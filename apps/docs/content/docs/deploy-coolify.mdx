@@ -1,0 +1,51 @@
+---
+title: "Coolify"
+description: "Deploy Bifrost on Coolify with Docker Compose."
+---
+
+[Coolify](https://coolify.io) deploys the repository's `docker-compose.yml` directly.
+
+## Deploy the Compose stack (recommended)
+
+1. **New Resource → Docker Compose**, and point it at this repository (or paste the
+   `docker-compose.yml`).
+2. Set the secrets as environment variables in the Coolify UI:
+	- `MASTER_KEY` — `openssl rand -base64 48`
+	- `ENCRYPTION_KEYRING` — e.g. `{"primary":"<openssl rand -hex 32>"}`
+	- `ACTIVE_ENCRYPTION_KEY_ID` — `primary`
+3. Deploy. The bundled `postgres` and `redis` run inside the stack's private network, the `migrate`
+   job applies migrations, and the gateway comes up on internal port `4000`.
+4. Configure domains only for long-running HTTP services:
+   - **gateway** — for example `https://api.example.com:4000`
+   - **docs** (optional) — for example `https://docs.example.com:3000`
+   - **migrate** — leave empty
+
+Coolify lists Compose services as possible domain targets and may therefore show **Domains for
+migrate**. That does not mean the job needs a domain: it runs once, exits, exposes no port, and must
+remain blank. The port suffix in a Coolify domain selects the internal container port; TLS still uses
+the normal public HTTPS port. Postgres and Redis must also remain internal.
+
+The base Compose file uses `expose`, not `ports`, so none of these services bypass Coolify's proxy or
+publish a raw host port.
+
+Because Postgres/Redis live on the Compose network and the gateway connects over plaintext
+(`postgres://gateway:gateway@postgres:5432/bifrost`, `redis://redis:6379`), there is no TLS and
+therefore no [Bun TLS issue](/docs/troubleshooting).
+
+## Using Coolify's standalone database / Redis services
+
+If you instead create Coolify's **standalone** Postgres and Redis services and connect the gateway to
+them, Coolify exposes them with **self-signed** certificates, which Bun's TLS may reject (see
+[Troubleshooting](/docs/troubleshooting)). The simplest setup is to run both without TLS on the private
+network:
+
+- **Disable SSL on both services** — uncheck **Enable SSL** on the Postgres and Redis services.
+- Connect via the **internal** hostname with `postgres://…` and `redis://…` (no `sslmode`, not
+  `rediss://`). On Coolify's private network the link is protected by network isolation, not TLS.
+
+> Postgres also offers an `allow` SSL mode if you prefer to keep TLS available for other clients;
+> disabling SSL is the simplest path for the gateway.
+
+Do not expose the database publicly in plaintext — see the
+[security note](/docs/troubleshooting#security-note). For an off-network database, prefer a
+[managed provider with a public-CA certificate](/docs/setup#managed-database-and-redis).

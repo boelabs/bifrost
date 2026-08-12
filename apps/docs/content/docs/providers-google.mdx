@@ -1,0 +1,47 @@
+---
+title: "Google AI Studio"
+description: "Adapter key googleaistudio. Strict tools, embeddings routes, and image thinking."
+---
+
+```json
+{ "publicModel": "gemini", "adapterKey": "googleaistudio", "upstreamModel": "gemini-3-pro", "credentials": { "apiKey": "..." } }
+```
+
+- **Credentials**: `apiKey` only.
+- **Default transport**: `generateContent` for text and image operations, `generate_videos` for Veo
+  video generation, and `embedContent`/`batchEmbedContents` for embeddings.
+- **Tool schemas are translated, not passed through.** Non-strict tools and pre-Gemini-3 models use
+  Gemini's OpenAPI-shaped `parameters` field and its narrower schema translator. On Gemini 3 and later,
+  a request containing an OpenAI `strict: true` function instead uses `parametersJsonSchema` for that
+  function and enables Gemini's schema-constrained `VALIDATED` mode when the tool choice remains
+  optional. Required or named tool choices keep `ANY`, which already constrains arguments to the
+  function schema. This is generation-time enforcement; the gateway does not coerce arguments or retry
+  a hidden repair request. Constructs outside Google's supported schema subset may still require a
+  simpler tool definition.
+- **Reasoning**: `gemini_level` (discrete `thinkingLevel`, with `xhigh` mapped to `high`) or
+  `gemini_budget` (raw `thinkingBudget` tokens), per model — see [Reasoning](/docs/reasoning).
+- **Thought signatures round-trip statelessly inside the tool call id.** When Gemini returns a
+  `thoughtSignature` on a function call, the gateway embeds it in the public tool call id as
+  `<id>__thought__<signature>` (LiteLLM-compatible) across all three surfaces. Any client that echoes
+  tool call ids verbatim — every standard OpenAI/Anthropic client, including the Vercel AI SDK —
+  round-trips it with no changes and no server-side state. The signature is also mirrored as
+  `provider_specific_fields.thought_signature` and `extra_content.google.thought_signature` on the
+  rendered tool call, and all three inbound forms are accepted. See
+  [Provider-specific fields](/docs/provider-specific-fields).
+- **Embeddings** accept text input and float vectors only through this gateway — no tokenized input,
+  no `base64` encoding — regardless of what the catalog profile might otherwise allow.
+- **Image `quality` maps to native thinking** for Gemini image models: `auto` (or omitted) and `low` use
+  `thinkingLevel: minimal`; `high` uses `thinkingLevel: high`. Some image models expose only
+  `quality: auto`. See [Images](/docs/images).
+- **Veo** uses the Gemini `:predictLongRunning` REST flow. Image/video references must be data URLs
+  because the REST request sends them as `inlineData`; multiple image references are forwarded as
+  `referenceImages`, while `video_url` is used for Veo extension on models that declare it.
+- Catalog: `src/adapters/google/catalog.json` (folder is `google`; adapter key is `googleaistudio` —
+  the one place today those two names don't match).
+
+## What to read next
+
+- [Reasoning](/docs/reasoning) — `gemini_level` / `gemini_budget` in detail.
+- [Embeddings](/docs/embeddings) — the reduced Google embedding contract.
+- [Images](/docs/images) — the quality-to-thinking mapping.
+- [Videos](/docs/videos) — the async video lifecycle and object storage.

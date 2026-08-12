@@ -1,0 +1,607 @@
+{
+	"$schema": "../../../schemas/model-catalog.schema.json",
+	"schemaVersion": 1,
+	"provider": {
+		"id": "zai",
+		"adapterKey": "zai",
+		"name": "Z.AI / ZAI AI",
+		"docs": [
+			"https://docs.z.ai/guides/llm/glm-5.2.md",
+			"https://docs.z.ai/guides/llm/glm-5.1.md",
+			"https://docs.z.ai/guides/llm/glm-5.md",
+			"https://docs.z.ai/guides/llm/glm-4.7.md",
+			"https://docs.z.ai/guides/llm/glm-4.6.md",
+			"https://docs.z.ai/guides/overview/concept-param.md",
+			"https://docs.z.ai/guides/overview/pricing"
+		]
+	},
+	"models": {
+		"glm-5.2": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 131072,
+					"reasoning": {
+						"kind": "openai_body",
+						"levels": ["none", "high", "max"],
+						"bodyField": {
+							"param": "thinking",
+							"onValue": {
+								"type": "enabled"
+							},
+							"offValue": {
+								"type": "disabled"
+							}
+						},
+						"effortField": "reasoning_effort"
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"thinking": {
+							"mode": "supported",
+							"upstreamField": "thinking",
+							"values": ["enabled", "disabled"]
+						},
+						"reasoning_effort": {
+							"mode": "mapped",
+							"values": ["none", "high", "max"],
+							"notes": "Positive tiers below high snap up to high; xhigh stays distinct from max and snaps down to high."
+						},
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_k": true,
+						"top_p": true,
+						"stop": true,
+						"frequency_penalty": true,
+						"presence_penalty": true,
+						"repetition_penalty": true,
+						"seed": true,
+						"min_p": true,
+						"logit_bias": true,
+						"structured_outputs": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 140,
+				"outputCentsPerMTokens": 440,
+				"cacheReadCentsPerMTokens": 26,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"glm-5.1": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 204800,
+					"maxOutputTokens": 131072,
+					"reasoning": {
+						"kind": "openai_body",
+						"levels": ["none", "high"],
+						"bodyField": {
+							"param": "thinking",
+							"onValue": {
+								"type": "enabled"
+							},
+							"offValue": {
+								"type": "disabled"
+							}
+						}
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_k": true,
+						"top_p": true,
+						"stop": true,
+						"structured_outputs": true,
+						"logprobs": true,
+						"top_logprobs": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 140,
+				"outputCentsPerMTokens": 440,
+				"cacheReadCentsPerMTokens": 26,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"glm-5": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 204800,
+					"maxOutputTokens": 131072,
+					"reasoning": {
+						"kind": "openai_body",
+						"levels": ["none", "high"],
+						"bodyField": {
+							"param": "thinking",
+							"onValue": {
+								"type": "enabled"
+							},
+							"offValue": {
+								"type": "disabled"
+							}
+						}
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_k": true,
+						"top_p": true,
+						"stop": true,
+						"seed": true,
+						"structured_outputs": true,
+						"response_format": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 100,
+				"outputCentsPerMTokens": 320,
+				"cacheReadCentsPerMTokens": 20,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"glm-5-turbo": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 204800,
+					"maxOutputTokens": 131072,
+					"reasoning": {
+						"kind": "openai_body",
+						"levels": ["none", "high"],
+						"bodyField": {
+							"param": "thinking",
+							"onValue": {
+								"type": "enabled"
+							},
+							"offValue": {
+								"type": "disabled"
+							}
+						}
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_k": true,
+						"top_p": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 120,
+				"outputCentsPerMTokens": 400,
+				"cacheReadCentsPerMTokens": 24,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"glm-5v-turbo": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 200000,
+					"maxOutputTokens": 131072,
+					"reasoning": {
+						"kind": "openai_body",
+						"levels": ["none", "high"],
+						"bodyField": {
+							"param": "thinking",
+							"onValue": {
+								"type": "enabled"
+							},
+							"offValue": {
+								"type": "disabled"
+							}
+						}
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_k": true,
+						"top_p": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 120,
+				"outputCentsPerMTokens": 400,
+				"cacheReadCentsPerMTokens": 24,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"glm-4.7": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 204800,
+					"maxOutputTokens": 131072,
+					"reasoning": {
+						"kind": "openai_body",
+						"levels": ["none", "high"],
+						"bodyField": {
+							"param": "thinking",
+							"onValue": {
+								"type": "enabled"
+							},
+							"offValue": {
+								"type": "disabled"
+							}
+						}
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_k": true,
+						"top_p": true,
+						"stop": true,
+						"frequency_penalty": true,
+						"presence_penalty": true,
+						"repetition_penalty": true,
+						"seed": true,
+						"min_p": true,
+						"structured_outputs": true,
+						"logit_bias": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 60,
+				"outputCentsPerMTokens": 220,
+				"cacheReadCentsPerMTokens": 11,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"glm-4.6": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 204800,
+					"maxOutputTokens": 131072,
+					"reasoning": {
+						"kind": "openai_body",
+						"levels": ["none", "high"],
+						"bodyField": {
+							"param": "thinking",
+							"onValue": {
+								"type": "enabled"
+							},
+							"offValue": {
+								"type": "disabled"
+							}
+						}
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_k": true,
+						"top_p": true,
+						"stop": true,
+						"frequency_penalty": true,
+						"presence_penalty": true,
+						"repetition_penalty": true,
+						"seed": true,
+						"min_p": true,
+						"response_format": true,
+						"logit_bias": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 60,
+				"outputCentsPerMTokens": 220,
+				"cacheReadCentsPerMTokens": 11,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"glm-4.6v": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 32768,
+					"reasoning": {
+						"kind": "openai_body",
+						"levels": ["none", "high"],
+						"bodyField": {
+							"param": "thinking",
+							"onValue": {
+								"type": "enabled"
+							},
+							"offValue": {
+								"type": "disabled"
+							}
+						}
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_k": true,
+						"top_p": true,
+						"stop": true,
+						"frequency_penalty": true,
+						"presence_penalty": true,
+						"seed": true,
+						"repetition_penalty": true,
+						"response_format": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 30,
+				"outputCentsPerMTokens": 90,
+				"cacheReadCentsPerMTokens": 5
+			}
+		},
+		"glm-4.5": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 131072,
+					"maxOutputTokens": 98304,
+					"reasoning": {
+						"kind": "openai_body",
+						"levels": ["none", "high"],
+						"bodyField": {
+							"param": "thinking",
+							"onValue": {
+								"type": "enabled"
+							},
+							"offValue": {
+								"type": "disabled"
+							}
+						}
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_k": true,
+						"top_p": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 60,
+				"outputCentsPerMTokens": 220,
+				"cacheReadCentsPerMTokens": 11,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"glm-4.5-air": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 131072,
+					"maxOutputTokens": 98304,
+					"reasoning": {
+						"kind": "openai_body",
+						"levels": ["none", "high"],
+						"bodyField": {
+							"param": "thinking",
+							"onValue": {
+								"type": "enabled"
+							},
+							"offValue": {
+								"type": "disabled"
+							}
+						}
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_k": true,
+						"top_p": true,
+						"stop": true,
+						"frequency_penalty": true,
+						"presence_penalty": true,
+						"seed": true,
+						"repetition_penalty": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 20,
+				"outputCentsPerMTokens": 110,
+				"cacheReadCentsPerMTokens": 3,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"glm-4.5v": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 65536,
+					"maxOutputTokens": 16384,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_k": true,
+						"top_p": true,
+						"stop": true,
+						"frequency_penalty": true,
+						"presence_penalty": true,
+						"seed": true,
+						"repetition_penalty": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 60,
+				"outputCentsPerMTokens": 180,
+				"cacheReadCentsPerMTokens": 11
+			}
+		},
+		"glm-4.7-flash": {
+			"operations": {
+				"text.generate": {
+					"maxInputTokens": 200000,
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true,
+						"top_p": true,
+						"frequency_penalty": true,
+						"presence_penalty": true,
+						"repetition_penalty": true,
+						"top_k": true,
+						"seed": true,
+						"min_p": true,
+						"response_format": true,
+						"structured_outputs": true,
+						"logit_bias": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"reasoning": {
+						"kind": "openai_body",
+						"levels": ["none", "high"],
+						"bodyField": {
+							"param": "thinking",
+							"onValue": {
+								"type": "enabled"
+							},
+							"offValue": {
+								"type": "disabled"
+							}
+						}
+					}
+				}
+			},
+			"pricing": {
+				"outputCentsPerMTokens": 40,
+				"cacheReadCentsPerMTokens": 1,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		}
+	}
+}

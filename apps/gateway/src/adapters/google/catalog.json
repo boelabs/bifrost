@@ -1,0 +1,1201 @@
+{
+	"$schema": "../../../schemas/model-catalog.schema.json",
+	"schemaVersion": 1,
+	"provider": {
+		"id": "googleaistudio",
+		"adapterKey": "googleaistudio",
+		"name": "Google AI Studio",
+		"docs": [
+			"https://ai.google.dev/gemini-api/docs/models",
+			"https://ai.google.dev/gemini-api/docs/pricing",
+			"https://ai.google.dev/gemini-api/docs/thinking"
+		]
+	},
+	"models": {
+		"veo-3.1-generate-preview": {
+			"operations": {
+				"video.generate": {
+					"maxPromptChars": 32000,
+					"durations": ["4", "6", "8"],
+					"supportsImageUrl": true,
+					"requiresDataUrlImageReference": true,
+					"maxReferenceBytes": 20000000,
+					"contentVariants": ["video"],
+					"pollIntervalSeconds": 10,
+					"sizes": {
+						"1280x720": {
+							"aspectRatio": "16:9",
+							"resolution": "720p"
+						},
+						"720x1280": {
+							"aspectRatio": "9:16",
+							"resolution": "720p"
+						},
+						"1920x1080": {
+							"aspectRatio": "16:9",
+							"resolution": "1080p"
+						},
+						"1080x1920": {
+							"aspectRatio": "9:16",
+							"resolution": "1080p"
+						},
+						"3840x2160": {
+							"aspectRatio": "16:9",
+							"resolution": "4k"
+						},
+						"2160x3840": {
+							"aspectRatio": "9:16",
+							"resolution": "4k"
+						}
+					},
+					"supportsFrameImages": true,
+					"supportsSeed": true,
+					"supportsVideoUrl": true,
+					"maxInputReferences": 3
+				}
+			}
+		},
+		"veo-3.1-fast-generate-preview": {
+			"operations": {
+				"video.generate": {
+					"maxPromptChars": 32000,
+					"durations": ["4", "6", "8"],
+					"supportsImageUrl": true,
+					"requiresDataUrlImageReference": true,
+					"maxReferenceBytes": 20000000,
+					"contentVariants": ["video"],
+					"pollIntervalSeconds": 10,
+					"sizes": {
+						"1280x720": {
+							"aspectRatio": "16:9",
+							"resolution": "720p"
+						},
+						"720x1280": {
+							"aspectRatio": "9:16",
+							"resolution": "720p"
+						},
+						"1920x1080": {
+							"aspectRatio": "16:9",
+							"resolution": "1080p"
+						},
+						"1080x1920": {
+							"aspectRatio": "9:16",
+							"resolution": "1080p"
+						},
+						"3840x2160": {
+							"aspectRatio": "16:9",
+							"resolution": "4k"
+						},
+						"2160x3840": {
+							"aspectRatio": "9:16",
+							"resolution": "4k"
+						}
+					},
+					"supportsFrameImages": true,
+					"supportsSeed": true,
+					"supportsVideoUrl": true,
+					"maxInputReferences": 3
+				}
+			}
+		},
+		"veo-3.1-lite-generate-preview": {
+			"operations": {
+				"video.generate": {
+					"maxPromptChars": 32000,
+					"durations": ["4", "6", "8"],
+					"supportsImageUrl": true,
+					"requiresDataUrlImageReference": true,
+					"maxReferenceBytes": 20000000,
+					"contentVariants": ["video"],
+					"pollIntervalSeconds": 10,
+					"sizes": {
+						"1280x720": {
+							"aspectRatio": "16:9",
+							"resolution": "720p"
+						},
+						"720x1280": {
+							"aspectRatio": "9:16",
+							"resolution": "720p"
+						},
+						"1920x1080": {
+							"aspectRatio": "16:9",
+							"resolution": "1080p"
+						},
+						"1080x1920": {
+							"aspectRatio": "9:16",
+							"resolution": "1080p"
+						}
+					},
+					"supportsFrameImages": true,
+					"supportsSeed": true,
+					"maxInputReferences": 1
+				}
+			}
+		},
+		"gemini-embedding-2": {
+			"operations": {
+				"embedding.create": {
+					"dimensions": 3072,
+					"supportsDimensions": true,
+					"minDimensions": 128,
+					"maxDimensions": 3072,
+					"encodingFormats": ["float"],
+					"maxInputTokens": 8192,
+					"supportsTokenInput": false
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 20,
+				"outputCentsPerMTokens": 0
+			},
+			"notes": "Upstream model is multimodal, but the gateway's OpenAI-compatible embeddings contract currently maps text inputs only."
+		},
+		"gemini-embedding-001": {
+			"operations": {
+				"embedding.create": {
+					"dimensions": 3072,
+					"supportsDimensions": true,
+					"minDimensions": 128,
+					"maxDimensions": 3072,
+					"encodingFormats": ["float"],
+					"maxInputTokens": 2048,
+					"supportsTokenInput": false
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 15,
+				"outputCentsPerMTokens": 0
+			}
+		},
+		"gemini-3.1-flash-image": {
+			"operations": {
+				"image.generate": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 14,
+					"maxImageBytes": 20000000,
+					"maxTotalInputBytes": 20000000,
+					"maxN": 1,
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto", "low", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"qualityMappings": {
+						"auto": {
+							"thinkingLevel": "minimal"
+						},
+						"low": {
+							"thinkingLevel": "minimal"
+						},
+						"high": {
+							"thinkingLevel": "high"
+						}
+					},
+					"sizes": {
+						"512x512": {
+							"aspectRatio": "1:1",
+							"imageSize": "512"
+						},
+						"1024x1024": {
+							"aspectRatio": "1:1",
+							"imageSize": "1K"
+						},
+						"2048x2048": {
+							"aspectRatio": "1:1",
+							"imageSize": "2K"
+						},
+						"4096x4096": {
+							"aspectRatio": "1:1",
+							"imageSize": "4K"
+						},
+						"848x1264": {
+							"aspectRatio": "2:3",
+							"imageSize": "1K"
+						},
+						"1264x848": {
+							"aspectRatio": "3:2",
+							"imageSize": "1K"
+						},
+						"1376x768": {
+							"aspectRatio": "16:9",
+							"imageSize": "1K"
+						},
+						"768x1376": {
+							"aspectRatio": "9:16",
+							"imageSize": "1K"
+						}
+					}
+				},
+				"image.edit": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 14,
+					"maxImageBytes": 20000000,
+					"maxTotalInputBytes": 20000000,
+					"maxN": 1,
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto", "low", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"qualityMappings": {
+						"auto": {
+							"thinkingLevel": "minimal"
+						},
+						"low": {
+							"thinkingLevel": "minimal"
+						},
+						"high": {
+							"thinkingLevel": "high"
+						}
+					},
+					"sizes": {
+						"512x512": {
+							"aspectRatio": "1:1",
+							"imageSize": "512"
+						},
+						"1024x1024": {
+							"aspectRatio": "1:1",
+							"imageSize": "1K"
+						},
+						"2048x2048": {
+							"aspectRatio": "1:1",
+							"imageSize": "2K"
+						},
+						"4096x4096": {
+							"aspectRatio": "1:1",
+							"imageSize": "4K"
+						},
+						"848x1264": {
+							"aspectRatio": "2:3",
+							"imageSize": "1K"
+						},
+						"1264x848": {
+							"aspectRatio": "3:2",
+							"imageSize": "1K"
+						},
+						"1376x768": {
+							"aspectRatio": "16:9",
+							"imageSize": "1K"
+						},
+						"768x1376": {
+							"aspectRatio": "9:16",
+							"imageSize": "1K"
+						}
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 50,
+				"outputCentsPerMTokens": 300,
+				"cacheReadCentsPerMTokens": 5
+			}
+		},
+		"gemini-3.1-flash-lite-image": {
+			"operations": {
+				"image.generate": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 14,
+					"maxImageBytes": 20000000,
+					"maxTotalInputBytes": 20000000,
+					"maxN": 1,
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {
+							"aspectRatio": "1:1",
+							"imageSize": "1K"
+						},
+						"848x1264": {
+							"aspectRatio": "2:3",
+							"imageSize": "1K"
+						},
+						"1264x848": {
+							"aspectRatio": "3:2",
+							"imageSize": "1K"
+						},
+						"1376x768": {
+							"aspectRatio": "16:9",
+							"imageSize": "1K"
+						},
+						"768x1376": {
+							"aspectRatio": "9:16",
+							"imageSize": "1K"
+						}
+					}
+				},
+				"image.edit": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 14,
+					"maxImageBytes": 20000000,
+					"maxTotalInputBytes": 20000000,
+					"maxN": 1,
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {
+							"aspectRatio": "1:1",
+							"imageSize": "1K"
+						},
+						"848x1264": {
+							"aspectRatio": "2:3",
+							"imageSize": "1K"
+						},
+						"1264x848": {
+							"aspectRatio": "3:2",
+							"imageSize": "1K"
+						},
+						"1376x768": {
+							"aspectRatio": "16:9",
+							"imageSize": "1K"
+						},
+						"768x1376": {
+							"aspectRatio": "9:16",
+							"imageSize": "1K"
+						}
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 25,
+				"outputCentsPerMTokens": 150,
+				"cacheReadCentsPerMTokens": 3
+			}
+		},
+		"gemini-3-pro-image": {
+			"operations": {
+				"image.generate": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 14,
+					"maxImageBytes": 20000000,
+					"maxTotalInputBytes": 20000000,
+					"maxN": 1,
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {
+							"aspectRatio": "1:1",
+							"imageSize": "1K"
+						},
+						"2048x2048": {
+							"aspectRatio": "1:1",
+							"imageSize": "2K"
+						},
+						"4096x4096": {
+							"aspectRatio": "1:1",
+							"imageSize": "4K"
+						},
+						"848x1264": {
+							"aspectRatio": "2:3",
+							"imageSize": "1K"
+						},
+						"1264x848": {
+							"aspectRatio": "3:2",
+							"imageSize": "1K"
+						}
+					}
+				},
+				"image.edit": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 14,
+					"maxImageBytes": 20000000,
+					"maxTotalInputBytes": 20000000,
+					"maxN": 1,
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {
+							"aspectRatio": "1:1",
+							"imageSize": "1K"
+						},
+						"2048x2048": {
+							"aspectRatio": "1:1",
+							"imageSize": "2K"
+						},
+						"4096x4096": {
+							"aspectRatio": "1:1",
+							"imageSize": "4K"
+						},
+						"848x1264": {
+							"aspectRatio": "2:3",
+							"imageSize": "1K"
+						},
+						"1264x848": {
+							"aspectRatio": "3:2",
+							"imageSize": "1K"
+						}
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 1200,
+				"cacheReadCentsPerMTokens": 20,
+				"cacheWriteCentsPerMTokens": 37.5
+			}
+		},
+		"gemini-2.5-flash-image": {
+			"operations": {
+				"image.generate": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 3,
+					"maxImageBytes": 20000000,
+					"maxTotalInputBytes": 20000000,
+					"maxN": 1,
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {
+							"aspectRatio": "1:1"
+						},
+						"832x1248": {
+							"aspectRatio": "2:3"
+						},
+						"1248x832": {
+							"aspectRatio": "3:2"
+						},
+						"864x1184": {
+							"aspectRatio": "3:4"
+						},
+						"1184x864": {
+							"aspectRatio": "4:3"
+						}
+					}
+				},
+				"image.edit": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 3,
+					"maxImageBytes": 20000000,
+					"maxTotalInputBytes": 20000000,
+					"maxN": 1,
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {
+							"aspectRatio": "1:1"
+						},
+						"832x1248": {
+							"aspectRatio": "2:3"
+						},
+						"1248x832": {
+							"aspectRatio": "3:2"
+						},
+						"864x1184": {
+							"aspectRatio": "3:4"
+						},
+						"1184x864": {
+							"aspectRatio": "4:3"
+						}
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 30,
+				"outputCentsPerMTokens": 250,
+				"cacheReadCentsPerMTokens": 3,
+				"cacheWriteCentsPerMTokens": 8.333333
+			}
+		},
+		"gemini-3.1-pro-preview": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 65536,
+					"reasoning": {
+						"kind": "gemini_level",
+						"levels": ["low", "medium", "high"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 1200,
+				"cacheReadCentsPerMTokens": 20,
+				"tiers": [
+					{
+						"aboveInputTokens": 200000,
+						"inputCentsPerMTokens": 400,
+						"outputCentsPerMTokens": 1800,
+						"cacheReadCentsPerMTokens": 40
+					}
+				],
+				"cacheWriteCentsPerMTokens": 37.5
+			}
+		},
+		"gemini-3.1-pro-preview-customtools": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 65536,
+					"reasoning": {
+						"kind": "gemini_level",
+						"levels": ["low", "medium", "high"]
+					},
+					"parameters": {
+						"reasoning": true,
+						"include_reasoning": true,
+						"max_tokens": true,
+						"temperature": true,
+						"top_p": true,
+						"seed": true,
+						"response_format": true,
+						"tools": true,
+						"tool_choice": true,
+						"structured_outputs": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 1200,
+				"cacheReadCentsPerMTokens": 20,
+				"tiers": [
+					{
+						"aboveInputTokens": 200000,
+						"inputCentsPerMTokens": 400,
+						"outputCentsPerMTokens": 1800,
+						"cacheReadCentsPerMTokens": 40
+					}
+				],
+				"cacheWriteCentsPerMTokens": 37.5
+			}
+		},
+		"gemini-3.6-flash": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 65536,
+					"reasoning": {
+						"kind": "gemini_level",
+						"levels": ["minimal", "low", "medium", "high"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 150,
+				"outputCentsPerMTokens": 750,
+				"cacheReadCentsPerMTokens": 15
+			}
+		},
+		"gemini-3.5-flash": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 65536,
+					"reasoning": {
+						"kind": "gemini_level",
+						"levels": ["minimal", "low", "medium", "high"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 150,
+				"outputCentsPerMTokens": 900,
+				"cacheReadCentsPerMTokens": 15,
+				"cacheWriteCentsPerMTokens": 8.333333
+			}
+		},
+		"gemini-3.5-flash-lite": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 65536,
+					"reasoning": {
+						"kind": "gemini_level",
+						"levels": ["minimal", "low", "medium", "high"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 30,
+				"outputCentsPerMTokens": 250,
+				"cacheReadCentsPerMTokens": 3
+			}
+		},
+		"gemini-3-flash-preview": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 65536,
+					"reasoning": {
+						"kind": "gemini_level",
+						"levels": ["minimal", "low", "medium", "high"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 50,
+				"outputCentsPerMTokens": 300,
+				"cacheReadCentsPerMTokens": 5,
+				"cacheWriteCentsPerMTokens": 8.333333
+			}
+		},
+		"gemini-3.1-flash-lite": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 65536,
+					"reasoning": {
+						"kind": "gemini_level",
+						"levels": ["minimal", "low", "medium", "high"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 25,
+				"outputCentsPerMTokens": 150,
+				"cacheReadCentsPerMTokens": 2.5,
+				"cacheWriteCentsPerMTokens": 8.333333
+			}
+		},
+		"gemini-2.5-pro": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 65536,
+					"reasoning": {
+						"kind": "gemini_budget",
+						"levels": ["minimal", "low", "medium", "high", "xhigh"],
+						"budgets": {
+							"minimal": 128,
+							"low": 2048,
+							"medium": 8192,
+							"high": 16384,
+							"xhigh": 32768
+						}
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 125,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 12.5,
+				"tiers": [
+					{
+						"aboveInputTokens": 200000,
+						"inputCentsPerMTokens": 250,
+						"outputCentsPerMTokens": 1500,
+						"cacheReadCentsPerMTokens": 25
+					}
+				],
+				"cacheWriteCentsPerMTokens": 37.5
+			}
+		},
+		"gemini-2.5-flash": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 65536,
+					"reasoning": {
+						"kind": "gemini_budget",
+						"levels": ["none", "minimal", "low", "medium", "high", "xhigh"],
+						"budgets": {
+							"minimal": 512,
+							"low": 1024,
+							"medium": 4096,
+							"high": 8192,
+							"xhigh": 24576
+						}
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 30,
+				"outputCentsPerMTokens": 250,
+				"cacheReadCentsPerMTokens": 3,
+				"cacheWriteCentsPerMTokens": 8.333333
+			}
+		},
+		"gemini-2.5-flash-lite": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 65536,
+					"reasoning": {
+						"kind": "gemini_budget",
+						"levels": ["none", "minimal", "low", "medium", "high", "xhigh"],
+						"budgets": {
+							"minimal": 512,
+							"low": 1024,
+							"medium": 4096,
+							"high": 8192,
+							"xhigh": 24576
+						}
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 10,
+				"outputCentsPerMTokens": 40,
+				"cacheReadCentsPerMTokens": 1,
+				"cacheWriteCentsPerMTokens": 8.333333
+			}
+		},
+		"gemma-4-26b-a4b-it": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 262144,
+					"maxOutputTokens": 262144,
+					"parameters": {
+						"frequency_penalty": true,
+						"include_reasoning": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"reasoning": true,
+						"repetition_penalty": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_k": true,
+						"top_logprobs": true,
+						"top_p": true,
+						"logit_bias": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 15,
+				"outputCentsPerMTokens": 60,
+				"cacheReadCentsPerMTokens": 1.5
+			}
+		},
+		"gemini-3.1-flash-lite-preview": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 65536,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 25,
+				"outputCentsPerMTokens": 150,
+				"cacheReadCentsPerMTokens": 2.5,
+				"cacheWriteCentsPerMTokens": 8.333333
+			}
+		},
+		"gemini-3.1-flash-image-preview": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 131072,
+					"maxOutputTokens": 32768,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"temperature": true,
+						"top_p": true,
+						"stop": true
+					}
+				},
+				"image.generate": {
+					"responseFormats": ["b64_json"],
+					"autoSize": {}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 50,
+				"outputCentsPerMTokens": 300,
+				"cacheReadCentsPerMTokens": 5
+			}
+		},
+		"gemini-3-pro-image-preview": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 65536,
+					"maxOutputTokens": 32768,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"top_p": true
+					}
+				},
+				"image.generate": {
+					"responseFormats": ["b64_json"],
+					"autoSize": {}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 1200,
+				"cacheReadCentsPerMTokens": 20,
+				"cacheWriteCentsPerMTokens": 37.5
+			}
+		},
+		"gemini-2.5-flash-lite-preview-09-2025": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 65535,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 10,
+				"outputCentsPerMTokens": 40,
+				"cacheReadCentsPerMTokens": 1,
+				"cacheWriteCentsPerMTokens": 8.333333
+			}
+		},
+		"gemini-2.5-pro-preview": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 65536,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 125,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 12.5,
+				"cacheWriteCentsPerMTokens": 37.5
+			}
+		},
+		"gemini-2.5-pro-preview-05-06": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 65536,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 125,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 12.5,
+				"cacheWriteCentsPerMTokens": 37.5
+			}
+		},
+		"gemma-4-31b-it": {
+			"operations": {
+				"text.generate": {
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true,
+						"top_p": true,
+						"top_k": true,
+						"repetition_penalty": true,
+						"frequency_penalty": true,
+						"presence_penalty": true,
+						"seed": true,
+						"response_format": true,
+						"structured_outputs": true,
+						"logprobs": true,
+						"top_logprobs": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"structuredOutputs": true
+					}
+				}
+			},
+			"pricing": {
+				"cacheReadCentsPerMTokens": 9
+			}
+		}
+	}
+}

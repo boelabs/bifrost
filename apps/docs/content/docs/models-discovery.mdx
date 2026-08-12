@@ -1,0 +1,116 @@
+---
+title: "Model discovery"
+description: "GET /v1/models and its per-deployment sibling: what's public, what's redacted, and why."
+---
+
+Three endpoints let a client discover what's servable, at two different levels of detail and two
+different auth requirements:
+
+| Endpoint | Auth | Returns |
+|---|---|---|
+| `GET /v1/models` | None | Every enabled Public Model, aggregated across its pool |
+| `GET /v1/models/{model}` | None | The same aggregated shape, for one Public Model |
+| `GET /v1/models/{model}/deployments` | **Required** (`Bearer`/`x-api-key`) | Per-deployment detail: weight, limits, live metrics |
+
+The first two are deliberately unauthenticated, the same way public provider model catalogs are public
+— a client (or a human) needs to see what's available before it has a reason to authenticate.
+The per-deployment endpoint is different: routing weight, rate limits, and live health/latency/
+throughput are **operator infrastructure detail**, not public model information, so it sits behind the
+same auth as inference.
+
+## `GET /v1/models` and `GET /v1/models/{model}`
+
+One entry per **Public Model** (not per deployment) — a pool of three deployments behind
+`gpt-image` still produces a single list entry, with fields aggregated across the pool:
+
+```json
+{
+  "id": "gpt-image",
+  "object": "model",
+  "created": 1735689600,
+  "owned_by": "Boelabs",
+  "architecture": {
+    "modality": "text->image",
+    "input_modalities": ["text"],
+    "output_modalities": ["image"]
+  },
+  "top_provider": {
+    "context_length": 128000,
+    "max_completion_tokens": 16384
+  },
+  "pricing": {
+    "prompt": "0.000005",
+    "completion": "0.00003"
+  },
+  "operations": [
+    { "id": "image.generate", "endpoints": ["/v1/images/generations"] }
+  ],
+  "supported_parameters": ["response_format", "size", "quality", ...],
+  "endpoint_count": 2
+}
+```
+
+Aggregation rules:
+
+- **`architecture`** — the union of input/output modalities across every operation every deployment in
+  the pool supports (vision-capable text models add `image` to input; embedding models add `embedding`
+  to output; rerank models add `rerank` to output; and so on).
+- **`top_provider`** — the **maximum** context length and max output tokens across the pool (the most
+  capable deployment behind this name).
+- **`pricing`** — the **minimum** (cheapest) rate across the pool, converted to USD per token;
+  rerank search-unit pricing is exposed as `search_unit` in USD per unit.
+- **`operations`** — the union of operation ids the pool supports, each with its public endpoint path(s).
+- **`supported_parameters`** — the union of parameter names any deployment in the pool declares as
+  supported (see [Parameter policy](/docs/parameter-policy) for what "supported" means).
+- **`endpoint_count`** — how many deployments back this Public Model, without exposing which ones.
+
+Nothing here reveals deployment labels, credentials, database ids, or the exact upstream model id —
+only what a caller needs to decide whether to use this model.
+
+## `GET /v1/models/{model}/deployments`
+
+One entry per deployment behind the pool, each with its own metrics:
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "dep_a1b2c3d4e5f6",
+      "object": "model.deployment",
+      "model": "gpt-image",
+      "provider": "openai",
+      "status": "available",
+      "retry_after_ms": null,
+      "created": 1735689600,
+      "weight": 1,
+      "limits": { "rpm": null, "tpm": null },
+      "top_provider": { "context_length": 128000, "max_completion_tokens": 16384 },
+      "pricing": { "prompt": "0.000005", "completion": "0.00003" },
+      "operations": [{ "id": "image.generate", "endpoints": ["/v1/images/generations"] }],
+      "supported_parameters": ["response_format", "size", "quality"],
+      "transports": {},
+      "metrics": {
+        "inflight": 0,
+        "rpm": 3,
+        "tpm": 1024,
+        "health_score": 0.92,
+        "latency_ms": 842.3,
+        "throughput_tps": 41.7
+      }
+    }
+  ]
+}
+```
+
+`id` is a deterministic, opaque hash (`dep_` + a truncated SHA-256 of the internal deployment id) — it
+identifies the deployment across calls without exposing the real database id. `metrics` mirrors exactly
+what [Routing](/docs/routing) uses to make decisions, so this endpoint doubles as a live dashboard for
+"why did the router pick that one." `status` is one of `available`, `cooldown`, `half_open`, or
+`rate_limited`; `retry_after_ms` is the remaining circuit/probe TTL when applicable.
+
+## What to read next
+
+- [Routing](/docs/routing) — how these same per-deployment metrics drive selection.
+- [Creating deployments](/docs/creating-deployments) — weights, limits, and shared failure domains.
+- [Security](/docs/security) — the general redaction rules for anything the gateway exposes publicly.

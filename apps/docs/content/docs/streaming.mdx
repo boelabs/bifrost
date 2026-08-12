@@ -1,0 +1,56 @@
+---
+title: "Streaming"
+description: "Server-Sent Events shape, shared across chat, responses, messages, images, and audio."
+---
+
+Every endpoint that accepts `"stream": true` returns **Server-Sent Events** (`Content-Type:
+text/event-stream`), each rendered into that endpoint's own native event shape from the same canonical
+stream underneath:
+
+| Endpoint | Chunk/event shape |
+|---|---|
+| Chat completions | `chat.completion.chunk` objects, one `data:` line each |
+| Responses | Responses-native event types (`response.output_text.delta`, ...) |
+| Messages | Anthropic-native events (`message_start`, `content_block_delta`, ...) |
+| Images | Partial-image events (`partial_images` count), then the final image |
+| Audio transcriptions | Incremental transcript events, if the model's profile declares streaming support |
+
+The stream ends with `data: [DONE]` (chat/responses/images) or the contract's native terminal event
+(messages), then closes the connection.
+
+## Usage in the final chunk
+
+For chat-shaped endpoints, request `stream_options.include_usage: true` (or the Responses/Messages
+equivalent) to get a usage object in the final chunk — otherwise token counts are only visible after
+the fact via `GET /admin/logs`.
+
+## Reasoning while streaming
+
+Where the contract and model support it, visible reasoning arrives incrementally as its own delta field
+(`delta.reasoning` on Chat Completions) alongside the regular content delta — governed by the same
+`reasoning.summary` resolution described in [Reasoning](/docs/reasoning).
+
+## Timing
+
+The gateway measures **upstream-only** latency and throughput — time to the last upstream chunk, not to
+when the client finished receiving the relayed response — specifically so a slow client connection
+doesn't get blamed on the model. This is what feeds `latency-based`/`throughput-based`
+[routing](/docs/routing) and the winning attempt's `firstOutputMs` timing (see
+[Observability](/docs/observability)).
+
+## Not cacheable
+
+Streaming requests are never eligible for the [response cache](/docs/caching) — caching only applies
+to complete, non-streamed, tool-free, stateless responses. Every streamed request goes to the provider
+live.
+
+## Cancellation
+
+If the client disconnects mid-stream, the gateway releases the deployment's in-flight slot without
+penalizing it — an abandoned stream never counts toward that deployment's failure count or cooldown
+(see [Routing](/docs/routing)).
+
+## What to read next
+
+- [Chat completions](/docs/chat-completions), [Responses](/docs/responses), [Messages](/docs/messages), [Images](/docs/images) — the contract-specific chunk shapes.
+- [Routing](/docs/routing) — how streaming timing feeds routing decisions.

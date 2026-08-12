@@ -1,0 +1,82 @@
+---
+title: "Concepts"
+description: "The mental model: how a request flows through the gateway."
+---
+
+Bifrost sits between your clients and many providers. Clients speak a stable, public contract;
+the gateway translates each request into one provider-agnostic internal shape, routes it to a real
+provider, and translates the answer back. This page is the mental model; the [Glossary](/docs/glossary)
+is the precise, canonical definition of each term.
+
+## The one diagram
+
+```text
+Client -> Public Endpoint -> Canonical request
+       -> Public Model -> deployment pool -> Deployment
+       -> Transport -> provider -> Canonical response
+       -> Public Endpoint contract -> client
+```
+
+Everything below is just the pieces of that line.
+
+## The pieces
+
+**Public Endpoint** — the route a client calls, with that API's exact contract:
+`/v1/chat/completions`, `/v1/responses`, `/v1/messages`, `/v1/embeddings`, `/v1/images/*`,
+`/v1/audio/transcriptions`, `/v1/rerank`. The endpoint decides the *client-facing* shape, not the provider protocol.
+
+**Public Model** — the name a client puts in `model` (`general`, `image-default`). It is yours to
+choose, not a provider's model id. There is no separate "model group" entity: every deployment that
+shares a `publicModel` automatically forms its **deployment pool**.
+
+**Deployment** — one executable route to a provider: a `publicModel` + adapter + `upstreamModel` +
+encrypted credentials + weight and limits. Several deployments under the same public name give you
+load balancing and fallback for free.
+
+**Adapter** — the code that knows a provider. It translates the canonical request into one or more
+upstream protocols and maps provider errors back into the gateway's error classes.
+
+**Transport** — the actual protocol the adapter speaks to the provider: `chat_completions`,
+`responses`, `generate_content`, `messages`, `images`, `audio_transcriptions`, `embeddings`, or
+`embed_content`, `openrouter_rerank`, or `cohere_rerank`. It is **inferred per operation** from the adapter; `transportOverrides` is the rare
+manual override.
+
+**Canonical** — the single provider-agnostic representation in the core. Every public wire format is
+converted *into* canonical on the way in, and rendered *from* canonical on the way out. This is why an
+extension hook or a fallback target written once works across `/v1/chat/completions`, `/v1/responses`,
+and `/v1/messages` alike — they are the same canonical request underneath.
+
+## Why public names, not provider ids
+
+Decoupling the client-facing name from the provider model is what makes the rest possible:
+
+- **Swap providers without touching clients** — repoint `general` from OpenAI to Anthropic by editing
+  deployments; the client keeps sending `model: "general"`.
+- **Pool and balance** — add a second deployment under `general` and the [router](/docs/fallbacks)
+  spreads load and retries across both.
+- **Fall back** — when a pool is exhausted, a [fallback chain](/docs/fallbacks) keyed by
+  `(publicModel, reason)` advances to another public model, same canonical request.
+- **One control plane** — auth, [virtual-key](/docs/virtual-keys) scopes, budgets, rate limits,
+  logging, and cost accounting all key off the public name, regardless of which provider served it.
+
+## How a request is served, briefly
+
+1. A client calls a **Public Endpoint** with a virtual or master key and a `model`.
+2. Auth resolves the key, checks the model is in scope, and applies rate limits.
+3. The endpoint parses the public contract into a **canonical** request.
+4. The router resolves the **Public Model** to its **deployment pool** and picks candidates by weight,
+   cooldown, and the request's operation profile.
+5. Each candidate runs over its **Transport**; retryable failures move to the next candidate, and an
+   exhausted pool may enter a **fallback chain**.
+6. The canonical response is rendered back into the calling endpoint's contract and returned, with
+   `x-request-id` and (for limited keys) `x-ratelimit-*` headers.
+
+This is the short version. For the exact execution order — including where the response cache,
+parameter policy, extension hooks, and cost accounting each fit in — see [Architecture](/docs/architecture).
+
+## Where to go next
+
+- [Architecture](/docs/architecture) — the same request, traced through every layer in precise order.
+- [Quickstart](/docs/quickstart) — do all of the above once, hands-on.
+- [Creating deployments](/docs/creating-deployments) — define public models over real providers.
+- [Glossary](/docs/glossary) — the exact, contract-level definition of every term here.

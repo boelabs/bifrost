@@ -1,0 +1,39 @@
+---
+title: "OpenAI"
+description: "Adapter key openai. Credentials, transport, and quirks."
+---
+
+```json
+{ "publicModel": "gpt-5.5", "adapterKey": "openai", "upstreamModel": "gpt-5.5", "credentials": { "apiKey": "sk-..." } }
+```
+
+- **Credentials**: `apiKey` only.
+- **Text transports**: both Responses and Chat Completions are supported. Without an operator
+  override, each public endpoint prefers its matching native transport. `transportOverrides` can pin
+  `text.generate` when a deployment intentionally needs one transport for every public text contract.
+- **Reasoning**: `openai_effort` (`reasoning_effort`) on reasoning-family models. `-chat` suffixed
+  variants (e.g. `gpt-5.2-chat`) are non-reasoning — the real API rejects `reasoning_effort` on them,
+  and the catalog declares them without a `reasoning` spec accordingly. On GPT-5.6, `xhigh` and `max`
+  are separate tiers and are forwarded unchanged.
+- **Encrypted reasoning round-trips through the client.** On reasoning-capable models the upstream
+  call sets `store: false` and requests `include: ["reasoning.encrypted_content"]`; the
+  encrypted state is returned to the client (native `reasoning` items on `/v1/responses`,
+  message-level `provider_specific_fields` on `/v1/chat/completions`) and replayed upstream when
+  echoed back. Responses are therefore never stored in your OpenAI account. See
+  [Provider-specific fields](/docs/provider-specific-fields).
+- **Responses WebSocket:** public WebSocket sessions terminate at the gateway. The OpenAI adapter
+  opens a separate upstream `/responses` WebSocket, maps public response ids to private upstream ids,
+  and uses incremental continuation while the same deployment remains selected. Routing to another
+  deployment reconstructs the full canonical context instead of leaking or forwarding provider
+  events directly.
+- **Images**: `gpt-image-*` models; always returns `b64_json` regardless of requested
+  `response_format` (see [Images](/docs/images)).
+- **Videos**: Sora profiles are included for OpenAI-shaped compatibility, but OpenAI's current docs
+  mark the Sora 2 Videos API deprecated with shutdown scheduled for September 24, 2026.
+- Catalog: `src/adapters/openai/catalog.json`.
+
+## What to read next
+
+- [Creating deployments](/docs/creating-deployments) — the full request shape.
+- [Reasoning](/docs/reasoning) — the `openai_effort` kind in detail.
+- [Videos](/docs/videos) — the async video lifecycle.

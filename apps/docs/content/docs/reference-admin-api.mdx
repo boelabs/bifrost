@@ -1,0 +1,80 @@
+---
+title: "Admin API reference"
+description: "Every admin route, grouped by area. Exact request/response shapes are in the OpenAPI spec."
+---
+
+All `/admin/*` routes require `Authorization: Bearer $MASTER_KEY`. Success responses use
+`{ "data": ... }`; paginated lists use `{ "data": [...], "pagination": { limit, offset, total, nextOffset } }`.
+This page is a map of what exists; for exact request/response bodies, see
+[`apps/gateway/openapi.yaml`](https://github.com/boelabs/bifrost/blob/main/apps/gateway/openapi.yaml)
+or the interactive spec (see [API guide](/docs/api-overview)).
+
+## Deployments
+
+| Route | Purpose |
+|---|---|
+| `GET /admin/operations` | Available operations, required credentials, and transports per adapter. |
+| `POST /admin/deployments/resolve` | Dry-run: resolve effective capabilities/operations/transports for a body, without saving. |
+| `GET /admin/deployments` | List deployments. Query: `enabled`, `publicModel`, `q` (search name/prefix). |
+| `POST /admin/deployments` | Create a deployment (see [Creating deployments](/docs/creating-deployments)). |
+| `GET /admin/deployments/:id` | Read one deployment. |
+| `PATCH /admin/deployments/:id` | Update a deployment. |
+| `DELETE /admin/deployments/:id` | Delete a deployment. |
+
+## Virtual keys
+
+| Route | Purpose |
+|---|---|
+| `GET /admin/keys` | List keys. Query: `limit`, `offset`, `enabled`, `publicModel`, `q` (search name/prefix). |
+| `POST /admin/keys` | Create a virtual key (see [Virtual keys](/docs/virtual-keys)). |
+| `PATCH /admin/keys/:id` | Update scope, limits, budget, or enabled state; send `null` to clear a limit. |
+| `DELETE /admin/keys/:id` | Permanently delete a key. |
+
+## Router and fallbacks
+
+| Route | Purpose |
+|---|---|
+| `GET /admin/router-settings` | Effective router configuration (defaults if never set). |
+| `PUT /admin/router-settings` | Patch any subset of routing/parameter-policy/retry settings — see [Routing](/docs/routing) and [Parameter policy](/docs/parameter-policy). |
+| `GET /admin/fallbacks` | List fallback chains. |
+| `PUT /admin/fallbacks` | Upsert a chain (`primaryModel`, `fallbackModels`, optional `reason`). |
+| `DELETE /admin/fallbacks/:primaryModel/:reason` | Remove a chain. See [Fallbacks](/docs/fallbacks). |
+
+## Cache
+
+| Route | Purpose |
+|---|---|
+| `DELETE /admin/cache` | Clear cached entries. Query: `callType`, `namespace` (a virtual key id) — omit both to clear everything. See [Caching](/docs/caching). |
+
+## Logs and usage
+
+| Route | Purpose |
+|---|---|
+| `GET /admin/logs` | Paginated operation summaries. Filters include `outcome`, `degraded`, `active`, `terminalVerified`, `failureKind`, `failurePhase`, duration, model, key, request id, cache, and time range. |
+| `GET /admin/logs/:operationId` | Full operation record and ordered upstream-attempt timeline. |
+| `GET /admin/logs/:operationId/payload` | Decrypt a retained forensic sample. Master-only and audit logged; returns 404 when no sample exists. |
+| `GET /admin/observability/summary` | Outcomes, degraded/stalled/active/abandoned counts, retries, and latency percentiles for `window=5m|1h|24h`. |
+| `GET /admin/usage` | Consumer usage/cost and estimated upstream cost across every attempt; group by public model, virtual key, day, or none. See [Cost accounting](/docs/cost-accounting). |
+
+## Extensions
+
+| Route | Purpose |
+|---|---|
+| `GET /admin/extensions` | Loaded definitions and configured instances, with live status. |
+| `GET /admin/extensions/artifacts` | List uploaded extension modules (by key). |
+| `GET /admin/extensions/artifacts/:key/versions` | Version history for one module key. |
+| `POST /admin/extensions/artifacts` | Upload a new version of a module (`key`, `code`). Triggers a hot-reload on every replica. |
+| `POST /admin/extensions/artifacts/:key/activate` | Roll back/forward to a specific previously-uploaded version. |
+| `DELETE /admin/extensions/artifacts/:key` | Delete a module and all its versions. |
+| `GET /admin/extensions/instances` | List configured instances (definition bindings). |
+| `POST /admin/extensions/instances` | Create an instance (`id`, `definition`, plus `enabled`/`critical`/`priority`/`match`/`config`). |
+| `PATCH /admin/extensions/instances/:id` | Update an instance. |
+| `DELETE /admin/extensions/instances/:id` | Remove an instance. |
+| `POST /admin/extensions/:id/reset` | Clear a tripped circuit breaker and re-activate the instance for the current process. |
+
+Full walkthrough, hook semantics, and failure behavior: [Runtime extensions](/docs/extensions).
+
+## What to read next
+
+- [API overview](/docs/api-overview) — auth and error shape shared with `/v1/*`.
+- [Creating deployments](/docs/creating-deployments), [Virtual keys](/docs/virtual-keys), [Fallbacks](/docs/fallbacks), [Extensions](/docs/extensions) — the guides behind each section above.

@@ -1,0 +1,45 @@
+---
+title: "OpenRouter"
+description: "Adapter key openrouter. Native reranking and the primary rerank model catalog."
+---
+
+```json
+{
+  "publicModel": "search-reranker",
+  "adapterKey": "openrouter",
+  "upstreamModel": "cohere/rerank-4-fast",
+  "credentials": { "apiKey": "sk-or-..." }
+}
+```
+
+- **Credentials**: `apiKey` is required. `baseUrl` and custom `headers` are optional. The default base
+  URL is `https://openrouter.ai/api/v1`.
+- **Operation**: reranking only in this release. The adapter sends `POST /rerank` through the native
+  `openrouter_rerank` transport.
+- **Provider routing**: the public `provider` object is preserved exactly and makes only OpenRouter
+  deployments eligible for that request.
+- **Model ids**: use OpenRouter's complete ids, including creator and suffixes such as `:free`.
+- **Catalog**: the committed catalog is generated from OpenRouter's model feed filtered by
+  `output_modalities=rerank`. No expected model count is hard-coded.
+- **Text-only release**: multimodal source capability is reported by the sync but withheld from the
+  public profile. The NVIDIA vision reranker therefore accepts text documents only for now.
+- **Pricing**: ambiguous zero token fields do not mark paid rerankers free. Reviewed search-unit
+  overrides are used where available; otherwise OpenRouter's response cost is the accounting fallback.
+
+Catalog workflow:
+
+```bash
+bun run --filter @boelabs/bifrost catalog:sync:openrouter
+bun run --filter @boelabs/bifrost catalog:sync:openrouter:verify
+# To update the committed snapshot after review:
+bun run --filter @boelabs/bifrost catalog:sync:openrouter:write
+```
+
+The report calls out multimodal capability not yet enabled, ambiguous zero pricing, orphaned reviewed
+overrides, and paid models without a representable local cost.
+
+## What to read next
+
+- [Reranking](/docs/reranking) — public contract, routing, validation, and examples.
+- [Model catalog](/docs/model-catalog#openrouter-rerank-sync) — sync ownership and schema.
+- [Routing](/docs/routing) — retries, fallback, health, and price strategy.

@@ -1,0 +1,33 @@
+{
+	"name": "@boelabs/docs",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Bifrost documentation site (Next.js, Fumadocs, MDX).",
+	"scripts": {
+		"dev": "next dev",
+		"build": "next build",
+		"preview": "next start",
+		"typecheck": "node ./node_modules/fumadocs-mdx/bin.js && next typegen && tsc --noEmit"
+	},
+	"dependencies": {
+		"@tailwindcss/postcss": "4.3.3",
+		"fumadocs-core": "16.14.0",
+		"fumadocs-mdx": "15.2.1",
+		"fumadocs-ui": "16.14.0",
+		"lucide-react": "1.28.0",
+		"next": "16.2.12",
+		"postcss": "8.5.25",
+		"react": "19.2.8",
+		"react-dom": "19.2.8",
+		"sharp": "0.35.3",
+		"tailwindcss": "4.3.3"
+	},
+	"devDependencies": {
+		"@types/mdx": "2.0.14",
+		"@types/node": "26.1.2",
+		"@types/react": "19.2.18",
+		"@types/react-dom": "19.2.4",
+		"typescript": "7.0.2"
+	}
+}

@@ -1,0 +1,28 @@
+# Build context is the repo ROOT; these patterns are relative to it.
+# (BuildKit reads <dockerfile>.dockerignore in preference to a context-root .dockerignore.)
+
+**/node_modules
+**/.turbo
+**/.astro
+**/dist
+**/coverage
+**/.extensions-cache
+.git
+.github
+*.log
+
+# secrets / env (the image gets config from the environment at runtime)
+**/.env
+**/.env.local
+**/.env.*
+!**/.env.example
+**/.env.extensions
+
+# Docs source is not needed; Bun only needs its workspace manifest.
+apps/docs/**
+!apps/docs/package.json
+
+# Development-only gateway files.
+**/tests
+**/*.test.ts
+apps/gateway/examples

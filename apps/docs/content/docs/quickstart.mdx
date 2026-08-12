@@ -1,0 +1,131 @@
+---
+title: "Quickstart"
+description: "From clone to your first response, end to end."
+---
+
+This walks through the full path once: start the gateway, register a real provider behind a public
+model, issue a client key, and make a call. It assumes one OpenAI key, but every step works the same
+for Anthropic, Google, Azure, or an OpenAI-compatible endpoint — see [Creating
+deployments](/docs/creating-deployments) for the per-provider bodies.
+
+> You need two kinds of credentials and they are not the same thing:
+> the **master key** (`MASTER_KEY`, operator-only) administers the gateway, and **virtual keys**
+> (`unified-…`) are what your clients send. Never hand the master key to a client.
+
+## 1. Run the gateway
+
+Requirements: Bun 1.3+, Postgres 18+, Redis 8+ (full configuration in [Setup](/docs/setup)).
+
+```bash
+git clone https://github.com/boelabs/bifrost.git && cd bifrost
+bun install
+docker compose -f docker-compose.yml -f compose.local.yaml up -d postgres redis
+```
+
+Create `apps/gateway/.env` (see `apps/gateway/.env.example`) with at least:
+
+```bash
+PORT=4000
+NODE_ENV=development
+MASTER_KEY=replace-with-at-least-32-random-characters
+ENCRYPTION_KEYRING={"primary":"64_hex_chars_32_bytes"}   # value: openssl rand -hex 32
+ACTIVE_ENCRYPTION_KEY_ID=primary
+DATABASE_URL=postgres://gateway:gateway@localhost:5432/bifrost
+REDIS_URL=redis://localhost:6379
+```
+
+Apply migrations and start it:
+
+```bash
+bun run --filter @boelabs/bifrost db:migrate
+bun run --filter @boelabs/bifrost dev
+```
+
+Confirm it is up:
+
+```bash
+curl http://localhost:4000/health/ready   # 200 once Postgres + Redis + extensions are healthy
+```
+
+For the rest of this page:
+
+```bash
+export BASE=http://localhost:4000
+export MASTER_KEY=replace-with-at-least-32-random-characters
+```
+
+## 2. Register a deployment
+
+A **deployment** binds a public model name to an adapter, an upstream model, and credentials. Create
+one with the master key — the provider API key goes inline and is encrypted at rest:
+
+```bash
+curl -X POST $BASE/admin/deployments \
+  -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
+    "publicModel": "general",
+    "adapterKey": "openai",
+    "upstreamModel": "gpt-5.4",
+    "credentials": { "apiKey": "sk-..." }
+  }'
+```
+
+`general` is now a public model. Want to preview what the gateway resolved (capabilities, operations,
+transports) **without saving**? Send the same body to `POST /admin/deployments/resolve`.
+
+## 3. Issue a virtual key
+
+Clients never use the master key. Mint a scoped virtual key instead — `allowedModels` limits which
+public models it may call (`[]` or omitted = all):
+
+```bash
+curl -X POST $BASE/admin/keys \
+  -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
+    "name": "my-app",
+    "allowedModels": ["general"]
+  }'
+```
+
+The response contains the plaintext key **once** — store it now, it is never shown again:
+
+```json
+{ "data": { "id": "…", "keyPrefix": "unified-abcd…", "key": "unified-…", "allowedModels": ["general"] } }
+```
+
+See [Virtual keys](/docs/virtual-keys) for budgets, RPM/TPM limits, and rotation.
+
+## 4. Make a call
+
+Use the virtual key exactly as you would an OpenAI key, with `model` set to your public name:
+
+```bash
+curl -X POST $BASE/v1/chat/completions \
+  -H "Authorization: Bearer unified-..." -H "content-type: application/json" -d '{
+    "model": "general",
+    "messages": [{ "role": "user", "content": "Say hello in one word." }]
+  }'
+```
+
+Or with the official OpenAI SDK — this is the whole integration:
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:4000/v1", api_key="unified-...")
+resp = client.chat.completions.create(
+    model="general",
+    messages=[{"role": "user", "content": "Say hello in one word."}],
+)
+print(resp.choices[0].message.content)
+```
+
+The same key and base URL also serve `/v1/responses`, `/v1/messages` (Anthropic shape),
+`/v1/embeddings`, `/v1/images/*`, and `/v1/audio/transcriptions`. Every response carries an
+`x-request-id`; virtual-key requests with limits also return `x-ratelimit-*` headers.
+
+## What to read next
+
+- [Concepts](/docs/concepts) — the mental model behind public models, pools, adapters, and transports.
+- [Architecture](/docs/architecture) — the same request, traced through every layer in precise order.
+- [Creating deployments](/docs/creating-deployments) — every provider and custom-model body.
+- [Fallbacks](/docs/fallbacks) — make a public model survive a provider outage.
+- [Troubleshooting](/docs/troubleshooting) — what a `400`/`401`/`403`/`429`/`503` means and how to fix it.

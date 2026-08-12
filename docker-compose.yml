@@ -1,0 +1,91 @@
+# Production/PaaS base. Services stay on the private Compose network; use
+# compose.local.yaml explicitly when host port bindings are needed.
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: gateway
+      POSTGRES_PASSWORD: gateway
+      POSTGRES_DB: bifrost
+    volumes:
+      # PG18 moved PGDATA to /var/lib/postgresql/18/docker; the volume is mounted
+      # on the parent /var/lib/postgresql (not /data as in 17 and earlier).
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gateway -d bifrost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-off job: applies SQL migrations and exits. PaaS domain selectors may list this service;
+  # leave its domain empty. The gateway waits for it to finish before starting.
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/gateway/Dockerfile
+    image: bifrost:local
+    command: ["bun", "src/db/migrate.ts"]
+    environment:
+      NODE_ENV: production
+      MASTER_KEY: ${MASTER_KEY:-}
+      ENCRYPTION_KEYRING: ${ENCRYPTION_KEYRING:-}
+      ACTIVE_ENCRYPTION_KEY_ID: ${ACTIVE_ENCRYPTION_KEY_ID:-}
+      DATABASE_URL: ${DATABASE_URL:-postgres://gateway:gateway@postgres:5432/bifrost}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  gateway:
+    build:
+      context: .
+      dockerfile: apps/gateway/Dockerfile
+    image: bifrost:local
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      # Required at deployment; intentionally empty instead of falling back to known credentials.
+      # MASTER_KEY needs >= 32 chars. ENCRYPTION_KEYRING is a JSON id-to-64-hex-key object.
+      MASTER_KEY: ${MASTER_KEY:-}
+      ENCRYPTION_KEYRING: ${ENCRYPTION_KEYRING:-}
+      ACTIVE_ENCRYPTION_KEY_ID: ${ACTIVE_ENCRYPTION_KEY_ID:-}
+      DATABASE_URL: ${DATABASE_URL:-postgres://gateway:gateway@postgres:5432/bifrost}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    expose:
+      - "4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  docs:
+    build:
+      context: .
+      dockerfile: apps/docs/Dockerfile
+    image: unified-docs:local
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    expose:
+      - "3000"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:

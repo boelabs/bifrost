@@ -1,0 +1,21 @@
+---
+title: "Z.AI"
+description: "Adapter key zai. Built-in base URL and the thinking toggle."
+---
+
+```json
+{ "publicModel": "glm", "adapterKey": "zai", "upstreamModel": "glm-4.7-flash", "credentials": { "apiKey": "..." } }
+```
+
+- **Credentials**: `apiKey` only. No `baseUrl` needed — defaults to
+  `https://api.z.ai/api/paas/v4`.
+- **Default transport**: Chat Completions.
+- **Reasoning**: `openai_body`, with a top-level `thinking: { type: "enabled" | "disabled" }` toggle —
+  the same mechanism across every GLM model in the catalog, whether it exposes a full effort ladder or
+  just an on/off switch (`levels: ["none", "high"]`). See [Reasoning](/docs/reasoning).
+- Catalog: `src/adapters/zai/catalog.json`.
+
+## What to read next
+
+- [Reasoning](/docs/reasoning) — the `openai_body` / `thinking` toggle in detail.
+- [Creating deployments](/docs/creating-deployments) — the full request shape.

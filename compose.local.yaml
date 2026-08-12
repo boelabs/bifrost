@@ -1,0 +1,39 @@
+# Explicit local/host override. Bindings use loopback so databases and application
+# ports are not exposed on every host interface.
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  minio:
+    image: minio/minio:latest
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-gateway}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-gateway-password}
+    volumes:
+      - miniodata:/data
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+
+  gateway:
+    environment:
+      MASTER_KEY: ${MASTER_KEY:-local-master-key-change-me-32chars}
+      ENCRYPTION_KEYRING: '{"local":"${ENCRYPTION_KEY_HEX:-0000000000000000000000000000000000000000000000000000000000000000}"}'
+      ACTIVE_ENCRYPTION_KEY_ID: ${ACTIVE_ENCRYPTION_KEY_ID:-local}
+      OBJECT_STORAGE_BACKEND: ${OBJECT_STORAGE_BACKEND:-local}
+      OBJECT_STORAGE_LOCAL_ROOT: ${OBJECT_STORAGE_LOCAL_ROOT:-.source/object-storage}
+    ports:
+      - "127.0.0.1:4000:4000"
+
+  docs:
+    ports:
+      - "127.0.0.1:3000:3000"
+
+volumes:
+  miniodata:

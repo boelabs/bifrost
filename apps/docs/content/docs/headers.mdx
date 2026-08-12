@@ -1,0 +1,59 @@
+---
+title: "Headers"
+description: "Every request and response header the gateway reads or sets, in one table."
+---
+
+## Request headers
+
+| Header | Where | Effect |
+|---|---|---|
+| `Authorization: Bearer <key>` or `x-api-key: <key>` | All `/v1/*`, all `/admin/*` | Auth. Master key on `/admin/*`; master or virtual key on `/v1/*`. |
+| `x-request-id` | Any request | Echoed back on the response if you send it; otherwise the gateway generates one. Always log this — see [Troubleshooting](/docs/troubleshooting). |
+| `x-unified-cache: true` (or `1`) | Chat-shaped and embeddings requests | Opt in to response caching for this request. Ignored entirely for master-key traffic. |
+| `x-unified-cache-ttl: <seconds>` | Same as above | TTL for a newly stored cache entry. Default `300`, max `86400`. Ignored if `x-unified-cache` isn't also set. |
+| `x-unified-routing-metadata: true` (or `1`/`yes`/`on`/`include`) | `/v1/chat/completions`, `/v1/messages`, `/v1/responses` | Adds an `unified_routing` object to the response body (see below). |
+
+## Response headers
+
+| Header | When | Meaning |
+|---|---|---|
+| `x-request-id` | Always | Same value as the request's (or newly generated). |
+| `x-ratelimit-limit-requests` / `-remaining-requests` / `-reset-requests` | Virtual-key requests with an RPM limit | Requests-per-minute budget for this key. |
+| `x-ratelimit-limit-tokens` / `-remaining-tokens` / `-reset-tokens` | Virtual-key requests with a TPM limit | Tokens-per-minute budget for this key. |
+| `x-ratelimit-limit-budget-cents` / `-remaining-budget-cents` / `-reset-budget` | Virtual-key requests with a spend budget | Remaining budget in cents, and seconds until the budget period resets. |
+
+Rate-limit headers are per **virtual key**, not per model or deployment — they reflect the key's own
+RPM/TPM/budget configuration (see [Virtual keys](/docs/virtual-keys)). Master-key requests never carry
+them (the master key has no limits). A cache hit is not signaled by any response header — it's only
+visible in the operation log's `cacheHit` field via `GET /admin/logs`.
+
+## `unified_routing` (response body, not a header)
+
+Requested via the `x-unified-routing-metadata` header, added to the JSON body:
+
+```json
+{
+  "unified_routing": {
+    "served_model": "gpt-image",
+    "routing_strategy": "latency-based",
+    "unsupported_parameter_strategy": "drop",
+    "fallback_used": false,
+    "attempt_count": 1,
+    "attempts": [
+      { "index": 0, "ok": true, "latency_ms": 842 }
+    ]
+  }
+}
+```
+
+`attempts` includes every deployment the router tried for this request (including ones that failed
+before the winning attempt), each with its latency and, on failure, `error_class` and `http_status`.
+An attempt rejected as candidate-incompatible also carries `health_impact: "neutral"`.
+See [Routing](/docs/routing) for what `routing_strategy` and `fallback_used` mean, and
+[Parameter policy](/docs/parameter-policy) for `unsupported_parameter_strategy`.
+
+## What to read next
+
+- [Routing](/docs/routing) and [Parameter policy](/docs/parameter-policy) — what drives `unified_routing`.
+- [Caching](/docs/caching) — full semantics of the cache headers.
+- [Virtual keys](/docs/virtual-keys) — how RPM/TPM/budget limits are configured.

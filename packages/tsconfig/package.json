@@ -1,0 +1,12 @@
+{
+	"name": "@boelabs/tsconfig",
+	"version": "1.0.0",
+	"private": true,
+	"description": "Shared TypeScript configuration for the Boelabs monorepo.",
+	"files": [
+		"base.json"
+	],
+	"exports": {
+		"./base.json": "./base.json"
+	}
+}

@@ -1,0 +1,476 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://bifrost.local/schemas/model-catalog.schema.json",
+	"title": "Bifrost Provider Catalog",
+	"description": "Provider-local catalog consumed at boot and indexed in memory by bifrost.",
+	"type": "object",
+	"additionalProperties": false,
+	"required": ["schemaVersion", "provider", "models"],
+	"properties": {
+		"$schema": { "type": "string" },
+		"schemaVersion": { "const": 1 },
+		"provider": { "$ref": "#/$defs/provider" },
+		"models": {
+			"type": "object",
+			"description": "Map keyed by upstream model id. Object lookup is the runtime hot path.",
+			"additionalProperties": { "$ref": "#/$defs/model" }
+		}
+	},
+	"$defs": {
+		"provider": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["id", "adapterKey"],
+			"properties": {
+				"id": { "type": "string", "minLength": 1 },
+				"adapterKey": { "type": "string", "minLength": 1 },
+				"name": { "type": "string" },
+				"docs": {
+					"type": "array",
+					"items": { "type": "string", "format": "uri" }
+				},
+				"notes": { "type": "string" }
+			}
+		},
+		"model": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["operations"],
+			"description": "Deliberately minimal: only data the gateway consumes (operations/pricing) plus human-facing flags.",
+			"properties": {
+				"deprecated": { "type": "boolean" },
+				"operations": { "$ref": "#/$defs/operationProfiles" },
+				"pricing": { "$ref": "#/$defs/pricing" },
+				"notes": { "type": "string" },
+				"needsHumanReview": {
+					"type": "array",
+					"items": { "type": "string" },
+					"description": "Dot-paths auto-drafted by the catalog sync; catalog:validate fails while non-empty."
+				}
+			}
+		},
+		"modalities": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"input": {
+					"type": "array",
+					"items": { "$ref": "#/$defs/modality" },
+					"uniqueItems": true
+				},
+				"output": {
+					"type": "array",
+					"items": { "$ref": "#/$defs/modality" },
+					"uniqueItems": true
+				}
+			}
+		},
+		"modality": {
+			"enum": [
+				"text",
+				"image",
+				"audio",
+				"video",
+				"pdf",
+				"file",
+				"embedding",
+				"moderation",
+				"rerank"
+			]
+		},
+		"operationProfiles": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"text.generate": { "$ref": "#/$defs/textGenerateProfile" },
+				"image.generate": { "$ref": "#/$defs/imageModelProfile" },
+				"image.edit": { "$ref": "#/$defs/imageModelProfile" },
+				"video.generate": { "$ref": "#/$defs/videoModelProfile" },
+				"audio.transcribe": { "$ref": "#/$defs/transcriptionProfile" },
+				"embedding.create": { "$ref": "#/$defs/embeddingProfile" },
+				"rerank": { "$ref": "#/$defs/rerankProfile" }
+			},
+			"minProperties": 1
+		},
+		"textGenerateProfile": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"capabilities": { "$ref": "#/$defs/textCapabilities" },
+				"maxInputTokens": { "type": "integer", "minimum": 1 },
+				"maxOutputTokens": { "type": "integer", "minimum": 1 },
+				"reasoning": { "$ref": "#/$defs/reasoningSpec" },
+				"modalities": { "$ref": "#/$defs/modalities" },
+				"contracts": {
+					"type": "array",
+					"items": {
+						"enum": [
+							"chat.completions",
+							"responses",
+							"messages",
+							"images.generations",
+							"images.edits",
+							"audio.transcriptions",
+							"videos"
+						]
+					},
+					"uniqueItems": true
+				},
+				"parameters": {
+					"type": "object",
+					"additionalProperties": {
+						"anyOf": [
+							{ "type": "boolean" },
+							{ "$ref": "#/$defs/parameterSupport" }
+						]
+					}
+				}
+			}
+		},
+		"parameterSupport": {
+			"type": "object",
+			"additionalProperties": true,
+			"properties": {
+				"mode": {
+					"enum": ["supported", "unsupported", "ignored", "range", "mapped"]
+				},
+				"min": { "type": "number" },
+				"max": { "type": "number" },
+				"values": {
+					"type": "array",
+					"items": { "type": ["string", "number", "boolean"] }
+				},
+				"upstreamField": { "type": "string" },
+				"notes": { "type": "string" }
+			}
+		},
+		"textCapabilities": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"tools": { "type": "boolean" },
+				"vision": { "type": "boolean" },
+				"reasoning": { "type": "boolean" },
+				"structuredOutputs": { "type": "boolean" }
+			}
+		},
+		"reasoningSpec": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "levels"],
+			"properties": {
+				"kind": {
+					"enum": [
+						"openai_effort",
+						"openai_body",
+						"anthropic_adaptive",
+						"anthropic_budget",
+						"gemini_level",
+						"gemini_budget",
+						"chat_template_flag",
+						"fixed"
+					]
+				},
+				"levels": {
+					"type": "array",
+					"items": { "$ref": "#/$defs/reasoningEffort" },
+					"minItems": 1,
+					"uniqueItems": true
+				},
+				"budgets": {
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"none": { "type": "integer", "minimum": 0 },
+						"minimal": { "type": "integer", "minimum": 0 },
+						"low": { "type": "integer", "minimum": 0 },
+						"medium": { "type": "integer", "minimum": 0 },
+						"high": { "type": "integer", "minimum": 0 },
+						"xhigh": { "type": "integer", "minimum": 0 },
+						"max": { "type": "integer", "minimum": 0 }
+					}
+				},
+				"upstreamEffortMap": {
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"none": { "type": "string" },
+						"minimal": { "type": "string" },
+						"low": { "type": "string" },
+						"medium": { "type": "string" },
+						"high": { "type": "string" },
+						"xhigh": { "type": "string" },
+						"max": { "type": "string" }
+					}
+				},
+				"bodyField": {
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["param"],
+					"properties": {
+						"param": { "type": "string", "minLength": 1 },
+						"onValue": { "$ref": "#/$defs/jsonValue" },
+						"offValue": { "$ref": "#/$defs/jsonValue" }
+					}
+				},
+				"effortField": { "type": "string", "minLength": 1 },
+				"chatTemplateFlag": {
+					"type": "object",
+					"additionalProperties": false,
+					"required": ["param"],
+					"properties": {
+						"param": { "type": "string", "minLength": 1 },
+						"onValue": { "type": ["boolean", "string", "number"] },
+						"offValue": { "type": ["boolean", "string", "number"] }
+					}
+				}
+			}
+		},
+		"jsonValue": {
+			"anyOf": [
+				{ "type": "null" },
+				{ "type": "boolean" },
+				{ "type": "number" },
+				{ "type": "string" },
+				{ "type": "array", "items": { "$ref": "#/$defs/jsonValue" } },
+				{
+					"type": "object",
+					"additionalProperties": { "$ref": "#/$defs/jsonValue" }
+				}
+			]
+		},
+		"reasoningEffort": {
+			"enum": ["none", "minimal", "low", "medium", "high", "xhigh", "max"]
+		},
+		"imageModelProfile": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"maxPromptChars": { "type": "integer", "minimum": 1 },
+				"maxInputImages": { "type": "integer", "minimum": 0 },
+				"maxImageBytes": { "type": "integer", "minimum": 1 },
+				"maxTotalInputBytes": { "type": "integer", "minimum": 1 },
+				"maxN": { "type": "integer", "minimum": 1 },
+				"supportsMask": { "type": "boolean" },
+				"supportsInputFidelity": { "type": "boolean" },
+				"supportsModeration": { "type": "boolean" },
+				"supportsStyle": { "type": "boolean" },
+				"supportsTransparentBackground": { "type": "boolean" },
+				"outputFormats": {
+					"type": "array",
+					"items": { "enum": ["png", "jpeg", "webp"] },
+					"uniqueItems": true
+				},
+				"qualities": {
+					"type": "array",
+					"items": {
+						"enum": ["standard", "hd", "low", "medium", "high", "auto"]
+					},
+					"uniqueItems": true
+				},
+				"responseFormats": {
+					"type": "array",
+					"items": { "enum": ["b64_json"] },
+					"uniqueItems": true
+				},
+				"sizes": {
+					"type": "object",
+					"additionalProperties": { "$ref": "#/$defs/imageSizeMapping" }
+				},
+				"autoSize": { "$ref": "#/$defs/imageSizeMapping" },
+				"arbitrarySize": { "$ref": "#/$defs/arbitraryImageSize" },
+				"supportsNativeStreaming": { "type": "boolean" },
+				"nativeOutputFormat": { "type": "boolean" },
+				"nativeOutputCompression": { "type": "boolean" },
+				"qualityMappings": {
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"standard": { "$ref": "#/$defs/imageQualityMapping" },
+						"hd": { "$ref": "#/$defs/imageQualityMapping" },
+						"low": { "$ref": "#/$defs/imageQualityMapping" },
+						"medium": { "$ref": "#/$defs/imageQualityMapping" },
+						"high": { "$ref": "#/$defs/imageQualityMapping" },
+						"auto": { "$ref": "#/$defs/imageQualityMapping" }
+					}
+				}
+			}
+		},
+		"imageSizeMapping": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"aspectRatio": { "type": "string" },
+				"imageSize": { "type": "string" }
+			}
+		},
+		"arbitraryImageSize": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": [
+				"divisibleBy",
+				"minAspectRatio",
+				"maxAspectRatio",
+				"maxWidth",
+				"maxHeight"
+			],
+			"properties": {
+				"divisibleBy": { "type": "integer", "minimum": 1 },
+				"minAspectRatio": { "type": "number", "exclusiveMinimum": 0 },
+				"maxAspectRatio": { "type": "number", "exclusiveMinimum": 0 },
+				"maxWidth": { "type": "integer", "minimum": 1 },
+				"maxHeight": { "type": "integer", "minimum": 1 },
+				"maxPixels": { "type": "integer", "minimum": 1 }
+			}
+		},
+		"imageQualityMapping": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"thinkingLevel": { "enum": ["minimal", "low", "high"] }
+			}
+		},
+		"videoModelProfile": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"maxPromptChars": { "type": "integer", "minimum": 1 },
+				"durations": {
+					"type": "array",
+					"items": { "type": "string", "minLength": 1 },
+					"minItems": 1,
+					"uniqueItems": true
+				},
+				"qualities": {
+					"type": "array",
+					"items": {
+						"enum": ["standard", "hd", "low", "medium", "high", "auto"]
+					},
+					"minItems": 1,
+					"uniqueItems": true
+				},
+				"sizes": {
+					"type": "object",
+					"additionalProperties": { "$ref": "#/$defs/videoSizeMapping" }
+				},
+				"supportsImageUrl": { "type": "boolean" },
+				"supportsAudioUrl": { "type": "boolean" },
+				"supportsVideoUrl": { "type": "boolean" },
+				"supportsFileId": { "type": "boolean" },
+				"supportsFrameImages": { "type": "boolean" },
+				"supportsSeed": { "type": "boolean" },
+				"supportsGenerateAudio": { "type": "boolean" },
+				"maxInputReferences": { "type": "integer", "minimum": 1 },
+				"requiresDataUrlImageReference": { "type": "boolean" },
+				"maxReferenceBytes": { "type": "integer", "minimum": 1 },
+				"contentVariants": {
+					"type": "array",
+					"items": { "enum": ["video", "thumbnail", "spritesheet"] },
+					"minItems": 1,
+					"uniqueItems": true
+				},
+				"pollIntervalSeconds": { "type": "integer", "minimum": 1 }
+			}
+		},
+		"videoSizeMapping": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"size": { "type": "string" },
+				"aspectRatio": { "type": "string" },
+				"resolution": { "type": "string" }
+			}
+		},
+		"transcriptionProfile": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["responseFormats"],
+			"properties": {
+				"responseFormats": {
+					"type": "array",
+					"items": { "enum": ["json", "text", "srt", "verbose_json", "vtt"] },
+					"minItems": 1,
+					"uniqueItems": true
+				},
+				"supportsStreaming": { "type": "boolean" },
+				"supportsTimestampGranularities": { "type": "boolean" },
+				"maxFileBytes": { "type": "integer", "minimum": 1 }
+			}
+		},
+		"embeddingProfile": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"dimensions": { "type": "integer", "minimum": 1 },
+				"supportsDimensions": { "type": "boolean" },
+				"minDimensions": { "type": "integer", "minimum": 1 },
+				"maxDimensions": { "type": "integer", "minimum": 1 },
+				"encodingFormats": {
+					"type": "array",
+					"items": { "enum": ["float", "base64"] },
+					"minItems": 1,
+					"uniqueItems": true
+				},
+				"maxInputs": { "type": "integer", "minimum": 1 },
+				"maxInputTokens": { "type": "integer", "minimum": 1 },
+				"maxTotalTokens": { "type": "integer", "minimum": 1 },
+				"maxInputBytes": { "type": "integer", "minimum": 1 },
+				"maxTotalInputBytes": { "type": "integer", "minimum": 1 },
+				"supportsTokenInput": { "type": "boolean" }
+			}
+		},
+		"rerankProfile": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["documentModalities"],
+			"properties": {
+				"documentModalities": {
+					"type": "array",
+					"items": { "enum": ["text", "image"] },
+					"minItems": 1,
+					"uniqueItems": true
+				},
+				"imageSources": {
+					"type": "array",
+					"items": { "enum": ["url", "data_url"] },
+					"uniqueItems": true
+				},
+				"maxDocuments": { "type": "integer", "minimum": 1 },
+				"maxQueryBytes": { "type": "integer", "minimum": 1 },
+				"maxDocumentBytes": { "type": "integer", "minimum": 1 },
+				"maxTotalDocumentBytes": { "type": "integer", "minimum": 1 },
+				"maxTokensPerDocument": { "type": "integer", "minimum": 1 },
+				"maxTotalTokens": { "type": "integer", "minimum": 1 },
+				"documentsPerSearchUnit": { "type": "integer", "minimum": 1 }
+			}
+		},
+		"pricing": {
+			"type": "object",
+			"description": "Runtime unit: USD cents per 1M tokens. Tiers are absolute step rates, not marginal rates.",
+			"additionalProperties": false,
+			"properties": {
+				"inputCentsPerMTokens": { "type": "number", "minimum": 0 },
+				"outputCentsPerMTokens": { "type": "number", "minimum": 0 },
+				"cacheReadCentsPerMTokens": { "type": "number", "minimum": 0 },
+				"cacheWriteCentsPerMTokens": { "type": "number", "minimum": 0 },
+				"searchUnitCents": { "type": "number", "minimum": 0 },
+				"tiers": {
+					"type": "array",
+					"items": { "$ref": "#/$defs/pricingTier" }
+				}
+			}
+		},
+		"pricingTier": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["aboveInputTokens"],
+			"properties": {
+				"aboveInputTokens": { "type": "integer", "minimum": 0 },
+				"inputCentsPerMTokens": { "type": "number", "minimum": 0 },
+				"outputCentsPerMTokens": { "type": "number", "minimum": 0 },
+				"cacheReadCentsPerMTokens": { "type": "number", "minimum": 0 },
+				"cacheWriteCentsPerMTokens": { "type": "number", "minimum": 0 }
+			}
+		}
+	}
+}

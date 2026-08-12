@@ -1,0 +1,346 @@
+{
+	"$schema": "../../../schemas/model-catalog.schema.json",
+	"schemaVersion": 1,
+	"provider": {
+		"id": "minimax",
+		"adapterKey": "minimax",
+		"name": "MiniMax",
+		"docs": ["https://platform.minimax.io/docs/guides/pricing-paygo"]
+	},
+	"models": {
+		"MiniMax-M3": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 131072,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 30,
+				"outputCentsPerMTokens": 120,
+				"cacheReadCentsPerMTokens": 6,
+				"tiers": [
+					{
+						"aboveInputTokens": 512000,
+						"inputCentsPerMTokens": 60,
+						"outputCentsPerMTokens": 240,
+						"cacheReadCentsPerMTokens": 12
+					}
+				]
+			}
+		},
+		"MiniMax-M2.7": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 204800,
+					"maxOutputTokens": 131072,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true,
+						"stop": true,
+						"top_k": true,
+						"structured_outputs": true,
+						"logprobs": true,
+						"top_logprobs": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 30,
+				"outputCentsPerMTokens": 120,
+				"cacheReadCentsPerMTokens": 6,
+				"cacheWriteCentsPerMTokens": 37.5
+			}
+		},
+		"MiniMax-M2.7-highspeed": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 204800,
+					"maxOutputTokens": 131072,
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 60,
+				"outputCentsPerMTokens": 240,
+				"cacheReadCentsPerMTokens": 6,
+				"cacheWriteCentsPerMTokens": 37.5
+			}
+		},
+		"MiniMax-M2.5": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 204800,
+					"maxOutputTokens": 131072,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true,
+						"stop": true,
+						"top_k": true,
+						"logprobs": true,
+						"top_logprobs": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 30,
+				"outputCentsPerMTokens": 120,
+				"cacheReadCentsPerMTokens": 3,
+				"cacheWriteCentsPerMTokens": 37.5
+			}
+		},
+		"MiniMax-M2.5-highspeed": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 204800,
+					"maxOutputTokens": 131072,
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 60,
+				"outputCentsPerMTokens": 240,
+				"cacheReadCentsPerMTokens": 3,
+				"cacheWriteCentsPerMTokens": 37.5
+			}
+		},
+		"MiniMax-M2.1": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 204800,
+					"maxOutputTokens": 131072,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true,
+						"stop": true,
+						"top_k": true,
+						"min_p": true,
+						"frequency_penalty": true,
+						"presence_penalty": true,
+						"repetition_penalty": true,
+						"seed": true,
+						"logit_bias": true,
+						"structured_outputs": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 30,
+				"outputCentsPerMTokens": 120,
+				"cacheReadCentsPerMTokens": 3,
+				"cacheWriteCentsPerMTokens": 37.5
+			}
+		},
+		"MiniMax-M2.1-highspeed": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 204800,
+					"maxOutputTokens": 131072
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 60,
+				"outputCentsPerMTokens": 240,
+				"cacheReadCentsPerMTokens": 3
+			}
+		},
+		"MiniMax-M2": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 196608,
+					"maxOutputTokens": 131072,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true,
+						"stop": true,
+						"top_k": true,
+						"min_p": true,
+						"frequency_penalty": true,
+						"presence_penalty": true,
+						"repetition_penalty": true,
+						"seed": true,
+						"logit_bias": true,
+						"response_format": true,
+						"structured_outputs": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 30,
+				"outputCentsPerMTokens": 120,
+				"cacheReadCentsPerMTokens": 3,
+				"cacheWriteCentsPerMTokens": 37.5
+			}
+		},
+		"MiniMax-M2-her": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 65536,
+					"maxOutputTokens": 2048,
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 30,
+				"outputCentsPerMTokens": 120,
+				"cacheReadCentsPerMTokens": 3
+			}
+		},
+		"MiniMax-M1": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 40000,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"temperature": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 40,
+				"outputCentsPerMTokens": 220
+			}
+		},
+		"MiniMax-01": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 1000192,
+					"maxOutputTokens": 1000192,
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 20,
+				"outputCentsPerMTokens": 110
+			}
+		}
+	}
+}

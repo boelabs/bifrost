@@ -1,0 +1,39 @@
+---
+title: "Audio transcriptions"
+description: "POST /v1/audio/transcriptions — the OpenAI Audio contract."
+---
+
+```bash
+curl -X POST "$GATEWAY/v1/audio/transcriptions" \
+  -H "Authorization: Bearer $API_KEY" \
+  -F "model=transcribe" \
+  -F "file=@recording.mp3"
+```
+
+Multipart only (`file` field). The uploaded file is streamed to temporary disk for validation — never
+buffered fully in memory — and removed after success, failure, timeout, or client cancellation.
+`AUDIO_MAX_MULTIPART_BYTES` (default 30 MB) caps the aggregate upload size.
+
+## Fields
+
+`model`, `file`, `language`, `prompt`, `temperature`, `response_format` (`json`, `text`, `srt`,
+`verbose_json`, `vtt`), `timestamp_granularities` (`word`/`segment`, `verbose_json` only), `include`,
+`stream`. Which response formats and whether streaming/timestamp granularities are available is
+declared per model in its `audio.transcribe` catalog profile.
+
+## Response format
+
+Returned as JSON, plain text, or SSE depending on the requested `response_format` and `stream` — not
+always JSON like the other endpoints.
+
+## Azure OpenAI note
+
+Azure requires the classic deployment-based transcription API (it doesn't exist on `/openai/v1`) — the
+adapter constructs that URL internally from your deployment name and resource `baseUrl`. See
+[Providers → Azure OpenAI](/docs/providers-azure-openai) and the Azure-specific example in
+[Creating deployments](/docs/creating-deployments#special-case-azure-openai).
+
+## What to read next
+
+- [Creating deployments](/docs/creating-deployments#4-audio-transcription--catalog-model) — registering a transcription model.
+- [Streaming](/docs/streaming) — the SSE variant of this endpoint.

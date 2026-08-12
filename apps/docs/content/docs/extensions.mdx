@@ -1,0 +1,213 @@
+---
+title: "Runtime extensions"
+description: "Admin-managed hooks: upload, versioning, hot-reload, the SDK, and failure policy."
+---
+
+Runtime extensions let an operator attach trusted behavior to Bifrost without forking the
+repository or rebuilding the official image. Extension code and configuration live in **Postgres** and
+are managed entirely through the Admin API — there are no files, volumes, or manifests to mount. Upload
+a module once and every replica picks it up automatically.
+
+Extensions are split into two concepts:
+
+- **Definitions** (artifacts): versioned, trusted ESM modules uploaded by an admin.
+- **Instances**: database rows that configure a definition with `match`, `config`, `priority`, and
+  failure policy.
+
+> **Trust model.** Extension code runs **in-process with full privileges**: it can read and rewrite
+> every request and response. Uploading is therefore restricted to the **master key**, code is
+> encrypted at rest, and every artifact is integrity-checked (sha256) before it is loaded. Treat an
+> extension upload with the same care as a deploy.
+
+## How it works
+
+1. An admin uploads a module's source through `POST /admin/extensions/artifacts`. The gateway
+   **validates it before storing** — it imports the module and asserts it exports a valid definition —
+   so a bad upload is rejected with a `400` and never reaches the running fleet.
+2. The source is stored encrypted (AES-256-GCM) as a new, immutable **version**. The newest version is
+   `active`; the previous one is archived. Activating an older version is a rollback.
+3. A single registry counter is bumped. Each replica polls it
+   (`BIFROST_EXTENSIONS_RELOAD_INTERVAL_MS`, default 15s) and **hot-reloads** on change — no
+   restart.
+4. On reload, each replica materializes the active modules to a **content-addressed on-disk cache**
+   (`<key>-<sha256>.mjs`). A module is downloaded and written once per version; subsequent reloads and
+   restarts reuse it. Hooks run entirely in memory, so there is **no per-request latency**.
+
+## Configuration
+
+```bash
+BIFROST_EXTENSION_MAX_FAILURES=3
+BIFROST_EXTENSION_HOOK_TIMEOUT_MS=5000
+BIFROST_EXTENSIONS_RELOAD_INTERVAL_MS=15000
+BIFROST_EXTENSIONS_MAX_CODE_BYTES=1000000
+```
+
+Extensions require only Postgres, which the gateway already depends on. There is nothing else to
+provision.
+
+## Managing extensions (Admin API)
+
+All routes require the master key. The management envelope is `{ "data": ... }`.
+
+| Method & path | Purpose |
+|---|---|
+| `GET /admin/extensions` | Live runtime status of this process (loaded definitions, instances, breaker state). |
+| `GET /admin/extensions/artifacts` | List uploaded artifacts (all keys and versions, no code). |
+| `GET /admin/extensions/artifacts/{key}/versions` | Version history for one definition. |
+| `POST /admin/extensions/artifacts` | Upload a new version and make it active. |
+| `POST /admin/extensions/artifacts/{key}/activate` | Activate a specific version (rollback). |
+| `DELETE /admin/extensions/artifacts/{key}` | Remove every version of a definition. |
+| `GET /admin/extensions/instances` | List instances. |
+| `POST /admin/extensions/instances` | Create an instance. |
+| `PATCH /admin/extensions/instances/{id}` | Update an instance. |
+| `DELETE /admin/extensions/instances/{id}` | Delete an instance. |
+| `POST /admin/extensions/{id}/reset` | Clear a circuit-breaker trip for an instance. |
+
+### Upload a definition
+
+The body carries the module source as a JSON string. The `key` must equal the `key` the module
+exports.
+
+```bash
+curl -X POST "$GATEWAY/admin/extensions/artifacts" \
+  -H "Authorization: Bearer $MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d "$(jq -n --arg code "$(cat chat-defaults.mjs)" \
+        '{ key: "chatdefaults", code: $code }')"
+```
+
+### Configure an instance
+
+```bash
+curl -X POST "$GATEWAY/admin/extensions/instances" \
+  -H "Authorization: Bearer $MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "chat-defaults-general",
+    "definition": "chatdefaults",
+    "enabled": true,
+    "priority": 50,
+    "critical": false,
+    "match": { "callTypes": ["chat"] },
+    "config": { "temperature": 0.2, "maxTokens": 1024 }
+  }'
+```
+
+Both calls take effect across the fleet within one reload interval.
+
+## Module API
+
+Extension modules export a definition and import the SDK through the package import map:
+
+```js
+import { defineExtension } from "#extensions/sdk.ts";
+
+export default defineExtension({
+  key: "chatdefaults",
+  version: "1.0.0",
+  label: "Chat defaults",
+  description: "Applies default generation parameters.",
+  hooks: {
+    onCanonicalRequest(ctx, request) {
+      if (request.callType !== "chat") return request;
+      return {
+        ...request,
+        temperature: request.temperature ?? ctx.config.temperature,
+        maxTokens: request.maxTokens ?? ctx.config.maxTokens
+      };
+    }
+  }
+});
+```
+
+The repository includes ready-to-upload examples in `apps/gateway/examples/extensions` (see its
+README). They cover every hook:
+
+- `prompt-firewall.mjs`: neutralizes or blocks prompt-injection attempts in inbound text
+  (`onCanonicalRequest`).
+- `pii-vault.mjs`: tokenizes PII before it reaches the upstream model and restores it in the reply,
+  including across streaming chunk boundaries (`onCanonicalRequest` + `onCanonicalResponse` +
+  `onStreamEvent` + `onError`).
+- `provenance-watermark.mjs`: embeds an invisible zero-width provenance marker into assistant text
+  (`onCanonicalResponse` + `onStreamEvent`).
+- `tiered-image-watermark.mjs`: stamps a visible preview watermark on images for non-privileged keys
+  (`onImageOutput`).
+
+Because hooks run after each public wire format is translated into Bifrost's canonical request,
+one `callTypes: ["chat"]` instance can affect all text wires: `/v1/chat/completions`,
+`/v1/responses`, and `/v1/messages`. Extension authors do not need separate branches for
+OpenAI-style `messages`, OpenAI Responses `input`/`instructions`, or Anthropic `system`.
+
+Available hooks in v1:
+
+- `onCanonicalRequest(ctx, request)`
+- `onCanonicalResponse(ctx, response)`
+- `onStreamEvent(ctx, event)`
+- `onImageOutput(ctx, output)`
+- `onError(ctx, error)`
+
+A definition may also export lifecycle callbacks:
+
+- `setup(ctx)` — runs once when the definition is first loaded with at least one active instance.
+- `teardown(ctx)` — runs when a hot-reload removes the definition or replaces it with a different code
+  version, so reloads release resources acquired in `setup` (timers, connections) without leaking.
+
+The hook context includes `requestId`, `callType`, `endpoint`, `publicModel`, sanitized auth data,
+`extensionKey`, `instanceId`, `config`, `match`, `signal`, and a structured logger. Deployment
+credentials are never exposed.
+
+Built-in `match` fields:
+
+- `models`: public model names.
+- `callTypes`: internal call types such as `chat`, `images.generations`, `images.edits`,
+  `embeddings`, `rerank`, and `audio.transcriptions`.
+- `endpoints`: public endpoint paths.
+
+## Versioning and rollback
+
+Every upload creates a new immutable version and activates it. To roll back, activate an earlier one:
+
+```bash
+curl -X POST "$GATEWAY/admin/extensions/artifacts/chatdefaults/activate" \
+  -H "Authorization: Bearer $MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "version": 2 }'
+```
+
+Instances are not pinned to a version; they always bind to the currently active artifact for their
+`definition`, so a rollback applies fleet-wide on the next reload.
+
+## Failures
+
+Invalid module exports, a key mismatch, or oversized source are rejected at **upload** time with a
+`400` — they never reach the database. **Loading is never fatal:** a bad artifact (failed import or
+integrity check) is skipped, and an instance that references a missing definition or has invalid
+config is disabled and surfaced in status. A disabled **critical** instance makes `/health/ready` report
+unhealthy and fails its matched requests closed with `extension_disabled`, but the gateway still boots
+and the Admin API stays reachable — so you can fix the problem (e.g. upload the missing definition) and
+the next reload re-activates it. The gateway never crash-loops over a misconfigured extension.
+
+At runtime, hook failures return a sanitized gateway error for that request. After
+`BIFROST_EXTENSION_MAX_FAILURES` consecutive failures, the instance is disabled for the current
+process. If a disabled instance is critical, affected requests fail with `extension_disabled` and
+`/health/ready` returns unhealthy. Non-critical disabled instances are skipped and reported as degraded.
+
+Each hook runs under a wall-clock budget (`BIFROST_EXTENSION_HOOK_TIMEOUT_MS`, default 5000ms;
+set `0` to disable). A hook that exceeds it — or one that ignores its `ctx.signal` while the client
+cancels — is aborted and counts as a failure, so a misbehaving hook can never block request
+processing indefinitely. Well-behaved hooks should honor `ctx.signal`, which fires on both timeout
+and upstream cancellation.
+
+`onError` is a fire-and-forget observability hook: a failure inside it is logged and surfaced in
+status but never trips the circuit breaker, so a logging glitch cannot disable a critical instance.
+
+An instance disabled by the circuit breaker can be re-activated for the current process without a
+restart via `POST /admin/extensions/{id}/reset`. Instances disabled by configuration, load-time
+validation, or setup are not eligible (their underlying problem persists) and the endpoint returns
+`bad_request`.
+
+## Image Outputs
+
+Bifrost re-encodes returned PNG, JPEG, and WebP files to strip upstream metadata by default. It
+does not stamp product or owner metadata in core. Operators that want image post-processing can upload
+a private extension that uses `onImageOutput`.

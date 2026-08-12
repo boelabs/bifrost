@@ -1,0 +1,70 @@
+---
+title: "Your first deployment"
+description: "The minimal path: one catalog model, one provider, verified and tested."
+---
+
+The full [Creating deployments](/docs/creating-deployments) guide covers every provider, custom
+models, and every operation type. This page is the minimal path for your very first one: a known
+model from a first-class adapter, verified before you save it.
+
+## 1. Pick a catalog model
+
+Known models need no `catalogEntry` — their capabilities, limits, and pricing already live in the
+adapter's catalog. Browse `src/adapters/<provider>/catalog.json` in the repo, or just pick a model id
+you already know exists at the provider (e.g. `gpt-5.5` for OpenAI).
+
+## 2. Dry-run it
+
+`POST /admin/deployments/resolve` validates and resolves the exact same body a real
+`POST /admin/deployments` would use, **without saving anything or touching credentials encryption** —
+safe to run repeatedly while you get the shape right:
+
+```bash
+curl -X POST "$GATEWAY/admin/deployments/resolve" \
+  -H "Authorization: Bearer $MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "publicModel": "general",
+    "adapterKey": "openai",
+    "upstreamModel": "gpt-5.5",
+    "credentials": { "apiKey": "sk-..." }
+  }'
+```
+
+The response shows `source: "catalog"` (confirming it recognized the model — no `catalogEntry` needed),
+plus the resolved operations and transports. If `source` comes back `"custom"` instead, the model isn't
+in the catalog and you'll need to follow the custom-model path in
+[Creating deployments](/docs/creating-deployments#custom-models-openai-compatible) instead.
+
+## 3. Create it for real
+
+Same body, real endpoint:
+
+```bash
+curl -X POST "$GATEWAY/admin/deployments" \
+  -H "Authorization: Bearer $MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "publicModel": "general",
+    "adapterKey": "openai",
+    "upstreamModel": "gpt-5.5",
+    "credentials": { "apiKey": "sk-..." }
+  }'
+```
+
+## 4. Test it
+
+With a virtual key (see [Virtual keys](/docs/virtual-keys)) or the master key:
+
+```bash
+curl -X POST "$GATEWAY/v1/chat/completions" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "model": "general", "messages": [{ "role": "user", "content": "Say hi" }] }'
+```
+
+## What to read next
+
+- [Creating deployments](/docs/creating-deployments) — every provider, custom models, images/embeddings/audio.
+- [Routing](/docs/routing) — what happens once `general` has more than one deployment.
+- [Virtual keys](/docs/virtual-keys) — scoped, rate-limited client keys instead of the master key.

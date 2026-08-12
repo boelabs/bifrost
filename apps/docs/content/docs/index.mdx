@@ -1,0 +1,97 @@
+---
+title: "Bifrost"
+description: "One OpenAI-compatible API in front of every provider you use."
+---
+
+Bifrost is a backend-only, provider-agnostic AI gateway. Your clients keep talking the
+OpenAI (and Anthropic) wire format they already know; the gateway routes each request to the right
+upstream — OpenAI, Anthropic, Google, Azure, Vercel AI Gateway, OpenAI-compatible providers, or your own custom models —
+behind a single public model catalog with one auth, rate-limit, routing, logging, and cost layer.
+
+The pitch in one line: **point your existing OpenAI SDK at Bifrost and change nothing else.**
+
+```python
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:4000/v1", api_key="<virtual-key>")
+client.chat.completions.create(model="general", messages=[{"role": "user", "content": "Hi"}])
+```
+
+`model` is a **public name** you define (`general`, `image-default`, …), not a provider model id. Behind
+it sits a pool of one or more deployments that the gateway load-balances, retries, and falls back across.
+
+## Start here
+
+New to the project? Read these in order:
+
+1. [Quickstart](/docs/quickstart) — from `git clone` to your first successful response in a few minutes.
+2. [Concepts](/docs/concepts) — the mental model: public models, deployments, adapters, transports.
+3. [Architecture](/docs/architecture) — the same request, traced through every layer in precise order.
+4. [First deployment](/docs/first-deployment) — wire up one real provider, verified before you save it.
+
+## Setup
+
+- [Setup](/docs/setup) — requirements, environment, secrets, and choosing a database and Redis.
+- [First deployment](/docs/first-deployment) / [Creating deployments](/docs/creating-deployments) — the minimal path, and the full reference across every provider and operation type.
+- [Environment variables](/docs/reference-environment) — every variable, its default, and what it controls.
+
+## Deploy
+
+- [Deployment](/docs/deployment) — the Docker Compose stack and per-platform guides
+  ([Coolify](/docs/deploy-coolify), [Portainer](/docs/deploy-portainer),
+  [Dokploy](/docs/deploy-dokploy), [Linux](/docs/deploy-docker-linux)).
+
+## Inference API
+
+- [API overview](/docs/api-overview) — auth, error shape, and OpenAPI import, shared across every endpoint.
+- [Chat completions](/docs/chat-completions), [Responses](/docs/responses), [Messages](/docs/messages) — the three text contracts over one canonical core.
+- [Images](/docs/images), [Embeddings](/docs/embeddings), [Reranking](/docs/reranking), [Audio transcriptions](/docs/audio-transcriptions) — the other operations.
+- [Streaming](/docs/streaming) — the SSE shape shared across every streamable endpoint.
+- [Model discovery](/docs/models-discovery) — `GET /v1/models` and its per-deployment sibling.
+- [Headers](/docs/headers) — every request/response header in one table.
+
+## Routing & resilience
+
+- [Routing](/docs/routing) — the eight balancing strategies and how each is measured.
+- [Parameter policy](/docs/parameter-policy) — what happens when a request asks for something a model doesn't support.
+- [Fallbacks](/docs/fallbacks) — fallback chains per public model: reasons, retries, lifecycle.
+- [Caching](/docs/caching) — the opt-in response cache and its headers.
+
+## Access & governance
+
+- [Virtual keys](/docs/virtual-keys) — client keys, scopes, budgets, and rate limits.
+- [Security](/docs/security) — the auth model, credential encryption, and what's redacted by default.
+- [Cost accounting](/docs/cost-accounting) — where pricing comes from and how spend is tracked.
+
+## Model catalog
+
+- [Model catalog](/docs/model-catalog) — the shape of `catalog.json`, per-operation profiles, pricing, and custom models.
+- [Reasoning](/docs/reasoning) — the canonical effort ladder and every provider's native reasoning mechanism.
+
+## Providers
+
+- [Providers](/docs/providers) — every built-in adapter: credentials, default transport, and quirks, from [OpenAI](/docs/providers-openai) to [Vercel AI Gateway](/docs/providers-vercel) to [any OpenAI-compatible API](/docs/providers-openai-compatible).
+
+## Extend
+
+- [Runtime extensions](/docs/extensions) — admin-uploaded ESM extensions, hooks, versioning, and failure handling.
+
+## Operate
+
+- [Operations](/docs/operations) — the runbook: health probes, secrets, data lifecycle, backups, shutdown.
+- [Observability](/docs/observability) — structured logs, durable operation logs, and OpenTelemetry.
+- [Production checklist](/docs/production-checklist) — a condensed pre-launch checklist.
+- [Upgrades](/docs/upgrades) — migrations, breaking changes, and safe rollback.
+- [Troubleshooting](/docs/troubleshooting) — error shape, status codes, and known issues with exact fixes.
+
+## Reference
+
+- [Admin API reference](/docs/reference-admin-api) — every admin route, grouped by area.
+- [Testing](/docs/testing) — test layers, common helpers, and the no-real-providers guarantee.
+- [Glossary](/docs/glossary) — the project's canonical names. The source of truth for code, SQL,
+  OpenAPI, logs, and docs.
+
+## Non-Markdown artifacts
+
+- OpenAPI: `apps/gateway/openapi.yaml`
+- JSON Schemas: `schemas`

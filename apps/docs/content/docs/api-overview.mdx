@@ -1,0 +1,76 @@
+---
+title: "API overview"
+description: "Auth, error shape, and how to import the spec — shared across every /v1/* endpoint."
+---
+
+The OpenAPI document is the source of truth for the exact request/response schema of every endpoint,
+public and admin:
+
+- [`apps/gateway/openapi.yaml`](https://github.com/boelabs/bifrost/blob/main/apps/gateway/openapi.yaml) — OpenAPI 3.1. Importable into Bruno, Postman, Insomnia, and similar tools.
+
+This page covers what's shared across every `/v1/*` endpoint; each endpoint's own page covers its
+specific contract.
+
+## Authentication
+
+- **Inference** (`/v1/*`): master key or virtual key, via `Authorization: Bearer <key>` or the
+  `x-api-key` header. Query-string credentials are rejected because URLs leak through logs, history,
+  and referrers. `/v1/models` and `/v1/models/{model}` are the only unauthenticated exceptions — see
+  [Model discovery](/docs/models-discovery).
+- **Admin** (`/admin/*`): requires the master key.
+
+Full model: [Security](/docs/security).
+
+## Error shape
+
+Most errors use the OpenAI-compatible envelope. `/v1/messages` uses Anthropic's shape and
+`/v1/rerank` uses OpenRouter's `{ "error": { "code": <status>, "message": "..." } }` shape:
+
+```json
+{ "error": { "message": "...", "type": "invalid_request_error", "param": "model", "code": "model_not_found" } }
+```
+
+The client-facing `message` is always a stable, generic-per-class string — the gateway is a router, so
+the same Public Model can fail differently on different attempts, and the public error can't leak a
+specific provider's wording or leak internals. `type`, `code`, and `param` give actionable detail
+without doing that. See [Troubleshooting](/docs/troubleshooting) for the full class/status/code table.
+
+## Request correlation
+
+Every response carries `x-request-id` (echoed if you send one). **Always include it** when reporting an
+issue — see [Headers](/docs/headers) for the full header reference and
+[Observability](/docs/observability) for how to look one up in the logs.
+
+## Importing into Bruno
+
+**Import Collection → OpenAPI V3**, select `apps/gateway/openapi.yaml`, then set the `baseUrl` server
+variable (e.g. `http://localhost:4000`) and the bearer token in Bruno's auth UI.
+
+## Typical flow to serve a model
+
+1. `POST /admin/deployments` — create a deployment: `publicModel` + `adapterKey` + `upstreamModel` + inline credentials.
+2. `POST /admin/keys` — issue a virtual key with `allowedModels`.
+3. Call an inference endpoint with the public model name in `model`.
+
+`POST /admin/deployments/resolve` validates the profile/operations/transports without saving — see
+[First deployment](/docs/first-deployment).
+
+## The endpoints
+
+| Endpoint | Contract | Page |
+|---|---|---|
+| `POST /v1/chat/completions` | OpenAI Chat Completions | [Chat completions](/docs/chat-completions) |
+| `POST /v1/responses`, `WS /v1/responses`, `GET/DELETE /v1/responses/:id`, `GET /v1/responses/:id/input_items` | OpenAI Responses | [Responses](/docs/responses) |
+| `POST /v1/messages` | Anthropic Messages | [Messages](/docs/messages) |
+| `POST /v1/images/generations`, `POST /v1/images/edits` | OpenAI Images | [Images](/docs/images) |
+| `POST/GET/DELETE /v1/videos`, `GET /v1/videos/:id/content` | OpenAI-shaped Videos | [Videos](/docs/videos) |
+| `POST /v1/embeddings` | OpenAI Embeddings | [Embeddings](/docs/embeddings) |
+| `POST /v1/rerank` | OpenRouter Rerank | [Reranking](/docs/reranking) |
+| `POST /v1/audio/transcriptions` | OpenAI Audio | [Audio transcriptions](/docs/audio-transcriptions) |
+| `GET /v1/models`, `GET /v1/models/{model}`, `GET /v1/models/{model}/deployments` | Model discovery | [Model discovery](/docs/models-discovery) |
+
+## What to read next
+
+- [Streaming](/docs/streaming) — SSE shape, shared across every streamable endpoint.
+- [Headers](/docs/headers) — every request/response header in one table.
+- [Troubleshooting](/docs/troubleshooting) — error classes, status codes, and common symptoms.

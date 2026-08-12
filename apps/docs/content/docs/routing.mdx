@@ -1,0 +1,195 @@
+---
+title: "Routing"
+description: "How the router balances a pool of deployments, and how to configure it."
+---
+
+Every request targets a **Public Model**, which can resolve to a **pool** of one or more deployments
+(same `publicModel`, possibly different providers or credentials). The router picks one deployment per
+attempt, retries the pool on failure, and falls back to another Public Model when the whole pool is
+exhausted. This page covers pool selection; retries, cooldowns, and fallback chains are the mechanics
+around it.
+
+## Strategies
+
+Set with `PUT /admin/router-settings` (`routingStrategy`), effective for **every** pool gateway-wide —
+there is no per-deployment or per-public-model override today.
+
+| Strategy | Picks the deployment with... | Good for |
+|---|---|---|
+| `simple-shuffle` (default) | A weighted random draw over `weight` | Even load across identical deployments |
+| `least-busy` | The fewest in-flight requests right now | Bursty traffic, uneven request duration |
+| `usage-based-rpm` | The fewest requests in the current minute | Enforcing soft RPM parity across a pool |
+| `usage-based-tpm` | The fewest tokens in the current minute | Enforcing soft TPM parity across a pool |
+| `latency-based` | The lowest EWMA completion latency | Minimizing time-to-response across mixed-speed providers |
+| `throughput-based` | The highest EWMA output tokens/second | Maximizing streaming throughput |
+| `price-based` | The lowest comparable token rate or `searchUnitCents` | Cost optimization across equivalent models with one billing basis |
+| `health-aware` | The highest `successRate × weight` | Steering traffic away from a flaky deployment without cutting it off entirely |
+
+A pool of exactly one deployment skips selection entirely — the strategy never runs, and metrics still
+accrue for observability. All strategies that rank by a live metric (`latency-based`,
+`throughput-based`, `price-based`, `health-aware`) fall back to weighted-random when no candidate has a
+usable value yet (e.g. a fresh deployment with no completed requests).
+
+For reranking, search-unit prices are exact only when every candidate declares that same basis. If a
+pool mixes token and search-unit billing, combines both bases, or contains an unknown price,
+`price-based` falls back to weighted selection instead of presenting a false numeric comparison.
+
+### How each metric is measured
+
+Per-deployment metrics live in Redis, keyed by deployment id, and are read fresh on every routing
+decision (no client-side caching):
+
+- **In-flight** — incremented when an attempt starts, decremented when it finishes, fails, or the
+  client cancels. TTL'd so a crashed process can't leak a permanently "busy" deployment.
+- **RPM / TPM** — per-minute counters. RPM increments on every attempt start; TPM increments by
+  `totalTokens` on success. Both expire on their own each minute.
+- **Latency** — an EWMA (α = 0.2) of wall-clock duration from just before the upstream call to when it
+  actually finished responding. For streaming requests this is the time to the **last upstream chunk**,
+  not to when the client finished receiving the relayed response — so latency-based routing reflects
+  upstream speed, not how long your own network to the client took.
+- **Throughput** — an EWMA (α = 0.2) of `completionTokens / durationSeconds`, using the same
+  upstream-finish timing as latency.
+- **Health score** — `successes / (successes + failures)` over a rolling 10-minute window. A deployment
+  with **no recorded attempts** in that window defaults to a neutral **0.5**, not a perfect 1.0 — a
+  perfect default would let `health-aware` immediately resend full traffic to a deployment that was
+  failing minutes ago, the instant its counters expire from being routed around. Neutral keeps it
+  ranked behind anything with an actual track record, without permanently blacklisting it either.
+
+None of these metrics factor into deployment **eligibility** — a slow or low-health deployment is still
+tried, just less often. Eligibility is decided separately by circuit state and per-deployment RPM/TPM
+**limits** (see below).
+
+## Pools, weights, and per-deployment limits
+
+Deployments created with the same `publicModel` form a pool automatically. Two knobs shape it per
+deployment (set on the deployment, not the router settings):
+
+- **`weight`** — relative share of traffic under `simple-shuffle`, and the multiplier applied to the
+  health score under `health-aware`. A deployment with `weight: 0` is never picked by weighted-random,
+  but the other strategies still consider it (rank by their own metric, ignoring weight — except
+  `health-aware`, which multiplies by weight and so also skips a `0`-weight deployment).
+- **`rpmLimit` / `tpmLimit`** — hard per-deployment caps. A deployment currently at or over either limit
+  is excluded from the candidate pool for this attempt (not cooled down, just skipped this round). If
+  **every** deployment in the pool is over its limit, the request fails with `rate_limit_exceeded`
+  (`429`) before any upstream call is made.
+- **`failureDomain`** — optional shared provider-account/quota identity. A provider `429` opens one
+  capacity circuit for every deployment with the same value, so duplicating rows backed by one account
+  does not multiply retries. Omit it when the deployments have genuinely independent quotas.
+
+## Circuit breakers and bounded retries
+
+Configured globally via `PUT /admin/router-settings`:
+
+Circuit controls remain global. Execution deadlines and retry budgets are defined by the exhaustive
+`executionPolicies` matrix instead of one timeout shared by unrelated operations.
+
+| Field | Default | Meaning |
+|---|---|---|
+| `allowedFails` | `3` | Transient logical-request failures a deployment is allowed before the **next** one opens cooldown. A success resets the count; `0` opens on the first failure. |
+| `cooldownSeconds` | `5` | Time a deployment stays in cooldown after exceeding `allowedFails`. `0` disables automatic cooldown circuits. |
+| `retryAfterSeconds` | `0` | Minimum wait before a transient retry; exponential full jitter is added above this floor. |
+
+The remaining fields are advanced safety controls:
+
+| Field | Default | Meaning |
+|---|---|---|
+| `failureWindowSeconds` | `60` | Fixed (non-sliding) failure-counting window |
+| `maxCooldownSeconds` | `300` | Maximum exponential cooldown after failed recovery probes |
+| `halfOpenProbeSeconds` | `30` | Ownership TTL for the single half-open recovery probe |
+| `configurationCooldownSeconds` | `300` | Immediate quarantine for invalid credentials/model access |
+| `throttleCooldownSeconds` | `5` | Minimum shared-capacity cooldown for provider `429` responses |
+Each `executionPolicies[operation].json|stream` entry defines `firstOutputMs`, nullable `idleMs`,
+nullable `reasoningOnlyMs`, `preCommitMs`, `totalMs`, and `maxAttempts`. The initial defaults are:
+
+| Operation | First output | Idle | Reasoning only | Pre-commit | Total | Attempts |
+|---|---:|---:|---:|---:|---:|---:|
+| Text stream/WebSocket | 30s | 30s | 90s | 100s | 600s | 6 |
+| Text JSON | 30s | — | — | 100s | 100s | 6 |
+| Images | 60s | 60s stream | — | 180s | 600s | 3 |
+| Audio | 60s | 60s stream | — | 180s | 900s | 2 |
+| Embeddings | 30s | — | — | 60s | 60s | 3 |
+| Video submit/refresh/delete | 60s | — | — | 120s | 120s | 3 |
+| Video download | 30s | 30s | — | 60s | 900s | 2 |
+
+The router makes a first pass across eligible deployments before reusing one. `Retry-After` is honored
+only when the wait fits inside the pre-commit deadline. Text streams are validated and buffered until
+the first semantic reasoning/content/tool frame or terminal. A retry or fallback is possible before
+commitment, but forbidden after any semantic frame is exposed to the client. Metadata, keepalives,
+roles, and usage-only frames do not commit the response.
+
+Failures are classified by effect rather than by a broad "provider error" bucket:
+
+- **Request** (`400`-class input/context/content failures, including otherwise unknown provider
+  `4xx` statuses): try a different candidate if useful, but never lower health or open a circuit.
+- **Throttle** (`429`): do not lower deployment health. Open the shared `failureDomain` capacity
+  circuit immediately and honor the provider's `Retry-After` value when present. These capacity
+  signals do not increment `allowedFails`.
+- **Transient** (timeouts, network failures, provider `5xx`, malformed protocol, missing terminal): retry with exponential full jitter and
+  count at most one failure per logical request and deployment toward the circuit.
+- **Configuration** (invalid provider auth/access/model): quarantine that deployment immediately
+  instead of repeatedly spending the request budget on it.
+- **Gateway/request-scoped** failures: do not penalize any deployment.
+
+Candidate incompatibilities discovered by gateway preprocessing (for example, an image source or file
+type that one transport cannot consume) are **health-neutral**. They may move routing to another
+candidate or fallback, but they do not increment the deployment's failure counters, lower its health
+score, or trigger cooldown. Request-scoped validation errors stop immediately and are neutral as well.
+
+Circuit transitions are atomic in Redis. Once the fixed failure threshold opens a circuit, late
+in-flight failures cannot extend it. After cooldown it becomes **half-open**: exactly one request owns
+the recovery probe while concurrent requests use other candidates. A successful probe closes it; a
+failed probe reopens it with exponential cooldown and jitter, capped by `maxCooldownSeconds`.
+While closed, every successful upstream call clears that deployment's accumulated transient-failure
+count.
+
+If every deployment circuit is open, the gateway returns `503 deployments_in_cooldown` with an
+accurate `Retry-After` header. If shared capacity is the blocker, it returns `429
+rate_limit_exceeded`. The authenticated `GET /v1/models/{model}/deployments` view reports each
+deployment as `available`, `cooldown`, `half_open`, or `rate_limited`, plus `retry_after_ms`.
+
+## Fallbacks
+
+When every deployment in the primary pool fails (or is in cooldown, or over its RPM/TPM limit), the
+router looks up a **fallback chain** for that Public Model and failure reason (`general`,
+`context_window`, or `content_policy`) and retries the whole selection process against each fallback
+Public Model in order. See [Fallbacks](/docs/fallbacks) for chain configuration, retry semantics per
+fallback hop, and lifecycle rules.
+
+## Observing a routing decision
+
+Send `x-unified-routing-metadata: true` on any chat-shaped request
+(`/v1/chat/completions`, `/v1/messages`, `/v1/responses`) to get an `unified_routing` object in the
+response body: the strategy in effect, which deployment actually served the request, whether a fallback
+was used, and a per-attempt log (latency, error class, HTTP status). See [Headers](/docs/headers) for
+the exact shape.
+
+## Configuring it
+
+```bash
+curl -X PUT "$GATEWAY/admin/router-settings" \
+  -H "Authorization: Bearer $MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "routingStrategy": "latency-based",
+    "allowedFails": 3,
+    "cooldownSeconds": 10,
+    "failureWindowSeconds": 60,
+    "maxCooldownSeconds": 300,
+    "halfOpenProbeSeconds": 30,
+    "configurationCooldownSeconds": 300,
+    "throttleCooldownSeconds": 5,
+    "retryAfterSeconds": 1
+  }'
+```
+
+`GET /admin/router-settings` returns the effective configuration (defaults if never set). All fields
+are optional in the `PUT` body — omitted fields keep their current value. When changing
+`executionPolicies`, send the complete matrix returned by `GET`; it is intentionally exhaustive so a
+new operation cannot ship without an explicit policy.
+
+## What to read next
+
+- [Parameter policy](/docs/parameter-policy) — the other global router behavior, orthogonal to strategy.
+- [Fallbacks](/docs/fallbacks) — what happens when a whole pool fails.
+- [Headers](/docs/headers) — the exact shape of `x-unified-routing-metadata`.
+- [Creating deployments](/docs/creating-deployments) — `weight`, limits, and `failureDomain`.

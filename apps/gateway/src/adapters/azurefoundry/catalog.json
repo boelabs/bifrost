@@ -1,0 +1,322 @@
+{
+	"$schema": "../../../schemas/model-catalog.schema.json",
+	"schemaVersion": 1,
+	"provider": {
+		"id": "azurefoundry",
+		"adapterKey": "azurefoundry",
+		"name": "Azure AI Foundry",
+		"docs": [
+			"https://learn.microsoft.com/azure/ai-foundry/foundry-models/concepts/models"
+		]
+	},
+	"models": {
+		"Cohere-command-a": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 131072,
+					"maxOutputTokens": 8182
+				}
+			}
+		},
+		"DeepSeek-V4-Pro": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "high", "max"]
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 384000
+				}
+			}
+		},
+		"DeepSeek-V4-Flash": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "high", "max"]
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 384000
+				}
+			}
+		},
+		"DeepSeek-V3.2-Speciale": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 128000
+				}
+			}
+		},
+		"DeepSeek-V3.2": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 128000
+				}
+			}
+		},
+		"DeepSeek-V3.1": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 131072,
+					"maxOutputTokens": 131072
+				}
+			}
+		},
+		"DeepSeek-R1-0528": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 163840,
+					"maxOutputTokens": 163840
+				}
+			}
+		},
+		"DeepSeek-V3-0324": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 131072,
+					"maxOutputTokens": 131072
+				}
+			}
+		},
+		"DeepSeek-R1": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 163840,
+					"maxOutputTokens": 163840
+				}
+			}
+		},
+		"Llama-4-Maverick-17B-128E-Instruct-FP8": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 1000000
+				}
+			}
+		},
+		"Llama-3.3-70B-Instruct": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 8192
+				}
+			}
+		},
+		"Mistral-Large-3": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": false
+					}
+				}
+			}
+		},
+		"Kimi-K2.6": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"reasoning": {
+						"kind": "fixed",
+						"levels": ["high"]
+					},
+					"maxInputTokens": 262144,
+					"maxOutputTokens": 262144
+				}
+			}
+		},
+		"Kimi-K2.5": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"reasoning": {
+						"kind": "fixed",
+						"levels": ["high"]
+					},
+					"maxInputTokens": 262144,
+					"maxOutputTokens": 262144
+				}
+			}
+		},
+		"grok-4.3": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 200000,
+					"maxOutputTokens": 8192
+				}
+			}
+		},
+		"grok-4-20-reasoning": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 262000,
+					"maxOutputTokens": 8192
+				}
+			}
+		},
+		"grok-4-20-non-reasoning": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 262000,
+					"maxOutputTokens": 8192
+				}
+			}
+		},
+		"grok-4.1-fast-reasoning": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 128000
+				}
+			}
+		},
+		"grok-4.1-fast-non-reasoning": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 128000
+				}
+			}
+		},
+		"grok-4": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 262000,
+					"maxOutputTokens": 8192
+				}
+			}
+		},
+		"grok-code-fast-1": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 256000,
+					"maxOutputTokens": 8192
+				}
+			}
+		}
+	}
+}

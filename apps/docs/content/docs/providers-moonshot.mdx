@@ -1,0 +1,20 @@
+---
+title: "Moonshot"
+description: "Adapter key moonshot. Built-in base URL."
+---
+
+```json
+{ "publicModel": "kimi", "adapterKey": "moonshot", "upstreamModel": "kimi-k2.7-code", "credentials": { "apiKey": "..." } }
+```
+
+- **Credentials**: `apiKey` only. No `baseUrl` needed — defaults to `https://api.moonshot.ai/v1`.
+- **Default transport**: Chat Completions.
+- **Reasoning**: native Kimi thinking, `openai_body` kind for most models; some coding-focused variants
+  (e.g. `kimi-k2.7-code`) are declared `fixed` — always-on reasoning with no off switch, since that
+  variant has no documented way to disable it.
+- Catalog: `src/adapters/moonshot/catalog.json`.
+
+## What to read next
+
+- [Reasoning](/docs/reasoning) — `openai_body` and `fixed` kinds in detail.
+- [Creating deployments](/docs/creating-deployments) — the full request shape.

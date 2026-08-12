@@ -1,0 +1,19 @@
+# Keep the Docker build context small and reproducible. Dependencies are installed inside the image
+# (bun install), and build artifacts are regenerated, so none of these should be sent to the daemon.
+**/node_modules
+**/.next
+**/.turbo
+**/.astro
+**/dist
+**/coverage
+
+.git
+.github
+.vscode
+
+**/*.log
+
+# Never bake local secrets into an image.
+**/.env
+**/.env.*
+!**/.env.example

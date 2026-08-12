@@ -1,0 +1,76 @@
+---
+title: "Deployment"
+description: "Deploy Bifrost: topologies, the Docker Compose stack, and per-platform guides."
+---
+
+Bifrost is a stateless Bun service that needs a Postgres and a Redis. The cleanest way to
+deploy it — and what this section is built around — is the repository's **Docker Compose** file, which
+is first-class on Coolify, Portainer, and Dokploy.
+
+## Pick your platform
+
+- [Local](/docs/deploy-local) — run it on your machine for development.
+- [Coolify](/docs/deploy-coolify) — deploy the Compose stack on Coolify.
+- [Portainer](/docs/deploy-portainer) — deploy the Compose stack on Portainer.
+- [Dokploy](/docs/deploy-dokploy) — deploy the Compose stack on Dokploy.
+- [Docker on a Linux VPS](/docs/deploy-docker-linux) — plain `docker compose` on any host.
+
+## Topologies
+
+How the gateway reaches Postgres/Redis decides whether you need TLS — and, because the gateway runs on
+**Bun**, whether you hit the [self-signed TLS issue](/docs/troubleshooting).
+
+| Topology | Connection | TLS | Works on Bun |
+|---|---|---|---|
+| **Compose (all-in-one)** — gateway + Postgres + Redis together | internal Docker network | none (plaintext) | ✅ recommended |
+| **Managed database** (Neon / Aiven / Upstash …) | internet | public-CA | ✅ |
+| **Self-signed database exposed publicly** (raw Coolify/Dokploy port) | internet | self-signed | ⚠️ may fail — see [Troubleshooting](/docs/troubleshooting) |
+
+The first row is the default for every recipe here: the gateway talks to Postgres/Redis over the
+private Compose network in plaintext, which is both safe (network isolation) and immune to the Bun TLS
+issue.
+
+## Compose files and naming
+
+- `docker-compose.yml` is the production/PaaS base. It uses `expose` for the gateway and docs, and
+  does not publish any service port on the host.
+- `compose.local.yaml` is an explicit development/host override. It binds Postgres (`5432`), Redis
+  (`6379`), the gateway (`4000`), and docs (`3000`) to `127.0.0.1`.
+
+`.yaml` and `.yml` contain the same YAML syntax. [Modern Docker prefers
+`compose.yaml`](https://docs.docker.com/compose/intro/compose-application-model/), while
+`docker-compose.yml` remains the most broadly auto-detected name across Coolify, Dokploy, Portainer,
+and older Compose tooling, so this repository keeps `docker-compose.yml` for deployment portability.
+The local override is deliberately named `compose.local.yaml` so a PaaS does not load it implicitly.
+
+## The Compose stack
+
+The repository ships a `docker-compose.yml` that brings up the whole stack:
+
+- **postgres** (`postgres:18-alpine`) and **redis** (`redis:8-alpine`), with health checks and named
+  volumes (`pgdata`, `redisdata`).
+- **migrate** — a one-off job that applies SQL migrations and exits; the gateway waits for it to
+  finish. PaaS dashboards may list it as a domain candidate; leave its domain empty.
+- **gateway** (`:4000` internally) — built from `apps/gateway/Dockerfile`.
+- **docs** (`:3000` internally) — this documentation site.
+
+Coolify and Dokploy deploy only `docker-compose.yml` and attach their proxy to the private network.
+For a local machine or a host-level reverse proxy, merge the local override explicitly:
+
+```bash
+git clone https://github.com/boelabs/bifrost.git && cd bifrost
+
+MASTER_KEY=$(openssl rand -base64 48) \
+ENCRYPTION_KEY_HEX=$(openssl rand -hex 32) \
+docker compose -f docker-compose.yml -f compose.local.yaml up -d
+```
+
+`compose.local.yaml` supplies known development-only defaults. The production base intentionally
+leaves both secrets empty, and the gateway refuses to start until they are configured. In
+Coolify/Portainer/Dokploy, set them in the UI. `DATABASE_URL` and `REDIS_URL` default to the internal
+`postgres`/`redis` services over plaintext and only need overriding if you point at managed instances
+— see [Setup](/docs/setup).
+
+> Only the **gateway** (and optionally **docs**) services are meant to receive a domain. Keep
+> Postgres, Redis, and the one-off `migrate` job internal. The production Compose base enforces this
+> by publishing no host ports.

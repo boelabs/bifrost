@@ -1,0 +1,2610 @@
+{
+	"$schema": "../../../schemas/model-catalog.schema.json",
+	"schemaVersion": 1,
+	"provider": {
+		"id": "openai",
+		"adapterKey": "openai",
+		"name": "OpenAI",
+		"docs": [
+			"https://developers.openai.com/api/docs/models",
+			"https://developers.openai.com/api/docs/pricing"
+		]
+	},
+	"models": {
+		"sora-2": {
+			"deprecated": true,
+			"operations": {
+				"video.generate": {
+					"maxPromptChars": 32000,
+					"durations": ["4", "8", "12"],
+					"supportsImageUrl": true,
+					"supportsFileId": true,
+					"contentVariants": ["video", "thumbnail", "spritesheet"],
+					"pollIntervalSeconds": 5,
+					"sizes": {
+						"720x1280": {
+							"size": "720x1280"
+						},
+						"1280x720": {
+							"size": "1280x720"
+						},
+						"1024x1792": {
+							"size": "1024x1792"
+						},
+						"1792x1024": {
+							"size": "1792x1024"
+						}
+					},
+					"maxInputReferences": 1
+				}
+			},
+			"notes": "OpenAI Videos/Sora 2 API compatibility profile. OpenAI docs currently mark this API deprecated with shutdown scheduled for 2026-09-24."
+		},
+		"sora-2-pro": {
+			"deprecated": true,
+			"operations": {
+				"video.generate": {
+					"maxPromptChars": 32000,
+					"durations": ["4", "8", "12"],
+					"supportsImageUrl": true,
+					"supportsFileId": true,
+					"contentVariants": ["video", "thumbnail", "spritesheet"],
+					"pollIntervalSeconds": 5,
+					"sizes": {
+						"720x1280": {
+							"size": "720x1280"
+						},
+						"1280x720": {
+							"size": "1280x720"
+						},
+						"1024x1792": {
+							"size": "1024x1792"
+						},
+						"1792x1024": {
+							"size": "1792x1024"
+						}
+					},
+					"maxInputReferences": 1
+				}
+			},
+			"notes": "OpenAI Videos/Sora 2 API compatibility profile. OpenAI docs currently mark this API deprecated with shutdown scheduled for 2026-09-24."
+		},
+		"text-embedding-3-large": {
+			"operations": {
+				"embedding.create": {
+					"dimensions": 3072,
+					"supportsDimensions": true,
+					"minDimensions": 1,
+					"maxDimensions": 3072,
+					"encodingFormats": ["float", "base64"],
+					"maxInputs": 2048,
+					"maxInputTokens": 8192,
+					"maxTotalTokens": 300000,
+					"supportsTokenInput": true
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 13,
+				"outputCentsPerMTokens": 0
+			}
+		},
+		"text-embedding-3-small": {
+			"operations": {
+				"embedding.create": {
+					"dimensions": 1536,
+					"supportsDimensions": true,
+					"minDimensions": 1,
+					"maxDimensions": 1536,
+					"encodingFormats": ["float", "base64"],
+					"maxInputs": 2048,
+					"maxInputTokens": 8192,
+					"maxTotalTokens": 300000,
+					"supportsTokenInput": true
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 2,
+				"outputCentsPerMTokens": 0
+			}
+		},
+		"text-embedding-ada-002": {
+			"operations": {
+				"embedding.create": {
+					"dimensions": 1536,
+					"supportsDimensions": false,
+					"encodingFormats": ["float", "base64"],
+					"maxInputs": 2048,
+					"maxInputTokens": 8192,
+					"maxTotalTokens": 300000,
+					"supportsTokenInput": true
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 10,
+				"outputCentsPerMTokens": 0
+			}
+		},
+		"gpt-image-2": {
+			"operations": {
+				"image.generate": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 16,
+					"maxImageBytes": 50000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"supportsInputFidelity": true,
+					"supportsModeration": true,
+					"supportsNativeStreaming": true,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto", "low", "medium", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {},
+						"1024x1536": {},
+						"1536x1024": {}
+					},
+					"arbitrarySize": {
+						"divisibleBy": 16,
+						"minAspectRatio": 0.3333333333333333,
+						"maxAspectRatio": 3,
+						"maxWidth": 3840,
+						"maxHeight": 3840,
+						"maxPixels": 8294400
+					}
+				},
+				"image.edit": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 16,
+					"maxImageBytes": 50000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"supportsInputFidelity": true,
+					"supportsModeration": true,
+					"supportsNativeStreaming": true,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto", "low", "medium", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {},
+						"1024x1536": {},
+						"1536x1024": {}
+					},
+					"arbitrarySize": {
+						"divisibleBy": 16,
+						"minAspectRatio": 0.3333333333333333,
+						"maxAspectRatio": 3,
+						"maxWidth": 3840,
+						"maxHeight": 3840,
+						"maxPixels": 8294400
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 500,
+				"outputCentsPerMTokens": 3000,
+				"cacheReadCentsPerMTokens": 125
+			}
+		},
+		"gpt-image-1.5": {
+			"operations": {
+				"image.generate": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 16,
+					"maxImageBytes": 50000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"supportsInputFidelity": true,
+					"supportsModeration": true,
+					"supportsTransparentBackground": true,
+					"supportsNativeStreaming": true,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto", "low", "medium", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {},
+						"1024x1536": {},
+						"1536x1024": {}
+					}
+				},
+				"image.edit": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 16,
+					"maxImageBytes": 50000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"supportsInputFidelity": true,
+					"supportsModeration": true,
+					"supportsTransparentBackground": true,
+					"supportsNativeStreaming": true,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto", "low", "medium", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {},
+						"1024x1536": {},
+						"1536x1024": {}
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 500,
+				"outputCentsPerMTokens": 3200,
+				"cacheReadCentsPerMTokens": 125
+			}
+		},
+		"gpt-image-1": {
+			"operations": {
+				"image.generate": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 16,
+					"maxImageBytes": 50000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"supportsInputFidelity": true,
+					"supportsModeration": true,
+					"supportsTransparentBackground": true,
+					"supportsNativeStreaming": true,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto", "low", "medium", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {},
+						"1024x1536": {},
+						"1536x1024": {}
+					}
+				},
+				"image.edit": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 16,
+					"maxImageBytes": 50000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"supportsInputFidelity": true,
+					"supportsModeration": true,
+					"supportsTransparentBackground": true,
+					"supportsNativeStreaming": true,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto", "low", "medium", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {},
+						"1024x1536": {},
+						"1536x1024": {}
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 500,
+				"outputCentsPerMTokens": 4000,
+				"cacheReadCentsPerMTokens": 125
+			}
+		},
+		"gpt-image-1-mini": {
+			"operations": {
+				"image.generate": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 16,
+					"maxImageBytes": 50000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"supportsInputFidelity": false,
+					"supportsModeration": true,
+					"supportsTransparentBackground": true,
+					"supportsNativeStreaming": true,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto", "low", "medium", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {},
+						"1024x1536": {},
+						"1536x1024": {}
+					}
+				},
+				"image.edit": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 16,
+					"maxImageBytes": 50000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"supportsInputFidelity": false,
+					"supportsModeration": true,
+					"supportsTransparentBackground": true,
+					"supportsNativeStreaming": true,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto", "low", "medium", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {},
+						"1024x1536": {},
+						"1536x1024": {}
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 800,
+				"cacheReadCentsPerMTokens": 20
+			}
+		},
+		"chatgpt-image-latest": {
+			"operations": {
+				"image.generate": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 16,
+					"maxImageBytes": 50000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"supportsInputFidelity": true,
+					"supportsModeration": true,
+					"supportsTransparentBackground": true,
+					"supportsNativeStreaming": true,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto", "low", "medium", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {},
+						"1024x1536": {},
+						"1536x1024": {}
+					}
+				},
+				"image.edit": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 16,
+					"maxImageBytes": 50000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"supportsInputFidelity": true,
+					"supportsModeration": true,
+					"supportsTransparentBackground": true,
+					"supportsNativeStreaming": true,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto", "low", "medium", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {},
+						"1024x1536": {},
+						"1536x1024": {}
+					}
+				}
+			}
+		},
+		"dall-e-2": {
+			"operations": {
+				"image.generate": {
+					"maxPromptChars": 1000,
+					"maxInputImages": 1,
+					"maxImageBytes": 4000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["standard"],
+					"responseFormats": ["b64_json"],
+					"sizes": {
+						"1024x1024": {},
+						"256x256": {},
+						"512x512": {}
+					}
+				},
+				"image.edit": {
+					"maxPromptChars": 1000,
+					"maxInputImages": 1,
+					"maxImageBytes": 4000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["standard"],
+					"responseFormats": ["b64_json"],
+					"sizes": {
+						"1024x1024": {},
+						"256x256": {},
+						"512x512": {}
+					}
+				}
+			}
+		},
+		"dall-e-3": {
+			"operations": {
+				"image.generate": {
+					"maxPromptChars": 4000,
+					"maxN": 1,
+					"supportsStyle": true,
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["standard", "hd"],
+					"responseFormats": ["b64_json"],
+					"sizes": {
+						"1024x1024": {},
+						"1792x1024": {},
+						"1024x1792": {}
+					}
+				}
+			}
+		},
+		"gpt-4o-transcribe": {
+			"operations": {
+				"audio.transcribe": {
+					"responseFormats": ["json", "text"],
+					"supportsStreaming": true,
+					"maxFileBytes": 26214400
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 250,
+				"outputCentsPerMTokens": 1000
+			}
+		},
+		"gpt-4o-mini-transcribe": {
+			"operations": {
+				"audio.transcribe": {
+					"responseFormats": ["json", "text"],
+					"supportsStreaming": true,
+					"maxFileBytes": 26214400
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 125,
+				"outputCentsPerMTokens": 500
+			}
+		},
+		"gpt-5.6": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1050000,
+					"maxOutputTokens": 128000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 500,
+				"outputCentsPerMTokens": 3000,
+				"cacheReadCentsPerMTokens": 50,
+				"cacheWriteCentsPerMTokens": 625,
+				"tiers": [
+					{
+						"aboveInputTokens": 272000,
+						"inputCentsPerMTokens": 1000,
+						"outputCentsPerMTokens": 4500,
+						"cacheReadCentsPerMTokens": 100,
+						"cacheWriteCentsPerMTokens": 1250
+					}
+				]
+			}
+		},
+		"gpt-5.6-sol": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1050000,
+					"maxOutputTokens": 128000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 500,
+				"outputCentsPerMTokens": 3000,
+				"cacheReadCentsPerMTokens": 50,
+				"cacheWriteCentsPerMTokens": 625,
+				"tiers": [
+					{
+						"aboveInputTokens": 272000,
+						"inputCentsPerMTokens": 1000,
+						"outputCentsPerMTokens": 4500,
+						"cacheReadCentsPerMTokens": 100,
+						"cacheWriteCentsPerMTokens": 1250
+					}
+				]
+			}
+		},
+		"gpt-5.6-terra": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1050000,
+					"maxOutputTokens": 128000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 250,
+				"outputCentsPerMTokens": 1500,
+				"cacheReadCentsPerMTokens": 25,
+				"cacheWriteCentsPerMTokens": 312.5,
+				"tiers": [
+					{
+						"aboveInputTokens": 272000,
+						"inputCentsPerMTokens": 500,
+						"outputCentsPerMTokens": 2250,
+						"cacheReadCentsPerMTokens": 50,
+						"cacheWriteCentsPerMTokens": 625
+					}
+				]
+			}
+		},
+		"gpt-5.6-luna": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1050000,
+					"maxOutputTokens": 128000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 100,
+				"outputCentsPerMTokens": 600,
+				"cacheReadCentsPerMTokens": 10,
+				"cacheWriteCentsPerMTokens": 125,
+				"tiers": [
+					{
+						"aboveInputTokens": 272000,
+						"inputCentsPerMTokens": 200,
+						"outputCentsPerMTokens": 900,
+						"cacheReadCentsPerMTokens": 20,
+						"cacheWriteCentsPerMTokens": 250
+					}
+				]
+			}
+		},
+		"gpt-5.5": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1050000,
+					"maxOutputTokens": 128000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "xhigh"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 500,
+				"outputCentsPerMTokens": 3000,
+				"cacheReadCentsPerMTokens": 50,
+				"tiers": [
+					{
+						"aboveInputTokens": 272000,
+						"inputCentsPerMTokens": 1000,
+						"outputCentsPerMTokens": 4500,
+						"cacheReadCentsPerMTokens": 100
+					}
+				]
+			}
+		},
+		"gpt-5.5-pro": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1050000,
+					"maxOutputTokens": 128000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["medium", "high", "xhigh"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 3000,
+				"outputCentsPerMTokens": 18000
+			}
+		},
+		"gpt-5.4": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1050000,
+					"maxOutputTokens": 128000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "xhigh"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 250,
+				"outputCentsPerMTokens": 1500,
+				"cacheReadCentsPerMTokens": 25
+			}
+		},
+		"gpt-5.4-pro": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1050000,
+					"maxOutputTokens": 128000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["medium", "high", "xhigh"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 3000,
+				"outputCentsPerMTokens": 18000
+			}
+		},
+		"gpt-5.4-mini": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 400000,
+					"maxOutputTokens": 128000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "xhigh"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 75,
+				"outputCentsPerMTokens": 450,
+				"cacheReadCentsPerMTokens": 7.5
+			}
+		},
+		"gpt-5.4-nano": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 400000,
+					"maxOutputTokens": 128000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "xhigh"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 20,
+				"outputCentsPerMTokens": 125,
+				"cacheReadCentsPerMTokens": 2
+			}
+		},
+		"gpt-5.3-codex": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 400000,
+					"maxOutputTokens": 128000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high", "xhigh"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 175,
+				"outputCentsPerMTokens": 1400,
+				"cacheReadCentsPerMTokens": 17.5
+			}
+		},
+		"gpt-5.2": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 400000,
+					"maxOutputTokens": 128000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "xhigh"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 175,
+				"outputCentsPerMTokens": 1400,
+				"cacheReadCentsPerMTokens": 17.5
+			}
+		},
+		"gpt-5.2-pro": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 400000,
+					"maxOutputTokens": 128000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["medium", "high", "xhigh"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 2100,
+				"outputCentsPerMTokens": 16800
+			}
+		},
+		"gpt-5.1": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 400000,
+					"maxOutputTokens": 128000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"max_completion_tokens": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 125,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 12.5
+			}
+		},
+		"gpt-5": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 400000,
+					"maxOutputTokens": 128000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["minimal", "low", "medium", "high"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true,
+						"max_completion_tokens": true
+					}
+				},
+				"image.generate": {
+					"responseFormats": ["b64_json"]
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 125,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 12.5,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"gpt-5-mini": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 400000,
+					"maxOutputTokens": 128000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["minimal", "low", "medium", "high"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 25,
+				"outputCentsPerMTokens": 200,
+				"cacheReadCentsPerMTokens": 2.5,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"gpt-5-nano": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 400000,
+					"maxOutputTokens": 128000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["minimal", "low", "medium", "high"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 5,
+				"outputCentsPerMTokens": 40,
+				"cacheReadCentsPerMTokens": 0.5,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"gpt-5-pro": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 400000,
+					"maxOutputTokens": 272000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["high"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 1500,
+				"outputCentsPerMTokens": 12000
+			}
+		},
+		"o3-pro": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 200000,
+					"maxOutputTokens": 100000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 2000,
+				"outputCentsPerMTokens": 8000
+			}
+		},
+		"o3": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 200000,
+					"maxOutputTokens": 100000,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 800,
+				"cacheReadCentsPerMTokens": 50,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"gpt-4.1": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1047576,
+					"maxOutputTokens": 32768,
+					"parameters": {
+						"max_tokens": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 800,
+				"cacheReadCentsPerMTokens": 50,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"gpt-4.1-mini": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1047576,
+					"maxOutputTokens": 32768,
+					"parameters": {
+						"max_tokens": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 40,
+				"outputCentsPerMTokens": 160,
+				"cacheReadCentsPerMTokens": 10,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"gpt-4o-mini": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 16384,
+					"parameters": {
+						"frequency_penalty": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_logprobs": true,
+						"top_p": true,
+						"web_search_options": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 15,
+				"outputCentsPerMTokens": 60,
+				"cacheReadCentsPerMTokens": 7.5,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"gpt-chat-latest": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 400000,
+					"maxOutputTokens": 128000,
+					"parameters": {
+						"frequency_penalty": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_logprobs": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 500,
+				"outputCentsPerMTokens": 3000,
+				"cacheReadCentsPerMTokens": 50
+			}
+		},
+		"gpt-5.4-image-2": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 272000,
+					"maxOutputTokens": 128000,
+					"parameters": {
+						"frequency_penalty": true,
+						"include_reasoning": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"top_logprobs": true
+					}
+				},
+				"image.generate": {
+					"responseFormats": ["b64_json"]
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 800,
+				"outputCentsPerMTokens": 1500,
+				"cacheReadCentsPerMTokens": 200
+			}
+		},
+		"gpt-5.3-chat": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 16384,
+					"parameters": {
+						"max_tokens": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 175,
+				"outputCentsPerMTokens": 1400,
+				"cacheReadCentsPerMTokens": 17.5
+			}
+		},
+		"gpt-audio": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 16384,
+					"parameters": {
+						"frequency_penalty": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_logprobs": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 250,
+				"outputCentsPerMTokens": 1000
+			}
+		},
+		"gpt-audio-mini": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 16384,
+					"parameters": {
+						"frequency_penalty": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_logprobs": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 60,
+				"outputCentsPerMTokens": 240
+			}
+		},
+		"gpt-5.2-codex": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 400000,
+					"maxOutputTokens": 128000,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 175,
+				"outputCentsPerMTokens": 1400,
+				"cacheReadCentsPerMTokens": 17.5
+			}
+		},
+		"gpt-5.2-chat": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 16384,
+					"parameters": {
+						"max_tokens": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 175,
+				"outputCentsPerMTokens": 1400,
+				"cacheReadCentsPerMTokens": 17.5
+			}
+		},
+		"gpt-5.1-codex-max": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 400000,
+					"maxOutputTokens": 128000,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 125,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 12.5
+			}
+		},
+		"gpt-5.1-chat": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 16384,
+					"parameters": {
+						"max_tokens": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 125,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 12.5
+			}
+		},
+		"gpt-5.1-codex": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 400000,
+					"maxOutputTokens": 128000,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 125,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 12.5
+			}
+		},
+		"gpt-5.1-codex-mini": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 400000,
+					"maxOutputTokens": 128000,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 25,
+				"outputCentsPerMTokens": 200,
+				"cacheReadCentsPerMTokens": 2.5
+			}
+		},
+		"gpt-5-image-mini": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 400000,
+					"maxOutputTokens": 128000,
+					"parameters": {
+						"frequency_penalty": true,
+						"include_reasoning": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"top_logprobs": true,
+						"top_p": true
+					}
+				},
+				"image.generate": {
+					"responseFormats": ["b64_json"]
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 250,
+				"outputCentsPerMTokens": 200,
+				"cacheReadCentsPerMTokens": 25
+			}
+		},
+		"gpt-5-image": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 400000,
+					"maxOutputTokens": 128000,
+					"parameters": {
+						"frequency_penalty": true,
+						"include_reasoning": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"top_logprobs": true,
+						"top_p": true
+					}
+				},
+				"image.generate": {
+					"responseFormats": ["b64_json"]
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 1000,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 125
+			}
+		},
+		"o3-deep-research": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 200000,
+					"maxOutputTokens": 100000,
+					"parameters": {
+						"frequency_penalty": true,
+						"include_reasoning": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_logprobs": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 1000,
+				"outputCentsPerMTokens": 4000,
+				"cacheReadCentsPerMTokens": 250
+			}
+		},
+		"o4-mini-deep-research": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 200000,
+					"maxOutputTokens": 100000,
+					"parameters": {
+						"frequency_penalty": true,
+						"include_reasoning": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_logprobs": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 800,
+				"cacheReadCentsPerMTokens": 50
+			}
+		},
+		"gpt-5-codex": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 400000,
+					"maxOutputTokens": 128000,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 125,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 12.5,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"gpt-5-chat": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 16384,
+					"parameters": {
+						"max_tokens": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 125,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 12.5
+			}
+		},
+		"o4-mini-high": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 200000,
+					"maxOutputTokens": 100000,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 110,
+				"outputCentsPerMTokens": 440,
+				"cacheReadCentsPerMTokens": 27.5
+			}
+		},
+		"o4-mini": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 200000,
+					"maxOutputTokens": 100000,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 110,
+				"outputCentsPerMTokens": 440,
+				"cacheReadCentsPerMTokens": 27.5,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"gpt-4.1-nano": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1047576,
+					"maxOutputTokens": 32768,
+					"parameters": {
+						"max_tokens": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 10,
+				"outputCentsPerMTokens": 40,
+				"cacheReadCentsPerMTokens": 2.5,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"o1-pro": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 200000,
+					"maxOutputTokens": 100000,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 15000,
+				"outputCentsPerMTokens": 60000
+			}
+		},
+		"gpt-4o-mini-search-preview": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 16384,
+					"parameters": {
+						"max_tokens": true,
+						"response_format": true,
+						"structured_outputs": true,
+						"web_search_options": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 15,
+				"outputCentsPerMTokens": 60
+			}
+		},
+		"gpt-4o-search-preview": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 16384,
+					"parameters": {
+						"max_tokens": true,
+						"response_format": true,
+						"structured_outputs": true,
+						"web_search_options": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 250,
+				"outputCentsPerMTokens": 1000
+			}
+		},
+		"o3-mini-high": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 200000,
+					"maxOutputTokens": 100000,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 110,
+				"outputCentsPerMTokens": 440,
+				"cacheReadCentsPerMTokens": 55
+			}
+		},
+		"o3-mini": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 200000,
+					"maxOutputTokens": 100000,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 110,
+				"outputCentsPerMTokens": 440,
+				"cacheReadCentsPerMTokens": 55,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"o1": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 200000,
+					"maxOutputTokens": 100000,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"seed": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"stop": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 1500,
+				"outputCentsPerMTokens": 6000,
+				"cacheReadCentsPerMTokens": 750,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"gpt-4o-2024-11-20": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 16384,
+					"parameters": {
+						"frequency_penalty": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_logprobs": true,
+						"top_p": true,
+						"web_search_options": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 250,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 125
+			}
+		},
+		"gpt-4o-2024-08-06": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 16384,
+					"parameters": {
+						"frequency_penalty": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_logprobs": true,
+						"top_p": true,
+						"web_search_options": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 250,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 125
+			}
+		},
+		"gpt-4o-mini-2024-07-18": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 16384,
+					"parameters": {
+						"frequency_penalty": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_logprobs": true,
+						"top_p": true,
+						"web_search_options": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 15,
+				"outputCentsPerMTokens": 60,
+				"cacheReadCentsPerMTokens": 7.5
+			}
+		},
+		"gpt-4o-2024-05-13": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 4096,
+					"parameters": {
+						"frequency_penalty": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_logprobs": true,
+						"top_p": true,
+						"web_search_options": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 500,
+				"outputCentsPerMTokens": 1500
+			}
+		},
+		"gpt-4o": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 16384,
+					"parameters": {
+						"frequency_penalty": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_logprobs": true,
+						"top_p": true,
+						"web_search_options": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 250,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 125,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
+		"gpt-4-turbo": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 4096,
+					"parameters": {
+						"frequency_penalty": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_logprobs": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 1000,
+				"outputCentsPerMTokens": 3000
+			}
+		},
+		"gpt-4-turbo-preview": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 4096,
+					"parameters": {
+						"frequency_penalty": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_logprobs": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 1000,
+				"outputCentsPerMTokens": 3000
+			}
+		},
+		"gpt-3.5-turbo-instruct": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 4095,
+					"maxOutputTokens": 4096,
+					"parameters": {
+						"frequency_penalty": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"top_logprobs": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 150,
+				"outputCentsPerMTokens": 200
+			}
+		},
+		"gpt-3.5-turbo-16k": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 16385,
+					"maxOutputTokens": 4096,
+					"parameters": {
+						"frequency_penalty": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_logprobs": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 300,
+				"outputCentsPerMTokens": 400
+			}
+		},
+		"gpt-3.5-turbo": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 16385,
+					"maxOutputTokens": 4096,
+					"parameters": {
+						"frequency_penalty": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_logprobs": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 50,
+				"outputCentsPerMTokens": 150,
+				"cacheReadCentsPerMTokens": 0
+			}
+		},
+		"gpt-4": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 8191,
+					"maxOutputTokens": 4096,
+					"parameters": {
+						"frequency_penalty": true,
+						"logit_bias": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"response_format": true,
+						"seed": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_logprobs": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 3000,
+				"outputCentsPerMTokens": 6000
+			}
+		},
+		"gpt-oss-20b": {
+			"operations": {
+				"text.generate": {
+					"maxOutputTokens": 8192,
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true,
+						"frequency_penalty": true,
+						"logit_bias": true,
+						"presence_penalty": true,
+						"seed": true,
+						"top_p": true,
+						"logprobs": true,
+						"top_logprobs": true,
+						"response_format": true,
+						"structured_outputs": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"structuredOutputs": true
+					}
+				}
+			},
+			"pricing": {}
+		},
+		"gpt-oss-120b": {
+			"operations": {
+				"text.generate": {
+					"maxInputTokens": 131072,
+					"maxOutputTokens": 131072,
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true,
+						"top_k": true,
+						"top_p": true,
+						"structured_outputs": true,
+						"response_format": true,
+						"logprobs": true,
+						"top_logprobs": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"structuredOutputs": true
+					}
+				}
+			},
+			"pricing": {}
+		},
+		"gpt-oss-safeguard-20b": {
+			"operations": {
+				"text.generate": {
+					"maxInputTokens": 131072,
+					"maxOutputTokens": 65536,
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true,
+						"top_p": true,
+						"seed": true,
+						"response_format": true,
+						"structured_outputs": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"structuredOutputs": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 7.5,
+				"outputCentsPerMTokens": 30,
+				"cacheReadCentsPerMTokens": 3.7
+			}
+		}
+	}
+}

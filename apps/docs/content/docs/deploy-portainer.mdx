@@ -1,0 +1,27 @@
+---
+title: "Portainer"
+description: "Deploy Bifrost on Portainer as a Compose stack."
+---
+
+[Portainer](https://www.portainer.io) deploys the repository's `docker-compose.yml` as a **Stack**.
+
+1. **Stacks → Add stack**, and either paste the `docker-compose.yml` or use the **Git repository**
+   option pointing at this repo.
+2. Under **Environment variables**, set:
+	- `MASTER_KEY` — `openssl rand -base64 48`
+	- `ENCRYPTION_KEYRING` — e.g. `{"primary":"<openssl rand -hex 32>"}`
+	- `ACTIVE_ENCRYPTION_KEY_ID` — `primary`
+3. **Deploy the stack.** Postgres, Redis and the one-off `migrate` job run inside the stack; the
+   gateway listens on internal port `4000` and docs on internal port `3000`.
+
+The production Compose base publishes no host ports. Attach your reverse proxy to the stack network.
+If the proxy runs directly on the same Docker host instead, add loopback-only mappings for gateway
+(`127.0.0.1:4000:4000`) and optionally docs (`127.0.0.1:3000:3000`) in Portainer's stack editor.
+Never publish Postgres, Redis, or `migrate`.
+
+The gateway reaches Postgres/Redis over the internal stack network in plaintext, so there is no TLS
+handshake and no [Bun TLS issue](/docs/troubleshooting).
+
+If you point at **external** instances instead, set `DATABASE_URL`/`REDIS_URL` in the stack
+environment and prefer a [managed provider with a public-CA certificate](/docs/setup#managed-database-and-redis);
+a self-signed database over a public port will not work on Bun.

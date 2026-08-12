@@ -1,0 +1,20 @@
+---
+title: "DeepSeek"
+description: "Adapter key deepseek. Built-in base URL."
+---
+
+```json
+{ "publicModel": "deepseek", "adapterKey": "deepseek", "upstreamModel": "deepseek-v4-flash", "credentials": { "apiKey": "..." } }
+```
+
+- **Credentials**: `apiKey` only. No `baseUrl` needed — defaults to `https://api.deepseek.com/v1`.
+- **Default transport**: Chat Completions.
+- **Reasoning**: `openai_body` (native `thinking`/effort controls), per model in the catalog.
+- `deepseek-chat` and `deepseek-reasoner` are retired compatibility aliases. New deployments should
+  use `deepseek-v4-flash` or `deepseek-v4-pro`.
+- Catalog: `src/adapters/deepseek/catalog.json`.
+
+## What to read next
+
+- [Reasoning](/docs/reasoning) — the `openai_body` kind in detail.
+- [Creating deployments](/docs/creating-deployments) — the full request shape.

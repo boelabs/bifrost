@@ -1,0 +1,32 @@
+---
+title: "Anthropic"
+description: "Adapter key anthropic. Credentials, transport, and reasoning kinds."
+---
+
+```json
+{ "publicModel": "claude", "adapterKey": "anthropic", "upstreamModel": "claude-sonnet-5", "credentials": { "apiKey": "sk-ant-..." } }
+```
+
+- **Credentials**: `apiKey`. `version` (the `anthropic-version` header) defaults to `2023-06-01` and
+  rarely needs overriding.
+- **Default transport**: Messages API for text.
+- **Reasoning**: either `anthropic_adaptive` (the model picks its own depth; the request only carries an
+  `output_config.effort` label) or `anthropic_budget` (`thinking: { budget_tokens }`, with a
+  provider-side default budget per canonical level if the catalog doesn't override it) — see
+  [Reasoning](/docs/reasoning). Models that expose both `xhigh` and `max` preserve them as distinct
+  tiers; models such as Opus/Sonnet 4.6 declare `max` without inventing `xhigh` support.
+- Claude Opus 5 enables adaptive thinking upstream when `thinking` is omitted. The adapter sends
+  `thinking: { "type": "disabled" }` when canonical reasoning resolves to `none`, preserving the
+  gateway's provider-independent off semantics.
+- `claude-opus-5-fast` and `claude-opus-4-8-fast` are gateway aliases for Anthropic's research-preview
+  fast mode. The adapter selects the base model, sends `speed: "fast"`, and adds the required beta
+  header. Anthropic account access is still required.
+- Native `/v1/messages` requests pass through with minimal translation; `/v1/chat/completions` and
+  `/v1/responses` requests are rendered onto the same canonical reasoning/tool/format machinery as
+  every other provider.
+- Catalog: `src/adapters/anthropic/catalog.json`.
+
+## What to read next
+
+- [Messages](/docs/messages) — the native Anthropic-compatible contract.
+- [Reasoning](/docs/reasoning) — `anthropic_adaptive` / `anthropic_budget` in detail.

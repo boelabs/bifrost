@@ -1,0 +1,4190 @@
+# GENERATED FILE - do not edit by hand.
+# Source: src/openapi/*.ts. Regenerate with `bun run openapi:generate`.
+openapi: 3.1.0
+info:
+  title: Bifrost API
+  version: 1.0.0
+  description: |-
+    Provider-agnostic AI gateway with OpenAI/OpenResponses-compatible public contracts. Importable in Postman, Insomnia, Bruno, and similar tools.
+
+    AUTHENTICATION: Bearer token (Authorization: Bearer <key>) or x-api-key header. The master key is required for /admin/*.
+
+    RESPONSE CONVENTIONS:
+    - Inference (/v1/chat/completions, /v1/responses, /v1/images/*, /v1/videos*, /v1/embeddings, /v1/rerank, /v1/models): documented OpenAI/OpenResponses-compatible contracts with explicit native-only features.
+    - Management (/admin/*): envelope { "data": <object|array> }; lists: { "data": [...], "pagination": {...} }; delete: 204 with no body; error: { "error": {...} }.
+
+    RESPONSE HEADERS: x-request-id (all responses; echoed if sent on the request). Virtual-key inference responses can also include x-ratelimit-{limit,remaining,reset}-{requests,tokens,budget}.
+
+    REQUEST LIMITS: public JSON bodies are capped at 72 MiB, admin JSON at 2 MiB, rerank JSON at 16 MiB, and multipart endpoints publish their own aggregate caps. Oversized input returns 413.
+servers:
+  - url: "{baseUrl}"
+    variables:
+      baseUrl:
+        default: http://localhost:4000
+security:
+  - bearerAuth: []
+tags:
+  - name: Inference
+  - name: Admin
+  - name: Health
+paths:
+  /health/live:
+    get:
+      tags:
+        - Health
+      summary: Liveness (process only, no dependencies)
+      description: Always 200 while the process is responsive. Does NOT check Postgres/Redis, so a dependency outage never triggers a restart. Wire this to the orchestrator's liveness probe.
+      security: []
+      responses:
+        "200":
+          description: Process is alive
+  /health/ready:
+    get:
+      tags:
+        - Health
+      summary: Readiness (DB + Redis + extensions)
+      description: 200 when Postgres, Redis and the extension runtime are healthy; otherwise 503 with a Retry-After header. Wire this to the readiness probe so a dependency outage pulls the instance from the load balancer without restarting it.
+      security: []
+      responses:
+        "200":
+          description: Ready to serve traffic
+        "503":
+          description: Not ready (a dependency is down)
+  /v1/chat/completions:
+    post:
+      tags:
+        - Inference
+      summary: Chat Completions (OpenAI-compatible, stream + no-stream)
+      parameters:
+        - &a2
+          $ref: "#/components/parameters/CacheHeader"
+        - &a3
+          $ref: "#/components/parameters/CacheTtlHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatCompletionRequest"
+            examples:
+              simple:
+                value:
+                  model: gemini
+                  messages:
+                    - role: user
+                      content: Hello, how are you?
+              streaming:
+                value:
+                  model: gemini
+                  stream: true
+                  stream_options:
+                    include_usage: true
+                  messages:
+                    - role: user
+                      content: Count from 1 to 5
+      responses:
+        "200":
+          description: chat.completion (or SSE stream of chat.completion.chunk)
+        "400": &a1
+          $ref: "#/components/responses/Error"
+        "401": *a1
+        "403": *a1
+        "413": *a1
+        "429": *a1
+  /v1/responses:
+    get:
+      tags:
+        - Inference
+      summary: Responses WebSocket upgrade
+      description: "OpenAI/OpenResponses-compatible persistent WebSocket mode. Requires Upgrade: websocket. Client messages are top-level response.create JSON objects; server messages are response.* streaming event objects. Turns are sequential and the connection lifetime is 60 minutes."
+      responses:
+        "101":
+          description: Switching Protocols
+        "401": *a1
+        "429": *a1
+    post:
+      tags:
+        - Inference
+      summary: Responses (OpenResponses, provider-agnostic, stream + no-stream)
+      description: This resource also supports OpenAI-compatible WebSocket upgrades with GET /v1/responses. Send response.create JSON events; the server returns the normal response.* streaming event objects. WebSocket turns are sequential and connections last at most 60 minutes.
+      parameters:
+        - *a2
+        - *a3
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResponsesRequest"
+            examples:
+              simple:
+                value:
+                  model: gemini
+                  input: Say hello in 3 words
+                  instructions: Be concise.
+              streaming:
+                value:
+                  model: gemini
+                  stream: true
+                  input: Count from 1 to 5
+              pdf:
+                value:
+                  model: gemini
+                  input:
+                    - role: user
+                      content:
+                        - type: input_file
+                          file_url: https://assets.example/document.pdf
+                        - type: input_text
+                          text: Summarize this document.
+                  plugins:
+                    - id: file-parser
+                      pdf:
+                        engine: auto
+      responses:
+        "200":
+          description: response (or SSE stream of response.* events)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseObject"
+            text/event-stream:
+              schema:
+                type: string
+        "400": *a1
+        "413": *a1
+  /v1/responses/compact:
+    post:
+      tags:
+        - Inference
+      summary: Compact a Responses conversation
+      description: Produces a provider-agnostic response.compaction item that can be replayed through the gateway.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompactResponseRequest"
+      responses:
+        "200":
+          description: Compacted response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompactResponseObject"
+        "400": *a1
+        "401": *a1
+        "413": *a1
+        "429": *a1
+  /v1/responses/{id}:
+    get:
+      tags:
+        - Inference
+      summary: Retrieve a stored response (server-side store)
+      description: "Returns the stored canonical `response` object when store=true. Scope is per key: a virtual key only sees its own responses; the master key sees responses created with the master key."
+      parameters:
+        - $ref: "#/components/parameters/ResponseIdPath"
+      responses:
+        "200":
+          description: response object (OpenResponses contract)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseObject"
+        "404": *a1
+    delete:
+      tags:
+        - Inference
+      summary: Delete a stored response
+      parameters:
+        - $ref: "#/components/parameters/ResponseIdPath"
+      responses:
+        "200":
+          description: "{ id, object: 'response.deleted', deleted: true }"
+        "404": *a1
+  /v1/responses/{id}/input_items:
+    get:
+      tags:
+        - Inference
+      summary: List input items for a stored response
+      parameters:
+        - $ref: "#/components/parameters/ResponseIdPath"
+      responses:
+        "200":
+          description: "{ object: 'list', data: [...], first_id, last_id, has_more }"
+        "404": *a1
+  /v1/messages:
+    post:
+      tags:
+        - Inference
+      summary: Anthropic Messages API (provider-agnostic, stream + no-stream)
+      description: Anthropic-compatible Messages contract, serviceable by any provider through the canonical hub. Native-only fields are routed only to a messages transport; errors and SSE events use the Anthropic format.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessagesRequest"
+            examples:
+              simple:
+                value:
+                  model: claude
+                  max_tokens: 1024
+                  system: Be concise.
+                  messages:
+                    - role: user
+                      content: Hello
+              streaming:
+                value:
+                  model: claude
+                  max_tokens: 1024
+                  stream: true
+                  messages:
+                    - role: user
+                      content: Count from 1 to 5
+      responses:
+        "200":
+          description: "message (or SSE stream: message_start, content_block_*, message_delta, message_stop)"
+        "400":
+          description: "{ type: 'error', error: {...} } (Anthropic shape)"
+        "413":
+          description: Request body exceeds the public JSON limit (Anthropic error shape)
+  /v1/embeddings:
+    post:
+      operationId: createEmbedding
+      tags:
+        - Inference
+      summary: Create embeddings (OpenAI contract, no-stream)
+      description: "Accepts a string input, a string batch, tokens, or a tokenized batch. Routes the embeddings operation to OpenAI/OpenAI-compatible providers or Google AI Studio, with opt-in response caching through x-unified-cache. Each model validates its own profile: for example, Google AI Studio accepts text + float only, without tokenized input or base64."
+      parameters:
+        - *a2
+        - *a3
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmbeddingsRequest"
+            examples:
+              simple:
+                value:
+                  model: text-embedding-3-small
+                  input: The food was delicious
+                  encoding_format: float
+              batch:
+                value:
+                  model: text-embedding-3-small
+                  input:
+                    - red fox
+                    - blue whale
+                  dimensions: 512
+      responses:
+        "200":
+          description: CreateEmbeddingResponse
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmbeddingsResponse"
+        "400": *a1
+        "401": *a1
+        "403": *a1
+        "413": *a1
+        "429": *a1
+  /v1/audio/transcriptions:
+    post:
+      operationId: createTranscription
+      tags:
+        - Inference
+      summary: Transcribe audio (OpenAI-compatible multipart contract)
+      description: Accepts one audio file plus transcription controls. JSON and verbose_json return JSON, text/srt/vtt return text, and stream=true returns OpenAI-compatible transcription SSE events.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/AudioTranscriptionRequest"
+      responses:
+        "200":
+          description: Transcription JSON, text, subtitles, or SSE stream
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AudioTranscriptionResponse"
+            text/plain:
+              schema:
+                type: string
+            text/event-stream:
+              schema:
+                type: string
+        "400": *a1
+        "401": *a1
+        "403": *a1
+        "413": *a1
+        "429": *a1
+  /v1/rerank:
+    post:
+      operationId: rerank
+      tags:
+        - Inference
+      summary: Rerank documents (OpenRouter contract, no-stream)
+      description: Ranks 1-1000 text documents against a query. Requests route across OpenRouter and Vercel AI Gateway unless OpenRouter provider preferences are supplied, in which case only OpenRouter-backed deployments are eligible. Result documents are reconstructed from the request and response caching is disabled.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RerankRequest"
+            examples:
+              mixedDocuments:
+                value:
+                  model: cohere/rerank-v3.5
+                  query: What is the capital of France?
+                  documents:
+                    - Paris is the capital of France.
+                    - text: Berlin is the capital of Germany.
+                  top_n: 2
+      responses:
+        "200":
+          description: OpenRouter-shaped rerank response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RerankResponse"
+        "400": &a4
+          $ref: "#/components/responses/OpenRouterError"
+        "401": *a4
+        "403": *a4
+        "413": *a4
+        "429": *a4
+        "500": *a4
+        "502": *a4
+        "503": *a4
+  /v1/images/generations:
+    post:
+      operationId: createImageGeneration
+      tags:
+        - Inference
+      summary: Generate images (OpenAI Images contract, JSON or SSE)
+      description: Routes images.generations to OpenAI Images, compatible APIs, Gemini generateContent, or multimodal chat_completions models. Parameters are validated against the model profile.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImageGenerationRequest"
+            examples:
+              gptImage:
+                value:
+                  model: gpt-image
+                  prompt: A tiny astronaut in a botanical garden
+                  size: 1024x1024
+                  quality: high
+      responses:
+        "200":
+          description: ImagesResponse JSON, or SSE events image_generation.partial_image/completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImagesResponse"
+        "400": *a1
+        "401": *a1
+        "403": *a1
+        "413": *a1
+        "429": *a1
+  /v1/images/edits:
+    post:
+      operationId: createImageEdit
+      tags:
+        - Inference
+      summary: Edit images (multipart; OpenAI Images contract)
+      description: Accepts up to 16 `image`/`image[]` parts, an optional PNG mask, and `extra_body` as a JSON string. Uploads are validated and stored temporarily during the request.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ImageEditRequest"
+            encoding:
+              image:
+                contentType: image/png, image/jpeg, image/webp
+              mask:
+                contentType: image/png
+      responses:
+        "200":
+          description: ImagesResponse JSON, or SSE events image_edit.partial_image/completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImagesResponse"
+        "400": *a1
+        "401": *a1
+        "403": *a1
+        "413": *a1
+        "429": *a1
+  /v1/videos:
+    post:
+      operationId: createVideo
+      tags:
+        - Inference
+      summary: Create a video generation job
+      description: Async video creation. The gateway routes submission to a video-capable deployment, stores local metadata, polls the upstream job, and persists completed video bytes in object storage for 24 hours. Accepts OpenAI-style aliases (seconds, size, input_reference).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VideoCreateRequest"
+            examples:
+              native:
+                value:
+                  model: veo
+                  prompt: A serene mountain landscape at sunset
+                  duration: 8
+                  aspect_ratio: 16:9
+                  resolution: 720p
+              openaiCompatible:
+                value:
+                  model: sora
+                  prompt: A serene mountain landscape at sunset
+                  seconds: "8"
+                  size: 1280x720
+      responses:
+        "200":
+          description: Video object
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoObject"
+        "400": *a1
+        "401": *a1
+        "403": *a1
+        "413": *a1
+        "429": *a1
+        "503": *a1
+    get:
+      operationId: listVideos
+      tags:
+        - Inference
+      summary: List videos
+      parameters:
+        - name: after
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 100
+        - name: order
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+      responses:
+        "200":
+          description: Video list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoListResponse"
+        "401": *a1
+  /v1/videos/{id}:
+    get:
+      operationId: retrieveVideo
+      tags:
+        - Inference
+      summary: Retrieve a video
+      parameters:
+        - $ref: "#/components/parameters/VideoIdPath"
+      responses:
+        "200":
+          description: Video object
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoObject"
+        "401": *a1
+        "404": *a1
+    delete:
+      operationId: deleteVideo
+      tags:
+        - Inference
+      summary: Delete a video and its stored assets
+      parameters:
+        - $ref: "#/components/parameters/VideoIdPath"
+      responses:
+        "200":
+          description: Deleted video marker
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VideoDeleted"
+        "401": *a1
+        "404": *a1
+  /v1/videos/{id}/content:
+    get:
+      operationId: downloadVideoContent
+      tags:
+        - Inference
+      summary: Download generated video content
+      parameters:
+        - $ref: "#/components/parameters/VideoIdPath"
+        - name: variant
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - video
+              - thumbnail
+              - spritesheet
+            default: video
+      responses:
+        "200":
+          description: Video or preview bytes
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+        "206":
+          description: Partial content for byte-range requests
+        "400": *a1
+        "401": *a1
+        "404": *a1
+        "409": *a1
+  /v1/models:
+    get:
+      tags:
+        - Inference
+      security: []
+      summary: List public models (unauthenticated)
+      description: OpenAI-compatible base fields plus capability metadata aggregated from enabled deployments. Does not expose deployment labels, credentials, or upstream model ids.
+      responses:
+        "200":
+          description: "{ object: 'list', data: [{ id, object, created, owned_by, architecture, top_provider, pricing, operations, supported_parameters, endpoint_count }] }"
+  /v1/models/{model}:
+    get:
+      tags:
+        - Inference
+      security: []
+      summary: Retrieve a public model (unauthenticated)
+      description: Supports model ids containing slashes. Returns the same public capability shape as /v1/models.
+      parameters:
+        - name: model
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "{ id, object: 'model', created, owned_by }"
+        "404": *a1
+  /v1/models/{model}/deployments:
+    get:
+      tags:
+        - Inference
+      security: []
+      summary: List redacted deployments for a public model
+      description: Redacted endpoint data for each enabled deployment. Public response redacts database ids, operator labels, credentials, metadata, and upstream model ids.
+      parameters:
+        - name: model
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "{ object: 'list', data: [{ id, object: 'model.deployment', model, provider, status, retry_after_ms, top_provider, pricing, operations, supported_parameters, metrics }] }"
+        "404": *a1
+  /admin/operations:
+    get:
+      tags:
+        - Admin
+      operationId: listOperations
+      summary: Discover available operations, endpoints, and transports by adapter
+      responses:
+        "200":
+          description: Operation and adapter registry
+        "401": *a1
+  /admin/deployments/resolve:
+    post:
+      tags:
+        - Admin
+      operationId: resolveDeployment
+      summary: Resolve profile, operations, and transports without saving
+      description: Validates adapter, catalog/custom model metadata, operation profiles, and transports without saving. Credentials are accepted for body reuse and ignored.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveDeployment"
+      responses:
+        "200":
+          description: Effective deployment configuration
+        "400": *a1
+  /admin/deployments:
+    get:
+      tags:
+        - Admin
+      operationId: listDeployments
+      summary: List deployments (master key, paginated)
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+      responses:
+        "200":
+          description: Paginated deployments (without credentials)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: {}
+                  pagination:
+                    $ref: "#/components/schemas/Pagination"
+                required:
+                  - data
+                  - pagination
+                additionalProperties: false
+        "401": *a1
+    post:
+      tags:
+        - Admin
+      operationId: createDeployment
+      summary: Create a deployment with the API key inline
+      description: "Creates a deployment: public name (`publicModel`) + adapter + exact upstream model + inline credentials. Multiple deployments with the same `publicModel` form a balanced pool."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDeployment"
+            examples:
+              gptImage:
+                value:
+                  publicModel: gpt-image
+                  adapterKey: openai
+                  upstreamModel: gpt-image-2
+                  credentials:
+                    apiKey: sk-...
+              customCompatible:
+                value:
+                  publicModel: grok
+                  adapterKey: openaicompatible
+                  upstreamModel: grok-4
+                  credentials:
+                    apiKey: xai-...
+                    baseUrl: https://api.x.ai/v1
+      responses:
+        "201":
+          description: Deployment created and resolved; credentials are never returned
+        "400": *a1
+  /admin/deployments/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    get:
+      tags:
+        - Admin
+      operationId: retrieveDeployment
+      summary: Retrieve a deployment (without credentials)
+      responses:
+        "200":
+          description: Deployment
+        "404": *a1
+    patch:
+      tags:
+        - Admin
+      operationId: updateDeployment
+      summary: Update upstreamModel, credentials, catalogEntry, pricing, transportOverrides, or routing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDeployment"
+      responses:
+        "200":
+          description: Deployment updated and resolved
+        "404": *a1
+    delete:
+      tags:
+        - Admin
+      operationId: deleteDeployment
+      summary: Delete a deployment
+      responses:
+        "204":
+          description: No Content
+        "404": *a1
+  /admin/keys:
+    get:
+      tags:
+        - Admin
+      summary: List virtual keys (master key, paginated)
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - name: enabled
+          in: query
+          schema:
+            type: boolean
+        - name: publicModel
+          in: query
+          schema:
+            type: string
+          description: Keys with access to this Public Model
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Search in name/prefix
+      responses:
+        "200":
+          description: Paginated virtual keys
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: {}
+                  pagination:
+                    $ref: "#/components/schemas/Pagination"
+                required:
+                  - data
+                  - pagination
+                additionalProperties: false
+    post:
+      tags:
+        - Admin
+      summary: Create virtual key (returns the plaintext key ONCE)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateKey"
+            examples:
+              scoped:
+                value:
+                  name: app-frontend
+                  allowedModels:
+                    - gemini
+                    - gpt
+                  maxBudgetCents: 500
+                  budgetReset: monthly
+                  rpm: 60
+              unlimited:
+                value:
+                  name: full-access
+                  allowedModels: []
+      responses:
+        "201":
+          description: "{ data: { ...key, key: '<rawKey>' } }"
+  /admin/keys/{id}:
+    patch:
+      tags:
+        - Admin
+      summary: Edit virtual key (master key)
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateKey"
+            examples:
+              disable:
+                value:
+                  enabled: false
+              raiseBudget:
+                value:
+                  maxBudgetCents: 2000
+              resetSpend:
+                value:
+                  resetSpend: true
+      responses:
+        "200":
+          description: "{ data: <key> }"
+        "404": *a1
+    delete:
+      tags:
+        - Admin
+      summary: Delete virtual key (master key)
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "204":
+          description: No Content
+  /admin/cache:
+    delete:
+      tags:
+        - Admin
+      summary: Invalidate response cache (master key)
+      parameters:
+        - name: callType
+          in: query
+          schema:
+            type: string
+          description: "e.g. chat | responses (default: all)"
+        - name: namespace
+          in: query
+          schema:
+            type: string
+          description: "virtual key id or 'master' (default: all)"
+      responses:
+        "200":
+          description: "{ data: { deleted: <n> } }"
+  /admin/extensions:
+    get:
+      tags:
+        - Admin
+      summary: Inspect the runtime extension state of this process (master key, read-only)
+      responses:
+        "200":
+          description: "{ data: { loaded, status, healthy, definitions, instances } }"
+  /admin/extensions/artifacts:
+    get:
+      tags:
+        - Admin
+      summary: List uploaded extension artifacts (all keys and versions, no code)
+      responses:
+        "200":
+          description: "{ data: [{ id, key, version, contentHash, sizeBytes, status, uploadedBy, createdAt }] }"
+    post:
+      tags:
+        - Admin
+      summary: Upload a new extension version and make it active (master key)
+      description: The module source is validated (imported and checked for a valid definition whose key matches) before it is stored, so an invalid upload is rejected with 400 and never reaches the fleet.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                key:
+                  type: string
+                  pattern: ^[a-z0-9]+$
+                code:
+                  type: string
+                  description: ESM module source
+              required:
+                - key
+                - code
+      responses:
+        "201":
+          description: "{ data: <artifact summary> }"
+        "400": *a1
+  /admin/extensions/artifacts/{key}/versions:
+    get:
+      tags:
+        - Admin
+      summary: Version history for one definition (master key)
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "{ data: [<artifact summary>] }"
+  /admin/extensions/artifacts/{key}/activate:
+    post:
+      tags:
+        - Admin
+      summary: Activate a specific version, archiving the rest (rollback, master key)
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                version:
+                  type: integer
+                  minimum: 1
+                  maximum: 9007199254740991
+              required:
+                - version
+      responses:
+        "200":
+          description: "{ data: [<artifact summary>] }"
+        "404": *a1
+  /admin/extensions/artifacts/{key}:
+    delete:
+      tags:
+        - Admin
+      summary: Remove every version of a definition (master key)
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted (idempotent)
+  /admin/extensions/instances:
+    get:
+      tags:
+        - Admin
+      summary: List extension instances (master key)
+      responses:
+        "200":
+          description: "{ data: [<instance>] }"
+    post:
+      tags:
+        - Admin
+      summary: Create an extension instance (master key)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  pattern: ^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$
+                definition:
+                  type: string
+                  pattern: ^[a-z0-9]+$
+                enabled:
+                  type: boolean
+                critical:
+                  anyOf:
+                    - type: boolean
+                    - type: "null"
+                priority:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                match:
+                  type: object
+                  propertyNames:
+                    type: string
+                  additionalProperties: {}
+                config: {}
+              required:
+                - id
+                - definition
+      responses:
+        "201":
+          description: "{ data: <instance> }"
+        "400": *a1
+  /admin/extensions/instances/{id}:
+    patch:
+      tags:
+        - Admin
+      summary: Update an extension instance (master key)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                definition:
+                  type: string
+                  pattern: ^[a-z0-9]+$
+                enabled:
+                  type: boolean
+                critical:
+                  anyOf:
+                    - type: boolean
+                    - type: "null"
+                priority:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                match:
+                  type: object
+                  propertyNames:
+                    type: string
+                  additionalProperties: {}
+                config: {}
+      responses:
+        "200":
+          description: "{ data: <instance> }"
+        "404": *a1
+    delete:
+      tags:
+        - Admin
+      summary: Delete an extension instance (master key)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted (idempotent)
+  /admin/extensions/{id}/reset:
+    post:
+      tags:
+        - Admin
+      summary: Clear a circuit-breaker trip and re-activate an instance (master key)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "{ data: <extension status> }"
+        "400": *a1
+        "404": *a1
+  /admin/logs:
+    get:
+      tags:
+        - Admin
+      summary: List gateway operations (master key, paginated, newest first)
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
+        - name: virtualKeyId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: publicModel
+          in: query
+          schema:
+            type: string
+        - name: deploymentId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: adapterKey
+          in: query
+          schema:
+            type: string
+        - name: callType
+          in: query
+          schema:
+            type: string
+          description: chat | responses | messages
+        - name: outcome
+          in: query
+          schema:
+            type: string
+            enum:
+              - success
+              - incomplete
+              - blocked
+              - error
+              - cancelled
+              - abandoned
+              - unknown
+        - name: degraded
+          in: query
+          schema:
+            type: boolean
+        - name: active
+          in: query
+          schema:
+            type: boolean
+        - name: terminalVerified
+          in: query
+          schema:
+            type: boolean
+        - name: failureKind
+          in: query
+          schema:
+            type: string
+        - name: failurePhase
+          in: query
+          schema:
+            type: string
+        - name: minDurationMs
+          in: query
+          schema:
+            type: number
+            minimum: 0
+        - name: maxDurationMs
+          in: query
+          schema:
+            type: number
+            minimum: 0
+        - name: requestId
+          in: query
+          schema:
+            type: string
+        - name: cacheHit
+          in: query
+          schema:
+            type: boolean
+        - name: start
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: start_time >= (narrows partitions)
+        - name: end
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: start_time <=
+      responses:
+        "200":
+          description: "{ data: [<operation>], pagination: {...} }"
+        "400": *a1
+  /admin/logs/{id}:
+    get:
+      tags:
+        - Admin
+      summary: Get one gateway operation and all upstream attempts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Operation detail
+        "404": *a1
+  /admin/logs/{id}/payload:
+    get:
+      tags:
+        - Admin
+      summary: Decrypt a retained forensic payload sample
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Decrypted sample
+        "404": *a1
+  /admin/observability/summary:
+    get:
+      tags:
+        - Admin
+      summary: Aggregate gateway lifecycle health
+      parameters:
+        - name: window
+          in: query
+          schema:
+            type: string
+            enum:
+              - 5m
+              - 1h
+              - 24h
+            default: 1h
+      responses:
+        "200":
+          description: Lifecycle SLI summary
+  /admin/usage:
+    get:
+      tags:
+        - Admin
+      summary: Aggregate usage (requests, tokens, search units, cost), optionally grouped (master key)
+      description: Sums consumer usage/cost and estimated upstream cost over gateway operations. Accepts the same filters as /admin/logs. groupBy=none returns a single total.
+      parameters:
+        - name: groupBy
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - public_model
+              - virtual_key
+              - day
+              - none
+            default: none
+        - name: virtualKeyId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: publicModel
+          in: query
+          schema:
+            type: string
+        - name: adapterKey
+          in: query
+          schema:
+            type: string
+        - name: callType
+          in: query
+          schema:
+            type: string
+        - name: outcome
+          in: query
+          schema:
+            type: string
+        - name: cacheHit
+          in: query
+          schema:
+            type: boolean
+        - name: start
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: end
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: "{ data: [{ key, requests, promptTokens, completionTokens, reasoningTokens, totalTokens, searchUnits, consumerCostCents, upstreamCostCents }] }"
+        "400": *a1
+  /admin/router-settings:
+    get:
+      tags:
+        - Admin
+      summary: View router config (master key)
+      responses:
+        "200":
+          description: "{ data: <settings|null> }"
+    put:
+      tags:
+        - Admin
+      summary: Update router config (master key)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RouterSettings"
+      responses:
+        "200":
+          description: "{ data: <settings> }"
+  /admin/fallbacks:
+    get:
+      tags:
+        - Admin
+      summary: List fallbacks (master key)
+      responses:
+        "200":
+          description: "{ data: [...] }"
+    put:
+      tags:
+        - Admin
+      summary: Create/update dedicated fallback (master key)
+      description: Configures an exact chain by (primaryModel, reason). Public Models must exist and each target must share at least one executable operation with the primary. The router exhausts the primary deployments before traversing the chain.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Fallback"
+            examples:
+              general:
+                value:
+                  primaryModel: gpt
+                  fallbackModels:
+                    - gemini
+                  reason: general
+      responses:
+        "201":
+          description: "{ data: <fallback> }"
+        "400": *a1
+  /admin/fallbacks/{primaryModel}/{reason}:
+    delete:
+      tags:
+        - Admin
+      summary: Delete fallback (master key)
+      parameters:
+        - name: primaryModel
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: reason
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - general
+              - context_window
+              - content_policy
+      responses:
+        "204":
+          description: No Content
+components:
+  schemas:
+    ChatCompletionRequest:
+      type: object
+      properties:
+        model:
+          type: string
+          description: public model (public_model)
+        messages:
+          type: array
+          items:
+            type: object
+            properties:
+              role:
+                type: string
+                enum:
+                  - system
+                  - developer
+                  - user
+                  - assistant
+                  - tool
+              content: {}
+            required:
+              - role
+            additionalProperties: true
+        stream:
+          default: false
+          type: boolean
+        stream_options:
+          type: object
+          properties:
+            include_usage:
+              type: boolean
+            include_obfuscation:
+              type: boolean
+        temperature:
+          type: number
+        top_p:
+          type: number
+        max_tokens:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        max_completion_tokens:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        logprobs:
+          type: boolean
+        top_logprobs:
+          type: integer
+          minimum: 0
+          maximum: 20
+        logit_bias:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties:
+            type: number
+        metadata:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties:
+            type: string
+        modalities:
+          type: array
+          items:
+            type: string
+        prediction:
+          type: object
+          properties: {}
+          additionalProperties: true
+        service_tier:
+          type: string
+        store:
+          type: boolean
+        verbosity:
+          type: string
+        web_search_options:
+          type: object
+          properties: {}
+          additionalProperties: true
+        tools:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        tool_choice: {}
+        response_format:
+          $ref: "#/components/schemas/ChatResponseFormat"
+        reasoning_effort:
+          type: string
+          enum:
+            - none
+            - minimal
+            - low
+            - medium
+            - high
+            - xhigh
+            - max
+        reasoning:
+          type: object
+          properties:
+            effort:
+              type: string
+              enum:
+                - none
+                - minimal
+                - low
+                - medium
+                - high
+                - xhigh
+                - max
+            summary:
+              type: string
+              enum:
+                - auto
+                - none
+                - concise
+                - detailed
+          additionalProperties: true
+        plugins:
+          maxItems: 1
+          type: array
+          items:
+            $ref: "#/components/schemas/FileParserPlugin"
+      required:
+        - model
+        - messages
+      additionalProperties: true
+    ChatResponseFormat:
+      anyOf:
+        - type: object
+          properties:
+            type:
+              type: string
+              const: text
+          required:
+            - type
+        - type: object
+          properties:
+            type:
+              type: string
+              const: json_object
+          required:
+            - type
+        - type: object
+          properties:
+            type:
+              type: string
+              const: json_schema
+            json_schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                schema:
+                  $ref: "#/components/schemas/JsonSchemaDefinition"
+                strict:
+                  anyOf:
+                    - type: boolean
+                    - type: "null"
+              required:
+                - name
+          required:
+            - type
+            - json_schema
+    JsonSchemaDefinition:
+      type: object
+      propertyNames:
+        type: string
+      additionalProperties: {}
+      description: JSON Schema the model output must satisfy.
+    FileParserPlugin:
+      type: object
+      properties:
+        id:
+          type: string
+          const: file-parser
+        enabled:
+          type: boolean
+        pdf:
+          type: object
+          properties:
+            engine:
+              type: string
+              enum:
+                - auto
+                - native
+                - pdf-text
+          additionalProperties: true
+      required:
+        - id
+      description: Request-scoped file portability. auto prefers native handling; pdf-text extracts UTF-8 text locally.
+      additionalProperties: true
+    ResponsesRequest:
+      type: object
+      properties:
+        model:
+          type: string
+        input:
+          description: string or array of items (message/function_call/...)
+        instructions:
+          anyOf:
+            - type: string
+            - type: "null"
+        stream:
+          default: false
+          type: boolean
+        max_output_tokens:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        max_tool_calls:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        temperature:
+          type: number
+        top_p:
+          type: number
+        presence_penalty:
+          type: number
+        frequency_penalty:
+          type: number
+        top_logprobs:
+          type: integer
+          minimum: 0
+          maximum: 20
+        parallel_tool_calls:
+          type: boolean
+        include:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+        service_tier:
+          type: string
+        stream_options:
+          type: object
+          properties: {}
+          additionalProperties: true
+        safety_identifier:
+          type: string
+          maxLength: 64
+        prompt_cache_key:
+          type: string
+          maxLength: 64
+        truncation:
+          type: string
+        context_management:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        tools:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        tool_choice: {}
+        text:
+          $ref: "#/components/schemas/ResponsesTextConfig"
+        reasoning:
+          type: object
+          properties:
+            effort:
+              type: string
+              enum:
+                - none
+                - minimal
+                - low
+                - medium
+                - high
+                - xhigh
+                - max
+            summary:
+              type: string
+              enum:
+                - auto
+                - none
+                - concise
+                - detailed
+          additionalProperties: true
+        store:
+          description: Persist server-side state for chaining with previous_response_id. Default follows RESPONSES_STORE_DEFAULT (true = OpenAI-compatible). Managed by the gateway; not forwarded upstream.
+          type: boolean
+        previous_response_id:
+          description: "Chains with a stored response (store): the gateway concatenates its input+output with the new input. Local pointer, not forwarded upstream. Cannot be combined with conversation."
+          type: string
+        background:
+          description: "Unsupported: background:true is rejected with 400."
+          type: boolean
+        conversation:
+          description: "Unsupported: use previous_response_id for gateway-managed state."
+        prompt:
+          description: Prompt templates are unsupported (400).
+        plugins:
+          maxItems: 1
+          type: array
+          items:
+            $ref: "#/components/schemas/FileParserPlugin"
+      required:
+        - model
+      additionalProperties: true
+    ResponsesTextConfig:
+      type: object
+      properties:
+        format:
+          $ref: "#/components/schemas/ResponsesTextFormat"
+      additionalProperties: true
+    ResponsesTextFormat:
+      anyOf:
+        - type: object
+          properties:
+            type:
+              type: string
+              const: text
+          required:
+            - type
+        - type: object
+          properties:
+            type:
+              type: string
+              const: json_object
+          required:
+            - type
+        - type: object
+          properties:
+            type:
+              type: string
+              const: json_schema
+            name:
+              type: string
+            description:
+              type: string
+            schema:
+              $ref: "#/components/schemas/JsonSchemaDefinition"
+            strict:
+              anyOf:
+                - type: boolean
+                - type: "null"
+          required:
+            - type
+            - name
+            - schema
+    CompactResponseRequest:
+      type: object
+      properties:
+        model:
+          type: string
+        input: {}
+        previous_response_id:
+          anyOf:
+            - type: string
+            - type: "null"
+        instructions:
+          anyOf:
+            - type: string
+            - type: "null"
+        prompt_cache_key:
+          type: string
+          maxLength: 64
+      required:
+        - model
+      additionalProperties: false
+    MessagesRequest:
+      type: object
+      properties:
+        model:
+          type: string
+        max_tokens:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        messages:
+          type: array
+          items:
+            type: object
+            properties:
+              role:
+                type: string
+                enum:
+                  - user
+                  - assistant
+              content: {}
+            required:
+              - role
+            additionalProperties: true
+        system:
+          description: string or array of text blocks
+        stream:
+          default: false
+          type: boolean
+        temperature:
+          type: number
+        top_p:
+          type: number
+        top_k:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        stop_sequences:
+          type: array
+          items:
+            type: string
+        tools:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        tool_choice:
+          type: object
+          properties: {}
+          additionalProperties: true
+        output_config:
+          $ref: "#/components/schemas/MessagesOutputConfig"
+        metadata:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+      required:
+        - model
+        - max_tokens
+        - messages
+      additionalProperties: true
+    MessagesOutputConfig:
+      type: object
+      properties:
+        effort:
+          anyOf:
+            - type: string
+              enum:
+                - low
+                - medium
+                - high
+                - xhigh
+                - max
+            - type: "null"
+        format:
+          type: object
+          properties:
+            type:
+              type: string
+              const: json_schema
+            schema:
+              $ref: "#/components/schemas/JsonSchemaDefinition"
+          required:
+            - type
+            - schema
+      additionalProperties: true
+    EmbeddingsRequest:
+      type: object
+      properties:
+        model:
+          type: string
+          description: public model
+        input:
+          anyOf:
+            - type: string
+              minLength: 1
+            - minItems: 1
+              type: array
+              items:
+                type: string
+                minLength: 1
+            - minItems: 1
+              type: array
+              items:
+                type: integer
+                minimum: 0
+                maximum: 9007199254740991
+            - minItems: 1
+              type: array
+              items:
+                minItems: 1
+                type: array
+                items:
+                  type: integer
+                  minimum: 0
+                  maximum: 9007199254740991
+        encoding_format:
+          default: float
+          type: string
+          enum:
+            - float
+            - base64
+        dimensions:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        user:
+          type: string
+        extra_body:
+          description: Provider-specific JSON parameters without collisions with managed fields.
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+      required:
+        - model
+        - input
+    AudioTranscriptionRequest:
+      type: object
+      properties:
+        model:
+          type: string
+          minLength: 1
+        language:
+          type: string
+        prompt:
+          type: string
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 1
+        response_format:
+          default: json
+          type: string
+          enum:
+            - json
+            - text
+            - srt
+            - verbose_json
+            - vtt
+        timestamp_granularities:
+          type: array
+          items:
+            type: string
+            enum:
+              - word
+              - segment
+        include:
+          type: array
+          items:
+            type: string
+        stream:
+          type: boolean
+        extra_body:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+        file:
+          type: string
+          format: binary
+          contentEncoding: binary
+      required:
+        - model
+        - file
+      additionalProperties: false
+    RerankRequest:
+      type: object
+      properties:
+        model:
+          type: string
+          minLength: 1
+        query:
+          type: string
+          minLength: 1
+        documents:
+          minItems: 1
+          maxItems: 1000
+          type: array
+          items:
+            anyOf:
+              - type: string
+                minLength: 1
+              - type: object
+                properties:
+                  text:
+                    type: string
+                    minLength: 1
+                required:
+                  - text
+                additionalProperties: false
+        top_n:
+          type: integer
+          exclusiveMinimum: 0
+          maximum: 9007199254740991
+        provider:
+          type: object
+          properties:
+            allow_fallbacks:
+              anyOf:
+                - type: boolean
+                - type: "null"
+            data_collection:
+              anyOf:
+                - type: string
+                  enum:
+                    - allow
+                    - deny
+                - type: "null"
+            enforce_distillable_text:
+              anyOf:
+                - type: boolean
+                - type: "null"
+            ignore:
+              anyOf:
+                - type: array
+                  items:
+                    type: string
+                    minLength: 1
+                - type: "null"
+            max_price:
+              type: object
+              properties:
+                audio:
+                  type: string
+                  minLength: 1
+                completion:
+                  type: string
+                  minLength: 1
+                image:
+                  type: string
+                  minLength: 1
+                prompt:
+                  type: string
+                  minLength: 1
+                request:
+                  type: string
+                  minLength: 1
+              additionalProperties: false
+            only:
+              anyOf:
+                - type: array
+                  items:
+                    type: string
+                    minLength: 1
+                - type: "null"
+            order:
+              anyOf:
+                - type: array
+                  items:
+                    type: string
+                    minLength: 1
+                - type: "null"
+            preferred_max_latency:
+              anyOf:
+                - anyOf:
+                    - type: number
+                      minimum: 0
+                    - type: object
+                      properties:
+                        p50:
+                          anyOf:
+                            - type: number
+                              minimum: 0
+                            - type: "null"
+                        p75:
+                          anyOf:
+                            - type: number
+                              minimum: 0
+                            - type: "null"
+                        p90:
+                          anyOf:
+                            - type: number
+                              minimum: 0
+                            - type: "null"
+                        p99:
+                          anyOf:
+                            - type: number
+                              minimum: 0
+                            - type: "null"
+                      additionalProperties: false
+                - type: "null"
+            preferred_min_throughput:
+              anyOf:
+                - anyOf:
+                    - type: number
+                      minimum: 0
+                    - type: object
+                      properties:
+                        p50:
+                          anyOf:
+                            - type: number
+                              minimum: 0
+                            - type: "null"
+                        p75:
+                          anyOf:
+                            - type: number
+                              minimum: 0
+                            - type: "null"
+                        p90:
+                          anyOf:
+                            - type: number
+                              minimum: 0
+                            - type: "null"
+                        p99:
+                          anyOf:
+                            - type: number
+                              minimum: 0
+                            - type: "null"
+                      additionalProperties: false
+                - type: "null"
+            quantizations:
+              anyOf:
+                - type: array
+                  items:
+                    type: string
+                    minLength: 1
+                - type: "null"
+            require_parameters:
+              anyOf:
+                - type: boolean
+                - type: "null"
+            sort:
+              anyOf:
+                - anyOf:
+                    - type: string
+                      minLength: 1
+                    - type: object
+                      properties:
+                        by:
+                          anyOf:
+                            - type: string
+                            - type: "null"
+                        partition:
+                          anyOf:
+                            - type: string
+                              enum:
+                                - model
+                                - none
+                            - type: "null"
+                      additionalProperties: false
+                - type: "null"
+            zdr:
+              anyOf:
+                - type: boolean
+                - type: "null"
+          additionalProperties: false
+      required:
+        - model
+        - query
+        - documents
+      additionalProperties: false
+      description: Strict OpenRouter-shaped text reranking request. Image documents are reserved for a future contract version.
+    ImageGenerationRequest:
+      type: object
+      properties:
+        model:
+          type: string
+          description: public model
+        prompt:
+          type: string
+          minLength: 1
+          maxLength: 32000
+        background:
+          anyOf:
+            - type: string
+              enum:
+                - transparent
+                - opaque
+                - auto
+            - type: "null"
+        moderation:
+          anyOf:
+            - type: string
+              enum:
+                - low
+                - auto
+            - type: "null"
+        n:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        output_compression:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        output_format:
+          anyOf:
+            - type: string
+              enum:
+                - png
+                - jpeg
+                - webp
+            - type: "null"
+        partial_images:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        quality:
+          anyOf:
+            - type: string
+              enum:
+                - standard
+                - hd
+                - low
+                - medium
+                - high
+                - auto
+            - type: "null"
+        response_format:
+          default: b64_json
+          anyOf:
+            - type: string
+              enum:
+                - b64_json
+            - type: "null"
+        size:
+          anyOf:
+            - type: string
+              pattern: ^(auto|[1-9][0-9]*x[1-9][0-9]*)$
+            - type: "null"
+        stream:
+          default: false
+          anyOf:
+            - type: boolean
+            - type: "null"
+        style:
+          anyOf:
+            - type: string
+              enum:
+                - vivid
+                - natural
+            - type: "null"
+        user:
+          anyOf:
+            - type: string
+            - type: "null"
+        extra_body:
+          description: Provider-specific JSON parameters; max 64 KiB and no collisions with managed fields.
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+      required:
+        - model
+        - prompt
+    ImageEditRequest:
+      type: object
+      properties:
+        model:
+          type: string
+        prompt:
+          type: string
+          minLength: 1
+          maxLength: 32000
+        image:
+          minItems: 1
+          maxItems: 16
+          type: array
+          items:
+            type: string
+            format: binary
+          description: Send one or more parts named image or image[].
+        mask:
+          type: string
+          format: binary
+          description: PNG <=4 MB; same dimensions as the first image.
+        background:
+          anyOf:
+            - type: string
+              enum:
+                - transparent
+                - opaque
+                - auto
+            - type: "null"
+        input_fidelity:
+          anyOf:
+            - type: string
+              enum:
+                - high
+                - low
+            - type: "null"
+        n:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        output_compression:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        output_format:
+          anyOf:
+            - type: string
+              enum:
+                - png
+                - jpeg
+                - webp
+            - type: "null"
+        partial_images:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        quality:
+          anyOf:
+            - type: string
+              enum:
+                - standard
+                - low
+                - medium
+                - high
+                - auto
+            - type: "null"
+        response_format:
+          default: b64_json
+          anyOf:
+            - type: string
+              enum:
+                - b64_json
+            - type: "null"
+        size:
+          anyOf:
+            - type: string
+              pattern: ^(auto|[1-9][0-9]*x[1-9][0-9]*)$
+            - type: "null"
+        stream:
+          default: false
+          anyOf:
+            - type: boolean
+            - type: "null"
+        user:
+          anyOf:
+            - type: string
+            - type: "null"
+        extra_body:
+          type: string
+          description: Serialized JSON object; max 64 KiB.
+      required:
+        - model
+        - prompt
+        - image
+    VideoCreateRequest:
+      type: object
+      properties:
+        model:
+          type: string
+          description: public model
+        prompt:
+          type: string
+          minLength: 1
+          maxLength: 32000
+        input_reference:
+          description: Mutually exclusive with input_references.
+          anyOf:
+            - $ref: "#/components/schemas/VideoInputReference"
+            - type: "null"
+        input_references:
+          anyOf:
+            - type: array
+              items:
+                $ref: "#/components/schemas/VideoInputReferencePart"
+            - type: "null"
+        frame_images:
+          anyOf:
+            - type: array
+              items:
+                $ref: "#/components/schemas/VideoFrameImage"
+            - type: "null"
+        seconds:
+          description: Mutually exclusive with duration.
+          anyOf:
+            - type: string
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        duration:
+          description: Duration in seconds.
+          anyOf:
+            - type: integer
+              exclusiveMinimum: 0
+              maximum: 9007199254740991
+            - type: "null"
+        size:
+          description: Interchangeable with aspect_ratio + resolution.
+          anyOf:
+            - type: string
+              pattern: ^[1-9][0-9]*x[1-9][0-9]*$
+            - type: "null"
+        aspect_ratio:
+          anyOf:
+            - type: string
+              enum:
+                - 16:9
+                - 9:16
+                - 1:1
+                - 4:3
+                - 3:4
+                - 3:2
+                - 2:3
+                - 21:9
+                - 9:21
+            - type: "null"
+        resolution:
+          anyOf:
+            - type: string
+              enum:
+                - 480p
+                - 720p
+                - 1080p
+                - 1K
+                - 2K
+                - 4K
+            - type: "null"
+        seed:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        generate_audio:
+          anyOf:
+            - type: boolean
+            - type: "null"
+        quality:
+          anyOf:
+            - type: string
+              enum:
+                - standard
+                - hd
+                - low
+                - medium
+                - high
+                - auto
+            - type: "null"
+        user:
+          description: Gateway-side attribution; never sent upstream.
+          anyOf:
+            - type: string
+            - type: "null"
+        extra_body:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+      required:
+        - model
+        - prompt
+      additionalProperties: true
+    VideoInputReference:
+      type: object
+      properties:
+        image_url:
+          anyOf:
+            - type: string
+            - type: object
+              properties:
+                url:
+                  type: string
+              required:
+                - url
+        file_id:
+          type: string
+      description: "OpenAI-compatible single reference: exactly one of image_url or file_id."
+    VideoInputReferencePart:
+      anyOf:
+        - type: object
+          properties:
+            type:
+              type: string
+              const: image_url
+            image_url:
+              type: object
+              properties:
+                url:
+                  type: string
+              required:
+                - url
+          required:
+            - type
+            - image_url
+        - type: object
+          properties:
+            type:
+              type: string
+              const: audio_url
+            audio_url:
+              type: object
+              properties:
+                url:
+                  type: string
+              required:
+                - url
+          required:
+            - type
+            - audio_url
+        - type: object
+          properties:
+            type:
+              type: string
+              const: video_url
+            video_url:
+              type: object
+              properties:
+                url:
+                  type: string
+              required:
+                - url
+          required:
+            - type
+            - video_url
+      description: A reference asset guiding generation. Audio/video references are only honored by providers that support them.
+    VideoFrameImage:
+      type: object
+      properties:
+        type:
+          type: string
+          const: image_url
+        image_url:
+          type: object
+          properties:
+            url:
+              type: string
+          required:
+            - url
+        frame_type:
+          type: string
+          enum:
+            - first_frame
+            - last_frame
+      required:
+        - type
+        - image_url
+        - frame_type
+    ResolveDeployment:
+      type: object
+      properties:
+        publicModel:
+          type: string
+          description: Public alias sent as model in /v1.
+        adapterKey:
+          type: string
+          description: Code adapter key (for example openai, googleaistudio, anthropic, openaicompatible).
+        upstreamModel:
+          type: string
+          description: Exact ID; preserves slash namespaces.
+        catalogEntry:
+          description: REQUIRED if the model is not in the catalog (custom); FORBIDDEN if it is. 1:1 entry with catalog.json.
+          $ref: "#/components/schemas/CatalogEntry"
+        pricing:
+          description: Operator pricing for cost calculation (optional).
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties:
+            type: number
+        transportOverrides:
+          description: Per-operation transport override. Usually inferred from the adapter; rarely needed.
+          $ref: "#/components/schemas/TransportOverrides"
+        credentials:
+          description: Accepted for body reuse with POST /admin/deployments, but ignored by resolve.
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+        label:
+          description: Accepted for body reuse with POST /admin/deployments, but ignored by resolve.
+          anyOf:
+            - type: string
+            - type: "null"
+        failureDomain:
+          description: Accepted for body reuse with POST /admin/deployments, but ignored by resolve.
+          anyOf:
+            - type: string
+            - type: "null"
+        metadata:
+          description: Accepted for body reuse with POST /admin/deployments, but ignored by resolve.
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+      required:
+        - publicModel
+        - adapterKey
+        - upstreamModel
+    CatalogEntry:
+      type: object
+      properties:
+        operations:
+          $ref: "#/components/schemas/OperationProfiles"
+      required:
+        - operations
+      additionalProperties: true
+    OperationProfiles:
+      type: object
+      propertyNames:
+        type: string
+        enum:
+          - text.generate
+          - image.generate
+          - image.edit
+          - video.generate
+          - audio.transcribe
+          - embedding.create
+          - rerank
+      additionalProperties:
+        type: object
+        propertyNames:
+          type: string
+        additionalProperties: {}
+      required:
+        - text.generate
+        - image.generate
+        - image.edit
+        - video.generate
+        - audio.transcribe
+        - embedding.create
+        - rerank
+    TransportOverrides:
+      type: object
+      propertyNames:
+        type: string
+        enum:
+          - text.generate
+          - image.generate
+          - image.edit
+          - video.generate
+          - audio.transcribe
+          - embedding.create
+          - rerank
+      additionalProperties:
+        type: string
+      required:
+        - text.generate
+        - image.generate
+        - image.edit
+        - video.generate
+        - audio.transcribe
+        - embedding.create
+        - rerank
+      description: Advanced operation-to-transport override. Defaults normally come from the adapter.
+    CreateDeployment:
+      type: object
+      properties:
+        publicModel:
+          type: string
+          description: Public alias sent as model in /v1.
+        adapterKey:
+          type: string
+          description: Code adapter key (for example openai, googleaistudio, anthropic, openaicompatible).
+        upstreamModel:
+          type: string
+          description: Exact ID; preserves slash namespaces.
+        credentials:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+          description: Inline provider credentials. Required keys are exposed by GET /admin/operations under adapter.credentials.required. Encrypted; never returned.
+        label:
+          description: Human identifier to tell deployments of the same publicModel apart (e.g. which API key). Snapshotted into operation metadata and attempt records.
+          anyOf:
+            - type: string
+            - type: "null"
+        failureDomain:
+          description: Shared provider account or quota domain. Deployments with the same value share upstream throttle state; null keeps the deployment independent.
+          anyOf:
+            - type: string
+            - type: "null"
+        metadata:
+          description: Free-form operator annotations (team, environment, key alias, rotation date, notes...). Up to 16 KiB; stored and returned verbatim.
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+        catalogEntry:
+          description: REQUIRED if the model is not in the catalog (custom); FORBIDDEN if it is. 1:1 entry with catalog.json.
+          $ref: "#/components/schemas/CatalogEntry"
+        pricing:
+          description: Operator pricing for cost calculation (optional).
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties:
+            type: number
+        transportOverrides:
+          description: Per-operation transport override. Usually inferred from the adapter; rarely needed.
+          $ref: "#/components/schemas/TransportOverrides"
+        enabled:
+          type: boolean
+        weight:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        tpmLimit:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        rpmLimit:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+      required:
+        - publicModel
+        - adapterKey
+        - upstreamModel
+        - credentials
+    UpdateDeployment:
+      type: object
+      properties:
+        publicModel:
+          type: string
+        upstreamModel:
+          type: string
+        credentials:
+          description: Credential patch; re-encrypted, never returned.
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+        label:
+          description: Human identifier; null clears it.
+          anyOf:
+            - type: string
+            - type: "null"
+        failureDomain:
+          description: Shared quota domain; null clears it.
+          anyOf:
+            - type: string
+            - type: "null"
+        metadata:
+          description: Replaces the stored metadata object.
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+        catalogEntry:
+          anyOf:
+            - $ref: "#/components/schemas/CatalogEntry"
+            - type: "null"
+        pricing:
+          anyOf:
+            - type: object
+              propertyNames:
+                type: string
+              additionalProperties:
+                type: number
+            - type: "null"
+        transportOverrides:
+          $ref: "#/components/schemas/TransportOverrides"
+        enabled:
+          type: boolean
+        weight:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        tpmLimit:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        rpmLimit:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+    CreateKey:
+      type: object
+      properties:
+        name:
+          type: string
+        allowedModels:
+          description: Allowed Public Models; [] = all
+          type: array
+          items:
+            type: string
+        maxBudgetCents:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        budgetReset:
+          anyOf:
+            - type: string
+              enum:
+                - hourly
+                - daily
+                - weekly
+                - monthly
+            - type: "null"
+        tpm:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        rpm:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        expiresAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+            - type: "null"
+      required:
+        - name
+    UpdateKey:
+      type: object
+      properties:
+        name:
+          type: string
+        allowedModels:
+          type: array
+          items:
+            type: string
+        maxBudgetCents:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        budgetReset:
+          anyOf:
+            - type: string
+              enum:
+                - hourly
+                - daily
+                - weekly
+                - monthly
+            - type: "null"
+        tpm:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        rpm:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        enabled:
+          type: boolean
+        expiresAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$
+            - type: "null"
+        resetSpend:
+          description: true resets spend for the current period
+          type: boolean
+    RouterSettings:
+      type: object
+      properties:
+        executionPolicies:
+          type: object
+          properties:
+            chat:
+              type: object
+              properties:
+                json:
+                  type: object
+                  properties:
+                    firstOutputMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    idleMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    reasoningOnlyMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    preCommitMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    totalMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    maxAttempts:
+                      type: integer
+                      minimum: 1
+                      maximum: 20
+                  required:
+                    - firstOutputMs
+                    - idleMs
+                    - reasoningOnlyMs
+                    - preCommitMs
+                    - totalMs
+                    - maxAttempts
+                stream:
+                  type: object
+                  properties:
+                    firstOutputMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    idleMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    reasoningOnlyMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    preCommitMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    totalMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    maxAttempts:
+                      type: integer
+                      minimum: 1
+                      maximum: 20
+                  required:
+                    - firstOutputMs
+                    - idleMs
+                    - reasoningOnlyMs
+                    - preCommitMs
+                    - totalMs
+                    - maxAttempts
+              required:
+                - json
+                - stream
+            images.generations:
+              type: object
+              properties:
+                json:
+                  type: object
+                  properties:
+                    firstOutputMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    idleMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    reasoningOnlyMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    preCommitMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    totalMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    maxAttempts:
+                      type: integer
+                      minimum: 1
+                      maximum: 20
+                  required:
+                    - firstOutputMs
+                    - idleMs
+                    - reasoningOnlyMs
+                    - preCommitMs
+                    - totalMs
+                    - maxAttempts
+                stream:
+                  type: object
+                  properties:
+                    firstOutputMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    idleMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    reasoningOnlyMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    preCommitMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    totalMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    maxAttempts:
+                      type: integer
+                      minimum: 1
+                      maximum: 20
+                  required:
+                    - firstOutputMs
+                    - idleMs
+                    - reasoningOnlyMs
+                    - preCommitMs
+                    - totalMs
+                    - maxAttempts
+              required:
+                - json
+                - stream
+            images.edits:
+              type: object
+              properties:
+                json:
+                  type: object
+                  properties:
+                    firstOutputMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    idleMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    reasoningOnlyMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    preCommitMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    totalMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    maxAttempts:
+                      type: integer
+                      minimum: 1
+                      maximum: 20
+                  required:
+                    - firstOutputMs
+                    - idleMs
+                    - reasoningOnlyMs
+                    - preCommitMs
+                    - totalMs
+                    - maxAttempts
+                stream:
+                  type: object
+                  properties:
+                    firstOutputMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    idleMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    reasoningOnlyMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    preCommitMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    totalMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    maxAttempts:
+                      type: integer
+                      minimum: 1
+                      maximum: 20
+                  required:
+                    - firstOutputMs
+                    - idleMs
+                    - reasoningOnlyMs
+                    - preCommitMs
+                    - totalMs
+                    - maxAttempts
+              required:
+                - json
+                - stream
+            videos.generations:
+              type: object
+              properties:
+                json:
+                  type: object
+                  properties:
+                    firstOutputMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    idleMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    reasoningOnlyMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    preCommitMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    totalMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    maxAttempts:
+                      type: integer
+                      minimum: 1
+                      maximum: 20
+                  required:
+                    - firstOutputMs
+                    - idleMs
+                    - reasoningOnlyMs
+                    - preCommitMs
+                    - totalMs
+                    - maxAttempts
+                stream:
+                  type: object
+                  properties:
+                    firstOutputMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    idleMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    reasoningOnlyMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    preCommitMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    totalMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    maxAttempts:
+                      type: integer
+                      minimum: 1
+                      maximum: 20
+                  required:
+                    - firstOutputMs
+                    - idleMs
+                    - reasoningOnlyMs
+                    - preCommitMs
+                    - totalMs
+                    - maxAttempts
+              required:
+                - json
+                - stream
+            audio.transcriptions:
+              type: object
+              properties:
+                json:
+                  type: object
+                  properties:
+                    firstOutputMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    idleMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    reasoningOnlyMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    preCommitMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    totalMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    maxAttempts:
+                      type: integer
+                      minimum: 1
+                      maximum: 20
+                  required:
+                    - firstOutputMs
+                    - idleMs
+                    - reasoningOnlyMs
+                    - preCommitMs
+                    - totalMs
+                    - maxAttempts
+                stream:
+                  type: object
+                  properties:
+                    firstOutputMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    idleMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    reasoningOnlyMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    preCommitMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    totalMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    maxAttempts:
+                      type: integer
+                      minimum: 1
+                      maximum: 20
+                  required:
+                    - firstOutputMs
+                    - idleMs
+                    - reasoningOnlyMs
+                    - preCommitMs
+                    - totalMs
+                    - maxAttempts
+              required:
+                - json
+                - stream
+            embeddings:
+              type: object
+              properties:
+                json:
+                  type: object
+                  properties:
+                    firstOutputMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    idleMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    reasoningOnlyMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    preCommitMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    totalMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    maxAttempts:
+                      type: integer
+                      minimum: 1
+                      maximum: 20
+                  required:
+                    - firstOutputMs
+                    - idleMs
+                    - reasoningOnlyMs
+                    - preCommitMs
+                    - totalMs
+                    - maxAttempts
+                stream:
+                  type: object
+                  properties:
+                    firstOutputMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    idleMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    reasoningOnlyMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    preCommitMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    totalMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    maxAttempts:
+                      type: integer
+                      minimum: 1
+                      maximum: 20
+                  required:
+                    - firstOutputMs
+                    - idleMs
+                    - reasoningOnlyMs
+                    - preCommitMs
+                    - totalMs
+                    - maxAttempts
+              required:
+                - json
+                - stream
+            rerank:
+              type: object
+              properties:
+                json:
+                  type: object
+                  properties:
+                    firstOutputMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    idleMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    reasoningOnlyMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    preCommitMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    totalMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    maxAttempts:
+                      type: integer
+                      minimum: 1
+                      maximum: 20
+                  required:
+                    - firstOutputMs
+                    - idleMs
+                    - reasoningOnlyMs
+                    - preCommitMs
+                    - totalMs
+                    - maxAttempts
+                stream:
+                  type: object
+                  properties:
+                    firstOutputMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    idleMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    reasoningOnlyMs:
+                      anyOf:
+                        - type: integer
+                          exclusiveMinimum: 0
+                          maximum: 3600000
+                        - type: "null"
+                    preCommitMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    totalMs:
+                      type: integer
+                      exclusiveMinimum: 0
+                      maximum: 3600000
+                    maxAttempts:
+                      type: integer
+                      minimum: 1
+                      maximum: 20
+                  required:
+                    - firstOutputMs
+                    - idleMs
+                    - reasoningOnlyMs
+                    - preCommitMs
+                    - totalMs
+                    - maxAttempts
+              required:
+                - json
+                - stream
+          required:
+            - chat
+            - images.generations
+            - images.edits
+            - videos.generations
+            - audio.transcriptions
+            - embeddings
+            - rerank
+        routingStrategy:
+          type: string
+          enum:
+            - simple-shuffle
+            - least-busy
+            - usage-based-tpm
+            - usage-based-rpm
+            - latency-based
+            - throughput-based
+            - price-based
+            - health-aware
+        unsupportedParameterStrategy:
+          description: How the router handles parameters explicitly marked unsupported by the selected deployment profile.
+          type: string
+          enum:
+            - drop
+            - error
+            - allow
+        allowedFails:
+          description: Number of transient logical-request failures a deployment may accumulate in the fixed window before the next failure opens its cooldown circuit. A successful call resets the count; zero opens on the first failure.
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        cooldownSeconds:
+          description: Time a deployment remains unavailable after exceeding allowedFails. Zero disables automatic cooldown circuits.
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        failureWindowSeconds:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        maxCooldownSeconds:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        halfOpenProbeSeconds:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        configurationCooldownSeconds:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        throttleCooldownSeconds:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        retryAfterSeconds:
+          description: Minimum wait before a transient retry. Exponential full jitter is added above this floor.
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+    Fallback:
+      type: object
+      properties:
+        primaryModel:
+          type: string
+          description: Primary public name; must have at least one persisted deployment.
+        fallbackModels:
+          minItems: 1
+          maxItems: 5
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+          description: Fallback public names in order. Each one must exist and share an executable operation with the primary.
+        reason:
+          description: Aggregated cause of the primary failure; not an operation. Chain lookup is exact by reason.
+          default: general
+          type: string
+          enum:
+            - general
+            - context_window
+            - content_policy
+      required:
+        - primaryModel
+        - fallbackModels
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+            type:
+              type: string
+            param:
+              anyOf:
+                - type: string
+                - type: "null"
+            code:
+              anyOf:
+                - type: string
+                - type: "null"
+          required:
+            - message
+            - type
+          additionalProperties: false
+      required:
+        - error
+      additionalProperties: false
+    OpenRouterError:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            message:
+              type: string
+          required:
+            - code
+            - message
+          additionalProperties: false
+      required:
+        - error
+      additionalProperties: false
+    ResponseObject:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          const: response
+        created_at:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        completed_at:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        status:
+          type: string
+        incomplete_details:
+          anyOf:
+            - type: object
+              properties: {}
+              additionalProperties: true
+            - type: "null"
+        model:
+          type: string
+        previous_response_id:
+          anyOf:
+            - type: string
+            - type: "null"
+        instructions:
+          anyOf:
+            - type: string
+            - type: "null"
+        output:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        error:
+          anyOf:
+            - type: object
+              properties: {}
+              additionalProperties: true
+            - type: "null"
+        tools:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        tool_choice: {}
+        truncation:
+          type: string
+        parallel_tool_calls:
+          type: boolean
+        text:
+          type: object
+          properties: {}
+          additionalProperties: true
+        top_p:
+          type: number
+        presence_penalty:
+          type: number
+        frequency_penalty:
+          type: number
+        top_logprobs:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        temperature:
+          type: number
+        reasoning:
+          anyOf:
+            - type: object
+              properties: {}
+              additionalProperties: true
+            - type: "null"
+        usage:
+          anyOf:
+            - $ref: "#/components/schemas/ResponsesUsage"
+            - type: "null"
+        max_output_tokens:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        max_tool_calls:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        store:
+          type: boolean
+        background:
+          type: boolean
+        service_tier:
+          type: string
+        metadata:
+          type: object
+          properties: {}
+          additionalProperties: true
+        safety_identifier:
+          anyOf:
+            - type: string
+            - type: "null"
+        prompt_cache_key:
+          anyOf:
+            - type: string
+            - type: "null"
+      required:
+        - id
+        - object
+        - created_at
+        - completed_at
+        - status
+        - incomplete_details
+        - model
+        - previous_response_id
+        - instructions
+        - output
+        - error
+        - tools
+        - tool_choice
+        - truncation
+        - parallel_tool_calls
+        - text
+        - top_p
+        - presence_penalty
+        - frequency_penalty
+        - top_logprobs
+        - temperature
+        - reasoning
+        - usage
+        - max_output_tokens
+        - max_tool_calls
+        - store
+        - background
+        - service_tier
+        - metadata
+        - safety_identifier
+        - prompt_cache_key
+      additionalProperties: true
+    ResponsesUsage:
+      type: object
+      properties:
+        input_tokens:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        input_tokens_details:
+          type: object
+          properties:
+            cached_tokens:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - cached_tokens
+          additionalProperties: false
+        output_tokens:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        output_tokens_details:
+          type: object
+          properties:
+            reasoning_tokens:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          required:
+            - reasoning_tokens
+          additionalProperties: false
+        total_tokens:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+      required:
+        - input_tokens
+        - input_tokens_details
+        - output_tokens
+        - output_tokens_details
+        - total_tokens
+      additionalProperties: false
+    CompactResponseObject:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          const: response.compaction
+        created_at:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        output:
+          type: array
+          items:
+            type: object
+            properties: {}
+            additionalProperties: true
+        usage:
+          $ref: "#/components/schemas/ResponsesUsage"
+      required:
+        - id
+        - object
+        - created_at
+        - output
+        - usage
+      additionalProperties: false
+    EmbeddingsResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          const: list
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Embedding"
+        model:
+          type: string
+        usage:
+          type: object
+          properties:
+            prompt_tokens:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            total_tokens:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          additionalProperties: false
+      required:
+        - object
+        - data
+        - model
+      additionalProperties: false
+    Embedding:
+      type: object
+      properties:
+        object:
+          type: string
+          const: embedding
+        embedding:
+          anyOf:
+            - type: array
+              items:
+                type: number
+            - type: string
+              description: Base64 when encoding_format=base64.
+        index:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+      required:
+        - object
+        - embedding
+        - index
+      additionalProperties: false
+    AudioTranscriptionResponse:
+      type: object
+      properties:
+        text:
+          type: string
+        language:
+          type: string
+        duration:
+          type: number
+        words:
+          type: array
+          items:
+            type: object
+            propertyNames:
+              type: string
+            additionalProperties: {}
+        segments:
+          type: array
+          items:
+            type: object
+            propertyNames:
+              type: string
+            additionalProperties: {}
+        usage:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+      required:
+        - text
+      additionalProperties: true
+    RerankResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        model:
+          type: string
+        provider:
+          type: string
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/RerankResult"
+        usage:
+          type: object
+          properties:
+            total_tokens:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            search_units:
+              type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            cost:
+              type: number
+              minimum: 0
+          additionalProperties: false
+      required:
+        - model
+        - results
+      additionalProperties: false
+    RerankResult:
+      type: object
+      properties:
+        index:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        relevance_score:
+          type: number
+        document:
+          type: object
+          properties:
+            text:
+              type: string
+          required:
+            - text
+          additionalProperties: false
+      required:
+        - index
+        - relevance_score
+        - document
+      additionalProperties: false
+    ImagesResponse:
+      type: object
+      properties:
+        created:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImageData"
+        background:
+          type: string
+          enum:
+            - transparent
+            - opaque
+        output_format:
+          type: string
+          enum:
+            - png
+            - jpeg
+            - webp
+        quality:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        size:
+          type: string
+        usage:
+          $ref: "#/components/schemas/ImageUsage"
+      required:
+        - created
+        - data
+      additionalProperties: false
+    ImageData:
+      type: object
+      properties:
+        b64_json:
+          type: string
+        revised_prompt:
+          type: string
+      required:
+        - b64_json
+      additionalProperties: false
+    ImageUsage:
+      type: object
+      properties:
+        input_tokens:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        output_tokens:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        total_tokens:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        input_tokens_details:
+          type: object
+          properties:
+            image_tokens:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            text_tokens:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          additionalProperties: false
+        output_tokens_details:
+          type: object
+          properties:
+            image_tokens:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            text_tokens:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+          additionalProperties: false
+      required:
+        - input_tokens
+        - output_tokens
+        - total_tokens
+      additionalProperties: false
+    VideoObject:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          const: video
+        created_at:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        completed_at:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        expires_at:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        model:
+          type: string
+        status:
+          type: string
+          enum:
+            - queued
+            - in_progress
+            - completed
+            - failed
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+        prompt:
+          type: string
+        error:
+          anyOf:
+            - type: object
+              properties:
+                code:
+                  anyOf:
+                    - type: string
+                    - type: "null"
+                message:
+                  type: string
+              required:
+                - message
+              additionalProperties: false
+            - type: "null"
+        remixed_from_video_id:
+          anyOf:
+            - type: string
+            - type: "null"
+        seconds:
+          type: string
+        size:
+          type: string
+        quality:
+          type: string
+          enum:
+            - standard
+            - hd
+            - low
+            - medium
+            - high
+            - auto
+      required:
+        - id
+        - object
+        - created_at
+        - completed_at
+        - expires_at
+        - model
+        - status
+        - progress
+        - prompt
+      additionalProperties: false
+    VideoListResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          const: list
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/VideoObject"
+        first_id:
+          anyOf:
+            - type: string
+            - type: "null"
+        last_id:
+          anyOf:
+            - type: string
+            - type: "null"
+        has_more:
+          type: boolean
+      required:
+        - object
+        - data
+        - first_id
+        - last_id
+        - has_more
+      additionalProperties: false
+    VideoDeleted:
+      type: object
+      properties:
+        id:
+          type: string
+        object:
+          type: string
+          const: video.deleted
+        deleted:
+          type: boolean
+      required:
+        - id
+        - object
+        - deleted
+      additionalProperties: false
+    Pagination:
+      type: object
+      properties:
+        limit:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        offset:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        total:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        nextOffset:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+      required:
+        - limit
+        - offset
+        - total
+        - nextOffset
+      additionalProperties: false
+  responses:
+    Error:
+      description: OpenAI-shaped error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    OpenRouterError:
+      description: OpenRouter-shaped rerank error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/OpenRouterError"
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ResponseIdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: OpenResponses response id (resp_...)
+    VideoIdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Gateway video id (video_...)
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 50
+    Offset:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 0
+    CacheHeader:
+      name: x-unified-cache
+      in: header
+      required: false
+      schema:
+        type: string
+        enum:
+          - "true"
+          - "1"
+      description: Opt-in response cache (non-stream, no tools).
+    CacheTtlHeader:
+      name: x-unified-cache-ttl
+      in: header
+      required: false
+      schema:
+        type: integer
+      description: Cache TTL in seconds (default 300).
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: "Master key or virtual key. Admin requires the master key. Alternative: x-api-key header."

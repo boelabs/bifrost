@@ -1,0 +1,32 @@
+---
+title: "Azure OpenAI"
+description: "Adapter key azureopenai. baseUrl rules, deployment naming, and quirks."
+---
+
+```json
+{
+  "publicModel": "azure-gpt",
+  "adapterKey": "azureopenai",
+  "upstreamModel": "gpt-5.4",
+  "credentials": { "apiKey": "...", "baseUrl": "https://my-resource.openai.azure.com" }
+}
+```
+
+- **Credentials**: `apiKey`, `baseUrl`.
+- **`baseUrl`** must be HTTPS, and can be either the bare resource endpoint
+  (`https://my-resource.openai.azure.com`) or the full `/openai/v1` base. **Legacy
+  `/openai/deployments/...` URLs and `api-version` query parameters are rejected** — this adapter only
+  speaks Azure's v1 API surface.
+- **Your Azure deployment name must equal the catalog model id** (`upstreamModel`) — Azure resolves the
+  model by deployment name, not by a separate model parameter.
+- **Default transport**: Responses API for text, `embeddings` for embeddings. No native image transport
+  today.
+- Azure OpenAI and [Azure Foundry](/docs/providers-azure-foundry) are two independent adapters and
+  catalogs, even though both live under the Azure umbrella — use this one for models you deploy through
+  Azure OpenAI resources specifically.
+- Catalog: `src/adapters/azureopenai/catalog.json`.
+
+## What to read next
+
+- [Azure Foundry](/docs/providers-azure-foundry) — the other Azure adapter, for models Azure itself sells.
+- [Creating deployments](/docs/creating-deployments) — the full request shape.

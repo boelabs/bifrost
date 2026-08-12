@@ -1,0 +1,93 @@
+---
+title: "Chat completions"
+description: "POST /v1/chat/completions — the OpenAI Chat Completions contract."
+---
+
+```bash
+curl -X POST "$GATEWAY/v1/chat/completions" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "general",
+    "messages": [{ "role": "user", "content": "Say hi" }],
+    "stream": false
+  }'
+```
+
+OpenAI-compatible request/response shape. Every field below is normalized into the same
+canonical request regardless of which endpoint or provider ultimately serves it — see
+[Architecture](/docs/architecture) for the full pipeline.
+
+## Supported request fields
+
+`model`, `messages` (with `system`/`developer`/`user`/`assistant`/`tool` roles, and multi-part content —
+text, image, audio, file), `stream`, `stream_options.include_usage`, `temperature`, `top_p`,
+`max_tokens`/`max_completion_tokens`, `stop`, `n`, `presence_penalty`, `frequency_penalty`, `seed`,
+`user`, `tools`, `tool_choice`, `parallel_tool_calls`, `response_format`, `reasoning_effort`,
+`prompt_cache_key`, `audio`, `logprobs`, `top_logprobs`, `logit_bias`, `metadata`, `modalities`,
+`prediction`, `service_tier`, `safety_identifier`, `store`, `verbosity`, `web_search_options`, and
+`extra_body` for provider-specific fields the gateway doesn't manage itself.
+
+Whether a given deployment actually **supports** a field you send is a per-model catalog declaration —
+see [Parameter policy](/docs/parameter-policy) for what happens when it doesn't (`drop`, `error`, or
+`allow`, operator-configured).
+
+## Tools and tool choice
+
+`tools` (JSON Schema `parameters`) and `tool_choice` (`"auto"`, `"none"`, `"required"`, or
+`{"type": "function", "function": {"name": "..."}}`) follow the OpenAI shape. The
+`allowed_tools` form is also accepted and retains both the allowed subset and its `auto` or `required`
+mode. Provider translation happens per-adapter — notably Google AI Studio narrows tool `parameters` to its own OpenAPI subset; see
+[Google AI Studio](/docs/providers-google).
+
+Some providers return opaque tool-call state that must round-trip with the tool call (e.g. Gemini
+thought signatures). The gateway embeds it in the tool call id itself (`<id>__thought__<signature>`),
+so echoing `tool_calls[].id` verbatim — which every standard client does — is enough; no extra field
+handling is needed. The state is also mirrored in `extra_content` / `provider_specific_fields` for
+rich clients, and all forms are accepted back. See
+[Provider-specific fields](/docs/provider-specific-fields).
+
+## Structured outputs
+
+`response_format: { "type": "json_schema", "json_schema": { ... } }` requests schema-adherent output on
+models that declare `structuredOutputs: true`. `{"type": "json_object"}` remains available as legacy
+JSON mode — valid JSON, but no schema adherence guarantee — on any model, and does not imply structured
+output support.
+
+## Reasoning
+
+`reasoning_effort` (`none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`) on models that support it.
+Requests are **clamped, never rejected** — see [Reasoning](/docs/reasoning) for the full ladder,
+snapping rules, and per-provider wire translation.
+
+## `extra_body`
+
+Provider-specific fields the gateway doesn't manage directly (e.g. vLLM's `top_k`,
+`repetition_penalty`, `guided_json`). Merged into the upstream body last, without overwriting any field
+the gateway itself manages — you can't use `extra_body` to smuggle in an override of `temperature` or
+`tools`, for instance. Content is provider-shaped and is the client's responsibility.
+
+## Vision, audio, and file input
+
+`content` accepts multi-part arrays: `{"type": "image_url", "image_url": {"url": "..."}}` (URL or
+base64 data URL) on `vision: true` models, plus audio and file parts on models whose catalog profile
+declares support. Video generation is exposed through the dedicated `/v1/videos` API, not a
+`video_url` chat part.
+
+Image and file source forms are resolved per routing candidate. A native URL is preserved when the
+upstream accepts it; inline-only transports receive a bounded, validated data URL produced by the
+gateway. See [Content inputs](/docs/file-inputs).
+
+## Streaming
+
+`"stream": true` returns Server-Sent Events with the standard `chat.completion.chunk` shape, including
+log probabilities, audio, annotations, usage, and `delta.reasoning` where the model/contract supports
+them. An error sent inside an otherwise successful upstream stream terminates the request as an error
+instead of being mistaken for a clean end. See
+[Streaming](/docs/streaming) for the full SSE contract shared across endpoints.
+
+## What to read next
+
+- [Streaming](/docs/streaming) — the SSE shape in depth.
+- [Reasoning](/docs/reasoning) and [Parameter policy](/docs/parameter-policy) — the two most commonly-tuned behaviors.
+- [Responses](/docs/responses) and [Messages](/docs/messages) — the other two text contracts over the same canonical core.

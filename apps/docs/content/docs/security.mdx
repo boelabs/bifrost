@@ -1,0 +1,73 @@
+---
+title: "Security"
+description: "The auth model, credential encryption, and what the gateway redacts by default."
+---
+
+## Auth model
+
+Two kinds of keys, both checked via `Authorization: Bearer <key>` or `x-api-key: <key>`:
+
+- **`MASTER_KEY`** — full access. Required on every `/admin/*` route. Also usable on `/v1/*` (operator
+  traffic); master-key requests never go through rate limiting, budgets, or the response cache.
+- **Virtual keys** — created via `POST /admin/keys`, scoped to a set of allowed public models, with
+  optional RPM/TPM limits and a spend budget. Used on `/v1/*` only. See [Virtual keys](/docs/virtual-keys).
+
+`/v1/models` and `/v1/models/{model}` are the only unauthenticated endpoints — deliberately, like any
+provider's public model listing. Everything else, including `/v1/models/{model}/deployments`
+(per-deployment operational detail), requires a key. See [Model discovery](/docs/models-discovery).
+
+## Virtual keys at rest
+
+A virtual key is never stored in plaintext: only its **SHA-256 hash** and a 10-character prefix (for
+display and search in `GET /admin/keys`) are persisted. The raw key is returned exactly once, at
+creation — there is no way to retrieve it again afterward. Rotate by creating a new key and disabling
+or deleting the old one.
+
+## Deployment credentials at rest
+
+Every credential (`apiKey`, `baseUrl`, etc.) is encrypted with **AES-256-GCM** before being stored. Each
+versioned envelope records a key id and purpose authenticated as AAD, and gets its own random IV. GCM's auth tag means
+tampering with the stored ciphertext makes it fail to decrypt rather than silently returning garbage.
+**No admin API response — `GET`, `POST`, or `PATCH` on `/admin/deployments`— ever includes credentials**,
+encrypted or not; they're stripped before the response is built.
+
+Losing every copy of a keyring entry while envelopes still reference it makes those values permanently
+unrecoverable. Keep the keyring outside the database it decrypts and never commit it. For the online
+rotation procedure for both `MASTER_KEY` and the encryption keyring, see
+[Operations → Secrets](/docs/operations#secrets).
+
+## What the gateway redacts publicly
+
+- **`/v1/models` and `/v1/models/{model}`** expose aggregated capability/pricing data, but never
+  deployment labels, credentials, database ids, or the exact upstream model id.
+- **`/v1/models/{model}/deployments`** (authenticated) exposes an opaque, deterministic per-deployment
+  id (a truncated hash of the real one) and live metrics, but still never credentials or the upstream
+  model id.
+- **Operation logs** (`GET /admin/logs`) persist summaries and HMAC fingerprints, not request or
+  response bodies.
+
+## Observability payloads
+
+Forensic samples use purpose-bound AEAD envelopes under the versioned keyring, expire automatically,
+and never fall back to plaintext. HMAC fingerprints use a separate derived subkey.
+OpenTelemetry never receives payload bodies. See [Environment variables](/docs/reference-environment)
+and [Observability](/docs/observability).
+
+## Runtime extensions
+
+Extension code is trusted, operator-uploaded ESM — it runs in-process with the same access as the
+gateway itself. Only upload code you've reviewed; there is no sandboxing beyond the per-hook timeout and
+consecutive-failure circuit breaker described in [Extensions](/docs/extensions). Treat
+`POST /admin/extensions/artifacts` with the same care as deploying new gateway code, because that's
+effectively what it is.
+
+## Reporting a vulnerability
+
+Follow [SECURITY.md](https://github.com/boelabs/bifrost/blob/main/SECURITY.md) in the
+repository root. Do not open public issues for security problems.
+
+## What to read next
+
+- [Virtual keys](/docs/virtual-keys) — scopes, budgets, rotation.
+- [Environment variables](/docs/reference-environment) — every secret and its format.
+- [Production checklist](/docs/production-checklist) — what to verify before going live.

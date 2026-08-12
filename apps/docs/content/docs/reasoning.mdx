@@ -1,0 +1,125 @@
+---
+title: "Reasoning"
+description: "The canonical reasoning ladder, how it maps to each provider's native controls, and how the catalog declares it."
+---
+
+Every provider that supports "thinking" controls it differently: OpenAI has a scalar
+`reasoning_effort`, Anthropic has an adaptive mode or a token budget, Gemini has discrete levels or a
+budget, and several OpenAI-compatible providers expose a plain on/off toggle. The gateway exposes a
+single public knob — an **effort** on a fixed ladder — and translates it to whatever the target model
+actually understands, per the catalog's declaration of *how* that model controls it.
+
+## The canonical ladder
+
+```
+none < minimal < low < medium < high < xhigh < max
+```
+
+A request sets `reasoning.effort` to one of these seven values. `max` is a first-class tier above
+`xhigh`, not an alias: providers including OpenAI and Anthropic expose models where both values are
+accepted and have different cost/capability semantics.
+
+## Requests are clamped, never rejected
+
+If a model doesn't support the exact requested effort, the gateway **snaps** it to the nearest level it
+does support — it never returns an error for an out-of-range effort. The only genuine reasoning error is
+requesting `reasoning.effort` on a model whose catalog entry doesn't declare reasoning at all.
+
+The snapping rules:
+
+- **Requesting `none`**: resolves to `none` only if the model has a literal off switch (`"none"` is one
+  of its declared `levels`). If the model has no off switch — it *always* reasons — the request snaps
+  **up** to the model's lowest declared level (its "floor"). There's no separate `canDisable` flag: the
+  presence of `"none"` in `levels` **is** the flag.
+- **Requesting a positive effort** (`minimal`..`max`): resolves to the highest declared level that
+  doesn't exceed the request, or the floor if the request is below every declared level. A positive
+  request **never** rounds down into `none` — asking for *some* reasoning never turns it off.
+- **Omitting `reasoning` entirely**: treated as requesting `none` — i.e., "don't reason" on a model that
+  can turn it off, or the floor on one that can't. There is no opaque upstream default silently inherited.
+
+This means a new model only ever needs to declare which `levels` it supports; the gateway's public
+contract stays exactly the same shape regardless of how sparse or how granular that model's real ladder
+is. Every clamp is recorded in the operation log (`requested` vs. `effective` effort, plus a `clamped`
+boolean) — the discrepancy is always observable, so a client is never silently charged for more or less
+reasoning than the log shows.
+
+## Declaring it in the catalog
+
+```json
+"reasoning": {
+  "kind": "openai_effort",
+  "levels": ["none", "low", "medium", "high", "xhigh", "max"]
+}
+```
+
+- **`levels`** — which rungs of the canonical ladder this model accepts, in any order (sorted internally
+  when snapping). Two conventions worth knowing: a binary on/off toggle is `["none", "high"]`; a
+  model that always reasons with no off switch and only one real mode is `kind: "fixed"` with
+  `levels: ["high"]`.
+- **`budgets`** — only for the `*_budget` kinds: a map from effort level to a token budget
+  (`{ "low": 4096, "high": 16000 }`). Falls back to a provider-specific default per level if omitted.
+  A budget-based spec that declares `max` must provide its budget explicitly; the gateway never invents
+  a portable token threshold for a provider-defined maximum tier.
+- **`upstreamEffortMap`** — only for synonymous provider labels whose spelling differs from the
+  canonical name. Keys are always canonical; values are the provider's native label. It must never
+  collapse distinct semantic tiers: mapping `xhigh` to `max` is invalid. Omitted levels pass through
+  unchanged (canonical name == upstream name).
+
+## The reasoning-control kinds
+
+`kind` tells the adapter *which wire mechanism* to use; it must be one the target adapter can actually
+emit (`adapter.reasoningKinds`), checked at startup — a catalog entry can't declare a kind its own
+adapter doesn't implement.
+
+| `kind` | Wire shape | Providers |
+|---|---|---|
+| `openai_effort` | Top-level `reasoning_effort: "<level>"` (or Responses API `reasoning.effort`) | OpenAI reasoning models |
+| `openai_body` | Provider-specific top-level field, typically `thinking: {"type": "enabled"\|"disabled"}`, optionally paired with an effort scalar (`effortField`, e.g. `reasoning_effort`) | Z.AI, MiniMax, and other OpenAI-compatible APIs with native thinking controls |
+| `anthropic_adaptive` | `thinking: {"type": "adaptive", "display": ...}` + `output_config.effort: "<level>"` | Anthropic adaptive-reasoning models |
+| `anthropic_budget` | `thinking: {"type": "enabled", "budget_tokens": N, "display": ...}` (or `{"type": "disabled"}` for `none`) | Anthropic budget-based models |
+| `gemini_level` | `thinkingConfig: {"thinkingLevel": "low"\|"high", "includeThoughts": true}` (`xhigh` maps to `high`) | Gemini models with discrete levels |
+| `gemini_budget` | `thinkingConfig: {"thinkingBudget": N, "includeThoughts": true}` (`0` for `none`) | Gemini models with a token budget |
+| `chat_template_flag` | A boolean/string/number flag inside `chat_template_kwargs`, e.g. `{"enable_thinking": true}` (Qwen) or `{"thinking": true}` (Kimi) | vLLM-style OpenAI-compatible deployments |
+| `fixed` | No upstream parameter at all — the model always reasons at its one supported level | Always-on reasoners with no off switch and no granularity |
+
+For `openai_body` and `chat_template_flag`, a `bodyField`/`chatTemplateFlag` sub-object configures the
+exact parameter name and on/off values:
+
+```json
+"reasoning": {
+  "kind": "openai_body",
+  "levels": ["none", "high"],
+  "bodyField": {
+    "param": "thinking",
+    "onValue": { "type": "enabled" },
+    "offValue": { "type": "disabled" }
+  }
+}
+```
+
+## Visible summaries
+
+When reasoning is active, `reasoning.summary` controls whether the model's thought process is surfaced
+back to the client: `"auto"` (the gateway's implicit default whenever effort is on and summary is
+unspecified), `"none"` (explicit opt-out), `"concise"`, or `"detailed"`. Each contract maps this to its
+native shape — Anthropic's `display: "summarized"|"omitted"`, Gemini's `includeThoughts`, etc.
+
+## Per-contract expression
+
+- `/v1/chat/completions` and `/v1/messages`: `reasoning_effort` (OpenAI) or the provider-native fields
+  above.
+- `/v1/responses`: `reasoning: { effort, summary }`.
+- Image generation: reasoning-adjacent but distinct — see quality-to-thinking mapping in
+  [Images](/docs/images).
+
+## Where this comes from in the sync
+
+The [catalog sync tool](/docs/model-catalog#catalog-sync) can draft a `reasoning` spec from
+models.dev's own vocabulary, but it can never safely infer the wire mechanics (`kind`, `bodyField`,
+`effortField`) — those are marked `needsHumanReview` and gate `catalog:validate` until a human verifies
+them against the provider's real API docs.
+
+## What to read next
+
+- [Model catalog](/docs/model-catalog) — the full per-model entry shape, including `reasoning`.
+- [Chat completions](/docs/chat-completions) / [Responses](/docs/responses) / [Messages](/docs/messages) — where `reasoning.effort` is set on a request.

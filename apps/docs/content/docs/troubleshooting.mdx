@@ -1,0 +1,153 @@
+---
+title: "Troubleshooting"
+description: "Error shape, status codes, and known issues with their exact symptoms and fixes."
+---
+
+Bifrost returns errors in the **exact shape of the endpoint you called**. OpenAI-style endpoints
+(`/v1/chat/completions`, `/v1/responses`, `/v1/images/*`, `/v1/embeddings`,
+`/v1/audio/transcriptions`) return the OpenAI error body; `/v1/messages` returns the Anthropic one and
+`/v1/rerank` returns the OpenRouter one. Your
+existing client's error handling works unchanged.
+
+OpenAI shape:
+
+```json
+{
+  "error": {
+    "message": "The request is invalid.",
+    "type": "invalid_request_error",
+    "param": null,
+    "code": "unsupported_parameter"
+  }
+}
+```
+
+Anthropic shape (`/v1/messages`):
+
+```json
+{ "type": "error", "error": { "type": "invalid_request_error", "message": "The request is invalid." } }
+```
+
+OpenRouter shape (`/v1/rerank`):
+
+```json
+{ "error": { "code": 400, "message": "The request is invalid." } }
+```
+
+> Because the gateway is a router, the **public message is intentionally generic** — the same public
+> model can resolve to different deployments that each fail differently, and the public error must be
+> stable and must not leak a provider's wording. The full provider detail is preserved in
+> `gateway_operations` and `upstream_attempts`, correlated by the `x-request-id` on every response. When you need the real cause,
+> look up the log by request id.
+
+## Status codes by class
+
+Every error maps to one internal class, which fixes its HTTP status and OpenAI `type`:
+
+| Class | HTTP | OpenAI `type` | Retryable | Typical default `code` |
+|---|---|---|---|---|
+| `bad_request` | 400 | `invalid_request_error` | no | — |
+| `context_window` | 400 | `invalid_request_error` | no | `context_length_exceeded` |
+| `content_policy` | 400 | `invalid_request_error` | no | `content_policy_violation` |
+| `auth` | 401 | `authentication_error` | no | — |
+| `permission` | 403 | `invalid_request_error` | no | `model_not_allowed` |
+| `not_found` | 404 | `invalid_request_error` | no | `model_not_found` |
+| `rate_limit` | 429 | `rate_limit_error` | yes | `rate_limit_exceeded` |
+| `server` | 502 | `server_error` | yes | — |
+| `timeout` | 504 | `server_error` | yes | `timeout` |
+
+"Retryable" here means the **router** retries it against the next candidate automatically — see
+[Routing](/docs/routing). A 503 with `Retry-After` and code `service_unavailable` is returned
+separately when a **dependency** (Postgres/Redis) is down, not a provider failure — see below.
+
+## Troubleshooting table
+
+| `code` | Status | What it means | How to fix |
+|---|---|---|---|
+| `model_not_found` | 404 | The public model has no enabled deployment for the requested operation. | Create a deployment for that `publicModel`, enable it, or check the operation (e.g. an image model can't serve chat). |
+| `model_not_allowed` | 403 | The virtual key's `allowedModels` does not include this model. | Add the model to the key's scope, or use a key that already has it. See [Virtual keys](/docs/virtual-keys). |
+| `unsupported_parameter` | 400 | Either an image/audio/embeddings/rerank parameter is outside the model's operation profile, **or** (chat-shaped only) every deployment in the pool lacks a parameter you sent under the `error` parameter-policy strategy. | Remove or adjust the parameter, or check `unsupportedParameterStrategy` — see [Parameter policy](/docs/parameter-policy). |
+| `unsupported_model_capability` | 400 | The request used a capability the model doesn't declare (tools, vision, reasoning, structured outputs). | Use a model whose catalog entry declares the capability, or drop the feature. |
+| `context_length_exceeded` | 400 | Input exceeds the model's context window. | Shorten the prompt or route to a larger-context model. Configure a `context_window` [fallback](/docs/fallbacks) to do this automatically. |
+| `content_policy_violation` | 400 | The provider blocked the request on content policy. | Adjust the content, or set a `content_policy` [fallback](/docs/fallbacks) to another model. |
+| `rate_limit_exceeded` | 429 | The virtual key's RPM/TPM limit, a deployment's own RPM/TPM limit, or the upstream's, was exceeded. | Back off using the `x-ratelimit-*` headers, raise the key's or deployment's limits, or add deployments to the pool. See [Routing](/docs/routing). |
+| `deployments_in_cooldown` | 503 | Every deployment circuit in the pool is temporarily open after transient/configuration failures. | Honor `Retry-After`, inspect deployment status and failed attempts, fix invalid configuration, or configure a `general` [fallback](/docs/fallbacks). |
+| `no_deployments_available` | varies | The pool (and any chain) was exhausted without a usable deployment. | Check provider keys and health; inspect the operation's upstream attempts (or `x-unified-routing-metadata`). |
+| `previous_response_not_found` | 400 | `previous_response_id` doesn't exist, expired, or belongs to a different virtual key. | Check the id and that you're using the same key that created it. See [Responses](/docs/responses). |
+| `extension_disabled` | 503 | A **critical** [runtime extension](/docs/extensions) tripped its failure breaker. | Fix the extension config and `POST /admin/extensions/{id}/reset`, or restart. Non-critical extensions are skipped, not fatal. |
+| `service_unavailable` | 503 | Postgres or Redis is unreachable; the request returns `Retry-After` instead of an opaque 500. | Transient — clients should honor `Retry-After` and retry. If persistent, check the dependency. |
+
+## Dependency outages
+
+When Postgres or Redis is down, in-flight inference requests return `503` with a `Retry-After` header
+(not a `500`), so well-behaved clients back off and retry. The readiness probe (`/health/ready`)
+returns `503` too, so a load balancer pulls the instance out until it recovers — without restarting
+it. See [Operations → Health](/docs/operations) for how to wire the probes.
+
+## Always log the request id
+
+Every response carries `x-request-id` (and echoes an inbound one if you send it). It is the join key
+between what the client saw and the encrypted forensic sample, when one was retained. When a user
+reports an error, capture that id first — it turns a generic public message into the exact upstream
+cause. See [Observability](/docs/observability).
+
+## Known issues
+
+Real, reproducible issues with their exact symptom and fix.
+
+### Bun may fail to connect to Postgres/Redis over self-signed TLS
+
+A **possible** issue, not a guaranteed one — you may or may not hit it depending on the certificate and
+the TLS endpoint. Worth knowing about because it is easy to misdiagnose.
+
+**Symptom.** The gateway (or `db:migrate`) fails to reach Postgres or Redis when the connection uses
+TLS with a **self-signed certificate** — most often a database or cache exposed by Coolify, Dokploy, or
+a hand-rolled Docker setup over a public port. When it happens, Bun's TLS stack reports:
+
+```
+error:1000009a:SSL routines:OPENSSL_internal:HANDSHAKE_FAILURE_ON_CLIENT_HELLO
+(ERR_SSL_HANDSHAKE_FAILURE_ON_CLIENT_HELLO)
+```
+
+It fails at the **ClientHello** — before any certificate verification — so `sslmode=require`,
+`rejectUnauthorized: false` and `NODE_TLS_REJECT_UNAUTHORIZED=0` make no difference.
+
+**Cause.** Bifrost runs on the **Bun** runtime, whose bundled TLS library (BoringSSL) **can**
+reject the handshake against some self-signed endpoints (reproduced with Coolify's self-signed
+Postgres and Redis certificates; it does not necessarily affect every self-signed setup). The same
+URLs connect fine under Node/OpenSSL and `openssl s_client`, and Bun's TLS works against **public-CA**
+endpoints (OpenAI, managed databases) — so when it does occur it is specific to self-signed
+certificates, not TLS in general.
+
+**Fix — keep TLS out of Bun's path. Pick one:**
+
+- **Private network, no TLS (recommended for self-hosting).** Run the gateway in the same private
+  network as Postgres/Redis and connect over plaintext: `postgres://…` (no `sslmode`) and `redis://…`
+  (not `rediss://`). On an isolated network the link is protected by network isolation, not TLS. This
+  is what every [Docker Compose deployment](/docs/deployment) does out of the box.
+- **Managed database with a public-CA certificate.** Providers like Neon, Aiven, Supabase (Postgres)
+  and Upstash (Redis) present publicly-trusted certificates, which Bun connects to without issue. See
+  [Setup → Managed database and Redis](/docs/setup#managed-database-and-redis).
+- **TLS-terminating proxy (stunnel).** If you must reach a self-signed endpoint over an untrusted
+  network from your own machine, run a local `stunnel` that speaks TLS upstream and exposes plaintext
+  on `localhost`, then point the gateway at `localhost`.
+
+> **Self-host note.** Coolify and Dokploy expose standalone databases with a self-signed certificate.
+> The simplest fix is to **disable SSL on both the Postgres and Redis services** (uncheck **Enable
+> SSL**) and connect over the private network with `postgres://…` and `redis://…` (no `sslmode`, not
+> `rediss://`). Inside the platform's private network this is both simpler and faster than TLS. See the
+> platform pages under [Deployment](/docs/deployment).
+
+#### Security note
+
+Plaintext is safe **on a private network**: the gateway and database share an
+isolated bridge that never touches the internet. It is **not** safe across the public internet —
+credentials and data travel unencrypted and an on-path attacker can read them. If your database is only
+reachable over a public port, use a managed provider with a public-CA certificate, or an stunnel
+tunnel, instead of plaintext.
+
+## What to read next
+
+- [Observability](/docs/observability) — finding a request by id, and what the log actually stores.
+- [Routing](/docs/routing) and [Fallbacks](/docs/fallbacks) — what happens after a retryable failure.
+- [Production checklist](/docs/production-checklist) — catching these before they're incidents.

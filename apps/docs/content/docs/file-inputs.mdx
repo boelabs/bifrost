@@ -1,0 +1,115 @@
+---
+title: "Content inputs"
+description: "Portable images, PDFs, JSON, and text attachments across contracts and transports."
+---
+
+Multimodal inputs travel through the canonical text pipeline instead of being tied to one public
+endpoint or provider. The gateway accepts:
+
+- Image URL/data-URL parts from Chat Completions, Responses, and Messages.
+- Chat Completions `type: "file"` parts (`file_id` or a base64 `file_data`; an HTTPS URL in
+  `file_data` is accepted for OpenRouter compatibility).
+- Responses `type: "input_file"` parts (`file_id`, `file_url`, or base64 `file_data`).
+- Messages `type: "document"` blocks with `base64`, `url`, or `file` sources.
+
+For every file part, exactly one source is required. A `file_id` belongs to the provider that created
+it; without a gateway Files API there is no safe way to replay that opaque identifier on another
+provider.
+
+## Portable routing
+
+The resolver is request-scoped and memoized. Every adapter transport declares a capability matrix for
+each canonical content kind (`image` and `file`) and source (`url`, `data_url`, or
+`provider_file_id`). The resolver then chooses the least destructive path for each routing candidate:
+
+1. Keep a native URL, data URL, or provider file reference when the transport accepts it.
+2. Materialize an HTTPS image or file URL once as base64 when the provider accepts inline data but not
+   external URLs. This is the compatibility baseline used by Gemini `generateContent`.
+3. Convert UTF-8 text formats to a text content part when the candidate has no native file input.
+4. Extract text from a text-based PDF for a non-native candidate.
+
+This makes a public model with heterogeneous deployments usable without claiming every upstream has
+the same document protocol. Model profiles that declare `modalities.input` further restrict native
+handling; the portable text path remains available when appropriate.
+
+## File parser plugin
+
+Chat Completions and Responses accept the OpenRouter-compatible `plugins` shape:
+
+```json
+{
+  "plugins": [
+    {
+      "id": "file-parser",
+      "pdf": { "engine": "auto" }
+    }
+  ]
+}
+```
+
+| Engine | Behavior |
+|---|---|
+| `auto` | Default. Prefer native document processing; use portable text extraction when the selected candidate is text-only. |
+| `native` | Require native file support. Incompatible deployments are removed before balancing. URL-to-base64 materialization is still allowed because it changes transport, not document semantics. |
+| `pdf-text` | Extract PDF text locally even when the candidate could process the PDF natively. Useful for predictable, text-only input. |
+
+The local parser does not perform OCR and does not preserve page images or visual layout. A scanned
+PDF with no extractable text returns `file_parser_no_text`; use `native` with a document-capable model
+or an external OCR service. The engine name deliberately describes that narrower behavior instead of
+pretending to provide the image-aware output of hosted OCR engines.
+
+## Example: Responses PDF URL
+
+```bash
+curl -X POST "$GATEWAY/v1/responses" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "general",
+    "input": [{
+      "role": "user",
+      "content": [
+        { "type": "input_file", "file_url": "https://assets.example/report.pdf" },
+        { "type": "input_text", "text": "Summarize the report." }
+      ]
+    }],
+    "plugins": [{ "id": "file-parser", "pdf": { "engine": "auto" } }]
+  }'
+```
+
+## Limits and URL handling
+
+Portable materialization is intentionally bounded:
+
+- 20 MB per image/file URL materialization or local parser input. Inline native inputs may be larger when the
+  declared transport allows it (up to the 50 MB gateway ceiling).
+- 50 MB combined per request.
+- 200 pages per locally parsed PDF.
+- 2,000,000 characters of extracted text.
+- 15 seconds per URL fetch and at most three redirects.
+- At most four concurrent URL fetches per request; output order always matches input order.
+
+Only public HTTPS URLs are fetched. Credentials and fragments are rejected, and every redirect and
+resolved address is checked against loopback, private, link-local, reserved, documentation, multicast,
+and other non-public ranges. Production deployments should still enforce an outbound network policy;
+application checks complement egress controls rather than replace them.
+
+Requests containing image, audio, or file inputs bypass the response cache: URL contents can change
+while the URL stays the same, and large base64 payloads are poor cache keys. Resolution activity is
+recorded in the operation's `metadata.contentInputs` field (native/parsed/materialized counts by content kind)
+without logging extracted content.
+
+## Why there is no gateway Files API yet
+
+Inline data and request-scoped URL resolution solve portable one-shot attachments without adding a
+storage lifecycle. A future `/v1/files` implementation should use database metadata plus object
+storage, explicit tenant ownership and retention, content hashes for parser reuse, and provider upload
+caches. Adding only an ID table or storing large binaries in Postgres would make the simple path more
+fragile rather than more compatible.
+
+The design follows the native-first/fallback-parser split documented by
+[OpenRouter PDF inputs](https://openrouter.ai/docs/guides/overview/multimodal/pdfs), while keeping the
+implemented engines local and explicit. Native wire details are based on the current
+[OpenAI file input](https://developers.openai.com/api/docs/guides/file-inputs),
+[Gemini document](https://ai.google.dev/gemini-api/docs/document-processing), and
+[Anthropic PDF](https://platform.claude.com/docs/en/build-with-claude/pdf-support) contracts.

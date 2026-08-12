@@ -1,0 +1,290 @@
+{
+	"$schema": "../../../schemas/model-catalog.schema.json",
+	"schemaVersion": 1,
+	"provider": {
+		"id": "deepseek",
+		"adapterKey": "deepseek",
+		"name": "DeepSeek",
+		"docs": [
+			"https://api-docs.deepseek.com/quick_start/pricing",
+			"https://api-docs.deepseek.com/api/create-chat-completion",
+			"https://api-docs.deepseek.com/guides/thinking_mode"
+		]
+	},
+	"models": {
+		"deepseek-v4-flash": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 384000,
+					"reasoning": {
+						"kind": "openai_body",
+						"levels": ["none", "high", "max"],
+						"bodyField": {
+							"param": "thinking",
+							"onValue": {
+								"type": "enabled"
+							},
+							"offValue": {
+								"type": "disabled"
+							}
+						},
+						"effortField": "reasoning_effort"
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"thinking": {
+							"mode": "supported",
+							"upstreamField": "thinking",
+							"values": ["enabled", "disabled"],
+							"notes": "Thinking defaults to enabled upstream; the gateway emits disabled when public effort is none."
+						},
+						"reasoning_effort": {
+							"mode": "mapped",
+							"values": ["high", "max"],
+							"notes": "DeepSeek supports native high/max; canonical xhigh stays distinct and snaps down to high."
+						},
+						"temperature": {
+							"mode": "ignored",
+							"notes": "Thinking mode does not use sampling parameters."
+						},
+						"frequency_penalty": true,
+						"include_reasoning": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_logprobs": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 14,
+				"outputCentsPerMTokens": 28,
+				"cacheReadCentsPerMTokens": 0.28
+			}
+		},
+		"deepseek-v4-pro": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 384000,
+					"reasoning": {
+						"kind": "openai_body",
+						"levels": ["none", "high", "max"],
+						"bodyField": {
+							"param": "thinking",
+							"onValue": {
+								"type": "enabled"
+							},
+							"offValue": {
+								"type": "disabled"
+							}
+						},
+						"effortField": "reasoning_effort"
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"thinking": {
+							"mode": "supported",
+							"upstreamField": "thinking",
+							"values": ["enabled", "disabled"]
+						},
+						"reasoning_effort": {
+							"mode": "mapped",
+							"values": ["high", "max"]
+						},
+						"temperature": {
+							"mode": "ignored",
+							"notes": "Thinking mode does not use sampling parameters."
+						},
+						"frequency_penalty": true,
+						"include_reasoning": true,
+						"logprobs": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_logprobs": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 43.5,
+				"outputCentsPerMTokens": 87,
+				"cacheReadCentsPerMTokens": 0.36
+			}
+		},
+		"deepseek-chat": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 16000,
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"top_p": true,
+						"frequency_penalty": true,
+						"stop": true,
+						"presence_penalty": true,
+						"response_format": true,
+						"structured_outputs": true,
+						"tools": true,
+						"tool_choice": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 20.02,
+				"outputCentsPerMTokens": 80.01,
+				"cacheReadCentsPerMTokens": 0.28
+			},
+			"deprecated": true,
+			"notes": "Deprecated compatibility alias for non-thinking mode of deepseek-v4-flash."
+		},
+		"deepseek-reasoner": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 393216,
+					"reasoning": {
+						"kind": "fixed",
+						"levels": ["high"]
+					},
+					"contracts": ["chat.completions"]
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 14,
+				"outputCentsPerMTokens": 28,
+				"cacheReadCentsPerMTokens": 0.28
+			},
+			"deprecated": true,
+			"notes": "Deprecated compatibility alias for thinking mode of deepseek-v4-flash."
+		},
+		"deepseek-r1": {
+			"operations": {
+				"text.generate": {
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true,
+						"top_p": true,
+						"frequency_penalty": true,
+						"presence_penalty": true,
+						"seed": true,
+						"top_k": true,
+						"repetition_penalty": true,
+						"response_format": true,
+						"structured_outputs": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"structuredOutputs": true
+					}
+				}
+			},
+			"pricing": {}
+		},
+		"deepseek-v3.2": {
+			"operations": {
+				"text.generate": {
+					"maxInputTokens": 128000,
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true,
+						"top_p": true,
+						"frequency_penalty": true,
+						"response_format": true,
+						"structured_outputs": true,
+						"logprobs": true,
+						"top_logprobs": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"structuredOutputs": true
+					}
+				}
+			},
+			"pricing": {}
+		},
+		"deepseek-v3.1-terminus": {
+			"operations": {
+				"text.generate": {
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true,
+						"top_p": true,
+						"frequency_penalty": true,
+						"presence_penalty": true,
+						"repetition_penalty": true,
+						"top_k": true,
+						"seed": true,
+						"min_p": true,
+						"response_format": true,
+						"logit_bias": true,
+						"structured_outputs": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"structuredOutputs": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 27
+			}
+		}
+	}
+}

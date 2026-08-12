@@ -1,0 +1,61 @@
+---
+title: "Upgrades"
+description: "How to roll out a new version safely: migrations, breaking changes, and rollback."
+---
+
+## Pulling a new image
+
+`docker-compose.yml`'s `migrate` service is a one-off job that applies pending SQL migrations and
+exits; the `gateway` service depends on it completing before it starts. Pulling a new image and
+re-running `docker compose up -d` (or your PaaS's redeploy) re-runs that job automatically — you don't
+need a separate manual migration step for the bundled Compose stack. If you run the gateway outside
+Compose, run `bun run --filter @boelabs/bifrost db:migrate` yourself before rolling out new
+instances.
+
+## Migrations are forward-only
+
+There is no `db:migrate:down`. Migrations in `src/db/migrations/` are never edited after being applied —
+a fix ships as a new migration, never a rewrite of an old one. This means:
+
+- **Rolling back the gateway image does not roll back the schema.** If a migration shipped with the
+  version you're rolling back from, the old code needs to still tolerate the new columns/enums (additive
+  changes are the norm specifically so this holds).
+- If a migration must be undone, that's a new forward migration that reverses it — plan for it the same
+  way you'd plan any other schema change, not as an emergency `DOWN`.
+
+## Pre-1.0 breaking changes
+
+Bifrost is pre-1.0: the adapter surface and admin API can still change in breaking ways between
+releases. Before upgrading in production:
+
+1. Read [`CHANGELOG.md`](https://github.com/boelabs/bifrost/blob/main/CHANGELOG.md) for the
+   versions between your current one and the target — entries are grouped `Added`/`Changed`/`Fixed`
+   per [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+2. Check whether any admin API request/response shape you depend on changed — the OpenAPI spec
+   (`apps/gateway/openapi.yaml`) is the source of truth; diff it against the version you're upgrading
+   from if you have automation built against it.
+3. If the release adds a router setting or catalog field with a new default (as router capabilities
+   did for `unsupportedParameterStrategy`), decide explicitly whether the default is what you want
+   rather than inheriting it silently — see [Routing](/docs/routing) and
+   [Parameter policy](/docs/parameter-policy).
+
+### Encryption-keyring baseline
+
+The keyring release is an intentional pre-1.0 reset, not a rolling-compatible encryption migration.
+Its forward migration removes v1-encrypted deployments, extension artifacts/instances, and retained
+payload samples; pending video jobs are expired so asset GC can finish cleanup. Back up the deployment
+and extension configuration before upgrading, configure `ENCRYPTION_KEYRING` and
+`ACTIVE_ENCRYPTION_KEY_ID`, then recreate those resources through the admin API. After this one-time
+baseline, ordinary key rotations are online and non-destructive through `encryption:rotate`.
+
+## Rolling back an image
+
+Redeploying a previous image is safe only when the release notes say its forward migrations remain
+compatible. Destructive pre-1.0 baselines, including the encryption-keyring reset, cannot be rolled
+back by changing the image tag. Restore a pre-upgrade database backup or ship a new forward migration;
+never rely on an image rollback to reverse data semantics.
+
+## What to read next
+
+- [Operations](/docs/operations) — the day-to-day runbook.
+- [Production checklist](/docs/production-checklist) — pre-launch verification.

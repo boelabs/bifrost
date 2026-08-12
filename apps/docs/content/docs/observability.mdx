@@ -1,0 +1,81 @@
+---
+title: "Observability"
+description: "Durable operation lifecycles, upstream attempts, structured logs, and OpenTelemetry."
+---
+
+Every public execution has two correlation keys: `x-request-id`, which may come from the client, and
+an internal `operationId`. Neither is used as a metric label. Application logs are structured JSON on
+stdout/stderr and include the request id, method, path, status, and duration.
+
+## Durable lifecycle
+
+The current observability model uses four tables:
+
+| Table | Purpose | Retention |
+|---|---|---|
+| `gateway_operations` | One row from request start through a verified terminal outcome. | 30 days operational target. |
+| `upstream_attempts` | One row per deployment interaction, inserted before the upstream call. | 30 days operational target. |
+| `payload_samples` | Redacted, AEAD-encrypted forensic samples. | 7 days by default. |
+| `payload_access_audit` | One immutable audit row for every forensic payload lookup, including misses. | Operator audit policy. |
+
+An operation is either `in_progress` or `finished`. Its outcome is `success`, `incomplete`, `blocked`,
+`error`, `cancelled`, `abandoned`, or `unknown`. `degraded` is orthogonal: a recovered retry or fallback
+is still successful but remains visible. A database constraint rejects new `success`, `incomplete`, or
+`blocked` rows unless `terminalVerified=true`.
+
+The stream supervisor records headers/first-event/first-reasoning/first-output timing, last progress,
+maximum inter-event gap, upstream/downstream bytes, frame classes, the physical transport terminator,
+and the normalized semantic terminal. EOF without a terminal, malformed JSON/SSE, duplicate
+terminals, and empty invalid responses are protocol errors. Only a verified terminal rewards
+deployment health.
+
+`GET /admin/logs` lists operation summaries. `GET /admin/logs/{operationId}` returns the operation and
+its complete attempt timeline. `GET /admin/observability/summary?window=5m|1h|24h` returns outcome,
+stall, retry, active/abandoned, and latency aggregates.
+
+Rerank request summaries record only the public model, document count and byte totals, `top_n`, and
+provider-option names. Response summaries contain only result count, indexes, usage, and cost. Query
+and document contents are never stored in normal rows. `searchUnits` is persisted on operations and
+attempts and included in `/admin/usage` aggregates.
+
+## Payload privacy
+
+Ordinary rows contain summaries and HMAC fingerprints, never request or response bodies. IP addresses
+and user agents are fingerprinted rather than stored verbatim. The versioned encryption keyring
+encrypts 1% of healthy successes by default and every degraded, incomplete, blocked, failed, or
+cancelled operation. Encryption and fingerprinting use separate, purpose-bound derived
+subkeys; request, response, error, and attempt components are each capped at 32 KiB after recursive
+secret-field redaction.
+
+`GET /admin/logs/{operationId}/payload` is master-only. Every lookup writes a durable audit row and
+emits a structured audit log, including missing samples and failed decryptions; successful retrievals
+also update the sample access timestamp. The gateway never falls back to plaintext.
+
+## OpenTelemetry
+
+OpenTelemetry is off by default. Enable it only after an OTLP collector is available:
+
+```bash
+OTEL_ENABLED=true
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+```
+
+The gateway exports the ingress-to-close operation span with routing, upstream-attempt, stream,
+render, and persistence children, plus low-cardinality counters, histograms, active gauges, queue
+depth, and persistence-loss metrics. Payload bodies are never emitted to OpenTelemetry. PostgreSQL,
+`/health/ready`, the observability summary, and structured JSON logs remain sufficient for the initial
+operating model.
+
+Rerank usage also increments `bifrost_search_units_total`; it remains independent from
+`bifrost_tokens_total`.
+
+## Initial alerts
+
+- Any successful/incomplete/blocked operation without a verified terminal, abandoned operation, or
+  persistence loss is critical.
+- Stalls above 2% over five minutes (minimum 20 requests), protocol errors above 1%, or p95 first
+  output above 25 seconds require investigation.
+- Degraded/retry above 5% and client cancellations above 5% are warnings.
+
+Use the request id supplied by the client to find the operation, then inspect its attempts and terminal
+timeline. See [Admin API](/docs/reference-admin-api) and [Routing](/docs/routing).

@@ -1,0 +1,369 @@
+{
+	"$schema": "../../../schemas/model-catalog.schema.json",
+	"schemaVersion": 1,
+	"provider": {
+		"id": "moonshot",
+		"adapterKey": "moonshot",
+		"name": "Moonshot AI / Kimi",
+		"docs": [
+			"https://platform.kimi.ai/docs/guide/kimi-k3-quickstart.md",
+			"https://platform.kimi.ai/docs/guide/kimi-k2-6-quickstart.md",
+			"https://platform.kimi.ai/docs/guide/kimi-k2-7-code-quickstart.md",
+			"https://platform.kimi.ai/docs/api/chat.md",
+			"https://platform.kimi.ai/docs/pricing/chat-k3.md",
+			"https://platform.kimi.ai/docs/pricing/chat-k26.md",
+			"https://platform.kimi.ai/docs/pricing/chat-k27-code.md",
+			"https://platform.kimi.ai/docs/pricing/chat.md"
+		]
+	},
+	"models": {
+		"kimi-k3": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 1048576,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["max"]
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"frequency_penalty": false,
+						"include_reasoning": true,
+						"max_completion_tokens": true,
+						"max_tokens": true,
+						"n": false,
+						"parallel_tool_calls": false,
+						"presence_penalty": false,
+						"prompt_cache_key": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"safety_identifier": true,
+						"seed": false,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": false,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": false,
+						"user": false
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 300,
+				"outputCentsPerMTokens": 1500,
+				"cacheReadCentsPerMTokens": 30
+			}
+		},
+		"kimi-k2.7-code": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 262144,
+					"maxOutputTokens": 32768,
+					"reasoning": {
+						"kind": "fixed",
+						"levels": ["high"]
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"thinking": {
+							"mode": "supported",
+							"upstreamField": "thinking",
+							"values": ["enabled"],
+							"notes": "Kimi K2.7 Code is always thinking; disabling thinking returns an error."
+						},
+						"temperature": {
+							"mode": "mapped",
+							"values": [1],
+							"notes": "Fixed at 1.0; other values return an error."
+						},
+						"top_p": {
+							"mode": "mapped",
+							"values": [0.95]
+						},
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["auto", "none"],
+							"notes": "Thinking mode only supports auto or none."
+						},
+						"frequency_penalty": true,
+						"include_reasoning": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"tools": true,
+						"repetition_penalty": true,
+						"top_k": true,
+						"seed": true,
+						"min_p": true,
+						"logit_bias": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 95,
+				"outputCentsPerMTokens": 400,
+				"cacheReadCentsPerMTokens": 19
+			}
+		},
+		"kimi-k2.7-code-highspeed": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 262144,
+					"maxOutputTokens": 32768,
+					"reasoning": {
+						"kind": "fixed",
+						"levels": ["high"]
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"thinking": {
+							"mode": "supported",
+							"upstreamField": "thinking",
+							"values": ["enabled"],
+							"notes": "HighSpeed uses the same model/parameters as Kimi K2.7 Code and cannot disable thinking."
+						},
+						"temperature": {
+							"mode": "mapped",
+							"values": [1]
+						},
+						"top_p": {
+							"mode": "mapped",
+							"values": [0.95]
+						},
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["auto", "none"]
+						},
+						"max_tokens": true,
+						"stop": true,
+						"tools": true,
+						"reasoning": true,
+						"include_reasoning": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 190,
+				"outputCentsPerMTokens": 800,
+				"cacheReadCentsPerMTokens": 38
+			}
+		},
+		"kimi-k2.6": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 262144,
+					"maxOutputTokens": 262144,
+					"reasoning": {
+						"kind": "openai_body",
+						"levels": ["none", "high"],
+						"bodyField": {
+							"param": "thinking",
+							"onValue": {
+								"type": "enabled"
+							},
+							"offValue": {
+								"type": "disabled"
+							}
+						}
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"thinking": {
+							"mode": "supported",
+							"upstreamField": "thinking",
+							"values": ["enabled", "disabled"]
+						},
+						"temperature": {
+							"mode": "mapped",
+							"values": [1, 0.6],
+							"notes": "Thinking mode uses fixed 1.0; non-thinking mode uses fixed 0.6."
+						},
+						"top_p": {
+							"mode": "mapped",
+							"values": [0.95]
+						},
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["auto", "none"],
+							"notes": "With thinking enabled, tool_choice is limited to auto or none."
+						},
+						"frequency_penalty": true,
+						"include_reasoning": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"tools": true,
+						"logprobs": true,
+						"top_logprobs": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 95,
+				"outputCentsPerMTokens": 400,
+				"cacheReadCentsPerMTokens": 16
+			}
+		},
+		"kimi-k2.5": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 262144,
+					"maxOutputTokens": 32768,
+					"reasoning": {
+						"kind": "openai_body",
+						"levels": ["none", "high"],
+						"bodyField": {
+							"param": "thinking",
+							"onValue": {
+								"type": "enabled"
+							},
+							"offValue": {
+								"type": "disabled"
+							}
+						}
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"thinking": {
+							"mode": "supported",
+							"upstreamField": "thinking",
+							"values": ["enabled", "disabled"]
+						},
+						"frequency_penalty": true,
+						"include_reasoning": true,
+						"max_tokens": true,
+						"presence_penalty": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"temperature": true,
+						"top_p": true,
+						"logprobs": true,
+						"top_logprobs": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 60,
+				"outputCentsPerMTokens": 300,
+				"cacheReadCentsPerMTokens": 10
+			}
+		},
+		"kimi-latest": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 131072,
+					"maxOutputTokens": 16384
+				}
+			}
+		},
+		"kimi-k2": {
+			"operations": {
+				"text.generate": {
+					"maxInputTokens": 131072,
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"top_p": true,
+						"frequency_penalty": true,
+						"presence_penalty": true,
+						"seed": true,
+						"top_k": true,
+						"repetition_penalty": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"structuredOutputs": false
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 57,
+				"outputCentsPerMTokens": 230
+			}
+		},
+		"kimi-k2-thinking": {
+			"operations": {
+				"text.generate": {
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true,
+						"top_p": true,
+						"top_k": true,
+						"min_p": true,
+						"frequency_penalty": true,
+						"presence_penalty": true,
+						"repetition_penalty": true,
+						"seed": true,
+						"logit_bias": true,
+						"response_format": true,
+						"structured_outputs": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"structuredOutputs": true
+					}
+				}
+			},
+			"pricing": {}
+		}
+	}
+}

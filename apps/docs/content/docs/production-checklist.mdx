@@ -1,0 +1,68 @@
+---
+title: "Production checklist"
+description: "What to verify before pointing real traffic at a deployment."
+---
+
+A condensed checklist. Each item links to the page with the full explanation.
+
+## Secrets
+
+- [ ] `MASTER_KEY` and every `ENCRYPTION_KEYRING` value are strong, unique per environment, and live in a
+  secret manager — not in the image, not in git, not in the Compose file's defaults.
+  `compose.local.yaml`'s secrets are development-only; the production `docker-compose.yml` base ships
+  both empty and refuses to start until you set them. See [Security](/docs/security).
+- [ ] You have a rotation plan for both, and know the leaked-secret procedure —
+  [Operations → Secrets](/docs/operations#secrets).
+
+## Network and TLS
+
+- [ ] Postgres and Redis connections use a public-CA certificate, or a private network without TLS.
+  **Bun's TLS implementation rejects self-signed certificates** — a raw Coolify/Dokploy-exposed port
+  commonly hits this. See [Known errors](/docs/troubleshooting#bun-tls-and-self-signed-certificates).
+- [ ] Only the gateway (and optionally the docs site) is exposed through your reverse proxy; Postgres
+  and Redis stay on the internal network. See [Deployment](/docs/deployment).
+
+## Health and scaling
+
+- [ ] Liveness probe → `GET /health/live` (no dependency checks — never point liveness at a
+  dependency-aware endpoint, or a Postgres/Redis blip restarts every replica at once).
+- [ ] Readiness probe → `GET /health/ready` (pulls an unhealthy instance from the load balancer without
+  restarting it).
+- [ ] Your orchestrator gives the container at least `SHUTDOWN_TIMEOUT_MS` to drain on `SIGTERM`.
+- [ ] Replicas are safe to scale horizontally; shared quotas/circuits are in Redis and maintenance work
+  is idempotent or transactionally claimed. See [Operations](/docs/operations).
+
+## Data lifecycle
+
+- [ ] `db:migrate` runs as a one-off step before rolling out new instances (the Compose stack does this
+  automatically via its migration job).
+- [ ] `OBSERVABILITY_METADATA_RETENTION_DAYS`, `OBSERVABILITY_PAYLOAD_RETENTION_DAYS`, and
+  `RESPONSES_STATE_RETENTION_DAYS` match your actual compliance/storage requirements.
+- [ ] You have a Postgres backup schedule. Redis needs none (fully rebuildable ephemeral state). See
+  [Operations → Backups](/docs/operations#backups).
+
+## Observability
+
+- [ ] `OTEL_ENABLED=true` with a real `OTEL_EXPORTER_OTLP_ENDPOINT` if you want traces/metrics —
+  disabled by default.
+- [ ] The encryption keyring is backed up and its rotation procedure is rehearsed; the gateway never
+  emits payload bodies to OTel. See [Security](/docs/security#observability-payloads).
+- [ ] Logs (structured JSON on stdout) are shipped to a collector.
+
+## Routing and resilience
+
+- [ ] `PUT /admin/router-settings` reflects real choices, not silent defaults — especially
+  `unsupportedParameterStrategy` (default `drop`, which silently strips parameters; `error` may be safer
+  for a strict client). See [Routing](/docs/routing) and [Parameter policy](/docs/parameter-policy).
+- [ ] Every Public Model you rely on has more than one deployment, or an explicit acceptance that it
+  has none. See [Fallbacks](/docs/fallbacks) for pool-exhaustion behavior.
+
+## Dependencies
+
+- [ ] `bun audit --production` is clean (CI enforces this at `--audit-level=high`, but re-check after
+  adding any runtime extension dependency).
+
+## What to read next
+
+- [Upgrades](/docs/upgrades) — what changes between releases and how to roll one out safely.
+- [Operations](/docs/operations) — the full runbook behind this checklist.

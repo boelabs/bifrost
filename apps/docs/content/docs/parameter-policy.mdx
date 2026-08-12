@@ -1,0 +1,75 @@
+---
+title: "Parameter policy"
+description: "How the gateway handles a request parameter the selected model doesn't support."
+---
+
+Different models support different request parameters — one provider accepts `seed`, another doesn't;
+one accepts `parallel_tool_calls`, another ignores it silently upstream (which is worse than an error).
+The catalog declares, per model, which parameters are supported, and a global router setting decides
+what happens when a client sends one that isn't.
+
+This only applies to the **chat-shaped** endpoints — `/v1/chat/completions`, `/v1/messages`, and
+`/v1/responses`. Images, embeddings, and audio transcriptions validate their own parameters against the
+catalog profile unconditionally (always a hard `400 unsupported_parameter`); there is no configurable
+strategy for them, because those requests don't get routed across a heterogeneous pool the same way.
+
+## Declaring support in the catalog
+
+Each model's `operations["text.generate"].parameters` map marks every parameter it recognizes:
+
+```json
+"parameters": {
+  "seed": true,
+  "parallel_tool_calls": false,
+  "temperature": { "mode": "range", "min": 0, "max": 1.5 },
+  "response_format": { "mode": "mapped", "upstreamField": "text.format" }
+}
+```
+
+A bare `true`/`false` means supported/unsupported. An object refines it: `mode` (`supported`,
+`unsupported`, `ignored`, `range`, `mapped`), with `min`/`max`/`values` as the accepted range or enum,
+`upstreamField` when the wire name differs from the canonical one, and `notes` for anything
+provider-specific. A parameter absent from the map is treated as **unknown**, not unsupported — the
+gateway doesn't reject on missing catalog data, only on an *explicit* `unsupported`/`ignored` mode.
+
+## The three strategies
+
+Set globally with `PUT /admin/router-settings` (`unsupportedParameterStrategy`); there is no per-model
+or per-request override.
+
+| Strategy | Behavior |
+|---|---|
+| `drop` (default) | Strip the unsupported parameter(s) from the request before sending it upstream to the **chosen** deployment. The request still succeeds. |
+| `error` | Exclude any deployment that doesn't support a requested parameter from candidacy **before** routing. If the pool has another deployment that does support it, the request is served by that one — silently, no error. Only if **every** deployment in the pool lacks the parameter does the client get a `400 unsupported_parameter`. |
+| `allow` | Forward the parameter as-is. The upstream provider decides — it may ignore it, error, or (worst case) silently misbehave. |
+
+`error`'s per-candidate exclusion means it behaves less like "reject this request" and more like "only
+route this request where it'll actually work" — a pool with mixed-capability deployments (e.g. one
+model that supports `seed` and one that doesn't) keeps serving requests that need it, as long as at
+least one deployment can.
+
+## Seeing what happened
+
+- **`drop`**: the response includes `unified_routing.unsupported_parameter_strategy` (when
+  `x-unified-routing-metadata` is requested — see [Headers](/docs/headers)); the operation log's
+  `parameterPolicy` field records exactly which parameter names were dropped for that request, so
+  dropped-silently is still auditable after the fact.
+- **`error`**: the client either gets a normal response (routed around the gap) or a `400` naming the
+  first unsupported parameter as `param`.
+- **`allow`**: whatever the upstream provider returns.
+
+## Configuring it
+
+```bash
+curl -X PUT "$GATEWAY/admin/router-settings" \
+  -H "Authorization: Bearer $MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "unsupportedParameterStrategy": "error" }'
+```
+
+## What to read next
+
+- [Routing](/docs/routing) — the other global router setting, orthogonal to this one.
+- [Headers](/docs/headers) — `x-unified-routing-metadata` response shape.
+- [Model catalog](/docs/model-catalog) — the full `parameters` map schema.
+- [Troubleshooting](/docs/troubleshooting) — the `unsupported_parameter` error code.

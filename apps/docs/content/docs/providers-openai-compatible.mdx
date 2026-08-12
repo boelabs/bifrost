@@ -1,0 +1,38 @@
+---
+title: "OpenAI-compatible"
+description: "Adapter key openaicompatible. For self-hosted or third-party APIs that speak the OpenAI wire format."
+---
+
+The escape hatch for any API that speaks OpenAI's Chat Completions (or compatible Images/Embeddings)
+contract but isn't one of the named providers — self-hosted vLLM/SGLang deployments, aggregators, or a
+provider Bifrost doesn't have a dedicated adapter for yet.
+
+```json
+{
+  "publicModel": "my-model",
+  "adapterKey": "openaicompatible",
+  "upstreamModel": "some-vendor/some-model",
+  "credentials": { "apiKey": "...", "baseUrl": "https://api.vendor.example/v1" }
+}
+```
+
+- **Credentials**: `apiKey`, `baseUrl` (both required — there's no built-in default host).
+- **Default transport**: Chat Completions for text, `images` for image generate/edit, `videos` for
+  OpenAI-shaped video APIs, and `embeddings` for embeddings.
+- **Compatibility goal**: this adapter covers the common OpenAI-shaped surface and stays extensible
+  through `catalogEntry`, `transportOverrides`, and `credentials.headers`. It does not promise perfect
+  behavior for every aggregator quirk or proprietary OpenAI feature.
+- Since the gateway can't know this model's real capabilities, **`catalogEntry` is required** — declare
+  `operations`, `capabilities`, and `parameters` by hand. See [Model catalog](/docs/model-catalog) and
+  the custom-model example in [Creating deployments](/docs/creating-deployments).
+- **Aggregators and hosted compatible APIs** use this same adapter with an explicit `baseUrl`. If an
+  operation needs a provider-specific transport shape, set
+  `transportOverrides` explicitly, such as `image.generate: "chat_completions"` or
+  `video.generate: "videos_async"`.
+- If the target speaks vLLM/SGLang-style thinking controls (`chat_template_kwargs`), declare
+  `reasoning.kind: "chat_template_flag"` in the custom catalog entry — see [Reasoning](/docs/reasoning).
+
+## What to read next
+
+- [Creating deployments](/docs/creating-deployments) — the full custom-model example.
+- [Model catalog](/docs/model-catalog) — the catalog entry a custom model must declare.

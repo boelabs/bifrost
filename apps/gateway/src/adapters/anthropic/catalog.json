@@ -1,0 +1,622 @@
+{
+	"$schema": "../../../schemas/model-catalog.schema.json",
+	"schemaVersion": 1,
+	"provider": {
+		"id": "anthropic",
+		"adapterKey": "anthropic",
+		"name": "Anthropic",
+		"docs": [
+			"https://platform.claude.com/docs/en/about-claude/models/overview",
+			"https://platform.claude.com/docs/en/about-claude/pricing"
+		]
+	},
+	"models": {
+		"claude-opus-5": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"reasoning": {
+						"kind": "anthropic_adaptive",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"verbosity": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 128000
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 500,
+				"outputCentsPerMTokens": 2500,
+				"cacheReadCentsPerMTokens": 50,
+				"cacheWriteCentsPerMTokens": 625
+			}
+		},
+		"claude-opus-4-8": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"reasoning": {
+						"kind": "anthropic_adaptive",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"verbosity": true,
+						"temperature": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 128000
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 500,
+				"outputCentsPerMTokens": 2500,
+				"cacheReadCentsPerMTokens": 50,
+				"cacheWriteCentsPerMTokens": 625
+			}
+		},
+		"claude-opus-4-7": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"reasoning": {
+						"kind": "anthropic_adaptive",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"verbosity": true,
+						"temperature": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 128000
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 500,
+				"outputCentsPerMTokens": 2500,
+				"cacheReadCentsPerMTokens": 50,
+				"cacheWriteCentsPerMTokens": 625
+			}
+		},
+		"claude-opus-4-6": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"reasoning": {
+						"kind": "anthropic_adaptive",
+						"levels": ["none", "low", "medium", "high", "max"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true,
+						"verbosity": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 128000
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 500,
+				"outputCentsPerMTokens": 2500,
+				"cacheReadCentsPerMTokens": 50,
+				"cacheWriteCentsPerMTokens": 625
+			}
+		},
+		"claude-sonnet-5": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"reasoning": {
+						"kind": "anthropic_adaptive",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"verbosity": true,
+						"temperature": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 128000
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 20,
+				"cacheWriteCentsPerMTokens": 250
+			}
+		},
+		"claude-sonnet-4-6": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"reasoning": {
+						"kind": "anthropic_adaptive",
+						"levels": ["none", "low", "medium", "high", "max"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true,
+						"verbosity": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 128000
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 300,
+				"outputCentsPerMTokens": 1500,
+				"cacheReadCentsPerMTokens": 30,
+				"cacheWriteCentsPerMTokens": 375
+			}
+		},
+		"claude-fable-5": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"reasoning": {
+						"kind": "anthropic_adaptive",
+						"levels": ["low", "medium", "high", "xhigh", "max"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"verbosity": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 128000
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 1000,
+				"outputCentsPerMTokens": 5000,
+				"cacheReadCentsPerMTokens": 100,
+				"cacheWriteCentsPerMTokens": 1250
+			}
+		},
+		"claude-mythos-5": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"reasoning": {
+						"kind": "anthropic_adaptive",
+						"levels": ["low", "medium", "high", "xhigh", "max"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 1000,
+				"outputCentsPerMTokens": 5000,
+				"cacheReadCentsPerMTokens": 100,
+				"cacheWriteCentsPerMTokens": 1250
+			}
+		},
+		"claude-sonnet-4-5": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"reasoning": {
+						"kind": "anthropic_budget",
+						"levels": ["none", "low", "medium", "high", "xhigh"],
+						"budgets": {
+							"low": 2048,
+							"medium": 8192,
+							"high": 16000,
+							"xhigh": 32000
+						}
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_k": true,
+						"top_p": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 64000
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 300,
+				"outputCentsPerMTokens": 1500,
+				"cacheReadCentsPerMTokens": 30,
+				"cacheWriteCentsPerMTokens": 375
+			}
+		},
+		"claude-opus-4-8-fast": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"reasoning": {
+						"kind": "anthropic_adaptive",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 128000,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"verbosity": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 1000,
+				"outputCentsPerMTokens": 5000,
+				"cacheReadCentsPerMTokens": 100,
+				"cacheWriteCentsPerMTokens": 1250
+			}
+		},
+		"claude-opus-5-fast": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"reasoning": {
+						"kind": "anthropic_adaptive",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 128000,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"verbosity": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 1000,
+				"outputCentsPerMTokens": 5000,
+				"cacheReadCentsPerMTokens": 100,
+				"cacheWriteCentsPerMTokens": 1250
+			},
+			"notes": "Gateway fast-mode alias for claude-opus-5. The adapter sends speed=\"fast\" with the required beta header; Anthropic access is required."
+		},
+		"claude-opus-4-7-fast": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"reasoning": {
+						"kind": "anthropic_adaptive",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 128000,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"verbosity": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 3000,
+				"outputCentsPerMTokens": 15000,
+				"cacheReadCentsPerMTokens": 300,
+				"cacheWriteCentsPerMTokens": 3750
+			},
+			"deprecated": true,
+			"notes": "Anthropic removed fast mode for Claude Opus 4.7 on July 24, 2026. Use claude-opus-5-fast or claude-opus-4-8-fast."
+		},
+		"claude-opus-4-5": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 200000,
+					"maxOutputTokens": 64000,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"verbosity": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 500,
+				"outputCentsPerMTokens": 2500,
+				"cacheReadCentsPerMTokens": 50,
+				"cacheWriteCentsPerMTokens": 625
+			}
+		},
+		"claude-haiku-4-5": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 200000,
+					"maxOutputTokens": 64000,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_k": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 100,
+				"outputCentsPerMTokens": 500,
+				"cacheReadCentsPerMTokens": 10,
+				"cacheWriteCentsPerMTokens": 125
+			}
+		},
+		"claude-opus-4-1": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 200000,
+					"maxOutputTokens": 32000,
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 1500,
+				"outputCentsPerMTokens": 7500,
+				"cacheReadCentsPerMTokens": 150,
+				"cacheWriteCentsPerMTokens": 1875
+			}
+		},
+		"claude-3-haiku": {
+			"operations": {
+				"text.generate": {
+					"maxInputTokens": 200000,
+					"maxOutputTokens": 4096,
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"top_p": true,
+						"top_k": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"structuredOutputs": false
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 25,
+				"outputCentsPerMTokens": 125,
+				"cacheReadCentsPerMTokens": 3,
+				"cacheWriteCentsPerMTokens": 30
+			}
+		},
+		"claude-opus-4": {
+			"operations": {
+				"text.generate": {
+					"maxInputTokens": 200000,
+					"maxOutputTokens": 32000,
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true,
+						"top_p": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"structuredOutputs": false
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 1500,
+				"outputCentsPerMTokens": 7500,
+				"cacheReadCentsPerMTokens": 150,
+				"cacheWriteCentsPerMTokens": 1875
+			}
+		},
+		"claude-sonnet-4": {
+			"operations": {
+				"text.generate": {
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 64000,
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true,
+						"top_p": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"structuredOutputs": false
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 300,
+				"outputCentsPerMTokens": 1500,
+				"cacheReadCentsPerMTokens": 30,
+				"cacheWriteCentsPerMTokens": 375
+			}
+		}
+	}
+}

@@ -1,0 +1,78 @@
+---
+title: "Architecture"
+description: "The full request pipeline, in execution order, with where each decision lives in the code."
+---
+
+[Concepts](/docs/concepts) defines the vocabulary (Public Endpoint, Public Model, Deployment, Adapter,
+Transport, Canonical). This page is the same request, traced through every layer in the exact order it
+actually executes, for a chat-shaped call (`/v1/chat/completions`, `/v1/messages`, `/v1/responses`) —
+the richest path. Images, embeddings, and audio transcriptions follow the same shape minus the pieces
+that don't apply to them (parameter policy, response caching).
+
+```
+1.  requestContextMiddleware   — assigns/echoes x-request-id (before anything else, so every log line
+                                 and every error response can carry it)
+2.  logger()                   — structured request/response log line
+3.  authMiddleware()           — resolves Bearer/x-api-key to master or virtual key ("/v1/*" only;
+                                 "/admin/*" has its own master-key-only check)
+4.  body + contract -> canonical — bounded streaming read, schema validation, then conversion into
+                                   CanonicalChatRequest
+5.  preflight()                — original-model scope and virtual-key RPM/current-balance checks
+6.  onCanonicalRequest hook    — every enabled extension instance, in priority order
+7.  final-model scope check    — prevents an extension rewrite from escaping the key's scope
+8.  response cache lookup      — virtual-key only, only if eligible (no stream/tools/server-side
+                                 state) and x-unified-cache was sent; a HIT returns here, skipping
+                                 every step below
+9.  parameter-policy eligibility — "error" strategy only: excludes candidates lacking a requested
+                                 parameter before routing even starts
+10. routing                    — candidate choice, atomic deployment RPM/TPM admission, and atomic
+                                 virtual-key TPM/budget reservation; then retries/cooldowns/fallbacks;
+                                 "drop"/"allow" parameter policy applied to the request actually sent
+                                 to the CHOSEN deployment, not before
+11. adapter execution           — canonical -> upstream wire format -> canonical response
+12. onCanonicalResponse /       — per full response, or per chunk while streaming
+    onStreamEvent hooks
+13. onImageOutput hook          — image endpoints only, after upstream bytes are decoded
+14. quota reconciliation        — reserved TPM/budget becomes provider-reported usage and exact cost
+15. response cache store        — on a MISS, persists the now-complete response
+16. operation log write         — cacheHit, parameterPolicy (dropped params), reasoning
+                                 (requested vs. effective effort), routing attempts, cost — all in
+                                 one row
+17. onError hook                — only on failure, anywhere above; never replaces the original error
+```
+
+## Why this order, specifically
+
+- **Auth before everything model-specific** — a request with no valid key never reaches model-scope
+  checks, rate limiting, or routing. Rejecting early is cheaper and leaks less information.
+- **Cache lookup happens after the request is already canonical, but before routing** — a cache hit
+  never touches the router, never counts toward any deployment's RPM/TPM, and never runs
+  `onCanonicalResponse`/`onStreamEvent` (there's nothing new to hook; the stored response was already
+  hooked once, on the request that created the cache entry). It also **skips cost accounting
+  entirely** — logged with `cost: null`, no spend or TPM recorded — so from the client's perspective a
+  cache hit is a normal response, just fast and free.
+- **Parameter-policy eligibility runs before deployment selection, but the "drop"/"allow" rewrite runs
+  after** — "error" needs to know which candidates even qualify before the router picks one; "drop"
+  only makes sense once you know which specific deployment's parameter map to strip against. See
+  [Parameter policy](/docs/parameter-policy).
+- **Extensions wrap the canonical layer, not the wire layer** — `onCanonicalRequest`/
+  `onCanonicalResponse` see the same shape regardless of which public endpoint or provider is involved,
+  which is what lets one hook (a PII filter, a watermark) work identically across
+  `/v1/chat/completions`, `/v1/responses`, and `/v1/messages`. See [Extensions](/docs/extensions).
+- **Cost accounting and the operation log run after everything succeeds (or in the error path for
+  failures)** — the log is the single place all of the above becomes observable after the fact:
+  what was cached, what was dropped, what reasoning effort was actually applied, which deployments were
+  tried and in what order.
+
+## Where this lives in code
+
+`src/index.ts` wires the global middleware (steps 1–3); `src/endpoints/runtime/pipeline.ts` provides
+the shared preflight/cache/extension/quota helpers every endpoint calls; `src/router/index.ts` owns
+atomic admission and exact settlement; `src/extensions/runtime.ts` implements hook dispatch.
+
+## What to read next
+
+- [Concepts](/docs/concepts) — the vocabulary this pipeline is built from.
+- [Routing](/docs/routing) and [Parameter policy](/docs/parameter-policy) — steps 8–9 in depth.
+- [Extensions](/docs/extensions) — steps 6, 11, 12, 16 in depth.
+- [Caching](/docs/caching) — step 7 in depth.

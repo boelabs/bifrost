@@ -1,0 +1,95 @@
+---
+title: "Provider-specific fields"
+description: "How opaque provider state (Gemini thought signatures, OpenAI encrypted reasoning) round-trips statelessly through clients."
+---
+
+Some providers attach opaque state to their responses that must be sent back verbatim on the next
+turn. The gateway round-trips that state **through the client, with no server-side storage**. Two
+kinds exist today:
+
+- **Tool-call-bound state** — Gemini thought signatures. Gemini 3 rejects a follow-up request whose
+  replayed function calls lack their `thoughtSignature` (`400 INVALID_ARGUMENT`).
+- **Message-bound state** — OpenAI encrypted reasoning (`reasoning` items with `encrypted_content`),
+  which improves multi-turn tool-use quality when replayed.
+
+## Thought signatures (tool-call-bound)
+
+When an upstream tool call carries a thought signature, the gateway embeds it in the **public tool
+call id**, LiteLLM-compatible:
+
+```
+<id>__thought__<signature>
+```
+
+The suffixed id appears as `tool_calls[].id` on `/v1/chat/completions`, as `function_call.call_id`
+on `/v1/responses`, and as `tool_use.id` on `/v1/messages` (non-stream and streaming). Because every
+standard client echoes tool call ids verbatim — even clients that drop unknown fields, like the
+Vercel AI SDK — the signature survives the round trip without the client understanding anything.
+
+The signature is also mirrored on the rendered tool call for rich clients:
+
+```json
+{
+  "id": "call_1__thought__EjQKMg...",
+  "type": "function",
+  "function": { "name": "get_weather", "arguments": "{}" },
+  "extra_content": { "google": { "thought_signature": "EjQKMg..." } },
+  "provider_specific_fields": { "thought_signature": "EjQKMg..." }
+}
+```
+
+Message/response level additionally aggregates `provider_specific_fields.thought_signatures: [...]`.
+
+### Inbound precedence
+
+On replay the gateway accepts the signature in any of three forms, merged in this order (later
+sources win per key):
+
+1. The `__thought__` id suffix (on `tool_calls[].id`, `function_call.call_id` or `function_call.id`,
+   `tool_use.id`).
+2. `provider_specific_fields.thought_signature` on the tool call / `tool_use` block.
+3. `extra_content.google.thought_signature` (OpenAI-shaped surfaces only).
+
+The suffix is stripped before anything reaches an upstream: adapters always see clean ids, and
+tool-result references (`tool_call_id`, `function_call_output.call_id`, `tool_result.tool_use_id`)
+are stripped symmetrically so call/result matching keeps working.
+
+### Notes
+
+- Signatures are standard base64 (`A-Za-z0-9+/=`), which cannot contain `_` — the separator is
+  unambiguous.
+- Ids can exceed 64 characters. The gateway never truncates this lossless carrier; clients that
+  truncate tool call ids would lose the signature. LiteLLM uses the same scheme in production.
+- With parallel function calls Gemini may sign only the first call; only signed calls get a suffix.
+- For migrated or already-persisted Gemini 3 history where every carrier is missing, the Google
+  adapter applies Google's documented `skip_thought_signature_validator` sentinel to the first
+  function call in that step. Exact signatures are always preferred; the sentinel is only a
+  compatibility recovery path at the provider boundary.
+
+## OpenAI encrypted reasoning (message-bound)
+
+For reasoning-capable OpenAI models the gateway requests
+`include: ["reasoning.encrypted_content"]` upstream and always calls the upstream with
+`store: false` (OpenAI only returns encrypted reasoning for unstored responses; the gateway never
+uses persisted upstream storage). A live Responses WebSocket may use OpenAI's connection-local
+previous-response cache, but public and upstream response ids remain separate.
+
+Per surface:
+
+- **`/v1/responses`** — encrypted reasoning is rendered as native `reasoning` output items
+  (`encrypted_content` included even without an explicit `include`, so default `store:false` replay
+  flows work). Clients that replay output items — the Vercel AI SDK does — round-trip it
+  automatically; on input, `reasoning` items with `encrypted_content` are replayed upstream before
+  the function calls they precede.
+- **`/v1/chat/completions`** — carried as message-level
+  `provider_specific_fields: { "openai": { "reasoning": [{ "id", "encrypted_content", "summary" }] } }`
+  on the assistant message (and streaming delta). Standard clients drop this field, so encrypted
+  reasoning does not round-trip for them on this surface — same limitation as LiteLLM.
+- **`/v1/messages`** — not supported: the Anthropic wire format has no message-level extension field
+  that clients echo.
+
+## Storage
+
+None of this uses the database. The `response_states` table only persists responses the client
+explicitly stores (`store: true` on `/v1/responses`) for `previous_response_id` / `item_reference`
+chaining.
