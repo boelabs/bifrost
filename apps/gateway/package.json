@@ -68,7 +68,7 @@
 		"@t3-oss/env-core": "0.13.11",
 		"busboy": "1.6.0",
 		"drizzle-orm": "0.45.2",
-		"hono": "4.12.33",
+		"hono": "4.12.34",
 		"ioredis": "6.0.0",
 		"postgres": "3.4.9",
 		"sharp": "0.35.3",
