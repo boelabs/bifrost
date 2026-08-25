@@ -4,7 +4,7 @@ import { makeAzurev1Adapter } from "#adapters/azurev1.ts";
 
 const LABEL = "Azure OpenAI v1";
 
-/** Chat, Responses, embeddings, and transcriptions use Azure's OpenAI-compatible v1 surface. */
+/** Chat, Responses, and embeddings use Azure's OpenAI-compatible v1 surface. */
 const base = makeAzurev1Adapter({
 	key: "azureopenai",
 	label: LABEL,
@@ -27,7 +27,7 @@ const base = makeAzurev1Adapter({
 	embeddings: true,
 });
 
-/** Modern Azure OpenAI, with an explicit legacy transcription transport for compatibility. */
+/** Azure OpenAI with classic audio transcriptions and an explicit v1 audio opt-in. */
 export const azureopenaiAdapter: Adapter = {
 	...base,
 	supportedCallTypes: new Set([
@@ -38,8 +38,8 @@ export const azureopenaiAdapter: Adapter = {
 	transports: {
 		...base.transports,
 		"audio.transcriptions": {
-			supported: ["audio_transcriptions", "azure_audio_transcriptions_legacy"],
-			default: "audio_transcriptions",
+			supported: ["azure_audio_transcriptions_legacy", "audio_transcriptions"],
+			default: "azure_audio_transcriptions_legacy",
 		},
 	},
 };

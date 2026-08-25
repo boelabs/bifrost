@@ -168,15 +168,14 @@ curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "
 
 Client: `POST /v1/audio/transcriptions` (multipart, `file` field) with `model=transcribe`.
 
-#### Azure OpenAI v1
+#### Azure OpenAI classic audio
 
-Azure transcription uses Microsoft's
-[v1 preview transcription route](https://learn.microsoft.com/azure/foundry/openai/reference-preview-latest#create-transcription),
-`/openai/v1/audio/transcriptions?api-version=preview`, by default.
-`upstreamModel` is the **Azure deployment name** sent in the multipart `model` field, and `baseUrl` is
-the resource endpoint. For catalog resolution, name the Azure deployment after its model id, such as
-`gpt-transcribe`; a custom Azure deployment name requires an inline `catalogEntry`. `apiVersion` is
-optional and defaults to `preview`:
+Azure transcription defaults to the classic deployment-based Audio API. Azure's v1 preview route can
+return `DeploymentNotFound` for a deployment that works through the classic route. `upstreamModel` is
+the **Azure deployment name** placed in the URL, and `baseUrl` is the resource endpoint. For catalog
+resolution, name the Azure deployment after its model id, such as `gpt-transcribe`; a custom Azure
+deployment name requires an inline `catalogEntry`. `apiVersion` is optional and defaults to
+`2024-06-01`:
 
 ```bash
 curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
@@ -190,19 +189,21 @@ curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "
 }'
 ```
 
-For an Azure resource that still needs the classic deployment-based Audio API, select the legacy
-transport explicitly. Its default API version is `2024-06-01`; set `credentials.apiVersion` when the
-deployment requires another version:
+To opt into Microsoft's
+[v1 preview transcription route](https://learn.microsoft.com/azure/foundry/openai/reference-preview-latest#create-transcription),
+select the OpenAI-compatible audio transport explicitly. It uses
+`/openai/v1/audio/transcriptions?api-version=preview` and sends the Azure deployment name in the
+multipart `model` field:
 
 ```json
 {
   "transportOverrides": {
-    "audio.transcribe": "azure_audio_transcriptions_legacy"
+    "audio.transcribe": "audio_transcriptions"
   },
   "credentials": {
     "apiKey": "...",
     "baseUrl": "https://my-resource.openai.azure.com",
-    "apiVersion": "2024-06-01"
+    "apiVersion": "preview"
   }
 }
 ```

@@ -28,10 +28,11 @@ always JSON like the other endpoints.
 
 ## Azure OpenAI note
 
-Azure requires the classic deployment-based transcription API (it doesn't exist on `/openai/v1`) — the
-adapter constructs that URL internally from your deployment name and resource `baseUrl`. See
-[Providers → Azure OpenAI](/docs/providers-azure-openai) and the Azure-specific example in
-[Creating deployments](/docs/creating-deployments#special-case-azure-openai).
+Azure uses the classic deployment-based transcription API by default because some resources return
+`DeploymentNotFound` from the v1 preview route for deployments that work through the classic route.
+The adapter constructs the classic URL from your deployment name and resource `baseUrl`; v1 remains an
+explicit transport override. See [Providers → Azure OpenAI](/docs/providers-azure-openai) and the
+Azure-specific example in [Creating deployments](/docs/creating-deployments#azure-openai-classic-audio).
 
 ## What to read next
 
