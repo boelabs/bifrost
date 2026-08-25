@@ -107,7 +107,7 @@ test("catalog maps gpt-transcribe for direct and Azure OpenAI", () => {
 		"audio.transcribe"
 	];
 	assert.ok(azure);
-	assert.equal(azure.supportsStreaming, false);
+	assert.equal(azure.supportsStreaming, true);
 });
 
 test("Azure OpenAI and Azure Foundry keep their own catalogs", () => {

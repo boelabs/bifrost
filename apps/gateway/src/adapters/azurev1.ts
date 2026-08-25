@@ -8,7 +8,7 @@ import {
 
 /**
  * Accepts the resource endpoint or the full v1 base. Never allows legacy deployment routes or
- * api-version query params: Azure v1 fixes the contract at /openai/v1.
+ * query parameters in the base URL; operation-specific version selectors are added by handlers.
  */
 export function normalizeAzurev1BaseUrl(value: string): string {
 	let url: URL;

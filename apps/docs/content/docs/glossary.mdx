@@ -54,8 +54,9 @@ catalog lives next to the adapter; if it is missing, that provider is not regist
 ## Transport
 
 The protocol an adapter uses against the provider: `chat_completions`, `responses`,
-`generate_content`, `messages`, `images`, `audio_transcriptions`, `embeddings`, `embed_content`,
-`openrouter_rerank`, or `cohere_rerank`.
+`generate_content`, `messages`, `images`, `audio_transcriptions`,
+`azure_audio_transcriptions_legacy`, `embeddings`, `embed_content`, `openrouter_rerank`, or
+`cohere_rerank`.
 The type is `UpstreamTransport`, in `src/core/transport.ts`, and the execution context uses
 `ctx.transport`.
 
