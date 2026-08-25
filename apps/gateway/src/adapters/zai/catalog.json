@@ -6,6 +6,7 @@
 		"adapterKey": "zai",
 		"name": "Z.AI / ZAI AI",
 		"docs": [
+			"https://docs.z.ai/guides/llm/glm-5.3.md",
 			"https://docs.z.ai/guides/llm/glm-5.2.md",
 			"https://docs.z.ai/guides/llm/glm-5.1.md",
 			"https://docs.z.ai/guides/llm/glm-5.md",
@@ -16,6 +17,60 @@
 		]
 	},
 	"models": {
+		"glm-5.3": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 131072,
+					"reasoning": {
+						"kind": "openai_body",
+						"levels": ["low", "high", "max"],
+						"bodyField": {
+							"param": "thinking",
+							"onValue": {
+								"type": "enabled"
+							}
+						},
+						"effortField": "reasoning_effort"
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"thinking": {
+							"mode": "supported",
+							"upstreamField": "thinking",
+							"values": ["enabled"],
+							"notes": "GLM-5.3 always reasons; disabling thinking is not supported."
+						},
+						"reasoning_effort": {
+							"mode": "mapped",
+							"values": ["low", "high", "max"]
+						},
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 140,
+				"outputCentsPerMTokens": 440,
+				"cacheReadCentsPerMTokens": 26,
+				"cacheWriteCentsPerMTokens": 0
+			}
+		},
 		"glm-5.2": {
 			"operations": {
 				"text.generate": {

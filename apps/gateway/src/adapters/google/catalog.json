@@ -637,9 +637,41 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 150,
-				"outputCentsPerMTokens": 750,
-				"cacheReadCentsPerMTokens": 15
+				"inputCentsPerMTokens": 75,
+				"outputCentsPerMTokens": 375,
+				"cacheReadCentsPerMTokens": 7.5
+			}
+		},
+		"gemini-3.7-flash": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 65536,
+					"reasoning": {
+						"kind": "gemini_level",
+						"levels": ["low", "medium", "high"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 75,
+				"outputCentsPerMTokens": 375,
+				"cacheReadCentsPerMTokens": 7.5
 			}
 		},
 		"gemini-3.5-flash": {

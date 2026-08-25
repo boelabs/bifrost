@@ -169,6 +169,37 @@ test("catalog: GLM-5.2 keeps xhigh distinct from native max", () => {
 	assert.equal(maximumBody.reasoning_effort, "max");
 });
 
+test("catalog: GLM-5.3 enforces its mandatory reasoning floor", () => {
+	const glm = resolveModelMetadata("zai", "glm-5.3");
+	assert.equal(glm.maxInputTokens, 1_000_000);
+	assert.equal(glm.maxOutputTokens, 131_072);
+	assert.equal(glm.capabilities.structuredOutputs, true);
+	assert.deepEqual(glm.reasoning, {
+		kind: "openai_body",
+		levels: ["low", "high", "max"],
+		bodyField: {
+			param: "thinking",
+			onValue: { type: "enabled" },
+		},
+		effortField: "reasoning_effort",
+	});
+
+	const defaultRequest = zaiAdapter.chat!.buildRequest(
+		req,
+		ctx("glm-5.3", "zai", { apiKey: "k" }),
+	);
+	const defaultBody = JSON.parse(defaultRequest.body!);
+	assert.deepEqual(defaultBody.thinking, { type: "enabled" });
+	assert.equal(defaultBody.reasoning_effort, "low");
+
+	const extended = zaiAdapter.chat!.buildRequest(
+		{ ...req, reasoning: { effort: "xhigh" } },
+		ctx("glm-5.3", "zai", { apiKey: "k" }),
+	);
+	const extendedBody = JSON.parse(extended.body!);
+	assert.equal(extendedBody.reasoning_effort, "high");
+});
+
 test("catalog: Kimi K3 and K2.x model-native thinking", () => {
 	const k3 = resolveModelMetadata("moonshot", "kimi-k3");
 	const k26 = resolveModelMetadata("moonshot", "kimi-k2.6");
