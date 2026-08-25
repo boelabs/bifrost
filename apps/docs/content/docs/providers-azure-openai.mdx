@@ -20,13 +20,14 @@ description: "Adapter key azureopenai. baseUrl rules, deployment naming, and qui
 - **Your Azure deployment name must equal the catalog model id** (`upstreamModel`) — Azure resolves the
   model by deployment name, not by a separate model parameter.
 - Audio transcription catalog ids include `gpt-transcribe`, `gpt-4o-transcribe`, and
-  `gpt-4o-mini-transcribe`. They use `/openai/v1/audio/transcriptions?api-version=preview` by default,
-  pass the Azure deployment name as multipart `model`, and support streaming. Custom deployment names
-  require an inline `catalogEntry`.
-- Existing Azure resources that still require the deployment-based Audio API can set
-  `transportOverrides["audio.transcribe"]` to `azure_audio_transcriptions_legacy`. That transport
-  defaults to API version `2024-06-01`, does not support streaming, and accepts
-  `credentials.apiVersion` when the deployment requires another version.
+  `gpt-4o-mini-transcribe`. They use the classic deployment-based Audio API by default because some
+  Azure resources return `DeploymentNotFound` from the v1 preview route for otherwise valid
+  deployments. The classic route defaults to API version `2024-06-01`, does not support streaming, and
+  accepts `credentials.apiVersion` when the deployment requires another version. Custom deployment
+  names require an inline `catalogEntry`.
+- To opt into `/openai/v1/audio/transcriptions?api-version=preview`, set
+  `transportOverrides["audio.transcribe"]` to `audio_transcriptions`. The v1 transport sends the Azure
+  deployment name as multipart `model`.
 - **Default transport**: Responses API for text, `embeddings` for embeddings. No native image transport
   today.
 - Azure OpenAI and [Azure Foundry](/docs/providers-azure-foundry) are two independent adapters and
