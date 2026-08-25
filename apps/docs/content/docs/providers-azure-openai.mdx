@@ -19,6 +19,8 @@ description: "Adapter key azureopenai. baseUrl rules, deployment naming, and qui
   speaks Azure's v1 API surface.
 - **Your Azure deployment name must equal the catalog model id** (`upstreamModel`) — Azure resolves the
   model by deployment name, not by a separate model parameter.
+- Audio transcription catalog ids include `gpt-transcribe`, `gpt-4o-transcribe`, and
+  `gpt-4o-mini-transcribe`. Custom deployment names require an inline `catalogEntry`.
 - **Default transport**: Responses API for text, `embeddings` for embeddings. No native image transport
   today.
 - Azure OpenAI and [Azure Foundry](/docs/providers-azure-foundry) are two independent adapters and

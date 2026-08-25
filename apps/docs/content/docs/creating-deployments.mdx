@@ -172,14 +172,15 @@ Client: `POST /v1/audio/transcriptions` (multipart, `file` field) with `model=tr
 
 Azure requires the classic deployment-based API for transcriptions (it does not exist on `/openai/v1`).
 It is still created under `azureopenai`; `upstreamModel` is the **deployment name** and `baseUrl` the
-resource endpoint. `apiVersion` is optional (default `2024-06-01`; gpt-4o-transcribe may require a
-more recent one):
+resource endpoint. For catalog resolution, name the Azure deployment after its model id, such as
+`gpt-transcribe`; a custom Azure deployment name requires an inline `catalogEntry`. `apiVersion` is
+optional (default `2024-06-01`; some transcription deployments may require a more recent one):
 
 ```bash
 curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
   "publicModel": "transcribe",
   "adapterKey": "azureopenai",
-  "upstreamModel": "my-transcribe-deployment",
+  "upstreamModel": "gpt-transcribe",
   "credentials": {
     "apiKey": "...",
     "baseUrl": "https://my-resource.openai.azure.com",

@@ -435,6 +435,15 @@
 				}
 			}
 		},
+		"gpt-transcribe": {
+			"operations": {
+				"audio.transcribe": {
+					"responseFormats": ["json", "text"],
+					"supportsStreaming": true,
+					"maxFileBytes": 26214400
+				}
+			}
+		},
 		"gpt-4o-transcribe": {
 			"operations": {
 				"audio.transcribe": {

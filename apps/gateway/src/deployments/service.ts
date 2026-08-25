@@ -180,16 +180,20 @@ export async function previewDeployment(
 		getCatalogEntry(input.adapterKey, input.upstreamModel) !== undefined;
 	// Binary rule: known -> internal catalog.json; custom -> CatalogEntry required.
 	if (inCatalog && input.catalogEntry) {
+		const message = `"${input.upstreamModel}" is already in the "${input.adapterKey}" catalog; omit catalogEntry because catalog models cannot be overridden`;
 		throw new GatewayError({
 			class: "bad_request",
-			message: `"${input.upstreamModel}" is in the catalog; its catalog entry is internal and cannot be overridden`,
+			message,
+			publicMessage: message,
 			param: "catalogEntry",
 		});
 	}
 	if (!inCatalog && !input.catalogEntry) {
+		const message = `"${input.upstreamModel}" is not in the "${input.adapterKey}" catalog; provide catalogEntry for this custom model`;
 		throw new GatewayError({
 			class: "bad_request",
-			message: `"${input.upstreamModel}" is not in the catalog; provide catalogEntry`,
+			message,
+			publicMessage: message,
 			param: "catalogEntry",
 		});
 	}

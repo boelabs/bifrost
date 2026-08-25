@@ -96,6 +96,20 @@ test("catalog maps active Azure OpenAI embedding models", () => {
 	}
 });
 
+test("catalog maps gpt-transcribe for direct and Azure OpenAI", () => {
+	const direct = getCatalogEntry("openai", "gpt-transcribe")?.operations[
+		"audio.transcribe"
+	];
+	assert.ok(direct);
+	assert.equal(direct.supportsStreaming, true);
+
+	const azure = getCatalogEntry("azureopenai", "gpt-transcribe")?.operations[
+		"audio.transcribe"
+	];
+	assert.ok(azure);
+	assert.equal(azure.supportsStreaming, false);
+});
+
 test("Azure OpenAI and Azure Foundry keep their own catalogs", () => {
 	assert.ok(getCatalogEntry("azureopenai", "gpt-5.6-sol"));
 	assert.ok(getCatalogEntry("azureopenai", "gpt-5.6-terra"));
