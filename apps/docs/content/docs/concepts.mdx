@@ -37,8 +37,9 @@ load balancing and fallback for free.
 upstream protocols and maps provider errors back into the gateway's error classes.
 
 **Transport** — the actual protocol the adapter speaks to the provider: `chat_completions`,
-`responses`, `generate_content`, `messages`, `images`, `audio_transcriptions`, `embeddings`, or
-`embed_content`, `openrouter_rerank`, or `cohere_rerank`. It is **inferred per operation** from the adapter; `transportOverrides` is the rare
+`responses`, `generate_content`, `messages`, `images`, `audio_transcriptions`,
+`azure_audio_transcriptions_legacy`, `embeddings`, `embed_content`, `openrouter_rerank`, or
+`cohere_rerank`. It is **inferred per operation** from the adapter; `transportOverrides` is the rare
 manual override.
 
 **Canonical** — the single provider-agnostic representation in the core. Every public wire format is

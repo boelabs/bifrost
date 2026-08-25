@@ -69,7 +69,7 @@
 			"operations": {
 				"audio.transcribe": {
 					"responseFormats": ["json", "text"],
-					"supportsStreaming": false,
+					"supportsStreaming": true,
 					"maxFileBytes": 26214400
 				}
 			}
@@ -78,7 +78,7 @@
 			"operations": {
 				"audio.transcribe": {
 					"responseFormats": ["json", "text"],
-					"supportsStreaming": false,
+					"supportsStreaming": true,
 					"maxFileBytes": 26214400
 				}
 			},
@@ -91,7 +91,7 @@
 			"operations": {
 				"audio.transcribe": {
 					"responseFormats": ["json", "text"],
-					"supportsStreaming": false,
+					"supportsStreaming": true,
 					"maxFileBytes": 26214400
 				}
 			},

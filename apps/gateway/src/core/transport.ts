@@ -7,6 +7,7 @@
  *   - messages:         Anthropic
  *   - images:           OpenAI Images API (/images/generations and /images/edits)
  *   - audio_transcriptions: OpenAI Audio API (/audio/transcriptions, multipart)
+ *   - azure_audio_transcriptions_legacy: Azure deployment-based Audio API
  *   - embeddings:       OpenAI-compatible Embeddings API (/embeddings)
  *   - embed_content:    Google Gemini Embeddings API (:embedContent/:batchEmbedContents)
  *   - openrouter_rerank: OpenRouter Rerank API (/rerank)
@@ -23,6 +24,7 @@ export type UpstreamTransport =
 	| "messages"
 	| "images"
 	| "audio_transcriptions"
+	| "azure_audio_transcriptions_legacy"
 	| "embeddings"
 	| "embed_content"
 	| "openrouter_rerank"
@@ -38,6 +40,7 @@ const UPSTREAM_TRANSPORTS: readonly UpstreamTransport[] = [
 	"messages",
 	"images",
 	"audio_transcriptions",
+	"azure_audio_transcriptions_legacy",
 	"embeddings",
 	"embed_content",
 	"openrouter_rerank",
