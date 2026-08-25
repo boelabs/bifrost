@@ -65,6 +65,15 @@
 				"outputCentsPerMTokens": 0
 			}
 		},
+		"gpt-transcribe": {
+			"operations": {
+				"audio.transcribe": {
+					"responseFormats": ["json", "text"],
+					"supportsStreaming": false,
+					"maxFileBytes": 26214400
+				}
+			}
+		},
 		"gpt-4o-transcribe": {
 			"operations": {
 				"audio.transcribe": {

@@ -151,6 +151,52 @@ test("admin platform: rejects legacy provider field", async () => {
 	assert.equal(response.status, 400);
 });
 
+test("admin platform: catalog validation errors identify the adapter and model", async () => {
+	const app = adminAppWithErrors();
+	const response = await app.request("/deployments/resolve", {
+		method: "POST",
+		headers: { "content-type": "application/json" },
+		body: JSON.stringify({
+			publicModel: "transcribe",
+			adapterKey: "azureopenai",
+			upstreamModel: "missing-transcribe-model",
+		}),
+	});
+
+	assert.equal(response.status, 400);
+	const json = (await response.json()) as {
+		error?: { message?: string; param?: string };
+	};
+	assert.equal(
+		json.error?.message,
+		'"missing-transcribe-model" is not in the "azureopenai" catalog; provide catalogEntry for this custom model',
+	);
+	assert.equal(json.error?.param, "catalogEntry");
+});
+
+test("admin platform: resolves Azure gpt-transcribe from the catalog", async () => {
+	const response = await platformAdminApp.request("/deployments/resolve", {
+		method: "POST",
+		headers: { "content-type": "application/json" },
+		body: JSON.stringify({
+			publicModel: "transcribe",
+			adapterKey: "azureopenai",
+			upstreamModel: "gpt-transcribe",
+		}),
+	});
+
+	assert.equal(response.status, 200);
+	const json = (await response.json()) as {
+		data?: { source?: string; operations?: Array<{ id?: string }> };
+	};
+	assert.equal(json.data?.source, "catalog");
+	assert.ok(
+		json.data?.operations?.some(
+			(operation) => operation.id === "audio.transcribe",
+		),
+	);
+});
+
 test("admin platform: validates adapter credential requirements before DB writes", async () => {
 	const app = adminAppWithErrors();
 
