@@ -892,21 +892,25 @@ async function* parseStream(
 	}
 }
 
-function mapError(err: unknown): GatewayError {
-	return mapUpstreamHttpError(err, {
-		label: "Anthropic",
-		// Anthropic classifies by `error.type` before looking at the HTTP status.
-		classifyBody: (_status, body) => {
-			const typ = (body as { error?: { type?: string } })?.error?.type;
-			if (typ === "rate_limit_error" || typ === "overloaded_error")
-				return "rate_limit";
-			if (typ === "authentication_error" || typ === "permission_error")
-				return "auth";
-			return null;
+function mapError(err: unknown, ctx: AdapterContext): GatewayError {
+	return mapUpstreamHttpError(
+		err,
+		{
+			label: "Anthropic",
+			// Anthropic classifies by `error.type` before looking at the HTTP status.
+			classifyBody: (_status, body) => {
+				const typ = (body as { error?: { type?: string } })?.error?.type;
+				if (typ === "rate_limit_error" || typ === "overloaded_error")
+					return "rate_limit";
+				if (typ === "authentication_error" || typ === "permission_error")
+					return "auth";
+				return null;
+			},
+			refineBadRequest: (message) =>
+				looksLikeContextWindowError(message) ? "context_window" : null,
 		},
-		refineBadRequest: (message) =>
-			looksLikeContextWindowError(message) ? "context_window" : null,
-	});
+		ctx,
+	);
 }
 
 function addBetaHeader(headers: Record<string, string>, beta: string): void {

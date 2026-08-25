@@ -1,14 +1,46 @@
+import { responsesRequestSchema } from "#contracts/openai/responses.ts";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { MAX_RERANK_BODY_BYTES } from "#endpoints/rerank.ts";
+import { parseBody, readJsonBody } from "./pipeline.ts";
 import { GatewayError } from "#core/errors.ts";
 import type { AppEnv } from "#auth/types.ts";
-import { readJsonBody } from "./pipeline.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { Hono } from "hono";
 
 test("rerank declares a 16 MiB pre-parse body limit", () => {
 	assert.equal(MAX_RERANK_BODY_BYTES, 16 * 1024 * 1024);
+});
+
+function rejectedRequest(body: unknown): GatewayError {
+	try {
+		parseBody(responsesRequestSchema, body);
+	} catch (error) {
+		if (GatewayError.is(error)) return error;
+		throw error;
+	}
+	throw new Error("Expected request validation to fail");
+}
+
+test("request validation exposes the field and cause for invalid scalar types", () => {
+	const error = rejectedRequest({
+		model: "public-model",
+		input: "hello",
+		max_output_tokens: "many",
+	});
+	assert.equal(error.param, "max_output_tokens");
+	assert.match(error.publicMessage, /max_output_tokens/);
+	assert.match(error.publicMessage, /expected number, received string/);
+	assert.notEqual(error.publicMessage, "The request is invalid.");
+});
+
+test("request validation points a missing Responses input at input", () => {
+	const error = rejectedRequest({ model: "public-model" });
+	assert.equal(error.param, "input");
+	assert.equal(
+		error.publicMessage,
+		"input: Either 'input' or 'previous_response_id' is required",
+	);
 });
 
 test("limited JSON reading rejects declared and actual oversized bodies before parsing", async () => {

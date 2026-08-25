@@ -30,10 +30,12 @@ Most errors use the OpenAI-compatible envelope. `/v1/messages` uses Anthropic's 
 { "error": { "message": "...", "type": "invalid_request_error", "param": "model", "code": "model_not_found" } }
 ```
 
-The client-facing `message` is always a stable, generic-per-class string — the gateway is a router, so
-the same Public Model can fail differently on different attempts, and the public error can't leak a
-specific provider's wording or leak internals. `type`, `code`, and `param` give actionable detail
-without doing that. See [Troubleshooting](/docs/troubleshooting) for the full class/status/code table.
+Validation failures produced by the gateway include the field path and validation detail. Structured
+upstream request rejections also preserve their actionable `message`, `param`, and `code`, after
+bounding the fields and redacting the configured upstream model and credentials. The raw provider
+body is never copied into the response. Operational failures (authentication, permissions, missing
+deployments, and rate limits) and 5xx responses keep stable gateway messages so routing internals do
+not leak. See [Troubleshooting](/docs/troubleshooting) for the full class/status/code table.
 
 ## Request correlation
 

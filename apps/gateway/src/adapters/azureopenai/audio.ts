@@ -53,11 +53,15 @@ function resourceEndpoint(baseUrl: string | undefined, label: string): string {
 export function makeAzureTranscriptionHandler(
 	label: string,
 ): TranscriptionHandler {
-	function mapError(err: unknown): GatewayError {
-		return mapUpstreamHttpError(err, {
-			label,
-			refineBadRequest: azureRefineBadRequest,
-		});
+	function mapError(err: unknown, ctx: AdapterContext): GatewayError {
+		return mapUpstreamHttpError(
+			err,
+			{
+				label,
+				refineBadRequest: azureRefineBadRequest,
+			},
+			ctx,
+		);
 	}
 	return {
 		async buildRequest(req, ctx: AdapterContext) {

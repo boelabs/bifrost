@@ -31,6 +31,110 @@ test("upstream errors: unusual 4xx request failures do not become server outages
 	assert.equal(error.failureKind, "request");
 	assert.equal(error.retryable, false);
 	assert.equal(error.deploymentHealth, "neutral");
+	assert.equal(error.publicMessage, "payload too large");
+});
+
+test("upstream errors: actionable request detail survives the public mapping", () => {
+	const error = mapUpstreamHttpError(
+		{
+			status: 400,
+			body: {
+				error: {
+					message:
+						"'required' must be an array containing every key in properties",
+					param: "text.format.schema",
+					code: "invalid_json_schema",
+				},
+			},
+		},
+		mapping,
+	);
+	assert.deepEqual(error.toOpenAI(), {
+		error: {
+			message: "'required' must be an array containing every key in properties",
+			type: "invalid_request_error",
+			param: "text.format.schema",
+			code: "invalid_json_schema",
+		},
+	});
+});
+
+test("upstream errors: public request detail redacts deployment secrets and is bounded", () => {
+	const secret = "sk-sensitive-provider-key";
+	const upstreamModel = "private-upstream-model";
+	const error = mapUpstreamHttpError(
+		{
+			status: 422,
+			body: {
+				error: {
+					message: `Model ${upstreamModel} rejected credential ${secret}: ${"x".repeat(5_000)}`,
+					param: `request.${upstreamModel}`,
+					code: "invalid_request",
+				},
+			},
+		},
+		mapping,
+		{ upstreamModel, credentials: { apiKey: secret } },
+	);
+	assert.doesNotMatch(
+		error.publicMessage,
+		/private-upstream-model|sk-sensitive/,
+	);
+	assert.doesNotMatch(error.param ?? "", /private-upstream-model/);
+	assert.ok(error.publicMessage.length <= 4_096);
+	assert.match(error.publicMessage, /\[redacted\]/);
+});
+
+test("upstream errors: short sensitive values redact as tokens without corrupting prose", () => {
+	const error = mapUpstreamHttpError(
+		{
+			status: 400,
+			body: { error: { message: "Model g rejected key k: missing argument" } },
+		},
+		mapping,
+		{ upstreamModel: "g", credentials: { apiKey: "k" } },
+	);
+	assert.equal(
+		error.publicMessage,
+		"Model [redacted] rejected key [redacted]: missing argument",
+	);
+});
+
+test("upstream errors: operational 4xx and 5xx messages remain generic", () => {
+	const auth = mapUpstreamHttpError(
+		{
+			status: 401,
+			body: {
+				error: {
+					message: "credential sk-private was rejected",
+					code: "invalid_api_key",
+				},
+			},
+		},
+		mapping,
+	);
+	assert.equal(auth.publicMessage, "Authentication failed.");
+	assert.equal(auth.code, "invalid_api_key");
+
+	const server = mapUpstreamHttpError(
+		{
+			status: 500,
+			body: {
+				error: {
+					message: "private stack detail",
+					param: "internal.host",
+					code: "database_failed",
+				},
+			},
+		},
+		mapping,
+	);
+	assert.equal(
+		server.publicMessage,
+		"The service is temporarily unavailable. Please try again later.",
+	);
+	assert.equal(server.param, null);
+	assert.equal(server.code, null);
 });
 
 test("upstream errors: provider-body retry hints are a header fallback", () => {

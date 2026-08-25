@@ -178,13 +178,17 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 		return headers;
 	}
 
-	function mapError(err: unknown): GatewayError {
-		return mapUpstreamHttpError(err, {
-			label: config.label,
-			...(config.refineBadRequest
-				? { refineBadRequest: config.refineBadRequest }
-				: {}),
-		});
+	function mapError(err: unknown, ctx: AdapterContext): GatewayError {
+		return mapUpstreamHttpError(
+			err,
+			{
+				label: config.label,
+				...(config.refineBadRequest
+					? { refineBadRequest: config.refineBadRequest }
+					: {}),
+			},
+			ctx,
+		);
 	}
 
 	async function parseHttpBody(res: Response): Promise<unknown> {
@@ -214,10 +218,13 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 				...(ctx.signal ? { signal: ctx.signal } : {}),
 			});
 		} catch (err) {
-			throw mapError(err);
+			throw mapError(err, ctx);
 		}
 		if (!res.ok) {
-			throw mapError({ status: res.status, body: await parseHttpBody(res) });
+			throw mapError(
+				{ status: res.status, body: await parseHttpBody(res) },
+				ctx,
+			);
 		}
 		return parseHttpBody(res);
 	}
@@ -235,10 +242,13 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 				...(ctx.signal ? { signal: ctx.signal } : {}),
 			});
 		} catch (err) {
-			throw mapError(err);
+			throw mapError(err, ctx);
 		}
 		if (!res.ok) {
-			throw mapError({ status: res.status, body: await parseHttpBody(res) });
+			throw mapError(
+				{ status: res.status, body: await parseHttpBody(res) },
+				ctx,
+			);
 		}
 		if (!res.body) {
 			throw new GatewayError({
@@ -279,7 +289,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 				});
 			}
 			if (json !== null && typeof json === "object" && "error" in json) {
-				throw mapError({ status: 502, body: json });
+				throw mapError({ status: 502, body: json }, ctx);
 			}
 			if (
 				json === null ||
@@ -439,8 +449,8 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 				? responsesStream(stream, ctx)
 				: completionsStream(stream, ctx);
 		},
-		mapError(err) {
-			return mapError(err);
+		mapError(err, ctx) {
+			return mapError(err, ctx);
 		},
 	};
 
@@ -506,8 +516,8 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 					},
 				});
 			},
-			mapError(err) {
-				return mapError(err);
+			mapError(err, ctx) {
+				return mapError(err, ctx);
 			},
 		};
 	}
@@ -852,7 +862,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			);
 		},
 		mapError(_err, _ctx) {
-			return mapError(_err);
+			return mapError(_err, _ctx);
 		},
 	};
 
@@ -879,8 +889,8 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 				},
 			});
 		},
-		mapError(err) {
-			return mapError(err);
+		mapError(err, ctx) {
+			return mapError(err, ctx);
 		},
 	};
 
@@ -903,8 +913,8 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 		parseResponse(raw) {
 			return parseEmbeddingsResponse(raw);
 		},
-		mapError(err) {
-			return mapError(err);
+		mapError(err, ctx) {
+			return mapError(err, ctx);
 		},
 	};
 
@@ -973,8 +983,8 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 								headers: buildAuthHeaders(credentials),
 							};
 						},
-						mapError(err) {
-							return mapError(err);
+						mapError(err, ctx) {
+							return mapError(err, ctx);
 						},
 					}),
 				}

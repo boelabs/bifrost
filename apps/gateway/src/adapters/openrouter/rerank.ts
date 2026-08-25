@@ -84,8 +84,8 @@ export function makeOpenRouterRerankHandler(
 					: {}),
 			};
 		},
-		mapError(err) {
-			return mapUpstreamHttpError(err, { label: "OpenRouter" });
+		mapError(err, ctx) {
+			return mapUpstreamHttpError(err, { label: "OpenRouter" }, ctx);
 		},
 	};
 }

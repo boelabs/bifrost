@@ -73,8 +73,8 @@ export function makeVercelRerankHandler(
 					: {}),
 			};
 		},
-		mapError(err) {
-			return mapUpstreamHttpError(err, { label: "Vercel AI Gateway" });
+		mapError(err, ctx) {
+			return mapUpstreamHttpError(err, { label: "Vercel AI Gateway" }, ctx);
 		},
 	};
 }

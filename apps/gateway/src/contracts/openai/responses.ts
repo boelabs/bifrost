@@ -77,6 +77,7 @@ export const responsesRequestSchema = z
 	.loose()
 	.refine((d) => d.input !== undefined || d.previous_response_id != null, {
 		error: "Either 'input' or 'previous_response_id' is required",
+		path: ["input"],
 	})
 	.refine((d) => d.background !== true, {
 		error: "Background mode is not supported; use synchronous requests",
@@ -153,6 +154,7 @@ export const compactResponseRequestSchema = z
 		(data) => data.input !== undefined || data.previous_response_id != null,
 		{
 			error: "Either 'input' or 'previous_response_id' is required",
+			path: ["input"],
 		},
 	);
 
