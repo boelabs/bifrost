@@ -782,13 +782,17 @@ function googleRetryAfterMs(
 	return undefined;
 }
 
-function mapGoogleError(err: unknown): GatewayError {
-	return mapUpstreamHttpError(err, {
-		label: "Google",
-		refineBadRequest: (message) =>
-			looksLikeContextWindowError(message) ? "context_window" : null,
-		retryAfterMs: googleRetryAfterMs,
-	});
+function mapGoogleError(err: unknown, ctx: AdapterContext): GatewayError {
+	return mapUpstreamHttpError(
+		err,
+		{
+			label: "Google",
+			refineBadRequest: (message) =>
+				looksLikeContextWindowError(message) ? "context_window" : null,
+			retryAfterMs: googleRetryAfterMs,
+		},
+		ctx,
+	);
 }
 
 function mapGeminiUsage(u: GeminiUsage | undefined): Usage {
@@ -1092,8 +1096,8 @@ const chat: ChatHandler = {
 		}
 	},
 
-	mapError(err) {
-		return mapGoogleError(err);
+	mapError(err, ctx) {
+		return mapGoogleError(err, ctx);
 	},
 };
 
@@ -1115,8 +1119,8 @@ const imageHandler: ImageHandler = {
 	parseResponse(raw) {
 		return parseGeminiImageResponse(raw);
 	},
-	mapError(err) {
-		return mapGoogleError(err);
+	mapError(err, ctx) {
+		return mapGoogleError(err, ctx);
 	},
 };
 
@@ -1316,13 +1320,16 @@ async function googleFetchJson(
 	try {
 		res = await upstreamFetch(ctx, url, init);
 	} catch (err) {
-		throw mapGoogleError(err);
+		throw mapGoogleError(err, ctx);
 	}
 	if (!res.ok) {
-		throw mapGoogleError({
-			status: res.status,
-			body: await parseJsonResponse(res),
-		});
+		throw mapGoogleError(
+			{
+				status: res.status,
+				body: await parseJsonResponse(res),
+			},
+			ctx,
+		);
 	}
 	return parseJsonResponse(res);
 }
@@ -1477,13 +1484,16 @@ const videoGeneration: VideoHandler = {
 				...(ctx.signal ? { signal: ctx.signal } : {}),
 			});
 		} catch (err) {
-			throw mapGoogleError(err);
+			throw mapGoogleError(err, ctx);
 		}
 		if (!res.ok) {
-			throw mapGoogleError({
-				status: res.status,
-				body: await parseJsonResponse(res),
-			});
+			throw mapGoogleError(
+				{
+					status: res.status,
+					body: await parseJsonResponse(res),
+				},
+				ctx,
+			);
 		}
 		if (!res.body) {
 			throw new GatewayError({
@@ -1498,8 +1508,8 @@ const videoGeneration: VideoHandler = {
 			...(length ? { contentLength: Number(length) } : {}),
 		};
 	},
-	mapError(err) {
-		return mapGoogleError(err);
+	mapError(err, ctx) {
+		return mapGoogleError(err, ctx);
 	},
 };
 
@@ -1530,8 +1540,8 @@ const embeddings: EmbeddingsHandler = {
 	parseResponse(raw, ctx) {
 		return parseGeminiEmbeddingsResponse(raw, ctx);
 	},
-	mapError(err) {
-		return mapGoogleError(err);
+	mapError(err, ctx) {
+		return mapGoogleError(err, ctx);
 	},
 };
 

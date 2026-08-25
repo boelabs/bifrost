@@ -60,15 +60,19 @@ export function toGatewayError(
 /** Translates a zod validation error to the `bad_request` GatewayError, with the issue detail. */
 function zodToGatewayError(error: z.ZodError): GatewayError {
 	const first = error.issues[0];
+	const describe = (issue: z.core.$ZodIssue): string =>
+		issue.path.length
+			? `${issue.path.join(".")}: ${issue.message}`
+			: issue.message;
+	const message = error.issues.map(describe).join("; ");
+	const publicMessage = first ? describe(first) : "Request validation failed.";
 	return new GatewayError({
 		class: "bad_request",
-		message: error.issues
-			.map((issue) =>
-				issue.path.length
-					? `${issue.path.join(".")}: ${issue.message}`
-					: issue.message,
-			)
-			.join("; "),
+		message,
+		publicMessage:
+			publicMessage.length <= 4_096
+				? publicMessage
+				: `${publicMessage.slice(0, 4_095)}…`,
 		param: first ? first.path.join(".") : null,
 	});
 }

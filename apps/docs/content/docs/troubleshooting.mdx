@@ -14,10 +14,10 @@ OpenAI shape:
 ```json
 {
   "error": {
-    "message": "The request is invalid.",
+    "message": "max_output_tokens: Invalid input: expected number, received string",
     "type": "invalid_request_error",
-    "param": null,
-    "code": "unsupported_parameter"
+    "param": "max_output_tokens",
+    "code": null
   }
 }
 ```
@@ -25,20 +25,22 @@ OpenAI shape:
 Anthropic shape (`/v1/messages`):
 
 ```json
-{ "type": "error", "error": { "type": "invalid_request_error", "message": "The request is invalid." } }
+{ "type": "error", "error": { "type": "invalid_request_error", "message": "max_tokens: Invalid input: expected number, received string" } }
 ```
 
 OpenRouter shape (`/v1/rerank`):
 
 ```json
-{ "error": { "code": 400, "message": "The request is invalid." } }
+{ "error": { "code": 400, "message": "query: Invalid input: expected string, received undefined" } }
 ```
 
-> Because the gateway is a router, the **public message is intentionally generic** — the same public
-> model can resolve to different deployments that each fail differently, and the public error must be
-> stable and must not leak a provider's wording. The full provider detail is preserved in
-> `gateway_operations` and `upstream_attempts`, correlated by the `x-request-id` on every response. When you need the real cause,
-> look up the log by request id.
+Request-validation 4xx responses are deliberately actionable: gateway validation reports its field
+path and cause, while structured upstream request rejections preserve `message`, `param`, and `code`.
+Provider fields are bounded and scrubbed of the configured upstream model and credential values; the
+raw body is never passed through. Authentication, permission, missing-deployment, rate-limit, and 5xx
+messages remain generic because they can contain operator or routing details. The complete provider
+body is preserved privately in `gateway_operations` and `upstream_attempts`, correlated by the
+`x-request-id` on every response.
 
 ## Status codes by class
 
