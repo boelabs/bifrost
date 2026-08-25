@@ -20,7 +20,9 @@
 					"documentsPerSearchUnit": 100
 				}
 			},
-			"pricing": { "searchUnitCents": 0.2 }
+			"pricing": {
+				"searchUnitCents": 0.2
+			}
 		},
 		"cohere/rerank-4-pro": {
 			"operations": {
@@ -31,7 +33,9 @@
 					"documentsPerSearchUnit": 100
 				}
 			},
-			"pricing": { "searchUnitCents": 0.25 }
+			"pricing": {
+				"searchUnitCents": 0.25
+			}
 		},
 		"cohere/rerank-v3.5": {
 			"operations": {
@@ -42,7 +46,9 @@
 					"documentsPerSearchUnit": 100
 				}
 			},
-			"pricing": { "searchUnitCents": 0.1 }
+			"pricing": {
+				"searchUnitCents": 0.1
+			}
 		},
 		"nvidia/llama-nemotron-rerank-vl-1b-v2:free": {
 			"operations": {
@@ -52,7 +58,18 @@
 					"maxTokensPerDocument": 10240
 				}
 			},
-			"pricing": { "searchUnitCents": 0 }
+			"pricing": {
+				"searchUnitCents": 0
+			}
+		},
+		"qwen/qwen3-reranker-8b": {
+			"operations": {
+				"rerank": {
+					"documentModalities": ["text"],
+					"maxDocuments": 1000,
+					"maxTokensPerDocument": 40960
+				}
+			}
 		},
 		"voyageai/rerank-2.5": {
 			"operations": {
