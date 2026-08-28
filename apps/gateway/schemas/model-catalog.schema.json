@@ -344,7 +344,7 @@
 				"qualities": {
 					"type": "array",
 					"items": {
-						"enum": ["standard", "hd", "low", "medium", "high", "auto"]
+						"enum": ["auto", "low", "medium", "high", "native"]
 					},
 					"minItems": 1,
 					"uniqueItems": true

@@ -2,13 +2,7 @@ import type { Usage } from "./usage.ts";
 
 export type VideoStatus = "queued" | "in_progress" | "completed" | "failed";
 export type VideoAssetVariant = "video" | "thumbnail" | "spritesheet";
-export type VideoQuality =
-	| "standard"
-	| "hd"
-	| "low"
-	| "medium"
-	| "high"
-	| "auto";
+export type VideoQuality = "auto" | "low" | "medium" | "high" | "native";
 
 export const VIDEO_ASPECT_RATIOS = [
 	"16:9",

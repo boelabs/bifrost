@@ -143,7 +143,7 @@ test("async videos transport submits, polls, and downloads with upstream job id"
 	);
 });
 
-test("async videos transport forwards seed, audio, references, and frame images", async () => {
+test("async videos transport forwards quality, seed, audio, references, and frame images", async () => {
 	let body: Record<string, unknown> | undefined;
 	await withStubbedFetch(
 		(_input, init) => {
@@ -157,6 +157,7 @@ test("async videos transport forwards seed, audio, references, and frame images"
 					prompt: "city",
 					aspectRatio: "9:16",
 					resolution: "1080p",
+					quality: "native",
 					seed: 42,
 					generateAudio: true,
 					inputReferences: [
@@ -174,6 +175,7 @@ test("async videos transport forwards seed, audio, references, and frame images"
 		prompt: "city",
 		aspect_ratio: "9:16",
 		resolution: "1080p",
+		quality: "native",
 		seed: 42,
 		generate_audio: true,
 		input_references: [
@@ -188,6 +190,28 @@ test("async videos transport forwards seed, audio, references, and frame images"
 			},
 		],
 	});
+});
+
+test("async videos transport deletes the upstream job", async () => {
+	const calls: Array<{ url: string; method: string }> = [];
+	await withStubbedFetch(
+		(input, init) => {
+			calls.push({ url: String(input), method: init?.method ?? "GET" });
+			return jsonResponse({ id: "job-1", status: "cancelled" });
+		},
+		async () => {
+			await openaicompatibleAdapter.videoGeneration!.remove!(
+				{ upstreamJobId: "job-1" },
+				ctx("videos_async"),
+			);
+		},
+	);
+	assert.deepEqual(calls, [
+		{
+			url: "https://api.aggregator.example/v1/videos/job-1",
+			method: "DELETE",
+		},
+	]);
 });
 
 test("async videos transport maps cancelled/expired to failed and keeps polling unknown statuses", async () => {
@@ -479,6 +503,7 @@ test("contract normalizes aggregator-style and OpenAI request shapes to one cano
 			resolution: "720p",
 			seed: 1,
 			generate_audio: false,
+			quality: "native",
 			input_references: [
 				{ type: "image_url", image_url: { url: "https://x/i.png" } },
 			],
@@ -489,6 +514,7 @@ test("contract normalizes aggregator-style and OpenAI request shapes to one cano
 	assert.equal(aggregatorStyle.resolution, "720p");
 	assert.equal(aggregatorStyle.seed, 1);
 	assert.equal(aggregatorStyle.generateAudio, false);
+	assert.equal(aggregatorStyle.quality, "native");
 	assert.deepEqual(aggregatorStyle.inputReferences, [
 		{ type: "image_url", url: "https://x/i.png" },
 	]);
@@ -524,6 +550,11 @@ test("contract normalizes aggregator-style and OpenAI request shapes to one cano
 			aspect_ratio: "16:9",
 		}),
 	);
+	for (const quality of ["standard", "hd"]) {
+		assert.throws(() =>
+			videoCreateRequestSchema.parse({ model: "m", prompt: "p", quality }),
+		);
+	}
 });
 
 test("validation gates parameters by model profile", () => {

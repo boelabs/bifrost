@@ -704,6 +704,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			...(req.generateAudio !== undefined
 				? { generate_audio: req.generateAudio }
 				: {}),
+			...(req.quality !== undefined ? { quality: req.quality } : {}),
 		};
 		const refs = req.inputReferences ?? [];
 		if (refs.some((ref) => ref.type === "file_id")) {
@@ -742,6 +743,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			"resolution",
 			"seed",
 			"generate_audio",
+			"quality",
 			"input_references",
 			"frame_images",
 		]);
@@ -849,8 +851,8 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			});
 		},
 		async remove(job, ctx) {
-			// Only the OpenAI-style dialect exposes a delete endpoint.
-			if (ctx.transport !== "videos") return;
+			if (ctx.transport !== "videos" && ctx.transport !== "videos_async")
+				return;
 			const c = resolveCreds(ctx);
 			await fetchJson(
 				{

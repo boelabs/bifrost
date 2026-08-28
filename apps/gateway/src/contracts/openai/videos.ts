@@ -90,7 +90,7 @@ export const videoCreateRequestSchema = z
 		seed: z.number().int().nullable().optional(),
 		generate_audio: z.boolean().nullable().optional(),
 		quality: z
-			.enum(["standard", "hd", "low", "medium", "high", "auto"])
+			.enum(["auto", "low", "medium", "high", "native"])
 			.nullable()
 			.optional(),
 		user: z.string().nullable().optional(),

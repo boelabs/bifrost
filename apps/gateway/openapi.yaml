@@ -2376,12 +2376,11 @@ components:
           anyOf:
             - type: string
               enum:
-                - standard
-                - hd
+                - auto
                 - low
                 - medium
                 - high
-                - auto
+                - native
             - type: "null"
         user:
           description: Gateway-side attribution; never sent upstream.
@@ -4031,12 +4030,11 @@ components:
         quality:
           type: string
           enum:
-            - standard
-            - hd
+            - auto
             - low
             - medium
             - high
-            - auto
+            - native
       required:
         - id
         - object
