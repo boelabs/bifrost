@@ -298,7 +298,7 @@ const videoOperationProfileSchema = z
 		maxPromptChars: z.int().positive().optional(),
 		durations: z.array(z.string().min(1)).min(1).optional(),
 		qualities: z
-			.array(z.enum(["standard", "hd", "low", "medium", "high", "auto"]))
+			.array(z.enum(["auto", "low", "medium", "high", "native"]))
 			.min(1)
 			.optional(),
 		sizes: z

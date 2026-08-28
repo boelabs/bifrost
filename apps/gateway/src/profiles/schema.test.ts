@@ -84,3 +84,27 @@ test("rerank profiles are strict, text-ready, and reserve image sources coherent
 		true,
 	);
 });
+
+test("video profiles use the portable quality vocabulary", () => {
+	const entry = (quality: string) => ({
+		operations: {
+			"video.generate": {
+				durations: ["8"],
+				qualities: [quality],
+				sizes: { "1280x720": {} },
+			},
+		},
+	});
+	for (const quality of ["auto", "low", "medium", "high", "native"]) {
+		assert.equal(
+			customCatalogEntrySchema.safeParse(entry(quality)).success,
+			true,
+		);
+	}
+	for (const quality of ["standard", "hd"]) {
+		assert.equal(
+			customCatalogEntrySchema.safeParse(entry(quality)).success,
+			false,
+		);
+	}
+});

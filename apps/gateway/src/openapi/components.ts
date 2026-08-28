@@ -640,12 +640,11 @@ export const VideoCreateRequest = loose(
 		seed: z.union([z.int(), z.null()]).optional(),
 		generate_audio: z.union([z.boolean(), z.null()]).optional(),
 		quality: nullableEnum([
-			"standard",
-			"hd",
+			"auto",
 			"low",
 			"medium",
 			"high",
-			"auto",
+			"native",
 		]).optional(),
 		user: nullableString
 			.optional()
@@ -678,9 +677,7 @@ export const VideoObject = z
 		remixed_from_video_id: nullableString.optional(),
 		seconds: z.string().optional(),
 		size: z.string().optional(),
-		quality: z
-			.enum(["standard", "hd", "low", "medium", "high", "auto"])
-			.optional(),
+		quality: z.enum(["auto", "low", "medium", "high", "native"]).optional(),
 	})
 	.meta({ id: "VideoObject" });
 

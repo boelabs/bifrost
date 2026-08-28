@@ -28,7 +28,7 @@ stays accept-compatible with OpenAI's Sora shape:
 | `input_references` | Array of `{type: "image_url"\|"audio_url"\|"video_url", ...}` parts. `input_reference` (single, `image_url` or `file_id`) is the OpenAI-style alias. |
 | `frame_images` | First/last frame conditioning (`frame_type: "first_frame"\|"last_frame"`) for models that support it. |
 | `seed`, `generate_audio` | Forwarded only when the model profile declares support. |
-| `quality` | Gateway extension; validated and forwarded only when the profile declares `qualities`. |
+| `quality` | Gateway extension: `auto`, `low`, `medium`, `high`, or `native`. Validated and forwarded only when the profile declares `qualities`. |
 | `user` | Gateway-side attribution only. It is stored with the job and **never** forwarded upstream. |
 | `extra_body` | Provider-specific passthrough merged into the upstream request body. |
 
@@ -55,7 +55,7 @@ reference support (`supportsImageUrl`, `supportsAudioUrl`, `supportsVideoUrl`, `
 
 Adapters expose video generation through transports: `videos` (OpenAI-shaped Videos API),
 `videos_async` (async job API: submit `/videos`, poll `/videos/{jobId}`, download
-`/videos/{jobId}/content`), and `generate_videos` (Google long-running operations). Adapter defaults
+`/videos/{jobId}/content`, delete `/videos/{jobId}`), and `generate_videos` (Google long-running operations). Adapter defaults
 pick the common path; use `transportOverrides` when a custom compatible target needs another
 transport.
 
