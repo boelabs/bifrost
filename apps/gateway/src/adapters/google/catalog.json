@@ -18,8 +18,6 @@
 					"maxPromptChars": 32000,
 					"durations": ["4", "6", "8"],
 					"supportsImageUrl": true,
-					"requiresDataUrlImageReference": true,
-					"maxReferenceBytes": 20000000,
 					"contentVariants": ["video"],
 					"pollIntervalSeconds": 10,
 					"sizes": {
@@ -61,8 +59,6 @@
 					"maxPromptChars": 32000,
 					"durations": ["4", "6", "8"],
 					"supportsImageUrl": true,
-					"requiresDataUrlImageReference": true,
-					"maxReferenceBytes": 20000000,
 					"contentVariants": ["video"],
 					"pollIntervalSeconds": 10,
 					"sizes": {
@@ -104,8 +100,6 @@
 					"maxPromptChars": 32000,
 					"durations": ["4", "6", "8"],
 					"supportsImageUrl": true,
-					"requiresDataUrlImageReference": true,
-					"maxReferenceBytes": 20000000,
 					"contentVariants": ["video"],
 					"pollIntervalSeconds": 10,
 					"sizes": {

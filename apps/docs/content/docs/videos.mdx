@@ -35,9 +35,16 @@ stays accept-compatible with OpenAI's Sora shape:
 Every parameter is validated against the model profile before routing, so unsupported parameters fail
 fast with `unsupported_parameter` instead of a provider error mid-pool.
 
-Reference images can be sent as `data:image/...` base64 URLs; large data URLs are redacted before the
-request body is persisted. Multipart uploads (the OpenAI SDK's file-typed `input_reference`) are not
-supported — use the JSON reference forms.
+Image, audio, and video references accept either public HTTPS URLs or base64 `data:` URLs. Bifrost
+downloads every HTTPS reference with SSRF protection, validates its MIME type and binary limits, and
+sends a `data:` URL to the selected upstream; remote URLs are never delegated to providers. The
+combined decoded media limit is 50 MB. Large data URLs are redacted before the request body is
+persisted. Multipart uploads (the OpenAI SDK's file-typed `input_reference`) are not supported — use
+the JSON reference forms.
+
+Image generation itself has no attachment field. Image edits accept multipart image files; Bifrost
+streams those files into request-scoped temporary storage, validates them as PNG/JPEG/WebP, and only
+then invokes an upstream adapter.
 
 ## Storage
 

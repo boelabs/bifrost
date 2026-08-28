@@ -14,36 +14,6 @@ function unsupported(param: string, message: string): never {
 	});
 }
 
-function dataUrlSizeBytes(url: string): number | undefined {
-	const match = /^data:[^;]+;base64,(.*)$/s.exec(url);
-	if (!match) return undefined;
-	return Math.floor((match[1]!.length * 3) / 4);
-}
-
-function assertImageUrlSupported(
-	url: string,
-	param: string,
-	profile: VideoModelProfile,
-): void {
-	if (profile.requiresDataUrlImageReference && !url.startsWith("data:image/")) {
-		unsupported(
-			param,
-			"The selected model only supports image references as data:image/... URLs.",
-		);
-	}
-	const sizeBytes = dataUrlSizeBytes(url);
-	if (
-		sizeBytes !== undefined &&
-		profile.maxReferenceBytes !== undefined &&
-		sizeBytes > profile.maxReferenceBytes
-	) {
-		unsupported(
-			param,
-			`The selected model accepts reference images up to ${profile.maxReferenceBytes} bytes.`,
-		);
-	}
-}
-
 function assertDimensionsSupported(
 	req: CanonicalVideoRequest,
 	profile: VideoModelProfile,
@@ -98,7 +68,6 @@ function assertReferencesSupported(
 					"The selected model does not support image references.",
 				);
 			}
-			assertImageUrlSupported(ref.url, "input_references", profile);
 		}
 		if (ref.type === "audio_url" && !profile.supportsAudioUrl) {
 			unsupported(
@@ -120,8 +89,6 @@ function assertReferencesSupported(
 				"The selected model does not support frame images.",
 			);
 		}
-		for (const frame of req.frameImages)
-			assertImageUrlSupported(frame.url, "frame_images", profile);
 	}
 }
 

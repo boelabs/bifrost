@@ -1,11 +1,16 @@
+import { openaicompatibleAdapter } from "#adapters/openaicompatible/index.ts";
 import type { DeploymentCandidate } from "#gateway/deploymentCandidates.ts";
-import { createContentInputResolver } from "./requestContentInputs.ts";
 import { deepseekAdapter } from "#adapters/deepseek/index.ts";
 import { googleAdapter } from "#adapters/google/index.ts";
 import { openaiAdapter } from "#adapters/openai/index.ts";
 import type { Adapter } from "#adapters/types.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
+
+import {
+	createContentInputResolver,
+	createVideoInputResolver,
+} from "./requestContentInputs.ts";
 
 import type {
 	CanonicalContentPart,
@@ -381,4 +386,139 @@ test("only opaque content sources require an additional token reservation", () =
 	);
 	assert.equal(inline.hasOpaqueInputs, false);
 	assert.equal(remote.hasOpaqueInputs, true);
+});
+
+test("video resolver downloads every remote media reference before adapter execution", async () => {
+	const fetches: string[] = [];
+	const resolver = createVideoInputResolver(
+		{
+			model: "video-model",
+			prompt: "Animate the references",
+			inputReferences: [
+				{ type: "image_url", url: "https://assets.example/input.png" },
+				{ type: "audio_url", url: "https://assets.example/input.wav" },
+				{ type: "video_url", url: "https://assets.example/input.mp4" },
+			],
+			frameImages: [{ frame: "last", url: "https://assets.example/input.png" }],
+		},
+		new AbortController().signal,
+		{
+			resolveHostname: async () => [{ address: "93.184.216.34", family: 4 }],
+			fetch: async (url) => {
+				fetches.push(url.href);
+				if (url.pathname.endsWith(".png")) {
+					return new Response(
+						new Uint8Array(Buffer.from(PNG_BASE64, "base64")),
+						{ headers: { "content-type": "image/png" } },
+					);
+				}
+				if (url.pathname.endsWith(".wav")) {
+					return new Response(new Uint8Array([1, 2, 3]), {
+						headers: { "content-type": "audio/wav" },
+					});
+				}
+				return new Response(new Uint8Array([4, 5, 6]), {
+					headers: { "content-type": "video/mp4" },
+				});
+			},
+		},
+	);
+	const upstream = candidate(openaicompatibleAdapter);
+	resolver.assertCandidate(upstream, "videos_async");
+
+	const resolved = await resolver.resolveForCandidate(upstream, "videos_async");
+	assert.equal(fetches.length, 3);
+	assert.ok(
+		resolved.request.inputReferences?.every(
+			(ref) => ref.type === "file_id" || ref.url.startsWith("data:"),
+		),
+	);
+	assert.match(
+		resolved.request.frameImages?.[0]?.url ?? "",
+		/^data:image\/png/,
+	);
+	assert.deepEqual(resolved.metadata, {
+		materializedAudio: 1,
+		materializedImages: 2,
+		materializedVideo: 1,
+		totalBytes: Buffer.from(PNG_BASE64, "base64").byteLength * 2 + 6,
+	});
+});
+
+test("video resolver rejects private remote media URLs before routing", () => {
+	assert.throws(
+		() =>
+			createVideoInputResolver(
+				{
+					model: "video-model",
+					prompt: "Animate",
+					inputReferences: [
+						{ type: "video_url", url: "https://127.0.0.1/input.mp4" },
+					],
+				},
+				new AbortController().signal,
+			),
+		(error: unknown) =>
+			(error as { code?: string }).code === "unsafe_video_url",
+	);
+});
+
+test("video resolver rejects media whose MIME does not match its reference type", async () => {
+	const resolver = createVideoInputResolver(
+		{
+			model: "video-model",
+			prompt: "Animate",
+			inputReferences: [
+				{ type: "audio_url", url: "https://assets.example/not-audio.bin" },
+			],
+		},
+		new AbortController().signal,
+		{
+			resolveHostname: async () => [{ address: "93.184.216.34", family: 4 }],
+			fetch: async () =>
+				new Response(new Uint8Array(Buffer.from(PNG_BASE64, "base64")), {
+					headers: { "content-type": "image/png" },
+				}),
+		},
+	);
+	await assert.rejects(
+		() =>
+			resolver.resolveForCandidate(
+				candidate(openaicompatibleAdapter),
+				"videos_async",
+			),
+		(error: unknown) =>
+			(error as { code?: string }).code === "unsupported_audio_input",
+	);
+});
+
+test("video resolver enforces the 50 MB decoded-media limit before reading a body", async () => {
+	const resolver = createVideoInputResolver(
+		{
+			model: "video-model",
+			prompt: "Animate",
+			inputReferences: [
+				{ type: "video_url", url: "https://assets.example/oversized.mp4" },
+			],
+		},
+		new AbortController().signal,
+		{
+			resolveHostname: async () => [{ address: "93.184.216.34", family: 4 }],
+			fetch: async () =>
+				new Response(new Uint8Array([1]), {
+					headers: {
+						"content-length": "50000001",
+						"content-type": "video/mp4",
+					},
+				}),
+		},
+	);
+	await assert.rejects(
+		() =>
+			resolver.resolveForCandidate(
+				candidate(openaicompatibleAdapter),
+				"videos_async",
+			),
+		(error: unknown) => (error as { code?: string }).code === "video_too_large",
+	);
 });

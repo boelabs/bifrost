@@ -5,6 +5,7 @@ import { candidateMetadata } from "#gateway/candidateMetadata.ts";
 import { OperationLogDraft } from "./runtime/operationLog.ts";
 import { route, type RouteResult } from "#router/index.ts";
 import type { AdapterContext } from "#adapters/types.ts";
+import { resolveTransport } from "#router/transport.ts";
 import { log as systemLog } from "#logging/log.ts";
 import { GatewayError } from "#core/errors.ts";
 import { getAuth } from "#auth/middleware.ts";
@@ -53,6 +54,11 @@ import {
 	listVideosForScope,
 	createVideoJob,
 } from "#db/repos/videos.ts";
+
+import {
+	type VideoInputResolutionMetadata,
+	createVideoInputResolver,
+} from "#files/requestContentInputs.ts";
 
 function virtualKeyId(c: Context<AppEnv>): string | null {
 	const auth = getAuth(c);
@@ -160,6 +166,7 @@ async function handleVideoCreate(
 	log.requestBody = storedRequest;
 	let routing: RouteResult<CanonicalVideoProviderJob> | null = null;
 	let submissionContext: AdapterContext | null = null;
+	let inputMetadata: VideoInputResolutionMetadata | undefined;
 	let persisted = false;
 	let finished = false;
 	const finish = async (error?: GatewayError | null): Promise<void> => {
@@ -175,6 +182,7 @@ async function handleVideoCreate(
 
 	try {
 		await preflight(c, req.model);
+		const inputResolver = createVideoInputResolver(req, log.clientSignal);
 		routing = await route(
 			req.model,
 			"videos.generations",
@@ -182,17 +190,27 @@ async function handleVideoCreate(
 				clientSignal: log.clientSignal,
 				requestId: log.requestId,
 				operationId: log.operationId,
-				candidateEligibility: (candidate) =>
-					assertVideoRequestSupported(req, candidate.meta),
+				candidateEligibility: (candidate) => {
+					assertVideoRequestSupported(req, candidate.meta);
+					inputResolver.assertCandidate(
+						candidate,
+						resolveTransport(candidate, "videos.generations"),
+					);
+				},
 				tokenReservation: (candidate) =>
 					estimateTokenReservation(req, {
 						maxOutputTokens: candidate.meta.maxOutputTokens ?? 0,
 					}),
 				usageQuota: usageQuotaForRequest(c),
 			},
-			(candidate, ctx) => {
+			async (candidate, ctx) => {
 				submissionContext = ctx;
-				return candidate.adapter.videoGeneration!.submit(req, ctx);
+				const resolved = await inputResolver.resolveForCandidate(
+					candidate,
+					ctx.transport,
+				);
+				inputMetadata = resolved.metadata;
+				return candidate.adapter.videoGeneration!.submit(resolved.request, ctx);
 			},
 		);
 		log.applyRouting(routing);
@@ -237,6 +255,7 @@ async function handleVideoCreate(
 			responseBody: body,
 			metadata: {
 				...candidateMetadata(routing.candidate),
+				...(inputMetadata ? { contentInputs: inputMetadata } : {}),
 				terminal: { outcome: "completed", reason: "stop", usage: null },
 			},
 			error: null,

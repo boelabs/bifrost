@@ -22,14 +22,18 @@ const HANDLER_KEY: Partial<Record<CallType, keyof Adapter>> = {
 const CONTENT_INPUT_SOURCES = new Set(["provider_file_id", "url", "data_url"]);
 
 function validateContentInputs(adapter: Adapter): void {
-	const chatTransports = new Set(adapter.transports?.chat?.supported ?? []);
+	const supportedTransports = new Set(
+		Object.values(adapter.transports ?? {}).flatMap(
+			(transports) => transports?.supported ?? [],
+		),
+	);
 	for (const [transportName, inputs] of Object.entries(
 		adapter.contentInputs ?? {},
 	)) {
 		const transport = transportName as UpstreamTransport;
-		if (!chatTransports.has(transport)) {
+		if (!supportedTransports.has(transport)) {
 			throw new Error(
-				`Adapter "${adapter.key}" declares content inputs for unsupported chat transport "${transport}".`,
+				`Adapter "${adapter.key}" declares content inputs for unsupported transport "${transport}".`,
 			);
 		}
 		for (const [kind, support] of Object.entries(inputs ?? {})) {

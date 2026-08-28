@@ -352,7 +352,6 @@ function validateOperations(value: unknown, path: string): void {
 		} else if (operation === "video.generate") {
 			for (const key of [
 				"maxPromptChars",
-				"maxReferenceBytes",
 				"maxInputReferences",
 				"pollIntervalSeconds",
 			]) {
@@ -367,7 +366,6 @@ function validateOperations(value: unknown, path: string): void {
 				"supportsFrameImages",
 				"supportsSeed",
 				"supportsGenerateAudio",
-				"requiresDataUrlImageReference",
 			]) {
 				if (profile[key] !== undefined)
 					assertBoolean(profile[key], `${path}.${operation}.${key}`);

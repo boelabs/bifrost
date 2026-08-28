@@ -84,7 +84,7 @@ test("rejects content inputs declared for an unsupported transport", () => {
 			responses: { image: { sources: ["url"] } },
 		},
 	};
-	assert.throws(() => registerAdapter(broken), /unsupported chat transport/);
+	assert.throws(() => registerAdapter(broken), /unsupported transport/);
 });
 
 test("rejects malformed content input limits and source lists", () => {

@@ -1,5 +1,6 @@
-/** Candidate-aware normalization for canonical file and image inputs. */
+/** Candidate-aware normalization and secure materialization for canonical media inputs. */
 
+import type { CanonicalVideoRequest, VideoUrlReference } from "#core/videos.ts";
 import { fetchPinnedHttps, type ResolvedAddress } from "./pinnedHttpsFetch.ts";
 import type { DeploymentCandidate } from "#gateway/deploymentCandidates.ts";
 import type { ContentPartInputSupport } from "#adapters/types.ts";
@@ -38,13 +39,16 @@ const SIGNATURED_IMAGE_MIME_TYPES = new Set([
 ]);
 
 const MIME_BY_EXTENSION: Readonly<Record<string, string>> = {
+	".aac": "audio/aac",
 	".avif": "image/avif",
+	".avi": "video/x-msvideo",
 	".bat": "text/x-bat",
 	".bmp": "image/bmp",
 	".conf": "text/plain",
 	".csv": "text/csv",
 	".css": "text/css",
 	".eml": "message/rfc822",
+	".flac": "audio/flac",
 	".gif": "image/gif",
 	".heic": "image/heic",
 	".heif": "image/heif",
@@ -56,7 +60,14 @@ const MIME_BY_EXTENSION: Readonly<Record<string, string>> = {
 	".jpg": "image/jpeg",
 	".jsx": "text/jsx",
 	".log": "text/plain",
+	".m4a": "audio/mp4",
+	".m4v": "video/x-m4v",
 	".md": "text/markdown",
+	".mkv": "video/x-matroska",
+	".mov": "video/quicktime",
+	".mp3": "audio/mpeg",
+	".mp4": "video/mp4",
+	".ogg": "audio/ogg",
 	".pdf": "application/pdf",
 	".png": "image/png",
 	".py": "text/x-python",
@@ -70,6 +81,8 @@ const MIME_BY_EXTENSION: Readonly<Record<string, string>> = {
 	".tsx": "text/tsx",
 	".txt": "text/plain",
 	".vtt": "text/vtt",
+	".wav": "audio/wav",
+	".webm": "video/webm",
 	".webp": "image/webp",
 	".xml": "application/xml",
 	".yaml": "application/yaml",
@@ -144,6 +157,18 @@ export interface ResolvedContentInputRequest {
 	metadata?: ContentInputResolutionMetadata;
 }
 
+export interface VideoInputResolutionMetadata {
+	materializedAudio: number;
+	materializedImages: number;
+	materializedVideo: number;
+	totalBytes: number;
+}
+
+export interface ResolvedVideoInputRequest {
+	request: CanonicalVideoRequest;
+	metadata?: VideoInputResolutionMetadata;
+}
+
 const DEFAULT_DEPENDENCIES: ResolverDependencies = {
 	fetch: (url, options, addresses) =>
 		fetchPinnedHttps(url, addresses, {
@@ -159,11 +184,12 @@ function requestError(
 	message: string,
 	code: string,
 	publicMessage: string,
+	param = "messages",
 ): GatewayError {
 	return new GatewayError({
 		class: "bad_request",
 		code,
-		param: "messages",
+		param,
 		message,
 		publicMessage,
 		routingScope: "request",
@@ -297,10 +323,18 @@ function isBlockedHostname(hostname: string): boolean {
 	);
 }
 
-type RemoteInputKind = "file" | "image";
+type RemoteInputKind = "audio" | "file" | "image" | "video";
 
-function parseSafeHttpsUrl(value: string, kind: RemoteInputKind): URL {
-	const param = kind === "file" ? "file_url" : "image_url";
+function inputParam(kind: RemoteInputKind): string {
+	return kind === "file" ? "file_url" : `${kind}_url`;
+}
+
+function parseSafeHttpsUrl(
+	value: string,
+	kind: RemoteInputKind,
+	errorParam = "messages",
+): URL {
+	const param = inputParam(kind);
 	let url: URL;
 	try {
 		url = new URL(value);
@@ -309,6 +343,7 @@ function parseSafeHttpsUrl(value: string, kind: RemoteInputKind): URL {
 			`Invalid ${kind} URL: ${value}`,
 			`invalid_${kind}_url`,
 			`${param} must be a valid public HTTPS URL.`,
+			errorParam,
 		);
 	}
 	const literalHost =
@@ -327,6 +362,7 @@ function parseSafeHttpsUrl(value: string, kind: RemoteInputKind): URL {
 			`Unsafe ${kind} URL: ${url.href}`,
 			`unsafe_${kind}_url`,
 			`${param} must be a public HTTPS URL without credentials or a fragment.`,
+			errorParam,
 		);
 	}
 	return url;
@@ -416,9 +452,10 @@ async function assertPublicUrl(
 	value: string,
 	resolveHostname: ResolveHostname,
 	kind: RemoteInputKind,
+	errorParam = "messages",
 ): Promise<{ url: URL; addresses: readonly ResolvedAddress[] }> {
-	const url = parseSafeHttpsUrl(value, kind);
-	const param = kind === "file" ? "file_url" : "image_url";
+	const url = parseSafeHttpsUrl(value, kind, errorParam);
+	const param = inputParam(kind);
 
 	const literalHost =
 		url.hostname.startsWith("[") && url.hostname.endsWith("]")
@@ -432,6 +469,7 @@ async function assertPublicUrl(
 					`Could not resolve ${kind} URL hostname ${url.hostname}: ${String(cause)}`,
 					`${kind}_fetch_failed`,
 					`The ${kind} URL hostname could not be resolved.`,
+					errorParam,
 				);
 			});
 	if (
@@ -442,6 +480,7 @@ async function assertPublicUrl(
 			`${kind} URL resolved to a non-public address: ${url.hostname}`,
 			`unsafe_${kind}_url`,
 			`${param} must resolve only to public network addresses.`,
+			errorParam,
 		);
 	}
 	return { url, addresses };
@@ -487,6 +526,13 @@ function sniffMimeType(bytes: Uint8Array): string | undefined {
 		return "image/gif";
 	if (ascii(bytes, 0, 4) === "RIFF" && ascii(bytes, 8, 4) === "WEBP")
 		return "image/webp";
+	if (ascii(bytes, 0, 4) === "RIFF" && ascii(bytes, 8, 4) === "WAVE")
+		return "audio/wav";
+	if (ascii(bytes, 0, 4) === "RIFF" && ascii(bytes, 8, 4) === "AVI ")
+		return "video/x-msvideo";
+	if (ascii(bytes, 0, 4) === "fLaC") return "audio/flac";
+	if (ascii(bytes, 0, 3) === "ID3") return "audio/mpeg";
+	if (ascii(bytes, 0, 4) === "OggS") return "audio/ogg";
 	if (startsWith(bytes, [0x42, 0x4d])) return "image/bmp";
 	if (
 		startsWith(bytes, [0x49, 0x49, 0x2a, 0x00]) ||
@@ -498,6 +544,9 @@ function sniffMimeType(bytes: Uint8Array): string | undefined {
 		if (brand === "avif" || brand === "avis") return "image/avif";
 		if (["heic", "heix", "hevc", "hevx"].includes(brand)) return "image/heic";
 		if (["mif1", "msf1", "heif"].includes(brand)) return "image/heif";
+		if (brand === "qt  ") return "video/quicktime";
+		if (brand === "m4a ") return "audio/mp4";
+		return "video/mp4";
 	}
 	return undefined;
 }
@@ -505,13 +554,16 @@ function sniffMimeType(bytes: Uint8Array): string | undefined {
 async function readLimitedBody(
 	response: Response,
 	kind: RemoteInputKind,
+	maxBytes = MAX_MATERIALIZED_INPUT_BYTES,
+	errorParam = "messages",
 ): Promise<Uint8Array> {
 	const declared = Number(response.headers.get("content-length"));
-	if (Number.isFinite(declared) && declared > MAX_MATERIALIZED_INPUT_BYTES) {
+	if (Number.isFinite(declared) && declared > maxBytes) {
 		throw candidateInputError(
-			`Remote ${kind} declares ${declared} bytes, above the ${MAX_MATERIALIZED_INPUT_BYTES} byte limit`,
+			`Remote ${kind} declares ${declared} bytes, above the ${maxBytes} byte limit`,
 			`${kind}_too_large`,
 			`The ${kind} is too large for gateway materialization.`,
+			errorParam,
 		);
 	}
 	if (!response.body) return new Uint8Array();
@@ -524,12 +576,13 @@ async function readLimitedBody(
 			const { done, value } = await reader.read();
 			if (done) break;
 			total += value.byteLength;
-			if (total > MAX_MATERIALIZED_INPUT_BYTES) {
+			if (total > maxBytes) {
 				await reader.cancel();
 				throw candidateInputError(
-					`Remote ${kind} exceeded the ${MAX_MATERIALIZED_INPUT_BYTES} byte limit`,
+					`Remote ${kind} exceeded the ${maxBytes} byte limit`,
 					`${kind}_too_large`,
 					`The ${kind} is too large for gateway materialization.`,
+					errorParam,
 				);
 			}
 			chunks.push(value);
@@ -552,6 +605,8 @@ async function fetchInput(
 	signal: AbortSignal,
 	dependencies: ResolverDependencies,
 	kind: RemoteInputKind,
+	maxBytes = MAX_MATERIALIZED_INPUT_BYTES,
+	errorParam = "messages",
 ): Promise<MaterializedInput> {
 	let current = value;
 	for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects += 1) {
@@ -559,6 +614,7 @@ async function fetchInput(
 			current,
 			dependencies.resolveHostname,
 			kind,
+			errorParam,
 		);
 		const { url, addresses } = validated;
 		let response: Response;
@@ -574,9 +630,9 @@ async function fetchInput(
 					]),
 					headers: {
 						accept:
-							kind === "image"
-								? "image/*, */*;q=0.1"
-								: "application/pdf, text/*, application/json, */*;q=0.1",
+							kind === "file"
+								? "application/pdf, text/*, application/json, */*;q=0.1"
+								: `${kind}/*, */*;q=0.1`,
 					},
 				},
 				addresses,
@@ -586,6 +642,7 @@ async function fetchInput(
 				`Could not fetch ${kind} URL ${url.href}: ${String(cause)}`,
 				`${kind}_fetch_failed`,
 				`The ${kind} URL could not be fetched.`,
+				errorParam,
 			);
 		}
 
@@ -596,6 +653,7 @@ async function fetchInput(
 					`${kind} URL exceeded ${MAX_REDIRECTS} redirects`,
 					`${kind}_fetch_failed`,
 					`The ${kind} URL has too many redirects.`,
+					errorParam,
 				);
 			}
 			await response.body?.cancel();
@@ -608,15 +666,17 @@ async function fetchInput(
 				`${kind} URL returned HTTP ${response.status}`,
 				`${kind}_fetch_failed`,
 				`The ${kind} URL could not be fetched.`,
+				errorParam,
 			);
 		}
 
-		const bytes = await readLimitedBody(response, kind);
+		const bytes = await readLimitedBody(response, kind, maxBytes, errorParam);
 		if (bytes.byteLength === 0) {
 			throw requestError(
 				`Remote ${kind} is empty`,
 				`invalid_${kind}_data`,
 				`The remote ${kind} cannot be empty.`,
+				errorParam,
 			);
 		}
 		const filename = filenameFromUrl(url);
@@ -639,6 +699,8 @@ function decodeDataUrl(
 	value: string,
 	filename: string | undefined,
 	kind: RemoteInputKind,
+	maxBytes = MAX_INLINE_INPUT_BYTES,
+	errorParam = "messages",
 ): MaterializedInput {
 	const match =
 		/^data:([^;,]+)(?:;charset=[^;,]+)?;base64,([a-z0-9+/]*={0,2})$/i.exec(
@@ -649,6 +711,7 @@ function decodeDataUrl(
 			`${kind} data is not a valid base64 data URL`,
 			`invalid_${kind}_data`,
 			`${kind} data must be a valid base64 data URL.`,
+			errorParam,
 		);
 	}
 	const mimeType = normalizedMimeType(match[1]);
@@ -657,6 +720,7 @@ function decodeDataUrl(
 			`Invalid ${kind} data MIME type: ${String(match[1])}`,
 			`invalid_${kind}_data`,
 			`${kind} data must include a valid MIME type.`,
+			errorParam,
 		);
 	}
 	const encoded = match[2]!;
@@ -665,6 +729,7 @@ function decodeDataUrl(
 			`${kind} data base64 has invalid padding`,
 			`invalid_${kind}_data`,
 			`${kind} data must contain valid padded base64.`,
+			errorParam,
 		);
 	}
 	const bytes = Uint8Array.from(Buffer.from(encoded, "base64"));
@@ -673,6 +738,7 @@ function decodeDataUrl(
 			`${kind} data is empty`,
 			`invalid_${kind}_data`,
 			`${kind} data cannot be empty.`,
+			errorParam,
 		);
 	}
 	if (
@@ -683,13 +749,15 @@ function decodeDataUrl(
 			`${kind} data base64 is not canonical`,
 			`invalid_${kind}_data`,
 			`${kind} data must contain valid base64.`,
+			errorParam,
 		);
 	}
-	if (bytes.byteLength > MAX_INLINE_INPUT_BYTES) {
+	if (bytes.byteLength > maxBytes) {
 		throw requestError(
-			`Inline ${kind} contains ${bytes.byteLength} bytes, above the ${MAX_INLINE_INPUT_BYTES} byte limit`,
+			`Inline ${kind} contains ${bytes.byteLength} bytes, above the ${maxBytes} byte limit`,
 			`${kind}_too_large`,
 			`The ${kind} is too large for portable processing.`,
+			errorParam,
 		);
 	}
 	const effective = effectiveMimeType(mimeType, filename, bytes);
@@ -792,12 +860,16 @@ function assertPdfSignature(file: MaterializedInput): void {
 	}
 }
 
-function assertImageContent(image: MaterializedInput): void {
+function assertImageContent(
+	image: MaterializedInput,
+	param = "messages",
+): void {
 	if (!image.mimeType.startsWith("image/")) {
 		throw requestError(
 			`Image input resolved to ${image.mimeType}`,
 			"image_type_mismatch",
 			"The image content does not match an image media type.",
+			param,
 		);
 	}
 	const sniffed = sniffMimeType(image.bytes);
@@ -810,6 +882,7 @@ function assertImageContent(image: MaterializedInput): void {
 			`Image input signature resolves to ${sniffed}`,
 			"image_type_mismatch",
 			"The image content does not match its declared type.",
+			param,
 		);
 	}
 }
@@ -1336,6 +1409,222 @@ export function createContentInputResolver(
 	dependencies?: Partial<ResolverDependencies>,
 ): ContentInputResolver {
 	return new ContentInputResolver(request, signal, {
+		...DEFAULT_DEPENDENCIES,
+		...dependencies,
+	});
+}
+
+type VideoMediaKind = "audio" | "image" | "video";
+
+interface VideoMediaPart {
+	kind: VideoMediaKind;
+	param: "frame_images" | "input_references";
+	url: string;
+}
+
+function videoMediaKind(ref: VideoUrlReference): VideoMediaKind {
+	return ref.type === "image_url"
+		? "image"
+		: ref.type === "audio_url"
+			? "audio"
+			: "video";
+}
+
+function videoMediaParts(request: CanonicalVideoRequest): VideoMediaPart[] {
+	return [
+		...(request.inputReferences ?? [])
+			.filter((ref): ref is VideoUrlReference => ref.type !== "file_id")
+			.map((ref) => ({
+				kind: videoMediaKind(ref),
+				param: "input_references" as const,
+				url: ref.url,
+			})),
+		...(request.frameImages ?? []).map((frame) => ({
+			kind: "image" as const,
+			param: "frame_images" as const,
+			url: frame.url,
+		})),
+	];
+}
+
+function videoSource(
+	url: string,
+	kind: VideoMediaKind,
+	param: string,
+): ContentSource {
+	if (url.length === 0) {
+		throw requestError(
+			`${kind} input source is empty`,
+			`invalid_${kind}_url`,
+			`${kind}_url cannot be empty.`,
+			param,
+		);
+	}
+	if (/^data:/i.test(url)) return { kind: "data_url", value: url };
+	parseSafeHttpsUrl(url, kind, param);
+	return { kind: "url", value: url };
+}
+
+function assertVideoMediaSupported(
+	part: VideoMediaPart,
+	support: ContentPartInputSupport | undefined,
+): void {
+	if (!support?.sources.includes("data_url")) {
+		throw candidateInputError(
+			`The selected transport cannot consume materialized ${part.kind} inputs`,
+			`unsupported_${part.kind}_input`,
+			`The selected deployment cannot consume this ${part.kind} input.`,
+			part.param,
+		);
+	}
+}
+
+/**
+ * Materializes every video-generation media URL before adapter execution. Remote URLs are never
+ * forwarded to providers: each candidate must explicitly accept a data URL for the media kind.
+ */
+export class VideoInputResolver {
+	readonly #request: CanonicalVideoRequest;
+	readonly #signal: AbortSignal;
+	readonly #dependencies: ResolverDependencies;
+	readonly #parts: VideoMediaPart[];
+	readonly #materialized = new Map<string, Promise<MaterializedInput>>();
+	readonly #fetches = new AsyncSemaphore(MAX_CONCURRENT_FETCHES);
+
+	constructor(
+		request: CanonicalVideoRequest,
+		signal: AbortSignal,
+		dependencies: ResolverDependencies = DEFAULT_DEPENDENCIES,
+	) {
+		this.#request = request;
+		this.#signal = signal;
+		this.#dependencies = dependencies;
+		this.#parts = videoMediaParts(request);
+		for (const part of this.#parts)
+			videoSource(part.url, part.kind, part.param);
+	}
+
+	get hasInputs(): boolean {
+		return this.#parts.length > 0;
+	}
+
+	assertCandidate(
+		candidate: DeploymentCandidate,
+		transport: UpstreamTransport,
+	): void {
+		const support = candidate.adapter.contentInputs?.[transport];
+		for (const part of this.#parts)
+			assertVideoMediaSupported(part, support?.[part.kind]);
+	}
+
+	async #materialize(part: VideoMediaPart): Promise<MaterializedInput> {
+		const source = videoSource(part.url, part.kind, part.param);
+		const key = `${part.kind}:${source.kind}:${source.value}`;
+		let pending = this.#materialized.get(key);
+		if (pending === undefined) {
+			pending =
+				source.kind === "url"
+					? this.#fetches.run(() =>
+							fetchInput(
+								source.value,
+								this.#signal,
+								this.#dependencies,
+								part.kind,
+								MAX_PORTABLE_CONTENT_INPUT_BYTES,
+								part.param,
+							),
+						)
+					: Promise.resolve(
+							decodeDataUrl(
+								source.value,
+								undefined,
+								part.kind,
+								MAX_PORTABLE_CONTENT_INPUT_BYTES,
+								part.param,
+							),
+						);
+			this.#materialized.set(key, pending);
+		}
+		return pending;
+	}
+
+	async resolveForCandidate(
+		candidate: DeploymentCandidate,
+		transport: UpstreamTransport,
+	): Promise<ResolvedVideoInputRequest> {
+		if (!this.hasInputs) return { request: this.#request };
+		this.assertCandidate(candidate, transport);
+		const support = candidate.adapter.contentInputs?.[transport];
+		const resolved = await Promise.all(
+			this.#parts.map(async (part) => {
+				const media = await this.#materialize(part);
+				if (part.kind === "image") assertImageContent(media, part.param);
+				const kindSupport = support?.[part.kind];
+				if (
+					!media.mimeType.startsWith(`${part.kind}/`) ||
+					!mimeMatches(media.mimeType, kindSupport?.mimeTypes) ||
+					(kindSupport?.maxBytes !== undefined &&
+						media.bytes.byteLength > kindSupport.maxBytes)
+				) {
+					throw candidateInputError(
+						`The ${part.kind} input uses unsupported MIME type ${media.mimeType} or exceeds the transport limit`,
+						`unsupported_${part.kind}_input`,
+						`The selected deployment does not support this ${part.kind} input.`,
+						part.param,
+					);
+				}
+				return { media, part };
+			}),
+		);
+		const totalBytes = resolved.reduce(
+			(total, item) => total + item.media.bytes.byteLength,
+			0,
+		);
+		if (totalBytes > MAX_PORTABLE_CONTENT_INPUT_BYTES) {
+			throw requestError(
+				`Video media inputs contain ${totalBytes} bytes, above the ${MAX_PORTABLE_CONTENT_INPUT_BYTES} byte request limit`,
+				"content_inputs_too_large",
+				"The combined video media inputs exceed the 50 MB limit.",
+				"input_references",
+			);
+		}
+
+		let index = 0;
+		const inputReferences = this.#request.inputReferences?.map((ref) => {
+			if (ref.type === "file_id") return ref;
+			const media = resolved[index++]!.media;
+			return { ...ref, url: media.dataUrl };
+		});
+		const frameImages = this.#request.frameImages?.map((frame) => {
+			const media = resolved[index++]!.media;
+			return { ...frame, url: media.dataUrl };
+		});
+		return {
+			request: {
+				...this.#request,
+				...(inputReferences !== undefined ? { inputReferences } : {}),
+				...(frameImages !== undefined ? { frameImages } : {}),
+			},
+			metadata: {
+				materializedAudio: resolved.filter((item) => item.part.kind === "audio")
+					.length,
+				materializedImages: resolved.filter(
+					(item) => item.part.kind === "image",
+				).length,
+				materializedVideo: resolved.filter((item) => item.part.kind === "video")
+					.length,
+				totalBytes,
+			},
+		};
+	}
+}
+
+export function createVideoInputResolver(
+	request: CanonicalVideoRequest,
+	signal: AbortSignal,
+	dependencies?: Partial<ResolverDependencies>,
+): VideoInputResolver {
+	return new VideoInputResolver(request, signal, {
 		...DEFAULT_DEPENDENCIES,
 		...dependencies,
 	});
