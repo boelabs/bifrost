@@ -361,8 +361,6 @@
 				"supportsSeed": { "type": "boolean" },
 				"supportsGenerateAudio": { "type": "boolean" },
 				"maxInputReferences": { "type": "integer", "minimum": 1 },
-				"requiresDataUrlImageReference": { "type": "boolean" },
-				"maxReferenceBytes": { "type": "integer", "minimum": 1 },
 				"contentVariants": {
 					"type": "array",
 					"items": { "enum": ["video", "thumbnail", "spritesheet"] },

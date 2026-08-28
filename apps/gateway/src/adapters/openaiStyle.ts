@@ -933,6 +933,30 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			...(config.contentInputs?.[transport] ?? {}),
 		};
 	}
+	for (const transport of videoTransports ?? []) {
+		contentInputs[transport] = {
+			image: {
+				sources: ["data_url"],
+				mimeTypes: ["image/*"],
+				maxBytes: 50_000_000,
+			},
+			...(transport === "videos_async"
+				? {
+						audio: {
+							sources: ["data_url" as const],
+							mimeTypes: ["audio/*"],
+							maxBytes: 50_000_000,
+						},
+						video: {
+							sources: ["data_url" as const],
+							mimeTypes: ["video/*"],
+							maxBytes: 50_000_000,
+						},
+					}
+				: {}),
+			...(config.contentInputs?.[transport] ?? {}),
+		};
+	}
 	if (!chatTransports.includes(config.defaultTransport)) {
 		throw new Error(
 			`${config.label}: default transport "${config.defaultTransport}" is not supported`,

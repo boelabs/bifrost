@@ -1579,6 +1579,18 @@ export const googleAdapter: Adapter = {
 				maxBytes: 20_000_000,
 			},
 		},
+		generate_videos: {
+			image: {
+				sources: ["data_url"],
+				mimeTypes: ["image/png", "image/jpeg", "image/webp"],
+				maxBytes: 20_000_000,
+			},
+			video: {
+				sources: ["data_url"],
+				mimeTypes: ["video/mp4"],
+				maxBytes: 20_000_000,
+			},
+		},
 	},
 	transports: {
 		chat: { supported: ["generate_content"], default: "generate_content" },

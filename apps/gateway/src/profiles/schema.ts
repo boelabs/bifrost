@@ -321,8 +321,6 @@ const videoOperationProfileSchema = z
 		supportsSeed: z.boolean().optional(),
 		supportsGenerateAudio: z.boolean().optional(),
 		maxInputReferences: z.int().positive().optional(),
-		requiresDataUrlImageReference: z.boolean().optional(),
-		maxReferenceBytes: z.int().positive().optional(),
 		contentVariants: z
 			.array(z.enum(["video", "thumbnail", "spritesheet"]))
 			.min(1)

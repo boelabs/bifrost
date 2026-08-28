@@ -90,9 +90,6 @@ export interface VideoModelProfile {
 	supportsSeed?: boolean;
 	supportsGenerateAudio?: boolean;
 	maxInputReferences?: number;
-	/** Require data:image/... URLs when the adapter cannot ingest remote URLs itself. */
-	requiresDataUrlImageReference?: boolean;
-	maxReferenceBytes?: number;
 	/** Variants the provider/gateway can serve without fabricating assets. */
 	contentVariants?: VideoAssetVariant[];
 	/** How often the gateway should poll an unfinished job for this model. */

@@ -68,8 +68,10 @@ export interface ContentPartInputSupport {
  * instead of in provider-specific routing branches.
  */
 export interface ContentInputTransportSupport {
+	audio?: ContentPartInputSupport;
 	file?: ContentPartInputSupport;
 	image?: ContentPartInputSupport;
+	video?: ContentPartInputSupport;
 }
 
 export interface UpstreamHttpRequest<TBody extends UpstreamBody = string> {
