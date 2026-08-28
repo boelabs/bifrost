@@ -96,19 +96,26 @@ export async function listOperationsPage(
 }
 
 export async function getOperationDetail(id: string) {
-	const [operation, attempts] = await Promise.all([
-		db
-			.select()
-			.from(gatewayOperations)
-			.where(eq(gatewayOperations.id, id))
-			.limit(1),
-		db
-			.select()
-			.from(upstreamAttempts)
-			.where(eq(upstreamAttempts.operationId, id))
-			.orderBy(upstreamAttempts.ordinal),
-	]);
-	return operation[0] ? { ...operation[0], attempts } : null;
+	return db.transaction(
+		async (tx) => {
+			const [operation] = await tx
+				.select()
+				.from(gatewayOperations)
+				.where(eq(gatewayOperations.id, id))
+				.limit(1);
+			if (!operation) return null;
+			const attempts = await tx
+				.select()
+				.from(upstreamAttempts)
+				.where(eq(upstreamAttempts.operationId, id))
+				.orderBy(upstreamAttempts.ordinal);
+			return { ...operation, attempts };
+		},
+		{
+			isolationLevel: "repeatable read",
+			accessMode: "read only",
+		},
+	);
 }
 
 export async function operationSummary(since: Date) {

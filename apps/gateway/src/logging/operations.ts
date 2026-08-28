@@ -464,216 +464,219 @@ export function completeOperation(
 		() =>
 			started.then(() =>
 				retry(async () => {
-					await db
-						.update(gatewayOperations)
-						.set({
-							publicModel: input.publicModel,
-							lifecycleState: "finished",
-							outcome,
-							degraded,
-							terminalVerified,
-							cacheHit: input.cacheHit,
-							stream: streamed,
-							httpStatus: input.httpStatus,
-							promptTokens: input.usage?.promptTokens ?? null,
-							completionTokens: input.usage?.completionTokens ?? null,
-							reasoningTokens: input.usage?.reasoningTokens ?? null,
-							cacheReadTokens: input.usage?.cacheReadTokens ?? null,
-							cacheWriteTokens: input.usage?.cacheWriteTokens ?? null,
-							totalTokens: input.usage?.totalTokens ?? null,
-							searchUnits: input.usage?.searchUnits ?? null,
-							consumerCostCents: input.cost?.totalCents.toFixed(10) ?? null,
-							upstreamCostCents:
-								(attempts.length > 0
-									? knownUpstreamCost
-									: input.cost?.totalCents
-								)?.toFixed(10) ?? null,
-							durationMs: input.durationMs,
-							firstOutputMs:
-								lifecycle?.firstOutputAt != null
-									? lifecycle.firstOutputAt - input.startTime.getTime()
-									: input.ttftMs,
-							firstEventMs:
-								lifecycle?.firstEventAt != null
-									? lifecycle.firstEventAt - input.startTime.getTime()
-									: null,
-							firstReasoningMs:
-								lifecycle?.firstReasoningAt != null
-									? lifecycle.firstReasoningAt - input.startTime.getTime()
-									: null,
-							maxInterEventGapMs: lifecycle?.maxInterEventGapMs ?? null,
-							downstreamBlockedMs:
-								downstream?.maxBlockedMs ??
-								(attempts.length > 0
-									? Math.max(
-											...attempts.map(
-												(attempt) => attempt.downstreamBlockedMs ?? 0,
-											),
-										)
-									: null),
-							upstreamBytes: attempts.length > 0 ? upstreamBytes : null,
-							downstreamBytes:
-								downstreamBytes > 0
-									? downstreamBytes
-									: typeof responseSummary.bytes === "number"
-										? responseSummary.bytes
+					// A finished parent must never be observable with stale in-progress attempts.
+					await db.transaction(async (tx) => {
+						await tx
+							.update(gatewayOperations)
+							.set({
+								publicModel: input.publicModel,
+								lifecycleState: "finished",
+								outcome,
+								degraded,
+								terminalVerified,
+								cacheHit: input.cacheHit,
+								stream: streamed,
+								httpStatus: input.httpStatus,
+								promptTokens: input.usage?.promptTokens ?? null,
+								completionTokens: input.usage?.completionTokens ?? null,
+								reasoningTokens: input.usage?.reasoningTokens ?? null,
+								cacheReadTokens: input.usage?.cacheReadTokens ?? null,
+								cacheWriteTokens: input.usage?.cacheWriteTokens ?? null,
+								totalTokens: input.usage?.totalTokens ?? null,
+								searchUnits: input.usage?.searchUnits ?? null,
+								consumerCostCents: input.cost?.totalCents.toFixed(10) ?? null,
+								upstreamCostCents:
+									(attempts.length > 0
+										? knownUpstreamCost
+										: input.cost?.totalCents
+									)?.toFixed(10) ?? null,
+								durationMs: input.durationMs,
+								firstOutputMs:
+									lifecycle?.firstOutputAt != null
+										? lifecycle.firstOutputAt - input.startTime.getTime()
+										: input.ttftMs,
+								firstEventMs:
+									lifecycle?.firstEventAt != null
+										? lifecycle.firstEventAt - input.startTime.getTime()
 										: null,
-							endedAt: input.endTime,
-							lastProgressAt: input.endTime,
-							reasoning: input.metadata.reasoning ?? null,
-							requestSummary,
-							responseSummary,
-							metadata: {
-								...input.metadata,
-								client: {
-									ipFingerprint: payloadFingerprint(input.ip),
-									userAgentFingerprint: payloadFingerprint(input.userAgent),
+								firstReasoningMs:
+									lifecycle?.firstReasoningAt != null
+										? lifecycle.firstReasoningAt - input.startTime.getTime()
+										: null,
+								maxInterEventGapMs: lifecycle?.maxInterEventGapMs ?? null,
+								downstreamBlockedMs:
+									downstream?.maxBlockedMs ??
+									(attempts.length > 0
+										? Math.max(
+												...attempts.map(
+													(attempt) => attempt.downstreamBlockedMs ?? 0,
+												),
+											)
+										: null),
+								upstreamBytes: attempts.length > 0 ? upstreamBytes : null,
+								downstreamBytes:
+									downstreamBytes > 0
+										? downstreamBytes
+										: typeof responseSummary.bytes === "number"
+											? responseSummary.bytes
+											: null,
+								endedAt: input.endTime,
+								lastProgressAt: input.endTime,
+								reasoning: input.metadata.reasoning ?? null,
+								requestSummary,
+								responseSummary,
+								metadata: {
+									...input.metadata,
+									client: {
+										ipFingerprint: payloadFingerprint(input.ip),
+										userAgentFingerprint: payloadFingerprint(input.userAgent),
+									},
 								},
-							},
-							error: input.error
-								? {
-										class: input.error.class,
-										code: input.error.code,
-										http_status: input.error.http_status,
-										failure_kind: input.error.failure_kind,
-									}
-								: !terminalVerified
+								error: input.error
 									? {
-											class: "server",
-											code: "missing_terminal_evidence",
-											failure_kind: "gateway",
+											class: input.error.class,
+											code: input.error.code,
+											http_status: input.error.http_status,
+											failure_kind: input.error.failure_kind,
 										}
-									: null,
-						})
-						.where(eq(gatewayOperations.id, operationId));
+									: !terminalVerified
+										? {
+												class: "server",
+												code: "missing_terminal_evidence",
+												failure_kind: "gateway",
+											}
+										: null,
+							})
+							.where(eq(gatewayOperations.id, operationId));
 
-					if (attempts.length > 0) {
-						await db
-							.insert(upstreamAttempts)
-							.values(
-								attempts.map((attempt, index) => {
-									const endedAt = new Date(
-										attempt.endedAt ?? input.endTime.getTime(),
-									);
-									const durationMs = Math.max(0, attempt.ms ?? 0);
-									return {
-										operationId,
-										ordinal: index + 1,
-										deploymentId: attempt.deploymentId ?? null,
-										deploymentLabel: attempt.label ?? null,
-										adapterKey: attempt.adapterKey ?? null,
-										transport: attempt.transport ?? null,
-										outcome: attempt.ok
-											? attempt.terminalOutcome === "incomplete"
-												? ("incomplete" as const)
-												: attempt.terminalOutcome === "blocked"
-													? ("blocked" as const)
-													: ("success" as const)
-											: ("error" as const),
-										terminalVerified: attempt.terminalVerified === true,
-										transportTerminator: attempt.transportTerminator ?? null,
-										failureOwner: failureOwner(attempt),
-										failureKind: normalizedFailureKind(attempt),
-										failurePhase: normalizedFailurePhase(attempt),
-										healthEffect:
-											attempt.terminalVerified === true
-												? "reward"
-												: attempt.deploymentHealth === "neutral"
-													? "neutral"
-													: "penalize",
-										httpStatus: attempt.httpStatus ?? null,
-										providerStatus: attempt.providerStatus ?? null,
-										durationMs,
-										headersMs: attempt.headersMs ?? null,
-										firstEventMs: attempt.firstEventMs ?? null,
-										firstReasoningMs: attempt.firstReasoningMs ?? null,
-										firstOutputMs: attempt.firstOutputMs ?? null,
-										maxInterEventGapMs: attempt.maxInterEventGapMs ?? null,
-										downstreamBlockedMs: attempt.downstreamBlockedMs ?? null,
-										upstreamBytes: attempt.upstreamBytes ?? null,
-										downstreamBytes: attempt.downstreamBytes ?? null,
-										frames: attempt.frames ?? null,
-										metadataFrames: attempt.metadataFrames ?? null,
-										reasoningFrames: attempt.reasoningFrames ?? null,
-										contentFrames: attempt.contentFrames ?? null,
-										toolFrames: attempt.toolFrames ?? null,
-										mediaFrames: attempt.mediaFrames ?? null,
-										usageFrames: attempt.usageFrames ?? null,
-										promptTokens: attempt.usage?.promptTokens ?? null,
-										completionTokens: attempt.usage?.completionTokens ?? null,
-										reasoningTokens: attempt.usage?.reasoningTokens ?? null,
-										cacheReadTokens: attempt.usage?.cacheReadTokens ?? null,
-										cacheWriteTokens: attempt.usage?.cacheWriteTokens ?? null,
-										totalTokens: attempt.usage?.totalTokens ?? null,
-										searchUnits: attempt.usage?.searchUnits ?? null,
-										lastProgressAt: new Date(
-											attempt.lastProgressAt ?? endedAt.getTime(),
-										),
-										startedAt: new Date(
-											attempt.startedAt ?? endedAt.getTime() - durationMs,
-										),
-										endedAt,
-										diagnostics: {
-											...(attempt.diagnostics ?? {}),
-											estimatedCostCents: attempt.estimatedCostCents ?? null,
-											terminalOutcome: attempt.terminalOutcome ?? null,
-											terminalReason: attempt.terminalReason ?? null,
-										},
-										error: attempt.ok
-											? null
-											: {
-													class: attempt.errorClass ?? null,
-													code: attempt.errorCode ?? null,
-													httpStatus: attempt.httpStatus ?? null,
-													providerStatus: attempt.providerStatus ?? null,
-												},
-									};
-								}),
-							)
-							.onConflictDoUpdate({
-								target: [
-									upstreamAttempts.operationId,
-									upstreamAttempts.ordinal,
-								],
-								set: {
-									outcome: sql`excluded.outcome`,
-									terminalVerified: sql`excluded.terminal_verified`,
-									transportTerminator: sql`excluded.transport_terminator`,
-									failureOwner: sql`excluded.failure_owner`,
-									failureKind: sql`excluded.failure_kind`,
-									failurePhase: sql`excluded.failure_phase`,
-									healthEffect: sql`excluded.health_effect`,
-									httpStatus: sql`excluded.http_status`,
-									providerStatus: sql`excluded.provider_status`,
-									durationMs: sql`excluded.duration_ms`,
-									headersMs: sql`excluded.headers_ms`,
-									firstEventMs: sql`excluded.first_event_ms`,
-									firstReasoningMs: sql`excluded.first_reasoning_ms`,
-									firstOutputMs: sql`excluded.first_output_ms`,
-									maxInterEventGapMs: sql`excluded.max_inter_event_gap_ms`,
-									downstreamBlockedMs: sql`excluded.downstream_blocked_ms`,
-									upstreamBytes: sql`excluded.upstream_bytes`,
-									downstreamBytes: sql`excluded.downstream_bytes`,
-									frames: sql`excluded.frames`,
-									metadataFrames: sql`excluded.metadata_frames`,
-									reasoningFrames: sql`excluded.reasoning_frames`,
-									contentFrames: sql`excluded.content_frames`,
-									toolFrames: sql`excluded.tool_frames`,
-									mediaFrames: sql`excluded.media_frames`,
-									usageFrames: sql`excluded.usage_frames`,
-									promptTokens: sql`excluded.prompt_tokens`,
-									completionTokens: sql`excluded.completion_tokens`,
-									reasoningTokens: sql`excluded.reasoning_tokens`,
-									cacheReadTokens: sql`excluded.cache_read_tokens`,
-									cacheWriteTokens: sql`excluded.cache_write_tokens`,
-									totalTokens: sql`excluded.total_tokens`,
-									searchUnits: sql`excluded.search_units`,
-									lastProgressAt: sql`excluded.last_progress_at`,
-									startedAt: sql`excluded.started_at`,
-									endedAt: sql`excluded.ended_at`,
-								},
-							});
-					}
+						if (attempts.length > 0) {
+							await tx
+								.insert(upstreamAttempts)
+								.values(
+									attempts.map((attempt, index) => {
+										const endedAt = new Date(
+											attempt.endedAt ?? input.endTime.getTime(),
+										);
+										const durationMs = Math.max(0, attempt.ms ?? 0);
+										return {
+											operationId,
+											ordinal: index + 1,
+											deploymentId: attempt.deploymentId ?? null,
+											deploymentLabel: attempt.label ?? null,
+											adapterKey: attempt.adapterKey ?? null,
+											transport: attempt.transport ?? null,
+											outcome: attempt.ok
+												? attempt.terminalOutcome === "incomplete"
+													? ("incomplete" as const)
+													: attempt.terminalOutcome === "blocked"
+														? ("blocked" as const)
+														: ("success" as const)
+												: ("error" as const),
+											terminalVerified: attempt.terminalVerified === true,
+											transportTerminator: attempt.transportTerminator ?? null,
+											failureOwner: failureOwner(attempt),
+											failureKind: normalizedFailureKind(attempt),
+											failurePhase: normalizedFailurePhase(attempt),
+											healthEffect:
+												attempt.terminalVerified === true
+													? "reward"
+													: attempt.deploymentHealth === "neutral"
+														? "neutral"
+														: "penalize",
+											httpStatus: attempt.httpStatus ?? null,
+											providerStatus: attempt.providerStatus ?? null,
+											durationMs,
+											headersMs: attempt.headersMs ?? null,
+											firstEventMs: attempt.firstEventMs ?? null,
+											firstReasoningMs: attempt.firstReasoningMs ?? null,
+											firstOutputMs: attempt.firstOutputMs ?? null,
+											maxInterEventGapMs: attempt.maxInterEventGapMs ?? null,
+											downstreamBlockedMs: attempt.downstreamBlockedMs ?? null,
+											upstreamBytes: attempt.upstreamBytes ?? null,
+											downstreamBytes: attempt.downstreamBytes ?? null,
+											frames: attempt.frames ?? null,
+											metadataFrames: attempt.metadataFrames ?? null,
+											reasoningFrames: attempt.reasoningFrames ?? null,
+											contentFrames: attempt.contentFrames ?? null,
+											toolFrames: attempt.toolFrames ?? null,
+											mediaFrames: attempt.mediaFrames ?? null,
+											usageFrames: attempt.usageFrames ?? null,
+											promptTokens: attempt.usage?.promptTokens ?? null,
+											completionTokens: attempt.usage?.completionTokens ?? null,
+											reasoningTokens: attempt.usage?.reasoningTokens ?? null,
+											cacheReadTokens: attempt.usage?.cacheReadTokens ?? null,
+											cacheWriteTokens: attempt.usage?.cacheWriteTokens ?? null,
+											totalTokens: attempt.usage?.totalTokens ?? null,
+											searchUnits: attempt.usage?.searchUnits ?? null,
+											lastProgressAt: new Date(
+												attempt.lastProgressAt ?? endedAt.getTime(),
+											),
+											startedAt: new Date(
+												attempt.startedAt ?? endedAt.getTime() - durationMs,
+											),
+											endedAt,
+											diagnostics: {
+												...(attempt.diagnostics ?? {}),
+												estimatedCostCents: attempt.estimatedCostCents ?? null,
+												terminalOutcome: attempt.terminalOutcome ?? null,
+												terminalReason: attempt.terminalReason ?? null,
+											},
+											error: attempt.ok
+												? null
+												: {
+														class: attempt.errorClass ?? null,
+														code: attempt.errorCode ?? null,
+														httpStatus: attempt.httpStatus ?? null,
+														providerStatus: attempt.providerStatus ?? null,
+													},
+										};
+									}),
+								)
+								.onConflictDoUpdate({
+									target: [
+										upstreamAttempts.operationId,
+										upstreamAttempts.ordinal,
+									],
+									set: {
+										outcome: sql`excluded.outcome`,
+										terminalVerified: sql`excluded.terminal_verified`,
+										transportTerminator: sql`excluded.transport_terminator`,
+										failureOwner: sql`excluded.failure_owner`,
+										failureKind: sql`excluded.failure_kind`,
+										failurePhase: sql`excluded.failure_phase`,
+										healthEffect: sql`excluded.health_effect`,
+										httpStatus: sql`excluded.http_status`,
+										providerStatus: sql`excluded.provider_status`,
+										durationMs: sql`excluded.duration_ms`,
+										headersMs: sql`excluded.headers_ms`,
+										firstEventMs: sql`excluded.first_event_ms`,
+										firstReasoningMs: sql`excluded.first_reasoning_ms`,
+										firstOutputMs: sql`excluded.first_output_ms`,
+										maxInterEventGapMs: sql`excluded.max_inter_event_gap_ms`,
+										downstreamBlockedMs: sql`excluded.downstream_blocked_ms`,
+										upstreamBytes: sql`excluded.upstream_bytes`,
+										downstreamBytes: sql`excluded.downstream_bytes`,
+										frames: sql`excluded.frames`,
+										metadataFrames: sql`excluded.metadata_frames`,
+										reasoningFrames: sql`excluded.reasoning_frames`,
+										contentFrames: sql`excluded.content_frames`,
+										toolFrames: sql`excluded.tool_frames`,
+										mediaFrames: sql`excluded.media_frames`,
+										usageFrames: sql`excluded.usage_frames`,
+										promptTokens: sql`excluded.prompt_tokens`,
+										completionTokens: sql`excluded.completion_tokens`,
+										reasoningTokens: sql`excluded.reasoning_tokens`,
+										cacheReadTokens: sql`excluded.cache_read_tokens`,
+										cacheWriteTokens: sql`excluded.cache_write_tokens`,
+										totalTokens: sql`excluded.total_tokens`,
+										searchUnits: sql`excluded.search_units`,
+										lastProgressAt: sql`excluded.last_progress_at`,
+										startedAt: sql`excluded.started_at`,
+										endedAt: sql`excluded.ended_at`,
+									},
+								});
+						}
+					});
 
 					const shouldCapture =
 						outcome !== "success" ||
