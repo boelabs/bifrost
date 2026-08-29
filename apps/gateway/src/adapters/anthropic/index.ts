@@ -277,7 +277,8 @@ function buildMessages(req: CanonicalChatRequest): {
 					input: parseToolArguments(toolCall.arguments),
 				});
 			}
-			messages.push({ role: "assistant", content: blocks });
+			if (blocks.length > 0)
+				messages.push({ role: "assistant", content: blocks });
 			continue;
 		}
 
