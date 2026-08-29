@@ -443,19 +443,21 @@ export function responsesRequestToCanonical(
 					break;
 				}
 				case "reasoning": {
-					const mirrored = mirrorReasoningItem(item);
-					const encrypted = mirrored.encrypted_content;
+					// Stored verbatim: mirroring is how reasoning is rendered to clients, so folding
+					// it into canonical state would hand every transport a half the provider never
+					// sent. Both representations are restored on the way out.
+					const encrypted = item.encrypted_content;
 					if (typeof encrypted === "string" && encrypted.length > 0) {
 						pendingReasoning.push({
 							encrypted_content: encrypted,
-							...(typeof mirrored.id === "string" && mirrored.id.length > 0
-								? { id: mirrored.id }
+							...(typeof item.id === "string" && item.id.length > 0
+								? { id: item.id }
 								: {}),
-							...(Array.isArray(mirrored.summary)
-								? { summary: structuredClone(mirrored.summary) }
+							...(Array.isArray(item.summary)
+								? { summary: structuredClone(item.summary) }
 								: {}),
-							...(Array.isArray(mirrored.content)
-								? { content: structuredClone(mirrored.content) }
+							...(Array.isArray(item.content)
+								? { content: structuredClone(item.content) }
 								: {}),
 						});
 					}

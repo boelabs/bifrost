@@ -17,6 +17,7 @@ import {
 
 import {
 	responsesEventsToCanonicalChunks,
+	buildResponsesRequestBody,
 	parseResponsesResponse,
 } from "./responsesTransport.ts";
 
@@ -543,6 +544,96 @@ test("request->canonical: reasoning items with encrypted_content attach to the n
 		},
 	});
 	assert.equal(u.messages[1]!.role, "tool");
+});
+
+function replayBody(reasoningItem: Record<string, unknown>) {
+	const canonical = responsesRequestToCanonical(
+		parse({
+			model: "gpt",
+			input: [
+				{ role: "user", content: [{ type: "input_text", text: "hi" }] },
+				reasoningItem,
+				{
+					type: "function_call",
+					call_id: "call_1",
+					name: "f",
+					arguments: "{}",
+				},
+				{ type: "function_call_output", call_id: "call_1", output: "ok" },
+			],
+		}),
+	);
+	return buildResponsesRequestBody(canonical, "upstream-model").input as Record<
+		string,
+		unknown
+	>[];
+}
+
+test("canonical->upstream: replayed reasoning drops content the provider cannot accept", () => {
+	// A client replaying what the gateway rendered sends both halves back; request schemas allow
+	// `content` on a reasoning item only as an empty array.
+	const input = replayBody({
+		type: "reasoning",
+		id: "rs_1",
+		encrypted_content: "enc-1",
+		summary: [{ type: "summary_text", text: "Weighed the options." }],
+		content: [{ type: "reasoning_text", text: "Weighed the options." }],
+	});
+	assert.deepEqual(input[1], {
+		type: "reasoning",
+		id: "rs_1",
+		encrypted_content: "enc-1",
+		summary: [{ type: "summary_text", text: "Weighed the options." }],
+	});
+	assert.equal(input[2]!.type, "function_call");
+});
+
+test("canonical->upstream: a summary-only reasoning item gains no synthesized content", () => {
+	const input = replayBody({
+		type: "reasoning",
+		id: "rs_1",
+		encrypted_content: "enc-1",
+		summary: [{ type: "summary_text", text: "Checked the tax rules." }],
+	});
+	assert.deepEqual(Object.keys(input[1]!).sort(), [
+		"encrypted_content",
+		"id",
+		"summary",
+		"type",
+	]);
+});
+
+test("request->canonical: an ingested reasoning item keeps only what the client sent", () => {
+	const u = responsesRequestToCanonical(
+		parse({
+			model: "gpt",
+			input: [
+				{
+					type: "reasoning",
+					id: "rs_1",
+					encrypted_content: "enc-1",
+					summary: [{ type: "summary_text", text: "Summarized." }],
+				},
+				{
+					type: "function_call",
+					call_id: "call_1",
+					name: "f",
+					arguments: "{}",
+				},
+			],
+		}),
+	);
+	assert.deepEqual(u.messages[0]!.providerFields, {
+		openai: {
+			reasoning: [
+				{
+					encrypted_content: "enc-1",
+					id: "rs_1",
+					summary: [{ type: "summary_text", text: "Summarized." }],
+				},
+			],
+		},
+	});
 });
 
 const renderOpts = (): RenderOptions => ({

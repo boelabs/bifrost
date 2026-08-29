@@ -48,9 +48,9 @@ import {
 
 import {
 	mirrorReasoningEventData,
+	reasoningItemForRequest,
 	mirrorReasoningOutput,
 	reasoningTextFromItem,
-	mirrorReasoningItem,
 } from "./responsesReasoning.ts";
 
 const ENCRYPTED_REASONING_INCLUDE = "reasoning.encrypted_content";
@@ -217,15 +217,7 @@ export function buildResponsesRequestBody(
 			// reasoning items to precede the function calls they preceded originally).
 			for (const item of openaiReasoningFromProviderFields(m.providerFields) ??
 				[]) {
-				input.push(
-					mirrorReasoningItem({
-						type: "reasoning",
-						...(item.id !== undefined ? { id: item.id } : {}),
-						encrypted_content: item.encrypted_content,
-						summary: item.summary ?? [],
-						...(item.content !== undefined ? { content: item.content } : {}),
-					}),
-				);
+				input.push(reasoningItemForRequest(item));
 			}
 			if (m.content)
 				input.push({
