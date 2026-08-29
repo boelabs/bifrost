@@ -1,12 +1,11 @@
 import type { OperationProfiles, TransportOverrides } from "#profiles/types.ts";
-import { listEnabledDeployments } from "#db/repos/deployments.ts";
+import { enforcePublicModelRateLimit } from "./modelsRateLimit.ts";
 import { supportedParameterNames } from "#catalog/parameters.ts";
 import type { ResolvedModelMetadata } from "#catalog/types.ts";
 import type { DeploymentRow } from "#db/repos/deployments.ts";
 import type { OperationId } from "#operations/registry.ts";
 import { getEffectiveSettings } from "#router/settings.ts";
 import type { RuntimeModelMetadata } from "#db/schema.ts";
-import { resolveModelMetadata } from "#catalog/index.ts";
 import { OPERATIONS } from "#operations/registry.ts";
 import { authMiddleware } from "#auth/middleware.ts";
 import { fetchMetrics } from "#router/state.ts";
@@ -21,6 +20,11 @@ import {
 	capacitySubject,
 } from "#router/circuit.ts";
 
+import {
+	type PublicModelGroup,
+	loadPublicModelGroups,
+} from "#catalog/publicModels.ts";
+
 type Modality =
 	| "text"
 	| "image"
@@ -31,13 +35,6 @@ type Modality =
 	| "embedding"
 	| "moderation"
 	| "rerank";
-
-interface PublicModelGroup {
-	name: string;
-	createdAt: Date;
-	rows: DeploymentRow[];
-	metas: ResolvedModelMetadata[];
-}
 
 function operationIds(meta: ResolvedModelMetadata): OperationId[] {
 	return Object.keys(meta.operations ?? {}) as OperationId[];
@@ -205,15 +202,6 @@ function topProvider(metas: ResolvedModelMetadata[]): Record<string, unknown> {
 	};
 }
 
-function resolveRowMeta(row: DeploymentRow): ResolvedModelMetadata {
-	return resolveModelMetadata(
-		row.adapterKey,
-		row.upstreamModel,
-		row.catalogEntry,
-		row.pricing,
-	);
-}
-
 function toModelObject(group: PublicModelGroup): Record<string, unknown> {
 	const architecture = aggregateModalities(group.metas);
 	return {
@@ -232,27 +220,6 @@ function toModelObject(group: PublicModelGroup): Record<string, unknown> {
 		supported_parameters: aggregateSupportedParameters(group.metas),
 		endpoint_count: group.rows.length,
 	};
-}
-
-async function loadGroups(): Promise<Map<string, PublicModelGroup>> {
-	const groups = new Map<string, PublicModelGroup>();
-	for (const row of await listEnabledDeployments()) {
-		const meta = resolveRowMeta(row);
-		const existing = groups.get(row.publicModel);
-		if (!existing) {
-			groups.set(row.publicModel, {
-				name: row.publicModel,
-				createdAt: row.createdAt,
-				rows: [row],
-				metas: [meta],
-			});
-			continue;
-		}
-		existing.rows.push(row);
-		existing.metas.push(meta);
-		if (row.createdAt < existing.createdAt) existing.createdAt = row.createdAt;
-	}
-	return groups;
 }
 
 function publicDeploymentId(row: DeploymentRow): string {
@@ -362,7 +329,8 @@ function wildcardModelId(c: Context<AppEnv>): {
 
 /** GET /v1/models - public model discovery with OpenAI-compatible base fields. */
 export async function listModelsHandler(c: Context<AppEnv>): Promise<Response> {
-	const groups = await loadGroups();
+	enforcePublicModelRateLimit(c);
+	const groups = await loadPublicModelGroups();
 	const data = [...groups.values()]
 		.sort((a, b) => a.name.localeCompare(b.name))
 		.map(toModelObject);
@@ -379,7 +347,8 @@ export async function modelsWildcardHandler(
 ): Promise<Response> {
 	const { model, deployments } = wildcardModelId(c);
 	if (deployments) await authMiddleware()(c, async () => {});
-	const groups = await loadGroups();
+	else enforcePublicModelRateLimit(c);
+	const groups = await loadPublicModelGroups();
 	const group = groups.get(model);
 	if (!group) throw notFound(model);
 	if (!deployments) return c.json(toModelObject(group));

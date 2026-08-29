@@ -18,6 +18,12 @@ The per-deployment endpoint is different: routing weight, rate limits, and live 
 throughput are **operator infrastructure detail**, not public model information, so it sits behind the
 same auth as inference.
 
+Each process caches the aggregated public catalog for five seconds and invalidates it immediately
+after deployment changes through the Admin API. Anonymous discovery also has a generous per-IP limit
+of 600 requests per minute by default; a rejected request returns `429` with `Retry-After`. Set
+`PUBLIC_MODELS_RPM` to tune the limit or to `0` to disable it. Configure `TRUSTED_PROXY_HOPS` so the
+gateway uses the real client address behind a controlled reverse proxy.
+
 ## `GET /v1/models` and `GET /v1/models/{model}`
 
 One entry per **Public Model** (not per deployment) — a pool of three deployments behind

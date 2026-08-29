@@ -24,6 +24,7 @@ must be set; everything else ships with a production-ready value.
 |---|---|---|
 | `PORT` | `4000` | HTTP listen port. |
 | `TRUSTED_PROXY_HOPS` | `0` | Number of rightmost, operator-controlled proxy hops trusted in `X-Forwarded-For`. `0` ignores the header. |
+| `PUBLIC_MODELS_RPM` | `600` | Per-process anonymous `/v1/models` requests allowed each minute per resolved client IP. `0` disables the limit. |
 | `NODE_ENV` | `development` | `development` \| `test` \| `production`. |
 | `LOG_LEVEL` | `info` | `debug` \| `info` \| `warn` \| `error`. |
 | `SHUTDOWN_TIMEOUT_MS` | `10000` | Drain budget on `SIGTERM`/`SIGINT` before forcing exit. |

@@ -16,20 +16,20 @@ import {
 	previewDeployment,
 	createDeployment,
 	updateDeployment,
-} from "#deployments/service.ts";
-
-import {
-	listDeploymentsPage,
-	type DeploymentRow,
-	getDeploymentById,
 	deleteDeployment,
-} from "#db/repos/deployments.ts";
+} from "#deployments/service.ts";
 
 import {
 	customCatalogEntrySchema,
 	transportOverridesSchema,
 	pricingSchema,
 } from "#profiles/schema.ts";
+
+import {
+	listDeploymentsPage,
+	type DeploymentRow,
+	getDeploymentById,
+} from "#db/repos/deployments.ts";
 
 import {
 	type OperationDefinition,

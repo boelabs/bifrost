@@ -707,6 +707,7 @@ export function buildOpenApiDocument() {
 							description:
 								"{ object: 'list', data: [{ id, object, created, owned_by, architecture, top_provider, pricing, operations, supported_parameters, endpoint_count }] }",
 						},
+						"429": errorResponse,
 					},
 				},
 			},
@@ -730,6 +731,7 @@ export function buildOpenApiDocument() {
 							description: "{ id, object: 'model', created, owned_by }",
 						},
 						"404": errorResponse,
+						"429": errorResponse,
 					},
 				},
 			},
