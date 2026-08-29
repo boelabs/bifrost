@@ -37,6 +37,12 @@ import type {
 } from "#core/canonical.ts";
 
 import {
+	mirrorReasoningEventData,
+	mirrorReasoningOutput,
+	mirrorReasoningItem,
+} from "./responsesReasoning.ts";
+
+import {
 	type ReasoningSummary,
 	isReasoningEffort,
 	summaryForEffort,
@@ -437,15 +443,19 @@ export function responsesRequestToCanonical(
 					break;
 				}
 				case "reasoning": {
-					const encrypted = item.encrypted_content;
+					const mirrored = mirrorReasoningItem(item);
+					const encrypted = mirrored.encrypted_content;
 					if (typeof encrypted === "string" && encrypted.length > 0) {
 						pendingReasoning.push({
 							encrypted_content: encrypted,
-							...(typeof item.id === "string" && item.id.length > 0
-								? { id: item.id }
+							...(typeof mirrored.id === "string" && mirrored.id.length > 0
+								? { id: mirrored.id }
 								: {}),
-							...(Array.isArray(item.summary)
-								? { summary: structuredClone(item.summary) }
+							...(Array.isArray(mirrored.summary)
+								? { summary: structuredClone(mirrored.summary) }
+								: {}),
+							...(Array.isArray(mirrored.content)
+								? { content: structuredClone(mirrored.content) }
 								: {}),
 						});
 					}
@@ -716,11 +726,11 @@ function messageItem(
 }
 
 function reasoningItem(summary: string, id: string): Record<string, unknown> {
-	return {
+	return mirrorReasoningItem({
 		type: "reasoning",
 		id,
 		summary: [{ type: "summary_text", text: summary }],
-	};
+	});
 }
 
 /**
@@ -736,17 +746,19 @@ function reasoningStateItems(
 	let summaryLeft = typeof summary === "string" && summary.length > 0;
 	return items.map((item) => {
 		const hasOwnSummary =
-			Array.isArray(item.summary) && item.summary.length > 0;
+			(Array.isArray(item.summary) && item.summary.length > 0) ||
+			(Array.isArray(item.content) && item.content.length > 0);
 		const useSummary = summaryLeft && !hasOwnSummary;
 		if (useSummary) summaryLeft = false;
-		return {
+		return mirrorReasoningItem({
 			type: "reasoning",
 			id: item.id ?? `rs_${randomUUID()}`,
 			summary: useSummary
 				? [{ type: "summary_text", text: summary }]
 				: (item.summary ?? []),
+			...(item.content !== undefined ? { content: item.content } : {}),
 			encrypted_content: item.encrypted_content,
-		};
+		});
 	});
 }
 
@@ -881,7 +893,8 @@ export function canonicalToResponsesResponse(
 	const nativeOutput = responsesOutputFromProviderFields(
 		choice?.message.providerFields,
 	);
-	if (nativeOutput !== undefined) output.push(...nativeOutput);
+	if (nativeOutput !== undefined)
+		output.push(...mirrorReasoningOutput(nativeOutput));
 	else {
 		if (reasoningState !== undefined) {
 			output.push(
@@ -929,6 +942,85 @@ function sse(
 		event: type,
 		data: JSON.stringify({ type, sequence_number: seq, ...extra }),
 	};
+}
+
+function eventIndex(value: unknown): number {
+	return typeof value === "number" && Number.isInteger(value) && value >= 0
+		? value
+		: 0;
+}
+
+function summaryPartKey(data: Record<string, unknown>): string {
+	return `${String(data.item_id ?? "")}:${String(data.output_index ?? "")}:${eventIndex(data.summary_index ?? data.content_index)}`;
+}
+
+function reasoningTextMirrors(
+	type: string,
+	data: Record<string, unknown>,
+): Array<{ type: string; data: Record<string, unknown> }> {
+	if (type === "response.reasoning_summary_text.delta") {
+		const twin = structuredClone(data);
+		delete twin.summary_index;
+		twin.content_index = eventIndex(data.summary_index ?? data.content_index);
+		return [{ type: "response.reasoning_text.delta", data: twin }];
+	}
+	if (type === "response.reasoning_text.delta") {
+		const twin = structuredClone(data);
+		delete twin.content_index;
+		twin.summary_index = eventIndex(data.content_index ?? data.summary_index);
+		return [{ type: "response.reasoning_summary_text.delta", data: twin }];
+	}
+	if (
+		type === "response.reasoning_summary.delta" ||
+		type === "response.reasoning.delta"
+	) {
+		const content = structuredClone(data);
+		delete content.summary_index;
+		content.content_index = eventIndex(
+			data.content_index ?? data.summary_index,
+		);
+		const summary = structuredClone(data);
+		delete summary.content_index;
+		summary.summary_index = eventIndex(
+			data.summary_index ?? data.content_index,
+		);
+		return [
+			{ type: "response.reasoning_text.delta", data: content },
+			{ type: "response.reasoning_summary_text.delta", data: summary },
+		];
+	}
+	if (type === "response.reasoning_summary_text.done") {
+		const twin = structuredClone(data);
+		delete twin.summary_index;
+		twin.content_index = eventIndex(data.summary_index ?? data.content_index);
+		return [{ type: "response.reasoning_text.done", data: twin }];
+	}
+	if (type === "response.reasoning_text.done") {
+		const twin = structuredClone(data);
+		delete twin.content_index;
+		twin.summary_index = eventIndex(data.content_index ?? data.summary_index);
+		return [{ type: "response.reasoning_summary_text.done", data: twin }];
+	}
+	if (
+		type === "response.reasoning_summary.done" ||
+		type === "response.reasoning.done"
+	) {
+		const content = structuredClone(data);
+		delete content.summary_index;
+		content.content_index = eventIndex(
+			data.content_index ?? data.summary_index,
+		);
+		const summary = structuredClone(data);
+		delete summary.content_index;
+		summary.summary_index = eventIndex(
+			data.summary_index ?? data.content_index,
+		);
+		return [
+			{ type: "response.reasoning_text.done", data: content },
+			{ type: "response.reasoning_summary_text.done", data: summary },
+		];
+	}
+	return [];
 }
 
 /**
@@ -984,6 +1076,8 @@ export async function* canonicalChunksToResponsesEvents(
 	let nativeStreamOutput: Record<string, unknown>[] | undefined;
 	let nativeResponsesStream = false;
 	let messageProviderFields: Record<string, unknown> | undefined;
+	const nativeSummaryPartsOpen = new Set<string>();
+	const nativeSummaryPartsDone = new Set<string>();
 	const appendReasoningState = (
 		fields: Record<string, unknown> | undefined,
 	): OpenAIReasoningStateItem[] => {
@@ -1035,6 +1129,12 @@ export async function* canonicalChunksToResponsesEvents(
 				summary_index: 0,
 				text: reasoning,
 			}),
+			sse("response.reasoning_text.done", next(), {
+				item_id: rsId,
+				output_index: rsIndex,
+				content_index: 0,
+				text: reasoning,
+			}),
 			sse("response.reasoning_summary_part.done", next(), {
 				item_id: rsId,
 				output_index: rsIndex,
@@ -1078,16 +1178,66 @@ export async function* canonicalChunksToResponsesEvents(
 		const streamOutput = openaiResponsesStreamOutputFromProviderFields(
 			delta.providerFields,
 		);
-		if (streamOutput !== undefined) nativeStreamOutput = streamOutput;
+		if (streamOutput !== undefined)
+			nativeStreamOutput = mirrorReasoningOutput(streamOutput);
 		const streamEvent = openaiResponsesStreamEventFromProviderFields(
 			delta.providerFields,
 		);
 		if (streamEvent !== undefined) {
 			nativeResponsesStream = true;
-			yield sse(streamEvent.type, next(), streamEvent.data);
+			const streamData = mirrorReasoningEventData(streamEvent.data);
+			const partKey = summaryPartKey(streamData);
+			if (streamEvent.type === "response.reasoning_summary_part.added") {
+				if (nativeSummaryPartsOpen.has(partKey)) continue;
+				nativeSummaryPartsOpen.add(partKey);
+			}
+			if (streamEvent.type === "response.reasoning_summary_part.done") {
+				if (nativeSummaryPartsDone.has(partKey)) continue;
+				nativeSummaryPartsDone.add(partKey);
+			}
+			const mirrors = reasoningTextMirrors(streamEvent.type, streamData);
+			const textEvents = [
+				{ type: streamEvent.type, data: streamData },
+				...mirrors,
+			];
+			const hasSummaryText = textEvents.some((event) =>
+				event.type.startsWith("response.reasoning_summary_text."),
+			);
+			if (hasSummaryText && !nativeSummaryPartsOpen.has(partKey)) {
+				nativeSummaryPartsOpen.add(partKey);
+				yield sse("response.reasoning_summary_part.added", next(), {
+					item_id: streamData.item_id,
+					output_index: eventIndex(streamData.output_index),
+					summary_index: eventIndex(
+						streamData.content_index ?? streamData.summary_index,
+					),
+					part: { type: "summary_text", text: "" },
+				});
+			}
+			yield sse(streamEvent.type, next(), streamData);
+			for (const mirror of mirrors) yield sse(mirror.type, next(), mirror.data);
+			if (
+				textEvents.some(
+					(event) => event.type === "response.reasoning_summary_text.done",
+				) &&
+				!nativeSummaryPartsDone.has(partKey)
+			) {
+				nativeSummaryPartsDone.add(partKey);
+				yield sse("response.reasoning_summary_part.done", next(), {
+					item_id: streamData.item_id,
+					output_index: eventIndex(streamData.output_index),
+					summary_index: eventIndex(
+						streamData.content_index ?? streamData.summary_index,
+					),
+					part: {
+						type: "summary_text",
+						text: typeof streamData.text === "string" ? streamData.text : "",
+					},
+				});
+			}
 			if (streamEvent.type === "response.output_item.done") {
-				const outputIndex = streamEvent.data.output_index;
-				const item = streamEvent.data.item;
+				const outputIndex = streamData.output_index;
+				const item = streamData.item;
 				if (
 					typeof outputIndex === "number" &&
 					Number.isInteger(outputIndex) &&
@@ -1117,7 +1267,7 @@ export async function* canonicalChunksToResponsesEvents(
 				rsIndex = nextOutputIndex++;
 				yield sse("response.output_item.added", next(), {
 					output_index: rsIndex,
-					item: { type: "reasoning", id: rsId, summary: [] },
+					item: { type: "reasoning", id: rsId, summary: [], content: [] },
 				});
 				yield sse("response.reasoning_summary_part.added", next(), {
 					item_id: rsId,
@@ -1134,6 +1284,12 @@ export async function* canonicalChunksToResponsesEvents(
 					summary_index: 0,
 					delta: delta.reasoning,
 				});
+				yield sse("response.reasoning_text.delta", next(), {
+					item_id: rsId,
+					output_index: rsIndex,
+					content_index: 0,
+					delta: delta.reasoning,
+				});
 			}
 		}
 		if (delta.providerFields !== undefined) {
@@ -1147,9 +1303,9 @@ export async function* canonicalChunksToResponsesEvents(
 				withoutOpenAIResponsesReasoningState(delta.providerFields),
 			);
 		}
-		for (const item of responsesOutputFromProviderFields(
-			delta.providerFields,
-		) ?? [])
+		for (const item of mirrorReasoningOutput(
+			responsesOutputFromProviderFields(delta.providerFields) ?? [],
+		))
 			nativeOutput.push(item);
 		if (delta.content) {
 			if (!messageStarted) {
@@ -1264,7 +1420,7 @@ export async function* canonicalChunksToResponsesEvents(
 		rsIndex = nextOutputIndex++;
 		yield sse("response.output_item.added", next(), {
 			output_index: rsIndex,
-			item: { type: "reasoning", id: rsId, summary: [] },
+			item: { type: "reasoning", id: rsId, summary: [], content: [] },
 		});
 		yield sse("response.reasoning_summary_part.added", next(), {
 			item_id: rsId,
@@ -1276,6 +1432,12 @@ export async function* canonicalChunksToResponsesEvents(
 			item_id: rsId,
 			output_index: rsIndex,
 			summary_index: 0,
+			delta: reasoning,
+		});
+		yield sse("response.reasoning_text.delta", next(), {
+			item_id: rsId,
+			output_index: rsIndex,
+			content_index: 0,
 			delta: reasoning,
 		});
 		reasoningOpen = true;

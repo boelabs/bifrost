@@ -76,6 +76,11 @@ Maps to the same canonical `responseFormat` as Chat Completions' `response_forma
 described in [Reasoning](/docs/reasoning). `summary` controls whether the model's reasoning is
 surfaced back (`auto`, `none`, `concise`, `detailed`).
 
+Providers may surface visible reasoning as either `summary[].summary_text` or
+`content[].reasoning_text`. When one representation is empty or absent, Bifrost mirrors the other
+into it on the same reasoning item. Streams expose the corresponding summary and content delta/done
+events together; this applies equally to SSE and Responses WebSocket turns.
+
 ## `responsesTransport` passthrough
 
 Fields specific to the Responses wire contract that don't have a Chat Completions equivalent —

@@ -300,6 +300,7 @@ export interface OpenAIReasoningStateItem {
 	id?: string;
 	encrypted_content: string;
 	summary?: unknown[];
+	content?: unknown[];
 }
 
 /**
@@ -404,6 +405,9 @@ export function openaiReasoningFromProviderFields(
 				: {}),
 			...(Array.isArray(item.summary)
 				? { summary: structuredClone(item.summary) }
+				: {}),
+			...(Array.isArray(item.content)
+				? { content: structuredClone(item.content) }
 				: {}),
 		});
 	}

@@ -1,4 +1,3 @@
-import { responsesEventsToCanonicalChunks } from "./responsesTransport.ts";
 import type { SSEEvent } from "#core/sse.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -15,6 +14,11 @@ import {
 	type RenderOptions,
 	responseForClient,
 } from "./responsesRender.ts";
+
+import {
+	responsesEventsToCanonicalChunks,
+	parseResponsesResponse,
+} from "./responsesTransport.ts";
 
 import type {
 	CanonicalChatStreamChunk,
@@ -535,6 +539,9 @@ test("canonical->response: message item, usage, and output_text", () => {
 	assert.equal(out.status, "completed");
 	assert.equal(out.output[0].type, "reasoning");
 	assert.equal(out.output[0].summary[0].text, "Analyzed the question.");
+	assert.deepEqual(out.output[0].content, [
+		{ type: "reasoning_text", text: "Analyzed the question." },
+	]);
 	assert.equal(out.output[1].type, "message");
 	assert.equal(out.output[1].content[0].type, "output_text");
 	assert.equal(out.output[1].content[0].text, "hello!");
@@ -542,6 +549,69 @@ test("canonical->response: message item, usage, and output_text", () => {
 	assert.equal(out.usage.input_tokens, 5);
 	assert.equal(out.usage.output_tokens, 3);
 	assert.equal(out.usage.output_tokens_details.reasoning_tokens, 1);
+});
+
+test("responses transport->edge: content-only reasoning is mirrored into summary", () => {
+	const canonical = parseResponsesResponse({
+		id: "resp_content",
+		created_at: 1,
+		model: "gpt-content",
+		status: "completed",
+		output: [
+			{
+				type: "reasoning",
+				id: "rs_content",
+				summary: [],
+				content: [
+					{
+						type: "reasoning_text",
+						text: "Checked the request.",
+					},
+				],
+			},
+		],
+		usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
+	});
+	assert.equal(canonical.choices[0]!.message.reasoning, "Checked the request.");
+
+	const rendered = canonicalToResponsesResponse(
+		canonical,
+		renderOpts(),
+	) as TestJsonObject;
+	const reasoning = rendered.output[0];
+	assert.deepEqual(reasoning.content, [
+		{ type: "reasoning_text", text: "Checked the request." },
+	]);
+	assert.deepEqual(reasoning.summary, [
+		{ type: "summary_text", text: "Checked the request." },
+	]);
+});
+
+test("responses transport->edge: summary-only reasoning is mirrored into content", () => {
+	const canonical = parseResponsesResponse({
+		id: "resp_summary",
+		created_at: 1,
+		model: "gpt-summary",
+		status: "completed",
+		output: [
+			{
+				type: "reasoning",
+				id: "rs_summary",
+				summary: [{ type: "summary_text", text: "Summarized the reasoning." }],
+			},
+		],
+		usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
+	});
+	const rendered = canonicalToResponsesResponse(
+		canonical,
+		renderOpts(),
+	) as TestJsonObject;
+	assert.deepEqual(rendered.output[0].summary, [
+		{ type: "summary_text", text: "Summarized the reasoning." },
+	]);
+	assert.deepEqual(rendered.output[0].content, [
+		{ type: "reasoning_text", text: "Summarized the reasoning." },
+	]);
 });
 
 test("canonical->response: echoes previous_response_id and store", () => {
@@ -811,8 +881,11 @@ test("stream->events: reasoning summary streams as its own item before the messa
 			"response.output_item.added",
 			"response.reasoning_summary_part.added",
 			"response.reasoning_summary_text.delta",
+			"response.reasoning_text.delta",
 			"response.reasoning_summary_text.delta",
+			"response.reasoning_text.delta",
 			"response.reasoning_summary_text.done",
+			"response.reasoning_text.done",
 			"response.reasoning_summary_part.done",
 			"response.output_item.done",
 			"response.output_item.added",
@@ -828,22 +901,50 @@ test("stream->events: reasoning summary streams as its own item before the messa
 	const rsAdded = events[2]!.data;
 	assert.equal(rsAdded.item.type, "reasoning");
 	assert.equal(rsAdded.output_index, 0);
+	assert.deepEqual(rsAdded.item.summary, []);
+	assert.deepEqual(rsAdded.item.content, []);
+	const reasoningDeltas = events.filter(
+		(event) =>
+			event.type === "response.reasoning_summary_text.delta" ||
+			event.type === "response.reasoning_text.delta",
+	);
+	assert.deepEqual(
+		reasoningDeltas.map((event) => [event.type, event.data.delta]),
+		[
+			["response.reasoning_summary_text.delta", "Think"],
+			["response.reasoning_text.delta", "Think"],
+			["response.reasoning_summary_text.delta", "ing."],
+			["response.reasoning_text.delta", "ing."],
+		],
+	);
 	const textDone = events.find(
 		(e) => e.type === "response.reasoning_summary_text.done",
 	)!.data;
 	assert.equal(textDone.text, "Thinking.");
-	const rsDone = events[8]!.data;
+	const rsDone = events.find(
+		(event) =>
+			event.type === "response.output_item.done" &&
+			event.data.item.type === "reasoning",
+	)!.data;
 	assert.equal(rsDone.item.type, "reasoning");
 	assert.deepEqual(rsDone.item.summary, [
 		{ type: "summary_text", text: "Thinking." },
 	]);
-	const msgAdded = events[9]!.data;
+	assert.deepEqual(rsDone.item.content, [
+		{ type: "reasoning_text", text: "Thinking." },
+	]);
+	const msgAdded = events.find(
+		(event) =>
+			event.type === "response.output_item.added" &&
+			event.data.item.type === "message",
+	)!.data;
 	assert.equal(msgAdded.item.type, "message");
 	assert.equal(msgAdded.output_index, 1);
 
 	const completed = events.at(-1)!.data.response;
 	assert.equal(completed.output[0].type, "reasoning");
 	assert.equal(completed.output[0].summary[0].text, "Thinking.");
+	assert.equal(completed.output[0].content[0].text, "Thinking.");
 	assert.equal(completed.output[1].type, "message");
 	assert.equal(completed.usage.output_tokens_details.reasoning_tokens, 2);
 });
@@ -1225,6 +1326,119 @@ test("responses transport->edge: Azure state-only reasoning stays before the fin
 		completed.output.filter((item) => item.id === "rs_azure").length,
 		1,
 	);
+});
+
+test("responses transport->edge: native reasoning_text streams beside summary events", async () => {
+	const content = [{ type: "reasoning_text", text: "Checked the request." }];
+	async function* upstreamEvents(): AsyncGenerator<SSEEvent> {
+		for (const event of [
+			{
+				type: "response.created",
+				response: { id: "resp_content_stream", model: "gpt-content" },
+			},
+			{
+				type: "response.output_item.added",
+				output_index: 0,
+				item: {
+					type: "reasoning",
+					id: "rs_content_stream",
+					summary: [],
+					content: [],
+				},
+			},
+			{
+				type: "response.reasoning_text.delta",
+				item_id: "rs_content_stream",
+				output_index: 0,
+				content_index: 0,
+				delta: "Checked the request.",
+			},
+			{
+				type: "response.reasoning_text.done",
+				item_id: "rs_content_stream",
+				output_index: 0,
+				content_index: 0,
+				text: "Checked the request.",
+			},
+			{
+				type: "response.output_item.done",
+				output_index: 0,
+				item: {
+					type: "reasoning",
+					id: "rs_content_stream",
+					summary: [],
+					content,
+					encrypted_content: "enc-content",
+				},
+			},
+			{
+				type: "response.completed",
+				response: {
+					id: "resp_content_stream",
+					model: "gpt-content",
+					status: "completed",
+					output: [
+						{
+							type: "reasoning",
+							id: "rs_content_stream",
+							summary: [],
+							content,
+							encrypted_content: "enc-content",
+						},
+					],
+					usage: {
+						input_tokens: 1,
+						output_tokens: 1,
+						total_tokens: 2,
+					},
+				},
+			},
+		] as Array<Record<string, unknown>>) {
+			const type = event.type as string;
+			yield { event: type, data: JSON.stringify(event) };
+		}
+	}
+
+	const observed: TestJsonObject[] = [];
+	for await (const event of canonicalChunksToResponsesEvents(
+		responsesEventsToCanonicalChunks(upstreamEvents()),
+		renderOpts(),
+	))
+		observed.push(JSON.parse(event.data) as TestJsonObject);
+
+	assert.deepEqual(
+		observed
+			.filter((event) =>
+				[
+					"response.reasoning_text.delta",
+					"response.reasoning_summary_text.delta",
+					"response.reasoning_text.done",
+					"response.reasoning_summary_text.done",
+				].includes(event.type),
+			)
+			.map((event) => event.type),
+		[
+			"response.reasoning_text.delta",
+			"response.reasoning_summary_text.delta",
+			"response.reasoning_text.done",
+			"response.reasoning_summary_text.done",
+		],
+	);
+	const added = observed.find(
+		(event) => event.type === "response.output_item.added",
+	)!.item;
+	assert.deepEqual(added.summary, []);
+	assert.deepEqual(added.content, []);
+	const done = observed.find(
+		(event) => event.type === "response.output_item.done",
+	)!.item;
+	assert.deepEqual(done.content, content);
+	assert.deepEqual(done.summary, [
+		{ type: "summary_text", text: "Checked the request." },
+	]);
+	const completed = observed.at(-1)!.response.output[0];
+	assert.deepEqual(completed.content, content);
+	assert.deepEqual(completed.summary, done.summary);
 });
 
 test("responses transport->edge: native item lifecycle and output indexes pass through unchanged", async () => {

@@ -360,6 +360,7 @@ test("openai.parseStream: reasoning summary deltas preserve their native item id
 	const doneFields = chunks[1]!.choices[0]!.delta.providerFields;
 	assert.deepEqual(openaiReasoningFromProviderFields(doneFields), [
 		{
+			content: [{ type: "reasoning_text", text: "Think" }],
 			encrypted_content: "enc-native",
 			id: "rs_native",
 			summary: [{ type: "summary_text", text: "Think" }],
@@ -536,6 +537,7 @@ test("openai.parseResponse: reasoning encrypted_content -> message providerField
 	const fields = message.providerFields?.openai as Record<string, unknown>;
 	assert.deepEqual(fields.reasoning, [
 		{
+			content: [{ type: "reasoning_text", text: "thinking" }],
 			encrypted_content: "enc-1",
 			id: "rs_1",
 			summary: [{ type: "summary_text", text: "thinking" }],
