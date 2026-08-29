@@ -1,48 +1,82 @@
+<div align="center">
+
 # Bifrost
 
-Bifrost is a backend-only, provider-agnostic AI gateway. It exposes stable OpenAI-shaped public
-endpoints while routing requests to provider-specific upstream APIs through adapters.
+**One contract. Every model provider.**
 
-Bifrost is developed by Boelabs as shared infrastructure for the products and services we run or
-plan to run.
+A backend-only, provider-agnostic AI gateway — built and operated by [Boelabs](https://boelabs.com).
 
-It is built for teams that want one public model catalog, one auth/rate-limit/logging layer, and one
-predictable contract across OpenAI, Anthropic, Google, Azure, OpenAI-compatible providers, and custom
-models.
+[Documentation](apps/docs/content/docs/index.mdx) ·
+[Quickstart](apps/docs/content/docs/quickstart.mdx) ·
+[Architecture](apps/docs/content/docs/architecture.mdx) ·
+[OpenAPI](apps/gateway/openapi.yaml)
 
-## Highlights
+</div>
 
-- Exact OpenAI-compatible public contracts for Chat Completions, Responses, Images, Embeddings, Audio Transcriptions, and Models.
-- Anthropic-compatible `/v1/messages` rendering over the same canonical core.
-- Provider adapters for OpenAI, OpenAI-compatible APIs, Google AI Studio, Anthropic, Azure OpenAI, Azure Foundry, Vercel AI Gateway, DeepSeek, MiniMax, Moonshot, and ZAI.
-- Public model aliases, weighted pools, cooldowns, retries, dedicated fallbacks, and per-operation transports.
-- Master key plus virtual keys with model scopes, RPM/TPM limits, budgets, and rate-limit headers.
-- Opt-in response cache, durable operation logs, cost accounting, OpenTelemetry metrics/traces, and graceful shutdown.
-- Admin API and OpenAPI spec for operating deployments, keys, router settings, logs, usage, and fallbacks.
-- Runtime extensions stored in Postgres and managed through the Admin API for request/response/stream/image hooks without forking the gateway.
+---
 
-## Status
+Bifrost gives a product team a single, stable, OpenAI-shaped API in front of every model vendor it
+uses. Applications keep one integration; the gateway owns authentication, routing, rate limiting,
+budgets, caching, cost accounting, and observability. Swapping providers, adding a model, or failing
+over becomes a configuration change instead of a release.
 
-Bifrost is pre-1.0. The main contracts are covered by unit and integration tests, but breaking
-changes are still possible while the adapter surface and admin API settle.
+We built it as the inference layer behind our own products, and we run it in production. It is
+shared infrastructure, not a demo.
 
-## Monorepo layout
+## Why teams run a gateway
 
-This repository is a [Turborepo](https://turborepo.com) managed with [Bun](https://bun.sh) workspaces.
+| Without | With Bifrost |
+|---|---|
+| One SDK and auth scheme per vendor | One OpenAI-compatible contract for all of them |
+| Vendor outages reach your users | Weighted pools, cooldowns, retries, dedicated fallbacks |
+| Keys embedded in every service | Virtual keys with scopes, RPM/TPM limits, and budgets |
+| Spend and latency invisible until the invoice | Per-request cost accounting, logs, and OpenTelemetry |
+| Provider migrations are code changes | Provider migrations are catalog and deployment changes |
+
+## Capabilities
+
+- **Public contracts** — exact OpenAI shapes for Chat Completions, Responses, Images, Embeddings,
+  Audio Transcriptions, Videos, Reranking, and Models; plus an Anthropic-compatible `/v1/messages`
+  rendered from the same canonical core.
+- **Providers** — OpenAI, Anthropic, Google AI Studio, Azure OpenAI, Azure Foundry, Vercel AI
+  Gateway, OpenRouter, DeepSeek, MiniMax, Moonshot, ZAI, and any OpenAI-compatible endpoint.
+- **Routing** — public model aliases over weighted deployment pools, with cooldowns, retries,
+  per-operation transports, and explicit fallback chains.
+- **Access control** — a master key for operations, virtual keys for clients, with model scopes,
+  rate limits, budgets, and standard rate-limit headers.
+- **Operations** — opt-in response cache, durable operation logs with retained payload samples,
+  cost accounting, OpenTelemetry metrics and traces, and graceful shutdown.
+- **Extensibility** — runtime extensions stored in Postgres and managed over the Admin API add
+  request/response/stream/image hooks without forking the gateway.
+
+Pre-1.0: contracts are covered by unit and integration tests, but breaking changes are still
+possible while the adapter surface and Admin API settle.
+
+## Architecture
+
+Every request is translated into one canonical representation, routed to a deployment, and executed
+against a provider adapter. Adapters never leak provider-specific fields into the core.
 
 ```
-.
-├── apps/
-│   ├── gateway/        # the Bifrost service (runs on Bun; see apps/gateway)
-│   └── docs/           # documentation site (Next.js, Fumadocs, MDX)
-├── packages/
-│   └── tsconfig/       # shared TypeScript configuration (@boelabs/tsconfig)
-├── turbo.json          # task pipeline
-└── package.json        # workspace root (bun workspaces + turbo)
+contracts/   public request/response shapes (OpenAI, Anthropic)
+core/        provider-agnostic canonical hub
+router/      deployment selection: strategy, cooldowns, fallbacks
+adapters/    upstream provider protocols (one directory per provider)
+endpoints/   HTTP handlers and shared per-request plumbing
 ```
 
-Dependencies, tasks, and the gateway runtime are all **Bun** (with Turbo orchestrating the workspace);
-Bun runs TypeScript directly, so there is no build step.
+Details, in order of execution: [Architecture](apps/docs/content/docs/architecture.mdx).
+
+## Repository
+
+A [Turborepo](https://turborepo.com) on [Bun](https://bun.sh) workspaces. Bun runs TypeScript
+directly, so there is no build step.
+
+```
+apps/gateway      the Bifrost service (@boelabs/bifrost)
+apps/docs         documentation site (Next.js + Fumadocs, MDX)
+packages/tsconfig shared strict TypeScript config (@boelabs/tsconfig)
+```
 
 ## Quickstart
 
@@ -56,37 +90,35 @@ bun run --filter @boelabs/bifrost db:migrate
 bun run --filter @boelabs/bifrost dev
 ```
 
-In `.env`, set `MASTER_KEY`, `ENCRYPTION_KEYRING`, and `ACTIVE_ENCRYPTION_KEY_ID`. Generate each
-keyring value with `openssl rand -hex 32`. Everything else ships with production-ready defaults — the full environment
-reference lives in [Setup](apps/docs/content/docs/setup.mdx).
+Set `MASTER_KEY`, `ENCRYPTION_KEYRING`, and `ACTIVE_ENCRYPTION_KEY_ID` in `.env` — the gateway
+refuses to start without them. Generate each keyring value with `openssl rand -hex 32`. Everything
+else ships with production-ready defaults ([environment reference](apps/docs/content/docs/reference-environment.mdx)).
 
 ```bash
-curl http://localhost:4000/health/live    # liveness (no dependencies)
-curl http://localhost:4000/health/ready   # readiness (Postgres + Redis + extensions)
+curl http://localhost:4000/health/live     # liveness (no dependencies)
+curl http://localhost:4000/health/ready    # readiness (Postgres, Redis, extensions)
 ```
 
-From here, the [Quickstart guide](apps/docs/content/docs/quickstart.mdx) walks from clone to a first
-completion: create a deployment through the Admin API, then call `/v1/chat/completions` with your key.
+From here, the [Quickstart guide](apps/docs/content/docs/quickstart.mdx) goes from clone to a first
+completion: create a deployment through the Admin API, then call `/v1/chat/completions`.
 
-Common workspace commands, from the repo root:
+### Workspace commands
 
 ```bash
-bun run dev          # run all dev tasks via turbo (gateway + docs)
+bun run dev          # all dev tasks (gateway + docs)
+bun run check        # Biome format + lint, whole repo — the CI gate
 bun run typecheck    # typecheck every package
 bun run test         # unit tests across packages
-bun run check        # Biome format + lint (whole repo)
 ```
 
-To work on a single package, use `--filter`, e.g. `bun run --filter @boelabs/bifrost dev`.
+Scope to one package with `--filter`, e.g. `bun run --filter @boelabs/bifrost dev`.
 
-## Running in production
+## Production
 
-Both apps ship container images built from the repo root (`apps/gateway/Dockerfile`,
-`apps/docs/Dockerfile`). `docker-compose.yml` is the production/PaaS base: Postgres, Redis, a one-off
-migration job, the gateway, and the docs site, without publishing host ports — Coolify, Dokploy, and
-similar platforms deploy that file directly and expose services through their proxy. For local or
-single-host use, merge `compose.local.yaml`, which publishes ports on loopback and provides
-development-only secrets:
+Both apps ship container images built from the repo root. `docker-compose.yml` is the
+production/PaaS base — Postgres, Redis, a one-off migration job, the gateway, and the docs site,
+without publishing host ports — so Coolify, Dokploy, and similar platforms deploy it directly. Merge
+`compose.local.yaml` for a local single-host run with loopback ports and development-only secrets.
 
 ```bash
 MASTER_KEY=$(openssl rand -base64 48) \
@@ -94,58 +126,27 @@ ENCRYPTION_KEY_HEX=$(openssl rand -hex 32) \
 docker compose -f docker-compose.yml -f compose.local.yaml up -d
 ```
 
-The production base leaves both secrets empty and the gateway refuses to start until they are
-configured. Per-platform guides and the compose naming rationale:
-[Deployment](apps/docs/content/docs/deployment.mdx).
+Platform guides and the production runbook:
+[Deployment](apps/docs/content/docs/deployment.mdx) ·
+[Operations](apps/docs/content/docs/operations.mdx) ·
+[Production checklist](apps/docs/content/docs/production-checklist.mdx).
 
 ## Documentation
 
-Everything beyond this page — API contracts, provider setup, admin operations — lives in the docs,
-authored in MDX under [`apps/docs/content/docs`](apps/docs/content/docs) and rendered as a Fumadocs
-site (`bun run --filter @boelabs/docs dev`).
-
-- [Overview](apps/docs/content/docs/index.mdx) — what Bifrost is, and the full documentation map
-- [Quickstart](apps/docs/content/docs/quickstart.mdx) — clone to first response, end to end
-- [Architecture](apps/docs/content/docs/architecture.mdx) — the request pipeline, traced in precise order
-- [Setup](apps/docs/content/docs/setup.mdx) — requirements, environment, secrets, and database choices
-- [Deployment](apps/docs/content/docs/deployment.mdx) — Docker Compose and per-platform guides (Coolify, Portainer, Dokploy, Linux)
-- [Creating deployments](apps/docs/content/docs/creating-deployments.mdx) — provider setup and custom model examples
-- [Routing](apps/docs/content/docs/routing.mdx) — balancing strategies, cooldowns, and retries
-- [Virtual keys](apps/docs/content/docs/virtual-keys.mdx) — client keys, scopes, budgets, and limits
-- [Fallbacks](apps/docs/content/docs/fallbacks.mdx) — fallback semantics and lifecycle
-- [Model catalog](apps/docs/content/docs/model-catalog.mdx) — catalog schema and capability profiles
-- [Providers](apps/docs/content/docs/providers.mdx) — every built-in adapter's credentials and quirks
-- [Runtime extensions](apps/docs/content/docs/extensions.mdx) — uploading extensions, hooks, and versioning
-- [Operations](apps/docs/content/docs/operations.mdx) — production runbook
-- [Security](apps/docs/content/docs/security.mdx) — auth model, credential encryption, and redaction
-- [API overview](apps/docs/content/docs/api-overview.mdx) — auth, error shape, and OpenAPI import notes
-- [Troubleshooting](apps/docs/content/docs/troubleshooting.mdx) — error shapes, status codes, and known issues with exact fixes
-
-The machine-readable API spec is [`apps/gateway/openapi.yaml`](apps/gateway/openapi.yaml) — see
-[the API guide](apps/docs/content/docs/api-overview.mdx) for import instructions.
-
-## Common errors
-
-- **Bun's TLS rejects self-signed Postgres/Redis certificates** (e.g. databases exposed by a raw
-  Coolify/Dokploy port). Connect over a private network without TLS, or use a managed provider with a
-  public-CA certificate.
-- **The gateway refuses to start** until `MASTER_KEY`, `ENCRYPTION_KEYRING`, and
-  `ACTIVE_ENCRYPTION_KEY_ID` are set — the
-  production compose base deliberately ships them empty.
-
-Exact symptoms, fixes, and every error code: [Troubleshooting](apps/docs/content/docs/troubleshooting.mdx).
+Everything beyond this page is authored in MDX under
+[`apps/docs/content/docs`](apps/docs/content/docs) and rendered as a Fumadocs site
+(`bun run --filter @boelabs/docs dev`). Start at the
+[Overview](apps/docs/content/docs/index.mdx), which maps the full set: API contracts, provider
+setup, routing, virtual keys, extensions, security, and troubleshooting. The machine-readable spec
+is [`apps/gateway/openapi.yaml`](apps/gateway/openapi.yaml).
 
 ## Contributing
 
-Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup,
-conventions, and the checks CI runs. All code, comments, and documentation are written in English.
-AI coding agents should start with [AGENTS.md](AGENTS.md).
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, conventions, and the checks CI runs. AI coding
+agents start with [AGENTS.md](AGENTS.md). All code, comments, and documentation are in English.
 
-## Security
-
-To report a vulnerability, follow [SECURITY.md](SECURITY.md). Please do not open public issues for
-security problems.
+Report vulnerabilities through [SECURITY.md](SECURITY.md) — never in a public issue.
 
 ## License
 
-Released under the [MIT License](LICENSE).
+[MIT](LICENSE) · © Boelabs
