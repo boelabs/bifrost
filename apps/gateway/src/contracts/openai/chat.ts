@@ -260,10 +260,19 @@ const usageSchema = z
 		completion_tokens: z.number(),
 		total_tokens: z.number(),
 		prompt_tokens_details: z
-			.object({ cached_tokens: z.number().optional() })
+			.object({
+				cached_tokens: z.number().optional(),
+				cache_write_tokens: z.number().optional(),
+				audio_tokens: z.number().optional(),
+			})
 			.optional(),
 		completion_tokens_details: z
-			.object({ reasoning_tokens: z.number().optional() })
+			.object({
+				reasoning_tokens: z.number().optional(),
+				audio_tokens: z.number().optional(),
+				accepted_prediction_tokens: z.number().optional(),
+				rejected_prediction_tokens: z.number().optional(),
+			})
 			.optional(),
 	})
 	.loose();
@@ -595,10 +604,43 @@ function toOpenAIUsage(u: Usage): z.infer<typeof usageSchema> {
 		completion_tokens: u.completionTokens,
 		total_tokens: u.totalTokens,
 	};
-	if (u.cacheReadTokens !== undefined)
-		out.prompt_tokens_details = { cached_tokens: u.cacheReadTokens };
-	if (u.reasoningTokens !== undefined) {
-		out.completion_tokens_details = { reasoning_tokens: u.reasoningTokens };
+	if (
+		u.cacheReadTokens !== undefined ||
+		u.cacheWriteTokens !== undefined ||
+		u.promptAudioTokens !== undefined
+	) {
+		out.prompt_tokens_details = {
+			...(u.cacheReadTokens !== undefined
+				? { cached_tokens: u.cacheReadTokens }
+				: {}),
+			...(u.cacheWriteTokens !== undefined
+				? { cache_write_tokens: u.cacheWriteTokens }
+				: {}),
+			...(u.promptAudioTokens !== undefined
+				? { audio_tokens: u.promptAudioTokens }
+				: {}),
+		};
+	}
+	if (
+		u.reasoningTokens !== undefined ||
+		u.completionAudioTokens !== undefined ||
+		u.acceptedPredictionTokens !== undefined ||
+		u.rejectedPredictionTokens !== undefined
+	) {
+		out.completion_tokens_details = {
+			...(u.reasoningTokens !== undefined
+				? { reasoning_tokens: u.reasoningTokens }
+				: {}),
+			...(u.completionAudioTokens !== undefined
+				? { audio_tokens: u.completionAudioTokens }
+				: {}),
+			...(u.acceptedPredictionTokens !== undefined
+				? { accepted_prediction_tokens: u.acceptedPredictionTokens }
+				: {}),
+			...(u.rejectedPredictionTokens !== undefined
+				? { rejected_prediction_tokens: u.rejectedPredictionTokens }
+				: {}),
+		};
 	}
 	return out;
 }

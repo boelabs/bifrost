@@ -369,8 +369,20 @@ interface TransportUsage {
 	prompt_tokens?: number;
 	completion_tokens?: number;
 	total_tokens?: number;
-	prompt_tokens_details?: { cached_tokens?: number };
-	completion_tokens_details?: { reasoning_tokens?: number };
+	prompt_tokens_details?: {
+		cached_tokens?: number;
+		cache_write_tokens?: number;
+		cache_creation_input_tokens?: number;
+		audio_tokens?: number;
+	};
+	completion_tokens_details?: {
+		reasoning_tokens?: number;
+		audio_tokens?: number;
+		accepted_prediction_tokens?: number;
+		rejected_prediction_tokens?: number;
+	};
+	cache_creation_input_tokens?: number;
+	cost?: number;
 }
 
 function mapUsage(u: TransportUsage | undefined | null): Usage {
@@ -384,8 +396,32 @@ function mapUsage(u: TransportUsage | undefined | null): Usage {
 	if (u?.prompt_tokens_details?.cached_tokens !== undefined) {
 		usage.cacheReadTokens = u.prompt_tokens_details.cached_tokens;
 	}
+	const cacheWriteTokens =
+		u?.prompt_tokens_details?.cache_write_tokens ??
+		u?.prompt_tokens_details?.cache_creation_input_tokens ??
+		u?.cache_creation_input_tokens;
+	if (cacheWriteTokens !== undefined) {
+		usage.cacheWriteTokens = cacheWriteTokens;
+	}
+	if (u?.prompt_tokens_details?.audio_tokens !== undefined) {
+		usage.promptAudioTokens = u.prompt_tokens_details.audio_tokens;
+	}
 	if (u?.completion_tokens_details?.reasoning_tokens !== undefined) {
 		usage.reasoningTokens = u.completion_tokens_details.reasoning_tokens;
+	}
+	if (u?.completion_tokens_details?.audio_tokens !== undefined) {
+		usage.completionAudioTokens = u.completion_tokens_details.audio_tokens;
+	}
+	if (u?.completion_tokens_details?.accepted_prediction_tokens !== undefined) {
+		usage.acceptedPredictionTokens =
+			u.completion_tokens_details.accepted_prediction_tokens;
+	}
+	if (u?.completion_tokens_details?.rejected_prediction_tokens !== undefined) {
+		usage.rejectedPredictionTokens =
+			u.completion_tokens_details.rejected_prediction_tokens;
+	}
+	if (u?.cost !== undefined && Number.isFinite(u.cost) && u.cost >= 0) {
+		usage.providerCostCents = u.cost * 100;
 	}
 	return usage;
 }

@@ -4,8 +4,7 @@
  *
  *  - `completionTokens` INCLUDES the reasoning/thinking tokens (they are not separate).
  *  - `totalTokens === promptTokens + completionTokens` (invariant).
- *  - `reasoningTokens`, `cacheReadTokens`, and `cacheWriteTokens` are OPTIONAL details and SUBSETS
- *    (reasoning of completion; read/write of prompt); they are not added to the total.
+ *  - Detail counters are OPTIONAL SUBSETS of prompt/completion; they are not added to the total.
  *  - `cacheReadTokens` and `cacheWriteTokens` are disjoint from each other; both are INCLUDED in
  *    `promptTokens`. If an upstream reports them separately (Anthropic), the adapter ADDS them to the prompt.
  *
@@ -23,6 +22,14 @@ export interface Usage {
 	cacheWriteTokens?: number;
 	/** Reasoning tokens. Subset of completionTokens. */
 	reasoningTokens?: number;
+	/** Audio input tokens. Subset of promptTokens. */
+	promptAudioTokens?: number;
+	/** Audio output tokens. Subset of completionTokens. */
+	completionAudioTokens?: number;
+	/** Predicted output tokens accepted by the model. Subset of completionTokens. */
+	acceptedPredictionTokens?: number;
+	/** Predicted output tokens rejected by the model. Subset of completionTokens. */
+	rejectedPredictionTokens?: number;
 	/** Provider-reported reranking search units. Independent from token counters. */
 	searchUnits?: number;
 	/** Upstream-reported request cost in USD cents, used only when configured pricing is absent. */
