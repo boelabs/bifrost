@@ -459,6 +459,49 @@ test("canonical->response: content blocks + stop_reason + usage", () => {
 	assert.equal(out.usage.cache_read_input_tokens, 0);
 });
 
+test("canonical->response: normalizes ids and preserves terminal metadata", () => {
+	const response = canonicalToMessagesResponse(
+		{
+			id: "chatcmpl-upstream",
+			created: 1,
+			model: "upstream",
+			choices: [
+				{
+					index: 0,
+					finishReason: "stop",
+					stopSequence: "<END>",
+					message: { role: "assistant", content: "done" },
+				},
+			],
+			usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+		},
+		opts,
+	) as TestJsonObject;
+	assert.match(String(response.id), /^msg_/);
+	assert.notEqual(response.id, "chatcmpl-upstream");
+	assert.equal(response.stop_reason, "stop_sequence");
+	assert.equal(response.stop_sequence, "<END>");
+
+	const unknown = canonicalToMessagesResponse(
+		{
+			id: "msg_native",
+			created: 1,
+			model: "upstream",
+			choices: [
+				{
+					index: 0,
+					finishReason: null,
+					message: { role: "assistant", content: null },
+				},
+			],
+			usage: { promptTokens: 1, completionTokens: 0, totalTokens: 1 },
+		},
+		opts,
+	) as TestJsonObject;
+	assert.equal(unknown.id, "msg_native");
+	assert.equal(unknown.stop_reason, null);
+});
+
 test("canonical->response: reconstructs Anthropic disjoint input buckets", () => {
 	const resp: CanonicalChatResponse = {
 		id: "m",
@@ -612,6 +655,34 @@ test("stream->events: Anthropic sequence for text", async () => {
 	assert.equal(deltaUsage.input_tokens, 4);
 	assert.equal(deltaUsage.cache_read_input_tokens, 2);
 	assert.equal(deltaUsage.cache_creation_input_tokens, 1);
+});
+
+test("stream->events: reports the matched stop sequence", async () => {
+	async function* chunks(): AsyncGenerator<CanonicalChatStreamChunk> {
+		yield {
+			id: "upstream",
+			created: 1,
+			model: "upstream",
+			choices: [
+				{
+					index: 0,
+					delta: { content: "done" },
+					finishReason: "stop",
+					stopSequence: "<END>",
+				},
+			],
+		};
+	}
+
+	let delta: TestJsonObject | undefined;
+	for await (const event of canonicalChunksToMessagesEvents(chunks(), opts)) {
+		if (event.event === "message_delta")
+			delta = (JSON.parse(event.data) as { delta: TestJsonObject }).delta;
+	}
+	assert.deepEqual(delta, {
+		stop_reason: "stop_sequence",
+		stop_sequence: "<END>",
+	});
 });
 
 test("stream->events: Anthropic tool_use includes provider_specific_fields", async () => {

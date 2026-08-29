@@ -773,6 +773,26 @@ test("responses transport->edge: summary-only reasoning is mirrored into content
 	]);
 });
 
+test("responses transport: max_output_tokens outranks partial function calls", () => {
+	const canonical = parseResponsesResponse({
+		id: "resp_partial",
+		created_at: 1,
+		model: "gpt",
+		status: "incomplete",
+		incomplete_details: { reason: "max_output_tokens" },
+		output: [
+			{
+				type: "function_call",
+				call_id: "call_1",
+				name: "lookup",
+				arguments: '{"partial":',
+			},
+		],
+		usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
+	});
+	assert.equal(canonical.choices[0]?.finishReason, "length");
+});
+
 test("canonical->response: echoes previous_response_id and store", () => {
 	const resp: CanonicalChatResponse = {
 		id: "x",

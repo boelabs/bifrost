@@ -68,6 +68,7 @@ interface AnthropicMessage {
 	model?: string;
 	content?: AnthropicContentBlock[];
 	stop_reason?: string | null;
+	stop_sequence?: string | null;
 	usage?: AnthropicUsage;
 }
 
@@ -83,6 +84,7 @@ interface AnthropicStreamEvent {
 		signature?: string;
 		partial_json?: string;
 		stop_reason?: string | null;
+		stop_sequence?: string | null;
 	};
 	usage?: AnthropicUsage;
 	error?: { type?: string; message?: string };
@@ -462,7 +464,6 @@ function mapFinishReason(
 	reason: string | null | undefined,
 	hasToolCalls: boolean,
 ): CanonicalFinishReason | null {
-	if (hasToolCalls) return "tool_calls";
 	switch (reason) {
 		case "end_turn":
 		case "stop_sequence":
@@ -477,7 +478,7 @@ function mapFinishReason(
 			return "content_filter";
 		case null:
 		case undefined:
-			return null;
+			return hasToolCalls ? "tool_calls" : null;
 		default: {
 			const normalized = reason.toLowerCase();
 			if (/max.?tokens?|context.?window|length/.test(normalized))
@@ -485,7 +486,7 @@ function mapFinishReason(
 			if (/tool.?use|function.?call/.test(normalized)) return "tool_calls";
 			if (/filter|safety|guardrail|block|prohibit|refus/.test(normalized))
 				return "content_filter";
-			return "stop";
+			return hasToolCalls ? "tool_calls" : "stop";
 		}
 	}
 }
@@ -548,6 +549,7 @@ function parseResponse(
 					message.stop_reason,
 					toolCalls.length > 0,
 				),
+				stopSequence: message.stop_sequence ?? null,
 				message: outMessage,
 			},
 		],
@@ -591,6 +593,7 @@ async function* parseStream(
 	let pendingTerminal:
 		| {
 				finishReason: CanonicalFinishReason;
+				stopSequence: string | null;
 				originalTerminalReason: string;
 				usage: Usage;
 		  }
@@ -858,6 +861,7 @@ async function* parseStream(
 			if (cacheWriteTokens > 0) usage.cacheWriteTokens = cacheWriteTokens;
 			pendingTerminal = {
 				finishReason,
+				stopSequence: event.delta?.stop_sequence ?? null,
 				originalTerminalReason: event.delta?.stop_reason ?? "unknown",
 				usage,
 			};
@@ -881,6 +885,7 @@ async function* parseStream(
 							index: 0,
 							delta: {},
 							finishReason: pendingTerminal.finishReason,
+							stopSequence: pendingTerminal.stopSequence,
 						},
 					],
 					usage: pendingTerminal.usage,

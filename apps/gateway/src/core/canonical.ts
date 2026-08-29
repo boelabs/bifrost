@@ -228,6 +228,8 @@ export interface CanonicalChatRequest {
 interface CanonicalChatResponseChoice {
 	index: number;
 	finishReason: CanonicalFinishReason | null;
+	/** Exact matched stop sequence when the upstream reports one. */
+	stopSequence?: string | null;
 	/** Provider-native token log probabilities when available. */
 	logprobs?: unknown;
 	message: {
@@ -279,6 +281,8 @@ export interface CanonicalChatStreamChunk {
 			providerFields?: Record<string, unknown>;
 		};
 		finishReason: CanonicalFinishReason | null;
+		/** Exact matched stop sequence when the upstream reports one. */
+		stopSequence?: string | null;
 	}>;
 	/** Only present in the final chunk if includeUsage. */
 	usage?: Usage | null;

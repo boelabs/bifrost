@@ -660,6 +660,48 @@ test("anthropic.parseResponse: context-window stop maps to length", () => {
 	assert.equal(parsed.choices[0]?.finishReason, "length");
 });
 
+test("anthropic.parseResponse: explicit max_tokens outranks partial tool calls", () => {
+	const parsed = anthropicAdapter.chat!.parseResponse(
+		{
+			id: "msg_1",
+			model: "claude",
+			stop_reason: "max_tokens",
+			content: [{ type: "tool_use", id: "toolu_1", name: "lookup", input: {} }],
+			usage: { input_tokens: 1, output_tokens: 1 },
+		},
+		ctx,
+	);
+	assert.equal(parsed.choices[0]?.finishReason, "length");
+});
+
+test("anthropic preserves matched stop sequences in responses and streams", async () => {
+	const parsed = anthropicAdapter.chat!.parseResponse(
+		{
+			id: "msg_1",
+			model: "claude",
+			stop_reason: "stop_sequence",
+			stop_sequence: "<END>",
+			content: [{ type: "text", text: "done" }],
+			usage: { input_tokens: 1, output_tokens: 1 },
+		},
+		ctx,
+	);
+	assert.equal(parsed.choices[0]?.stopSequence, "<END>");
+
+	const sse =
+		`event: message_start\ndata: {"type":"message_start","message":{"id":"msg_1","model":"claude","usage":{"input_tokens":1},"content":[]}}\n\n` +
+		`event: message_delta\ndata: {"type":"message_delta","delta":{"stop_reason":"stop_sequence","stop_sequence":"<END>"},"usage":{"output_tokens":1}}\n\n` +
+		`event: message_stop\ndata: {"type":"message_stop"}\n\n`;
+	const chunks = [];
+	for await (const chunk of anthropicAdapter.chat!.parseStream(
+		new Response(sse).body!,
+		ctx,
+	)) {
+		chunks.push(chunk);
+	}
+	assert.equal(chunks.at(-1)?.choices[0]?.stopSequence, "<END>");
+});
+
 test("anthropic.parseResponse: new stop reasons preserve valid output and diagnostics", () => {
 	const parsed = anthropicAdapter.chat!.parseResponse(
 		{
