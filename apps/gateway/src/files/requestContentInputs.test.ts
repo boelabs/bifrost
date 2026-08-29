@@ -209,6 +209,46 @@ test("content resolver preserves native image URLs without downloading them", as
 	]);
 });
 
+test("file resolver materializes URLs before OpenAI Chat Completions", async () => {
+	let fetches = 0;
+	const resolver = createContentInputResolver(
+		request({
+			type: "file",
+			fileUrl: "https://assets.example/document.pdf",
+			filename: "document.pdf",
+		}),
+		new AbortController().signal,
+		{
+			resolveHostname: async () => [{ address: "93.184.216.34", family: 4 }],
+			fetch: async () => {
+				fetches += 1;
+				return new Response(new Uint8Array(Buffer.from(PDF_BASE64, "base64")), {
+					headers: { "content-type": "application/pdf" },
+				});
+			},
+		},
+	);
+	const openai = candidate(openaiAdapter);
+	const resolved = await resolver.resolveForCandidate(
+		openai,
+		"chat_completions",
+	);
+	const built = openaiAdapter.chat!.buildRequest(resolved.request, {
+		upstreamModel: "gpt-5.4",
+		credentials: { apiKey: "test-key" },
+		meta: openai.meta,
+		transport: "chat_completions",
+		requestId: "test-request",
+	});
+	const body = JSON.parse(built.body!);
+	assert.equal(fetches, 1);
+	assert.match(
+		body.messages[0].content[0].file.file_data,
+		/^data:application\/pdf;base64,/,
+	);
+	assert.equal(body.messages[0].content[0].file.filename, "document.pdf");
+});
+
 test("materialized image inputs reject content with a non-image signature", async () => {
 	const resolver = createContentInputResolver(
 		request({

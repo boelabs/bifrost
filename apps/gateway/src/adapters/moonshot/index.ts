@@ -16,6 +16,7 @@ export const moonshotAdapter = makeOpenAIStyleAdapter({
 	defaultBaseUrl: "https://api.moonshot.ai/v1",
 	defaultTransport: "chat_completions",
 	maxTokensField: "max_tokens",
+	supportsTopK: true,
 	refineBadRequest: contextWindowRefine,
 });
 

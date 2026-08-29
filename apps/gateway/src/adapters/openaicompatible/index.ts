@@ -14,6 +14,7 @@ export const openaicompatibleAdapter = makeOpenAIStyleAdapter({
 	label: "OpenAI-compatible",
 	defaultTransport: "chat_completions",
 	maxTokensField: "max_tokens",
+	supportsTopK: true,
 	imageTransports: ["images", "chat_completions"],
 	defaultImageTransport: "images",
 	videoTransports: ["videos", "videos_async"],

@@ -183,6 +183,8 @@ const openAIStyle = makeOpenAIStyleAdapter({
 		},
 	},
 	maxTokensField: "max_completion_tokens",
+	supportsDeveloperRole: true,
+	supportsTopK: true,
 	refineBadRequest,
 	imageTransports: ["images", "chat_completions"],
 	defaultImageTransport: "images",

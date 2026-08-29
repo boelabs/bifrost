@@ -92,11 +92,15 @@ export function makeAzurev1Adapter(
 		| "supportedChatTransports"
 		| "contentInputs"
 		| "embeddings"
+		| "supportsDeveloperRole"
 	>,
 ) {
 	return makeOpenAIStyleAdapter({
 		...config,
 		maxTokensField: "max_completion_tokens",
+		...(config.supportsDeveloperRole !== undefined
+			? { supportsDeveloperRole: config.supportsDeveloperRole }
+			: {}),
 		authScheme: "api-key",
 		normalizeBaseUrl: normalizeAzurev1BaseUrl,
 		refineBadRequest: azureRefineBadRequest,

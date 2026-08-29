@@ -16,6 +16,7 @@ export const zaiAdapter = makeOpenAIStyleAdapter({
 	defaultBaseUrl: "https://api.z.ai/api/paas/v4",
 	defaultTransport: "chat_completions",
 	maxTokensField: "max_tokens",
+	supportsTopK: true,
 	refineBadRequest: contextWindowRefine,
 });
 
