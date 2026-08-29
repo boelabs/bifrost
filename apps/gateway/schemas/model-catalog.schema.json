@@ -149,6 +149,7 @@
 			"additionalProperties": false,
 			"properties": {
 				"tools": { "type": "boolean" },
+				"strictTools": { "type": "boolean" },
 				"vision": { "type": "boolean" },
 				"reasoning": { "type": "boolean" },
 				"structuredOutputs": { "type": "boolean" }

@@ -50,6 +50,7 @@ rules the admin API enforces.
         "text.generate": {
           "capabilities": {
             "tools": true,
+            "strictTools": true,
             "vision": true,
             "reasoning": true,
             "structuredOutputs": true
@@ -77,7 +78,8 @@ rules the admin API enforces.
 - `models` is an object keyed by `upstreamModel`; do not use arrays for the hot path.
 - `operations` is the declarative source: the presence of an operation implies support.
 - For custom models, `catalogEntry.operations` is required and the gateway validates per-operation
-  minimums: text requires `capabilities.tools|vision|reasoning|structuredOutputs`; image requires
+  minimums: text requires `capabilities.tools|vision|reasoning|structuredOutputs`; `strictTools` is
+  optional and must only be set when the upstream guarantees schema-adherent function arguments; image requires
   `outputFormats`, `responseFormats`, and `sizes`, `arbitrarySize`, or `autoSize`; audio transcribe requires
   `responseFormats`.
 - Embeddings are declared with `embedding.create`. The profile may indicate `dimensions`,
@@ -95,6 +97,10 @@ rules the admin API enforces.
   the catalog forward-compatible: a new model only declares its `levels`.
 - `openai_effort` emits `reasoning_effort`; `openai_body` emits a provider-specific top-level field
   such as `thinking: {"type":"enabled"}` and, where applicable, an `effortField` like `reasoning_effort`.
+- `capabilities.strictTools` is separate from `capabilities.tools`: it means the upstream guarantees
+  that function-call arguments conform to the declared JSON Schema. A request with a tool whose
+  `strict` is `true` is routed only to deployments that declare this capability; it is never silently
+  downgraded or dropped by `unsupportedParameterStrategy`.
 - Entries are deliberately minimal: only `operations` and `pricing` (the data the runtime consumes)
   plus the human-facing `deprecated`, `notes`, and `needsHumanReview`. Descriptive metadata the gateway
   never reads (names, lifecycle dates, modalities lists, provenance) is rejected by the validator.

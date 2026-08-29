@@ -38,7 +38,8 @@ that contain one require a native Messages deployment instead of silently degrad
 ## Structured output
 
 `output_config.format` maps to the same canonical `responseFormat` as `response_format` elsewhere —
-`json_schema` requests schema-adherent output on models that declare `structuredOutputs: true`.
+`json_schema` is native strict structured output and requests a schema-adherent response on models
+that declare `structuredOutputs: true`. Anthropic tool definitions preserve `strict: true` end to end.
 
 ## Reasoning
 

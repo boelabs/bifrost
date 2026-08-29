@@ -28,6 +28,12 @@ import {
 	createContentInputResolver,
 } from "#files/requestContentInputs.ts";
 
+import {
+	assertStrictTextRequestSupported,
+	requestUsesStrictOutput,
+	requestUsesStrictTools,
+} from "#gateway/textRequestValidation.ts";
+
 export type ParameterPolicyRecorder = (result: ParameterPolicyResult) => void;
 export type ChatCandidateExecutor = (
 	candidate: DeploymentCandidate,
@@ -96,14 +102,32 @@ export async function routeChat(
 		settings.unsupportedParameterStrategy,
 	);
 	const publicWire = canonical.publicWire ?? "chat_completions";
-	const preferredTransport = nativeTransportForPublicWire(publicWire);
+	const nativeTransport = nativeTransportForPublicWire(publicWire);
+	const transportPreference: NonNullable<
+		RouteOptions["transportPreference"]
+	> = (candidate) =>
+		candidate.adapter.preferredChatTransport?.(canonical, {
+			upstreamModel: candidate.upstreamModel,
+			meta: candidate.meta,
+			nativeTransport,
+		}) ?? nativeTransport;
+	const transportForCandidate = (candidate: DeploymentCandidate) =>
+		resolveTransport(candidate, "chat", transportPreference(candidate));
+	const strictEligibility: RouteOptions["candidateEligibility"] | undefined =
+		requestUsesStrictTools(canonical) || requestUsesStrictOutput(canonical)
+			? (candidate) => {
+					assertStrictTextRequestSupported(canonical, candidate.meta);
+					candidate.adapter.assertChatRequestSupported?.(canonical, {
+						upstreamModel: candidate.upstreamModel,
+						meta: candidate.meta,
+						transport: transportForCandidate(candidate),
+					});
+				}
+			: undefined;
 	const nativeEligibility: RouteOptions["candidateEligibility"] | undefined =
 		canonical.requiresNativeWire
 			? (candidate) => {
-					if (
-						resolveTransport(candidate, "chat", preferredTransport) !==
-						preferredTransport
-					) {
+					if (transportForCandidate(candidate) !== nativeTransport) {
 						throw new GatewayError({
 							class: "bad_request",
 							code: "native_transport_required",
@@ -114,13 +138,17 @@ export async function routeChat(
 				}
 			: undefined;
 	const candidateEligibility: RouteOptions["candidateEligibility"] | undefined =
-		eligibility || nativeEligibility || contentInputResolver.hasInputs
+		eligibility ||
+		strictEligibility ||
+		nativeEligibility ||
+		contentInputResolver.hasInputs
 			? (candidate) => {
 					eligibility?.(candidate);
+					strictEligibility?.(candidate);
 					nativeEligibility?.(candidate);
 					contentInputResolver.assertCandidate(
 						candidate,
-						resolveTransport(candidate, "chat", preferredTransport),
+						transportForCandidate(candidate),
 					);
 				}
 			: undefined;
@@ -137,7 +165,8 @@ export async function routeChat(
 				clientSignal,
 				requestId,
 				executionMode: canonical.stream ? "stream" : "json",
-				preferredTransport,
+				preferredTransport: nativeTransport,
+				transportPreference,
 				maxAttempts: remainingAttempts,
 				preOutputDeadlineAt,
 				totalDeadlineAt,

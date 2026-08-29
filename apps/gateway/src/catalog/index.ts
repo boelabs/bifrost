@@ -17,6 +17,7 @@ export type { CatalogEntry, ResolvedModelMetadata } from "./types.ts";
 
 const DEFAULT_CAPABILITIES: TextCapabilities = {
 	tools: true,
+	strictTools: false,
 	vision: true,
 	reasoning: false,
 	structuredOutputs: false,

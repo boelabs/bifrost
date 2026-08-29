@@ -28,6 +28,7 @@ export const pricingSchema = z
 const capabilitiesSchema = z
 	.object({
 		tools: z.boolean().optional(),
+		strictTools: z.boolean().optional(),
 		vision: z.boolean().optional(),
 		reasoning: z.boolean().optional(),
 		structuredOutputs: z.boolean().optional(),
@@ -37,6 +38,7 @@ const capabilitiesSchema = z
 const requiredCapabilitiesSchema = z
 	.object({
 		tools: z.boolean(),
+		strictTools: z.boolean().optional(),
 		vision: z.boolean(),
 		reasoning: z.boolean(),
 		structuredOutputs: z.boolean(),

@@ -30,6 +30,7 @@ const geminiLevelCtx: AdapterContext = {
 	meta: {
 		capabilities: {
 			tools: true,
+			strictTools: true,
 			vision: true,
 			reasoning: true,
 			structuredOutputs: true,
@@ -352,12 +353,12 @@ test("google.buildRequest: strict mode preserves required tool-choice semantics"
 	}
 });
 
-test("google.buildRequest: non-strict and pre-Gemini-3 requests keep their legacy wire", () => {
-	for (const [context, strict] of [
-		[geminiLevelCtx, false],
-		[ctx, true],
-		[{ ...ctx, upstreamModel: "gemma-4-26b-a4b-it" }, true],
-	] as const) {
+test("google.buildRequest: non-strict requests keep their legacy wire", () => {
+	for (const context of [
+		geminiLevelCtx,
+		ctx,
+		{ ...ctx, upstreamModel: "gemma-4-26b-a4b-it" },
+	]) {
 		const body = JSON.parse(
 			googleAdapter.chat!.buildRequest(
 				{
@@ -365,7 +366,7 @@ test("google.buildRequest: non-strict and pre-Gemini-3 requests keep their legac
 					tools: [
 						{
 							name: "search_web",
-							strict,
+							strict: false,
 							parameters: {
 								type: "object",
 								additionalProperties: false,
@@ -383,10 +384,7 @@ test("google.buildRequest: non-strict and pre-Gemini-3 requests keep their legac
 		assert.equal(body.toolConfig.functionCallingConfig.mode, "AUTO");
 	}
 
-	for (const [context, strict] of [
-		[geminiLevelCtx, false],
-		[ctx, true],
-	] as const) {
+	for (const context of [geminiLevelCtx, ctx]) {
 		const body = JSON.parse(
 			googleAdapter.chat!.buildRequest(
 				{
@@ -394,7 +392,7 @@ test("google.buildRequest: non-strict and pre-Gemini-3 requests keep their legac
 					tools: [
 						{
 							name: "search_web",
-							strict,
+							strict: false,
 							parameters: { type: "object" },
 						},
 					],
@@ -403,6 +401,34 @@ test("google.buildRequest: non-strict and pre-Gemini-3 requests keep their legac
 			).body!,
 		);
 		assert.equal(body.toolConfig, undefined);
+	}
+});
+
+test("google.buildRequest: unsupported models reject strict tools instead of downgrading", () => {
+	for (const context of [
+		ctx,
+		{ ...ctx, upstreamModel: "gemma-4-26b-a4b-it" },
+	]) {
+		assert.throws(
+			() =>
+				googleAdapter.chat!.buildRequest(
+					{
+						...req,
+						tools: [
+							{
+								name: "search_web",
+								strict: true,
+								parameters: { type: "object" },
+							},
+						],
+					},
+					context,
+				),
+			(error) =>
+				GatewayError.is(error) &&
+				error.code === "unsupported_model_capability" &&
+				error.param === "tools",
+		);
 	}
 });
 

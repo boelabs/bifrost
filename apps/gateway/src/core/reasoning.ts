@@ -66,6 +66,8 @@ export function summaryForEffort(
 /** A model's capabilities (features), independent of the CallType. */
 export interface TextCapabilities {
 	tools: boolean;
+	/** The model guarantees function arguments conform to the declared JSON Schema. */
+	strictTools?: boolean;
 	vision: boolean;
 	reasoning: boolean;
 	/** The model can adhere to a JSON Schema, not just produce valid JSON. */

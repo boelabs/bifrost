@@ -256,6 +256,7 @@ test("request->canonical: native tools retain their exact Messages definitions",
 			name: "weather",
 			description: "Get weather",
 			input_schema: { type: "object", properties: {} },
+			strict: true,
 		},
 	];
 	const canonical = messagesRequestToCanonical(
@@ -273,6 +274,7 @@ test("request->canonical: native tools retain their exact Messages definitions",
 		canonical.tools?.map((tool) => tool.name),
 		["web_search", "weather"],
 	);
+	assert.equal(canonical.tools?.[1]?.strict, true);
 });
 
 test("request->canonical: LiteLLM provider_specific_fields restore tool_use state", () => {
@@ -394,7 +396,11 @@ test("request->canonical: output_config.format becomes canonical format", () => 
 			output_config: { effort: "low", format: { type: "json_schema", schema } },
 		}),
 	);
-	assert.deepEqual(u.responseFormat, { type: "json_schema", schema });
+	assert.deepEqual(u.responseFormat, {
+		type: "json_schema",
+		schema,
+		strict: true,
+	});
 	assert.deepEqual(u.reasoning, { effort: "low", summary: "auto" });
 });
 

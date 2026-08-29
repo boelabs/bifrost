@@ -11,13 +11,12 @@ description: "Adapter key googleaistudio. Strict tools, embeddings routes, and i
 - **Default transport**: `generateContent` for text and image operations, `generate_videos` for Veo
   video generation, and `embedContent`/`batchEmbedContents` for embeddings.
 - **Tool schemas are translated, not passed through.** Non-strict tools and pre-Gemini-3 models use
-  Gemini's OpenAPI-shaped `parameters` field and its narrower schema translator. On Gemini 3 and later,
-  a request containing an OpenAI `strict: true` function instead uses `parametersJsonSchema` for that
-  function and enables Gemini's schema-constrained `VALIDATED` mode when the tool choice remains
-  optional. Required or named tool choices keep `ANY`, which already constrains arguments to the
-  function schema. This is generation-time enforcement; the gateway does not coerce arguments or retry
-  a hidden repair request. Constructs outside Google's supported schema subset may still require a
-  simpler tool definition.
+  Gemini's OpenAPI-shaped `parameters` field and its narrower schema translator. Gemini 3 and later
+  models declare `capabilities.strictTools: true`; a request containing an OpenAI `strict: true`
+  function uses `parametersJsonSchema` and Gemini's schema-constrained `VALIDATED` mode. Pre-Gemini-3
+  models reject strict requests instead of silently downgrading them. This is generation-time
+  enforcement; the gateway does not coerce arguments or retry a hidden repair request. Constructs
+  outside Google's supported schema subset may still require a simpler tool definition.
 - **Reasoning**: `gemini_level` (discrete `thinkingLevel`, with `xhigh` mapped to `high`) or
   `gemini_budget` (raw `thinkingBudget` tokens), per model — see [Reasoning](/docs/reasoning).
 - **Thought signatures round-trip statelessly inside the tool call id.** When Gemini returns a

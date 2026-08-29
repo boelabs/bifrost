@@ -1,5 +1,6 @@
 import { looksLikeContextWindowError } from "#core/httpError.ts";
 import { GatewayError, type ErrorClass } from "#core/errors.ts";
+import type { CanonicalChatRequest } from "#core/canonical.ts";
 
 import {
 	makeOpenAIStyleAdapter,
@@ -83,6 +84,31 @@ export function azureRefineBadRequest(
 	return null;
 }
 
+function usesStrictTools(req: CanonicalChatRequest): boolean {
+	return req.tools?.some((tool) => tool.strict === true) === true;
+}
+
+function assertAzureStrictRequest(req: CanonicalChatRequest): void {
+	if (usesStrictTools(req) && req.parallelToolCalls === true) {
+		throw new GatewayError({
+			class: "bad_request",
+			deploymentHealth: "neutral",
+			message:
+				"Azure strict tool schemas require parallel_tool_calls to be false",
+			code: "strict_tools_parallel_conflict",
+			param: "parallel_tool_calls",
+		});
+	}
+}
+
+function prepareAzureStrictRequest(
+	req: CanonicalChatRequest,
+): CanonicalChatRequest {
+	return usesStrictTools(req) && req.parallelToolCalls === undefined
+		? { ...req, parallelToolCalls: false }
+		: req;
+}
+
 export function makeAzurev1Adapter(
 	config: Pick<
 		OpenAIStyleConfig,
@@ -104,5 +130,7 @@ export function makeAzurev1Adapter(
 		authScheme: "api-key",
 		normalizeBaseUrl: normalizeAzurev1BaseUrl,
 		refineBadRequest: azureRefineBadRequest,
+		assertChatRequestSupported: assertAzureStrictRequest,
+		prepareChatRequest: prepareAzureStrictRequest,
 	});
 }

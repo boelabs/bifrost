@@ -108,6 +108,18 @@ export interface AdapterContext {
 	transportStats?: { upstreamBytes: number };
 }
 
+export interface ChatRoutingContext {
+	upstreamModel: string;
+	meta: ResolvedModelMetadata;
+	nativeTransport: UpstreamTransport;
+}
+
+export interface ChatSupportContext {
+	upstreamModel: string;
+	meta: ResolvedModelMetadata;
+	transport: UpstreamTransport;
+}
+
 /** Safe, private provider evidence retained for operator diagnostics and never rendered publicly. */
 export interface AdapterDiagnostics {
 	providerRequestId?: string;
@@ -295,6 +307,16 @@ export interface Adapter {
 	};
 	supportedCallTypes: ReadonlySet<CallType>;
 	chat?: ChatHandler;
+	/** Selects a request-specific native text transport before balancing. */
+	preferredChatTransport?(
+		req: CanonicalChatRequest,
+		ctx: ChatRoutingContext,
+	): UpstreamTransport | undefined;
+	/** Rejects requests whose guarantee cannot be honored by the resolved transport. */
+	assertChatRequestSupported?(
+		req: CanonicalChatRequest,
+		ctx: ChatSupportContext,
+	): void;
 	messageTokenCount?: MessageTokenCountHandler;
 	/** Optional native persistent /responses WebSocket transport. */
 	responsesWebSocket?: ResponsesWebSocketHandler;

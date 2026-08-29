@@ -92,9 +92,12 @@ test("compatible providers downgrade developer and forward catalog top_k", () =>
 	}
 });
 
-test("chat-compatible providers do not advertise an unimplemented Responses transport", () => {
+test("chat-compatible providers advertise only transports they implement", () => {
+	assert.deepEqual(deepseekAdapter.transports?.chat, {
+		supported: ["chat_completions", "responses"],
+		default: "chat_completions",
+	});
 	for (const adapter of [
-		deepseekAdapter,
 		moonshotAdapter,
 		zaiAdapter,
 		minimaxAdapter,
@@ -141,7 +144,8 @@ test("catalog: DeepSeek-V4 includes official pricing and native thinking/effort"
 	assert.equal(flash.pricing?.cacheReadCentsPerMTokens, 0.28);
 	assert.equal(flash.pricing?.outputCentsPerMTokens, 28);
 	assert.equal(flash.maxOutputTokens, 384000);
-	assert.equal(flash.capabilities.structuredOutputs, false);
+	assert.equal(flash.capabilities.structuredOutputs, true);
+	assert.equal(flash.capabilities.strictTools, true);
 	assert.equal(flash.reasoning?.kind, "openai_body");
 	assert.deepEqual(
 		flash.reasoning,
@@ -174,10 +178,127 @@ test("catalog: DeepSeek-V4 includes official pricing and native thinking/effort"
 	assert.equal(body.reasoning_effort, "max");
 });
 
+test("DeepSeek strict tools use the beta Chat endpoint and require all tools strict", () => {
+	const strictRequest: CanonicalChatRequest = {
+		...req,
+		tools: [
+			{
+				name: "lookup",
+				strict: true,
+				parameters: {
+					type: "object",
+					properties: { id: { type: "string" } },
+					required: ["id"],
+					additionalProperties: false,
+				},
+			},
+		],
+	};
+	const built = deepseekAdapter.chat!.buildRequest(
+		strictRequest,
+		ctx("deepseek-v4-flash", "deepseek", { apiKey: "k" }),
+	);
+	assert.equal(built.url, "https://api.deepseek.com/beta/chat/completions");
+	assert.equal(JSON.parse(built.body!).tools[0].function.strict, true);
+
+	assert.throws(() =>
+		deepseekAdapter.chat!.buildRequest(
+			{
+				...strictRequest,
+				tools: [strictRequest.tools![0]!, { name: "other", strict: false }],
+			},
+			ctx("deepseek-v4-flash", "deepseek", { apiKey: "k" }),
+		),
+	);
+});
+
+test("DeepSeek maps reasoning onto the Responses contract, not its Chat body fields", () => {
+	// DeepSeek's Responses API supports `reasoning.effort` and silently ignores unknown top-level
+	// keys, so the native Chat controls (`thinking`, `reasoning_effort`) must not leak onto it.
+	const responsesCtx = {
+		...ctx("deepseek-v4-flash", "deepseek", { apiKey: "k" }),
+		transport: "responses" as const,
+	};
+	const off = JSON.parse(
+		deepseekAdapter.chat!.buildRequest(req, responsesCtx).body!,
+	);
+	assert.deepEqual(off.reasoning, { effort: "none" });
+	assert.equal(off.thinking, undefined);
+	assert.equal(off.reasoning_effort, undefined);
+
+	const on = JSON.parse(
+		deepseekAdapter.chat!.buildRequest(
+			{ ...req, reasoning: { effort: "xhigh" } },
+			responsesCtx,
+		).body!,
+	);
+	assert.deepEqual(on.reasoning, { effort: "high", summary: "auto" });
+	assert.equal(on.thinking, undefined);
+	assert.equal(on.reasoning_effort, undefined);
+});
+
+test("DeepSeek strict output uses the native Responses schema", () => {
+	const built = deepseekAdapter.chat!.buildRequest(
+		{
+			...req,
+			tools: [
+				{ name: "lookup", strict: false, parameters: { type: "object" } },
+			],
+			responseFormat: {
+				type: "json_schema",
+				name: "answer",
+				schema: { type: "object", additionalProperties: false },
+				strict: true,
+			},
+		},
+		{
+			...ctx("deepseek-v4-flash", "deepseek", { apiKey: "k" }),
+			transport: "responses",
+		},
+	);
+	const body = JSON.parse(built.body!);
+	assert.equal(built.url, "https://api.deepseek.com/responses");
+	assert.deepEqual(body.text.format, {
+		type: "json_schema",
+		name: "answer",
+		schema: { type: "object", additionalProperties: false },
+	});
+	assert.equal(body.tools[0].strict, undefined);
+});
+
+test("Moonshot emits its native strict function-tool flag", () => {
+	const built = moonshotAdapter.chat!.buildRequest(
+		{
+			...req,
+			tools: [{ name: "lookup", strict: true, parameters: { type: "object" } }],
+		},
+		ctx("kimi-k2.6", "moonshot", { apiKey: "k" }),
+	);
+	assert.equal(JSON.parse(built.body!).tools[0].function.strict, true);
+});
+
+test("Z.AI does not claim strict JSON Schema support", () => {
+	const metadata = resolveModelMetadata("zai", "glm-5.2");
+	assert.equal(metadata.capabilities.structuredOutputs, false);
+	assert.throws(() =>
+		assertTextRequestSupported(
+			{
+				...req,
+				responseFormat: {
+					type: "json_schema",
+					schema: { type: "object" },
+					strict: true,
+				},
+			},
+			metadata,
+		),
+	);
+});
+
 test("catalog: GLM-5.2 keeps xhigh distinct from native max", () => {
 	const glm = resolveModelMetadata("zai", "glm-5.2");
 	assert.equal(glm.maxInputTokens, 1_000_000);
-	assert.equal(glm.capabilities.structuredOutputs, true);
+	assert.equal(glm.capabilities.structuredOutputs, false);
 	assert.equal(glm.reasoning?.kind, "openai_body");
 	const r = zaiAdapter.chat!.buildRequest(
 		{ ...req, reasoning: { effort: "xhigh" } },
@@ -200,7 +321,7 @@ test("catalog: GLM-5.3 enforces its mandatory reasoning floor", () => {
 	const glm = resolveModelMetadata("zai", "glm-5.3");
 	assert.equal(glm.maxInputTokens, 1_000_000);
 	assert.equal(glm.maxOutputTokens, 131_072);
-	assert.equal(glm.capabilities.structuredOutputs, true);
+	assert.equal(glm.capabilities.structuredOutputs, false);
 	assert.deepEqual(glm.reasoning, {
 		kind: "openai_body",
 		levels: ["low", "high", "max"],

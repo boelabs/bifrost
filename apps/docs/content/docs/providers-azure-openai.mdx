@@ -30,6 +30,9 @@ description: "Adapter key azureopenai. baseUrl rules, deployment naming, and qui
   deployment name as multipart `model`.
 - **Default transport**: Responses API for text, `embeddings` for embeddings. No native image transport
   today.
+- Strict function tools are emitted on both Chat Completions and Responses. Azure requires
+  `parallel_tool_calls: false` for this mode, so the adapter supplies that default and rejects an
+  explicit `true` rather than weakening the guarantee.
 - Azure OpenAI and [Azure Foundry](/docs/providers-azure-foundry) are two independent adapters and
   catalogs, even though both live under the Azure umbrella — use this one for models you deploy through
   Azure OpenAI resources specifically.

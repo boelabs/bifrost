@@ -250,7 +250,7 @@ curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "
   "catalogEntry": {
     "operations": {
       "text.generate": {
-        "capabilities": { "tools": true, "vision": false, "reasoning": false, "structuredOutputs": false },
+        "capabilities": { "tools": true, "strictTools": false, "vision": false, "reasoning": false, "structuredOutputs": false },
         "maxInputTokens": 131072,
         "maxOutputTokens": 8192
       }

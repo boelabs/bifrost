@@ -371,7 +371,11 @@ export function messagesRequestToCanonical(
 	}
 	const outputFormat = req.output_config?.format;
 	if (outputFormat != null) {
-		u.responseFormat = { type: "json_schema", schema: outputFormat.schema };
+		u.responseFormat = {
+			type: "json_schema",
+			schema: outputFormat.schema,
+			strict: true,
+		};
 	}
 	if (req.extra_body !== undefined) {
 		assertNoManagedExtraBodyKeys(
@@ -389,6 +393,7 @@ export function messagesRequestToCanonical(
 				name?: string;
 				description?: string;
 				input_schema?: Record<string, unknown>;
+				strict?: boolean;
 				cache_control?: Record<string, unknown>;
 			};
 			if (typeof tool.name === "string") {
@@ -401,6 +406,7 @@ export function messagesRequestToCanonical(
 					entry.description = tool.description;
 				if (tool.input_schema !== undefined)
 					entry.parameters = tool.input_schema;
+				if (tool.strict !== undefined) entry.strict = tool.strict;
 				if (tool.cache_control !== undefined)
 					entry.cacheControl = tool.cache_control;
 				tools.push(entry);

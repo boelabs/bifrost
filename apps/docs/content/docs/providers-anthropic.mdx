@@ -24,6 +24,9 @@ description: "Adapter key anthropic. Credentials, transport, and reasoning kinds
 - Native `/v1/messages` requests pass through with minimal translation; `/v1/chat/completions` and
   `/v1/responses` requests are rendered onto the same canonical reasoning/tool/format machinery as
   every other provider.
+- Models that declare `capabilities.strictTools: true` preserve Anthropic's native top-level
+  `strict: true` tool flag. Native `output_config.format` is schema-adherent and is treated as strict
+  structured output by the gateway.
 - Catalog: `src/adapters/anthropic/catalog.json`.
 
 ## What to read next

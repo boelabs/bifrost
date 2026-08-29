@@ -40,6 +40,11 @@ see [Parameter policy](/docs/parameter-policy) for what happens when it doesn't 
 mode. Provider translation happens per-adapter — notably Google AI Studio narrows tool `parameters` to its own OpenAPI subset; see
 [Google AI Studio](/docs/providers-google).
 
+Set `tools[].function.strict` to `true` when the function arguments must conform to the supplied
+JSON Schema. The router selects only deployments whose catalog declares `capabilities.strictTools: true`;
+if none can guarantee it, the request fails with `unsupported_model_capability` instead of silently
+falling back to a non-strict tool call.
+
 Some providers return opaque tool-call state that must round-trip with the tool call (e.g. Gemini
 thought signatures). The gateway embeds it in the tool call id itself (`<id>__thought__<signature>`),
 so echoing `tool_calls[].id` verbatim — which every standard client does — is enough; no extra field
@@ -49,8 +54,9 @@ rich clients, and all forms are accepted back. See
 
 ## Structured outputs
 
-`response_format: { "type": "json_schema", "json_schema": { ... } }` requests schema-adherent output on
-models that declare `structuredOutputs: true`. `{"type": "json_object"}` remains available as legacy
+`response_format: { "type": "json_schema", "json_schema": { ..., "strict": true } }` requests
+schema-adherent output on models that declare `structuredOutputs: true`; the strict flag is preserved
+on native transports that expose it. `{"type": "json_object"}` remains available as legacy
 JSON mode — valid JSON, but no schema adherence guarantee — on any model, and does not imply structured
 output support.
 

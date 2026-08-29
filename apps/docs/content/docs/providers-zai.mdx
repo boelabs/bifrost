@@ -10,6 +10,10 @@ description: "Adapter key zai. Built-in base URL and the thinking toggle."
 - **Credentials**: `apiKey` only. No `baseUrl` needed — defaults to
   `https://api.z.ai/api/paas/v4`.
 - **Default transport**: Chat Completions.
+- **Structured outputs**: Z.AI documents JSON mode (`response_format: {"type": "json_object"}`) with
+  client-side validation, not guaranteed JSON Schema adherence, so no GLM model declares
+  `structuredOutputs` or `strictTools`. A `json_schema` response format is rejected with
+  `unsupported_model_capability` rather than downgraded to unvalidated JSON.
 - **Reasoning**: `openai_body`, with a top-level `thinking: { type: "enabled" | "disabled" }` toggle —
   the same mechanism across every GLM model in the catalog, whether it exposes a full effort ladder or
   just an on/off switch (`levels: ["none", "high"]`). See [Reasoning](/docs/reasoning).

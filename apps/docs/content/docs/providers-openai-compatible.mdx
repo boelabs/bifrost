@@ -22,6 +22,9 @@ provider Bifrost doesn't have a dedicated adapter for yet.
 - **Compatibility goal**: this adapter covers the common OpenAI-shaped surface and stays extensible
   through `catalogEntry`, `transportOverrides`, and `credentials.headers`. It does not promise perfect
   behavior for every aggregator quirk or proprietary OpenAI feature.
+- **Strict tools**: declare `capabilities.strictTools: true` only when the target itself guarantees
+  schema-adherent function arguments. The adapter forwards each tool's `strict` flag natively and
+  rejects strict requests when the catalog does not make that guarantee.
 - Since the gateway can't know this model's real capabilities, **`catalogEntry` is required** — declare
   `operations`, `capabilities`, and `parameters` by hand. See [Model catalog](/docs/model-catalog) and
   the custom-model example in [Creating deployments](/docs/creating-deployments).

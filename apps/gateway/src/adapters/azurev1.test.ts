@@ -37,6 +37,7 @@ function context(
 		meta: {
 			capabilities: {
 				tools: true,
+				strictTools: true,
 				vision: true,
 				reasoning: false,
 				structuredOutputs: true,
@@ -60,6 +61,51 @@ test("azureopenai: uses /openai/v1/responses, api-key, and deployment=model", ()
 	const body = JSON.parse(built.body!);
 	assert.equal(body.model, "gpt-5.4");
 	assert.equal(body.max_output_tokens, 256);
+});
+
+test("azureopenai: strict tools use native schemas and disable parallel calls", () => {
+	const strictRequest: CanonicalChatRequest = {
+		...request,
+		tools: [
+			{
+				name: "lookup",
+				strict: true,
+				parameters: {
+					type: "object",
+					properties: { id: { type: "string" } },
+					required: ["id"],
+					additionalProperties: false,
+				},
+			},
+		],
+	};
+
+	for (const transport of ["chat_completions", "responses"] as const) {
+		const built = azureopenaiAdapter.chat!.buildRequest(
+			strictRequest,
+			context(transport, "gpt-5.4"),
+		);
+		const body = JSON.parse(built.body!);
+		assert.equal(body.parallel_tool_calls, false);
+		assert.equal(
+			transport === "responses"
+				? body.tools[0].strict
+				: body.tools[0].function.strict,
+			true,
+		);
+	}
+
+	assert.throws(
+		() =>
+			azureopenaiAdapter.chat!.buildRequest(
+				{ ...strictRequest, parallelToolCalls: true },
+				context("responses", "gpt-5.4"),
+			),
+		(error) =>
+			GatewayError.is(error) &&
+			error.code === "strict_tools_parallel_conflict" &&
+			error.param === "parallel_tool_calls",
+	);
 });
 
 test("azureopenai: uses /openai/v1/embeddings, api-key, and OpenAI body", () => {
