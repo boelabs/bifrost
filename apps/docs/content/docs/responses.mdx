@@ -81,6 +81,11 @@ Providers may surface visible reasoning as either `summary[].summary_text` or
 into it on the same reasoning item. Streams expose the corresponding summary and content delta/done
 events together; this applies equally to SSE and Responses WebSocket turns.
 
+Mirroring shapes what Bifrost **returns**. A `reasoning` item replayed on input is sent upstream
+with only what the provider produced — its id, `encrypted_content`, and summary — because request
+schemas accept `content` on a reasoning item solely as an empty array. Clients may send the mirrored
+item back untouched; the extra half is dropped for them.
+
 ## `responsesTransport` passthrough
 
 Fields specific to the Responses wire contract that don't have a Chat Completions equivalent —

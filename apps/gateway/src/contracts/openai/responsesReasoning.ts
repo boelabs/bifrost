@@ -1,3 +1,5 @@
+import type { OpenAIReasoningStateItem } from "#core/providerSpecificFields.ts";
+
 type ReasoningPartType = "reasoning_text" | "summary_text";
 
 function recordValue(value: unknown): Record<string, unknown> | undefined {
@@ -49,6 +51,26 @@ export function mirrorReasoningItem(
 	else if (!Array.isArray(mirrored.content)) mirrored.content = [];
 
 	return mirrored;
+}
+
+/**
+ * Renders stored reasoning state as an input item for an upstream Responses request.
+ *
+ * Deliberately not `mirrorReasoningItem`: mirroring exists so *clients* receive both public
+ * representations, and the half it synthesizes is gateway state the provider never produced.
+ * Request schemas accept `content` on a reasoning item only as an empty array — OpenAI-style
+ * upstreams answer `array_above_max_length` for anything else — so replay carries only what the
+ * upstream itself returned: its id, its encrypted state, and its summary.
+ */
+export function reasoningItemForRequest(
+	item: OpenAIReasoningStateItem,
+): Record<string, unknown> {
+	return {
+		type: "reasoning",
+		...(item.id !== undefined ? { id: item.id } : {}),
+		encrypted_content: item.encrypted_content,
+		summary: structuredClone(item.summary ?? []),
+	};
 }
 
 export function mirrorReasoningOutput(
