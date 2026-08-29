@@ -1,4 +1,5 @@
 import { request as httpsRequest } from "node:https";
+import type { LookupFunction } from "node:net";
 import { Readable } from "node:stream";
 
 export interface ResolvedAddress {
@@ -22,6 +23,24 @@ function headersFromRaw(rawHeaders: string[]): Headers {
 	return headers;
 }
 
+/**
+ * Answers every DNS lookup for the connection with one already-validated address.
+ *
+ * The `all` flag decides the callback shape: `net` requests the array form whenever Happy Eyeballs
+ * is enabled — always, under Bun — and answering such a lookup with the single-address triple
+ * leaves the socket without an address, so the connection fails before it is opened.
+ */
+export function pinnedLookup(address: ResolvedAddress): LookupFunction {
+	const family = address.family === 6 ? 6 : 4;
+	return (_hostname, lookupOptions, callback) => {
+		if (lookupOptions.all === true) {
+			callback(null, [{ address: address.address, family }]);
+			return;
+		}
+		callback(null, address.address, family);
+	};
+}
+
 function requestAddress(
 	url: URL,
 	address: ResolvedAddress,
@@ -35,8 +54,7 @@ function requestAddress(
 				headers: { ...options.headers, "accept-encoding": "identity" },
 				signal: options.signal,
 				agent: false,
-				lookup: (_hostname, _lookupOptions, callback) =>
-					callback(null, address.address, address.family === 6 ? 6 : 4),
+				lookup: pinnedLookup(address),
 			},
 			(incoming) => {
 				const status = incoming.statusCode ?? 502;
