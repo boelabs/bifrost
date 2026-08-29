@@ -207,6 +207,74 @@ test("request->canonical: assistant tool_use and user tool_result", () => {
 	assert.equal(u.messages[1]!.content, "42");
 });
 
+test("request->canonical: tool_result preserves errors and multimodal content", () => {
+	const canonical = messagesRequestToCanonical(
+		parse({
+			model: "claude",
+			max_tokens: 50,
+			messages: [
+				{
+					role: "user",
+					content: [
+						{
+							type: "tool_result",
+							tool_use_id: "toolu_1",
+							is_error: true,
+							content: [
+								{ type: "text", text: "capture failed" },
+								{
+									type: "image",
+									source: {
+										type: "base64",
+										media_type: "image/png",
+										data: "AAAA",
+									},
+								},
+							],
+						},
+					],
+				},
+			],
+		}),
+	);
+
+	assert.deepEqual(canonical.messages[0], {
+		role: "tool",
+		toolCallId: "toolu_1",
+		toolResultError: true,
+		content: [
+			{ type: "text", text: "capture failed" },
+			{ type: "image", url: "data:image/png;base64,AAAA" },
+		],
+	});
+});
+
+test("request->canonical: native tools retain their exact Messages definitions", () => {
+	const tools = [
+		{ type: "web_search_20250305", name: "web_search", max_uses: 3 },
+		{
+			name: "weather",
+			description: "Get weather",
+			input_schema: { type: "object", properties: {} },
+		},
+	];
+	const canonical = messagesRequestToCanonical(
+		parse({
+			model: "claude",
+			max_tokens: 50,
+			messages: [{ role: "user", content: "Search" }],
+			tools,
+		}),
+	);
+
+	assert.equal(canonical.requiresNativeWire, true);
+	assert.deepEqual(canonical.messagesTransport?.rawTools, tools);
+	assert.deepEqual(
+		canonical.tools?.map((tool) => tool.name),
+		["web_search", "weather"],
+	);
+});
+
 test("request->canonical: LiteLLM provider_specific_fields restore tool_use state", () => {
 	const u = messagesRequestToCanonical(
 		parse({
@@ -417,6 +485,38 @@ test("canonical->response: reconstructs Anthropic disjoint input buckets", () =>
 	assert.equal(out.usage.cache_read_input_tokens, 2);
 	assert.equal(out.usage.cache_creation_input_tokens, 3);
 	assert.equal(out.usage.output_tokens, 3);
+});
+
+test("canonical->response: portable reasoning becomes an unsigned thinking block", () => {
+	const out = canonicalToMessagesResponse(
+		{
+			id: "response-1",
+			created: 1,
+			model: "upstream",
+			choices: [
+				{
+					index: 0,
+					finishReason: "stop",
+					message: {
+						role: "assistant",
+						reasoning: "Check the constraints.",
+						content: "Done.",
+					},
+				},
+			],
+			usage: { promptTokens: 1, completionTokens: 2, totalTokens: 3 },
+		},
+		opts,
+	) as TestJsonObject;
+
+	assert.deepEqual(out.content.slice(0, 2), [
+		{
+			type: "thinking",
+			thinking: "Check the constraints.",
+			signature: "",
+		},
+		{ type: "text", text: "Done." },
+	]);
 });
 
 test("canonical->response: tool_calls -> tool_use; finish tool_calls -> tool_use", () => {
@@ -754,4 +854,67 @@ test("stream->events: native thinking emits its real signature delta", async () 
 		{ type: "thinking_delta", thinking: "plan" },
 		{ type: "signature_delta", signature: "sig-1" },
 	]);
+});
+
+test("stream->events: portable interleaved reasoning never overlaps blocks", async () => {
+	async function* chunks(): AsyncGenerator<CanonicalChatStreamChunk> {
+		for (const delta of [
+			{ content: "Answer" },
+			{ reasoning: "Recheck" },
+			{ content: " complete" },
+		]) {
+			yield {
+				id: "c",
+				created: 1,
+				model: "upstream",
+				choices: [{ index: 0, delta, finishReason: null }],
+			};
+		}
+	}
+
+	const lifecycle: string[] = [];
+	for await (const event of canonicalChunksToMessagesEvents(chunks(), opts)) {
+		if (
+			event.event !== "content_block_start" &&
+			event.event !== "content_block_stop"
+		)
+			continue;
+		const data = JSON.parse(event.data) as {
+			index: number;
+			content_block?: { type?: string };
+		};
+		lifecycle.push(
+			`${event.event}:${data.index}:${data.content_block?.type ?? ""}`,
+		);
+	}
+
+	assert.deepEqual(lifecycle, [
+		"content_block_start:0:text",
+		"content_block_stop:0:",
+		"content_block_start:1:thinking",
+		"content_block_stop:1:",
+		"content_block_start:2:text",
+		"content_block_stop:2:",
+	]);
+});
+
+test("request->canonical: unsigned portable thinking does not anchor replay", () => {
+	const canonical = messagesRequestToCanonical(
+		parse({
+			model: "claude",
+			max_tokens: 50,
+			messages: [
+				{
+					role: "assistant",
+					content: [
+						{ type: "thinking", thinking: "portable", signature: "" },
+						{ type: "text", text: "answer" },
+					],
+				},
+			],
+		}),
+	);
+
+	assert.equal(canonical.messages[0]?.providerFields, undefined);
+	assert.equal(canonical.requiresNativeWire, undefined);
 });

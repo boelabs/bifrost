@@ -95,14 +95,23 @@ function toTransportPart(p: CanonicalContentPart): Record<string, unknown> {
 }
 
 function toTransportMessage(m: CanonicalMessage): Record<string, unknown> {
+	const content =
+		m.toolResultError === true
+			? typeof m.content === "string"
+				? `[Tool execution failed] ${m.content}`
+				: ([
+						{ type: "text", text: "[Tool execution failed]" },
+						...(m.content ?? []),
+					] satisfies CanonicalContentPart[])
+			: m.content;
 	const out: Record<string, unknown> = {
 		role: m.role,
 		content:
-			m.content === null
+			content === null
 				? null
-				: typeof m.content === "string"
-					? m.content
-					: m.content.map(toTransportPart),
+				: typeof content === "string"
+					? content
+					: content.map(toTransportPart),
 	};
 	if (m.name !== undefined) out.name = m.name;
 	if (m.toolCalls) {

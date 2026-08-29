@@ -250,10 +250,10 @@ function buildMessages(req: CanonicalChatRequest): {
 					{
 						type: "tool_result",
 						tool_use_id: message.toolCallId ?? "",
-						content:
-							typeof message.content === "string"
-								? message.content
-								: JSON.stringify(message.content ?? ""),
+						content: contentToAnthropic(message.content),
+						...(message.toolResultError !== undefined
+							? { is_error: message.toolResultError }
+							: {}),
 					},
 				],
 			});
@@ -386,7 +386,9 @@ function buildBody(
 	if (req.messagesTransport?.metadata !== undefined)
 		body.metadata = req.messagesTransport.metadata;
 	if (req.stop !== undefined) body.stop_sequences = req.stop;
-	if (req.tools) {
+	if (req.messagesTransport?.rawTools) {
+		body.tools = structuredClone(req.messagesTransport.rawTools);
+	} else if (req.tools) {
 		body.tools = req.tools.map((tool) => ({
 			name: tool.name,
 			...(tool.description !== undefined

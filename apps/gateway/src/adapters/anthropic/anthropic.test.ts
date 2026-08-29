@@ -548,6 +548,46 @@ test("anthropic.buildRequest: top_k and metadata use their native fields", () =>
 	assert.deepEqual(body.metadata, { user_id: "user-1" });
 });
 
+test("anthropic.buildRequest: preserves native tools and structured error results", () => {
+	const rawTools = [
+		{ type: "web_search_20250305", name: "web_search", max_uses: 2 },
+	];
+	const built = anthropicAdapter.chat!.buildRequest(
+		{
+			...req,
+			messages: [
+				{
+					role: "tool",
+					toolCallId: "toolu_1",
+					toolResultError: true,
+					content: [
+						{ type: "text", text: "failed" },
+						{ type: "image", url: "data:image/png;base64,AAAA" },
+					],
+				},
+			],
+			tools: [{ name: "web_search" }],
+			messagesTransport: { rawTools },
+		},
+		ctx,
+	);
+	const body = JSON.parse(built.body!);
+
+	assert.deepEqual(body.tools, rawTools);
+	assert.deepEqual(body.messages[0].content[0], {
+		type: "tool_result",
+		tool_use_id: "toolu_1",
+		is_error: true,
+		content: [
+			{ type: "text", text: "failed" },
+			{
+				type: "image",
+				source: { type: "base64", media_type: "image/png", data: "AAAA" },
+			},
+		],
+	});
+});
+
 test("anthropic.parseStream: signature deltas become replayable message state", async () => {
 	const sse =
 		`event: message_start\ndata: {"type":"message_start","message":{"id":"msg_1","model":"claude","usage":{"input_tokens":1},"content":[]}}\n\n` +

@@ -66,6 +66,30 @@ test("OpenAI transport strips provider-specific tool-call extra_content", () => 
 	assert.equal(toolCalls[0]!.extra_content, undefined);
 });
 
+test("OpenAI transport marks tool execution errors in portable content", () => {
+	const body = buildOpenAIChatBody(
+		{
+			callType: "chat",
+			model: "gpt",
+			stream: false,
+			messages: [
+				{
+					role: "tool",
+					toolCallId: "call_1",
+					toolResultError: true,
+					content: "permission denied",
+				},
+			],
+		},
+		"gpt-x",
+	);
+	const messages = body.messages as Array<Record<string, unknown>>;
+	assert.equal(
+		messages[0]?.content,
+		"[Tool execution failed] permission denied",
+	);
+});
+
 test("request: parses a basic chat and applies stream=false by default", () => {
 	const parsed = chatRequestSchema.parse({
 		model: "gpt",

@@ -495,7 +495,7 @@ test("google.buildRequest: wraps non-object JSON tool outputs in a Struct", () =
 	}
 });
 
-test("google.buildRequest: tool execution failures remain ordinary function responses", () => {
+test("google.buildRequest: canonical tool errors use Gemini's error field", () => {
 	const body = JSON.parse(
 		googleAdapter.chat!.buildRequest(
 			{
@@ -516,6 +516,7 @@ test("google.buildRequest: tool execution failures remain ordinary function resp
 					{
 						role: "tool",
 						toolCallId: "call-1",
+						toolResultError: true,
 						content:
 							'{"state":"output-error","errorText":"An error occurred."}',
 					},
@@ -528,8 +529,10 @@ test("google.buildRequest: tool execution failures remain ordinary function resp
 		id: "call-1",
 		name: "search_web",
 		response: {
-			state: "output-error",
-			errorText: "An error occurred.",
+			error: {
+				state: "output-error",
+				errorText: "An error occurred.",
+			},
 		},
 	});
 });
