@@ -709,6 +709,67 @@ test("chat native options: advanced request fields are preserved by the transpor
 	assert.deepEqual(body.web_search_options, { search_context_size: "low" });
 });
 
+test("chat native routing ignores accessory fields and no-op values", () => {
+	const canonical = toCanonicalChatRequest(
+		chatRequestSchema.parse({
+			model: "chat-model",
+			messages: [{ role: "user", content: "hi" }],
+			stream: true,
+			stream_options: { include_obfuscation: false },
+			logprobs: false,
+			top_logprobs: 0,
+			logit_bias: {},
+			metadata: { trace: "a" },
+			modalities: ["text"],
+			service_tier: "default",
+			safety_identifier: "user-1",
+			store: false,
+		}),
+	);
+
+	assert.equal(canonical.requiresNativeWire, undefined);
+	assert.deepEqual(canonical.chatTransport, {
+		logprobs: false,
+		topLogprobs: 0,
+		logitBias: {},
+		metadata: { trace: "a" },
+		modalities: ["text"],
+		serviceTier: "default",
+		safetyIdentifier: "user-1",
+		store: false,
+		streamOptions: { include_obfuscation: false },
+	});
+});
+
+test("chat native routing retains semantic requirements", () => {
+	for (const nativeField of [
+		{ audio: { format: "wav", voice: "alloy" } },
+		{ logprobs: true },
+		{ top_logprobs: 1 },
+		{ logit_bias: { "42": -1 } },
+		{ modalities: ["audio"] },
+		{ prediction: { type: "content", content: "prefix" } },
+		{ service_tier: "priority" },
+		{ store: true },
+		{ verbosity: "low" },
+		{ web_search_options: { search_context_size: "low" } },
+		{ stream: true, stream_options: { include_obfuscation: true } },
+	] satisfies Array<Record<string, unknown>>) {
+		const canonical = toCanonicalChatRequest(
+			chatRequestSchema.parse({
+				model: "chat-model",
+				messages: [{ role: "user", content: "hi" }],
+				...nativeField,
+			}),
+		);
+		assert.equal(
+			canonical.requiresNativeWire,
+			true,
+			JSON.stringify(nativeField),
+		);
+	}
+});
+
 test("chat response: log probabilities and annotations survive canonical rendering", () => {
 	const canonical = parseOpenAIChatResponse({
 		id: "response-1",
