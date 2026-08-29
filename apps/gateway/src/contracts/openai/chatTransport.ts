@@ -333,10 +333,12 @@ interface TransportUsage {
 }
 
 function mapUsage(u: TransportUsage | undefined | null): Usage {
+	const promptTokens = u?.prompt_tokens ?? 0;
+	const completionTokens = u?.completion_tokens ?? 0;
 	const usage: Usage = {
-		promptTokens: u?.prompt_tokens ?? 0,
-		completionTokens: u?.completion_tokens ?? 0,
-		totalTokens: u?.total_tokens ?? 0,
+		promptTokens,
+		completionTokens,
+		totalTokens: u?.total_tokens ?? promptTokens + completionTokens,
 	};
 	if (u?.prompt_tokens_details?.cached_tokens !== undefined) {
 		usage.cacheReadTokens = u.prompt_tokens_details.cached_tokens;

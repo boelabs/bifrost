@@ -1,3 +1,4 @@
+import { isUsageConsistent } from "#core/usage.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -722,6 +723,20 @@ test("chat response: log probabilities and annotations survive canonical renderi
 		content: [{ token: "ok", logprob: -0.1 }],
 	});
 	assert.equal(rendered.choices[0]?.message.annotations?.length, 1);
+});
+
+test("chat response: derives total usage when an OpenAI-compatible upstream omits it", () => {
+	const canonical = parseOpenAIChatResponse({
+		choices: [{ finish_reason: "stop", message: { content: "done" } }],
+		usage: { prompt_tokens: 7, completion_tokens: 3 },
+	});
+
+	assert.deepEqual(canonical.usage, {
+		promptTokens: 7,
+		completionTokens: 3,
+		totalTokens: 10,
+	});
+	assert.equal(isUsageConsistent(canonical.usage), true);
 });
 
 test("OpenAI-compatible finish reasons degrade without rejecting valid responses", () => {
