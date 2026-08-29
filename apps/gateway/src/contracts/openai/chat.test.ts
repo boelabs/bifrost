@@ -892,6 +892,76 @@ test("chat response: derives total usage when an OpenAI-compatible upstream omit
 	assert.equal(isUsageConsistent(canonical.usage), true);
 });
 
+test("chat response: preserves detailed usage and provider-reported cost", () => {
+	const canonical = parseOpenAIChatResponse({
+		choices: [{ finish_reason: "stop", message: { content: "done" } }],
+		usage: {
+			prompt_tokens: 100,
+			completion_tokens: 20,
+			total_tokens: 120,
+			prompt_tokens_details: {
+				cached_tokens: 30,
+				cache_write_tokens: 10,
+				audio_tokens: 5,
+			},
+			completion_tokens_details: {
+				reasoning_tokens: 8,
+				audio_tokens: 4,
+				accepted_prediction_tokens: 3,
+				rejected_prediction_tokens: 2,
+			},
+			cost: 0.0123,
+		},
+	});
+
+	assert.deepEqual(canonical.usage, {
+		promptTokens: 100,
+		completionTokens: 20,
+		totalTokens: 120,
+		cacheReadTokens: 30,
+		cacheWriteTokens: 10,
+		promptAudioTokens: 5,
+		reasoningTokens: 8,
+		completionAudioTokens: 4,
+		acceptedPredictionTokens: 3,
+		rejectedPredictionTokens: 2,
+		providerCostCents: 1.23,
+	});
+
+	const rendered = toOpenAIChatResponse(canonical, publicModel);
+	assert.deepEqual(rendered.usage.prompt_tokens_details, {
+		cached_tokens: 30,
+		cache_write_tokens: 10,
+		audio_tokens: 5,
+	});
+	assert.deepEqual(rendered.usage.completion_tokens_details, {
+		reasoning_tokens: 8,
+		audio_tokens: 4,
+		accepted_prediction_tokens: 3,
+		rejected_prediction_tokens: 2,
+	});
+});
+
+test("chat response: accepts compatible cache-creation usage aliases", () => {
+	const nested = parseOpenAIChatResponse({
+		usage: {
+			prompt_tokens: 5,
+			completion_tokens: 0,
+			prompt_tokens_details: { cache_creation_input_tokens: 3 },
+		},
+	});
+	const topLevel = parseOpenAIChatResponse({
+		usage: {
+			prompt_tokens: 5,
+			completion_tokens: 0,
+			cache_creation_input_tokens: 4,
+		},
+	});
+
+	assert.equal(nested.usage.cacheWriteTokens, 3);
+	assert.equal(topLevel.usage.cacheWriteTokens, 4);
+});
+
 test("OpenAI-compatible finish reasons degrade without rejecting valid responses", () => {
 	const response = (finishReason: string) =>
 		parseOpenAIChatResponse({
