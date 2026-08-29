@@ -43,6 +43,8 @@ export const env = createEnv({
 		PORT: z.coerce.number().int().positive().default(4000),
 		/** Number of reverse-proxy hops allowed to append X-Forwarded-For. 0 ignores the header. */
 		TRUSTED_PROXY_HOPS: z.coerce.number().int().min(0).max(16).default(0),
+		/** Per-process anonymous model-catalog requests per minute and client IP. 0 disables it. */
+		PUBLIC_MODELS_RPM: z.coerce.number().int().min(0).default(600),
 		NODE_ENV: z
 			.enum(["development", "test", "production"])
 			.default("development"),

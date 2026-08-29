@@ -1,8 +1,6 @@
 import { modelsWildcardHandler, listModelsHandler } from "#endpoints/models.ts";
 import { redisAvailable, pgAvailable } from "#test-support/infra.ts";
 import { invalidateVirtualKey } from "#auth/virtualKeyCache.ts";
-import { deleteDeployment } from "#db/repos/deployments.ts";
-import { createDeployment } from "#deployments/service.ts";
 import { makeGatewayTestApp } from "#test-support/app.ts";
 import { randomUUID } from "node:crypto";
 import assert from "node:assert/strict";
@@ -13,6 +11,12 @@ import {
 	createVirtualKey,
 	deleteVirtualKey,
 } from "#db/repos/virtualKeys.ts";
+
+import {
+	updateDeployment,
+	createDeployment,
+	deleteDeployment,
+} from "#deployments/service.ts";
 
 import "#adapters/index.ts";
 
@@ -153,6 +157,36 @@ test("rerank model discovery exposes operation, modality, search pricing, and re
 			await invalidateVirtualKey(virtualKey.row.keyHash);
 			await deleteVirtualKey(virtualKey.row.id);
 		}
+		if (deploymentId) await deleteDeployment(deploymentId);
+	}
+});
+
+test("public model cache invalidates after deployment mutations", {
+	skip,
+}, async () => {
+	const app = modelsTestApp();
+	const initialModel = `models-cache-${randomUUID()}`;
+	const renamedModel = `${initialModel}-renamed`;
+	let deploymentId: string | undefined;
+
+	try {
+		const deployment = await createDeployment({
+			publicModel: initialModel,
+			adapterKey: "openai",
+			upstreamModel: "gpt-5.5",
+			credentials: { apiKey: "test-upstream-key" },
+		});
+		deploymentId = deployment.row.id;
+
+		assert.equal((await app.request(`/v1/models/${initialModel}`)).status, 200);
+		await updateDeployment(deploymentId, { publicModel: renamedModel });
+		assert.equal((await app.request(`/v1/models/${initialModel}`)).status, 404);
+		assert.equal((await app.request(`/v1/models/${renamedModel}`)).status, 200);
+
+		await deleteDeployment(deploymentId);
+		deploymentId = undefined;
+		assert.equal((await app.request(`/v1/models/${renamedModel}`)).status, 404);
+	} finally {
 		if (deploymentId) await deleteDeployment(deploymentId);
 	}
 });

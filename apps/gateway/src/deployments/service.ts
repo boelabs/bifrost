@@ -1,4 +1,5 @@
 import { resolveModelMetadata, getCatalogEntry } from "#catalog/index.ts";
+import { invalidatePublicModelGroups } from "#catalog/publicModels.ts";
 import type { TransportOverrides } from "#profiles/types.ts";
 import type { RuntimeModelMetadata } from "#db/schema.ts";
 import { isUpstreamTransport } from "#core/transport.ts";
@@ -10,6 +11,7 @@ import { GatewayError } from "#core/errors.ts";
 import {
 	updateDeployment as persistDeployment,
 	createDeployment as insertDeployment,
+	deleteDeployment as removeDeployment,
 	PublicModelReferencedError,
 	type DeploymentRow,
 	getDeploymentById,
@@ -277,6 +279,7 @@ export async function createDeployment(
 		...(input.tpmLimit !== undefined ? { tpmLimit: input.tpmLimit } : {}),
 		...(input.rpmLimit !== undefined ? { rpmLimit: input.rpmLimit } : {}),
 	});
+	invalidatePublicModelGroups();
 	return { row, preview };
 }
 
@@ -358,5 +361,11 @@ export async function updateDeployment(
 			class: "not_found",
 			message: `Deployment "${id}" does not exist`,
 		});
+	invalidatePublicModelGroups();
 	return { row, preview };
+}
+
+export async function deleteDeployment(id: string): Promise<void> {
+	await removeDeployment(id);
+	invalidatePublicModelGroups();
 }

@@ -599,6 +599,7 @@ paths:
       responses:
         "200":
           description: "{ object: 'list', data: [{ id, object, created, owned_by, architecture, top_provider, pricing, operations, supported_parameters, endpoint_count }] }"
+        "429": *a1
   /v1/models/{model}:
     get:
       tags:
@@ -616,6 +617,7 @@ paths:
         "200":
           description: "{ id, object: 'model', created, owned_by }"
         "404": *a1
+        "429": *a1
   /v1/models/{model}/deployments:
     get:
       tags:
