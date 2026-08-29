@@ -265,6 +265,7 @@ export interface CanonicalChatStreamChunk {
 			content?: string;
 			/** Visible reasoning/thinking summary delta. */
 			reasoning?: string;
+			/** Zero-based contiguous tool-call ordinal within this choice. */
 			toolCalls?: Array<{ index: number } & Partial<CanonicalToolCall>>;
 			refusal?: string;
 			/** Native streaming audio delta when available. */

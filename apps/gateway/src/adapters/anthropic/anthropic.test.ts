@@ -453,7 +453,9 @@ test("anthropic.parseStream: text and tool JSON deltas stream as canonical chunk
 	assert.equal(chunks[1]!.choices[0]!.delta.reasoning, "Hmm");
 	assert.equal(chunks[2]!.choices[0]!.delta.content, "Hi");
 	assert.equal(chunks[3]!.choices[0]!.delta.toolCalls?.[0]?.name, "lookup");
+	assert.equal(chunks[3]!.choices[0]!.delta.toolCalls?.[0]?.index, 0);
 	assert.equal(chunks[4]!.choices[0]!.delta.toolCalls?.[0]?.arguments, '{"q":');
+	assert.equal(chunks[4]!.choices[0]!.delta.toolCalls?.[0]?.index, 0);
 	assert.equal(chunks[5]!.choices[0]!.finishReason, "tool_calls");
 	assert.equal(chunks[5]!.usage?.totalTokens, 11);
 });
