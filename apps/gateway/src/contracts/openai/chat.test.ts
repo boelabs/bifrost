@@ -724,6 +724,20 @@ test("chat response: log probabilities and annotations survive canonical renderi
 	assert.equal(rendered.choices[0]?.message.annotations?.length, 1);
 });
 
+test("OpenAI-compatible finish reasons degrade without rejecting valid responses", () => {
+	const response = (finishReason: string) =>
+		parseOpenAIChatResponse({
+			choices: [{ finish_reason: finishReason, message: { content: "done" } }],
+		});
+	assert.equal(response("end_turn").choices[0]?.finishReason, "stop");
+	assert.equal(response("max_tokens").choices[0]?.finishReason, "length");
+	assert.equal(
+		response("guardrail_intervened").choices[0]?.finishReason,
+		"content_filter",
+	);
+	assert.equal(response("future_reason").choices[0]?.finishReason, "stop");
+});
+
 test("chat tool choice: allowed tools keep the official nested shape", () => {
 	const canonical = toCanonicalChatRequest(
 		chatRequestSchema.parse({

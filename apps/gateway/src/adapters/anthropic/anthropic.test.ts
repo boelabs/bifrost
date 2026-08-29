@@ -1,4 +1,5 @@
 import type { CanonicalChatRequest } from "#core/canonical.ts";
+import { adapterDiagnostics } from "#adapters/diagnostics.ts";
 import type { AdapterContext } from "#adapters/types.ts";
 import { anthropicAdapter } from "./index.ts";
 import assert from "node:assert/strict";
@@ -554,4 +555,22 @@ test("anthropic.parseResponse: context-window stop maps to length", () => {
 		ctx,
 	);
 	assert.equal(parsed.choices[0]?.finishReason, "length");
+});
+
+test("anthropic.parseResponse: new stop reasons preserve valid output and diagnostics", () => {
+	const parsed = anthropicAdapter.chat!.parseResponse(
+		{
+			id: "msg_1",
+			model: "claude",
+			stop_reason: "pause_turn",
+			content: [{ type: "text", text: "partial" }],
+			usage: { input_tokens: 1, output_tokens: 1 },
+		},
+		ctx,
+	);
+	assert.equal(parsed.choices[0]?.finishReason, "stop");
+	assert.equal(
+		adapterDiagnostics(parsed)?.originalTerminalReason,
+		"pause_turn",
+	);
 });

@@ -444,6 +444,8 @@ function mapGeminiFinish(
 		case "IMAGE_SAFETY":
 		case "IMAGE_PROHIBITED_CONTENT":
 		case "IMAGE_RECITATION":
+		case "LANGUAGE":
+		case "ESCALATION":
 			return "content_filter";
 		case "MALFORMED_FUNCTION_CALL":
 		case "UNEXPECTED_TOOL_CALL":
@@ -457,18 +459,36 @@ function mapGeminiFinish(
 				deploymentHealth: "neutral",
 				provider: { body: { finishReason: reason } },
 			});
-		case undefined:
-		case null:
-			return null;
-		default:
+		case "MISSING_THOUGHT_SIGNATURE":
+		case "MALFORMED_RESPONSE":
 			throw new GatewayError({
 				class: "server",
 				code: "upstream_protocol_error",
-				message: `Gemini returned an unknown finish reason: ${String(reason)}`,
+				message: `Gemini produced an invalid response: ${reason}`,
 				failureKind: "transient",
-				deploymentHealth: "penalize",
+				deploymentHealth: "neutral",
 				provider: { body: { finishReason: reason } },
 			});
+		case "FINISH_REASON_UNSPECIFIED":
+		case "OTHER":
+		case "IMAGE_OTHER":
+		case "NO_IMAGE":
+			return "stop";
+		case undefined:
+		case null:
+			return null;
+		default: {
+			const normalized = String(reason).toLowerCase();
+			if (/max.?tokens?|context.?window|length/.test(normalized))
+				return "length";
+			if (
+				/filter|safety|guardrail|block|prohibit|refus|recitation/.test(
+					normalized,
+				)
+			)
+				return "content_filter";
+			return "stop";
+		}
 	}
 }
 
