@@ -157,6 +157,8 @@ test("integration: structured outputs cross the three public transports", () => 
 			output_config: { format: { type: "json_schema", schema } },
 		}),
 	);
+	// Anthropic's output_config.format is schema-adherent by definition, so the guarantee survives the
+	// hop to an OpenAI upstream as `strict: true` rather than degrading to best-effort JSON.
 	assert.deepEqual(
 		JSON.parse(openaiAdapter.chat!.buildRequest(fromMessages, openaiCtx).body!)
 			.text.format,
@@ -164,6 +166,7 @@ test("integration: structured outputs cross the three public transports", () => 
 			type: "json_schema",
 			name: "structured_output",
 			schema,
+			strict: true,
 		},
 	);
 });
