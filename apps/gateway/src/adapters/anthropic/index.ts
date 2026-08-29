@@ -592,6 +592,15 @@ async function* parseStream(
 		| undefined;
 	let messageStopped = false;
 	const thinkingBlocks = new Map<number, AnthropicThinkingBlock>();
+	const toolCallIndexes = new Map<number, number>();
+	let nextToolCallIndex = 0;
+	const toolCallIndex = (blockIndex: number): number => {
+		const existing = toolCallIndexes.get(blockIndex);
+		if (existing !== undefined) return existing;
+		const index = nextToolCallIndex++;
+		toolCallIndexes.set(blockIndex, index);
+		return index;
+	};
 
 	for await (const sse of parseSSE(stream)) {
 		let event: AnthropicStreamEvent;
@@ -643,13 +652,14 @@ async function* parseStream(
 			event.type === "content_block_start" &&
 			event.content_block?.type === "tool_use"
 		) {
+			const index = toolCallIndex(event.index ?? 0);
 			const toolCall: {
 				index: number;
 				id?: string;
 				name?: string;
 				arguments: string;
 			} = {
-				index: event.index ?? 0,
+				index,
 				arguments: "",
 			};
 			if (event.content_block.id !== undefined)
@@ -770,6 +780,7 @@ async function* parseStream(
 				event.delta?.type === "input_json_delta" &&
 				event.delta.partial_json !== undefined
 			) {
+				const index = toolCallIndex(event.index ?? 0);
 				yield {
 					id,
 					created,
@@ -780,7 +791,7 @@ async function* parseStream(
 							delta: {
 								toolCalls: [
 									{
-										index: event.index ?? 0,
+										index,
 										arguments: event.delta.partial_json,
 									},
 								],

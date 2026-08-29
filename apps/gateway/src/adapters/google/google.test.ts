@@ -889,6 +889,22 @@ test("google.parseStream: deltas + usage final", async () => {
 	assert.equal(usageTotal, 5);
 });
 
+test("google.parseStream: tool call indexes remain contiguous across events", async () => {
+	const sse =
+		`data: {"candidates":[{"content":{"parts":[{"functionCall":{"id":"call-1","name":"first","args":{}}}],"role":"model"},"index":0}]}\n\n` +
+		`data: {"candidates":[{"content":{"parts":[{"functionCall":{"id":"call-2","name":"second","args":{}}}]},"finishReason":"STOP","index":0}]}\n\n`;
+	const indexes: number[] = [];
+	for await (const chunk of googleAdapter.chat!.parseStream(
+		new Response(sse).body!,
+		ctx,
+	)) {
+		for (const toolCall of chunk.choices[0]?.delta.toolCalls ?? [])
+			indexes.push(toolCall.index);
+	}
+
+	assert.deepEqual(indexes, [0, 1]);
+});
+
 test("google.parseStream: repeated STOP after a tool call remains one tool terminal", async () => {
 	const sse =
 		`data: {"candidates":[{"content":{"parts":[{"functionCall":{"id":"call-1","name":"search_web","args":{"queries":["example"]}}}],"role":"model"},"finishReason":"STOP","index":0}]}` +

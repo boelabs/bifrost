@@ -1040,6 +1040,9 @@ const chat: ChatHandler = {
 					const index = candidate.index ?? fallbackIndex;
 					const parts = candidate.content?.parts ?? [];
 					const accumulated = contentParts.get(index) ?? [];
+					const firstToolCallIndex = accumulated.filter(
+						(part) => (part as GeminiPart).functionCall,
+					).length;
 					accumulated.push(
 						...(parts as unknown as Record<string, unknown>[]).map((part) =>
 							structuredClone(part),
@@ -1071,9 +1074,11 @@ const chat: ChatHandler = {
 							.filter((part) => part.functionCall)
 							.map((part, toolIndex) => {
 								const extraContent = geminiToolCallExtra(part);
+								const canonicalIndex = firstToolCallIndex + toolIndex;
 								return {
-									index: toolIndex,
-									id: part.functionCall!.id ?? `call_${index}_${toolIndex}`,
+									index: canonicalIndex,
+									id:
+										part.functionCall!.id ?? `call_${index}_${canonicalIndex}`,
 									name: part.functionCall!.name ?? "",
 									arguments: JSON.stringify(part.functionCall!.args ?? {}),
 									...(extraContent !== undefined ? { extraContent } : {}),
