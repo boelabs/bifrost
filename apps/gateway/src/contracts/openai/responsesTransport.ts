@@ -141,7 +141,7 @@ function partToInput(
 			return {
 				type: "input_image",
 				image_url: p.url,
-				...(p.detail !== undefined ? { detail: p.detail } : {}),
+				detail: p.detail ?? "auto",
 			};
 		case "file":
 			return {

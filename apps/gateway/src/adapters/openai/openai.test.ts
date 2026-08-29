@@ -89,6 +89,31 @@ test("openai.buildRequest: native /responses transport, auth, and responses body
 	assert.equal(body.input[0].content[0].text, "hello");
 });
 
+test("openai.buildRequest: /responses images default detail to auto", () => {
+	const r = openaiAdapter.chat!.buildRequest(
+		{
+			...baseReq,
+			messages: [
+				{
+					role: "user",
+					content: [
+						{ type: "image", url: "https://example.com/default.png" },
+						{
+							type: "image",
+							url: "https://example.com/high.png",
+							detail: "high",
+						},
+					],
+				},
+			],
+		},
+		ctx,
+	);
+	const content = JSON.parse(r.body!).input[0].content;
+	assert.equal(content[0].detail, "auto");
+	assert.equal(content[1].detail, "high");
+});
+
 test("openai.buildRequest: does not forward provider-specific tool-call extra_content", () => {
 	const r = openaiAdapter.chat!.buildRequest(
 		{
