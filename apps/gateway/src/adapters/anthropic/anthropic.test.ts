@@ -81,6 +81,34 @@ test("anthropic.buildRequest: messages transport, auth headers and system split"
 	assert.deepEqual(body.messages, [{ role: "user", content: "Hello" }]);
 });
 
+test("anthropic.buildRequest: omits empty assistant messages", () => {
+	const built = anthropicAdapter.chat!.buildRequest(
+		{
+			...req,
+			messages: [
+				{ role: "user", content: "First" },
+				{ role: "assistant", content: null },
+				{ role: "user", content: "Second" },
+			],
+		},
+		ctx,
+	);
+	const body = JSON.parse(built.body!);
+
+	assert.deepEqual(body.messages, [
+		{ role: "user", content: "First" },
+		{ role: "user", content: "Second" },
+	]);
+	assert.equal(
+		body.messages.every(
+			(message: { content: unknown }) =>
+				message.content !== "" &&
+				(!Array.isArray(message.content) || message.content.length > 0),
+		),
+		true,
+	);
+});
+
 test("anthropic.buildRequest: cache_control is emitted in system (array), content, and tools", () => {
 	const built = anthropicAdapter.chat!.buildRequest(
 		{
