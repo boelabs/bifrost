@@ -70,12 +70,26 @@ export function describeUnknownError(err: unknown): {
  *   - Kimi:      "Input token length too long" / "Your request exceeded model token limit : N"
  *   - generic:   "context window", "reduce the length", "too many tokens", "token limit exceeded"
  * Only applied on 400/422 (see adapters), so "token limit" does not collide with rate limits (429).
+ *
+ * A misclassification is not cosmetic: `context_window` selects the operator's context-window
+ * fallback, so the request is re-sent to another deployment and the client is told the context
+ * overflowed. Every phrasing here must be about the context, never about length alone.
  */
+const CONTEXT_PHRASES =
+	/context (?:length|window)|maximum context|input token (?:count|length)|token limit|exceed(?:s|ed)?[^.]*\btokens?\b|reduce the (?:length|number of (?:input )?tokens)|too many (?:input )?tokens/i;
+
+/**
+ * "too long" on its own is how providers report *any* length violation — a schema array, a string
+ * field ("array too long. Expected an array with maximum length 0"). It identifies the context
+ * window only when the message is also about tokens or the context.
+ */
+const TOO_LONG = /\btoo long\b/i;
+const TOKENS_OR_CONTEXT = /\btokens?\b|\bcontext\b/i;
+
 export function looksLikeContextWindowError(
 	message: string | undefined,
 ): boolean {
 	if (!message) return false;
-	return /context (?:length|window)|maximum context|too long|input token (?:count|length)|token limit|exceed(?:s|ed)?[^.]*\btokens?\b|reduce the (?:length|number of (?:input )?tokens)|too many (?:input )?tokens/i.test(
-		message,
-	);
+	if (CONTEXT_PHRASES.test(message)) return true;
+	return TOO_LONG.test(message) && TOKENS_OR_CONTEXT.test(message);
 }

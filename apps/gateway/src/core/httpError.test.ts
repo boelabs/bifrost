@@ -73,6 +73,32 @@ test("looksLikeContextWindowError: does not mark unrelated errors", () => {
 	);
 });
 
+test("looksLikeContextWindowError: a length violation is not a context overflow", () => {
+	// Reported by OpenAI-style providers for any schema array or string that is over its limit.
+	// Matching these sends the request to the operator's context-window fallback for nothing.
+	assert.equal(
+		looksLikeContextWindowError(
+			"Invalid 'input[1].content': array too long. Expected an array with maximum length 0, but got an array with length 1 instead.",
+		),
+		false,
+	);
+	assert.equal(
+		looksLikeContextWindowError(
+			"Invalid 'stop': array too long. Expected an array with maximum length 4, but got an array with length 5 instead.",
+		),
+		false,
+	);
+	assert.equal(
+		looksLikeContextWindowError(
+			"Invalid 'metadata.key': string too long. Expected a string with maximum length 64.",
+		),
+		false,
+	);
+	// "too long" still classifies when the message is about tokens or the context.
+	assert.ok(looksLikeContextWindowError("Input is too long for the context."));
+	assert.ok(looksLikeContextWindowError("messages are too long: 900 tokens"));
+});
+
 test("isAbortError: detects AbortError/TimeoutError even when not instanceof Error", () => {
 	assert.equal(isAbortError(new DOMException("x", "AbortError")), true);
 	assert.equal(isAbortError({ name: "TimeoutError" }), true); // plain object (unusual runtime)
