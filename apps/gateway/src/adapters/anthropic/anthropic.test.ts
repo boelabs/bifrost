@@ -81,6 +81,39 @@ test("anthropic.buildRequest: messages transport, auth headers and system split"
 	assert.deepEqual(body.messages, [{ role: "user", content: "Hello" }]);
 });
 
+test("anthropic token count preserves input fields and removes generation controls", () => {
+	const handler = anthropicAdapter.messageTokenCount;
+	assert.ok(handler);
+	const built = handler.buildRequest(
+		{
+			canonical: req,
+			rawBody: {
+				model: "claude",
+				messages: [{ role: "user", content: "Hello" }],
+				system: "Be concise.",
+				tools: [{ name: "lookup", input_schema: { type: "object" } }],
+				cache_control: { type: "ephemeral" },
+				temperature: 0.5,
+				extra_body: { beta_flag: true },
+			},
+		},
+		ctx,
+	);
+	assert.equal(built.url, "https://api.anthropic.com/v1/messages/count_tokens");
+	assert.equal(built.headers["x-api-key"], "sk-ant-test");
+	assert.deepEqual(JSON.parse(built.body!), {
+		model: "claude-sonnet-4-5",
+		messages: [{ role: "user", content: "Hello" }],
+		system: "Be concise.",
+		tools: [{ name: "lookup", input_schema: { type: "object" } }],
+		cache_control: { type: "ephemeral" },
+		beta_flag: true,
+	});
+	assert.deepEqual(handler.parseResponse({ input_tokens: 17 }, ctx), {
+		inputTokens: 17,
+	});
+});
+
 test("anthropic.buildRequest: omits empty assistant messages", () => {
 	const built = anthropicAdapter.chat!.buildRequest(
 		{

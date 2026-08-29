@@ -20,38 +20,60 @@ const outputConfigSchema = z
  *
  * (The anthropic ADAPTER speaks this transport TOWARD the provider; this ENDPOINT exposes it to the client.)
  */
+
+const messagesInputShape = {
+	model: z.string(),
+	messages: z
+		.array(
+			z
+				.object({
+					role: z.enum(["user", "assistant"]),
+					content: z.union([
+						z.string(),
+						z.array(z.record(z.string(), z.unknown())),
+					]),
+				})
+				.loose(),
+		)
+		.min(1),
+	system: z
+		.union([z.string(), z.array(z.record(z.string(), z.unknown()))])
+		.optional(),
+	tools: z.array(z.record(z.string(), z.unknown())).optional(),
+	tool_choice: z.record(z.string(), z.unknown()).optional(),
+	thinking: z.record(z.string(), z.unknown()).optional(),
+	output_config: outputConfigSchema.optional(),
+} satisfies z.ZodRawShape;
+
 export const messagesRequestSchema = z
 	.object({
-		model: z.string(),
+		...messagesInputShape,
 		max_tokens: z.int().positive(), // required by Anthropic
-		messages: z
-			.array(
-				z
-					.object({
-						role: z.enum(["user", "assistant"]),
-						content: z.union([
-							z.string(),
-							z.array(z.record(z.string(), z.unknown())),
-						]),
-					})
-					.loose(),
-			)
-			.min(1),
-		system: z
-			.union([z.string(), z.array(z.record(z.string(), z.unknown()))])
-			.optional(),
 		stream: z.boolean().optional().default(false),
 		temperature: z.number().optional(),
 		top_p: z.number().optional(),
 		top_k: z.int().optional(),
 		stop_sequences: z.array(z.string()).optional(),
-		tools: z.array(z.record(z.string(), z.unknown())).optional(),
-		tool_choice: z.record(z.string(), z.unknown()).optional(),
 		metadata: z.record(z.string(), z.unknown()).optional(),
-		thinking: z.record(z.string(), z.unknown()).optional(),
-		output_config: outputConfigSchema.optional(),
 		extra_body: z.record(z.string(), z.unknown()).optional(),
 	})
 	.loose();
 
 export type MessagesRequest = z.infer<typeof messagesRequestSchema>;
+
+/** PUBLIC contract of POST /v1/messages/count_tokens. */
+export const messagesTokenCountRequestSchema = z
+	.object({
+		...messagesInputShape,
+		cache_control: z.record(z.string(), z.unknown()).optional(),
+		extra_body: z.record(z.string(), z.unknown()).optional(),
+	})
+	.loose();
+
+export const messagesTokenCountResponseSchema = z.object({
+	input_tokens: z.int().nonnegative(),
+});
+
+export type MessagesTokenCountRequest = z.infer<
+	typeof messagesTokenCountRequestSchema
+>;

@@ -147,6 +147,26 @@ export interface ChatHandler {
 	mapError(err: unknown, ctx: AdapterContext): GatewayError;
 }
 
+export interface MessageTokenCountRequest {
+	canonical: CanonicalChatRequest;
+	/** Parsed Anthropic request retained so native counters receive future-compatible input fields. */
+	rawBody: Record<string, unknown>;
+}
+
+export interface MessageTokenCountResponse {
+	inputTokens: number;
+}
+
+/** Optional native implementation of Anthropic's Messages token-count endpoint. */
+export interface MessageTokenCountHandler {
+	buildRequest(
+		req: MessageTokenCountRequest,
+		ctx: AdapterContext,
+	): UpstreamHttpRequest;
+	parseResponse(raw: unknown, ctx: AdapterContext): MessageTokenCountResponse;
+	mapError(err: unknown, ctx: AdapterContext): GatewayError;
+}
+
 /**
  * A persistent upstream Responses WebSocket. The gateway still translates every event through the
  * canonical core; this is a transport optimization, never a public-protocol passthrough.
@@ -275,6 +295,7 @@ export interface Adapter {
 	};
 	supportedCallTypes: ReadonlySet<CallType>;
 	chat?: ChatHandler;
+	messageTokenCount?: MessageTokenCountHandler;
 	/** Optional native persistent /responses WebSocket transport. */
 	responsesWebSocket?: ResponsesWebSocketHandler;
 	imageGeneration?: ImageHandler;

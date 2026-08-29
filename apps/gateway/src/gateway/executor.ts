@@ -17,6 +17,14 @@ import {
 } from "./streamLifecycle.ts";
 
 import type {
+	MessageTokenCountResponse,
+	MessageTokenCountRequest,
+	UpstreamHttpRequest,
+	AdapterContext,
+	Adapter,
+} from "#adapters/types.ts";
+
+import type {
 	CanonicalTranscriptionStreamEvent,
 	CanonicalTranscriptionResponse,
 	CanonicalTranscriptionRequest,
@@ -53,12 +61,6 @@ import type {
 	CanonicalRerankResponse,
 	CanonicalRerankRequest,
 } from "#core/rerank.ts";
-
-import type {
-	UpstreamHttpRequest,
-	AdapterContext,
-	Adapter,
-} from "#adapters/types.ts";
 
 export type ChatExecResult =
 	| {
@@ -339,6 +341,40 @@ export async function executeChat(
 		terminal: terminalForChatResponse(response),
 		diagnostics,
 	};
+}
+
+/** Executes an adapter's native Messages token-count operation. */
+export async function executeMessageTokenCount(
+	adapter: Adapter,
+	req: MessageTokenCountRequest,
+	ctx: AdapterContext,
+): Promise<MessageTokenCountResponse> {
+	const handler = adapter.messageTokenCount;
+	if (!handler)
+		throw new Error(
+			`Adapter "${adapter.key}" does not implement Messages token counting`,
+		);
+	const res = await dispatch(
+		handler.buildRequest(req, ctx),
+		ctx,
+		handler.mapError,
+	);
+	const response = await beforeFirstOutput(
+		Promise.resolve(parseBody(res)).then((raw) =>
+			handler.parseResponse(raw, ctx),
+		),
+		ctx,
+	);
+	if (!Number.isSafeInteger(response.inputTokens) || response.inputTokens < 0) {
+		throw new GatewayError({
+			class: "server",
+			code: "upstream_protocol_error",
+			message: "Upstream token count was not a non-negative safe integer",
+			failureKind: "transient",
+			deploymentHealth: "penalize",
+		});
+	}
+	return response;
 }
 
 /** Executes an image generation/edit and normalizes JSON or SSE events. */

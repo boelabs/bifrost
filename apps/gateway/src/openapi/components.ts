@@ -220,11 +220,38 @@ export const MessagesRequest = loose(
 		stop_sequences: z.array(z.string()).optional(),
 		tools: z.array(loose({}, {})).optional(),
 		tool_choice: loose({}, {}).optional(),
+		thinking: loose({}, {}).optional(),
 		output_config: MessagesOutputConfig.optional(),
 		metadata: z.record(z.string(), z.unknown()).optional(),
 	},
 	{ id: "MessagesRequest" },
 );
+
+export const MessagesTokenCountRequest = loose(
+	{
+		model: z.string(),
+		messages: z.array(
+			loose(
+				{
+					role: z.enum(["user", "assistant"]),
+					content: z.unknown(),
+				},
+				{},
+			),
+		),
+		system: z.unknown().optional(),
+		tools: z.array(loose({}, {})).optional(),
+		tool_choice: loose({}, {}).optional(),
+		thinking: loose({}, {}).optional(),
+		output_config: MessagesOutputConfig.optional(),
+		cache_control: loose({}, {}).optional(),
+	},
+	{ id: "MessagesTokenCountRequest" },
+);
+
+export const MessagesTokenCountResponse = z
+	.object({ input_tokens: z.int().nonnegative() })
+	.meta({ id: "MessagesTokenCountResponse" });
 
 export const ResponsesRequest = loose(
 	{

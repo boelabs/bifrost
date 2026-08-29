@@ -363,6 +363,36 @@ export function buildOpenApiDocument() {
 					},
 				},
 			},
+			"/v1/messages/count_tokens": {
+				post: {
+					operationId: "countMessageTokens",
+					tags: ["Inference"],
+					summary: "Count input tokens for an Anthropic Messages request",
+					description:
+						"Uses a native provider counter when the selected model exposes one; otherwise returns a deterministic portable estimate. Errors use the Anthropic envelope.",
+					requestBody: jsonBody(c.MessagesTokenCountRequest, {
+						simple: {
+							value: {
+								model: "claude",
+								messages: [{ role: "user", content: "Hello" }],
+							},
+						},
+					}),
+					responses: {
+						"200": {
+							description: "Input token count",
+							content: {
+								"application/json": {
+									schema: c.MessagesTokenCountResponse,
+								},
+							},
+						},
+						"400": {
+							description: "Anthropic error envelope",
+						},
+					},
+				},
+			},
 			"/v1/embeddings": {
 				post: {
 					operationId: "createEmbedding",

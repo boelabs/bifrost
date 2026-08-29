@@ -26,18 +26,20 @@ import {
 	mergeProviderFields,
 } from "#core/providerSpecificFields.ts";
 
-import {
-	recordUnknownAdapterEvent,
-	adapterContextDiagnostics,
-	attachAdapterDiagnostics,
-} from "#adapters/diagnostics.ts";
-
 import type {
+	MessageTokenCountRequest,
+	MessageTokenCountHandler,
 	AdapterContext,
 	ProviderModule,
 	ChatHandler,
 	Adapter,
 } from "#adapters/types.ts";
+
+import {
+	recordUnknownAdapterEvent,
+	adapterContextDiagnostics,
+	attachAdapterDiagnostics,
+} from "#adapters/diagnostics.ts";
 
 interface AnthropicCreds extends BaseCreds {
 	version?: string;
@@ -942,22 +944,67 @@ function addBetaHeader(headers: Record<string, string>, beta: string): void {
 	if (!betas.includes(beta)) headers[betaName] = `${headers[betaName]},${beta}`;
 }
 
+function requestHeaders(
+	ctx: AdapterContext,
+	options: { fastMode?: boolean; providerFileId?: boolean } = {},
+): { base: string; headers: Record<string, string> } {
+	const c = creds(ctx);
+	const headers: Record<string, string> = {
+		"content-type": "application/json",
+		"x-api-key": c.apiKey,
+		"anthropic-version": c.version ?? DEFAULT_VERSION,
+		...(c.headers ?? {}),
+	};
+	if (options.fastMode) addBetaHeader(headers, FAST_MODE_BETA);
+	if (options.providerFileId) addBetaHeader(headers, "files-api-2025-04-14");
+	return {
+		base: (c.baseUrl ?? DEFAULT_BASE).replace(/\/+$/, ""),
+		headers,
+	};
+}
+
+function buildTokenCountBody(
+	req: MessageTokenCountRequest,
+	ctx: AdapterContext,
+): Record<string, unknown> {
+	const body = structuredClone(req.rawBody);
+	const extraBody =
+		body.extra_body !== null &&
+		typeof body.extra_body === "object" &&
+		!Array.isArray(body.extra_body)
+			? (body.extra_body as Record<string, unknown>)
+			: undefined;
+	delete body.extra_body;
+	for (const key of [
+		"max_tokens",
+		"stream",
+		"temperature",
+		"top_p",
+		"top_k",
+		"stop_sequences",
+		"metadata",
+	]) {
+		delete body[key];
+	}
+	body.model = FAST_MODE_ALIASES.get(ctx.upstreamModel) ?? ctx.upstreamModel;
+	return mergeExtraBody(body, extraBody, [
+		"model",
+		"messages",
+		"system",
+		"tools",
+		"tool_choice",
+		"thinking",
+		"output_config",
+		"cache_control",
+	]);
+}
+
 const chat: ChatHandler = {
 	buildRequest(req, ctx) {
-		const c = creds(ctx);
-		const base = (c.baseUrl ?? DEFAULT_BASE).replace(/\/+$/, "");
-		const headers: Record<string, string> = {
-			"content-type": "application/json",
-			"x-api-key": c.apiKey,
-			"anthropic-version": c.version ?? DEFAULT_VERSION,
-			...(c.headers ?? {}),
-		};
-		if (FAST_MODE_ALIASES.has(ctx.upstreamModel)) {
-			addBetaHeader(headers, FAST_MODE_BETA);
-		}
-		if (requestUsesProviderFileId(req)) {
-			addBetaHeader(headers, "files-api-2025-04-14");
-		}
+		const { base, headers } = requestHeaders(ctx, {
+			fastMode: FAST_MODE_ALIASES.has(ctx.upstreamModel),
+			providerFileId: requestUsesProviderFileId(req),
+		});
 		return {
 			method: "POST",
 			url: `${base}/messages`,
@@ -970,11 +1017,32 @@ const chat: ChatHandler = {
 	mapError,
 };
 
+const messageTokenCount: MessageTokenCountHandler = {
+	buildRequest(req, ctx) {
+		const { base, headers } = requestHeaders(ctx, {
+			providerFileId: requestUsesProviderFileId(req.canonical),
+		});
+		return {
+			method: "POST",
+			url: `${base}/messages/count_tokens`,
+			headers,
+			body: JSON.stringify(buildTokenCountBody(req, ctx)),
+		};
+	},
+	parseResponse(raw) {
+		return {
+			inputTokens: (raw as { input_tokens?: number })?.input_tokens ?? -1,
+		};
+	},
+	mapError,
+};
+
 export const anthropicAdapter: Adapter = {
 	key: "anthropic",
 	credentials: { required: ["apiKey"] },
 	supportedCallTypes: new Set(["chat"]),
 	chat,
+	messageTokenCount,
 	reasoningKinds: new Set<ReasoningControlKind>([
 		"anthropic_adaptive",
 		"anthropic_budget",
