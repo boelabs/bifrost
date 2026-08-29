@@ -80,7 +80,7 @@ packages/tsconfig shared strict TypeScript config (@boelabs/tsconfig)
 
 ## Quickstart
 
-Requirements: Bun 1.3+, Postgres 18+, Redis 8+ (Docker optional, for local dependencies).
+Requirements: Bun 1.4+, Postgres 18+, Redis 8+ (Docker optional, for local dependencies).
 
 ```bash
 bun install

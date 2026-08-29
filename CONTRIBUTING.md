@@ -21,7 +21,7 @@ Postgres/Redis certificates — see the docs' Known errors page.
 
 ## Requirements
 
-- Bun 1.3+ (gateway runtime, package manager, and task runner — runs TypeScript directly, no build step)
+- Bun 1.4+ (gateway runtime, package manager, and task runner — runs TypeScript directly, no build step)
 - Postgres 18+
 - Redis 8+
 - Docker (optional, for spinning up Postgres/Redis locally)

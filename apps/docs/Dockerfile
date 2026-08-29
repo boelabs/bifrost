@@ -11,7 +11,7 @@
 # production server is the standard Node-based `next start` (unlike the gateway, which runs on Bun).
 
 # ---- deps: full install (the build needs devDependencies) ----
-FROM oven/bun:1.3.14 AS deps
+FROM oven/bun:1.4.0 AS deps
 WORKDIR /app
 COPY package.json bun.lock ./
 COPY apps/docs/package.json ./apps/docs/package.json
