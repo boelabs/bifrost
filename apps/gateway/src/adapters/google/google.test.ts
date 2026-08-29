@@ -738,6 +738,26 @@ test("google.parseResponse: functionCall -> tool_calls + finish tool_calls", () 
 	});
 });
 
+test("google.parseResponse: MAX_TOKENS outranks partial function calls", () => {
+	const parsed = googleAdapter.chat!.parseResponse(
+		{
+			candidates: [
+				{
+					content: {
+						parts: [
+							{ functionCall: { id: "call-1", name: "lookup", args: {} } },
+						],
+					},
+					finishReason: "MAX_TOKENS",
+				},
+			],
+			usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1 },
+		},
+		ctx,
+	);
+	assert.equal(parsed.choices[0]?.finishReason, "length");
+});
+
 test("google.usage: reasoning (thoughts) is added to completion; total matches", () => {
 	const raw = {
 		candidates: [

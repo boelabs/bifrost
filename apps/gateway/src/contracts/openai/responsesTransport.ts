@@ -435,12 +435,12 @@ function finishFrom(
 	r: RWResponse,
 	hasToolCalls: boolean,
 ): CanonicalFinishReason {
-	if (hasToolCalls) return "tool_calls";
 	if (r.status === "incomplete") {
 		return r.incomplete_details?.reason === "max_output_tokens"
 			? "length"
 			: "content_filter";
 	}
+	if (hasToolCalls) return "tool_calls";
 	return "stop";
 }
 

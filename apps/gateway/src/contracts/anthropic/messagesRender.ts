@@ -436,8 +436,14 @@ export function messagesRequestToCanonical(
 
 /* ---------------------------------------------- canonical -> response */
 
-function mapStopReason(finish: CanonicalFinishReason | null): string {
+function mapStopReason(
+	finish: CanonicalFinishReason | null,
+	stopSequence?: string | null,
+): string | null {
+	if (stopSequence) return "stop_sequence";
 	switch (finish) {
+		case null:
+			return null;
 		case "length":
 			return "max_tokens";
 		case "tool_calls":
@@ -447,6 +453,10 @@ function mapStopReason(finish: CanonicalFinishReason | null): string {
 		default:
 			return "end_turn";
 	}
+}
+
+function messagesResponseId(id: string): string {
+	return id.startsWith("msg_") ? id : `msg_${randomUUID()}`;
 }
 
 /**
@@ -507,13 +517,16 @@ export function canonicalToMessagesResponse(
 		});
 	}
 	return {
-		id: resp.id || `msg_${randomUUID()}`,
+		id: messagesResponseId(resp.id),
 		type: "message",
 		role: "assistant",
 		model: opts.publicModel,
 		content: blocks,
-		stop_reason: mapStopReason(choice?.finishReason ?? null),
-		stop_sequence: null,
+		stop_reason: mapStopReason(
+			choice?.finishReason ?? null,
+			choice?.stopSequence,
+		),
+		stop_sequence: choice?.stopSequence ?? null,
 		usage: usageToAnthropic(resp.usage),
 	};
 }
@@ -531,6 +544,7 @@ export async function* canonicalChunksToMessagesEvents(
 	const id = `msg_${randomUUID()}`;
 	let finalUsage: Usage | null = null;
 	let finish: CanonicalFinishReason | null = null;
+	let stopSequence: string | null = null;
 
 	let nextIndex = 0;
 	let textOpen = false;
@@ -564,6 +578,7 @@ export async function* canonicalChunksToMessagesEvents(
 		const choice = chunk.choices[0];
 		if (!choice) continue;
 		if (choice.finishReason) finish = choice.finishReason;
+		if (choice.stopSequence !== undefined) stopSequence = choice.stopSequence;
 		const delta = choice.delta;
 		for (const block of anthropicThinkingFromProviderFields(
 			delta.providerFields,
@@ -672,7 +687,10 @@ export async function* canonicalChunksToMessagesEvents(
 		yield sse("content_block_stop", { index: blockIndex });
 
 	yield sse("message_delta", {
-		delta: { stop_reason: mapStopReason(finish), stop_sequence: null },
+		delta: {
+			stop_reason: mapStopReason(finish, stopSequence),
+			stop_sequence: stopSequence,
+		},
 		// Cross-provider transports may learn input usage only at the end. Current Anthropic SDKs
 		// accumulate every usage field present in message_delta, so report the complete final usage.
 		usage: finalUsage ? usageToAnthropic(finalUsage) : { output_tokens: 0 },
