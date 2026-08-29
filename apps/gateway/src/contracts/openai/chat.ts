@@ -667,13 +667,14 @@ function renderChunkToolCall(tc: {
 /** Canonical response -> OpenAI response (non-stream). */
 export function toOpenAIChatResponse(
 	resp: CanonicalChatResponse,
+	publicModel: string,
 ): OpenAIChatResponse {
 	return {
 		// OpenAI uses the `chatcmpl-` prefix; we preserve the upstream id inside for traceability.
 		id: resp.id.startsWith("chatcmpl-") ? resp.id : `chatcmpl-${resp.id}`,
 		object: "chat.completion",
 		created: resp.created,
-		model: resp.model,
+		model: publicModel,
 		choices: resp.choices.map((c) => {
 			const providerSpecificFields = withoutOpenAIResponsesStreamMetadata(
 				mergeProviderFields(
@@ -724,12 +725,13 @@ export function toOpenAIChatResponse(
 /** Canonical chunk -> OpenAI chunk (SSE). */
 export function toOpenAIChatChunk(
 	chunk: CanonicalChatStreamChunk,
+	publicModel: string,
 ): OpenAIChatChunk {
 	return {
 		id: chunk.id.startsWith("chatcmpl-") ? chunk.id : `chatcmpl-${chunk.id}`,
 		object: "chat.completion.chunk",
 		created: chunk.created,
-		model: chunk.model,
+		model: publicModel,
 		choices: chunk.choices.map((c) => {
 			const providerSpecificFields = withoutOpenAIResponsesStreamMetadata(
 				c.delta.providerFields,

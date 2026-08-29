@@ -678,8 +678,8 @@ export function responsesRequestToCanonical(
 export interface RenderOptions {
 	/** Original request (for echoing fields: instructions, tools, etc.). */
 	req: ResponsesRequest;
-	/** Upstream model (fallback if the response carries no model). */
-	upstreamModel: string;
+	/** Public model selected by the router. */
+	publicModel: string;
 }
 
 export function toResponsesUsage(usage: Usage): Record<string, unknown> {
@@ -815,7 +815,6 @@ function buildResponse(
 	parts: {
 		id: string;
 		createdAt: number;
-		model: string;
 		status: string;
 		incomplete: Record<string, unknown> | null;
 		output: Record<string, unknown>[];
@@ -838,7 +837,7 @@ function buildResponse(
 		instructions: req.instructions ?? null,
 		max_output_tokens: req.max_output_tokens ?? null,
 		max_tool_calls: req.max_tool_calls ?? null,
-		model: parts.model,
+		model: opts.publicModel,
 		output: parts.output,
 		output_text: parts.outputText,
 		parallel_tool_calls: req.parallel_tool_calls ?? true,
@@ -922,7 +921,6 @@ export function canonicalToResponsesResponse(
 	return buildResponse(opts, {
 		id: `resp_${randomUUID()}`,
 		createdAt: resp.created,
-		model: resp.model || opts.upstreamModel,
 		status,
 		incomplete,
 		output,
@@ -1037,7 +1035,6 @@ export async function* canonicalChunksToResponsesEvents(
 	let seq = 0;
 	const next = () => seq++;
 
-	let model = opts.upstreamModel;
 	let content = "";
 	let reasoning = "";
 	let usage: Usage | null = null;
@@ -1152,7 +1149,6 @@ export async function* canonicalChunksToResponsesEvents(
 		buildResponse(opts, {
 			id: responseId,
 			createdAt,
-			model,
 			status,
 			incomplete: null,
 			output: [],
@@ -1168,7 +1164,6 @@ export async function* canonicalChunksToResponsesEvents(
 	});
 
 	for await (const chunk of chunks) {
-		if (chunk.model) model = chunk.model;
 		if (chunk.usage) usage = chunk.usage;
 		const choice = chunk.choices[0];
 		if (!choice) continue;
@@ -1376,7 +1371,6 @@ export async function* canonicalChunksToResponsesEvents(
 		const finalResponse = buildResponse(opts, {
 			id: responseId,
 			createdAt,
-			model,
 			status,
 			incomplete,
 			output: orderedOutput,
@@ -1504,7 +1498,6 @@ export async function* canonicalChunksToResponsesEvents(
 	const finalResponse = buildResponse(opts, {
 		id: responseId,
 		createdAt,
-		model,
 		status,
 		incomplete,
 		output,

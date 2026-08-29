@@ -186,23 +186,26 @@ test("integration: one Gemini upstream feeds all 3 public contracts (json)", asy
 			const u = result.response;
 
 			// Render a /v1/chat/completions
-			const chat = toOpenAIChatResponse(u);
+			const chat = toOpenAIChatResponse(u, "grp");
 			assert.equal(chat.object, "chat.completion");
+			assert.equal(chat.model, "grp");
 			assert.equal(chat.choices[0]!.message.content, "Hello from Gemini");
 
 			// Render a /v1/responses
 			const resp = canonicalToResponsesResponse(u, {
 				req: { model: "grp" } as never,
-				upstreamModel: "gemini-2.5-flash",
+				publicModel: "grp",
 			}) as TestJsonObject;
 			assert.equal(resp.object, "response");
+			assert.equal(resp.model, "grp");
 			assert.equal(resp.output_text, "Hello from Gemini");
 
 			// Render a /v1/messages (Anthropic)
 			const msg = canonicalToMessagesResponse(u, {
-				upstreamModel: "gemini-2.5-flash",
+				publicModel: "grp",
 			}) as TestJsonObject;
 			assert.equal(msg.type, "message");
+			assert.equal(msg.model, "grp");
 			assert.equal(msg.content[0].text, "Hello from Gemini");
 			assert.equal(msg.usage.input_tokens, 4);
 		},
@@ -221,7 +224,7 @@ test("integration: /v1/responses request served by Google (non-OpenAI) and rende
 			if (result.kind !== "json") return;
 			const out = canonicalToResponsesResponse(result.response, {
 				req: responsesRequestSchema.parse({ model: "grp", input: "hello" }),
-				upstreamModel: "gemini-2.5-flash",
+				publicModel: "grp",
 			}) as TestJsonObject;
 			assert.equal(out.output_text, "Hello from Gemini");
 			assert.equal(out.usage.input_tokens, 4);
@@ -244,7 +247,7 @@ test("integration: /v1/messages request served by OpenAI (/responses transport) 
 			assert.equal(result.kind, "json");
 			if (result.kind !== "json") return;
 			const msg = canonicalToMessagesResponse(result.response, {
-				upstreamModel: "gpt-5.5",
+				publicModel: "grp",
 			}) as TestJsonObject;
 			assert.equal(msg.content[0].text, "Hello from OpenAI");
 			assert.equal(msg.stop_reason, "end_turn");
@@ -282,7 +285,7 @@ test("integration: streaming Gemini -> /v1/responses events and /v1/chat chunks"
 			);
 
 			// -> /v1/chat/completions chunks
-			const chatChunks = chunks.map(toOpenAIChatChunk);
+			const chatChunks = chunks.map((chunk) => toOpenAIChatChunk(chunk, "grp"));
 			assert.equal(chatChunks[0]!.object, "chat.completion.chunk");
 			assert.equal(
 				chatChunks.map((c) => c.choices[0]?.delta.content ?? "").join(""),
@@ -297,7 +300,7 @@ test("integration: streaming Gemini -> /v1/responses events and /v1/chat chunks"
 			let total: number | undefined;
 			for await (const ev of canonicalChunksToResponsesEvents(replay(), {
 				req: { model: "grp" } as never,
-				upstreamModel: "gemini-2.5-flash",
+				publicModel: "grp",
 			})) {
 				if (ev.event) types.push(ev.event);
 				if (ev.event === "response.completed")

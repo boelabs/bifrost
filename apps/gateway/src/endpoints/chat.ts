@@ -152,7 +152,11 @@ function streamChatCompletion(
 				}
 				await writeSSE(
 					stream,
-					{ data: JSON.stringify(toOpenAIChatChunk(out)) },
+					{
+						data: JSON.stringify(
+							toOpenAIChatChunk(out, routing.candidate.row.publicModel),
+						),
+					},
 					downstream,
 				);
 				const semantic = chatChunkSemantic(transformed);
@@ -319,7 +323,10 @@ export async function chatCompletionsHandler(
 			);
 			await lifecycle.finish(response.usage);
 			const cost = computeUsageCost(meta, response.usage);
-			const baseResponse = toOpenAIChatResponse(response);
+			const baseResponse = toOpenAIChatResponse(
+				response,
+				routing.candidate.row.publicModel,
+			);
 			cache.store(baseResponse, response.usage);
 			const oa = attachRoutingMetadata(
 				baseResponse as unknown as Record<string, unknown>,

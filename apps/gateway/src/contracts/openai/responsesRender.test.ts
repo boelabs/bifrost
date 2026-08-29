@@ -505,7 +505,7 @@ test("request->canonical: reasoning items with encrypted_content attach to the n
 
 const renderOpts = (): RenderOptions => ({
 	req: parse({ model: "gpt", input: "hi" }),
-	upstreamModel: "gpt-x",
+	publicModel: "public-gpt",
 });
 
 test("canonical->response: message item, usage, and output_text", () => {
@@ -537,6 +537,7 @@ test("canonical->response: message item, usage, and output_text", () => {
 	) as TestJsonObject;
 	assert.equal(out.object, "response");
 	assert.equal(out.status, "completed");
+	assert.equal(out.model, renderOpts().publicModel);
 	assert.equal(out.output[0].type, "reasoning");
 	assert.equal(out.output[0].summary[0].text, "Analyzed the question.");
 	assert.deepEqual(out.output[0].content, [
@@ -635,7 +636,7 @@ test("canonical->response: echoes previous_response_id and store", () => {
 			previous_response_id: "resp_prev",
 			store: true,
 		}),
-		upstreamModel: "gpt-x",
+		publicModel: "public-gpt",
 	}) as TestJsonObject;
 	assert.equal(out.previous_response_id, "resp_prev");
 	assert.equal(out.store, true);
@@ -804,15 +805,21 @@ test("stream->events: OpenResponses sequence for text", async () => {
 	}
 	const types: string[] = [];
 	let completedUsage: TestJsonObject | undefined;
+	let completedModel: unknown;
 	for await (const ev of canonicalChunksToResponsesEvents(
 		chunks(),
 		renderOpts(),
 	)) {
 		types.push(ev.event!);
-		if (ev.event === "response.completed")
-			completedUsage = (
-				JSON.parse(ev.data) as { response: { usage: TestJsonObject } }
-			).response.usage;
+		if (ev.event === "response.completed") {
+			const response = (
+				JSON.parse(ev.data) as {
+					response: { model: unknown; usage: TestJsonObject };
+				}
+			).response;
+			completedModel = response.model;
+			completedUsage = response.usage;
+		}
 	}
 	assert.deepEqual(types, [
 		"response.created",
@@ -826,6 +833,7 @@ test("stream->events: OpenResponses sequence for text", async () => {
 		"response.output_item.done",
 		"response.completed",
 	]);
+	assert.equal(completedModel, renderOpts().publicModel);
 	assert.ok(completedUsage);
 	assert.equal(completedUsage.total_tokens, 3);
 });
@@ -1717,7 +1725,7 @@ test("response object: every OpenResponses 2.3 required field is present", () =>
 		},
 		{
 			req: parse({ model: "response-model", input: "hi" }),
-			upstreamModel: "response-model",
+			publicModel: "response-model",
 		},
 	);
 	for (const field of [

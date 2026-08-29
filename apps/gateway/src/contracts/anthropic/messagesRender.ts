@@ -42,7 +42,7 @@ import {
  * ==================================================================== */
 
 export interface MessagesRenderOptions {
-	upstreamModel: string;
+	publicModel: string;
 }
 
 const MESSAGES_EXTRA_BODY_MANAGED_KEYS = [
@@ -489,7 +489,7 @@ export function canonicalToMessagesResponse(
 		id: resp.id || `msg_${randomUUID()}`,
 		type: "message",
 		role: "assistant",
-		model: resp.model || opts.upstreamModel,
+		model: opts.publicModel,
 		content: blocks,
 		stop_reason: mapStopReason(choice?.finishReason ?? null),
 		stop_sequence: null,
@@ -508,7 +508,6 @@ export async function* canonicalChunksToMessagesEvents(
 	opts: MessagesRenderOptions,
 ): AsyncGenerator<SSEEvent> {
 	const id = `msg_${randomUUID()}`;
-	let model = opts.upstreamModel;
 	let finalUsage: Usage | null = null;
 	let finish: CanonicalFinishReason | null = null;
 
@@ -525,7 +524,7 @@ export async function* canonicalChunksToMessagesEvents(
 			id,
 			type: "message",
 			role: "assistant",
-			model,
+			model: opts.publicModel,
 			content: [],
 			stop_reason: null,
 			stop_sequence: null,
@@ -541,7 +540,6 @@ export async function* canonicalChunksToMessagesEvents(
 	yield sse("ping", {});
 
 	for await (const chunk of chunks) {
-		if (chunk.model) model = chunk.model;
 		if (chunk.usage) finalUsage = chunk.usage;
 		const choice = chunk.choices[0];
 		if (!choice) continue;
