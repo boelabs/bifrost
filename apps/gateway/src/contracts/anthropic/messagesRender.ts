@@ -86,6 +86,7 @@ interface Block {
 	thinking?: string;
 	signature?: string;
 	data?: string;
+	is_error?: boolean;
 }
 
 /** Attaches the prompt-caching breakpoint to the canonical part if the block carries it. */
@@ -189,14 +190,16 @@ function systemToCanonicalContent(
 	return null;
 }
 
-function toolResultToString(content: unknown): string {
+function toolResultToCanonical(
+	content: unknown,
+): string | CanonicalContentPart[] {
 	if (typeof content === "string") return content;
 	if (Array.isArray(content)) {
-		return content
-			.map((b) =>
-				typeof b === "string" ? b : ((b as Block).text ?? JSON.stringify(b)),
-			)
-			.join("");
+		return content.map((value): CanonicalContentPart => {
+			if (typeof value === "string") return { type: "text", text: value };
+			const part = blockToPart(value as Block);
+			return part ?? { type: "text", text: JSON.stringify(value) };
+		});
 	}
 	return JSON.stringify(content ?? "");
 }
@@ -273,7 +276,8 @@ export function messagesRequestToCanonical(
 				if (
 					b.type === "thinking" &&
 					typeof b.thinking === "string" &&
-					typeof b.signature === "string"
+					typeof b.signature === "string" &&
+					b.signature.length > 0
 				) {
 					thinkingBlocks.push({
 						type: "thinking",
@@ -328,7 +332,8 @@ export function messagesRequestToCanonical(
 				messages.push({
 					role: "tool",
 					toolCallId: stripThoughtSignatureId(b.tool_use_id ?? ""),
-					content: toolResultToString(b.content),
+					content: toolResultToCanonical(b.content),
+					...(b.is_error !== undefined ? { toolResultError: b.is_error } : {}),
 				});
 			} else {
 				const p = blockToPart(b);
@@ -377,14 +382,18 @@ export function messagesRequestToCanonical(
 	}
 	if (Array.isArray(req.tools)) {
 		const tools = [];
+		let hasNativeTool = false;
 		for (const t of req.tools) {
 			const tool = t as {
+				type?: string;
 				name?: string;
 				description?: string;
 				input_schema?: Record<string, unknown>;
 				cache_control?: Record<string, unknown>;
 			};
 			if (typeof tool.name === "string") {
+				if (typeof tool.type === "string" || tool.input_schema === undefined)
+					hasNativeTool = true;
 				const entry: NonNullable<CanonicalChatRequest["tools"]>[number] = {
 					name: tool.name,
 				};
@@ -398,6 +407,13 @@ export function messagesRequestToCanonical(
 			}
 		}
 		if (tools.length > 0) u.tools = tools;
+		if (hasNativeTool) {
+			u.messagesTransport = {
+				...u.messagesTransport,
+				rawTools: structuredClone(req.tools),
+			};
+			u.requiresNativeWire = true;
+		}
 	}
 	const tc = mapToolChoice(req.tool_choice);
 	if (tc !== undefined) u.toolChoice = tc;
@@ -464,10 +480,16 @@ export function canonicalToMessagesResponse(
 	const choice = resp.choices[0];
 	const content = choice?.message.content;
 	const blocks: Record<string, unknown>[] = [];
-	blocks.push(
-		...(anthropicThinkingFromProviderFields(choice?.message.providerFields) ??
-			[]),
-	);
+	const nativeThinking =
+		anthropicThinkingFromProviderFields(choice?.message.providerFields) ?? [];
+	blocks.push(...nativeThinking);
+	if (nativeThinking.length === 0 && choice?.message.reasoning) {
+		blocks.push({
+			type: "thinking",
+			thinking: choice.message.reasoning,
+			signature: "",
+		});
+	}
 	if (content) blocks.push({ type: "text", text: content });
 	for (const tc of choice?.message.toolCalls ?? []) {
 		const providerSpecificFields = providerSpecificFieldsFromExtraContent(
@@ -513,7 +535,6 @@ export async function* canonicalChunksToMessagesEvents(
 	let nextIndex = 0;
 	let textOpen = false;
 	let thinkingOpen = false;
-	let nativeThinking = false;
 	let textIndex = 0;
 	let thinkingIndex = 0;
 	const toolBlock = new Map<number, number>(); // canonical toolCall index -> anthropic block index
@@ -544,15 +565,10 @@ export async function* canonicalChunksToMessagesEvents(
 		if (!choice) continue;
 		if (choice.finishReason) finish = choice.finishReason;
 		const delta = choice.delta;
-		const anthropic = delta.providerFields?.anthropic as
-			| { thinking_stream?: unknown }
-			| undefined;
-		if (anthropic?.thinking_stream === true) nativeThinking = true;
 		for (const block of anthropicThinkingFromProviderFields(
 			delta.providerFields,
 		) ?? []) {
 			if (block.type === "thinking") {
-				nativeThinking = true;
 				if (thinkingOpen && block.signature.length > 0) {
 					yield sse("content_block_delta", {
 						index: thinkingIndex,
@@ -573,7 +589,11 @@ export async function* canonicalChunksToMessagesEvents(
 			}
 		}
 
-		if (delta.reasoning && nativeThinking) {
+		if (delta.reasoning) {
+			if (textOpen) {
+				yield sse("content_block_stop", { index: textIndex });
+				textOpen = false;
+			}
 			if (!thinkingOpen) {
 				thinkingIndex = nextIndex++;
 				thinkingOpen = true;

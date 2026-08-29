@@ -35,6 +35,31 @@ function parse(body: unknown) {
 	return responsesRequestSchema.parse(body);
 }
 
+test("Responses transport marks tool execution errors in portable output", () => {
+	const body = buildResponsesRequestBody(
+		{
+			callType: "chat",
+			model: "gpt",
+			stream: false,
+			messages: [
+				{
+					role: "tool",
+					toolCallId: "call_1",
+					toolResultError: true,
+					content: "permission denied",
+				},
+			],
+		},
+		"gpt-x",
+	);
+	const input = body.input as Array<Record<string, unknown>>;
+	assert.deepEqual(input[0], {
+		type: "function_call_output",
+		call_id: "call_1",
+		output: "[Tool execution failed] permission denied",
+	});
+});
+
 interface TestJsonObject extends Record<string, unknown> {
 	type: string;
 	id: string;

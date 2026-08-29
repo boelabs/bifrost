@@ -200,15 +200,27 @@ export function buildResponsesRequestBody(
 			continue;
 		}
 		if (m.role === "tool") {
+			const output =
+				typeof m.content === "string"
+					? m.content
+					: m.content === null
+						? ""
+						: contentToInput(m.content, "user");
 			input.push({
 				type: "function_call_output",
 				call_id: m.toolCallId ?? "",
 				output:
-					typeof m.content === "string"
-						? m.content
-						: m.content === null
-							? ""
-							: contentToInput(m.content, "user"),
+					m.toolResultError === true
+						? typeof output === "string"
+							? `[Tool execution failed] ${output}`
+							: [
+									{
+										type: "input_text",
+										text: "[Tool execution failed]",
+									},
+									...output,
+								]
+						: output,
 			});
 			continue;
 		}

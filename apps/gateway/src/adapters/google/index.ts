@@ -341,6 +341,8 @@ function buildGeminiBody(
 			} catch {
 				response = { result: text };
 			}
+			if (m.toolResultError === true)
+				response = { error: response.error ?? response };
 			body.contents.push({
 				role: "user",
 				parts: [

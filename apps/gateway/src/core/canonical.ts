@@ -76,6 +76,8 @@ export interface CanonicalMessage {
 	toolCalls?: CanonicalToolCall[];
 	/** Only on role=tool messages: which tool_call it answers. */
 	toolCallId?: string;
+	/** Only on role=tool messages: whether the tool execution failed. */
+	toolResultError?: boolean;
 	/** Responses assistant-message phase; preserved across continuation and native transports. */
 	phase?: "commentary" | "final_answer";
 	/**
@@ -160,6 +162,8 @@ interface CanonicalChatTransportOptions {
 
 interface CanonicalMessagesTransportOptions {
 	metadata?: Record<string, unknown>;
+	/** Exact Anthropic tool definitions when built-in tools cannot be represented as functions. */
+	rawTools?: Record<string, unknown>[];
 }
 
 export type PublicChatWire = "chat_completions" | "responses" | "messages";
