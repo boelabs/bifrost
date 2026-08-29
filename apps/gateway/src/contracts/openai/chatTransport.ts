@@ -82,7 +82,27 @@ function toTransportPart(p: CanonicalContentPart): Record<string, unknown> {
 				type: "input_audio",
 				input_audio: { data: p.data, format: p.format },
 			};
-		case "file":
+		case "file": {
+			if (p.fileUrl !== undefined) {
+				throw new GatewayError({
+					class: "bad_request",
+					code: "unsupported_file_reference",
+					param: "messages",
+					message:
+						"OpenAI Chat Completions cannot represent file_url; resolve it before building the upstream request",
+					publicMessage:
+						"The selected deployment cannot consume this file URL directly.",
+				});
+			}
+			if (p.fileId === undefined && p.fileData === undefined) {
+				throw new GatewayError({
+					class: "bad_request",
+					code: "invalid_file_source",
+					param: "messages",
+					message: "OpenAI Chat Completions file input has no source",
+					publicMessage: "Each file input must contain a usable source.",
+				});
+			}
 			return {
 				type: "file",
 				file: {
@@ -91,10 +111,14 @@ function toTransportPart(p: CanonicalContentPart): Record<string, unknown> {
 					...(p.filename !== undefined ? { filename: p.filename } : {}),
 				},
 			};
+		}
 	}
 }
 
-function toTransportMessage(m: CanonicalMessage): Record<string, unknown> {
+function toTransportMessage(
+	m: CanonicalMessage,
+	developerRole: "developer" | "system",
+): Record<string, unknown> {
 	const content =
 		m.toolResultError === true
 			? typeof m.content === "string"
@@ -105,7 +129,7 @@ function toTransportMessage(m: CanonicalMessage): Record<string, unknown> {
 					] satisfies CanonicalContentPart[])
 			: m.content;
 	const out: Record<string, unknown> = {
-		role: m.role,
+		role: m.role === "developer" ? developerRole : m.role,
 		content:
 			content === null
 				? null
@@ -150,6 +174,10 @@ export interface BuildChatBodyOptions {
 	 * many compatibles only accept `max_tokens`.
 	 */
 	maxTokensField?: "max_completion_tokens" | "max_tokens";
+	/** Compatible APIs commonly require developer instructions to use the system role. */
+	developerRole?: "developer" | "system";
+	/** Emit the non-OpenAI top_k sampling extension. */
+	supportsTopK?: boolean;
 	reasoningSpec?: ReasoningSpec;
 }
 
@@ -192,9 +220,12 @@ export function buildOpenAIChatBody(
 	opts: BuildChatBodyOptions = {},
 ): Record<string, unknown> {
 	const maxTokensField = opts.maxTokensField ?? "max_completion_tokens";
+	const developerRole = opts.developerRole ?? "developer";
 	const body: Record<string, unknown> = {
 		model: upstreamModel,
-		messages: req.messages.map(toTransportMessage),
+		messages: req.messages.map((message) =>
+			toTransportMessage(message, developerRole),
+		),
 		stream: req.stream,
 	};
 	// We ALWAYS request usage in streaming so we can account for it (TPM/budget/cost). If the client
@@ -284,6 +315,7 @@ export function buildOpenAIChatBody(
 		req.extraBody,
 		OPENAI_CHAT_TRANSPORT_MANAGED_KEYS,
 	);
+	if (opts.supportsTopK && req.topK !== undefined) merged.top_k = req.topK;
 	if (spec?.kind === "openai_body") {
 		const field = resolveBodyFieldReasoning(req.reasoning, spec);
 		if (field) merged[field.param] = field.value;

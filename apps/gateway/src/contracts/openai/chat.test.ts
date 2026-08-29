@@ -90,6 +90,64 @@ test("OpenAI transport marks tool execution errors in portable content", () => {
 	);
 });
 
+test("OpenAI transport preserves or downgrades developer roles by capability", () => {
+	const request = {
+		callType: "chat" as const,
+		model: "gpt",
+		stream: false,
+		messages: [{ role: "developer" as const, content: "instructions" }],
+	};
+	const nativeMessages = buildOpenAIChatBody(request, "gpt-x")
+		.messages as Array<Record<string, unknown>>;
+	const compatibleMessages = buildOpenAIChatBody(request, "gpt-x", {
+		developerRole: "system",
+	}).messages as Array<Record<string, unknown>>;
+	assert.equal(nativeMessages[0]?.role, "developer");
+	assert.equal(compatibleMessages[0]?.role, "system");
+});
+
+test("OpenAI-compatible transport emits top_k only when enabled", () => {
+	const request = {
+		callType: "chat" as const,
+		model: "gpt",
+		stream: false,
+		messages: [{ role: "user" as const, content: "hello" }],
+		topK: 40,
+	};
+	assert.equal(buildOpenAIChatBody(request, "gpt-x").top_k, undefined);
+	assert.equal(
+		buildOpenAIChatBody(request, "gpt-x", { supportsTopK: true }).top_k,
+		40,
+	);
+});
+
+test("OpenAI transport rejects unresolved file URLs instead of emitting an empty file", () => {
+	assert.throws(
+		() =>
+			buildOpenAIChatBody(
+				{
+					callType: "chat",
+					model: "gpt",
+					stream: false,
+					messages: [
+						{
+							role: "user",
+							content: [
+								{
+									type: "file",
+									fileUrl: "https://assets.example/brief.pdf",
+								},
+							],
+						},
+					],
+				},
+				"gpt-x",
+			),
+		(error: unknown) =>
+			(error as { code?: string }).code === "unsupported_file_reference",
+	);
+});
+
 test("request: parses a basic chat and applies stream=false by default", () => {
 	const parsed = chatRequestSchema.parse({
 		model: "gpt",

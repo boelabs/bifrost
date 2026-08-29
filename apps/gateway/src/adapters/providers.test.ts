@@ -65,6 +65,33 @@ test("new providers: default base URL, max_tokens, and auth", () => {
 	}
 });
 
+test("compatible providers downgrade developer and forward catalog top_k", () => {
+	for (const [adapter, model] of [
+		[deepseekAdapter, "deepseek-r1"],
+		[moonshotAdapter, "kimi-k2"],
+		[zaiAdapter, "glm-4.6"],
+		[minimaxAdapter, "MiniMax-M2"],
+		[openaicompatibleAdapter, "custom-model"],
+	] as const) {
+		const built = adapter.chat!.buildRequest(
+			{
+				...req,
+				topK: 32,
+				messages: [{ role: "developer", content: "instructions" }],
+			},
+			ctx(model, adapter.key, {
+				apiKey: "k",
+				...(adapter === openaicompatibleAdapter
+					? { baseUrl: "https://compatible.example/v1" }
+					: {}),
+			}),
+		);
+		const body = JSON.parse(built.body!);
+		assert.equal(body.messages[0].role, "system", adapter.key);
+		assert.equal(body.top_k, 32, adapter.key);
+	}
+});
+
 test("chat-compatible providers do not advertise an unimplemented Responses transport", () => {
 	for (const adapter of [
 		deepseekAdapter,

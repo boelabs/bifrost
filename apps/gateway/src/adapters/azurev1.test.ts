@@ -103,6 +103,17 @@ test("azurefoundry: uses modern Chat Completions and max_completion_tokens", () 
 	assert.equal(body.max_tokens, undefined);
 });
 
+test("azureopenai: preserves the OpenAI developer role", () => {
+	const built = azureopenaiAdapter.chat!.buildRequest(
+		{
+			...request,
+			messages: [{ role: "developer", content: "instructions" }],
+		},
+		context("chat_completions", "gpt-5.4"),
+	);
+	assert.equal(JSON.parse(built.body!).messages[0].role, "developer");
+});
+
 test("azurefoundry: DeepSeek V4 keeps xhigh distinct from native max", () => {
 	const reasoning = {
 		kind: "openai_effort" as const,

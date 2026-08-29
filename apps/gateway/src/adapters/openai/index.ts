@@ -45,6 +45,7 @@ export const openaiAdapter = makeOpenAIStyleAdapter({
 		},
 	},
 	maxTokensField: "max_completion_tokens",
+	supportsDeveloperRole: true,
 	sendOrganization: true,
 	refineBadRequest,
 	imageTransports: ["images"],

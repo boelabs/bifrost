@@ -87,6 +87,10 @@ export interface OpenAIStyleConfig {
 	contentInputs?: Adapter["contentInputs"];
 	/** Output-limit field (chat_completions transport only). OpenAI: max_completion_tokens; compatibles: max_tokens. */
 	maxTokensField: "max_completion_tokens" | "max_tokens";
+	/** Preserve role=developer on Chat Completions. Defaults to false for broad compatibility. */
+	supportsDeveloperRole?: boolean;
+	/** Emit top_k on Chat Completions. Defaults to false because OpenAI does not define it. */
+	supportsTopK?: boolean;
 	/** OpenAI uses Bearer; Azure v1 with a key uses the api-key header. */
 	authScheme?: "bearer" | "api-key";
 	/** Base-URL-specific normalization/validation. */
@@ -401,6 +405,10 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 				body: JSON.stringify(
 					buildOpenAIChatBody(req, ctx.upstreamModel, {
 						maxTokensField: config.maxTokensField,
+						developerRole: config.supportsDeveloperRole
+							? "developer"
+							: "system",
+						supportsTopK: config.supportsTopK === true,
 						...(ctx.meta.reasoning !== undefined
 							? { reasoningSpec: ctx.meta.reasoning }
 							: {}),

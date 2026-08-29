@@ -10,6 +10,7 @@ const base = makeAzurev1Adapter({
 	label: LABEL,
 	defaultTransport: "responses",
 	supportedChatTransports: ["responses", "chat_completions"],
+	supportsDeveloperRole: true,
 	contentInputs: {
 		responses: {
 			file: {

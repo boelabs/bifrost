@@ -15,6 +15,7 @@ export const deepseekAdapter = makeOpenAIStyleAdapter({
 	defaultBaseUrl: "https://api.deepseek.com/v1",
 	defaultTransport: "chat_completions",
 	maxTokensField: "max_tokens",
+	supportsTopK: true,
 	refineBadRequest: contextWindowRefine,
 });
 
