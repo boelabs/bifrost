@@ -11,7 +11,7 @@
 # via a managed provider with a public-CA certificate. See the docs "Known errors" section.
 
 # ---- deps: production dependencies only, with Bun ----
-FROM oven/bun:1.3.14 AS deps
+FROM oven/bun:1.4.0 AS deps
 WORKDIR /app
 ENV NODE_ENV=production
 # Copy only the manifests + lockfile first so this layer caches until dependencies change.
@@ -22,7 +22,7 @@ COPY packages/tsconfig/package.json ./packages/tsconfig/package.json
 RUN bun install --frozen-lockfile --production --filter @boelabs/bifrost
 
 # ---- runtime: Bun ----
-FROM oven/bun:1.3.14 AS runtime
+FROM oven/bun:1.4.0 AS runtime
 WORKDIR /app/apps/gateway
 ENV NODE_ENV=production \
     PORT=4000
