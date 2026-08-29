@@ -461,6 +461,7 @@ function mapFinishReason(
 	switch (reason) {
 		case "end_turn":
 		case "stop_sequence":
+		case "pause_turn":
 			return "stop";
 		case "max_tokens":
 		case "model_context_window_exceeded":
@@ -472,13 +473,15 @@ function mapFinishReason(
 		case null:
 		case undefined:
 			return null;
-		default:
-			throw new GatewayError({
-				class: "server",
-				code: "upstream_protocol_error",
-				message: `Anthropic returned unknown stop reason "${reason}"`,
-				provider: { body: { stop_reason: reason } },
-			});
+		default: {
+			const normalized = reason.toLowerCase();
+			if (/max.?tokens?|context.?window|length/.test(normalized))
+				return "length";
+			if (/tool.?use|function.?call/.test(normalized)) return "tool_calls";
+			if (/filter|safety|guardrail|block|prohibit|refus/.test(normalized))
+				return "content_filter";
+			return "stop";
+		}
 	}
 }
 

@@ -1,6 +1,7 @@
 import type { CanonicalEmbeddingsRequest } from "#core/embeddings.ts";
 import { observeChatStream } from "#gateway/streamLifecycle.ts";
 import type { CanonicalChatRequest } from "#core/canonical.ts";
+import { adapterDiagnostics } from "#adapters/diagnostics.ts";
 import type { AdapterContext } from "#adapters/types.ts";
 import { isUsageConsistent } from "#core/usage.ts";
 import { GatewayError } from "#core/errors.ts";
@@ -674,6 +675,24 @@ test("google.parseResponse: maps candidates/usageMetadata to canonical", () => {
 	assert.equal(u.choices[0]!.finishReason, "stop");
 	assert.equal(u.usage.totalTokens, 7);
 	assert.equal(u.usage.promptTokens, 5);
+});
+
+test("google.parseResponse: documented and future finish reasons remain observable", () => {
+	const parse = (finishReason: string) =>
+		googleAdapter.chat!.parseResponse(
+			{
+				candidates: [
+					{ content: { parts: [{ text: "partial" }] }, finishReason },
+				],
+				usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1 },
+			},
+			ctx,
+		);
+	const other = parse("OTHER");
+	assert.equal(other.choices[0]?.finishReason, "stop");
+	assert.equal(adapterDiagnostics(other)?.originalTerminalReason, "OTHER");
+	assert.equal(parse("LANGUAGE").choices[0]?.finishReason, "content_filter");
+	assert.equal(parse("FUTURE_REASON").choices[0]?.finishReason, "stop");
 });
 
 test("google.parseResponse: functionCall -> tool_calls + finish tool_calls", () => {
