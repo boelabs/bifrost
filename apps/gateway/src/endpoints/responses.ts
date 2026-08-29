@@ -530,6 +530,7 @@ function streamResponses(
 				if (
 					ev.event === "response.output_text.delta" ||
 					ev.event === "response.reasoning_summary_text.delta" ||
+					ev.event === "response.reasoning_text.delta" ||
 					ev.event === "response.function_call_arguments.delta"
 				)
 					markDownstreamSemanticWritten(downstream);

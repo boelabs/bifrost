@@ -46,6 +46,13 @@ import {
 	summaryVisible,
 } from "#core/reasoning.ts";
 
+import {
+	mirrorReasoningEventData,
+	mirrorReasoningOutput,
+	reasoningTextFromItem,
+	mirrorReasoningItem,
+} from "./responsesReasoning.ts";
+
 const ENCRYPTED_REASONING_INCLUDE = "reasoning.encrypted_content";
 
 const OPENAI_RESPONSES_TRANSPORT_MANAGED_KEYS = [
@@ -210,12 +217,15 @@ export function buildResponsesRequestBody(
 			// reasoning items to precede the function calls they preceded originally).
 			for (const item of openaiReasoningFromProviderFields(m.providerFields) ??
 				[]) {
-				input.push({
-					type: "reasoning",
-					...(item.id !== undefined ? { id: item.id } : {}),
-					encrypted_content: item.encrypted_content,
-					summary: item.summary ?? [],
-				});
+				input.push(
+					mirrorReasoningItem({
+						type: "reasoning",
+						...(item.id !== undefined ? { id: item.id } : {}),
+						encrypted_content: item.encrypted_content,
+						summary: item.summary ?? [],
+						...(item.content !== undefined ? { content: item.content } : {}),
+					}),
+				);
 			}
 			if (m.content)
 				input.push({
@@ -401,6 +411,9 @@ function reasoningStateFromItem(
 		...(Array.isArray(item.summary)
 			? { summary: structuredClone(item.summary) }
 			: {}),
+		...(Array.isArray(item.content)
+			? { content: structuredClone(item.content) }
+			: {}),
 	};
 }
 interface RWResponse {
@@ -449,15 +462,15 @@ export function parseResponsesResponse(raw: unknown): CanonicalChatResponse {
 	const toolCalls: NonNullable<
 		CanonicalChatResponse["choices"][number]["message"]["toolCalls"]
 	> = [];
-	for (const item of r.output ?? []) {
+	const output = mirrorReasoningOutput(
+		(r.output ?? []) as unknown as Record<string, unknown>[],
+	) as RWOutputItem[];
+	for (const item of output) {
 		if (item.type === "message") {
 			for (const c of item.content ?? [])
 				if (c.type === "output_text") content += c.text ?? "";
 		} else if (item.type === "reasoning") {
-			for (const s of item.summary ?? []) {
-				if (typeof s === "string") reasoning.push(s);
-				else if (s.text) reasoning.push(s.text);
-			}
+			reasoning.push(...reasoningTextFromItem(item));
 			const state = reasoningStateFromItem(item);
 			if (state !== undefined) reasoningState.push(state);
 		} else if (item.type === "function_call") {
@@ -475,7 +488,7 @@ export function parseResponsesResponse(raw: unknown): CanonicalChatResponse {
 		role: "assistant",
 		content: content.length > 0 ? content : null,
 	};
-	const responseMessage = (r.output ?? []).find(
+	const responseMessage = output.find(
 		(item) => item.type === "message" && item.phase !== undefined,
 	);
 	if (responseMessage?.phase !== undefined)
@@ -483,12 +496,10 @@ export function parseResponsesResponse(raw: unknown): CanonicalChatResponse {
 	if (reasoning.length > 0) message.reasoning = reasoning.join("\n\n");
 	if (reasoningState.length > 0)
 		message.providerFields = providerFieldsWithOpenAIReasoning(reasoningState);
-	if ((r.output?.length ?? 0) > 0) {
+	if (output.length > 0) {
 		const providerFields = mergeProviderFields(
 			message.providerFields,
-			providerFieldsWithResponsesOutput(
-				r.output as unknown as Record<string, unknown>[],
-			),
+			providerFieldsWithResponsesOutput(output),
 		);
 		if (providerFields !== undefined) message.providerFields = providerFields;
 	}
@@ -529,6 +540,25 @@ export async function* responsesEventsToCanonicalChunks(
 	const base = () => ({ id, created, model });
 
 	let terminalSeen = false;
+	const reasoningLanes = new Map<string, "content" | "summary">();
+	const selectReasoningLane = (
+		data: Record<string, unknown>,
+		lane: "content" | "summary",
+	): boolean => {
+		const key =
+			typeof data.item_id === "string" && data.item_id.length > 0
+				? `id:${data.item_id}`
+				: typeof data.output_index === "number" &&
+						Number.isInteger(data.output_index) &&
+						data.output_index >= 0
+					? `index:${data.output_index}`
+					: undefined;
+		if (key === undefined) return true;
+		const selectedLane = reasoningLanes.get(key);
+		if (selectedLane !== undefined && selectedLane !== lane) return false;
+		reasoningLanes.set(key, lane);
+		return true;
+	};
 	for await (const ev of events) {
 		if (ev.data === "[DONE]") {
 			options?.onTransportTerminator?.("done_marker");
@@ -536,7 +566,9 @@ export async function* responsesEventsToCanonicalChunks(
 		}
 		let d: Record<string, unknown>;
 		try {
-			d = JSON.parse(ev.data) as Record<string, unknown>;
+			d = mirrorReasoningEventData(
+				JSON.parse(ev.data) as Record<string, unknown>,
+			);
 		} catch (cause) {
 			throw new GatewayError({
 				class: "server",
@@ -604,8 +636,11 @@ export async function* responsesEventsToCanonicalChunks(
 		if (
 			type === "response.reasoning_summary_text.delta" ||
 			type === "response.reasoning_summary.delta" ||
+			type === "response.reasoning_text.delta" ||
 			type === "response.reasoning.delta"
 		) {
+			const lane = type.includes("summary") ? "summary" : "content";
+			if (!selectReasoningLane(d, lane)) continue;
 			const delta: CanonicalChatStreamChunk["choices"][number]["delta"] = {};
 			delta.providerFields = providerFieldsWithOpenAIResponsesStreamEvent(
 				type,
@@ -622,6 +657,32 @@ export async function* responsesEventsToCanonicalChunks(
 					providerFieldsWithOpenAIReasoningItemId(d.item_id),
 				)!;
 			yield { ...base(), choices: [{ index: 0, delta, finishReason: null }] };
+			continue;
+		}
+
+		if (
+			type === "response.reasoning_summary_text.done" ||
+			type === "response.reasoning_text.done" ||
+			type === "response.reasoning_summary.done" ||
+			type === "response.reasoning.done"
+		) {
+			const lane = type.includes("summary") ? "summary" : "content";
+			if (!selectReasoningLane(d, lane)) continue;
+			yield {
+				...base(),
+				choices: [
+					{
+						index: 0,
+						delta: {
+							providerFields: providerFieldsWithOpenAIResponsesStreamEvent(
+								type,
+								d,
+							),
+						},
+						finishReason: null,
+					},
+				],
+			};
 			continue;
 		}
 
@@ -713,9 +774,12 @@ export async function* responsesEventsToCanonicalChunks(
 		if (type === "response.completed" || type === "response.incomplete") {
 			terminalSeen = true;
 			const r = (d.response ?? {}) as RWResponse;
+			const output = mirrorReasoningOutput(
+				(r.output ?? []) as unknown as Record<string, unknown>[],
+			) as RWOutputItem[];
 			// Belt and braces: forward any encrypted reasoning state that did not stream as its own
 			// output_item.done event.
-			const missed = (r.output ?? [])
+			const missed = output
 				.map(reasoningStateFromItem)
 				.filter(
 					(state): state is OpenAIReasoningStateItem =>
@@ -738,9 +802,7 @@ export async function* responsesEventsToCanonicalChunks(
 					],
 				};
 			}
-			const hasTool = (r.output ?? []).some(
-				(it) => it.type === "function_call",
-			);
+			const hasTool = output.some((it) => it.type === "function_call");
 			const finishReason = finishFrom(r, hasTool);
 			options?.onTerminalEvent?.(
 				type,
@@ -753,9 +815,8 @@ export async function* responsesEventsToCanonicalChunks(
 					{
 						index: 0,
 						delta: {
-							providerFields: providerFieldsWithOpenAIResponsesStreamOutput(
-								(r.output ?? []) as unknown as Record<string, unknown>[],
-							),
+							providerFields:
+								providerFieldsWithOpenAIResponsesStreamOutput(output),
 						},
 						finishReason,
 					},
