@@ -113,8 +113,29 @@ test("upstream errors: operational 4xx and 5xx messages remain generic", () => {
 		},
 		mapping,
 	);
-	assert.equal(auth.publicMessage, "Authentication failed.");
-	assert.equal(auth.code, "invalid_api_key");
+	assert.equal(auth.class, "auth");
+	assert.equal(auth.httpStatus, 502);
+	assert.equal(
+		auth.publicMessage,
+		"The service is temporarily unavailable. Please try again later.",
+	);
+	assert.deepEqual(auth.toOpenAI(), {
+		error: {
+			message:
+				"The service is temporarily unavailable. Please try again later.",
+			type: "server_error",
+			param: null,
+			code: null,
+		},
+	});
+	assert.deepEqual(auth.toAnthropic(), {
+		type: "error",
+		error: {
+			type: "api_error",
+			message:
+				"The service is temporarily unavailable. Please try again later.",
+		},
+	});
 
 	const server = mapUpstreamHttpError(
 		{
@@ -171,4 +192,27 @@ test("upstream errors: invalid provider configuration is quarantinable", () => {
 	);
 	assert.equal(error.failureKind, "configuration");
 	assert.equal(error.deploymentHealth, "penalize");
+	assert.equal(error.httpStatus, 502);
+});
+
+test("upstream errors: provider permission failures are public gateway errors", () => {
+	const error = mapUpstreamHttpError(
+		{
+			status: 403,
+			body: {
+				error: {
+					message: "service account lacks permission",
+					param: "credential",
+					code: "permission_denied",
+				},
+			},
+		},
+		mapping,
+	);
+	assert.equal(error.class, "auth");
+	assert.equal(error.failureKind, "configuration");
+	assert.equal(error.httpStatus, 502);
+	assert.equal(error.openaiType, "server_error");
+	assert.equal(error.param, null);
+	assert.equal(error.code, null);
 });

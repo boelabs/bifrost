@@ -1,8 +1,16 @@
 import { getCachedVirtualKey } from "./virtualKeyCache.ts";
+import { createHash, timingSafeEqual } from "node:crypto";
 import type { Context, MiddlewareHandler } from "hono";
 import { GatewayError } from "#core/errors.ts";
 import type { AppEnv, Auth } from "./types.ts";
 import { env } from "#config/env.ts";
+
+const MASTER_KEY_DIGEST = createHash("sha256").update(env.MASTER_KEY).digest();
+
+function isMasterKey(value: string): boolean {
+	const candidateDigest = createHash("sha256").update(value).digest();
+	return timingSafeEqual(candidateDigest, MASTER_KEY_DIGEST);
+}
 
 /** Extracts an API key only from headers, which do not leak through URLs, history, or referrers. */
 function extractKey(c: Context): string | undefined {
@@ -26,7 +34,7 @@ export async function authenticateRequest(c: Context): Promise<Auth> {
 		});
 	}
 
-	if (key === env.MASTER_KEY) return { type: "master" };
+	if (isMasterKey(key)) return { type: "master" };
 
 	const vk = await getCachedVirtualKey(key);
 	if (!vk)

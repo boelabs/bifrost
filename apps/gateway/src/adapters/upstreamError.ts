@@ -178,12 +178,16 @@ export function mapUpstreamHttpError(
 		const headerRetryAfterMs = parseRetryAfter(up.headers?.["retry-after"]);
 		const retryAfterMs =
 			headerRetryAfterMs ?? mapping.retryAfterMs?.(up.status, up.body);
-		const exposeDetail = exposesRequestDetail(cls, up.status);
-		const is4xx = up.status >= 400 && up.status < 500;
+		const upstreamCredentialFailure = up.status === 401 || up.status === 403;
+		const exposeDetail =
+			!upstreamCredentialFailure && exposesRequestDetail(cls, up.status);
+		const exposeFields =
+			!upstreamCredentialFailure && up.status >= 400 && up.status < 500;
 		return new GatewayError({
 			class: cls,
+			...(upstreamCredentialFailure ? { publicClass: "server" as const } : {}),
 			message,
-			status: up.status,
+			status: upstreamCredentialFailure ? 502 : up.status,
 			...(exposeDetail && detail.message !== undefined
 				? {
 						publicMessage: publicProviderField(
@@ -193,7 +197,7 @@ export function mapUpstreamHttpError(
 						),
 					}
 				: {}),
-			...(is4xx && detail.param !== undefined
+			...(exposeFields && detail.param !== undefined
 				? {
 						param: publicProviderField(
 							detail.param,
@@ -202,7 +206,7 @@ export function mapUpstreamHttpError(
 						),
 					}
 				: {}),
-			...(is4xx && detail.code !== undefined
+			...(exposeFields && detail.code !== undefined
 				? {
 						code: publicProviderField(detail.code, ctx, PUBLIC_FIELD_MAX_CHARS),
 					}
