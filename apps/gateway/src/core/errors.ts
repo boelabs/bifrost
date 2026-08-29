@@ -137,6 +137,8 @@ const ANTHROPIC_TYPE: Record<ErrorClass, string> = {
 
 export interface GatewayErrorOptions {
 	class: ErrorClass;
+	/** Optional public classification when the internal router disposition must remain different. */
+	publicClass?: ErrorClass;
 	/** INTERNAL/detailed message (goes to logs; may include the provider's detail). */
 	message: string;
 	/**
@@ -185,6 +187,7 @@ function defaultFailureKind(cls: ErrorClass): FailureKind {
 
 export class GatewayError extends Error {
 	readonly class: ErrorClass;
+	readonly publicClass: ErrorClass;
 	readonly httpStatus: number;
 	readonly openaiType: string;
 	readonly code: string | null;
@@ -209,14 +212,17 @@ export class GatewayError extends Error {
 		);
 		this.name = "GatewayError";
 		const meta = META[opts.class];
+		const publicClass = opts.publicClass ?? opts.class;
+		const publicMeta = META[publicClass];
 		this.class = opts.class;
-		this.httpStatus = opts.status ?? meta.httpStatus;
-		this.openaiType = meta.openaiType;
-		this.code = opts.code !== undefined ? opts.code : meta.defaultCode;
+		this.publicClass = publicClass;
+		this.httpStatus = opts.status ?? publicMeta.httpStatus;
+		this.openaiType = publicMeta.openaiType;
+		this.code = opts.code !== undefined ? opts.code : publicMeta.defaultCode;
 		this.param = opts.param ?? null;
 		this.retryable = opts.retryable ?? meta.retryable;
 		// By default the client sees the class's GENERIC message; the detail stays in `message`.
-		this.publicMessage = opts.publicMessage ?? GENERIC_PUBLIC[opts.class];
+		this.publicMessage = opts.publicMessage ?? GENERIC_PUBLIC[publicClass];
 		if (opts.provider !== undefined) this.provider = opts.provider;
 		if (opts.headers !== undefined) this.headers = opts.headers;
 		this.routingScope = opts.routingScope ?? "candidate";
@@ -272,7 +278,10 @@ export class GatewayError extends Error {
 	toAnthropic(): { type: "error"; error: { type: string; message: string } } {
 		return {
 			type: "error",
-			error: { type: ANTHROPIC_TYPE[this.class], message: this.publicMessage },
+			error: {
+				type: ANTHROPIC_TYPE[this.publicClass],
+				message: this.publicMessage,
+			},
 		};
 	}
 
