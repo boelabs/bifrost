@@ -18,7 +18,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"reasoning": {
 						"kind": "anthropic_adaptive",
@@ -53,7 +54,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"reasoning": {
 						"kind": "anthropic_adaptive",
@@ -89,7 +91,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"reasoning": {
 						"kind": "anthropic_adaptive",
@@ -125,7 +128,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"reasoning": {
 						"kind": "anthropic_adaptive",
@@ -162,7 +166,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"reasoning": {
 						"kind": "anthropic_adaptive",
@@ -198,7 +203,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"reasoning": {
 						"kind": "anthropic_adaptive",
@@ -235,7 +241,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"reasoning": {
 						"kind": "anthropic_adaptive",
@@ -270,7 +277,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"reasoning": {
 						"kind": "anthropic_adaptive",
@@ -292,7 +300,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"reasoning": {
 						"kind": "anthropic_budget",
@@ -335,7 +344,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"reasoning": {
 						"kind": "anthropic_adaptive",
@@ -370,7 +380,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"reasoning": {
 						"kind": "anthropic_adaptive",
@@ -406,7 +417,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"reasoning": {
 						"kind": "anthropic_adaptive",
@@ -443,7 +455,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 64000,
@@ -475,7 +488,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 64000,
@@ -508,7 +522,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": false
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 32000,

@@ -12,6 +12,7 @@ const ctx: AdapterContext = {
 		maxOutputTokens: 2048,
 		capabilities: {
 			tools: true,
+			strictTools: true,
 			vision: true,
 			reasoning: false,
 			structuredOutputs: true,
@@ -79,6 +80,28 @@ test("anthropic.buildRequest: messages transport, auth headers and system split"
 	assert.equal(body.max_tokens, 128);
 	assert.equal(body.system, "Be concise.");
 	assert.deepEqual(body.messages, [{ role: "user", content: "Hello" }]);
+});
+
+test("anthropic.buildRequest: emits native strict tool schemas", () => {
+	const built = anthropicAdapter.chat!.buildRequest(
+		{
+			...req,
+			tools: [
+				{
+					name: "lookup",
+					strict: true,
+					parameters: {
+						type: "object",
+						properties: { id: { type: "string" } },
+						required: ["id"],
+						additionalProperties: false,
+					},
+				},
+			],
+		},
+		ctx,
+	);
+	assert.equal(JSON.parse(built.body!).tools[0].strict, true);
 });
 
 test("anthropic token count preserves input fields and removes generation controls", () => {

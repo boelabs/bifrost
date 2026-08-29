@@ -19,7 +19,8 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 384000,
@@ -37,7 +38,7 @@
 						},
 						"effortField": "reasoning_effort"
 					},
-					"contracts": ["chat.completions"],
+					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"thinking": {
 							"mode": "supported",
@@ -82,7 +83,8 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 384000,
@@ -100,7 +102,7 @@
 						},
 						"effortField": "reasoning_effort"
 					},
-					"contracts": ["chat.completions"],
+					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"thinking": {
 							"mode": "supported",
@@ -143,7 +145,8 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": false,
+						"strictTools": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 16000,
@@ -177,7 +180,8 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": false,
+						"strictTools": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 393216,
@@ -219,7 +223,8 @@
 					"capabilities": {
 						"tools": true,
 						"vision": false,
-						"structuredOutputs": true
+						"structuredOutputs": false,
+						"strictTools": true
 					}
 				}
 			},
@@ -247,7 +252,8 @@
 					"capabilities": {
 						"tools": true,
 						"vision": false,
-						"structuredOutputs": true
+						"structuredOutputs": false,
+						"strictTools": true
 					}
 				}
 			},
@@ -278,7 +284,8 @@
 					"capabilities": {
 						"tools": true,
 						"vision": false,
-						"structuredOutputs": true
+						"structuredOutputs": false,
+						"strictTools": true
 					}
 				}
 			},

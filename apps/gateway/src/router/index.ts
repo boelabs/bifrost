@@ -61,6 +61,10 @@ export interface RouteOptions {
 	requestId: string;
 	/** Preferred native transport when the selected adapter supports it. */
 	preferredTransport?: UpstreamTransport;
+	/** Optional request-aware preference resolved separately for each candidate. */
+	transportPreference?: (
+		candidate: DeploymentCandidate,
+	) => UpstreamTransport | undefined;
 	/** Excludes deployments incompatible with the request before balancing, without cooldown. */
 	candidateEligibility?: (candidate: DeploymentCandidate) => void;
 	/** Session affinity hint; used only when this deployment is still healthy and eligible. */
@@ -82,6 +86,13 @@ export interface RouteOptions {
 	tokenReservation?: (candidate: DeploymentCandidate) => number;
 	/** Optional public-key quota admission, kept provider-independent through this lifecycle contract. */
 	usageQuota?: UsageQuota;
+}
+
+function preferredTransportForCandidate(
+	candidate: DeploymentCandidate,
+	opts: RouteOptions,
+): UpstreamTransport | undefined {
+	return opts.transportPreference?.(candidate) ?? opts.preferredTransport;
 }
 
 export interface UsageQuotaLease {
@@ -259,7 +270,11 @@ function buildContext(
 			upstreamModel: candidate.upstreamModel,
 			credentials: decryptDeploymentCredentials(candidate),
 			meta: candidate.meta,
-			transport: resolveTransport(candidate, callType, opts.preferredTransport),
+			transport: resolveTransport(
+				candidate,
+				callType,
+				preferredTransportForCandidate(candidate, opts),
+			),
 			requestId: opts.requestId,
 			...(opts.operationId ? { operationId: opts.operationId } : {}),
 			attemptStartedAt,
@@ -477,7 +492,7 @@ export async function route<T>(
 				const transport = resolveTransport(
 					chosen,
 					callType,
-					opts.preferredTransport,
+					preferredTransportForCandidate(chosen, opts),
 				);
 				const deployment = deploymentSubject(chosen.row.id);
 				const capacity = capacitySubject(

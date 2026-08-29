@@ -197,7 +197,7 @@ function requiresThoughtSignature(ctx: AdapterContext): boolean {
 }
 
 function supportsStrictToolCalling(ctx: AdapterContext): boolean {
-	return isGemini3OrNewerModel(ctx);
+	return ctx.meta.capabilities.strictTools === true;
 }
 
 function ensureFirstFunctionCallSignature(
@@ -275,9 +275,18 @@ function buildGeminiBody(
 	ctx: AdapterContext,
 ): GeminiBody {
 	const body: GeminiBody = { contents: [] };
-	const strictToolDecoding =
-		supportsStrictToolCalling(ctx) &&
+	const strictToolsRequested =
 		req.tools?.some((tool) => tool.strict === true) === true;
+	if (strictToolsRequested && !supportsStrictToolCalling(ctx)) {
+		throw new GatewayError({
+			class: "bad_request",
+			deploymentHealth: "neutral",
+			message: "The selected Gemini model does not support strict tool schemas",
+			code: "unsupported_model_capability",
+			param: "tools",
+		});
+	}
+	const strictToolDecoding = strictToolsRequested;
 	const systemParts: Record<string, unknown>[] = [];
 	// Map toolCallId -> function name (to map tool results).
 	const toolNameById = new Map<string, string>();

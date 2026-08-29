@@ -522,7 +522,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1048576,
 					"maxOutputTokens": 65536,
@@ -567,7 +568,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1048576,
 					"maxOutputTokens": 65536,
@@ -611,7 +613,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1048576,
 					"maxOutputTokens": 65536,
@@ -643,7 +646,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1048576,
 					"maxOutputTokens": 65536,
@@ -675,7 +679,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1048576,
 					"maxOutputTokens": 65536,
@@ -712,7 +717,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1048576,
 					"maxOutputTokens": 65536,
@@ -744,7 +750,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1048576,
 					"maxOutputTokens": 65536,
@@ -781,7 +788,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1048576,
 					"maxOutputTokens": 65536,
@@ -997,7 +1005,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1048576,
 					"maxOutputTokens": 65536,

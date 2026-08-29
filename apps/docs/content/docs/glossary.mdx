@@ -99,8 +99,10 @@ profile declares document modalities and request limits.
 
 ## Capabilities
 
-The reserved name for the concrete feature flags of `text.generate`: `tools`, `vision`, `reasoning`,
-and `structuredOutputs`. It does not mean "list of operations" nor "adapter handler".
+The reserved name for the concrete feature flags of `text.generate`: `tools`, `strictTools`, `vision`,
+`reasoning`, and `structuredOutputs`. `strictTools` specifically means that the provider guarantees
+function arguments conform to their declared schema. It does not mean "list of operations" nor
+"adapter handler".
 
 ## CallType
 

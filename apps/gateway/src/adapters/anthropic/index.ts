@@ -399,6 +399,7 @@ function buildBody(
 				? { description: tool.description }
 				: {}),
 			input_schema: tool.parameters ?? { type: "object", properties: {} },
+			...(tool.strict !== undefined ? { strict: tool.strict } : {}),
 			...(tool.cacheControl !== undefined
 				? { cache_control: tool.cacheControl }
 				: {}),

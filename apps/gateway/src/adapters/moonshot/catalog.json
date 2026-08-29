@@ -24,7 +24,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1048576,
 					"maxOutputTokens": 1048576,
@@ -70,7 +71,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 32768,
@@ -130,7 +132,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 32768,
@@ -179,7 +182,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 262144,
@@ -244,7 +248,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 32768,
@@ -298,7 +303,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": false,
+						"strictTools": true
 					},
 					"maxInputTokens": 131072,
 					"maxOutputTokens": 16384
@@ -325,7 +331,8 @@
 					"capabilities": {
 						"tools": true,
 						"vision": false,
-						"structuredOutputs": false
+						"structuredOutputs": false,
+						"strictTools": true
 					}
 				}
 			},
@@ -359,7 +366,8 @@
 					"capabilities": {
 						"tools": true,
 						"vision": false,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					}
 				}
 			},

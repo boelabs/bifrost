@@ -17,6 +17,84 @@ function hasPart(
 	return false;
 }
 
+export function requestUsesStrictTools(req: CanonicalChatRequest): boolean {
+	return req.tools?.some((tool) => tool.strict === true) === true;
+}
+
+export function requestUsesStrictOutput(req: CanonicalChatRequest): boolean {
+	return (
+		req.responseFormat?.type === "json_schema" &&
+		req.responseFormat.strict === true
+	);
+}
+
+function explicitlyUnsupportedParameter(
+	meta: ResolvedModelMetadata,
+	name: string,
+): boolean {
+	const entry = meta.operations?.["text.generate"]?.parameters?.[name];
+	if (entry === undefined || entry === true) return false;
+	if (entry === false) return true;
+	return entry.mode === "unsupported" || entry.mode === "ignored";
+}
+
+function assertStrictParameterIsNotDropped(
+	req: CanonicalChatRequest,
+	meta: ResolvedModelMetadata,
+): void {
+	const strictTools = requestUsesStrictTools(req);
+	const strictOutput = requestUsesStrictOutput(req);
+	const parameter = strictTools
+		? [
+				"tools",
+				...(req.toolChoice !== undefined ? ["tool_choice"] : []),
+				...(req.parallelToolCalls === true ? ["parallel_tool_calls"] : []),
+			].find((name) => explicitlyUnsupportedParameter(meta, name))
+		: strictOutput
+			? explicitlyUnsupportedParameter(meta, "response_format")
+				? "response_format"
+				: explicitlyUnsupportedParameter(meta, "structured_outputs")
+					? "structured_outputs"
+					: undefined
+			: undefined;
+	if (parameter === undefined) return;
+	throw new GatewayError({
+		class: "bad_request",
+		deploymentHealth: "neutral",
+		message: `The selected model cannot preserve strict parameter "${parameter}"`,
+		code: "unsupported_parameter",
+		param: parameter,
+	});
+}
+
+/** Strict guarantees are never eligible for unsupported-parameter dropping. */
+export function assertStrictTextRequestSupported(
+	req: CanonicalChatRequest,
+	meta: ResolvedModelMetadata,
+): void {
+	if (requestUsesStrictTools(req) && meta.capabilities.strictTools !== true) {
+		throw new GatewayError({
+			class: "bad_request",
+			deploymentHealth: "neutral",
+			message: "The selected model does not support strict tool schemas",
+			code: "unsupported_model_capability",
+			param: "tools",
+		});
+	}
+
+	if (requestUsesStrictOutput(req) && !meta.capabilities.structuredOutputs) {
+		throw new GatewayError({
+			class: "bad_request",
+			deploymentHealth: "neutral",
+			message: "The selected model does not support strict JSON Schema outputs",
+			code: "unsupported_model_capability",
+			param: "response_format",
+		});
+	}
+
+	assertStrictParameterIsNotDropped(req, meta);
+}
+
 export function assertTextRequestSupported(
 	req: CanonicalChatRequest,
 	meta: ResolvedModelMetadata,
@@ -30,6 +108,8 @@ export function assertTextRequestSupported(
 			param: "tools",
 		});
 	}
+
+	assertStrictTextRequestSupported(req, meta);
 
 	if (
 		hasPart(req, (part) => part.type === "image") &&

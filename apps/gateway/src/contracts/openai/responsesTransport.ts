@@ -101,10 +101,12 @@ function resolveOpenAIReasoning(
 			param: "reasoning",
 		});
 	}
-	if (spec.kind !== "openai_effort") {
+	// `openai_body` models keep their native top-level controls on Chat Completions, but their
+	// Responses contract exposes reasoning through OpenAI's nested `reasoning.effort` instead.
+	if (spec.kind !== "openai_effort" && spec.kind !== "openai_body") {
 		throw new GatewayError({
 			class: "bad_request",
-			message: `Reasoning control "${spec.kind}" cannot be emitted as OpenAI reasoning.effort`,
+			message: `Reasoning control "${spec.kind}" cannot be emitted as Responses reasoning.effort`,
 			code: "unsupported_model_capability",
 			param: "reasoning",
 		});

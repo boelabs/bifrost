@@ -1,10 +1,10 @@
 import { makeOpenAIResponsesWebSocketHandler } from "./openaiResponsesWebSocket.ts";
-import type { Adapter, AdapterContext, ChatHandler } from "./types.ts";
 import { imageProfileFor, videoProfileFor } from "#catalog/types.ts";
 import { upstreamFetch } from "#gateway/instrumentedTransport.ts";
 import { looksLikeContextWindowError } from "#core/httpError.ts";
 import { GatewayError, type ErrorClass } from "#core/errors.ts";
 import { type BaseCreds, requireApiKeyCreds } from "./creds.ts";
+import type { CanonicalChatRequest } from "#core/canonical.ts";
 import type { ReasoningControlKind } from "#core/reasoning.ts";
 import type { UpstreamTransport } from "#core/transport.ts";
 import { mapUpstreamHttpError } from "./upstreamError.ts";
@@ -20,6 +20,19 @@ import {
 	parseOmniImageResponse,
 	buildOmniImageBody,
 } from "#contracts/openai/imagesTransport.ts";
+
+import type {
+	TranscriptionHandler,
+	ChatSupportContext,
+	ChatRoutingContext,
+	EmbeddingsHandler,
+	AdapterContext,
+	ImageHandler,
+	VideoHandler,
+	VideoJobRef,
+	ChatHandler,
+	Adapter,
+} from "./types.ts";
 
 import {
 	type CanonicalVideoProviderJob,
@@ -47,14 +60,6 @@ import {
 	parseOpenAIChatChunk,
 	buildOpenAIChatBody,
 } from "#contracts/openai/chatTransport.ts";
-
-import type {
-	TranscriptionHandler,
-	EmbeddingsHandler,
-	ImageHandler,
-	VideoHandler,
-	VideoJobRef,
-} from "./types.ts";
 
 import {
 	recordUnknownAdapterEvent,
@@ -123,6 +128,27 @@ export interface OpenAIStyleConfig {
 	defaultVideoTransport?: Extract<UpstreamTransport, "videos" | "videos_async">;
 	/** This provider exposes persistent WebSocket mode at its /responses resource. */
 	responsesWebSocket?: boolean;
+	/** Selects a request-specific transport when one strict feature has a dedicated API. */
+	preferredChatTransport?: (
+		req: CanonicalChatRequest,
+		ctx: ChatRoutingContext,
+	) => UpstreamTransport | undefined;
+	/** Validates provider-specific guarantees after the transport is resolved. */
+	assertChatRequestSupported?: (
+		req: CanonicalChatRequest,
+		ctx: ChatSupportContext,
+	) => void;
+	/** Applies provider-required request defaults without mutating the canonical request. */
+	prepareChatRequest?: (
+		req: CanonicalChatRequest,
+		ctx: ChatSupportContext,
+	) => CanonicalChatRequest;
+	/** Selects a provider endpoint variant for the request. */
+	resolveChatBaseUrl?: (
+		baseUrl: string,
+		req: CanonicalChatRequest,
+		ctx: ChatSupportContext,
+	) => string;
 }
 
 /**
@@ -370,6 +396,17 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 	const chat: ChatHandler = {
 		buildRequest(req, ctx) {
 			const c = resolveCreds(ctx);
+			const supportContext: ChatSupportContext = {
+				upstreamModel: ctx.upstreamModel,
+				meta: ctx.meta,
+				transport: ctx.transport,
+			};
+			config.assertChatRequestSupported?.(req, supportContext);
+			const preparedRequest =
+				config.prepareChatRequest?.(req, supportContext) ?? req;
+			const base =
+				config.resolveChatBaseUrl?.(c.base, preparedRequest, supportContext) ??
+				c.base;
 			const supportedChatTransports = config.supportedChatTransports ?? [
 				"chat_completions",
 				"responses",
@@ -387,11 +424,11 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			if (ctx.transport === "responses") {
 				return {
 					method: "POST",
-					url: `${c.base}/responses`,
+					url: `${base}/responses`,
 					headers: buildHeaders(c),
 					body: JSON.stringify(
 						buildResponsesRequestBody(
-							req,
+							preparedRequest,
 							ctx.upstreamModel,
 							ctx.meta.reasoning,
 						),
@@ -400,10 +437,10 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			}
 			return {
 				method: "POST",
-				url: `${c.base}/chat/completions`,
+				url: `${base}/chat/completions`,
 				headers: buildHeaders(c),
 				body: JSON.stringify(
-					buildOpenAIChatBody(req, ctx.upstreamModel, {
+					buildOpenAIChatBody(preparedRequest, ctx.upstreamModel, {
 						maxTokensField: config.maxTokensField,
 						developerRole: config.supportsDeveloperRole
 							? "developer"
@@ -1006,6 +1043,12 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 		},
 		supportedCallTypes,
 		chat,
+		...(config.preferredChatTransport
+			? { preferredChatTransport: config.preferredChatTransport }
+			: {}),
+		...(config.assertChatRequestSupported
+			? { assertChatRequestSupported: config.assertChatRequestSupported }
+			: {}),
 		...(config.responsesWebSocket
 			? {
 					responsesWebSocket: makeOpenAIResponsesWebSocketHandler({

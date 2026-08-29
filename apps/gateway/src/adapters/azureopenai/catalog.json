@@ -107,7 +107,8 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 111616,
 					"maxOutputTokens": 16384
@@ -121,7 +122,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1050000,
 					"maxOutputTokens": 128000,
@@ -168,7 +170,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1050000,
 					"maxOutputTokens": 128000,
@@ -215,7 +218,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1050000,
 					"maxOutputTokens": 128000,
@@ -262,7 +266,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1050000,
 					"maxOutputTokens": 128000,
@@ -306,7 +311,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1050000,
 					"maxOutputTokens": 128000,
@@ -342,7 +348,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1050000,
 					"maxOutputTokens": 128000,
@@ -377,7 +384,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -414,7 +422,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -451,7 +460,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -487,7 +497,8 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": false,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 16384,
@@ -514,7 +525,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -550,7 +562,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -586,7 +599,8 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": false,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 16384,
@@ -616,7 +630,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 272000,
 					"maxOutputTokens": 128000,
@@ -649,7 +664,8 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 16384,
@@ -676,7 +692,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -708,7 +725,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -740,7 +758,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -776,7 +795,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -816,7 +836,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -853,7 +874,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -890,7 +912,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 16384,
@@ -916,7 +939,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -949,7 +973,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 272000,
 					"maxOutputTokens": 128000,
@@ -971,7 +996,8 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 131072,
 					"maxOutputTokens": 131072
@@ -985,7 +1011,8 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 131072,
 					"maxOutputTokens": 131072
@@ -999,7 +1026,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1047576,
 					"maxOutputTokens": 32768,
@@ -1031,7 +1059,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1047576,
 					"maxOutputTokens": 32768,
@@ -1063,7 +1092,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 1047576,
 					"maxOutputTokens": 32768,
@@ -1095,7 +1125,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 100000
@@ -1114,7 +1145,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 100000,
@@ -1136,7 +1168,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 100000,
@@ -1169,7 +1202,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 100000,
@@ -1192,7 +1226,8 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 100000,
@@ -1221,7 +1256,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 100000,
@@ -1250,7 +1286,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 16384,
@@ -1288,7 +1325,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 16384,
@@ -1326,7 +1364,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": true
+						"structuredOutputs": false
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 4096,
@@ -1359,7 +1397,8 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"strictTools": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 16384,
@@ -1395,7 +1434,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": true
+						"structuredOutputs": false
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 4096,
@@ -1430,7 +1469,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": false,
-						"structuredOutputs": true
+						"structuredOutputs": false
 					},
 					"maxInputTokens": 4095,
 					"maxOutputTokens": 4096,
@@ -1464,7 +1503,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": false,
-						"structuredOutputs": true
+						"structuredOutputs": false
 					},
 					"maxInputTokens": 16385,
 					"maxOutputTokens": 4096,

@@ -32,6 +32,81 @@ test("capabilities: rejects tools if the model does not support them", () => {
 	);
 });
 
+test("capabilities: strict tools require an explicit model guarantee", () => {
+	const request = {
+		...baseReq,
+		tools: [{ name: "f", strict: true }],
+	};
+	assert.throws(
+		() =>
+			assertTextRequestSupported(request, {
+				...noCaps,
+				capabilities: { ...noCaps.capabilities, tools: true },
+			}),
+		(error) =>
+			GatewayError.is(error) &&
+			error.param === "tools" &&
+			error.code === "unsupported_model_capability",
+	);
+	assert.doesNotThrow(() =>
+		assertTextRequestSupported(request, {
+			...noCaps,
+			capabilities: {
+				...noCaps.capabilities,
+				tools: true,
+				strictTools: true,
+			},
+		}),
+	);
+});
+
+test("capabilities: strict requests cannot be dropped by an explicit parameter override", () => {
+	const strictTools = {
+		...noCaps,
+		capabilities: { ...noCaps.capabilities, tools: true, strictTools: true },
+		operations: {
+			"text.generate": { parameters: { tools: false } },
+		},
+	};
+	assert.throws(
+		() =>
+			assertTextRequestSupported(
+				{ ...baseReq, tools: [{ name: "f", strict: true }] },
+				strictTools,
+			),
+		(error) =>
+			GatewayError.is(error) &&
+			error.code === "unsupported_parameter" &&
+			error.param === "tools",
+	);
+
+	const strictOutput = {
+		...noCaps,
+		capabilities: { ...noCaps.capabilities, structuredOutputs: true },
+		operations: {
+			"text.generate": { parameters: { response_format: false } },
+		},
+	};
+	assert.throws(
+		() =>
+			assertTextRequestSupported(
+				{
+					...baseReq,
+					responseFormat: {
+						type: "json_schema",
+						schema: { type: "object" },
+						strict: true,
+					},
+				},
+				strictOutput,
+			),
+		(error) =>
+			GatewayError.is(error) &&
+			error.code === "unsupported_parameter" &&
+			error.param === "response_format",
+	);
+});
+
 test("capabilities: rejects images if the model does not support vision", () => {
 	assert.throws(
 		() =>

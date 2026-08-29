@@ -132,7 +132,13 @@ function validatePricing(value: unknown, path: string): void {
 function validateCapabilities(value: unknown, path: string): void {
 	if (value === undefined) return;
 	if (!isRecord(value)) fail(path, "must be an object");
-	for (const key of ["tools", "vision", "reasoning", "structuredOutputs"]) {
+	for (const key of [
+		"tools",
+		"strictTools",
+		"vision",
+		"reasoning",
+		"structuredOutputs",
+	]) {
 		if (value[key] !== undefined) assertBoolean(value[key], `${path}.${key}`);
 	}
 }

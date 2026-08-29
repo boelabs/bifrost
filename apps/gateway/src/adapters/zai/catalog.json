@@ -24,7 +24,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": false
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 131072,
@@ -78,7 +78,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": false
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 131072,
@@ -142,7 +142,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": false
 					},
 					"maxInputTokens": 204800,
 					"maxOutputTokens": 131072,
@@ -191,7 +191,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": false
 					},
 					"maxInputTokens": 204800,
 					"maxOutputTokens": 131072,
@@ -239,7 +239,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": false
 					},
 					"maxInputTokens": 204800,
 					"maxOutputTokens": 131072,
@@ -285,7 +285,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": false
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 131072,
@@ -331,7 +331,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": false
 					},
 					"maxInputTokens": 204800,
 					"maxOutputTokens": 131072,
@@ -635,7 +635,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": false
 					},
 					"reasoning": {
 						"kind": "openai_body",
