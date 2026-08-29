@@ -287,6 +287,48 @@ test("request->canonical: extra OpenResponses parameters map to responses transp
 	assert.equal(u.responsesTransport?.maxToolCalls, 4);
 });
 
+test("request->canonical: accessory Responses fields do not require its native wire", () => {
+	const u = responsesRequestToCanonical(
+		parse({
+			model: "gpt",
+			input: "hi",
+			metadata: { trace: "abc" },
+			service_tier: "default",
+			safety_identifier: "user-1",
+			top_logprobs: 0,
+			max_tool_calls: 4,
+			user: "legacy-user",
+			truncation: "disabled",
+		}),
+	);
+
+	assert.equal(u.requiresNativeWire, undefined);
+	assert.deepEqual(u.responsesTransport, {
+		metadata: { trace: "abc" },
+		serviceTier: "default",
+		safetyIdentifier: "user-1",
+		topLogprobs: 0,
+		maxToolCalls: 4,
+		user: "legacy-user",
+		truncation: "disabled",
+	});
+});
+
+test("request->canonical: semantic Responses fields retain native requirements", () => {
+	for (const nativeField of [
+		{ service_tier: "priority" },
+		{ top_logprobs: 1 },
+		{ truncation: "auto" },
+		{ text: { verbosity: "low" } },
+		{ context_management: [{ type: "compaction" }] },
+	] satisfies Array<Record<string, unknown>>) {
+		const u = responsesRequestToCanonical(
+			parse({ model: "gpt", input: "hi", ...nativeField }),
+		);
+		assert.equal(u.requiresNativeWire, true, JSON.stringify(nativeField));
+	}
+});
+
 test("request->canonical: text.format is normalized and preserves the rest of text", () => {
 	const schema = {
 		type: "object",

@@ -522,8 +522,22 @@ export function toCanonicalChatRequest(
 	};
 	if (Object.keys(chatTransport).length > 0) {
 		u.chatTransport = chatTransport;
-		u.requiresNativeWire = true;
 	}
+	const requiresNativeChatTransport =
+		req.audio !== undefined ||
+		req.logprobs === true ||
+		(req.top_logprobs ?? 0) > 0 ||
+		Object.keys(req.logit_bias ?? {}).length > 0 ||
+		(req.modalities?.some((modality) => modality !== "text") ?? false) ||
+		req.prediction !== undefined ||
+		(req.service_tier !== undefined &&
+			req.service_tier !== "auto" &&
+			req.service_tier !== "default") ||
+		req.store === true ||
+		req.verbosity !== undefined ||
+		req.web_search_options !== undefined ||
+		req.stream_options?.include_obfuscation === true;
+	if (requiresNativeChatTransport) u.requiresNativeWire = true;
 	if (req.parallel_tool_calls !== undefined)
 		u.parallelToolCalls = req.parallel_tool_calls;
 	const reasoningEffort = req.reasoning?.effort ?? req.reasoning_effort;

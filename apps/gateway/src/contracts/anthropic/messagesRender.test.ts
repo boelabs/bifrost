@@ -36,6 +36,22 @@ test("request->canonical: system, string content, max_tokens", () => {
 	assert.equal(u.maxTokens, 100);
 });
 
+test("request->canonical: metadata does not require the Messages wire", () => {
+	const u = messagesRequestToCanonical(
+		parse({
+			model: "claude",
+			max_tokens: 100,
+			metadata: { user_id: "user-1" },
+			messages: [{ role: "user", content: "hello" }],
+		}),
+	);
+
+	assert.equal(u.requiresNativeWire, undefined);
+	assert.deepEqual(u.messagesTransport, {
+		metadata: { user_id: "user-1" },
+	});
+});
+
 test("request->canonical: document URL, base64, and file references become files", () => {
 	const canonical = messagesRequestToCanonical(
 		parse({

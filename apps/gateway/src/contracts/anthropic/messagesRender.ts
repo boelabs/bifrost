@@ -352,7 +352,6 @@ export function messagesRequestToCanonical(
 	if (req.stop_sequences !== undefined) u.stop = req.stop_sequences;
 	if (req.metadata !== undefined) {
 		u.messagesTransport = { metadata: req.metadata };
-		u.requiresNativeWire = true;
 	}
 	const effort = reasoningEffortFromMessages(req);
 	const display = displayFromThinking(req.thinking);

@@ -628,11 +628,10 @@ export function responsesRequestToCanonical(
 	if (req.prompt_cache_key !== undefined)
 		u.promptCacheKey = req.prompt_cache_key;
 	if (
-		req.service_tier !== undefined ||
-		req.safety_identifier !== undefined ||
-		req.top_logprobs !== undefined ||
-		req.max_tool_calls !== undefined ||
-		req.user !== undefined ||
+		(req.service_tier !== undefined &&
+			req.service_tier !== "auto" &&
+			req.service_tier !== "default") ||
+		(req.top_logprobs ?? 0) > 0 ||
 		req.context_management !== undefined ||
 		(req.truncation !== undefined && req.truncation !== "disabled") ||
 		(textTransport !== undefined && Object.keys(textTransport).length > 0)
