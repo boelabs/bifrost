@@ -35,7 +35,7 @@ test("openapi: committed openapi.yaml is up to date with the generator", () => {
 
 test("openapi: document is a structurally valid 3.1 spec with resolving refs", () => {
 	assert.equal(doc.openapi, "3.1.0");
-	assert.equal(Object.keys(doc.paths).length, 42);
+	assert.equal(Object.keys(doc.paths).length, 43);
 
 	// Every local $ref must resolve to a defined component.
 	const text = JSON.stringify(doc);

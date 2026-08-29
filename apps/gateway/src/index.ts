@@ -16,8 +16,10 @@ import {
 
 import "./adapters/index.ts"; // registers the adapters (side-effect)
 
+import { messagesCountTokensHandler } from "./endpoints/messagesCountTokens.ts";
 import { startResponseStateGcJob } from "./db/repos/responseStates.ts";
 import { requestContextMiddleware } from "./http/requestContext.ts";
+import { usesAnthropicErrorDialect } from "./http/errorDialect.ts";
 import { installGracefulShutdown } from "./runtime/shutdown.ts";
 import { embeddingsHandler } from "./endpoints/embeddings.ts";
 import { chatCompletionsHandler } from "./endpoints/chat.ts";
@@ -109,9 +111,9 @@ app.use("*", async (c, next) => {
 });
 
 // Global error handler: translates GatewayError to the shape of each public contract.
-// /v1/messages -> Anthropic shape; everything else -> OpenAI shape.
+// /v1/messages/* -> Anthropic shape; everything else -> OpenAI shape.
 app.onError((err, c) => {
-	const isAnthropic = c.req.path === "/v1/messages";
+	const isAnthropic = usesAnthropicErrorDialect(c.req.path);
 	const isOpenRouterRerank = c.req.path === "/v1/rerank";
 	// A reachable-dependency failure (Postgres/Redis down) becomes a 503 + Retry-After so clients back
 	// off and retry, instead of the opaque 500 a raw driver error would otherwise produce.
@@ -234,6 +236,7 @@ app.get("/v1/responses/:id", retrieveResponseHandler);
 app.delete("/v1/responses/:id", deleteResponseHandler);
 app.get("/v1/responses/:id/input_items", listResponseInputItemsHandler);
 app.post("/v1/messages", messagesHandler);
+app.post("/v1/messages/count_tokens", messagesCountTokensHandler);
 app.post("/v1/images/generations", imageGenerationsHandler);
 app.post("/v1/images/edits", imageEditsHandler);
 app.post("/v1/videos", videoCreateHandler);
