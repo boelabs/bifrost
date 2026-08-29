@@ -25,8 +25,15 @@ test("parseSSE: tolerates CRLF and flushes the last event without a final blank 
 	assert.deepEqual(out, ["a", "b"]);
 });
 
+test("parseSSE: flushes a final data line without any line terminator", async () => {
+	const out = [];
+	for await (const ev of parseSSE(streamOf('data: {"a":1}\n\ndata: [DONE]')))
+		out.push(ev.data);
+	assert.deepEqual(out, ['{"a":1}', "[DONE]"]);
+});
+
 test("parseSSE: UTF-8 split across chunks is not corrupted", async () => {
-	const bytes = new TextEncoder().encode("data: ☺\n\n");
+	const bytes = new TextEncoder().encode("data: ☺");
 	const stream = new ReadableStream<Uint8Array>({
 		start(controller) {
 			// Splits the multibyte character (☺ = 3 bytes) across two chunks.

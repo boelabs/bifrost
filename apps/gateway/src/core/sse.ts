@@ -20,6 +20,27 @@ export async function* parseSSE(
 		dataLines = [];
 		eventName = undefined;
 	};
+	const processLine = (rawLine: string): SSEEvent | undefined => {
+		const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+		if (line === "") {
+			const event =
+				dataLines.length === 0
+					? undefined
+					: eventName !== undefined
+						? { event: eventName, data: dataLines.join("\n") }
+						: { data: dataLines.join("\n") };
+			reset();
+			return event;
+		}
+		if (line.startsWith(":")) return undefined; // comment/keep-alive
+		if (line.startsWith("data:")) {
+			dataLines.push(line.slice(5).replace(/^ /, ""));
+		} else if (line.startsWith("event:")) {
+			eventName = line.slice(6).replace(/^ /, "");
+		}
+		// other fields (id:, retry:) are ignored for now
+		return undefined;
+	};
 
 	try {
 		while (true) {
@@ -30,35 +51,20 @@ export async function* parseSSE(
 			while (true) {
 				const nl = buffer.indexOf("\n");
 				if (nl < 0) break;
-				let line = buffer.slice(0, nl);
+				const line = buffer.slice(0, nl);
 				buffer = buffer.slice(nl + 1);
-				if (line.endsWith("\r")) line = line.slice(0, -1);
-
-				if (line === "") {
-					// End of event.
-					if (dataLines.length > 0) {
-						yield eventName !== undefined
-							? { event: eventName, data: dataLines.join("\n") }
-							: { data: dataLines.join("\n") };
-					}
-					reset();
-					continue;
-				}
-				if (line.startsWith(":")) continue; // comment/keep-alive
-				if (line.startsWith("data:")) {
-					dataLines.push(line.slice(5).replace(/^ /, ""));
-				} else if (line.startsWith("event:")) {
-					eventName = line.slice(6).replace(/^ /, "");
-				}
-				// other fields (id:, retry:) are ignored for now
+				const event = processLine(line);
+				if (event) yield event;
 			}
 		}
-		// Flush a final event that has no trailing blank line.
-		if (dataLines.length > 0) {
-			yield eventName !== undefined
-				? { event: eventName, data: dataLines.join("\n") }
-				: { data: dataLines.join("\n") };
+		buffer += decoder.decode();
+		// Provider-tolerant extension: accept a final line/event without its SSE terminator.
+		if (buffer.length > 0) {
+			const event = processLine(buffer);
+			if (event) yield event;
 		}
+		const finalEvent = processLine("");
+		if (finalEvent) yield finalEvent;
 	} finally {
 		// If the consumer stops early (break/throw), propagate the cancellation to the upstream:
 		// close the provider's body instead of leaving it open. On normal termination it is a no-op.
