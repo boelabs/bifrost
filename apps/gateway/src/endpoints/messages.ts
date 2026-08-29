@@ -98,7 +98,7 @@ function streamMessages(
 			const upstreamStartedAt = routing.upstreamStartedAt;
 			const meta = routing.candidate.meta;
 			const renderOpts: MessagesRenderOptions = {
-				upstreamModel: routing.candidate.upstreamModel,
+				publicModel: routing.candidate.row.publicModel,
 			};
 			metadata = {
 				...candidateMetadata(routing.candidate),
@@ -274,7 +274,7 @@ export async function messagesHandler(c: Context<AppEnv>): Promise<Response> {
 		const upstreamStartedAt = routing.upstreamStartedAt;
 		const meta = routing.candidate.meta;
 		const renderOpts: MessagesRenderOptions = {
-			upstreamModel: routing.candidate.upstreamModel,
+			publicModel: routing.candidate.row.publicModel,
 		};
 		const metadata: Record<string, unknown> = {
 			...candidateMetadata(routing.candidate),

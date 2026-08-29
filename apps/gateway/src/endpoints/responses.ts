@@ -379,7 +379,7 @@ function streamResponses(
 			const meta = routing.candidate.meta;
 			const renderOpts: RenderOptions = {
 				req: pipelineReq,
-				upstreamModel: routing.candidate.upstreamModel,
+				publicModel: routing.candidate.row.publicModel,
 			};
 			metadata = {
 				...candidateMetadata(routing.candidate),
@@ -679,7 +679,7 @@ export async function responsesHandler(c: Context<AppEnv>): Promise<Response> {
 		const meta = routing.candidate.meta;
 		const renderOpts: RenderOptions = {
 			req: pipelineReq,
-			upstreamModel: routing.candidate.upstreamModel,
+			publicModel: routing.candidate.row.publicModel,
 		};
 		const metadata: Record<string, unknown> = {
 			...candidateMetadata(routing.candidate),
@@ -1016,7 +1016,7 @@ async function executeResponsesWebSocketTurn(
 		const meta = routing.candidate.meta;
 		const renderOpts: RenderOptions = {
 			req: pipelineReq,
-			upstreamModel: routing.candidate.upstreamModel,
+			publicModel: routing.candidate.row.publicModel,
 		};
 		const metadata: Record<string, unknown> = {
 			...candidateMetadata(routing.candidate),

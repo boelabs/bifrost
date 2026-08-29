@@ -21,6 +21,8 @@ import {
 	buildOpenAIChatBody,
 } from "./chatTransport.ts";
 
+const publicModel = "public-model";
+
 test("prompt_cache_key: from chat contract to canonical request and OpenAI transport", () => {
 	const u = toCanonicalChatRequest(
 		chatRequestSchema.parse({
@@ -333,7 +335,7 @@ test("toOpenAIResponse: produces a schema-valid chat.completion", () => {
 			cacheReadTokens: 4,
 		},
 	};
-	const out = toOpenAIChatResponse(canonical);
+	const out = toOpenAIChatResponse(canonical, publicModel);
 	chatResponseSchema.parse(out);
 	assert.equal(out.object, "chat.completion");
 	assert.equal(out.choices[0]!.message.content, "hello!");
@@ -371,12 +373,15 @@ test("toOpenAIResponse: produces a schema-valid chat.completion", () => {
 });
 
 test('toOpenAIChunk: first delta (role) carries content:"" and refusal:null like OpenAI', () => {
-	const first = toOpenAIChatChunk({
-		id: "gen-abc",
-		created: 1,
-		model: "gpt",
-		choices: [{ index: 0, delta: { role: "assistant" }, finishReason: null }],
-	});
+	const first = toOpenAIChatChunk(
+		{
+			id: "gen-abc",
+			created: 1,
+			model: "gpt",
+			choices: [{ index: 0, delta: { role: "assistant" }, finishReason: null }],
+		},
+		publicModel,
+	);
 	chatChunkSchema.parse(first);
 	assert.ok(first.id.startsWith("chatcmpl-")); // id estilo OpenAI
 	assert.equal(first.choices[0]!.delta.role, "assistant");
@@ -415,7 +420,8 @@ test("toOpenAIChunk: produces a valid chat.completion.chunk with final usage", (
 		],
 		usage: { promptTokens: 1, completionTokens: 2, totalTokens: 3 },
 	};
-	const out = toOpenAIChatChunk(chunk);
+	const out = toOpenAIChatChunk(chunk, publicModel);
+	assert.equal(out.model, publicModel);
 	chatChunkSchema.parse(out);
 	assert.equal(out.object, "chat.completion.chunk");
 	assert.equal(
@@ -491,7 +497,7 @@ test("toOpenAIResponse: embeds the thought signature in the tool call id", () =>
 		],
 		usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
 	};
-	const out = toOpenAIChatResponse(canonical);
+	const out = toOpenAIChatResponse(canonical, publicModel);
 	chatResponseSchema.parse(out);
 	assert.equal(
 		out.choices[0]!.message.tool_calls?.[0]?.id,
@@ -527,7 +533,7 @@ test("round trip: a signed response replayed as history restores the canonical s
 		],
 		usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
 	};
-	const rendered = toOpenAIChatResponse(canonical);
+	const rendered = toOpenAIChatResponse(canonical, publicModel);
 	// Simulate a client that echoes only the standard fields (drops extra_content/psf).
 	const echoed = rendered.choices[0]!.message.tool_calls!.map((tc) => ({
 		id: tc.id,
@@ -574,7 +580,7 @@ test("toOpenAIChunk: first tool-call delta carries the suffixed id", () => {
 			},
 		],
 	};
-	const out = toOpenAIChatChunk(chunk);
+	const out = toOpenAIChatChunk(chunk, publicModel);
 	chatChunkSchema.parse(out);
 	assert.equal(
 		out.choices[0]!.delta.tool_calls?.[0]?.id,
@@ -602,7 +608,7 @@ test("chat surface: message-level provider_specific_fields carry OpenAI reasonin
 		],
 		usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
 	};
-	const out = toOpenAIChatResponse(canonical);
+	const out = toOpenAIChatResponse(canonical, publicModel);
 	chatResponseSchema.parse(out);
 	assert.deepEqual(
 		(out.choices[0]!.message as Record<string, unknown>)
@@ -631,31 +637,34 @@ test("chat surface: message-level provider_specific_fields carry OpenAI reasonin
 });
 
 test("chat surface: internal Responses stream metadata is not exposed", () => {
-	const out = toOpenAIChatChunk({
-		id: "resp_1",
-		created: 1,
-		model: "gpt",
-		choices: [
-			{
-				index: 0,
-				finishReason: null,
-				delta: {
-					providerFields: {
-						openai: {
-							reasoning: [{ id: "rs_1", encrypted_content: "enc-1" }],
-							responses: {
-								stream_event: {
-									type: "response.output_item.done",
-									data: { output_index: 0 },
+	const out = toOpenAIChatChunk(
+		{
+			id: "resp_1",
+			created: 1,
+			model: "gpt",
+			choices: [
+				{
+					index: 0,
+					finishReason: null,
+					delta: {
+						providerFields: {
+							openai: {
+								reasoning: [{ id: "rs_1", encrypted_content: "enc-1" }],
+								responses: {
+									stream_event: {
+										type: "response.output_item.done",
+										data: { output_index: 0 },
+									},
+									stream_output: [{ type: "reasoning", id: "rs_1" }],
 								},
-								stream_output: [{ type: "reasoning", id: "rs_1" }],
 							},
 						},
 					},
 				},
-			},
-		],
-	});
+			],
+		},
+		publicModel,
+	);
 	assert.deepEqual(out.choices[0]!.delta.provider_specific_fields, {
 		openai: { reasoning: [{ id: "rs_1", encrypted_content: "enc-1" }] },
 	});
@@ -718,7 +727,8 @@ test("chat response: log probabilities and annotations survive canonical renderi
 		],
 		usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
 	});
-	const rendered = toOpenAIChatResponse(canonical);
+	const rendered = toOpenAIChatResponse(canonical, publicModel);
+	assert.equal(rendered.model, publicModel);
 	assert.deepEqual(rendered.choices[0]?.logprobs, {
 		content: [{ token: "ok", logprob: -0.1 }],
 	});

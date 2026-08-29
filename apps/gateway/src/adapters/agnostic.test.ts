@@ -59,9 +59,11 @@ test("agnosticism: OpenAI and Gemini -> identical output OpenAI contract", () =>
 
 	const fromOpenAI = toOpenAIChatResponse(
 		openaicompatibleAdapter.chat!.parseResponse(openaiRaw, ctx),
+		"public-model",
 	);
 	const fromGemini = toOpenAIChatResponse(
 		googleAdapter.chat!.parseResponse(geminiRaw, ctx),
+		"public-model",
 	);
 
 	// Both satisfy the exact OpenAI schema.

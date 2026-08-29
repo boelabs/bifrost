@@ -14,7 +14,7 @@ import type {
 } from "#core/canonical.ts";
 
 const parse = (b: unknown) => messagesRequestSchema.parse(b);
-const opts = { upstreamModel: "claude-x" };
+const opts = { publicModel: "public-claude" };
 
 interface TestJsonObject extends Record<string, unknown> {
 	content: [TestJsonObject, TestJsonObject, ...TestJsonObject[]];
@@ -361,6 +361,7 @@ test("canonical->response: content blocks + stop_reason + usage", () => {
 	const out = canonicalToMessagesResponse(resp, opts) as TestJsonObject;
 	assert.equal(out.type, "message");
 	assert.equal(out.role, "assistant");
+	assert.equal(out.model, opts.publicModel);
 	assert.equal(out.content[0].type, "thinking");
 	assert.equal(out.content[0].thinking, "Penbe brief.");
 	assert.equal(out.content[0].signature, "sig-1");
@@ -470,8 +471,12 @@ test("stream->events: Anthropic sequence for text", async () => {
 	}
 	const types: string[] = [];
 	let deltaUsage: TestJsonObject | undefined;
+	let streamModel: unknown;
 	for await (const ev of canonicalChunksToMessagesEvents(chunks(), opts)) {
 		types.push(ev.event!);
+		if (ev.event === "message_start")
+			streamModel = (JSON.parse(ev.data) as { message: { model: unknown } })
+				.message.model;
 		if (ev.event === "message_delta")
 			deltaUsage = (JSON.parse(ev.data) as { usage: TestJsonObject }).usage;
 	}
@@ -485,6 +490,7 @@ test("stream->events: Anthropic sequence for text", async () => {
 		"message_delta",
 		"message_stop",
 	]);
+	assert.equal(streamModel, opts.publicModel);
 	assert.ok(deltaUsage);
 	assert.equal(deltaUsage.output_tokens, 1);
 	assert.equal(deltaUsage.input_tokens, 4);
