@@ -25,10 +25,22 @@ next-env.d.ts
 Thumbs.db
 desktop.ini
 
-# local AI tooling (personal settings, not shared)
+# local AI tooling — personal settings, session state, and private operator notes.
+# AGENTS.md is the shared, committed agent contract; *.local.md holds anything that
+# must not leave this machine (production hosts, runbooks, credentials handling).
 .claude/
 .codex/
 .agents/
+.cursor/
+.aider*
+.windsurf/
+.gemini/
+CLAUDE.local.md
+AGENTS.local.md
+.mcp.local.json
+
+# agent scratch space (use for throwaway scripts, notes, and reports)
+.scratch/
 
 # legacy / binary lockfiles (bun.lock IS committed)
 bun.lockb
