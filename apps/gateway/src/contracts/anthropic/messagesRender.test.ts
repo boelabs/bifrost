@@ -459,7 +459,13 @@ test("stream->events: Anthropic sequence for text", async () => {
 			created: 1,
 			model: "claude-x",
 			choices: [{ index: 0, delta: { content: "lo" }, finishReason: "stop" }],
-			usage: { promptTokens: 2, completionTokens: 1, totalTokens: 3 },
+			usage: {
+				promptTokens: 7,
+				completionTokens: 1,
+				totalTokens: 8,
+				cacheReadTokens: 2,
+				cacheWriteTokens: 1,
+			},
 		};
 	}
 	const types: string[] = [];
@@ -481,7 +487,9 @@ test("stream->events: Anthropic sequence for text", async () => {
 	]);
 	assert.ok(deltaUsage);
 	assert.equal(deltaUsage.output_tokens, 1);
-	assert.equal(deltaUsage.input_tokens, undefined); // message_delta only carries output_tokens
+	assert.equal(deltaUsage.input_tokens, 4);
+	assert.equal(deltaUsage.cache_read_input_tokens, 2);
+	assert.equal(deltaUsage.cache_creation_input_tokens, 1);
 });
 
 test("stream->events: Anthropic tool_use includes provider_specific_fields", async () => {

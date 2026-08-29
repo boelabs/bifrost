@@ -134,12 +134,14 @@ function streamMessages(
 			async function* transformedChunks() {
 				for await (const chunk of tapped) {
 					log.progress();
-					yield await applyStreamEventExtensions(
+					const transformed = await applyStreamEventExtensions(
 						c,
 						"chat",
 						canonical.model,
 						chunk,
 					);
+					if (transformed.usage) usage = transformed.usage;
+					yield transformed;
 				}
 			}
 			const events = canonicalChunksToMessagesEvents(
@@ -149,23 +151,6 @@ function streamMessages(
 			for await (const ev of withSSEHeartbeats(events, () =>
 				writeSSEHeartbeat(stream, downstream),
 			)) {
-				if (ev.event === "message_delta") {
-					try {
-						const parsed = JSON.parse(ev.data) as {
-							usage?: { input_tokens?: number; output_tokens?: number };
-						};
-						if (parsed.usage)
-							usage = {
-								promptTokens: parsed.usage.input_tokens ?? 0,
-								completionTokens: parsed.usage.output_tokens ?? 0,
-								totalTokens:
-									(parsed.usage.input_tokens ?? 0) +
-									(parsed.usage.output_tokens ?? 0),
-							};
-					} catch {
-						// The renderer owns event validation; usage extraction is best effort.
-					}
-				}
 				await writeSSE(stream, { event: ev.event!, data: ev.data }, downstream);
 				if (
 					ev.event === "content_block_start" ||

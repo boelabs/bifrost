@@ -656,8 +656,9 @@ export async function* canonicalChunksToMessagesEvents(
 
 	yield sse("message_delta", {
 		delta: { stop_reason: mapStopReason(finish), stop_sequence: null },
-		// In message_delta Anthropic reports only the accumulated output_tokens.
-		usage: { output_tokens: finalUsage?.completionTokens ?? 0 },
+		// Cross-provider transports may learn input usage only at the end. Current Anthropic SDKs
+		// accumulate every usage field present in message_delta, so report the complete final usage.
+		usage: finalUsage ? usageToAnthropic(finalUsage) : { output_tokens: 0 },
 	});
 	yield sse("message_stop", {});
 }
