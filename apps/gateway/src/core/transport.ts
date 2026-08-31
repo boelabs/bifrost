@@ -16,6 +16,7 @@
  *   - videos_async:     Async job Videos API (POST /videos -> 202 + polling_url, GET /videos/{job},
  *                       GET /videos/{job}/content?index=N)
  *   - generate_videos:  Google Veo long-running video generation (:predictLongRunning)
+ *   - interactions:     Google Interactions API (/interactions)
  */
 export type UpstreamTransport =
 	| "chat_completions"
@@ -31,7 +32,8 @@ export type UpstreamTransport =
 	| "cohere_rerank"
 	| "videos"
 	| "videos_async"
-	| "generate_videos";
+	| "generate_videos"
+	| "interactions";
 
 const UPSTREAM_TRANSPORTS: readonly UpstreamTransport[] = [
 	"chat_completions",
@@ -48,6 +50,7 @@ const UPSTREAM_TRANSPORTS: readonly UpstreamTransport[] = [
 	"videos",
 	"videos_async",
 	"generate_videos",
+	"interactions",
 ] as const;
 
 export function isUpstreamTransport(

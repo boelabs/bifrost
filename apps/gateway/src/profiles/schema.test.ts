@@ -85,12 +85,13 @@ test("rerank profiles are strict, text-ready, and reserve image sources coherent
 	);
 });
 
-test("video profiles use the portable quality vocabulary", () => {
-	const entry = (quality: string) => ({
+test("video profiles use portable quality and task vocabularies", () => {
+	const entry = (quality: string, task = "text_to_video") => ({
 		operations: {
 			"video.generate": {
 				durations: ["8"],
 				qualities: [quality],
+				tasks: [task],
 				sizes: { "1280x720": {} },
 			},
 		},
@@ -107,4 +108,20 @@ test("video profiles use the portable quality vocabulary", () => {
 			false,
 		);
 	}
+	for (const task of [
+		"text_to_video",
+		"image_to_video",
+		"reference_to_video",
+		"edit",
+		"extend",
+	]) {
+		assert.equal(
+			customCatalogEntrySchema.safeParse(entry("auto", task)).success,
+			true,
+		);
+	}
+	assert.equal(
+		customCatalogEntrySchema.safeParse(entry("auto", "remix")).success,
+		false,
+	);
 });

@@ -298,6 +298,18 @@ const transcriptionOperationProfileSchema = z
 const videoOperationProfileSchema = z
 	.object({
 		maxPromptChars: z.int().positive().optional(),
+		tasks: z
+			.array(
+				z.enum([
+					"text_to_video",
+					"image_to_video",
+					"reference_to_video",
+					"edit",
+					"extend",
+				]),
+			)
+			.min(1)
+			.optional(),
 		durations: z.array(z.string().min(1)).min(1).optional(),
 		qualities: z
 			.array(z.enum(["auto", "low", "medium", "high", "native"]))

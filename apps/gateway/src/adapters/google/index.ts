@@ -1448,8 +1448,351 @@ function parseGoogleVideoJob(
 	};
 }
 
+interface GoogleInteractionVideo {
+	data?: string;
+	uri?: string;
+	mimeType?: string;
+}
+
+function record(value: unknown): Record<string, unknown> | undefined {
+	return value !== null && typeof value === "object" && !Array.isArray(value)
+		? (value as Record<string, unknown>)
+		: undefined;
+}
+
+function googleInteractionVideo(
+	raw: unknown,
+): GoogleInteractionVideo | undefined {
+	const value = record(raw);
+	const steps = Array.isArray(value?.steps) ? value.steps : [];
+	for (const stepValue of steps.toReversed()) {
+		const step = record(stepValue);
+		if (step?.type !== "model_output" || !Array.isArray(step.content)) continue;
+		for (const contentValue of step.content.toReversed()) {
+			const content = record(contentValue);
+			if (content?.type !== "video") continue;
+			return {
+				...(typeof content.data === "string" ? { data: content.data } : {}),
+				...(typeof content.uri === "string" ? { uri: content.uri } : {}),
+				...(typeof content.mime_type === "string"
+					? { mimeType: content.mime_type }
+					: {}),
+			};
+		}
+	}
+	const outputVideo = record(value?.output_video);
+	if (!outputVideo) return undefined;
+	return {
+		...(typeof outputVideo.data === "string" ? { data: outputVideo.data } : {}),
+		...(typeof outputVideo.uri === "string" ? { uri: outputVideo.uri } : {}),
+		...(typeof outputVideo.mime_type === "string"
+			? { mimeType: outputVideo.mime_type }
+			: {}),
+	};
+}
+
+function googleInteractionPath(base: string, interactionId: string): string {
+	const id = interactionId.replace(/^interactions\//, "");
+	return `${base}/interactions/${encodeURIComponent(id)}`;
+}
+
+function googleInteractionMediaPart(
+	url: string,
+	param: string,
+	mediaType: "image" | "video",
+): Record<string, unknown> {
+	const inline = googleVideoInline(url, param, mediaType);
+	return {
+		type: mediaType,
+		data: inline.data,
+		mime_type: inline.mimeType,
+	};
+}
+
+function googleInteractionInput(req: CanonicalVideoRequest): unknown[] {
+	const refs = req.inputReferences ?? [];
+	if (refs.some((ref) => ref.type === "file_id" || ref.type === "audio_url")) {
+		throw new GatewayError({
+			class: "bad_request",
+			message:
+				"Google Interactions video generation supports inline image and video references only",
+			param: "input_references",
+		});
+	}
+	const videoRefs = refs.filter(
+		(ref): ref is VideoUrlReference => ref.type === "video_url",
+	);
+	if (videoRefs.length > 0 && req.task === undefined) {
+		throw new GatewayError({
+			class: "bad_request",
+			code: "invalid_video_task",
+			message:
+				"Google Interactions requires task=reference_to_video, task=edit, or task=extend when a video reference is provided",
+			param: "task",
+		});
+	}
+	if (videoRefs.length > 3) {
+		throw new GatewayError({
+			class: "bad_request",
+			code: "unsupported_parameter",
+			message: "Google Interactions accepts at most three video references",
+			param: "input_references",
+		});
+	}
+
+	const sourceVideo =
+		req.task === "edit" || req.task === "extend" ? videoRefs[0] : undefined;
+	const orderedRefs = sourceVideo
+		? [sourceVideo, ...refs.filter((ref) => ref !== sourceVideo)]
+		: refs;
+	const parts: unknown[] = [];
+	const sources: string[] = [];
+	const references: string[] = [];
+	let imageNumber = 0;
+	let videoNumber = 0;
+
+	const firstFrame = req.frameImages?.find((frame) => frame.frame === "first");
+	const lastFrame = req.frameImages?.find((frame) => frame.frame === "last");
+	if (firstFrame) {
+		imageNumber += 1;
+		parts.push(
+			googleInteractionMediaPart(firstFrame.url, "frame_images", "image"),
+		);
+		sources.push(`<FIRST_FRAME>@Image${imageNumber}`);
+	}
+	if (lastFrame) {
+		imageNumber += 1;
+		parts.push(
+			googleInteractionMediaPart(lastFrame.url, "frame_images", "image"),
+		);
+		sources.push(`<LAST_FRAME>@Image${imageNumber}`);
+	}
+
+	let imageReference = 0;
+	let videoReference = 0;
+	for (const ref of orderedRefs) {
+		if (ref.type === "image_url") {
+			imageNumber += 1;
+			parts.push(
+				googleInteractionMediaPart(ref.url, "input_references", "image"),
+			);
+			if (
+				req.task === "reference_to_video" ||
+				req.task === "edit" ||
+				req.task === "extend" ||
+				(req.task === undefined && orderedRefs.length > 1)
+			) {
+				references.push(`<IMAGE_REF_${imageReference}>@Image${imageNumber}`);
+				imageReference += 1;
+			}
+			continue;
+		}
+		if (ref.type === "video_url") {
+			videoNumber += 1;
+			parts.push(
+				googleInteractionMediaPart(ref.url, "input_references", "video"),
+			);
+			if (ref === sourceVideo) {
+				sources.push(`<VIDEO_0>@Video${videoNumber}`);
+			} else {
+				references.push(`<VIDEO_REF_${videoReference}>@Video${videoNumber}`);
+				videoReference += 1;
+			}
+		}
+	}
+
+	const hasExplicitBindings = /\[#\s*(?:Sources|References)\b/i.test(
+		req.prompt,
+	);
+	const prefix = hasExplicitBindings
+		? ""
+		: [
+				sources.length > 0 ? `[# Sources ${sources.join(" ")}]` : "",
+				references.length > 0 ? `[# References ${references.join(" ")}]` : "",
+			]
+				.filter(Boolean)
+				.join(" ");
+	parts.push({
+		type: "text",
+		text: prefix ? `${prefix} ${req.prompt}` : req.prompt,
+	});
+	return parts;
+}
+
+function googleInteractionBody(
+	req: CanonicalVideoRequest,
+	ctx: AdapterContext,
+): Record<string, unknown> {
+	const resolved = resolveVideoSize(req, videoProfileFor(ctx.meta));
+	const responseFormat: Record<string, unknown> = {
+		type: "video",
+		delivery: "inline",
+		...(req.seconds ? { duration: `${req.seconds}s` } : {}),
+		...(req.task !== "extend" && resolved?.aspectRatio
+			? { aspect_ratio: resolved.aspectRatio }
+			: {}),
+		...(resolved?.resolution ? { resolution: resolved.resolution } : {}),
+	};
+	const body: Record<string, unknown> = {
+		model: ctx.upstreamModel,
+		input: googleInteractionInput(req),
+		background: true,
+		store: true,
+		stream: false,
+		response_format: responseFormat,
+		...(req.task
+			? { generation_config: { video_config: { task: req.task } } }
+			: {}),
+	};
+	return mergeExtraBodyDeep(body, req.extraBody, [
+		"model",
+		"input",
+		"background",
+		"store",
+		"stream",
+		"previous_interaction_id",
+		"response_format.type",
+		"response_format.delivery",
+		"response_format.duration",
+		"response_format.aspect_ratio",
+		"response_format.resolution",
+		"generation_config.video_config.task",
+	]);
+}
+
+function parseGoogleInteractionJob(
+	raw: unknown,
+	fallbackJobId?: string,
+): CanonicalVideoProviderJob {
+	const value = record(raw) ?? {};
+	const upstreamJobId =
+		typeof value.id === "string" && value.id ? value.id : fallbackJobId;
+	if (!upstreamJobId) {
+		throw new GatewayError({
+			class: "server",
+			message: "Google Interactions response is missing interaction id",
+		});
+	}
+	const video = googleInteractionVideo(value);
+	const upstreamStatus =
+		typeof value.status === "string" ? value.status.toLowerCase() : undefined;
+	let status: VideoStatus;
+	if (upstreamStatus === "completed" || (!upstreamStatus && video)) {
+		status = "completed";
+	} else if (upstreamStatus === "queued") {
+		status = "queued";
+	} else if (upstreamStatus === "in_progress") {
+		status = "in_progress";
+	} else if (
+		upstreamStatus === "failed" ||
+		upstreamStatus === "cancelled" ||
+		upstreamStatus === "incomplete" ||
+		upstreamStatus === "budget_exceeded" ||
+		upstreamStatus === "requires_action"
+	) {
+		status = "failed";
+	} else {
+		status = "in_progress";
+	}
+	const rawError = record(value.error);
+	const errorMessage =
+		typeof rawError?.message === "string"
+			? rawError.message
+			: `Google interaction ended with status ${upstreamStatus ?? "unknown"}`;
+	const errorCode =
+		typeof rawError?.code === "string" || typeof rawError?.code === "number"
+			? String(rawError.code)
+			: upstreamStatus;
+	const usage = record(value.usage);
+	return {
+		upstreamJobId,
+		status,
+		progress: status === "queued" ? 0 : status === "in_progress" ? 50 : 100,
+		...(status === "failed"
+			? { error: { code: errorCode ?? null, message: errorMessage } }
+			: {}),
+		...(usage ? { usage } : {}),
+		providerState: {
+			...(video?.mimeType ? { videoMimeType: video.mimeType } : {}),
+		},
+	};
+}
+
+async function getGoogleInteraction(
+	job: { upstreamJobId: string },
+	ctx: AdapterContext,
+): Promise<unknown> {
+	const c = creds(ctx);
+	const base = (c.baseUrl ?? DEFAULT_BASE).replace(/\/+$/, "");
+	return googleFetchJson(
+		googleInteractionPath(base, job.upstreamJobId),
+		{
+			method: "GET",
+			headers: { "x-goog-api-key": c.apiKey, ...(c.headers ?? {}) },
+			...(ctx.signal ? { signal: ctx.signal } : {}),
+		},
+		ctx,
+	);
+}
+
+async function downloadGoogleInteraction(
+	job: { upstreamJobId: string },
+	variant: VideoAssetVariant,
+	ctx: AdapterContext,
+) {
+	if (variant !== "video") {
+		throw new GatewayError({
+			class: "not_found",
+			code: "video_variant_unavailable",
+			message: `Google Interactions does not provide ${variant}`,
+		});
+	}
+	const raw = await getGoogleInteraction(job, ctx);
+	const video = googleInteractionVideo(raw);
+	if (!video?.data) {
+		throw new GatewayError({
+			class: "not_found",
+			code: "video_content_unavailable",
+			message: video?.uri
+				? "Google returned URI-only video output, but this deployment does not use the Files API"
+				: "Google interaction does not contain inline video output",
+		});
+	}
+	const bytes = new Uint8Array(Buffer.from(video.data, "base64"));
+	return {
+		body: new ReadableStream<Uint8Array>({
+			start(controller) {
+				controller.enqueue(bytes);
+				controller.close();
+			},
+		}),
+		contentType: video.mimeType ?? "video/mp4",
+		contentLength: bytes.byteLength,
+	};
+}
+
 const videoGeneration: VideoHandler = {
 	async submit(req, ctx) {
+		if (ctx.transport === "interactions") {
+			const c = creds(ctx);
+			const base = (c.baseUrl ?? DEFAULT_BASE).replace(/\/+$/, "");
+			return parseGoogleInteractionJob(
+				await googleFetchJson(
+					`${base}/interactions`,
+					{
+						method: "POST",
+						headers: {
+							"content-type": "application/json",
+							"x-goog-api-key": c.apiKey,
+							...(c.headers ?? {}),
+						},
+						body: JSON.stringify(googleInteractionBody(req, ctx)),
+						...(ctx.signal ? { signal: ctx.signal } : {}),
+					},
+					ctx,
+				),
+			);
+		}
 		if (ctx.transport !== "generate_videos") {
 			throw new GatewayError({
 				class: "server",
@@ -1476,6 +1819,12 @@ const videoGeneration: VideoHandler = {
 		);
 	},
 	async refresh(job, ctx) {
+		if (ctx.transport === "interactions") {
+			return parseGoogleInteractionJob(
+				await getGoogleInteraction(job, ctx),
+				job.upstreamJobId,
+			);
+		}
 		const c = creds(ctx);
 		const base = (c.baseUrl ?? DEFAULT_BASE).replace(/\/+$/, "");
 		return parseGoogleVideoJob(
@@ -1495,6 +1844,9 @@ const videoGeneration: VideoHandler = {
 		);
 	},
 	async download(job, variant: VideoAssetVariant, ctx) {
+		if (ctx.transport === "interactions") {
+			return downloadGoogleInteraction(job, variant, ctx);
+		}
 		if (variant !== "video") {
 			throw new GatewayError({
 				class: "not_found",
@@ -1543,6 +1895,30 @@ const videoGeneration: VideoHandler = {
 			contentType: res.headers.get("content-type") ?? "video/mp4",
 			...(length ? { contentLength: Number(length) } : {}),
 		};
+	},
+	async remove(job, ctx) {
+		if (ctx.transport !== "interactions") return;
+		const c = creds(ctx);
+		const base = (c.baseUrl ?? DEFAULT_BASE).replace(/\/+$/, "");
+		const path = googleInteractionPath(base, job.upstreamJobId);
+		await googleFetchJson(
+			`${path}/cancel`,
+			{
+				method: "POST",
+				headers: { "x-goog-api-key": c.apiKey, ...(c.headers ?? {}) },
+				...(ctx.signal ? { signal: ctx.signal } : {}),
+			},
+			ctx,
+		).catch(() => undefined);
+		await googleFetchJson(
+			path,
+			{
+				method: "DELETE",
+				headers: { "x-goog-api-key": c.apiKey, ...(c.headers ?? {}) },
+				...(ctx.signal ? { signal: ctx.signal } : {}),
+			},
+			ctx,
+		);
 	},
 	mapError(err, ctx) {
 		return mapGoogleError(err, ctx);
@@ -1627,6 +2003,18 @@ export const googleAdapter: Adapter = {
 				maxBytes: 20_000_000,
 			},
 		},
+		interactions: {
+			image: {
+				sources: ["data_url"],
+				mimeTypes: ["image/png", "image/jpeg", "image/webp"],
+				maxBytes: 20_000_000,
+			},
+			video: {
+				sources: ["data_url"],
+				mimeTypes: ["video/mp4"],
+				maxBytes: 20_000_000,
+			},
+		},
 	},
 	transports: {
 		chat: { supported: ["generate_content"], default: "generate_content" },
@@ -1639,7 +2027,7 @@ export const googleAdapter: Adapter = {
 			default: "generate_content",
 		},
 		"videos.generations": {
-			supported: ["generate_videos"],
+			supported: ["generate_videos", "interactions"],
 			default: "generate_videos",
 		},
 		embeddings: {

@@ -298,8 +298,8 @@ curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "
 
 ### Custom video
 
-Video generation requires `durations` and `sizes`. Optional flags gate the rest of the request
-surface: `supportsAudioUrl`/`supportsVideoUrl` (multi-modal references), `supportsFrameImages`,
+Video generation requires `durations` and `sizes`. Optional fields gate the rest of the request
+surface: `tasks`, `supportsAudioUrl`/`supportsVideoUrl` (multi-modal references), `supportsFrameImages`,
 `supportsSeed`, `supportsGenerateAudio`, `maxInputReferences`, and `qualities`. Parameters a profile
 does not declare are rejected with `unsupported_parameter` instead of being forwarded. OpenAI-compatible
 targets with an async job Videos API should set `transportOverrides.video.generate` to `videos_async`:

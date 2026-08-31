@@ -22,9 +22,10 @@ stays accept-compatible with OpenAI's Sora shape:
 | Parameter | Notes |
 | --- | --- |
 | `model`, `prompt` | Required. |
+| `task` | Optional explicit workflow: `text_to_video`, `image_to_video`, `reference_to_video`, `edit`, or `extend`. Models declare which tasks they support. |
 | `duration` | Length in seconds (integer). `seconds` (string or int) is the OpenAI-style alias; send one or the other. |
 | `size` | Exact `WIDTHxHEIGHT`. Interchangeable with `aspect_ratio` + `resolution`; send one form. |
-| `aspect_ratio` / `resolution` | `16:9`, `9:16`, ... / `480p`–`4K`. Reverse-mapped to an exact size for providers that need one. |
+| `aspect_ratio` / `resolution` | `16:9`, `9:16`, ... / `360p`–`4K`. Reverse-mapped to an exact size for providers that need one. |
 | `input_references` | Array of `{type: "image_url"\|"audio_url"\|"video_url", ...}` parts. `input_reference` (single, `image_url` or `file_id`) is the OpenAI-style alias. |
 | `frame_images` | First/last frame conditioning (`frame_type: "first_frame"\|"last_frame"`) for models that support it. |
 | `seed`, `generate_audio` | Forwarded only when the model profile declares support. |
@@ -56,15 +57,40 @@ keeps metadata in Postgres.
 ## Model profiles
 
 Video-capable deployments declare `catalogEntry.operations["video.generate"]`. The profile controls
-accepted durations, sizes (with per-provider `aspectRatio`/`resolution` mappings), `quality`,
+accepted tasks, durations, sizes (with per-provider `aspectRatio`/`resolution` mappings), `quality`,
 reference support (`supportsImageUrl`, `supportsAudioUrl`, `supportsVideoUrl`, `supportsFileId`,
 `supportsFrameImages`, `maxInputReferences`), and `supportsSeed`/`supportsGenerateAudio`.
 
 Adapters expose video generation through transports: `videos` (OpenAI-shaped Videos API),
 `videos_async` (async job API: submit `/videos`, poll `/videos/{jobId}`, download
-`/videos/{jobId}/content`, delete `/videos/{jobId}`), and `generate_videos` (Google long-running operations). Adapter defaults
-pick the common path; use `transportOverrides` when a custom compatible target needs another
-transport.
+`/videos/{jobId}/content`, delete `/videos/{jobId}`), `generate_videos` (Google Veo long-running
+operations), and `interactions` (Google Interactions API). Adapter defaults pick the common path;
+use `transportOverrides` when a model needs another transport.
+
+### Gemini Omni Flash
+
+`gemini-omni-1.1-flash` uses the Google `interactions` transport. Configure its deployment with
+`transportOverrides: { "video.generate": "interactions" }`.
+
+- Text-to-video may omit `task` or set `text_to_video`.
+- Image-to-video and first/last-frame interpolation use image references or `frame_images`.
+- Reference-to-video uses `task: "reference_to_video"` and image/video references.
+- Editing and extension require `task: "edit"` or `task: "extend"` plus exactly one `video_url`.
+
+The integration intentionally does not use Google's Files API. Inputs are materialized as validated
+inline data, and completed output is fetched inline directly into Bifrost object storage without
+being persisted in Postgres. Consequently, the stock profile exposes 360p and 720p only, rejects
+`file_id`, and limits each input asset to 20 MB. Uploaded videos for edit/extend remain subject to
+Google's 10-second and regional restrictions.
+
+Stateful continuation is also intentionally unavailable. `previous_interaction_id` is blocked in
+`extra_body`; accepting a raw provider id would bypass Bifrost ownership and deployment-affinity
+checks. A future implementation should expose a local source video id instead.
+
+The stock Omni profile omits pricing until terminal async video usage can be reconciled with the
+operation and virtual-key accounting lifecycle. Usage is retained on the video job, but budget-capped
+virtual keys fail closed with `budget_pricing_unavailable` instead of accepting an under-reserved
+request.
 
 ## Lifecycle
 

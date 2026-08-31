@@ -336,6 +336,20 @@
 			"additionalProperties": false,
 			"properties": {
 				"maxPromptChars": { "type": "integer", "minimum": 1 },
+				"tasks": {
+					"type": "array",
+					"items": {
+						"enum": [
+							"text_to_video",
+							"image_to_video",
+							"reference_to_video",
+							"edit",
+							"extend"
+						]
+					},
+					"minItems": 1,
+					"uniqueItems": true
+				},
 				"durations": {
 					"type": "array",
 					"items": { "type": "string", "minLength": 1 },

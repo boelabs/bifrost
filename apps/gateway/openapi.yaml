@@ -2379,6 +2379,17 @@ components:
           type: string
           minLength: 1
           maxLength: 32000
+        task:
+          description: Explicit video workflow. Required by some providers for edit and extend requests.
+          anyOf:
+            - type: string
+              enum:
+                - text_to_video
+                - image_to_video
+                - reference_to_video
+                - edit
+                - extend
+            - type: "null"
         input_reference:
           description: Mutually exclusive with input_references.
           anyOf:
@@ -2435,6 +2446,7 @@ components:
           anyOf:
             - type: string
               enum:
+                - 360p
                 - 480p
                 - 720p
                 - 1080p
