@@ -7,7 +7,10 @@ Read this file top to bottom before your first change. The rules here override d
 
 ## 1. Ground rules
 
-- **Language: English only** — code, comments, identifiers, branches, commits, PRs, and docs.
+- **Repository language: English only** — code, comments, identifiers, branches, commits, PRs, and
+  docs.
+- **Conversation language follows the user.** Reply in the language the user is using unless they
+  ask otherwise.
 - **Be concise.** Low verbosity everywhere: commit subjects, PR bodies, code comments, and your
   replies. Say what changed and why it matters; drop preamble, restatement, and summaries of work
   the diff already shows.
