@@ -493,11 +493,264 @@ test("google veo transport rejects non-8s high-resolution constrained requests",
 	);
 });
 
+test("google interactions submits an explicit text-to-video background job", async () => {
+	let body: Record<string, unknown> | undefined;
+	await withStubbedFetch(
+		(input, init) => {
+			assert.equal(
+				String(input),
+				"https://api.aggregator.example/v1/interactions",
+			);
+			body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+			return jsonResponse({ id: "interaction-1", status: "queued" });
+		},
+		async () => {
+			const job = await googleAdapter.videoGeneration!.submit(
+				{
+					model: "omni",
+					prompt: "a paper plane crossing a city",
+					task: "text_to_video",
+					seconds: "8",
+					aspectRatio: "16:9",
+					resolution: "720p",
+				},
+				{
+					...ctx("interactions", {
+						tasks: ["text_to_video"],
+					}),
+					upstreamModel: "gemini-omni-1.1-flash",
+				},
+			);
+			assert.equal(job.upstreamJobId, "interaction-1");
+			assert.equal(job.status, "queued");
+		},
+	);
+	assert.deepEqual(body, {
+		model: "gemini-omni-1.1-flash",
+		input: [{ type: "text", text: "a paper plane crossing a city" }],
+		background: true,
+		store: true,
+		stream: false,
+		response_format: {
+			type: "video",
+			delivery: "inline",
+			duration: "8s",
+			aspect_ratio: "16:9",
+			resolution: "720p",
+		},
+		generation_config: { video_config: { task: "text_to_video" } },
+	});
+});
+
+test("google interactions binds frame and reference roles without Files API", async () => {
+	let body: Record<string, unknown> | undefined;
+	await withStubbedFetch(
+		(_input, init) => {
+			body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+			return jsonResponse({ id: "interaction-2", status: "queued" });
+		},
+		async () => {
+			await googleAdapter.videoGeneration!.submit(
+				{
+					model: "omni",
+					prompt: "transition into the referenced character",
+					frameImages: [
+						{ frame: "last", url: "data:image/jpeg;base64,LAST" },
+						{ frame: "first", url: "data:image/png;base64,FIRST" },
+					],
+					inputReferences: [
+						{ type: "image_url", url: "data:image/webp;base64,REF" },
+					],
+				},
+				{
+					...ctx("interactions"),
+					upstreamModel: "gemini-omni-1.1-flash",
+				},
+			);
+		},
+	);
+	assert.deepEqual(body?.input, [
+		{ type: "image", data: "FIRST", mime_type: "image/png" },
+		{ type: "image", data: "LAST", mime_type: "image/jpeg" },
+		{ type: "image", data: "REF", mime_type: "image/webp" },
+		{
+			type: "text",
+			text: "[# Sources <FIRST_FRAME>@Image1 <LAST_FRAME>@Image2] transition into the referenced character",
+		},
+	]);
+});
+
+test("google interactions maps edit and extend source videos explicitly", async () => {
+	const bodies: Record<string, unknown>[] = [];
+	await withStubbedFetch(
+		(_input, init) => {
+			bodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+			return jsonResponse({
+				id: `interaction-${bodies.length}`,
+				status: "queued",
+			});
+		},
+		async () => {
+			for (const task of ["edit", "extend"] as const) {
+				await googleAdapter.videoGeneration!.submit(
+					{
+						model: "omni",
+						prompt: `${task} this scene`,
+						task,
+						aspectRatio: "16:9",
+						resolution: "720p",
+						inputReferences: [
+							{ type: "image_url", url: "data:image/png;base64,REF" },
+							{ type: "video_url", url: "data:video/mp4;base64,SOURCE" },
+						],
+					},
+					{
+						...ctx("interactions"),
+						upstreamModel: "gemini-omni-1.1-flash",
+					},
+				);
+			}
+		},
+	);
+	for (const [index, task] of ["edit", "extend"].entries()) {
+		const body = bodies[index]!;
+		assert.deepEqual(body.input, [
+			{ type: "video", data: "SOURCE", mime_type: "video/mp4" },
+			{ type: "image", data: "REF", mime_type: "image/png" },
+			{
+				type: "text",
+				text: `[# Sources <VIDEO_0>@Video1] [# References <IMAGE_REF_0>@Image1] ${task} this scene`,
+			},
+		]);
+		const responseFormat = body.response_format as Record<string, unknown>;
+		assert.equal(
+			responseFormat.aspect_ratio,
+			task === "extend" ? undefined : "16:9",
+		);
+		assert.deepEqual(body.generation_config, { video_config: { task } });
+	}
+});
+
+test("google interactions polls and downloads inline output without persisting it", async () => {
+	let requests = 0;
+	await withStubbedFetch(
+		(input, init) => {
+			requests += 1;
+			assert.equal(
+				String(input),
+				"https://api.aggregator.example/v1/interactions/interaction-3",
+			);
+			assert.equal(init?.method, "GET");
+			return jsonResponse({
+				id: "interaction-3",
+				status: "completed",
+				steps: [
+					{
+						type: "model_output",
+						content: [
+							{
+								type: "video",
+								mime_type: "video/mp4",
+								data: Buffer.from("mp4").toString("base64"),
+							},
+						],
+					},
+				],
+				usage: { total_input_tokens: 12, total_output_tokens: 34 },
+			});
+		},
+		async () => {
+			const interactionContext = {
+				...ctx("interactions"),
+				upstreamModel: "gemini-omni-1.1-flash",
+			};
+			const job = await googleAdapter.videoGeneration!.refresh(
+				{ upstreamJobId: "interaction-3" },
+				interactionContext,
+			);
+			assert.equal(job.status, "completed");
+			assert.deepEqual(job.usage, {
+				total_input_tokens: 12,
+				total_output_tokens: 34,
+			});
+			assert.deepEqual(job.providerState, { videoMimeType: "video/mp4" });
+
+			const content = await googleAdapter.videoGeneration!.download(
+				{ upstreamJobId: "interaction-3", providerState: job.providerState },
+				"video",
+				interactionContext,
+			);
+			assert.equal(content.contentLength, 3);
+			assert.equal(await new Response(content.body).text(), "mp4");
+		},
+	);
+	assert.equal(requests, 2);
+});
+
+test("google interactions cancels before deleting a job", async () => {
+	const calls: Array<{ url: string; method: string }> = [];
+	await withStubbedFetch(
+		(input, init) => {
+			calls.push({ url: String(input), method: init?.method ?? "GET" });
+			return init?.method === "DELETE"
+				? new Response(null, { status: 204 })
+				: jsonResponse({ id: "interaction-4", status: "cancelled" });
+		},
+		async () => {
+			await googleAdapter.videoGeneration!.remove!(
+				{ upstreamJobId: "interaction-4" },
+				{
+					...ctx("interactions"),
+					upstreamModel: "gemini-omni-1.1-flash",
+				},
+			);
+		},
+	);
+	assert.deepEqual(calls, [
+		{
+			url: "https://api.aggregator.example/v1/interactions/interaction-4/cancel",
+			method: "POST",
+		},
+		{
+			url: "https://api.aggregator.example/v1/interactions/interaction-4",
+			method: "DELETE",
+		},
+	]);
+});
+
+test("google interactions rejects ambiguous video input and managed state", async () => {
+	await assert.rejects(
+		googleAdapter.videoGeneration!.submit(
+			{
+				model: "omni",
+				prompt: "change this",
+				inputReferences: [
+					{ type: "video_url", url: "data:video/mp4;base64,SOURCE" },
+				],
+			},
+			{ ...ctx("interactions"), upstreamModel: "gemini-omni-1.1-flash" },
+		),
+		/task=/,
+	);
+	await assert.rejects(
+		googleAdapter.videoGeneration!.submit(
+			{
+				model: "omni",
+				prompt: "new scene",
+				extraBody: { previous_interaction_id: "foreign-interaction" },
+			},
+			{ ...ctx("interactions"), upstreamModel: "gemini-omni-1.1-flash" },
+		),
+		/previous_interaction_id/,
+	);
+});
+
 test("contract normalizes aggregator-style and OpenAI request shapes to one canonical form", () => {
 	const aggregatorStyle = videoCreateToCanonical(
 		videoCreateRequestSchema.parse({
 			model: "m",
 			prompt: "p",
+			task: "image_to_video",
 			duration: 8,
 			aspect_ratio: "16:9",
 			resolution: "720p",
@@ -510,6 +763,7 @@ test("contract normalizes aggregator-style and OpenAI request shapes to one cano
 		}),
 	);
 	assert.equal(aggregatorStyle.seconds, "8");
+	assert.equal(aggregatorStyle.task, "image_to_video");
 	assert.equal(aggregatorStyle.aspectRatio, "16:9");
 	assert.equal(aggregatorStyle.resolution, "720p");
 	assert.equal(aggregatorStyle.seed, 1);
@@ -596,6 +850,24 @@ test("validation gates parameters by model profile", () => {
 			{ ...base, seed: 3 },
 			meta({ supportsSeed: true }) as unknown as ResolvedModelMetadata,
 		),
+	);
+	assert.doesNotThrow(() =>
+		assertVideoRequestSupported(
+			{ ...base, task: "text_to_video" },
+			meta({ tasks: ["text_to_video"] }) as unknown as ResolvedModelMetadata,
+		),
+	);
+	assert.throws(
+		() =>
+			assertVideoRequestSupported(
+				{
+					...base,
+					task: "extend",
+					inputReferences: [{ type: "image_url", url: "https://x/f.png" }],
+				},
+				meta({ tasks: ["extend"] }) as unknown as ResolvedModelMetadata,
+			),
+		/exactly one video reference/,
 	);
 });
 

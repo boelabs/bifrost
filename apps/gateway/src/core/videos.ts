@@ -4,6 +4,15 @@ export type VideoStatus = "queued" | "in_progress" | "completed" | "failed";
 export type VideoAssetVariant = "video" | "thumbnail" | "spritesheet";
 export type VideoQuality = "auto" | "low" | "medium" | "high" | "native";
 
+export const VIDEO_TASKS = [
+	"text_to_video",
+	"image_to_video",
+	"reference_to_video",
+	"edit",
+	"extend",
+] as const;
+export type VideoTask = (typeof VIDEO_TASKS)[number];
+
 export const VIDEO_ASPECT_RATIOS = [
 	"16:9",
 	"9:16",
@@ -18,6 +27,7 @@ export const VIDEO_ASPECT_RATIOS = [
 export type VideoAspectRatio = (typeof VIDEO_ASPECT_RATIOS)[number];
 
 export const VIDEO_RESOLUTIONS = [
+	"360p",
 	"480p",
 	"720p",
 	"1080p",
@@ -49,6 +59,8 @@ export interface VideoFrameImage {
 export interface CanonicalVideoRequest {
 	model: string;
 	prompt: string;
+	/** Explicit generation intent when a model exposes multiple video workflows. */
+	task?: VideoTask;
 	/** Guiding assets. Image references are broadly supported; audio/video only by some providers. */
 	inputReferences?: VideoInputReference[];
 	/** First/last frame images for providers that support frame conditioning. */
@@ -78,6 +90,8 @@ export interface VideoSizeMapping {
 
 export interface VideoModelProfile {
 	maxPromptChars?: number;
+	/** Explicit video workflows accepted by this model. Omission means `task` is unsupported. */
+	tasks?: VideoTask[];
 	/** Accepted public durations, represented as seconds strings. */
 	durations?: string[];
 	qualities?: VideoQuality[];

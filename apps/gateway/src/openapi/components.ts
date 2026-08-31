@@ -623,6 +623,18 @@ export const VideoCreateRequest = loose(
 	{
 		model: z.string().meta({ description: "public model" }),
 		prompt: z.string().min(1).max(32000),
+		task: nullableEnum([
+			"text_to_video",
+			"image_to_video",
+			"reference_to_video",
+			"edit",
+			"extend",
+		])
+			.optional()
+			.meta({
+				description:
+					"Explicit video workflow. Required by some providers for edit and extend requests.",
+			}),
 		input_reference: z
 			.union([VideoInputReference, z.null()])
 			.optional()
@@ -657,6 +669,7 @@ export const VideoCreateRequest = loose(
 			"9:21",
 		]).optional(),
 		resolution: nullableEnum([
+			"360p",
 			"480p",
 			"720p",
 			"1080p",

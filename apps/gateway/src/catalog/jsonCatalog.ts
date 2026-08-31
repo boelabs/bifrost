@@ -3,6 +3,7 @@ import { ADAPTER_KEY_PATTERN, ADAPTER_KEY_RULE } from "#adapters/key.ts";
 import type { OperationProfiles } from "#profiles/types.ts";
 import { PARAMETER_SUPPORT_MODES } from "./parameters.ts";
 import type { CatalogEntry } from "./types.ts";
+import { VIDEO_TASKS } from "#core/videos.ts";
 import { readFileSync } from "node:fs";
 
 interface CatalogProviderInfo {
@@ -57,6 +58,7 @@ const MODEL_KEYS = new Set([
 ]);
 
 const PARAMETER_MODES = new Set<string>(PARAMETER_SUPPORT_MODES);
+const VIDEO_TASK_SET = new Set<string>(VIDEO_TASKS);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -376,9 +378,21 @@ function validateOperations(value: unknown, path: string): void {
 				if (profile[key] !== undefined)
 					assertBoolean(profile[key], `${path}.${operation}.${key}`);
 			}
-			for (const key of ["durations", "qualities", "contentVariants"]) {
+			for (const key of [
+				"tasks",
+				"durations",
+				"qualities",
+				"contentVariants",
+			]) {
 				if (profile[key] !== undefined)
 					assertStringArray(profile[key], `${path}.${operation}.${key}`);
+			}
+			if (Array.isArray(profile.tasks)) {
+				for (const task of profile.tasks) {
+					if (!VIDEO_TASK_SET.has(task)) {
+						fail(`${path}.${operation}.tasks`, `unknown video task "${task}"`);
+					}
+				}
 			}
 			if (profile.sizes !== undefined) {
 				if (!isRecord(profile.sizes))

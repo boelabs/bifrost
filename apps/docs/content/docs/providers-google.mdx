@@ -9,7 +9,8 @@ description: "Adapter key googleaistudio. Strict tools, embeddings routes, and i
 
 - **Credentials**: `apiKey` only.
 - **Default transport**: `generateContent` for text and image operations, `generate_videos` for Veo
-  video generation, and `embedContent`/`batchEmbedContents` for embeddings.
+  video generation, and `embedContent`/`batchEmbedContents` for embeddings. Gemini Omni Flash must
+  override `video.generate` to `interactions`.
 - **Tool schemas are translated, not passed through.** Non-strict tools and pre-Gemini-3 models use
   Gemini's OpenAPI-shaped `parameters` field and its narrower schema translator. Gemini 3 and later
   models declare `capabilities.strictTools: true`; a request containing an OpenAI `strict: true`
@@ -35,6 +36,11 @@ description: "Adapter key googleaistudio. Strict tools, embeddings routes, and i
 - **Veo** uses the Gemini `:predictLongRunning` REST flow. Image/video references must be data URLs
   because the REST request sends them as `inlineData`; multiple image references are forwarded as
   `referenceImages`, while `video_url` is used for Veo extension on models that declare it.
+- **Gemini Omni Flash 1.1** uses the Interactions API for text-to-video, image-to-video,
+  reference-to-video, edit, extend, and frame interpolation. The gateway runs interactions in the
+  background, polls by interaction id, and fetches inline output into object storage without storing
+  base64 in Postgres. Files API inputs, multi-turn `previous_interaction_id`, audio references, and
+  URI-only 1080p/4K output are intentionally unsupported.
 - Catalog: `src/adapters/google/catalog.json` (folder is `google`; adapter key is `googleaistudio` —
   the one place today those two names don't match).
 

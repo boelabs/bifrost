@@ -14,6 +14,73 @@ function unsupported(param: string, message: string): never {
 	});
 }
 
+function invalidTaskInput(param: string, message: string): never {
+	throw new GatewayError({
+		class: "bad_request",
+		message,
+		code: "invalid_video_task",
+		param,
+		publicMessage: message,
+	});
+}
+
+function assertTaskInputs(req: CanonicalVideoRequest): void {
+	const refs = req.inputReferences ?? [];
+	const frameImages = req.frameImages ?? [];
+	const imageCount =
+		refs.filter((ref) => ref.type === "image_url").length + frameImages.length;
+	const videoCount = refs.filter((ref) => ref.type === "video_url").length;
+	const otherCount = refs.filter(
+		(ref) => ref.type !== "image_url" && ref.type !== "video_url",
+	).length;
+
+	const firstFrames = frameImages.filter((frame) => frame.frame === "first");
+	const lastFrames = frameImages.filter((frame) => frame.frame === "last");
+	if (firstFrames.length > 1 || lastFrames.length > 1) {
+		invalidTaskInput(
+			"frame_images",
+			"Provide at most one first frame and one last frame.",
+		);
+	}
+	if (lastFrames.length === 1 && firstFrames.length === 0) {
+		invalidTaskInput("frame_images", "A last frame requires a first frame.");
+	}
+
+	if (req.task === undefined) return;
+	if (req.task === "text_to_video" && refs.length + frameImages.length > 0) {
+		invalidTaskInput(
+			"task",
+			"text_to_video cannot be combined with media inputs.",
+		);
+	}
+	if (
+		req.task === "image_to_video" &&
+		(imageCount === 0 || videoCount > 0 || otherCount > 0)
+	) {
+		invalidTaskInput(
+			"task",
+			"image_to_video requires image inputs and cannot use video, audio, or file references.",
+		);
+	}
+	if (
+		req.task === "reference_to_video" &&
+		(refs.length === 0 || frameImages.length > 0)
+	) {
+		invalidTaskInput(
+			"task",
+			"reference_to_video requires input_references and cannot use frame_images.",
+		);
+	}
+	if (req.task === "edit" || req.task === "extend") {
+		if (videoCount !== 1 || frameImages.length > 0) {
+			invalidTaskInput(
+				"task",
+				`${req.task} requires exactly one video reference and cannot use frame_images.`,
+			);
+		}
+	}
+}
+
 function assertDimensionsSupported(
 	req: CanonicalVideoRequest,
 	profile: VideoModelProfile,
@@ -113,6 +180,12 @@ export function assertVideoRequestSupported(
 			`The selected model accepts at most ${profile.maxPromptChars} prompt characters.`,
 		);
 	}
+	if (req.task && !profile.tasks?.includes(req.task)) {
+		unsupported(
+			"task",
+			`The selected model does not support task=${req.task}.`,
+		);
+	}
 	if (req.seconds && !profile.durations?.includes(req.seconds)) {
 		unsupported(
 			"duration",
@@ -135,5 +208,6 @@ export function assertVideoRequestSupported(
 			"The selected model does not support generate_audio.",
 		);
 	}
+	assertTaskInputs(req);
 	assertReferencesSupported(req, profile);
 }

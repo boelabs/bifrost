@@ -7,6 +7,7 @@ import {
 	type VideoFrameImage,
 	VIDEO_ASPECT_RATIOS,
 	VIDEO_RESOLUTIONS,
+	VIDEO_TASKS,
 } from "#core/videos.ts";
 
 /**
@@ -79,6 +80,7 @@ export const videoCreateRequestSchema = z
 	.object({
 		model: z.string().min(1),
 		prompt: z.string().min(1).max(32_000),
+		task: z.enum(VIDEO_TASKS).nullable().optional(),
 		input_reference: videoInputReferenceSchema.nullable().optional(),
 		input_references: videoInputReferencesSchema.nullable().optional(),
 		frame_images: videoFrameImagesSchema.nullable().optional(),
@@ -167,6 +169,8 @@ export function videoCreateToCanonical(
 		model: req.model,
 		prompt: req.prompt,
 	};
+	const task = defined(req.task);
+	if (task !== undefined) canonical.task = task;
 	const inputReferences = inputReferencesToCanonical(req);
 	if (inputReferences !== undefined && inputReferences.length > 0)
 		canonical.inputReferences = inputReferences;
