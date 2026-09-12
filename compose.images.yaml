@@ -1,0 +1,112 @@
+# Bifrost from published images. Nothing is built, so this file is complete on its own: paste it
+# into Coolify, Dokploy or Portainer, or run it anywhere Docker is installed.
+#
+#   curl -O https://raw.githubusercontent.com/boelabs/bifrost/main/compose.images.yaml
+#   cp .env.example .env   # then fill it in
+#   docker compose -f compose.images.yaml up -d
+#
+# Use docker-compose.yml instead when you want to build from a checkout of this repository.
+#
+# The gateway and the dashboard are two products, each with its own environment. The only
+# thing joining them is GATEWAY_URL on the dashboard: everything the browser needs, the
+# dashboard fetches itself, so the gateway never has to be exposed.
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gateway}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-bifrost}
+    volumes:
+      # PG18 moved PGDATA to /var/lib/postgresql/18/docker; the volume is mounted on the parent.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gateway} -d ${POSTGRES_DB:-bifrost}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # Applies SQL migrations and exits. The gateway waits for it to finish.
+  migrate:
+    image: ${GATEWAY_IMAGE:-ghcr.io/boelabs/bifrost-gateway:latest}
+    command: ["bun", "src/db/migrate.ts"]
+    env_file:
+      # Optional so `docker compose config` works in a fresh checkout; in a real deployment this is
+      # where MASTER_KEY, ENCRYPTION_KEYRING and the DASH_* settings come from.
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgres://gateway:${POSTGRES_PASSWORD}@postgres:5432/bifrost}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  gateway:
+    image: ${GATEWAY_IMAGE:-ghcr.io/boelabs/bifrost-gateway:latest}
+    env_file:
+      # Optional so `docker compose config` works in a fresh checkout; in a real deployment this is
+      # where MASTER_KEY, ENCRYPTION_KEYRING and the DASH_* settings come from.
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: ${DATABASE_URL:-postgres://gateway:${POSTGRES_PASSWORD}@postgres:5432/bifrost}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    expose:
+      - "4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # Remove this service entirely if you do not want a dashboard — then set DASH_ENABLED=false so the
+  # gateway stops mounting /auth as well.
+  dashboard:
+    image: ${DASHBOARD_IMAGE:-ghcr.io/boelabs/bifrost-dashboard:latest}
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      # The only address it needs. The browser never talks to the gateway directly, so the
+      # gateway needs no public domain of its own.
+      GATEWAY_URL: ${GATEWAY_URL:-http://gateway:4000}
+    expose:
+      - "3001"
+    depends_on:
+      gateway:
+        condition: service_started
+    restart: unless-stopped
+
+  # Optional: the documentation site. Delete it if you do not want it published.
+  docs:
+    image: ${DOCS_IMAGE:-ghcr.io/boelabs/bifrost-docs:latest}
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    expose:
+      - "3000"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:

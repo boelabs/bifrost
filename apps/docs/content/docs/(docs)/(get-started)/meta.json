@@ -1,0 +1,11 @@
+{
+	"title": "Get started",
+	"defaultOpen": true,
+	"pages": [
+		"quickstart",
+		"concepts",
+		"architecture",
+		"setup",
+		"first-deployment"
+	]
+}

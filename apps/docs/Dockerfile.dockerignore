@@ -1,0 +1,16 @@
+**/node_modules
+**/.next
+**/.source
+**/.turbo
+**/dist
+**/coverage
+**/.env
+**/.env.*
+**/*.local.md
+.git
+.github
+.vscode
+.scratch
+*.log
+apps/gateway/**
+!apps/gateway/package.json

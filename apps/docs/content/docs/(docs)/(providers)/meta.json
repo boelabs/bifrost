@@ -1,0 +1,20 @@
+{
+	"title": "Models and providers",
+	"pages": [
+		"model-catalog",
+		"reasoning",
+		"providers",
+		"providers-openai",
+		"providers-anthropic",
+		"providers-google",
+		"providers-azure-openai",
+		"providers-azure-foundry",
+		"providers-deepseek",
+		"providers-minimax",
+		"providers-moonshot",
+		"providers-zai",
+		"providers-vercel",
+		"providers-openrouter",
+		"providers-openai-compatible"
+	]
+}

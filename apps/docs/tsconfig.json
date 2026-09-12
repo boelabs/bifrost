@@ -1,0 +1,44 @@
+{
+	"include": [
+		"**/*.ts",
+		"**/*.tsx",
+		// TypeScript's `include` globs skip dot-directories, so the collection fumadocs-mdx generates
+		// has to be named. Without it `source.getPage()` degrades to the untyped `PageData` default
+		// and every `page.data.body` is an error.
+		".source/**/*.ts",
+		".next/types/**/*.ts",
+		"next-env.d.ts",
+		".next/dev/types/**/*.ts"
+	],
+	"exclude": ["node_modules", ".next"],
+	"compilerOptions": {
+		"target": "ES2022",
+		"jsx": "react-jsx",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"types": ["bun-types"],
+		"plugins": [{ "name": "next" }],
+		"paths": {
+			"#/*": ["./src/*"]
+		},
+		"allowJs": true,
+		"esModuleInterop": true,
+		"incremental": true,
+		"isolatedModules": true,
+		"resolveJsonModule": true,
+		"allowImportingTsExtensions": true,
+		"verbatimModuleSyntax": true,
+		"noEmit": true,
+		"skipLibCheck": true,
+		/**
+		 * Same reasoning as the dashboard: the repo-wide config's `exactOptionalPropertyTypes` and
+		 * `noUncheckedIndexedAccess` fight React and third-party component props, and relaxing them
+		 * there would weaken the gateway. Strict mode and unused-symbol checks still apply.
+		 */
+		"strict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noFallthroughCasesInSwitch": true
+	}
+}

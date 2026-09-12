@@ -1,0 +1,208 @@
+/*
+ * The Tailwind sources are declared once in `src/app/globals.css` (`@source "../"`), which covers
+ * this directory along with the rest of the app.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@utility effect-3d {
+	position: relative;
+	background-clip: padding-box;
+
+	&::before {
+		content: "";
+		pointer-events: none;
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		box-shadow: var(--ui-effect-edge);
+	}
+}
+
+/* Neutral gray palette with understated accents. */
+@theme inline {
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-input: var(--input);
+	--color-chart-1: var(--chart-1);
+	--color-chart-2: var(--chart-2);
+	--color-chart-3: var(--chart-3);
+	--color-chart-4: var(--chart-4);
+	--color-chart-5: var(--chart-5);
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-surface: var(--surface);
+	--color-surface-2: var(--surface-2);
+	--color-fg: var(--fg);
+	--color-fg-muted: var(--fg-muted);
+	--color-fg-disabled: var(--fg-disabled);
+	--color-fg-inverse: var(--fg-inverse);
+	--color-border: var(--border);
+	--color-focus: var(--focus);
+	--color-primary: var(--primary);
+	--color-primary-hover: var(--primary-hover);
+	--color-primary-fg: var(--primary-fg);
+	--color-secondary: var(--secondary);
+	--color-secondary-fg: var(--secondary-fg);
+	--color-danger: var(--danger);
+	--color-danger-fg: var(--danger-fg);
+	--color-success: var(--success);
+	--color-success-fg: var(--success-fg);
+	--color-warning: var(--warning);
+	--color-warning-fg: var(--warning-fg);
+
+	--font-sans:
+		ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+		"Helvetica Neue", Arial, sans-serif;
+	--font-mono:
+		ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+		monospace;
+}
+
+:root {
+	color-scheme: light;
+	--ui-effect-edge: 0 1px rgb(0 0 0 / 4%);
+	--card: oklch(97.02% 0 0);
+	--card-foreground: oklch(32.11% 0 0);
+	--popover: oklch(97.02% 0 0);
+	--popover-foreground: oklch(32.11% 0 0);
+	--accent: oklch(80.78% 0 0);
+	--accent-foreground: oklch(32.11% 0 0);
+	--input: oklch(90.67% 0 0);
+	--chart-1: oklch(48.91% 0 0);
+	--chart-2: oklch(48.63% 0.0361 196.0278);
+	--chart-3: oklch(65.34% 0 0);
+	--chart-4: oklch(73.16% 0 0);
+	--chart-5: oklch(80.78% 0 0);
+	--sidebar: oklch(93.7% 0 0);
+	--sidebar-foreground: oklch(32.11% 0 0);
+	--sidebar-border: oklch(85.76% 0 0);
+	--ui-radius-sm: 0.375rem;
+	--ui-radius-md: 0.5rem;
+	--ui-radius-lg: 0.75rem;
+	--ui-radius-xl: 1rem;
+	--ui-radius-2xl: 1.5rem;
+	--ui-radius-control: var(--ui-radius-lg);
+	--ui-radius-surface: var(--ui-radius-xl);
+	/**
+	 * Overlays sit above everything and are read as one object, so they carry more radius than a card:
+	 * next to the pill buttons inside them, a 1rem corner reads as a mismatch rather than as restraint.
+	 */
+	--ui-radius-dialog: var(--ui-radius-2xl);
+	--ui-radius-item: var(--ui-radius-md);
+	--surface: oklch(95.51% 0 0);
+	--surface-2: oklch(88.53% 0 0);
+	--fg: oklch(32.11% 0 0);
+	--fg-muted: oklch(48.5% 0 0);
+	--fg-inverse: oklch(100% 0 0);
+	--fg-disabled: oklch(68% 0 0);
+	--border: oklch(85.76% 0 0);
+	--focus: oklch(48.91% 0 0);
+	/**
+	 * Lightened from 48.6%: the old primary read as near-black against the off-white ground. 56% is as
+	 * far as it goes while white label text still clears 4.5:1 — past that the button gets friendlier
+	 * and its text stops being readable.
+	 */
+	--primary: oklch(56% 0 0);
+	/**
+	 * An explicit hover shade rather than an opacity step: fading the primary toward the page ground
+	 * lightens it, and white label text on the lightened result stops clearing 4.5:1 — the button would
+	 * become hardest to read exactly while the pointer is on it.
+	 */
+	--primary-hover: oklch(48.6% 0 0);
+	--primary-fg: oklch(100% 0 0);
+	--secondary: oklch(90.67% 0 0);
+	--secondary-fg: oklch(32.11% 0 0);
+	--danger: oklch(46% 0.16 27);
+	--danger-fg: oklch(100% 0 0);
+	--success: oklch(43% 0.09 160);
+	--success-fg: oklch(100% 0 0);
+	--warning: oklch(46% 0.1 70);
+	--warning-fg: oklch(100% 0 0);
+}
+
+.dark {
+	color-scheme: dark;
+	--ui-effect-edge: 0 -1px rgb(255 255 255 / 6%);
+	--card: oklch(24.35% 0 0);
+	--card-foreground: oklch(88.53% 0 0);
+	--popover: oklch(24.35% 0 0);
+	--popover-foreground: oklch(88.53% 0 0);
+	--accent: oklch(37.15% 0 0);
+	--accent-foreground: oklch(88.53% 0 0);
+	--input: oklch(30.92% 0 0);
+	--chart-1: oklch(70.58% 0 0);
+	--chart-2: oklch(67.14% 0.0339 206.3482);
+	--chart-3: oklch(54.52% 0 0);
+	--chart-4: oklch(46.04% 0 0);
+	--chart-5: oklch(37.15% 0 0);
+	--sidebar: oklch(23.93% 0 0);
+	--sidebar-foreground: oklch(88.53% 0 0);
+	--sidebar-border: oklch(32.9% 0 0);
+	--surface: oklch(21.78% 0 0);
+	--surface-2: oklch(28.5% 0 0);
+	--fg: oklch(88.53% 0 0);
+	--fg-muted: oklch(66% 0 0);
+	--fg-inverse: oklch(100% 0 0);
+	--fg-disabled: oklch(47% 0 0);
+	--border: oklch(32.9% 0 0);
+	--focus: oklch(70.58% 0 0);
+	--primary: oklch(70.58% 0 0);
+	--primary-hover: oklch(78% 0 0);
+	--primary-fg: oklch(21.78% 0 0);
+	--secondary: oklch(30.92% 0 0);
+	--secondary-fg: oklch(88.53% 0 0);
+	--danger: oklch(80% 0.09 27);
+	--danger-fg: oklch(26% 0.07 27);
+	--success: oklch(79% 0.09 160);
+	--success-fg: oklch(26% 0.035 160);
+	--warning: oklch(82% 0.1 80);
+	--warning-fg: oklch(28% 0.045 70);
+}
+
+@layer base {
+	* {
+		box-sizing: border-box;
+	}
+
+	/**
+	 * Reserve the scrollbar's track whether or not it is showing.
+	 *
+	 * Overlays lock the page by setting `overflow: hidden` on the body, which on a platform with
+	 * classic (layout-consuming) scrollbars takes ~15px of width away the instant a select, dialog or
+	 * menu opens — the whole page shifts sideways and snaps back on close. Reserving the gutter costs
+	 * nothing where scrollbars are overlaid, and is the difference between a jump and a still page
+	 * where they are not.
+	 */
+	html {
+		scrollbar-gutter: stable;
+	}
+
+	body {
+		margin: 0;
+		min-height: 100dvh;
+		background-color: var(--color-surface);
+		color: var(--color-fg);
+		font-family: var(--font-sans);
+		-webkit-font-smoothing: antialiased;
+	}
+
+	:where(:focus-visible) {
+		outline: 2px solid var(--color-focus);
+		outline-offset: 2px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms;
+		transition-duration: 0.01ms;
+		scroll-behavior: auto;
+	}
+}

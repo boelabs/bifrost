@@ -1,0 +1,35 @@
+---
+title: "Providers"
+description: "Every built-in adapter: credentials, default transport, and where to find its catalog."
+---
+
+Each provider is a code **adapter** (translates the canonical format to/from the provider's wire
+format) paired with a **catalog** (`catalog.json`, the known models and their capabilities/pricing).
+Creating a deployment always names the adapter directly with `adapterKey` — see
+[Creating deployments](/docs/creating-deployments) for the full request shape.
+
+| Provider | Adapter key | Credentials | Default transport |
+|---|---|---|---|
+| [OpenAI](/docs/providers-openai) | `openai` | `apiKey` | Responses API |
+| [Azure OpenAI](/docs/providers-azure-openai) | `azureopenai` | `apiKey`, `baseUrl` | Responses API |
+| [Azure Foundry](/docs/providers-azure-foundry) | `azurefoundry` | `apiKey`, `baseUrl` | Chat Completions |
+| [Google AI Studio](/docs/providers-google) | `googleaistudio` | `apiKey` | `generateContent` |
+| [Anthropic](/docs/providers-anthropic) | `anthropic` | `apiKey` | Messages API |
+| [DeepSeek](/docs/providers-deepseek) | `deepseek` | `apiKey` | Chat Completions |
+| [MiniMax](/docs/providers-minimax) | `minimax` | `apiKey` | Chat Completions |
+| [Moonshot](/docs/providers-moonshot) | `moonshot` | `apiKey` | Chat Completions |
+| [Z.AI](/docs/providers-zai) | `zai` | `apiKey` | Chat Completions |
+| [Vercel AI Gateway](/docs/providers-vercel) | `vercel` | `apiKey` | Responses API |
+| [OpenAI-compatible](/docs/providers-openai-compatible) | `openaicompatible` | `apiKey`, `baseUrl` | Chat Completions |
+
+Adapters with a built-in upstream host do not require `baseUrl`. `openaicompatible`, Azure OpenAI,
+and Azure Foundry require `baseUrl` because the operator chooses the target endpoint.
+
+`GET /admin/operations` returns this same adapter list live, including required credential keys and
+which operations/transports each adapter actually implements.
+
+## What to read next
+
+- [Creating deployments](/docs/creating-deployments) — the request shape shared by every provider.
+- [Model catalog](/docs/model-catalog) — how a provider's models are declared.
+- [First deployment](/docs/first-deployment) — the minimal end-to-end example.

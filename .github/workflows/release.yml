@@ -1,0 +1,92 @@
+# Publishes the three images to GitHub Container Registry.
+#
+# This is what makes "deploy Bifrost" a `docker pull` rather than a checkout and a build. Coolify,
+# Dokploy, Portainer and plain Compose all take an image reference; none of them should have to
+# clone this repository to run it.
+#
+# Triggered by a tag (`v1.2.3`) or by hand. Not by every push to main: a registry tag is a promise
+# that something was released, and a moving `latest` that follows every commit is not one.
+name: Release images
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag to publish (e.g. v1.2.3 or edge)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  # Required to push to ghcr.io as the built-in GITHUB_TOKEN; no registry secret to manage.
+  packages: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      # One failing image must not cancel the others: a half-published release is easier to finish
+      # than to reason about.
+      fail-fast: false
+      matrix:
+        include:
+          - name: gateway
+            dockerfile: apps/gateway/Dockerfile
+            image: bifrost-gateway
+          - name: dashboard
+            dockerfile: apps/dashboard/Dockerfile
+            image: bifrost-dashboard
+          - name: docs
+            dockerfile: apps/docs/Dockerfile
+            image: bifrost-docs
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      # arm64 is emulated here. It is slow, and it is what lets the same tag run on an Apple laptop,
+      # a Graviton instance and an x86 server without three sets of instructions.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: Log in to GHCR
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive tags
+        id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          # `latest` follows the newest semver release only — never a prerelease, and never a
+          # manual `edge` build.
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=${{ inputs.tag }},enable=${{ github.event_name == 'workflow_dispatch' }}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-') }}
+
+      - name: Build and push
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Shared with the other images in the matrix and with later releases; a rebuild of an
+          # unchanged layer costs nothing.
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}

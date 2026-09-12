@@ -1,0 +1,62 @@
+---
+title: "Images"
+description: "POST /v1/images/generations and /v1/images/edits — the OpenAI Images contract."
+---
+
+```bash
+curl -X POST "$GATEWAY/v1/images/generations" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "model": "image-default", "prompt": "a red fox in snow", "size": "1024x1024", "n": 1 }'
+```
+
+`POST /v1/images/generations` is JSON; `POST /v1/images/edits` is multipart (image + optional `mask` +
+the same fields as form fields). Both accept JSON response or SSE (progressive partial images via
+`partial_images`).
+
+## Always `b64_json`
+
+Every image is returned as `b64_json` regardless of the requested `response_format` — URL image
+responses are **not part of the public contract**. `response_format` may be omitted or set to
+`b64_json` explicitly; anything else is rejected as unsupported by the model's profile.
+
+## Fields
+
+`prompt`, `size`, `quality`, `n`, `response_format`, `background`, `moderation`, `input_fidelity`,
+`output_format`, `output_compression`, `style`, `user`, `stream`, `partial_images`, and (edits only)
+`image`/`images` + `mask`. Which values are actually accepted for `size`/`quality`/`output_format` is
+per-model, declared in its catalog `image.generate`/`image.edit` profile — an unsupported combination
+returns `400 unsupported_parameter` before any upstream call.
+
+## `size: "auto"` works everywhere
+
+`size: "auto"` — and an omitted `size`, which is equivalent — is accepted for **every** image model.
+Models whose profile declares native auto support (`autoSize`, e.g. the `gpt-image-*` and
+`gemini-*-image` families) let the model pick the dimensions itself — for edits, Gemini matches the
+aspect ratio of the input images. Models without native auto resolve `auto` deterministically to the
+**first entry of the profile's `sizes` table**, which is the model's default size. The response `size`
+always reports the actual dimensions of the returned image, never the literal `auto`.
+
+## Output handling
+
+Every returned PNG, JPEG, and WebP is **re-encoded to strip upstream metadata** — no provider watermark
+or embedded identifying data survives to the client by default. If you need product/owner branding
+instead, add it via an operator-managed [runtime extension](/docs/extensions) hooking `onImageOutput`.
+
+## Gemini: quality maps to thinking
+
+For Gemini 3.1 Flash Image and similar models, the `quality` parameter doesn't map to a rendering
+quality tier the way it does for OpenAI — it maps to native **thinking level**: `auto`/omitted and
+`low` use `thinkingLevel: minimal`; `high` uses `thinkingLevel: high`. Some Gemini image models expose
+only `quality: auto`. See [Providers → Google AI Studio](/docs/providers-google).
+
+## Streaming
+
+`stream: true` with `partial_images: N` returns progressively refined images via SSE before the final
+one — see [Streaming](/docs/streaming).
+
+## What to read next
+
+- [Providers → Google AI Studio](/docs/providers-google) — the quality-to-thinking mapping in context.
+- [Extensions](/docs/extensions) — the `onImageOutput` hook, and the bundled watermark examples.
+- [Creating deployments](/docs/creating-deployments#2-image--catalog-model) — registering an image model.

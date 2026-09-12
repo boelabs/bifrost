@@ -1,0 +1,31 @@
+---
+title: "DeepSeek"
+description: "Adapter key deepseek. Built-in base URL."
+---
+
+```json
+{ "publicModel": "deepseek", "adapterKey": "deepseek", "upstreamModel": "deepseek-v4-flash", "credentials": { "apiKey": "..." } }
+```
+
+- **Credentials**: `apiKey` only. No `baseUrl` needed — defaults to `https://api.deepseek.com/v1`.
+- **Default transport**: Chat Completions. Strict tools automatically use DeepSeek's `/beta` Chat
+  endpoint and require every declared function to set `strict: true` — DeepSeek validates the schema
+  server-side and rejects unsupported constructs. JSON Schema output on V4 models requires an
+  explicit `transportOverrides["text.generate"]: "responses"`, where `text.format` is supported and
+  tool `strict` is not. Requests never switch transport automatically, and the two strict modes
+  cannot be combined in one DeepSeek request.
+- **Base URL per feature**: the Responses transport is pinned to `https://api.deepseek.com` and
+  strict tools to `https://api.deepseek.com/beta`, because DeepSeek documents `/v1` only as an
+  OpenAI-SDK alias for Chat Completions. A custom `baseUrl` is never rewritten.
+- **Reasoning**: `openai_body` (native `thinking`/effort controls), per model in the catalog. On the
+  Responses transport those controls are emitted as OpenAI's nested `reasoning.effort` instead, which
+  is what DeepSeek supports there — it silently ignores unknown top-level keys, so the Chat-shaped
+  `thinking` field is deliberately not sent.
+- `deepseek-chat` and `deepseek-reasoner` are retired compatibility aliases. New deployments should
+  use `deepseek-v4-flash` or `deepseek-v4-pro`.
+- Catalog: `src/adapters/deepseek/catalog.json`.
+
+## What to read next
+
+- [Reasoning](/docs/reasoning) — the `openai_body` kind in detail.
+- [Creating deployments](/docs/creating-deployments) — the full request shape.

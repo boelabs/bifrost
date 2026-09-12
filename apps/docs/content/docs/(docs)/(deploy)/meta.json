@@ -1,0 +1,12 @@
+{
+	"title": "Deploy",
+	"pages": [
+		"deployment",
+		"deploy-local",
+		"deploy-docker-linux",
+		"deploy-coolify",
+		"deploy-portainer",
+		"deploy-dokploy",
+		"creating-deployments"
+	]
+}

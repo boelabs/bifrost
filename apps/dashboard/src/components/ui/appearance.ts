@@ -1,0 +1,108 @@
+import type { CSSProperties } from "react";
+import { tv } from "tailwind-variants";
+import { cn } from "cn";
+
+export type UISize = "xs" | "sm" | "md" | "lg";
+export type UIVariant = "outlined" | "filled" | "ghost";
+export interface EffectProps {
+	effect?: "3d" | null;
+}
+
+export function effectClassName(effect: EffectProps["effect"]) {
+	return effect === "3d" ? "effect-3d" : "";
+}
+export type BorderRadius =
+	| "none"
+	| "sm"
+	| "md"
+	| "lg"
+	| "xl"
+	| "full"
+	| CSSProperties["borderRadius"]
+	| null;
+export type UIWidth = "auto" | "full" | CSSProperties["width"] | null;
+
+export interface AppearanceProps {
+	borderRadius?: BorderRadius;
+	width?: UIWidth;
+}
+
+export interface ControlProps extends AppearanceProps {
+	size?: UISize;
+	variant?: UIVariant;
+}
+
+const radii: Record<string, string> = {
+	none: "0px",
+	sm: "var(--ui-radius-sm)",
+	md: "var(--ui-radius-md)",
+	lg: "var(--ui-radius-lg)",
+	xl: "var(--ui-radius-xl)",
+	full: "9999px",
+};
+
+/** Null leaves sizing to the stylesheet; explicit style remains the final escape hatch. */
+export function appearanceStyle(
+	{ borderRadius, width }: AppearanceProps,
+	style?: CSSProperties,
+): CSSProperties {
+	return {
+		...(borderRadius != null
+			? {
+					borderRadius:
+						typeof borderRadius === "string"
+							? (radii[borderRadius] ?? borderRadius)
+							: borderRadius,
+				}
+			: {}),
+		...(width != null ? { width: width === "full" ? "100%" : width } : {}),
+		...style,
+	};
+}
+
+export function mergeClassName<State>(
+	base: string,
+	className?: string | ((state: State) => string | undefined),
+) {
+	return typeof className === "function"
+		? (state: State) => cn(base, className(state))
+		: cn(base, className);
+}
+
+export function mergeStyle<State>(
+	appearance: AppearanceProps,
+	style?: CSSProperties | ((state: State) => CSSProperties | undefined),
+) {
+	return typeof style === "function"
+		? (state: State) => appearanceStyle(appearance, style(state))
+		: appearanceStyle(appearance, style);
+}
+
+export const focusRing =
+	"outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
+export const controlStyles = tv({
+	base: "ui-control flex min-w-0 items-center gap-2 rounded-[var(--ui-radius-control)] border bg-surface text-fg outline-none transition-[color,background-color,border-color,box-shadow] placeholder:text-fg-muted focus-visible:border-focus focus-visible:ring-2 focus-visible:ring-focus/25 data-[focused]:border-focus data-[focused]:ring-2 data-[focused]:ring-focus/25 disabled:cursor-not-allowed disabled:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 aria-invalid:border-danger data-[invalid]:border-danger",
+	variants: {
+		size: {
+			xs: "min-h-7 px-2 py-1 text-xs",
+			sm: "min-h-9 px-3 py-1.5 text-sm",
+			md: "min-h-11 px-3 py-2.5 text-sm",
+			lg: "min-h-13 px-4 py-3 text-base",
+		},
+		variant: {
+			outlined: "border-border hover:border-fg-muted/60",
+			filled: "border-transparent bg-surface-2 hover:bg-secondary",
+			ghost: "border-transparent bg-transparent hover:bg-surface-2",
+		},
+	},
+	defaultVariants: { size: "md", variant: "outlined" },
+});
+
+export const overlayFadeStyles =
+	"transition-opacity duration-150 ease-out data-[starting-style]:opacity-0 data-[ending-style]:opacity-0 motion-reduce:transition-none";
+export const popupStyles = `z-50 max-h-[var(--available-height)] max-w-[calc(100vw-2rem)] overflow-auto rounded-[var(--ui-radius-surface)] border border-border/60 bg-popover p-1 text-popover-foreground shadow-lg outline-none ${overlayFadeStyles}`;
+export const itemStyles =
+	"relative flex cursor-default items-center gap-2 rounded-[var(--ui-radius-item)] px-3 py-2 text-sm font-medium outline-none data-[highlighted]:bg-secondary data-[highlighted]:text-secondary-fg data-[disabled]:pointer-events-none data-[disabled]:text-fg-disabled";
+export const labelStyles = "text-sm font-medium text-fg";
+export const descriptionStyles = "text-sm text-fg-muted";
+export const errorStyles = "text-sm text-danger";

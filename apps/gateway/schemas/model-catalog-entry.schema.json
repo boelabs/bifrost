@@ -1,0 +1,167 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://bifrost.local/schemas/model-catalog-entry.schema.json",
+	"title": "Bifrost Catalog Entry",
+	"description": "Single CatalogEntry shape for custom model catalogEntry payloads and editor snippets.",
+	"allOf": [
+		{ "$ref": "./model-catalog.schema.json#/$defs/model" },
+		{ "$ref": "#/$defs/customRequirements" }
+	],
+	"$defs": {
+		"customRequirements": {
+			"allOf": [
+				{
+					"if": {
+						"required": ["operations"],
+						"properties": {
+							"operations": { "required": ["text.generate"] }
+						}
+					},
+					"then": {
+						"properties": {
+							"operations": {
+								"properties": {
+									"text.generate": {
+										"required": ["capabilities"],
+										"properties": {
+											"capabilities": {
+												"required": [
+													"tools",
+													"vision",
+													"reasoning",
+													"structuredOutputs"
+												]
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				{
+					"if": {
+						"required": ["operations"],
+						"properties": {
+							"operations": {
+								"required": ["text.generate"],
+								"properties": {
+									"text.generate": {
+										"required": ["capabilities"],
+										"properties": {
+											"capabilities": {
+												"required": ["reasoning"],
+												"properties": {
+													"reasoning": { "const": true }
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					},
+					"then": {
+						"properties": {
+							"operations": {
+								"properties": {
+									"text.generate": {
+										"required": ["reasoning"]
+									}
+								}
+							}
+						}
+					}
+				},
+				{
+					"if": {
+						"required": ["operations"],
+						"properties": {
+							"operations": {
+								"required": ["text.generate"],
+								"properties": {
+									"text.generate": {
+										"required": ["capabilities"],
+										"properties": {
+											"capabilities": {
+												"required": ["reasoning"],
+												"properties": {
+													"reasoning": { "const": false }
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					},
+					"then": {
+						"properties": {
+							"operations": {
+								"properties": {
+									"text.generate": {
+										"not": { "required": ["reasoning"] }
+									}
+								}
+							}
+						}
+					}
+				},
+				{
+					"$ref": "#/$defs/imageGenerateRequirements"
+				},
+				{
+					"$ref": "#/$defs/imageEditRequirements"
+				}
+			]
+		},
+		"imageGenerateRequirements": {
+			"if": {
+				"required": ["operations"],
+				"properties": {
+					"operations": { "required": ["image.generate"] }
+				}
+			},
+			"then": {
+				"properties": {
+					"operations": {
+						"properties": {
+							"image.generate": {
+								"required": ["outputFormats", "responseFormats"],
+								"anyOf": [
+									{ "required": ["sizes"] },
+									{ "required": ["arbitrarySize"] },
+									{ "required": ["autoSize"] }
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"imageEditRequirements": {
+			"if": {
+				"required": ["operations"],
+				"properties": {
+					"operations": { "required": ["image.edit"] }
+				}
+			},
+			"then": {
+				"properties": {
+					"operations": {
+						"properties": {
+							"image.edit": {
+								"required": ["outputFormats", "responseFormats"],
+								"anyOf": [
+									{ "required": ["sizes"] },
+									{ "required": ["arbitrarySize"] },
+									{ "required": ["autoSize"] }
+								]
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

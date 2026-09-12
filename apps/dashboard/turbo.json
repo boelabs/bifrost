@@ -1,0 +1,15 @@
+{
+	"extends": ["//"],
+	"tasks": {
+		"build": {
+			"dependsOn": ["^build", "^typecheck"],
+			"outputs": [".next/**", "!.next/cache/**"]
+		},
+		"typecheck": {
+			"dependsOn": ["^build", "^typecheck"]
+		},
+		"test": {
+			"dependsOn": ["^build", "^test"]
+		}
+	}
+}

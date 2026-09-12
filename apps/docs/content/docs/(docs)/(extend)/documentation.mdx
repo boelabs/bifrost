@@ -1,0 +1,95 @@
+---
+title: Documentation development
+description: Write, preview, test, and deploy the documentation site with Bun.
+---
+
+The documentation is a Next.js App Router site using [Fumadocs](https://fumadocs.dev), built and
+served on Bun. Every page is prerendered from MDX in this repository, so the running server only
+hands out what the build produced — the one exception is `/api/search`, which answers search
+queries in process. The site has one language: English.
+
+## Preview changes
+
+From the repository root, install dependencies and start the documentation app:
+
+```bash
+bun install
+bun run --filter @boelabs/docs dev
+```
+
+Open the address it prints (port 3000 by default, or `DOCS_PORT`). To check the production
+output — including full-text search, which is built from the same page tree:
+
+```bash
+bun run --filter @boelabs/docs build
+bun run --filter @boelabs/docs start
+```
+
+`start` reproduces the container rather than approximating it: it copies the static assets beside
+Next's standalone server and runs it under Bun, which is exactly what the image does.
+
+## Write a page
+
+Pages live in `apps/docs/content/docs`, under one of two **switcher roots** — the dropdown at the
+top of the sidebar:
+
+| Root | Holds |
+|---|---|
+| `(docs)` | Getting started, deploying, routing, access, providers, operating, extending |
+| `(api)` | The wire format, every endpoint, and every value the gateway reads |
+
+Inside a root, each `(group)` folder is one collapsible sidebar section. Add an MDX file with a
+descriptive `title` and a short `description` in YAML frontmatter, then list its filename in that
+folder's `meta.json`. Standard Markdown is enough for most pages.
+
+**A parenthesised folder never appears in the URL** — it is a route group, exactly as in Next — so
+`(docs)/(routing)/routing.mdx` is served at `/docs/routing`. That is what lets the navigation be
+reorganised without breaking a single link, and it is why the whole switcher could be added without
+moving a page.
+
+Two things to know when adding a section, both of which a test enforces:
+
+- every `.mdx` file and every nested `(group)` must be listed in its folder's `meta.json`, and
+  nothing may be listed that is not there;
+- a root needs at least one page directly inside it. Fumadocs takes the switcher entry's link from
+  the root's index page, falling back to its first direct page child — a root holding only folders
+  produces no link and is dropped from the switcher without a word.
+
+Use one page per task or reference area. Start with its purpose and prerequisites, explain steps
+in execution order, and finish with verification or relevant next steps. Keep credentials as
+placeholders and distinguish public model names from upstream model IDs.
+
+## Validate
+
+```bash
+bun run check
+bun run typecheck
+bun run test
+bun run --filter @boelabs/docs build
+```
+
+The build ends by checking every internal link and `#anchor` in the prerendered HTML, so a renamed
+page or a heading that no longer exists fails the build rather than shipping. Check both light and
+dark appearance, mobile navigation, and search before publishing.
+
+## Deploy
+
+The image is published to GHCR alongside the gateway and the dashboard, and the Compose files pull
+it. To build it yourself:
+
+```bash
+docker build -f apps/docs/Dockerfile -t bifrost-docs .
+docker run --rm -p 3000:3000 bifrost-docs
+```
+
+It carries no configuration: the same image runs anywhere, and no database, Redis instance,
+provider key, or gateway environment file is required to serve the documentation.
+
+Set `DOCS_SITE_URL` to the public origin to publish a sitemap at `/sitemap.xml`:
+
+```bash
+docker run --rm -p 3000:3000 -e DOCS_SITE_URL=https://docs.example.com bifrost-docs
+```
+
+It is read at run time, not baked in, so one image can serve staging and production. Without it the
+site works exactly the same and no sitemap is generated.

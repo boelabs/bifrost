@@ -1,0 +1,49 @@
+---
+title: "Upgrades"
+description: "How to roll out a new version safely: migrations, breaking changes, and rollback."
+---
+
+## Pulling a new image
+
+`docker-compose.yml`'s `migrate` service is a one-off job that applies pending SQL migrations and
+exits; the `gateway` service depends on it completing before it starts. Pulling a new image and
+re-running `docker compose up -d` (or your PaaS's redeploy) re-runs that job automatically — you don't
+need a separate manual migration step for the bundled Compose stack. If you run the gateway outside
+Compose, run `bun run --filter @boelabs/bifrost db:migrate` yourself before rolling out new
+instances.
+
+## Migrations are forward-only
+
+There is no `db:migrate:down`. Migrations in `src/db/migrations/` are never edited after being applied —
+a fix ships as a new migration, never a rewrite of an old one. This means:
+
+- **Rolling back the gateway image does not roll back the schema.** If a migration shipped with the
+  version you're rolling back from, the old code needs to still tolerate the new columns/enums (additive
+  changes are the norm specifically so this holds).
+- If a migration must be undone, that's a new forward migration that reverses it — plan for it the same
+  way you'd plan any other schema change, not as an emergency `DOWN`.
+
+## Before upgrading in production
+
+The adapter surface and the admin API can still change in breaking ways. Before rolling a new image
+into production:
+
+1. Check whether any admin API request or response shape you depend on changed. The OpenAPI spec
+   (`apps/gateway/openapi.yaml`) is the source of truth — diff it against the version you are
+   upgrading from if you have automation built against it.
+2. If the upgrade adds a router setting or a catalog field with a new default, decide explicitly
+   whether that default is what you want rather than inheriting it silently — see
+   [Routing](/docs/routing) and [Parameter policy](/docs/parameter-policy).
+3. Take a database backup. Migrations are forward-only; a backup is the only way back from one that
+   changes data semantics.
+
+## Rolling back an image
+
+Redeploying a previous image is safe only while the migrations applied since then remain compatible
+with it — a migration that dropped or rewrote data is not reversed by changing the image tag. Restore
+a pre-upgrade backup or ship a new forward migration instead.
+
+## What to read next
+
+- [Operations](/docs/operations) — the day-to-day runbook.
+- [Production checklist](/docs/production-checklist) — pre-launch verification.

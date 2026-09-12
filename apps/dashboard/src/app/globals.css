@@ -1,0 +1,152 @@
+@import "tailwindcss";
+@import "../components/ui/styles.css";
+@import "../shared/fonts/fonts.css";
+@import "streamdown/styles.css";
+@import "katex/dist/katex.min.css";
+
+@source "../";
+@source "../../node_modules/streamdown/dist/*.js";
+@source "../../node_modules/@streamdown/math/dist/*.js";
+
+.playground-dotmatrix {
+	display: grid;
+	grid-template-columns: repeat(5, 3px);
+	grid-template-rows: repeat(5, 3px);
+	gap: 2px;
+	width: 24px;
+	height: 24px;
+}
+
+.playground-dotmatrix-dot {
+	border-radius: 50%;
+	background: currentColor;
+	opacity: 0.24;
+	animation: playground-diagonal-sweep 1500ms linear infinite;
+	animation-delay: var(--dot-delay);
+}
+
+@keyframes playground-diagonal-sweep {
+	0%,
+	100% {
+		opacity: 0.08;
+	}
+	14% {
+		opacity: 1;
+	}
+	30% {
+		opacity: 0.12;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.playground-dotmatrix-dot {
+		animation: none;
+		opacity: var(--dot-rest);
+	}
+}
+
+@theme inline {
+	--font-sans:
+		"Google Sans Flex", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+		sans-serif;
+	--font-mono:
+		"Google Sans Code", ui-monospace, SFMono-Regular, Consolas, monospace;
+	--color-background: var(--surface);
+	--color-foreground: var(--fg);
+	--color-muted: var(--surface-2);
+	--color-muted-foreground: var(--fg-muted);
+	--color-sidebar: var(--sidebar);
+}
+
+button {
+	cursor: pointer;
+}
+
+.playground-code-lines {
+	counter-reset: code-line;
+}
+
+.playground-code-line {
+	display: block;
+
+	&::before {
+		content: counter(code-line);
+		counter-increment: code-line;
+		display: inline-block;
+		width: 1.5rem;
+		margin-right: 1rem;
+		color: var(--fg-muted);
+		font-size: 13px;
+		text-align: right;
+		user-select: none;
+	}
+}
+
+.playground-code-token {
+	color: var(--code-light, inherit);
+
+	.dark & {
+		color: var(--code-dark, var(--code-light, inherit));
+	}
+}
+
+.playground-markdown {
+	& [data-streamdown="code-block"] {
+		max-width: 100%;
+		border-radius: var(--ui-radius-surface);
+	}
+	& [data-streamdown="code-block-header"] {
+		background: var(--surface-2);
+		color: var(--fg-muted);
+	}
+	& pre {
+		overflow-x: auto;
+		background: transparent;
+		padding: 0;
+	}
+	& code {
+		font-family: var(--font-mono);
+	}
+	& .katex-display {
+		overflow-x: auto;
+		overflow-y: hidden;
+		padding-block: 0.25rem;
+	}
+	& table {
+		border-collapse: collapse;
+	}
+	& th,
+	& td {
+		border: 1px solid var(--color-border);
+		padding: 0.5rem;
+	}
+	& ul {
+		list-style: disc;
+		padding-left: 1.5rem;
+	}
+	& ol {
+		list-style: decimal;
+		padding-left: 1.5rem;
+	}
+	& h1,
+	& h2,
+	& h3,
+	& h4 {
+		font-weight: 600;
+	}
+	& h1 {
+		font-size: 1.5rem;
+	}
+	& h2 {
+		font-size: 1.25rem;
+	}
+	& blockquote {
+		border-left: 3px solid var(--color-border);
+		padding-left: 1rem;
+		color: var(--color-fg-muted);
+	}
+	& > * + *,
+	& .playground-markdown-block > * + * {
+		margin-top: 0.75rem;
+	}
+}

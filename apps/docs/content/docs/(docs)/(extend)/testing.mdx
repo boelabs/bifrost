@@ -1,0 +1,39 @@
+---
+title: "Testing"
+description: "Unit and integration testing strategy."
+---
+
+Tests are designed to be **hermetic with respect to providers**:
+
+- They do not need real credentials for OpenAI, Google, Azure, aggregators, or any other provider.
+- `bun run --filter @boelabs/bifrost test`, `bun run --filter @boelabs/bifrost test:unit`, and `bun run --filter @boelabs/bifrost test:integration` import `apps/gateway/tests/support/noRealFetch.ts`, which blocks any real `fetch`.
+- If a test needs to simulate an upstream, it must use `withStubbedFetch()` from `tests/support/fetch.ts`.
+
+## Layers
+
+| Layer | Script | External dependencies |
+|---|---|---|
+| Unit / contract | `bun run --filter @boelabs/bifrost test` or `bun run --filter @boelabs/bifrost test:unit` | No real network. Lives next to the code in `apps/gateway/src/**/*.test.ts`. |
+| Integration | `bun run --filter @boelabs/bifrost test:integration` | Local Postgres/Redis if the test needs them; if they are not available, it is skipped. Lives in `apps/gateway/tests/integration/**/*.ts`. Never a real provider. |
+| All | `bun run --filter @boelabs/bifrost test:all` | Unit + integration. |
+| Catalog validation | `bun run --filter @boelabs/bifrost catalog:validate` | No real network; validates local JSON. |
+
+## Common helpers
+
+- `tests/support/fetch.ts`: upstream stubs (`withStubbedFetch`, `jsonResponse`).
+- `tests/support/app.ts`: a mini Hono app for `/v1/*` endpoints with auth, request-id, and OpenAI-compatible errors.
+- `tests/support/infra.ts`: Postgres and Redis detection/teardown.
+- `tests/support/integrationCleanup.ts`: defensive cleanup for UUID-suffixed integration-test rows before and after each integration file.
+- `tests/support/wait.ts`: polling for fire-and-forget async effects (logs, cache, Redis).
+- `apps/gateway/tests/support/noRealFetch.ts`: global guard against real network access.
+
+## Escape hatch
+
+For a one-off manual test against the internet:
+
+```bash
+ALLOW_TEST_NETWORK=1 bun run --filter @boelabs/bifrost test
+```
+
+Do not use it in CI or in normal tests; if a provider behavior matters, capture the minimal shape and
+simulate it with `withStubbedFetch()`.

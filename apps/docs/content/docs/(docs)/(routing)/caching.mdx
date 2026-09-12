@@ -1,0 +1,71 @@
+---
+title: "Caching"
+description: "The opt-in response cache and how to control it."
+---
+
+Bifrost can cache full responses in Redis and serve identical repeat requests without hitting a
+provider. It is **opt-in per request** and **off by default** — nothing is cached unless the client
+asks for it.
+
+## Enable it per request
+
+Send the cache headers on the inference request:
+
+| Header | Values | Effect |
+|---|---|---|
+| `x-unified-cache` | `true` or `1` | Enables caching for this request. Any other value (or absent) = no cache. |
+| `x-unified-cache-ttl` | seconds | Time to live on a stored entry. Default `300` (5 min), max `86400` (24 h). |
+
+```bash
+curl -X POST $BASE/v1/chat/completions \
+  -H "Authorization: Bearer unified-..." \
+  -H "x-unified-cache: true" -H "x-unified-cache-ttl: 600" \
+  -H "content-type: application/json" -d '{
+    "model": "general",
+    "messages": [{ "role": "user", "content": "Capital of France?" }]
+  }'
+```
+
+The first call is a miss (served from the provider and stored); identical calls within the TTL are
+hits served from Redis. A cache hit is recorded in `gateway_operations` with `cache_hit = true` and bills as
+zero cost.
+
+## How entries are scoped
+
+- **Per virtual key.** The cache namespace is the virtual key's id, so one key never sees another
+  key's cached responses.
+- **The master key never caches.** Operator traffic always goes to the provider, even with the header
+  set — this keeps administrative and test calls from polluting client caches.
+- **By exact request.** The key is derived from the call type, namespace, and a hash of the canonical
+  request, so any change to the prompt, model, or parameters is a different entry.
+- **Size cap.** Responses larger than 512 KB (typically big embedding batches) are served normally but
+  **not** stored — the per-hit saving does not justify the Redis memory, and they rarely repeat
+  identically.
+- **Not for streaming, tool calls, or stateful requests.** Eligibility requires a non-streamed request
+  with no tools and no server-side state (e.g. a `/v1/responses` call with `store: true`) — a streaming
+  request always goes live. Multimodal content inputs also bypass caching because a remote URL can change without
+  changing the request and base64 files are poor cache keys. See [Streaming](/docs/streaming) and
+  [Content inputs](/docs/file-inputs).
+- **A hit is free.** It's logged with `cost: null` and never touches the virtual key's spend or TPM
+  counters — see [Cost accounting](/docs/cost-accounting).
+
+## Invalidate
+
+Operators can clear cached entries with the master key:
+
+```bash
+# Everything
+DELETE /admin/cache
+
+# Narrow by call type and/or namespace (a virtual key id)
+DELETE /admin/cache?callType=chat&namespace=<virtual-key-id>
+```
+
+Both filters are optional; omitting them widens the match. The response reports how many entries were
+removed. Entries also expire on their own once the TTL elapses.
+
+## When to use it
+
+Good fits: deterministic or low-temperature prompts, repeated embedding lookups, idempotent retries,
+and read-heavy endpoints behind a cache-friendly client. Avoid it for high-temperature or personalized
+generations where every call should be fresh — leave the header off and they never touch the cache.

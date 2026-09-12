@@ -1,0 +1,33 @@
+---
+title: "Embeddings"
+description: "POST /v1/embeddings — the OpenAI Embeddings contract."
+---
+
+```bash
+curl -X POST "$GATEWAY/v1/embeddings" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "model": "embed", "input": ["red fox", "blue whale"], "encoding_format": "float" }'
+```
+
+## Fields
+
+`model`, `input` (a string, a string batch, pre-tokenized `number[]`/`number[][]`, depending on the
+model's profile), `encoding_format` (`float` or `base64`), `dimensions`, `user`.
+
+Every field is validated against the target model's `embedding.create` catalog profile before any
+upstream call: `dimensions` is only honored when the model declares `supportsDimensions: true`;
+`encoding_format: "base64"` is rejected unless the profile lists it; pre-tokenized input is rejected
+unless `supportsTokenInput: true`. A rejected combination returns `400 unsupported_parameter`.
+
+## Provider routing
+
+OpenAI, Azure OpenAI, and OpenAI-compatible deployments route to the native `/embeddings` endpoint.
+Google AI Studio routes to `:embedContent` (single input) or `:batchEmbedContents` (batch) — and, in
+this gateway, accepts **text input and `float` vectors only**, regardless of what a custom profile might
+otherwise allow. See [Providers → Google AI Studio](/docs/providers-google).
+
+## What to read next
+
+- [Model catalog → Embeddings](/docs/model-catalog#embeddings) — the full `embedding.create` schema.
+- [Creating deployments](/docs/creating-deployments#3-embeddings--catalog-model) — registering an embeddings model per provider.

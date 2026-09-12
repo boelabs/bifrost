@@ -1,0 +1,46 @@
+name: Bug report
+description: Report a problem with the gateway
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. Please do **not** include real API keys, `.env` contents, or
+        production connection strings. For security vulnerabilities, follow SECURITY.md instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Include the endpoint, request body (redacted), provider/adapter, and response.
+      placeholder: |
+        1. POST /v1/chat/completions with model "..."
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      description: Git commit SHA or release tag.
+    validations:
+      required: false
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Node version, Postgres/Redis versions, OS, deployment (Docker, bare metal…).
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Structured logs or operation details (redacted). Include `x-request-id` if available.
+      render: shell

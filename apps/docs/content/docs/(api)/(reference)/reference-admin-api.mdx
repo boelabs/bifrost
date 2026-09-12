@@ -1,0 +1,161 @@
+---
+title: "Admin API reference"
+description: "Every admin route, grouped by area. Exact request/response shapes are in the OpenAPI spec."
+---
+
+All `/admin/*` routes require an operator identity: `Authorization: Bearer $MASTER_KEY`, or — when
+`DASH_ENABLED` — an operator session cookie whose role carries the permission that route needs (the
+master key carries all of them). See [Security → Roles](/docs/security#roles). Success responses use
+`{ "data": ... }`; paginated lists use `{ "data": [...], "pagination": { limit, offset, total, nextOffset } }`.
+
+Any `POST /admin/*` accepts an optional `Idempotency-Key` header — see
+[Idempotent creates](#idempotent-creates).
+This page is a map of what exists; for exact request/response bodies, see
+[`apps/gateway/openapi.yaml`](https://github.com/boelabs/bifrost/blob/main/apps/gateway/openapi.yaml)
+or the interactive spec (see [API guide](/docs/api-overview)).
+
+## Typed clients
+
+Every management response carries a schema in
+[`apps/gateway/openapi.yaml`](https://github.com/boelabs/bifrost/blob/main/apps/gateway/openapi.yaml),
+so a fully typed client is generated rather than hand-written:
+
+```bash
+bunx openapi-typescript apps/gateway/openapi.yaml -o src/api/schema.d.ts
+```
+
+Pair it with a typed fetch wrapper (`openapi-fetch` or equivalent) and paths, query parameters,
+request bodies and response shapes are all checked at compile time.
+
+The spec is generated from the same Zod schemas the API validates with, and two tests fail the build
+if it drifts: one when the committed YAML is stale, and one when a management response is documented
+without a schema. There is no second, private protocol for our own UI to use — the documented API is
+the API.
+
+## Deployments
+
+| Route | Purpose |
+|---|---|
+| `GET /admin/operations` | Available operations, required credentials, and transports per adapter. |
+| `POST /admin/deployments/resolve` | Dry-run: resolve effective capabilities/operations/transports for a body, without saving. |
+| `GET /admin/deployments` | List deployments. Query: `enabled`, `publicModel`, `q` (search name/prefix). |
+| `POST /admin/deployments` | Create a deployment (see [Creating deployments](/docs/creating-deployments)). |
+| `GET /admin/deployments/:id` | Read one deployment. |
+| `PATCH /admin/deployments/:id` | Update a deployment. |
+| `DELETE /admin/deployments/:id` | Delete a deployment. |
+
+## Virtual keys
+
+| Route | Purpose |
+|---|---|
+| `GET /admin/keys` | List keys. Query: `limit`, `offset`, `enabled`, `publicModel`, `q` (search name/prefix). |
+| `POST /admin/keys` | Create a virtual key (see [Virtual keys](/docs/virtual-keys)). |
+| `PATCH /admin/keys/:id` | Update scope, limits, budget, or enabled state; send `null` to clear a limit. |
+| `DELETE /admin/keys/:id` | Permanently delete a key. |
+
+## Router and fallbacks
+
+| Route | Purpose |
+|---|---|
+| `GET /admin/router-settings` | Effective router configuration (defaults if never set). |
+| `PUT /admin/router-settings` | Patch any subset of routing/parameter-policy/retry settings — see [Routing](/docs/routing) and [Parameter policy](/docs/parameter-policy). |
+| `GET /admin/fallbacks` | List fallback chains. |
+| `PUT /admin/fallbacks` | Upsert a chain (`primaryModel`, `fallbackModels`, optional `reason`). |
+| `DELETE /admin/fallbacks/:primaryModel/:reason` | Remove a chain. See [Fallbacks](/docs/fallbacks). |
+
+## Cache
+
+| Route | Purpose |
+|---|---|
+| `DELETE /admin/cache` | Clear cached entries. Query: `callType`, `namespace` (a virtual key id) — omit both to clear everything. See [Caching](/docs/caching). |
+
+## Logs and usage
+
+| Route | Purpose |
+|---|---|
+| `GET /admin/logs` | Paginated operation summaries. Filters include `outcome`, `degraded`, `active`, `terminalVerified`, `failureKind`, `failurePhase`, duration, model, key, request id, cache, and time range. |
+| `GET /admin/logs/:operationId` | Full operation record and ordered upstream-attempt timeline. |
+| `GET /admin/logs/:operationId/payload` | Decrypt a retained forensic sample. Requires `payloads:read` (master, owner, or admin) and is audit logged; returns 404 when no sample exists. |
+| `GET /admin/observability/summary` | Outcomes, degraded/stalled/active/abandoned counts, retries, and latency percentiles for `window=5m|1h|24h`. |
+| `GET /admin/usage` | Consumer usage/cost and estimated upstream cost across every attempt; group by `public_model`, `virtual_key`, `actor`, `hour`, `day`, or `none`. Filterable by `actor`. See [Cost accounting](/docs/cost-accounting). |
+
+## Audit trail
+
+| Route | Purpose |
+|---|---|
+| `GET /admin/audit` | Paginated, newest first. Merges the record of mutating `/admin` calls with the record of retained-payload reads. Query: `kind` (`admin`, `payload_access`), `actor`, `action`, `targetType`, `start`, `end`. Requires `audit:read` (master key or owner). |
+
+Both tables are read and interleaved, so `offset + limit` is capped at 5000 entries: older ones are
+reached with a date range or a narrower filter rather than a deeper page. Configuration entries are
+kept for `ADMIN_AUDIT_RETENTION_DAYS` (365 by default) and payload-read entries for as long as the
+operation metadata they point at.
+
+Reads are not audited — they are the overwhelming majority of dashboard traffic and would bury the
+entries that matter. The deliberate exception is `GET /admin/logs/:id/payload`: it is a read, but it
+reveals real prompts and completions, so it lands here as a `payload_access` entry. The trail is
+append-only; there is no write or delete route for it.
+
+## Idempotent creates
+
+Send `Idempotency-Key: <opaque string>` with a `POST` and the gateway remembers what that key
+produced. Retrying with the same key returns the original response — same status, same body, plus
+`Idempotent-Replay: true` — instead of creating a second resource. It is opt-in: a request without
+the header behaves exactly as it always has.
+
+- Keys are scoped to the caller and expire after 24 hours.
+- Reusing a key with a different body is `409 idempotency_key_reuse`, because that is a client bug
+  rather than a retry.
+- A retry that arrives while the first request is still running is `409 idempotency_key_in_progress`.
+- Only successful responses are remembered. A rejected or failed call releases the key, so the
+  corrected request can reuse it.
+
+## Operators and sessions
+
+Present only when `DASH_ENABLED`. `/auth/*` is deliberately mounted outside `/admin`: every `/admin`
+route requires an already-resolved operator identity, so the route that creates one cannot live under
+it.
+
+| Route | Purpose |
+|---|---|
+| `GET /auth/config` | Unauthenticated probe: whether human authentication exists here. Always present. |
+| `POST /auth/session` | Log in. Sets the httpOnly session cookie and the readable CSRF cookie. Rate limited per username and per IP. |
+| `GET /auth/session` | Current identity and the permissions its role grants. |
+| `DELETE /auth/session` | Log out; revokes the session server-side and clears both cookies. |
+| `POST /auth/password` | Change your own password. Revokes your other sessions and reissues the current one. Not available to the root operator. |
+| `GET /admin/users` | List operators. Query: `limit`, `offset`, `role`, `q`. Owner only. |
+| `POST /admin/users` | Create an operator. The only way an account comes into existence. Owner only. |
+| `GET /admin/users/:id` | Read one operator. Owner only. |
+| `PATCH /admin/users/:id` | Change role or enabled state. Either one revokes that user's live sessions. Owner only. |
+| `POST /admin/users/:id/password` | Set a user's password and revoke their sessions. Owner only. |
+| `DELETE /admin/users/:id` | Delete an operator and their sessions. Owner only. |
+| `GET /admin/users/:id/sessions` | That user's live sessions. Never includes the stored token hash. Owner only. |
+
+There is no per-session revoke: disabling the account, changing its role, or setting a new password
+revokes every session it has.
+
+The root operator (`DASH_ROOT_USER`) never appears in `GET /admin/users` and cannot be edited through
+the API: it is an environment identity, not a row. See
+[Security → Dashboard authentication](/docs/security#dashboard-authentication).
+
+## Extensions
+
+| Route | Purpose |
+|---|---|
+| `GET /admin/extensions` | Loaded definitions and configured instances, with live status. |
+| `GET /admin/extensions/artifacts` | List uploaded extension modules (by key). |
+| `GET /admin/extensions/artifacts/:key/versions` | Version history for one module key. |
+| `POST /admin/extensions/artifacts` | Upload a new version of a module (`key`, `code`). Triggers a hot-reload on every replica. |
+| `POST /admin/extensions/artifacts/:key/activate` | Roll back/forward to a specific previously-uploaded version. |
+| `DELETE /admin/extensions/artifacts/:key` | Delete a module and all its versions. |
+| `GET /admin/extensions/instances` | List configured instances (definition bindings). |
+| `POST /admin/extensions/instances` | Create an instance (`id`, `definition`, plus `enabled`/`critical`/`priority`/`match`/`config`). |
+| `PATCH /admin/extensions/instances/:id` | Update an instance. |
+| `DELETE /admin/extensions/instances/:id` | Remove an instance. |
+| `POST /admin/extensions/:id/reset` | Clear a tripped circuit breaker and re-activate the instance for the current process. |
+
+Full walkthrough, hook semantics, and failure behavior: [Runtime extensions](/docs/extensions).
+
+## What to read next
+
+- [API overview](/docs/api-overview) — auth and error shape shared with `/v1/*`.
+- [Creating deployments](/docs/creating-deployments), [Virtual keys](/docs/virtual-keys), [Fallbacks](/docs/fallbacks), [Extensions](/docs/extensions) — the guides behind each section above.

@@ -1,0 +1,15 @@
+{
+	"title": "Documentation",
+	"description": "Connect an application, configure providers, and operate Bifrost.",
+	"root": true,
+	"pages": [
+		"index",
+		"(get-started)",
+		"(deploy)",
+		"(routing)",
+		"(access)",
+		"(providers)",
+		"(operate)",
+		"(extend)"
+	]
+}

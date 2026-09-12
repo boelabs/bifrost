@@ -1,0 +1,49 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+
+/*
+ * Fumadocs ships its own Tailwind source detection, but its components live in node_modules, which
+ * Tailwind 4 does not scan by default. Without this the UI renders unstyled.
+ */
+@source "../../node_modules/fumadocs-ui/dist/**/*.js";
+
+@theme {
+	/* The two families `app/layout.tsx` loads, handed to Fumadocs' own type scale. */
+	--font-sans: var(--font-sans);
+	--font-mono: var(--font-mono);
+}
+
+:root {
+	/* Starlight held the prose column at 49rem; anything wider makes the API tables hard to track. */
+	--fd-layout-width: 90rem;
+}
+
+/*
+ * Long values — model ids, environment variable names, provider URLs — appear constantly in this
+ * documentation and none of them contain spaces, so without this they push the page sideways.
+ */
+#nd-page :is(p, li, td, th, a) {
+	overflow-wrap: anywhere;
+}
+
+/* Reference tables are wide by nature; let them scroll inside the column rather than widen it. */
+#nd-page table {
+	display: block;
+	max-width: 100%;
+	overflow-x: auto;
+}
+
+/*
+ * The dotted field behind the landing hero, carried over from the Starlight site.
+ *
+ * A class rather than an arbitrary Tailwind value because the colour needs mixing: the border token
+ * on its own is 20% alpha, which disappears entirely against the dark background.
+ */
+.dot-grid {
+	background-image: radial-gradient(
+		color-mix(in oklab, var(--color-fd-muted-foreground) 40%, transparent) 0.8px,
+		transparent 0.8px
+	);
+	background-size: 18px 18px;
+}

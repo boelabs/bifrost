@@ -1,0 +1,50 @@
+---
+title: "Local"
+description: "Run Bifrost on your machine for development."
+---
+
+For development, run Postgres and Redis in Docker and the gateway on the host with hot reload.
+
+## Dependencies
+
+```bash
+git clone https://github.com/boelabs/bifrost.git && cd bifrost
+bun install
+docker compose -f docker-compose.yml -f compose.local.yaml up -d postgres redis
+```
+
+This starts only Postgres and Redis locally (plaintext on `localhost`), which the gateway reaches
+without TLS — so there is no [Bun TLS issue](/docs/troubleshooting).
+
+## Configure and run
+
+Create `apps/gateway/.env` (see [Setup](/docs/setup)) with the local connection strings:
+
+```bash
+DATABASE_URL=postgres://gateway:gateway@localhost:5432/bifrost
+REDIS_URL=redis://localhost:6379
+```
+
+Apply migrations and start it on Bun with hot reload:
+
+```bash
+bun run --filter @boelabs/bifrost db:migrate
+bun run --filter @boelabs/bifrost dev
+curl http://localhost:4000/health/ready
+```
+
+`dev` runs the gateway on Bun with `--watch` (restart on change). Next, the
+[Quickstart](/docs/quickstart) registers a provider and makes your first call.
+
+## Full stack locally
+
+To run everything (gateway + docs + dependencies) in containers instead of on the host:
+
+```bash
+docker compose -f docker-compose.yml -f compose.local.yaml up -d
+```
+
+The override binds Postgres, Redis, the gateway, and docs to `127.0.0.1`; it is intentionally not
+loaded by production PaaS deployments.
+
+See [Deployment → The Compose stack](/docs/deployment#the-compose-stack).

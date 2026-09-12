@@ -1,0 +1,169 @@
+---
+title: "Operator dashboard"
+description: "The optional web UI for operating the gateway: models, keys, logs, settings, audit, and a playground."
+---
+
+Everything the gateway does is reachable through the [Admin API](/docs/reference-admin-api); the
+dashboard is a web interface over exactly that API, with no private protocol of its own. It is a
+separate deployment from the gateway — its own image, its own domain, its own process — shipped in
+the same repository, and it is **off unless you turn it on**.
+
+## Enabling it
+
+The dashboard is served only when the gateway has human authentication enabled:
+
+```bash
+DASH_ENABLED=true
+DASH_ROOT_USER=root
+DASH_ROOT_PASSWORD=<a long random password>
+```
+
+The root operator lives in the environment rather than in the database, so nobody can be locked out
+of a fresh deployment. It never appears in the user list and cannot be edited through the API; use it
+to create real accounts, then stop using it. Every other environment variable is in the
+[environment reference](/docs/reference-environment).
+
+## Serving it
+
+The gateway and the dashboard are **two independent deployments**. Two images, two containers, and
+as many domains as you like:
+
+| | Image | Port |
+|---|---|---|
+| Gateway | `ghcr.io/boelabs/bifrost-gateway` | 4000 |
+| Dashboard | `ghcr.io/boelabs/bifrost-dashboard` | 3001 |
+
+The dashboard needs one setting, and the gateway needs nothing at all:
+
+```bash
+GATEWAY_URL=https://gateway.example.com   # or http://gateway:4000 on a private network
+```
+
+That is the whole contract. Put them in different regions, different providers, different
+continents — the only requirement is that the dashboard can reach the gateway.
+
+### The browser never leaves the dashboard
+
+Everything the page needs, the dashboard's own server fetches. Reads and writes are Server
+Components and Server Actions; the three things that must be the browser's own request — signing
+in, signing out, and the playground's inference stream — go to routes on the dashboard that relay
+to the gateway (`src/shared/api/relay.ts`).
+
+Three consequences worth having:
+
+- **No CORS, anywhere.** The gateway ships none and needs none.
+- **No cross-site cookie policy.** The session cookie is `SameSite=Lax` on the dashboard's own
+  domain, which is the strict setting, not a widened one.
+- **The gateway does not have to be public.** Expose the dashboard; keep the gateway on the private
+  network. That is one fewer thing on the internet.
+
+The dashboard is a plain Next.js app at the root of its domain, so any reverse proxy that forwards
+a hostname to a port is enough — there is no path prefix to preserve and nothing to strip.
+
+### Nothing is baked into the image
+
+There is no build argument for a hostname and no `NEXT_PUBLIC_*` anywhere in the dashboard, so one
+image tag is promoted from staging to production unchanged and a hostname change is a restart, not
+a rebuild.
+
+### Check it
+
+```bash
+# The dashboard is up and can reach the gateway:
+curl -si -X POST https://dash.example.com/api/auth/session   -H 'content-type: application/json' -d '{"username":"nobody","password":"wrong"}' | head -1
+```
+
+A `401` means the whole path worked — the dashboard reached the gateway and relayed its answer. A
+`502` means the dashboard is running but `GATEWAY_URL` is wrong or unreachable.
+
+## How it authenticates
+
+**The dashboard holds no credential.** No master key, no API key, no service account. It is a
+renderer with no authority of its own, and the only thing it can do is what the person signed into
+it can do.
+
+The person authenticates; the dashboard carries the answer:
+
+```
+1.  operator types a username and password at dash.example.com
+2.  browser    ──POST /api/auth/session──►  dashboard
+3.  dashboard  ──POST /auth/session─────►  gateway        (passes them on, keeps nothing)
+4.  gateway verifies against DASH_ROOT_USER or the dashboard_users table
+                           ◄──Set-Cookie: bifrost_session=<opaque token>
+5.  dashboard re-emits that cookie to the browser, on its own domain
+6.  every later request carries it, and the dashboard forwards it upstream
+```
+
+The gateway never authenticates "a dashboard". It authenticates **an operator**, which is why the
+audit trail records `user:<uuid>` and why roles mean anything at all: a dashboard bug cannot exceed
+the role of whoever is signed in, because the gateway checks on every call.
+
+### Pointing one at any gateway
+
+You can, and it will be useless. You get a login screen you cannot pass, because you have no account
+on that gateway. **Pointing is not access.**
+
+This is the property a shared token would have destroyed. If the dashboard authenticated with the
+master key, it would have authority of its own, every request would arrive as `master-key`, roles
+would be advisory, and anyone who got past the dashboard's login would hold the whole gateway.
+
+### GATEWAY_URL is a trust decision
+
+The risk runs the other way, and it is worth being plain about.
+
+Sign-in travels *through* the dashboard, so its server sees the password in transit. It neither
+stores nor logs it — but that means whoever can change `GATEWAY_URL` can point your operators'
+login form at a server they control and harvest real credentials.
+
+So treat it like a credential, not like a hostname: restrict who can edit the deployment's
+environment, and review it when it changes. This is the cost of the browser never talking to the
+gateway directly, which is what buys you a gateway that needs no public domain.
+
+## Who can see what
+
+Sessions are opaque tokens in httpOnly cookies, and every mutation echoes a CSRF token. Roles are
+enforced by the gateway, not by the interface — the navigation simply does not offer a section whose
+API calls would come back 403. See [Security → Roles](/docs/security#roles).
+
+| | viewer | admin | owner |
+|---|---|---|---|
+| Models and deployments | read | read/write | read/write |
+| Usage, metrics, overview | read | read | read |
+| Virtual keys | — | read/write | read/write |
+| Logs and payload samples | — | read | read |
+| Playground (real inference) | — | yes | yes |
+| Router settings, fallbacks, cache | read | read/write | read/write |
+| Extensions | — | — | manage |
+| Users and audit trail | — | — | manage / read |
+
+## What each section is for
+
+- **Overview** — traffic, spend, tokens and reliability for the last 24 hours, plus whether Postgres,
+  Redis and the extension runtime are answering. Refreshes on its own; the switch stops it.
+- **Metrics** — the same numbers over a chosen window, filtered by model, deployment or operation.
+- **Models** — public models and the deployment pool behind each one. Creating or editing a
+  deployment validates the whole configuration against the adapter before it is written.
+- **API keys** — issuing, scoping, limiting and budgeting virtual keys. The secret is shown once, at
+  creation, because only its hash is stored.
+- **Playground** — real inference against a real deployment, billed and logged like any other
+  request, attributed to the operator who sent it.
+- **Logs** — one row per operation with its outcome, timing and cost; opening one shows every
+  upstream attempt. Reading a retained payload sample is itself recorded in the audit trail.
+- **Extensions** — uploaded modules and the instances running them, with live status from the replica
+  answering the page.
+- **Settings** — router behaviour, fallback chains and the response cache.
+- **Audit** — who changed the configuration and who read a payload sample. Owner only, append-only,
+  and not editable from here or anywhere else.
+
+## Safety rails
+
+Destructive actions ask first, and the question names what is actually lost — the last enabled
+deployment of a model, the instances still running a module. Creates carry an `Idempotency-Key`, so a
+double-clicked button or a retry after a timeout cannot produce two keys where you asked for one
+(see [Idempotent creates](/docs/reference-admin-api#idempotent-creates)).
+
+## What to read next
+
+- [Security](/docs/security) — the auth model behind the roles above.
+- [Admin API reference](/docs/reference-admin-api) — the same capabilities, without a browser.
+- [Virtual keys](/docs/virtual-keys) — what the scopes, budgets and limits actually do at runtime.

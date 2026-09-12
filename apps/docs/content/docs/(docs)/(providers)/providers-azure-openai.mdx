@@ -1,0 +1,46 @@
+---
+title: "Azure OpenAI"
+description: "Adapter key azureopenai. baseUrl rules, deployment naming, and quirks."
+---
+
+```json
+{
+  "publicModel": "azure-gpt",
+  "adapterKey": "azureopenai",
+  "upstreamModel": "gpt-5.4",
+  "credentials": { "apiKey": "...", "baseUrl": "https://my-resource.openai.azure.com" }
+}
+```
+
+- **Credentials**: `apiKey`, `baseUrl`.
+- **`baseUrl`** must be HTTPS, and can be either the bare resource endpoint
+  (`https://my-resource.openai.azure.com`) or the full `/openai/v1` base. **Legacy
+  `/openai/deployments/...` URLs and query parameters are rejected**. Version selectors belong in
+  `credentials.apiVersion`, not in `baseUrl`.
+- **Your Azure deployment name must equal the catalog model id** (`upstreamModel`) — Azure resolves the
+  model by deployment name, not by a separate model parameter.
+- Audio transcription catalog ids include `gpt-transcribe`, `gpt-4o-transcribe`, and
+  `gpt-4o-mini-transcribe`. They use the classic deployment-based Audio API by default because some
+  Azure resources return `DeploymentNotFound` from the v1 preview route for otherwise valid
+  deployments. The classic route defaults to API version `2024-06-01`, does not support streaming, and
+  accepts `credentials.apiVersion` when the deployment requires another version. Custom deployment
+  names require an inline `catalogEntry`.
+- To opt into `/openai/v1/audio/transcriptions?api-version=preview`, set
+  `transportOverrides["audio.transcribe"]` to `audio_transcriptions`. The v1 transport sends the Azure
+  deployment name as multipart `model`.
+- **Default transport**: Responses API for every public text endpoint, including Chat Completions
+  and Messages; `embeddings` for embeddings. Set `transportOverrides["text.generate"]` to
+  `chat_completions` to opt into Azure Chat Completions. The public endpoint does not select the
+  upstream transport. No native image transport today.
+- Strict function tools are emitted on both Chat Completions and Responses. Azure requires
+  `parallel_tool_calls: false` for this mode, so the adapter supplies that default and rejects an
+  explicit `true` rather than weakening the guarantee.
+- Azure OpenAI and [Azure Foundry](/docs/providers-azure-foundry) are two independent adapters and
+  catalogs, even though both live under the Azure umbrella — use this one for models you deploy through
+  Azure OpenAI resources specifically.
+- Catalog: `src/adapters/azureopenai/catalog.json`.
+
+## What to read next
+
+- [Azure Foundry](/docs/providers-azure-foundry) — the other Azure adapter, for models Azure itself sells.
+- [Creating deployments](/docs/creating-deployments) — the full request shape.

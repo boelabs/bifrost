@@ -1,0 +1,27 @@
+---
+title: "Azure Foundry"
+description: "Adapter key azurefoundry. For models sold directly by Azure."
+---
+
+```json
+{
+  "publicModel": "azure-deepseek",
+  "adapterKey": "azurefoundry",
+  "upstreamModel": "DeepSeek-V3.1",
+  "credentials": { "apiKey": "...", "baseUrl": "https://my-foundry-resource.services.ai.azure.com" }
+}
+```
+
+- **Credentials**: `apiKey`, `baseUrl`.
+- Use this adapter — not [Azure OpenAI](/docs/providers-azure-openai) — for models Azure itself sells
+  through Foundry, such as `DeepSeek-V3.1` or `grok-4.3`. Their upstream transport is Chat Completions;
+  Bifrost still renders every public text contract (Chat Completions, Responses, Messages) over it.
+- **Default transport**: Chat Completions for text. No native image/embedding transport.
+- Two independent providers, two independent catalogs: a model available on both Azure OpenAI and Azure
+  Foundry needs a separate catalog entry (and deployment) per adapter.
+- Catalog: `src/adapters/azurefoundry/catalog.json`.
+
+## What to read next
+
+- [Azure OpenAI](/docs/providers-azure-openai) — the other Azure adapter.
+- [Creating deployments](/docs/creating-deployments) — the full request shape.

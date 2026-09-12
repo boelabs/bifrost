@@ -1,0 +1,117 @@
+---
+title: "Virtual keys"
+description: "Client credentials with model scopes, budgets, and rate limits."
+---
+
+A **virtual key** is the credential your clients send. Unlike the master key — a single static
+operator secret — virtual keys live in the database, each with its own model scope, budget, and
+RPM/TPM limits. Issue one per app, tenant, or environment, and revoke or re-scope it without touching
+anything else.
+
+All key management is on the admin API and requires the **master key**:
+
+```
+Authorization: Bearer $MASTER_KEY
+```
+
+> Keys are stored as a SHA-256 hash. The plaintext `unified-…` value is returned **only once**, at
+> creation. There is no way to recover it later — if it is lost, delete the key and issue a new one.
+
+## Create a key
+
+```bash
+curl -X POST $BASE/admin/keys \
+  -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
+    "name": "frontend-prod",
+    "allowedModels": ["general", "image-default"],
+    "maxBudgetCents": 50000,
+    "budgetReset": "monthly",
+    "rpm": 600,
+    "tpm": 200000
+  }'
+```
+
+The response includes the plaintext key once:
+
+```json
+{
+  "data": {
+    "id": "…",
+    "name": "frontend-prod",
+    "keyPrefix": "unified-abcd…",
+    "key": "unified-…",
+    "allowedModels": ["general", "image-default"],
+    "maxBudgetCents": 50000,
+    "budgetReset": "monthly",
+    "rpm": 600,
+    "tpm": 200000,
+    "spendCents": "0",
+    "enabled": true
+  }
+}
+```
+
+## Fields
+
+| Field | Default | Meaning |
+|---|---|---|
+| `name` | required | Human label; also searchable via `?q=`. |
+| `allowedModels` | `[]` (all) | Public models this key may call. `[]` or omitted grants access to **every** model. |
+| `maxBudgetCents` | `null` (none) | Spend cap in USD cents over the current budget window. |
+| `budgetReset` | `null` | `hourly`, `daily`, `weekly`, or `monthly`. When the window rolls over, `spendCents` resets. |
+| `rpm` | `null` (none) | Max requests per minute. |
+| `tpm` | `null` (none) | Max tokens per minute. |
+| `expiresAt` | `null` (never) | ISO timestamp after which the key is rejected. |
+
+`null` always means "no limit". Limits and budget are enforced on the hot path in Redis and mirrored
+to Postgres for durable accounting.
+
+## Scopes
+
+`allowedModels` is checked against the request's **public model** name. A key calling a model outside
+its scope gets `403` with code `model_not_allowed`. An empty array is an explicit "all models" — use
+it only for trusted operator tooling, not for client-facing keys.
+
+## Budgets and limits
+
+- **Budget:** before upstream execution, the gateway atomically reserves a conservative maximum cost
+  from catalog [pricing](/docs/model-catalog) or the deployment override. Settlement replaces the
+  reservation with exact provider-reported usage. A budget-limited key cannot use a deployment whose
+  pricing is unknown, because a hard cap would otherwise be impossible to guarantee.
+- **RPM/TPM:** RPM admission and conservative TPM reservations are atomic in Redis across replicas.
+  Exact tokens reconcile at settlement; exceeding either returns `429` with code `rate_limit_exceeded`.
+  Rerank search units contribute to spend and budgets but never synthesize tokens for TPM; RPM still
+  counts each rerank request.
+- **Headers:** when a key carries any limit, responses include the matching
+  `x-ratelimit-limit-*` / `x-ratelimit-remaining-*` / `x-ratelimit-reset-*` headers (requests, tokens,
+  and budget-cents), so clients can back off before being throttled.
+
+## Manage keys
+
+```bash
+# List (filter + paginate)
+GET /admin/keys?limit=50&offset=0&enabled=true&publicModel=general&q=frontend
+
+# Update scope, limits, or budget (same fields; send null to clear a limit)
+PATCH /admin/keys/:id   { "rpm": 1200, "allowedModels": ["general"] }
+
+# Re-enable or disable without deleting
+PATCH /admin/keys/:id   { "enabled": false }
+
+# Reset accumulated spend now (e.g. after a billing dispute)
+PATCH /admin/keys/:id   { "resetSpend": true }
+
+# Permanently delete
+DELETE /admin/keys/:id
+```
+
+The admin API never returns the key hash or the plaintext value on reads — only `keyPrefix`, which is
+enough to identify a key in logs and dashboards.
+
+## Rotation and leaks
+
+Virtual keys are independent of `MASTER_KEY`, so rotating the master key does **not** invalidate them.
+To rotate a client key, issue a new one, migrate the client, then `DELETE` the old. If a key leaks,
+`DELETE` it immediately (or `PATCH … {"enabled": false}` to cut access while you investigate) and
+audit `gateway_operations` and structured admin-access logs. For master-key and provider-credential leaks, see
+[Operations → Secrets](/docs/operations).

@@ -1,0 +1,11 @@
+{
+	"title": "Operate",
+	"pages": [
+		"dashboard",
+		"operations",
+		"observability",
+		"production-checklist",
+		"upgrades",
+		"troubleshooting"
+	]
+}

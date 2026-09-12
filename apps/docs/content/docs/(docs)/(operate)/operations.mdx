@@ -1,0 +1,158 @@
+---
+title: "Operations"
+description: "Health probes, secrets, data lifecycle, backups, and shutdown."
+---
+
+Operational runbook for running Bifrost in production: health probes, rotating secrets,
+managing operation retention, backups, and graceful shutdown. If you are still getting the
+gateway running locally, start with the [Quickstart](/docs/quickstart) instead — this page assumes a
+real deployment. For observability (logs, telemetry, request/usage queries) see
+[Observability](/docs/observability); for pricing and spend, see [Cost accounting](/docs/cost-accounting).
+
+## Health and lifecycle
+
+For **how** to deploy — Docker Compose, Coolify, Portainer, Dokploy, or a Linux VPS — see
+[Deployment](/docs/deployment). This section covers the runtime behavior you wire into your
+orchestrator.
+
+The app runs TypeScript directly on **Bun** — there is no build step. Run
+`bun run --filter @boelabs/bifrost db:migrate` as a one-off **before** rolling out new
+instances; migrations are generated from `schema.ts` with drizzle-kit and are forward-only — never
+edit an already-applied migration. See [Upgrades](/docs/upgrades) for the full rollout/rollback story.
+
+**Health probes** — two probes with different jobs; wire each to the matching orchestrator probe:
+
+- `GET /health/live` — **liveness**. Always `200` while the process responds; does **not** touch
+  Postgres/Redis. Use it for the liveness probe and the container healthcheck. Never point a liveness
+  probe at a dependency-aware endpoint: a Postgres/Redis blip would otherwise restart every replica at
+  once (a restart cannot fix the dependency) and turn a blip into an outage.
+- `GET /health/ready` — **readiness**. `200` when Postgres, Redis and the extension runtime are
+  healthy; otherwise `503` with `Retry-After`. Use it for the readiness probe so an unhealthy instance
+  is pulled from the load balancer **without** being restarted, and rejoins automatically once
+  dependencies recover.
+- During a dependency outage, in-flight inference requests return `503` + `Retry-After` (not an opaque
+  `500`), so well-behaved clients back off and retry.
+
+**Shutdown** — the process handles `SIGTERM`/`SIGINT`, stops accepting traffic, drains in-flight HTTP,
+flushes the bounded operation-finalization queue, then closes Redis/Postgres and finally OpenTelemetry.
+Give the container at least `SHUTDOWN_TIMEOUT_MS` to drain.
+
+**Scaling** — replicas are safe to run concurrently. Maintenance deletes are idempotent, due work is
+claimed transactionally, and shared router/rate-limit state lives in Redis rather than process memory.
+
+## Secrets
+
+Store the root credential and encryption keyring in your secret manager (not in the image or git):
+
+| Secret | Purpose | Format |
+|---|---|---|
+| `MASTER_KEY` | Root admin credential; grants full access to `/admin/*`. | Strong random string, at least 32 characters. |
+| `ENCRYPTION_KEYRING` | Keys accepted for purpose-bound AES-256-GCM envelopes. | JSON object mapping stable key ids to 64-character hex keys. |
+| `ACTIVE_ENCRYPTION_KEY_ID` | Key id used for every new encrypted value. | A key present in `ENCRYPTION_KEYRING`. |
+
+Generate values:
+
+```bash
+# MASTER_KEY
+openssl rand -base64 48
+
+# Generate one value for each ENCRYPTION_KEYRING entry
+openssl rand -hex 32
+```
+
+See [Security](/docs/security) for what each one actually protects and the redaction guarantees around it.
+
+### Rotating `MASTER_KEY`
+
+The master key is a single static secret read from the environment. It is not stored in the database,
+so rotation is a deploy-time operation:
+
+1. Generate a new strong value.
+2. Update `MASTER_KEY` in your secret manager.
+3. Roll the deployment so every instance picks up the new value.
+4. Update any admin tooling/CI that authenticated with the old key.
+
+Virtual keys are unaffected — they live in the database and are not derived from the master key.
+
+### Rotating the encryption keyring
+
+Every envelope records its key id and purpose; new writes always use `ACTIVE_ENCRYPTION_KEY_ID` while
+reads accept every id in `ENCRYPTION_KEYRING`. Rotation therefore requires no plaintext credential
+export and no downtime:
+
+1. Add a new random id/value to `ENCRYPTION_KEYRING`, leaving the current active id in place, and roll
+   every replica so all can read both keys.
+2. Set `ACTIVE_ENCRYPTION_KEY_ID` to the new id and roll the replicas again.
+3. Run `bun run --filter @boelabs/bifrost encryption:rotate`. It re-encrypts deployments,
+   extension artifacts, and retained payload samples in bounded batches and reports row counts.
+4. Run it again; every reported count must be zero.
+5. Keep the old key for at least 14 days so stateless Responses compaction capsules issued before the
+   rotation remain readable, then remove it and roll once more.
+
+### Leaked-secret response
+
+If `MASTER_KEY` leaks: rotate it immediately (above) and audit `gateway_operations`, payload-access
+audit logs, and admin access. If a
+**provider** API key leaks, revoke it at the provider and `PATCH` the affected deployments with a new
+key.
+
+## Operation retention
+
+`gateway_operations` and `upstream_attempts` are the current operational source and expire after
+`OBSERVABILITY_METADATA_RETENTION_DAYS`. Encrypted `payload_samples` expire after
+`OBSERVABILITY_PAYLOAD_RETENTION_DAYS`; an in-process maintenance job
+also reconciles stale in-progress operations and attempts as `abandoned`. Operation metadata never
+stores full request or response bodies; bounded forensic samples are separately encrypted and expired.
+
+## `response_states` GC
+
+Expired `/v1/responses` state rows (written when `store=true`) are deleted automatically by an in-app
+job every `RESPONSE_STATE_GC_INTERVAL_MS`; an opportunistic prune on write traffic covers the gaps
+between ticks. Retention is `RESPONSES_STATE_RETENTION_DAYS`. See [Responses](/docs/responses) for what
+gets stored and how to retrieve or delete it early.
+
+## Backups
+
+**Back up Postgres; Redis is disposable.** Postgres is the source of truth — deployments, virtual
+keys, operation logs, response states, extension artifacts, and router settings. Redis only holds ephemeral runtime state
+(cooldowns, in-flight counters, rate-limit windows, the response cache), which rebuilds itself, so it
+needs no backup.
+
+The bundled Postgres uses the standard `postgres` image and a named volume (`pgdata`) — exactly what
+self-hosting platforms back up:
+
+- **Coolify** recognizes the `postgres` service and can schedule logical (`pg_dump`) backups to
+  S3-compatible storage with retention. Restoring through Coolify's UI is only available for its
+  *standalone* managed databases, not Compose services — restore a Compose backup manually with
+  `pg_restore` / `psql`. For one-click backup **and** restore, deploy Postgres as a Coolify-managed
+  database and point `DATABASE_URL` at it over the private network.
+- **Dokploy** schedules `pg_dump` backups (to S3) for databases inside a Compose app as well as
+  standalone ones, with restore.
+- **Portainer** has no database-aware backup: use a `pg_dump` cron, a volume-backup sidecar (e.g.
+  `offen/docker-volume-backup`), or back up the `pgdata` volume at the host.
+
+Manual logical backup/restore (works anywhere):
+
+```bash
+# Backup
+docker compose exec -T postgres pg_dump -U gateway -d bifrost --no-owner | gzip > backup.sql.gz
+
+# Restore into an empty database
+gunzip -c backup.sql.gz | docker compose exec -T postgres psql -U gateway -d bifrost
+```
+
+> Prefer `pg_dump` (logical) backups: they are consistent without stopping the gateway. A raw `pgdata`
+> volume snapshot is only consistent if Postgres is stopped or the platform uses a consistent-snapshot
+> method.
+
+## Dependency audit
+
+`bun audit --production` is expected to be clean for the production dependency tree, and CI enforces it
+at `--audit-level=high`.
+
+## What to read next
+
+- [Observability](/docs/observability) — logs, telemetry, and the `/admin/logs` and `/admin/usage` queries.
+- [Cost accounting](/docs/cost-accounting) — how pricing and spend actually work.
+- [Production checklist](/docs/production-checklist) — a condensed pre-launch checklist.
+- [Upgrades](/docs/upgrades) — rolling out a new version safely.

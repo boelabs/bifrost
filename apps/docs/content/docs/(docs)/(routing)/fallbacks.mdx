@@ -1,0 +1,103 @@
+---
+title: "Fallbacks"
+description: "Public-model fallback chains and routing behavior."
+---
+
+Fallbacks keep a public model answering when its provider can't. When a pool is exhausted — an outage,
+a content-policy block, an oversized prompt — the router advances to another public model you nominated,
+carrying the same canonical request, so the client never sees the failure.
+
+A fallback connects **public model names**, not individual deployments. Each public name represents a
+pool of one or more deployments. The router always exhausts the current pool before advancing to the
+next name in the chain. (New to public models and pools? Start with [Concepts](/docs/concepts).)
+
+## Configuration
+
+The logical key of a chain is `(primaryModel, reason)`:
+
+```http
+PUT /admin/fallbacks
+
+{
+  "primaryModel": "gpt",
+  "reason": "general",
+  "fallbackModels": ["gemini", "claude"]
+}
+```
+
+- `primaryModel`: the public name originally requested by the client.
+- `fallbackModels`: between 1 and 5 public names, in order. No duplicates and not the primary.
+- `reason`: the cause that activates this chain. If omitted, it defaults to `general`.
+
+On save, the gateway requires the primary and each target to have at least one persisted deployment.
+Each target must share at least one executable operation with the primary. Disabled deployments also
+count for this validation, because disabling is temporary.
+
+## Reasons
+
+`reason` is not an operation nor a model type. It is the aggregate cause for which the primary pool
+failed:
+
+| reason | When it is used |
+|---|---|
+| `general` | Transient or mixed errors, provider-specific auth/bad request, cooldown, RPM/TPM limits, or no eligible candidates for the request. |
+| `context_window` | All failures observed while exhausting the pool were `context_window`. |
+| `content_policy` | All failures observed while exhausting the pool were `content_policy`. |
+
+The lookup is exact. `general` does not substitute for a missing `context_window` or `content_policy`
+chain. If the pool's causes are mixed, `general` is used.
+
+The `reason` is decided once, from the primary pool. After that the chosen chain is traversed
+linearly; fallback Public Models do not recursively open their own chains.
+
+## Retry budgets
+
+One request-wide limit applies:
+
+```text
+max for primary + all fallbacks = executionPolicies[operation][mode].maxAttempts
+```
+
+The router makes a first pass over all eligible deployments before starting the second, and so on.
+It advances to the next fallback when the current pool has no usable candidate. Execution ends
+immediately when one reaches a verified terminal, and the shared budget prevents a long fallback list
+from amplifying an outage.
+
+Non-retryable errors, including `context_window` and `content_policy`, exhaust that deployment after a
+single attempt, but do not cut the pool: the others are still tried. Circuit state, RPM/TPM, and
+availability can reduce the actual number of attempts below the maximum.
+
+Example with a request-wide `maxAttempts` large enough for the sequence:
+
+```text
+primary (deployments A, B): A1, B1, A2
+fallback-1 (deployment C): C1, C2, C3
+fallback-2 (deployment D): D1 → success
+```
+
+## Operations and availability
+
+The request's operation never changes when entering fallback. For each Public Model in the chain, the
+router re-filters enabled deployments that support the same operation and the request's specific
+profile (for example image format/size).
+
+A chain may cover only part of the primary's operations: each target must share at least one, and at
+runtime it is skipped for the rest. Per-operation chains would require adding `operation` to the
+configuration key; that level does not currently exist.
+
+If the primary has no enabled deployment compatible with the requested operation, the request returns
+`model_not_found`: a fallback does not turn a non-existent name into a model.
+
+## Lifecycle
+
+- Disabling deployments preserves the chains.
+- Deleting a deployment preserves the chains as long as another with the same public name remains.
+- Deleting the last deployment of a primary removes all of its chains.
+- Deleting the last deployment of a target prunes it from all chains; an empty chain is deleted.
+- Renaming the last deployment of a referenced name is rejected. You must first reconfigure its
+  fallbacks to avoid implicit changes or collisions.
+- The runtime stays defensive: missing or incompatible targets are skipped if changes happened outside
+  the application's normal services.
+
+Attempts are durable `upstream_attempts` rows with deployment, adapter, transport, duration, terminal,
+and failure classification; `degraded` and the attempt timeline preserve recovered fallbacks.

@@ -1,0 +1,176 @@
+---
+title: "Security"
+description: "The auth model, credential encryption, and what the gateway redacts by default."
+---
+
+## Auth model
+
+Three identities. Two are keys, checked via `Authorization: Bearer <key>` or `x-api-key: <key>`:
+
+- **`MASTER_KEY`** — full access. Accepted on every `/admin/*` route. Also usable on `/v1/*` (operator
+  traffic); master-key requests never go through rate limiting, budgets, or the response cache.
+- **Virtual keys** — created via `POST /admin/keys`, scoped to a set of allowed public models, with
+  optional RPM/TPM limits and a spend budget. Used on `/v1/*` only. See [Virtual keys](/docs/virtual-keys).
+
+The third exists only when `DASH_ENABLED`:
+
+- **Operator sessions** — a human logs in at `POST /auth/session` and receives an opaque session token
+  in an httpOnly cookie. A session reaches both `/admin/*` (limited by its role) and `/v1/*`. It is
+  never a key: it expires, it can be revoked individually, and every action it takes is attributable
+  to a person.
+
+A request carrying a header credential is never treated as a session — an explicit key always wins,
+and the cookie is consulted only in its absence. That is what keeps every existing SDK client on
+exactly the path it used before.
+
+`/v1/models` and `/v1/models/{model}` are the only unauthenticated endpoints — deliberately, like any
+provider's public model listing. Everything else, including `/v1/models/{model}/deployments`
+(per-deployment operational detail), requires a key. See [Model discovery](/docs/models-discovery).
+
+## Dashboard authentication
+
+Off by default. Enabling it changes nothing for existing clients: it only adds the `/auth/*` routes,
+`/admin/users`, and the ability of a session to satisfy `/admin`.
+
+**The root operator lives in the environment, not the database.** `DASH_ROOT_USER` (with
+`DASH_ROOT_PASSWORD`, or `MASTER_KEY` as a fallback) always authenticates and always has the `owner`
+role. It has no row, so it cannot be disabled, demoted, or deleted, and emptying `dashboard_users`
+can never lock an operator out. Its password is not settable through the API — only through the
+environment.
+
+Every other operator is a row created by an existing owner through `POST /admin/users`. There is **no
+self-registration route and no OAuth** anywhere in the gateway; an account exists because an owner
+created it.
+
+**The dashboard is not an identity.** It holds no credential of its own and authenticates nothing —
+it relays the operator's sign-in and then carries their session. A dashboard pointed at a gateway
+where you have no account is a login screen you cannot pass. See
+[Operator dashboard → How it authenticates](/docs/dashboard#how-it-authenticates), which also covers
+the one risk that runs the other way: whoever can change the dashboard's `GATEWAY_URL` can point its
+login form somewhere else.
+
+**Passwords** are hashed with Argon2id and never stored or returned in any form. **Sessions** are
+stored as a SHA-256 hash of the token, exactly like virtual keys, with an absolute expiry
+and a sliding idle expiry, both set in **Settings › Operator sessions**. Disabling a
+user, changing their role, or resetting their password revokes every live session of theirs
+immediately rather than waiting for expiry.
+
+**Failed logins** are counted per username *and* per client IP, so neither one account under a
+distributed attack nor one address spraying many usernames reaches the attempt ceiling unnoticed.
+Both counters then lock out for the configured window. Every rejection returns the same
+generic message, and an unknown username is still verified against a real digest, so neither the
+wording nor the timing discloses whether an account exists.
+
+### Roles
+
+| | viewer | admin | owner |
+|---|---|---|---|
+| Deployments | read | read/write | read/write |
+| Virtual keys | — | read/write | read/write |
+| Usage and summaries | read | read | read |
+| Operation logs | — | read | read |
+| Retained payload samples | — | read | read |
+| Inference (`/v1/*`) | — | yes | yes |
+| Router settings, fallbacks, cache | read | read/write | read/write |
+| Runtime extensions | — | — | manage |
+| Dashboard users | — | — | manage |
+| Audit trail | — | — | read |
+
+The three capabilities reserved for `owner` are the ones that are dangerous rather than merely
+destructive: **extensions** run uploaded code in-process with no sandbox (it is remote code execution
+by design), **payload samples** are real prompts and completions, and **user management** is how any
+other permission could be granted to anyone. Reading the **audit trail** sits with them for the same
+reason — it is the record of who used those three.
+
+### CSRF
+
+A browser attaches cookies to cross-site requests on its own, so a cookie-authenticated request that
+changes state must prove it came from our own page. The gateway enforces double-submit: the login
+response sets a readable `bifrost_csrf` cookie alongside the httpOnly session cookie, and every
+non-`GET` request authenticated by that cookie must echo it in `X-CSRF-Token`.
+
+**The rule is by credential source, not by route.** It applies on `/v1/*` as well as `/admin/*` —
+inference costs real money — and it never applies to `Bearer`/`x-api-key` credentials, which a
+browser never attaches automatically.
+
+### Browser origins
+
+The gateway ships **no CORS middleware**, and the session cookie is `SameSite=Lax`. No page on the
+internet can make a browser spend an operator's session here, and an API authenticated by a bearer
+key does not need a browser's permission to be called from a server.
+
+Nothing widens this. The dashboard does not call the gateway from the browser at all — its own
+server does, and relays the three calls that must be the browser's own request. See
+[Operator dashboard → Serving it](/docs/dashboard#serving-it).
+
+### Audit trail
+
+Every mutating `/admin` call is appended to `admin_audit` with the acting identity (`master-key`,
+`root`, or `user:<uuid>`), the route, the target, the request id, and the resulting status. Reads are
+not audited — they are most of a dashboard's traffic and would bury what matters — with one deliberate
+exception in the other direction: reading a payload sample is a `GET` that reveals real content, and
+`payload_access_audit` records it separately.
+
+Both records are readable through `GET /admin/audit` (`audit:read`, so master key or owner), merged
+into one timeline and filterable by actor, action and time. The trail is append-only: no route
+updates or deletes an entry.
+
+Inference operations carry the same identity in `gateway_operations.actor`, so operator traffic
+(a playground, a manual test) is attributable and shows up in `GET /admin/usage?groupBy=actor` instead
+of appearing as unattributed spend.
+
+## Virtual keys at rest
+
+A virtual key is never stored in plaintext: only its **SHA-256 hash** and a 10-character prefix (for
+display and search in `GET /admin/keys`) are persisted. The raw key is returned exactly once, at
+creation — there is no way to retrieve it again afterward. Rotate by creating a new key and disabling
+or deleting the old one.
+
+## Deployment credentials at rest
+
+Every credential (`apiKey`, `baseUrl`, etc.) is encrypted with **AES-256-GCM** before being stored. Each
+versioned envelope records a key id and purpose authenticated as AAD, and gets its own random IV. GCM's auth tag means
+tampering with the stored ciphertext makes it fail to decrypt rather than silently returning garbage.
+**No admin API response — `GET`, `POST`, or `PATCH` on `/admin/deployments`— ever includes credentials**,
+encrypted or not; they're stripped before the response is built.
+
+Losing every copy of a keyring entry while envelopes still reference it makes those values permanently
+unrecoverable. Keep the keyring outside the database it decrypts and never commit it. For the online
+rotation procedure for both `MASTER_KEY` and the encryption keyring, see
+[Operations → Secrets](/docs/operations#secrets).
+
+## What the gateway redacts publicly
+
+- **`/v1/models` and `/v1/models/{model}`** expose aggregated capability/pricing data, but never
+  deployment labels, credentials, database ids, or the exact upstream model id.
+- **`/v1/models/{model}/deployments`** (authenticated) exposes an opaque, deterministic per-deployment
+  id (a truncated hash of the real one) and live metrics, but still never credentials or the upstream
+  model id.
+- **Operation logs** (`GET /admin/logs`) persist summaries and HMAC fingerprints, not request or
+  response bodies.
+
+## Observability payloads
+
+Forensic samples use purpose-bound AEAD envelopes under the versioned keyring, expire automatically,
+and never fall back to plaintext. HMAC fingerprints use a separate derived subkey.
+OpenTelemetry never receives payload bodies. See [Environment variables](/docs/reference-environment)
+and [Observability](/docs/observability).
+
+## Runtime extensions
+
+Extension code is trusted, operator-uploaded ESM — it runs in-process with the same access as the
+gateway itself. Only upload code you've reviewed; there is no sandboxing beyond the per-hook timeout and
+consecutive-failure circuit breaker described in [Extensions](/docs/extensions). Treat
+`POST /admin/extensions/artifacts` with the same care as deploying new gateway code, because that's
+effectively what it is.
+
+## Reporting a vulnerability
+
+Follow [SECURITY.md](https://github.com/boelabs/bifrost/blob/main/SECURITY.md) in the
+repository root. Do not open public issues for security problems.
+
+## What to read next
+
+- [Virtual keys](/docs/virtual-keys) — scopes, budgets, rotation.
+- [Environment variables](/docs/reference-environment) — every secret and its format.
+- [Production checklist](/docs/production-checklist) — what to verify before going live.
