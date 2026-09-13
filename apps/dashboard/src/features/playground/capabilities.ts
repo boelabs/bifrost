@@ -35,6 +35,12 @@ export const CAPABILITIES = [
 		label: "Reranking",
 		description: "Order documents by a query",
 	},
+	{
+		id: "transcription",
+		operations: ["audio.transcribe"],
+		label: "Transcription",
+		description: "Turn speech into text",
+	},
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number]["id"];

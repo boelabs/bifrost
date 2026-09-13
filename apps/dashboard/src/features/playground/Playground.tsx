@@ -1,5 +1,6 @@
 "use client";
 
+import { TranscriptionWorkspace } from "./TranscriptionWorkspace";
 import { EmptyState, PageHeader } from "#/components/ui/page";
 import { EmbeddingWorkspace } from "./EmbeddingWorkspace";
 import { RerankWorkspace } from "./RerankWorkspace";
@@ -71,6 +72,13 @@ export function Playground({ models }: { models: PlaygroundModel[] }) {
 				selection.capability === "image" ? (
 					<ImageWorkspace
 						key="image"
+						model={selected}
+						models={models}
+						onSelect={select}
+					/>
+				) : selection.capability === "transcription" ? (
+					<TranscriptionWorkspace
+						key="transcription"
 						model={selected}
 						models={models}
 						onSelect={select}

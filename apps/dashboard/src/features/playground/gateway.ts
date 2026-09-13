@@ -17,6 +17,11 @@ export interface GatewayRequest {
 	csrf?: () => string | undefined;
 	/** `FetchLike`, not the ambient `fetch`: a caller must only supply what is actually called. */
 	fetch?: FetchLike;
+	/**
+	 * How to read a successful body that is not JSON. Transcription is the case: `text`, `srt` and
+	 * `vtt` are the file a caller would save, and parsing them as JSON would only lose them.
+	 */
+	parse?: (body: string, contentType: string | null) => unknown;
 }
 
 function headersFor(
@@ -34,7 +39,10 @@ function headersFor(
  * the sentence an operator can act on, and losing it for "Request failed with 400" is what makes a
  * playground useless for debugging a deployment.
  */
-async function answer<T>(response: Response): Promise<T> {
+async function answer<T>(
+	response: Response,
+	options: GatewayRequest = {},
+): Promise<T> {
 	const text = await response.text();
 	let body: unknown;
 	try {
@@ -55,6 +63,8 @@ async function answer<T>(response: Response): Promise<T> {
 				: `The gateway answered ${response.status}.`;
 		throw new Error(message);
 	}
+	if (options.parse)
+		return options.parse(text, response.headers.get("content-type")) as T;
 	if (body === undefined) throw new Error("The gateway returned no answer.");
 	return body as T;
 }
@@ -71,7 +81,7 @@ export async function gatewayJson<T>(
 		body: JSON.stringify(body),
 		...(options.signal ? { signal: options.signal } : {}),
 	});
-	return answer<T>(response);
+	return answer<T>(response, options);
 }
 
 /** Multipart, for the operations that carry a file: image edits and transcription. */
@@ -88,5 +98,5 @@ export async function gatewayForm<T>(
 		body: form,
 		...(options.signal ? { signal: options.signal } : {}),
 	});
-	return answer<T>(response);
+	return answer<T>(response, options);
 }
