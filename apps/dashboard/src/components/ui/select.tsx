@@ -167,7 +167,17 @@ export function Select<Value = string>({
 					</BaseSelect.Icon>
 				</Trigger>
 				<BaseSelect.Portal>
+					{/**
+					 * Positioned `fixed`, not `absolute`.
+					 *
+					 * An absolutely positioned popup is part of the document's flow: for the frame
+					 * between being portalled to the end of `body` and being placed, it can make the
+					 * page taller, and the browser scrolls the item it just focused into view. The page
+					 * lurches and snaps back a frame later, when the popup lands where it belongs.
+					 * Fixed, it never contributes to the page's height, so there is nothing to scroll.
+					 */}
 					<BaseSelect.Positioner
+						positionMethod="fixed"
 						sideOffset={6}
 						alignItemWithTrigger={false}
 						className="z-50"
