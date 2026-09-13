@@ -32,28 +32,36 @@ async function Session() {
 	return <Playground models={await listPublicModels()} />;
 }
 
-/** The header and the composer, at the size the real ones occupy. */
+/**
+ * The header and the composer, where the real ones sit.
+ *
+ * The playground arrives empty, and an empty `ChatSession` centres its composer in the remaining
+ * space with the "Playground" heading above it (below `sm` it stays at the bottom, with the heading
+ * in the transcript instead). So the placeholder copies that layout — and `PageHeader`'s own
+ * `items-start` / `mt-1` rhythm — rather than a bottom bar and a pair of header controls the page
+ * does not have.
+ */
 function PlaygroundSkeleton() {
 	return (
-		<div className="flex h-full flex-col">
-			<div className="flex flex-wrap items-center justify-between gap-4 pb-6">
+		<div className="flex h-full min-h-0 flex-col">
+			<div className="flex flex-wrap items-start justify-between gap-4 pb-6">
 				<div>
 					<Skeleton className="h-8" width="10rem" />
-					<Skeleton className="mt-2 h-3.5" width="26rem" />
-				</div>
-				<div className="flex items-center gap-2">
-					<Skeleton
-						className="h-8 rounded-[var(--ui-radius-control)]"
-						width="14rem"
-					/>
-					<Skeleton
-						className="h-8 rounded-[var(--ui-radius-control)]"
-						width="8rem"
-					/>
+					<Skeleton className="mt-1 h-5" width="22rem" />
 				</div>
 			</div>
-			<div className="mt-auto">
-				<Skeleton className="rounded-[28px]" style={{ height: "7rem" }} />
+			<div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+				<div className="min-h-0 flex-1 overflow-hidden pt-6">
+					<div className="flex h-full items-center justify-center px-4 pb-8 sm:hidden">
+						<Skeleton className="h-8" width="9rem" />
+					</div>
+				</div>
+				<div className="relative mx-auto w-full shrink-0 px-2 pt-3 pb-2 sm:absolute sm:top-1/2 sm:left-1/2 sm:max-w-2xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:px-0 sm:pb-4 xl:max-w-3xl">
+					<div className="mb-6 hidden justify-center sm:flex">
+						<Skeleton className="h-9" width="10rem" />
+					</div>
+					<Skeleton className="h-13 rounded-[28px]" />
+				</div>
 			</div>
 		</div>
 	);
