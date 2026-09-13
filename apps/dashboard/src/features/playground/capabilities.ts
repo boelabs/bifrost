@@ -23,6 +23,12 @@ export const CAPABILITIES = [
 		label: "Images",
 		description: "Generate and edit pictures",
 	},
+	{
+		id: "embedding",
+		operations: ["embedding.create"],
+		label: "Embeddings",
+		description: "Turn text into vectors",
+	},
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number]["id"];

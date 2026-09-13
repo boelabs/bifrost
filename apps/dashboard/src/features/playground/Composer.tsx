@@ -32,6 +32,7 @@ export function Composer({
 	onReset,
 	modelPicker,
 	placeholder = "Write a message...",
+	showAttach = true,
 }: {
 	prompt: string;
 	onPrompt: (value: string) => void;
@@ -52,6 +53,12 @@ export function Composer({
 	modelPicker?: ReactNode;
 	/** What this capability is asking for — a message, a prompt, a query. */
 	placeholder?: string;
+	/**
+	 * Whether attaching is a thing this capability can do at all. A chat model that happens to take
+	 * no images still shows the clip, disabled, because another model would; embedding a file is not
+	 * a thing anywhere, and a permanently dead button is worse than none.
+	 */
+	showAttach?: boolean;
 }) {
 	const input = useRef<HTMLInputElement>(null);
 	const [dragging, setDragging] = useState(false);
@@ -142,31 +149,33 @@ export function Composer({
 					/>
 				}
 				leftActions={
-					<Button
-						type="button"
-						variant="secondary"
-						size="sm"
-						mode="icon"
-						aria-label="Attach files"
-						title={
-							accepted.length
-								? "Attach files"
-								: "This model does not support attachments"
-						}
-						disabled={reading || busy || !accepted.length}
-						onClick={() => input.current?.click()}
-						className="hover:border-fg-muted max-sm:border-transparent max-sm:hover:border-transparent"
-					>
-						{reading ? (
-							<IconLoader2
-								size={20}
-								className="animate-spin motion-reduce:animate-none"
-								aria-hidden
-							/>
-						) : (
-							<IconPlus size={20} strokeWidth={2.5} aria-hidden />
-						)}
-					</Button>
+					showAttach ? (
+						<Button
+							type="button"
+							variant="secondary"
+							size="sm"
+							mode="icon"
+							aria-label="Attach files"
+							title={
+								accepted.length
+									? "Attach files"
+									: "This model does not support attachments"
+							}
+							disabled={reading || busy || !accepted.length}
+							onClick={() => input.current?.click()}
+							className="hover:border-fg-muted max-sm:border-transparent max-sm:hover:border-transparent"
+						>
+							{reading ? (
+								<IconLoader2
+									size={20}
+									className="animate-spin motion-reduce:animate-none"
+									aria-hidden
+								/>
+							) : (
+								<IconPlus size={20} strokeWidth={2.5} aria-hidden />
+							)}
+						</Button>
+					) : null
 				}
 				rightActions={
 					<>

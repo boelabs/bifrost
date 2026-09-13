@@ -1,6 +1,7 @@
 "use client";
 
 import { EmptyState, PageHeader } from "#/components/ui/page";
+import { EmbeddingWorkspace } from "./EmbeddingWorkspace";
 import { ImageWorkspace } from "./ImageWorkspace";
 import type { Capability } from "./capabilities";
 import { TextWorkspace } from "./TextWorkspace";
@@ -69,6 +70,13 @@ export function Playground({ models }: { models: PlaygroundModel[] }) {
 				selection.capability === "image" ? (
 					<ImageWorkspace
 						key="image"
+						model={selected}
+						models={models}
+						onSelect={select}
+					/>
+				) : selection.capability === "embedding" ? (
+					<EmbeddingWorkspace
+						key="embedding"
 						model={selected}
 						models={models}
 						onSelect={select}
