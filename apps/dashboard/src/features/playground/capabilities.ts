@@ -29,6 +29,12 @@ export const CAPABILITIES = [
 		label: "Embeddings",
 		description: "Turn text into vectors",
 	},
+	{
+		id: "rerank",
+		operations: ["rerank"],
+		label: "Reranking",
+		description: "Order documents by a query",
+	},
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number]["id"];
