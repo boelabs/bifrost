@@ -1,6 +1,8 @@
+import { MESSAGE_ACTION, MESSAGE_ACTION_ICON } from "./MessageParts";
 import { buttonStyles } from "#/components/ui/button";
 import { IconInfoCircle } from "@tabler/icons-react";
 import type { ResponseMetrics } from "./transport";
+import { cn } from "cn";
 
 import {
 	DialogDescription,
@@ -23,13 +25,17 @@ export function ResponseDetails({
 }) {
 	return (
 		<DialogRoot>
+			{/* Styled as the buttons it sits with, not as a dialog trigger: same box, same hover. */}
 			<DialogTrigger
 				disabled={disabled}
-				className="size-10 rounded-xl p-0 text-fg-muted lg:size-8"
+				className={cn(
+					buttonStyles({ variant: "ghost", size: "sm", mode: "icon" }),
+					MESSAGE_ACTION,
+				)}
 				aria-label="Response details"
 				title="Response details"
 			>
-				<IconInfoCircle className="size-5 lg:size-4.5" aria-hidden />
+				<IconInfoCircle className={MESSAGE_ACTION_ICON} aria-hidden />
 			</DialogTrigger>
 			<DialogContent layout="sectioned" className="md:w-xl">
 				<DialogHeader>

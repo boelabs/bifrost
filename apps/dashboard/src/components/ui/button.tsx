@@ -42,7 +42,10 @@ export const buttonStyles = tv({
 		 */
 		mode: {
 			default: "",
-			icon: "aspect-square shrink-0 p-0",
+			// `min-h-0` because the size variant's `min-h-*` would otherwise outlive an overridden
+			// `size-*`: a caller asking for `lg:size-8` got a 32px-wide box held 36px tall, which is
+			// how the playground's message actions stopped lining up with each other.
+			icon: "aspect-square shrink-0 p-0 min-h-0",
 		},
 	},
 	compoundVariants: [
