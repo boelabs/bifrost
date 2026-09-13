@@ -6,17 +6,24 @@ import { ResponseDetails } from "./ResponseDetails";
 import { ResponseLoader } from "./ResponseLoader";
 import { IconRotate2 } from "@tabler/icons-react";
 import { Button } from "#/components/ui/button";
+import { ErrorNote } from "#/components/ui/page";
 import { Status } from "#/components/ui/status";
 import { Markdown } from "./Markdown";
 
 export function Conversation({
 	messages,
 	busy,
+	error,
 	onCopy,
 	onRegenerate,
 }: {
 	messages: PlaygroundMessage[];
 	busy: boolean;
+	/**
+	 * Why the last response failed, shown inside the turn it belongs to rather than as a bar across
+	 * the page: the failure is that answer, and the message's own regenerate button is the retry.
+	 */
+	error?: string;
 	onCopy: (text: string) => Promise<void>;
 	onRegenerate: (messageId: string) => void;
 }) {
@@ -36,6 +43,10 @@ export function Conversation({
 	const isStreaming = (message: PlaygroundMessage) =>
 		message.metadata?.state === "streaming" ||
 		(busy && message.id === messages.at(-1)?.id);
+	// A request that failed before the first chunk leaves no assistant turn to hang the note on.
+	const failed = displayMessages.at(-1);
+	const failedId =
+		error && failed?.role === "assistant" ? failed.id : undefined;
 	return (
 		<div className="mx-auto w-full space-y-10 pb-8 sm:max-w-2xl xl:max-w-3xl">
 			{groups.map((group) => (
@@ -167,6 +178,9 @@ export function Conversation({
 									/>
 								</div>
 							) : null}
+							{message.id === failedId ? (
+								<ErrorNote width="fit-content">{error}</ErrorNote>
+							) : null}
 							{message.role === "assistant" ? (
 								<div
 									className={`-ml-2 mt-1 flex h-10 shrink-0 gap-0.5 lg:h-8 ${isStreaming(message) ? "pointer-events-none" : ""}`}
@@ -203,6 +217,11 @@ export function Conversation({
 					))}
 				</section>
 			))}
+			{error && !failedId ? (
+				<section aria-label="Conversation turn" className="px-4">
+					<ErrorNote width="fit-content">{error}</ErrorNote>
+				</section>
+			) : null}
 		</div>
 	);
 }

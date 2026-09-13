@@ -165,6 +165,7 @@ export function ChatSession({
 					<Conversation
 						messages={messages}
 						busy={busy}
+						error={error?.message}
 						onCopy={copy}
 						onRegenerate={(messageId) => {
 							clearError();
@@ -181,25 +182,6 @@ export function ChatSession({
 					</div>
 				)}
 			</div>
-			{error || localError ? (
-				<div className="px-5 pb-4">
-					<ErrorNote>{localError ?? error?.message}</ErrorNote>
-					{error ? (
-						<Button
-							variant="ghost"
-							size="xs"
-							disabled={busy}
-							onClick={() => {
-								clearError();
-								startedAt.current = performance.now();
-								void regenerate();
-							}}
-						>
-							Retry response
-						</Button>
-					) : null}
-				</div>
-			) : null}
 			{notice ? (
 				<p role="status" className="sr-only">
 					{notice}
@@ -228,6 +210,18 @@ export function ChatSession({
 					<h2 className="mb-6 hidden text-center text-3xl font-medium tracking-tight sm:block">
 						Playground
 					</h2>
+				) : null}
+				{/**
+				 * Only the composer's own complaints belong here — a rejected attachment, an empty
+				 * send. A failed response is shown inside its turn, next to the regenerate button
+				 * that retries it; and when the failure left no turn behind, this is where it lands.
+				 */}
+				{localError || (error && !messages.length) ? (
+					<div className="mb-2 px-2 sm:px-0">
+						<ErrorNote width="fit-content">
+							{localError ?? error?.message}
+						</ErrorNote>
+					</div>
 				) : null}
 				<Composer
 					prompt={prompt}

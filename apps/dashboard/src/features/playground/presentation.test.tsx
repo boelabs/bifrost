@@ -419,3 +419,40 @@ test("reasoning ends with a ready step and collapses once the answer starts", ()
 	assert.ok(html.indexOf("Considered the options.") < html.indexOf(">Ready<"));
 	assert.ok(html.indexOf(">Ready<") < html.indexOf(">Answer<"));
 });
+
+test("a failed response is reported inside its own turn, above its regenerate button", () => {
+	const failed: PlaygroundMessage[] = [
+		messages[0],
+		{ id: "a1", role: "assistant", parts: [], metadata: { state: "failed" } },
+	];
+	const html = renderToStaticMarkup(
+		<Conversation
+			messages={failed}
+			busy={false}
+			error="Failed to construct 'URL': Invalid URL"
+			onCopy={async () => {}}
+			onRegenerate={() => {}}
+		/>,
+	);
+	const alert = html.indexOf('role="alert"');
+	assert.notEqual(alert, -1);
+	assert.match(html, /Failed to construct &#x27;URL&#x27;: Invalid URL/);
+	// Inside the assistant article, and before the actions that retry it.
+	assert.ok(alert > html.indexOf('aria-label="Assistant message"'));
+	assert.ok(alert < html.indexOf('aria-label="Regenerate response"'));
+	assert.doesNotMatch(html, /disabled[^>]*aria-label="Regenerate response"/);
+});
+
+test("a failure that left no turn behind still reports itself in the transcript", () => {
+	const html = renderToStaticMarkup(
+		<Conversation
+			messages={[messages[0]]}
+			busy={false}
+			error="The inference request failed."
+			onCopy={async () => {}}
+			onRegenerate={() => {}}
+		/>,
+	);
+	assert.equal((html.match(/role="alert"/g) ?? []).length, 1);
+	assert.match(html, /The inference request failed\./);
+});
