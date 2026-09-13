@@ -55,6 +55,17 @@ function Trigger({
 		</BaseCombobox.Trigger>
 	);
 }
+/**
+ * Positioned `fixed`, not `absolute`, for the reason spelled out in `select.tsx`: an absolutely
+ * positioned popup is part of the document's flow for the frame before it is placed, which can make
+ * the page taller and send the browser scrolling after the item it just focused.
+ */
+function Positioner({
+	positionMethod = "fixed",
+	...props
+}: BaseCombobox.Positioner.Props) {
+	return <BaseCombobox.Positioner positionMethod={positionMethod} {...props} />;
+}
 function Popup({
 	className,
 	style,
@@ -341,6 +352,7 @@ function InputField({
 
 export const Combobox = {
 	...BaseCombobox,
+	Positioner,
 	Input,
 	InputGroup,
 	InputField,
