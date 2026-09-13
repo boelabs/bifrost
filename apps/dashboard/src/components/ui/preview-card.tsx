@@ -68,10 +68,13 @@ export function PreviewCardPositioner({
 	borderRadius,
 	width,
 	sideOffset = 8,
+	// Against the viewport, not the document — see `select.tsx` for what `absolute` costs.
+	positionMethod = "fixed",
 	...props
 }: PreviewCardPositionerProps) {
 	return (
 		<BasePreviewCard.Positioner
+			positionMethod={positionMethod}
 			{...props}
 			sideOffset={sideOffset}
 			className={mergeClassName("z-50 outline-none", className)}

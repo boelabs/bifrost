@@ -66,10 +66,13 @@ export function TooltipPositioner({
 	borderRadius,
 	width,
 	sideOffset = 8,
+	// Against the viewport, not the document — see `select.tsx` for what `absolute` costs.
+	positionMethod = "fixed",
 	...props
 }: TooltipPositionerProps) {
 	return (
 		<BaseTooltip.Positioner
+			positionMethod={positionMethod}
 			{...props}
 			sideOffset={sideOffset}
 			className={mergeClassName("z-50", className)}
