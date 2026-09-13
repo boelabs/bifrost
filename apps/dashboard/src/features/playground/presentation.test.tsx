@@ -2,6 +2,8 @@ import { composerExpanded, composerTextareaGeometry } from "./composerLayout";
 import { Conversation, groupMessages } from "./Conversation";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { PlaygroundMessage } from "./transport";
+import type { PlaygroundModel } from "./models";
+import { ModelSelect } from "./ModelSelect";
 import { Metrics } from "./ResponseDetails";
 import assert from "node:assert/strict";
 import { Markdown } from "./Markdown";
@@ -455,4 +457,29 @@ test("a failure that left no turn behind still reports itself in the transcript"
 	);
 	assert.equal((html.match(/role="alert"/g) ?? []).length, 1);
 	assert.match(html, /The inference request failed\./);
+});
+
+test("the model picker names the current model and is reachable as a labelled control", () => {
+	const model: PlaygroundModel = {
+		id: "gpt-5",
+		capabilities: ["text"],
+		endpoints: ["chat.completions"],
+		acceptsImages: false,
+		supportedParameters: [],
+		inputModalities: ["text"],
+		parameterConstraints: {},
+		reasoningEfforts: [],
+	};
+	const html = renderToStaticMarkup(
+		<ModelSelect
+			models={[model, { ...model, id: "claude-opus-5" }]}
+			capability="text"
+			modelId="gpt-5"
+			onSelect={() => {}}
+		/>,
+	);
+	assert.match(html, /aria-label="Model"/);
+	assert.match(html, /gpt-5/);
+	// The list lives in a portal, so the closed trigger must not leak the other names.
+	assert.doesNotMatch(html, /claude-opus-5/);
 });

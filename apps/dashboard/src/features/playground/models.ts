@@ -1,3 +1,4 @@
+import { type Capability, CAPABILITIES } from "./capabilities.ts";
 import type { PublicEndpoint } from "./api.ts";
 import { z } from "zod";
 
@@ -28,6 +29,12 @@ export interface PlaygroundCapabilities {
 
 export interface PlaygroundModel extends PlaygroundCapabilities {
 	id: string;
+	/**
+	 * What this model can be asked to do here — the same model may offer several, and it is listed
+	 * under each. Only capabilities the playground implements appear; see `capabilities.ts`.
+	 */
+	capabilities: Capability[];
+	/** The public contracts text generation is available under. Empty for a model that has none. */
 	endpoints: PublicEndpoint[];
 	acceptsImages: boolean;
 }
@@ -75,14 +82,26 @@ export function parsePublicModels(body: unknown): PlaygroundModel[] {
 			const text = model.operations.find(
 				(operation) => operation.id === "text.generate",
 			);
-			if (!text) return [];
 			const capabilities = model.text_capabilities;
 			const available = endpoints.filter(
 				(endpoint) =>
-					text.endpoints.includes(endpointPaths[endpoint]) &&
+					text?.endpoints.includes(endpointPaths[endpoint]) &&
 					(capabilities?.contracts.includes(endpoint) ?? true),
 			);
-			if (!available.length) return [];
+			// A capability with no public endpoint left to send it through is not one this playground
+			// can offer, whatever the catalog says the model supports.
+			const availableCapabilities = CAPABILITIES.flatMap(
+				(capability): Capability[] =>
+					model.operations.some(
+						(operation) =>
+							operation.id === capability.operation &&
+							operation.endpoints.length > 0,
+					) &&
+					(capability.id !== "text" || available.length > 0)
+						? [capability.id]
+						: [],
+			);
+			if (!availableCapabilities.length) return [];
 			// Older catalogs only provide a union: do not infer safe optional controls or attachments.
 			const inputModalities = capabilities?.input_modalities ?? ["text"];
 			const parameterConstraints: Record<string, ParameterConstraint> = {};
@@ -100,6 +119,7 @@ export function parsePublicModels(body: unknown): PlaygroundModel[] {
 			return [
 				{
 					id: model.id,
+					capabilities: availableCapabilities,
 					endpoints: available,
 					supportedParameters: capabilities?.supported_parameters ?? [],
 					inputModalities,
@@ -115,6 +135,46 @@ export function parsePublicModels(body: unknown): PlaygroundModel[] {
 			];
 		})
 		.sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/** One entry per capability that has models, in the registry's order, for the picker's groups. */
+export interface CapabilityGroup {
+	capability: Capability;
+	label: string;
+	items: ModelChoice[];
+}
+
+/** A model under one of its capabilities — what the picker offers and what selecting one returns. */
+export interface ModelChoice {
+	key: string;
+	capability: Capability;
+	model: PlaygroundModel;
+}
+
+export function choiceKey(capability: Capability, modelId: string): string {
+	return `${capability}:${modelId}`;
+}
+
+/**
+ * The catalog arranged by capability.
+ *
+ * A model with several capabilities is repeated, once per group: the group it is picked from is how
+ * the operator says which operation this session is about, so the two listings are genuinely
+ * different choices rather than a duplicate.
+ */
+export function capabilityGroups(models: PlaygroundModel[]): CapabilityGroup[] {
+	return CAPABILITIES.flatMap((capability): CapabilityGroup[] => {
+		const items = models
+			.filter((model) => model.capabilities.includes(capability.id))
+			.map((model) => ({
+				key: choiceKey(capability.id, model.id),
+				capability: capability.id,
+				model,
+			}));
+		return items.length
+			? [{ capability: capability.id, label: capability.label, items }]
+			: [];
+	});
 }
 
 const endpointParameters: Record<PublicEndpoint, readonly string[]> = {

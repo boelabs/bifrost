@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import {
 	reasoningEffortsFor,
 	parsePublicModels,
+	capabilityGroups,
 	parameterValues,
 	capabilitiesFor,
 	tunablesFor,
@@ -210,5 +211,55 @@ test("incompatible numeric constraints and discrete enumerations never produce i
 	assert.equal(
 		controls.some((control) => control.key === "top_p"),
 		false,
+	);
+});
+
+test("a model is listed under every capability it exposes, and under none it cannot run", () => {
+	const models = parsePublicModels({
+		data: [
+			model(),
+			{
+				id: "image-only",
+				operations: [
+					{ id: "image.generate", endpoints: ["/v1/images/generations"] },
+				],
+			},
+			{
+				id: "declared-but-unreachable",
+				operations: [{ id: "text.generate", endpoints: [] }],
+			},
+		],
+	});
+	assert.deepEqual(
+		models.map((entry) => entry.id),
+		["public-model"],
+	);
+	assert.deepEqual(models[0]?.capabilities, ["text"]);
+	assert.deepEqual(
+		capabilityGroups(models).map((group) => ({
+			capability: group.capability,
+			items: group.items.map((item) => item.key),
+		})),
+		[{ capability: "text", items: ["text:public-model"] }],
+	);
+});
+
+test("a text model with no contract the gateway exposes is not offered at all", () => {
+	assert.deepEqual(
+		parsePublicModels({
+			data: [
+				{
+					...model(),
+					operations: [
+						{ id: "text.generate", endpoints: ["/v1/chat/completions"] },
+					],
+					text_capabilities: {
+						...model().text_capabilities,
+						contracts: ["responses"],
+					},
+				},
+			],
+		}),
+		[],
 	);
 });
