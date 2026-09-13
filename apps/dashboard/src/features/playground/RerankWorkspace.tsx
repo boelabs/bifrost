@@ -179,8 +179,8 @@ function RerankRunView({
 						size="sm"
 						mode="icon"
 						className={MESSAGE_ACTION}
-						aria-label="Run this query again"
-						title="Run this query again"
+						aria-label="Rank again"
+						title="Rank again"
 						disabled={run.state === "running"}
 						onClick={onRetry}
 					>
@@ -272,32 +272,51 @@ export function RerankWorkspace({
 			return;
 		}
 		setLocalError(undefined);
-		const id = crypto.randomUUID();
-		const asked = { query: query.trim(), documents };
-		setRuns((current) => [
-			...current,
-			{
-				id,
-				...asked,
-				model: model.id,
-				settings,
-				state: "running",
-				results: [],
-			},
-		]);
+		const run: RerankRun = {
+			id: crypto.randomUUID(),
+			query: query.trim(),
+			documents,
+			model: model.id,
+			settings,
+			state: "running",
+			results: [],
+		};
+		setRuns((current) => [...current, run]);
 		setQuery("");
+		await execute(run);
+	}
+
+	/**
+	 * Runs a ranking in its own place in the transcript: asking again replaces that run rather than
+	 * adding one, the way regenerating an answer does in the chat.
+	 */
+	async function execute(run: RerankRun) {
+		const { id } = run;
+		// Under whatever is set now, not what was set then: the same rule the chat's regenerate follows.
+		update(id, {
+			state: "running",
+			results: [],
+			error: undefined,
+			model: model.id,
+			settings,
+		});
 		const controller = new AbortController();
 		request.current = controller;
 		const started = performance.now();
 		try {
 			const response = await runRerank(
-				{ model: model.id, ...asked, settings },
+				{
+					model: model.id,
+					query: run.query,
+					documents: run.documents,
+					settings,
+				},
 				{ signal: controller.signal },
 			);
 			if (!alive.current) return;
 			update(id, {
 				state: "completed",
-				results: rankingFrom(response, asked.documents),
+				results: rankingFrom(response, run.documents),
 				durationMs: performance.now() - started,
 				...(response.usage?.total_tokens !== undefined
 					? { totalTokens: response.usage.total_tokens }

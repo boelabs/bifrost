@@ -125,8 +125,8 @@ export function ImageRunView({
 						size="sm"
 						mode="icon"
 						className={MESSAGE_ACTION}
-						aria-label="Use this prompt again"
-						title="Use this prompt again"
+						aria-label="Generate again"
+						title="Generate again"
 						disabled={run.state === "running"}
 						onClick={onRetry}
 					>

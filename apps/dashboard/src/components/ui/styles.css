@@ -170,17 +170,15 @@
 	}
 
 	/**
-	 * Reserve the scrollbar's track whether or not it is showing.
+	 * The document deliberately reserves nothing.
 	 *
-	 * Overlays lock the page by setting `overflow: hidden` on the body, which on a platform with
-	 * classic (layout-consuming) scrollbars takes ~15px of width away the instant a select, dialog or
-	 * menu opens — the whole page shifts sideways and snaps back on close. Reserving the gutter costs
-	 * nothing where scrollbars are overlaid, and is the difference between a jump and a still page
-	 * where they are not.
+	 * A page-wide `scrollbar-gutter: stable` used to sit here, to keep an overlay's scroll lock from
+	 * shifting the page sideways. It cost ~15px of the window on every platform with classic
+	 * scrollbars — a dead strip down the right of an app that never scrolls its document, with the
+	 * panes and their scrollbars held off the edge. The lock is dealt with where it happens instead:
+	 * the shell is one viewport tall so the document has no scrollbar to take away, and the controls
+	 * that do not need to lock the page (see `select.tsx`) do not.
 	 */
-	html {
-		scrollbar-gutter: stable;
-	}
 
 	body {
 		margin: 0;
