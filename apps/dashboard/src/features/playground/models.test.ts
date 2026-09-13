@@ -45,7 +45,7 @@ function model(overrides: Record<string, unknown> = {}) {
 	};
 }
 
-test("parses actual operation objects and only exposes text generation models", () => {
+test("parses actual operation objects and reads each model's contracts", () => {
 	const models = parsePublicModels({
 		data: [
 			model(),
@@ -57,14 +57,17 @@ test("parses actual operation objects and only exposes text generation models", 
 			},
 		],
 	});
-	assert.equal(models.length, 1);
-	assert.deepEqual(models[0]?.endpoints, [
+	assert.deepEqual(
+		models.map((entry) => entry.capabilities),
+		[["image"], ["text"]],
+	);
+	assert.deepEqual(models[1]?.endpoints, [
 		"chat.completions",
 		"responses",
 		"messages",
 	]);
-	assert.deepEqual(models[0]?.reasoningEfforts, ["none", "high"]);
-	assert.equal(models[0]?.acceptsImages, true);
+	assert.deepEqual(models[1]?.reasoningEfforts, ["none", "high"]);
+	assert.equal(models[1]?.acceptsImages, true);
 });
 
 test("effective contract and parameter availability applies separately to each endpoint", () => {
@@ -232,15 +235,53 @@ test("a model is listed under every capability it exposes, and under none it can
 	});
 	assert.deepEqual(
 		models.map((entry) => entry.id),
-		["public-model"],
+		["image-only", "public-model"],
 	);
-	assert.deepEqual(models[0]?.capabilities, ["text"]);
+	assert.deepEqual(models[1]?.capabilities, ["text"]);
+	// The unreachable model is gone; the image model is offered under Images and nowhere else.
 	assert.deepEqual(
 		capabilityGroups(models).map((group) => ({
 			capability: group.capability,
 			items: group.items.map((item) => item.key),
 		})),
-		[{ capability: "text", items: ["text:public-model"] }],
+		[
+			{ capability: "text", items: ["text:public-model"] },
+			{ capability: "image", items: ["image:image-only"] },
+		],
+	);
+});
+
+test("a model that both writes and draws is offered under each, as separate choices", () => {
+	const models = parsePublicModels({
+		data: [
+			{
+				...model(),
+				operations: [
+					{
+						id: "text.generate",
+						endpoints: [
+							"/v1/chat/completions",
+							"/v1/responses",
+							"/v1/messages",
+						],
+					},
+					{ id: "image.generate", endpoints: ["/v1/images/generations"] },
+					{ id: "image.edit", endpoints: ["/v1/images/edits"] },
+				],
+			},
+		],
+	});
+	assert.deepEqual(models[0]?.capabilities, ["text", "image"]);
+	assert.deepEqual(models[0]?.operations, [
+		"text.generate",
+		"image.generate",
+		"image.edit",
+	]);
+	assert.deepEqual(
+		capabilityGroups(models).flatMap((group) =>
+			group.items.map((item) => item.key),
+		),
+		["text:public-model", "image:public-model"],
 	);
 });
 

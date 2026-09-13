@@ -34,6 +34,8 @@ export interface PlaygroundModel extends PlaygroundCapabilities {
 	 * under each. Only capabilities the playground implements appear; see `capabilities.ts`.
 	 */
 	capabilities: Capability[];
+	/** The catalog's own operation ids, for the few choices a capability alone cannot answer. */
+	operations: string[];
 	/** The public contracts text generation is available under. Empty for a model that has none. */
 	endpoints: PublicEndpoint[];
 	acceptsImages: boolean;
@@ -90,13 +92,12 @@ export function parsePublicModels(body: unknown): PlaygroundModel[] {
 			);
 			// A capability with no public endpoint left to send it through is not one this playground
 			// can offer, whatever the catalog says the model supports.
+			const operations = model.operations
+				.filter((operation) => operation.endpoints.length > 0)
+				.map((operation) => operation.id);
 			const availableCapabilities = CAPABILITIES.flatMap(
 				(capability): Capability[] =>
-					model.operations.some(
-						(operation) =>
-							operation.id === capability.operation &&
-							operation.endpoints.length > 0,
-					) &&
+					capability.operations.some((id) => operations.includes(id)) &&
 					(capability.id !== "text" || available.length > 0)
 						? [capability.id]
 						: [],
@@ -120,6 +121,7 @@ export function parsePublicModels(body: unknown): PlaygroundModel[] {
 				{
 					id: model.id,
 					capabilities: availableCapabilities,
+					operations,
 					endpoints: available,
 					supportedParameters: capabilities?.supported_parameters ?? [],
 					inputModalities,
