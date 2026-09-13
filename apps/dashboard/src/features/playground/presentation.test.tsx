@@ -463,6 +463,7 @@ test("the model picker names the current model and is reachable as a labelled co
 	const model: PlaygroundModel = {
 		id: "gpt-5",
 		capabilities: ["text"],
+		operations: ["text.generate"],
 		endpoints: ["chat.completions"],
 		acceptsImages: false,
 		supportedParameters: [],

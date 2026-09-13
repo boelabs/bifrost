@@ -31,6 +31,7 @@ export function Composer({
 	onSettings,
 	onReset,
 	modelPicker,
+	placeholder = "Write a message...",
 }: {
 	prompt: string;
 	onPrompt: (value: string) => void;
@@ -49,6 +50,8 @@ export function Composer({
 	 * writing the message, and it is the thing an operator changes most often.
 	 */
 	modelPicker?: ReactNode;
+	/** What this capability is asking for — a message, a prompt, a query. */
+	placeholder?: string;
 }) {
 	const input = useRef<HTMLInputElement>(null);
 	const [dragging, setDragging] = useState(false);
@@ -113,7 +116,7 @@ export function Composer({
 						rows={1}
 						value={prompt}
 						style={{ height, overflowY }}
-						placeholder="Write a message..."
+						placeholder={placeholder}
 						className="mt-4 w-full min-w-0 resize-none bg-transparent pt-0 pb-4 align-bottom text-base font-normal leading-6.5 text-fg outline-none placeholder:truncate placeholder:text-fg-muted"
 						onChange={(event) => onPrompt(event.target.value)}
 						onKeyDown={(event) => {

@@ -11,19 +11,24 @@
 export const CAPABILITIES = [
 	{
 		id: "text",
-		operation: "text.generate",
+		operations: ["text.generate"],
 		label: "Text",
 		description: "Chat and completions",
+	},
+	{
+		// Editing is the same workspace as generating — a prompt with source images rather than a
+		// mode of its own — so a model that only edits still belongs in this group.
+		id: "image",
+		operations: ["image.generate", "image.edit"],
+		label: "Images",
+		description: "Generate and edit pictures",
 	},
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number]["id"];
 
-/** The catalog operation each capability is read from, for parsing a model's operation list. */
-export const CAPABILITY_OPERATIONS: Record<Capability, string> =
-	Object.fromEntries(
-		CAPABILITIES.map((capability) => [capability.id, capability.operation]),
-	) as Record<Capability, string>;
+export const IMAGE_GENERATE = "image.generate";
+export const IMAGE_EDIT = "image.edit";
 
 export function capabilityLabel(capability: Capability): string {
 	return (
