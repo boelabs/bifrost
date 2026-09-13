@@ -1,19 +1,20 @@
 import { MessageAttachments } from "./MessageAttachments";
 import { Reasoning, reasoningGroupAt } from "./Reasoning";
+import type { PlaygroundMessage } from "./transport";
+import { ResponseDetails } from "./ResponseDetails";
+import { ResponseLoader } from "./ResponseLoader";
+import { IconRotate2 } from "@tabler/icons-react";
+import { ErrorNote } from "#/components/ui/page";
+import { Button } from "#/components/ui/button";
+import { Status } from "#/components/ui/status";
+import { Markdown } from "./Markdown";
+
 import {
 	MESSAGE_ACTION_ICON,
 	MESSAGE_ACTION,
 	CopyAction,
 	UserBubble,
 } from "./MessageParts";
-import type { PlaygroundMessage } from "./transport";
-import { ResponseDetails } from "./ResponseDetails";
-import { ResponseLoader } from "./ResponseLoader";
-import { IconRotate2 } from "@tabler/icons-react";
-import { Button } from "#/components/ui/button";
-import { ErrorNote } from "#/components/ui/page";
-import { Status } from "#/components/ui/status";
-import { Markdown } from "./Markdown";
 
 export function Conversation({
 	messages,

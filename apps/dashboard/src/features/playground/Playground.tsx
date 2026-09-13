@@ -5,8 +5,22 @@ import { Select, SelectItem } from "#/components/ui/select";
 import { NumberField } from "#/components/ui/number-field";
 import { buttonStyles } from "#/components/ui/button";
 import { Textarea } from "#/components/ui/textarea";
+import type { Capability } from "./capabilities";
+import { ModelSelect } from "./ModelSelect";
 import { ChatSession } from "./ChatSession";
 import { Tabs } from "#/components/ui/tabs";
+
+import {
+	type PlaygroundModel,
+	reasoningEffortsFor,
+	type ModelChoice,
+	capabilityGroups,
+	capabilitiesFor,
+	parameterValues,
+	tunablesFor,
+	supports,
+	TUNABLE,
+} from "./models";
 
 import {
 	DialogDescription,
@@ -18,16 +32,6 @@ import {
 	DialogBody,
 	DialogRoot,
 } from "#/components/ui/dialog";
-
-import {
-	type PlaygroundModel,
-	reasoningEffortsFor,
-	capabilitiesFor,
-	parameterValues,
-	tunablesFor,
-	supports,
-	TUNABLE,
-} from "./models";
 
 import {
 	type PlaygroundSettings,
@@ -67,13 +71,13 @@ function ModelSession({
 	model,
 	models,
 	endpoint,
-	onModel,
+	onSelect,
 	onEndpoint,
 }: {
 	model: PlaygroundModel;
 	models: PlaygroundModel[];
 	endpoint: PublicEndpoint;
-	onModel: (id: string) => void;
+	onSelect: (choice: ModelChoice) => void;
 	onEndpoint: (endpoint: PublicEndpoint) => void;
 }) {
 	const [settings, setSettings] = useState(() =>
@@ -122,22 +126,12 @@ function ModelSession({
 					onSettings={() => setSettingsOpen(true)}
 					onReset={() => setGeneration((current) => current + 1)}
 					modelPicker={
-						<Select
-							aria-label="Public model"
-							size="sm"
-							variant="ghost"
-							value={model.id}
-							onValueChange={(value) => {
-								if (value !== null) onModel(value);
-							}}
-							className="max-w-40 justify-between gap-1 truncate font-medium text-sm"
-						>
-							{models.map((entry) => (
-								<SelectItem key={entry.id} value={entry.id}>
-									{entry.id}
-								</SelectItem>
-							))}
-						</Select>
+						<ModelSelect
+							models={models}
+							capability="text"
+							modelId={model.id}
+							onSelect={onSelect}
+						/>
 					}
 				/>
 			</div>
@@ -206,15 +200,15 @@ function SettingsDialog({
 					 */}
 					<Select
 						label="Transport"
-						description="The public contract this conversation is sent under. Models that do not expose it drop out of the picker."
+						description="The public contract this conversation is sent under. Only the ones this model exposes are offered."
 						value={endpoint}
 						onValueChange={(value) => {
 							if (isPublicEndpoint(value)) onEndpoint(value);
 						}}
 					>
-						{Object.entries(PUBLIC_ENDPOINTS).map(([key, entry]) => (
+						{model.endpoints.map((key) => (
 							<SelectItem key={key} value={key}>
-								{entry.label}
+								{PUBLIC_ENDPOINTS[key].label}
 							</SelectItem>
 						))}
 					</Select>
@@ -372,43 +366,74 @@ function SettingsDialog({
 	);
 }
 
+/**
+ * The session the operator is in: one model, under one of the things it can do.
+ *
+ * Both halves matter. A model that generates text and images is two different experiments, and the
+ * capability is what says which one this is — so switching it replaces the workspace, while
+ * switching the model within a capability keeps the work in progress.
+ */
+export interface PlaygroundSelection {
+	capability: Capability;
+	modelId: string;
+}
+
+export function initialSelection(
+	models: PlaygroundModel[],
+): PlaygroundSelection | undefined {
+	const [group] = capabilityGroups(models);
+	const [first] = group?.items ?? [];
+	return first
+		? { capability: first.capability, modelId: first.model.id }
+		: undefined;
+}
+
 export function Playground({ models }: { models: PlaygroundModel[] }) {
+	const [selection, setSelection] = useState(() => initialSelection(models));
+	const selected = models.find((model) => model.id === selection?.modelId);
 	const [endpoint, setEndpoint] = useState<PublicEndpoint>(
-		models[0]?.endpoints[0] ?? "chat.completions",
+		selected?.endpoints[0] ?? "chat.completions",
 	);
-	const [selectedId, setSelectedId] = useState(models[0]?.id ?? "");
-	const available = models.filter((model) =>
-		model.endpoints.includes(endpoint),
-	);
-	const selected =
-		available.find((model) => model.id === selectedId) ?? available[0];
+	/**
+	 * A model reached through the picker decides the transport when it does not speak the current
+	 * one. The alternative — hiding it until the transport is changed first — makes the operator
+	 * guess which of the three contracts a name is behind.
+	 */
+	function select(choice: ModelChoice) {
+		setSelection({ capability: choice.capability, modelId: choice.model.id });
+		if (
+			choice.capability === "text" &&
+			!choice.model.endpoints.includes(endpoint)
+		) {
+			const [first] = choice.model.endpoints;
+			if (first) setEndpoint(first);
+		}
+	}
+
 	return (
 		<div className="flex h-full min-h-0 flex-col">
 			<PageHeader
 				title="Playground"
 				description="Try your models. Conversations stay in this session."
 			/>
-			{models.length ? (
-				<>
-					{selected ? (
-						<ModelSession
-							model={selected}
-							models={available}
-							endpoint={endpoint}
-							onModel={setSelectedId}
-							onEndpoint={setEndpoint}
-						/>
-					) : (
-						<EmptyState
-							title="No models for this transport"
-							description="Choose another transport or configure a deployment exposing this contract."
-						/>
-					)}
-				</>
+			{selected && selection ? (
+				<ModelSession
+					// The workspace belongs to the capability: moving to another one starts its own.
+					key={selection.capability}
+					model={selected}
+					models={models}
+					endpoint={
+						selected.endpoints.includes(endpoint)
+							? endpoint
+							: (selected.endpoints[0] ?? endpoint)
+					}
+					onSelect={select}
+					onEndpoint={setEndpoint}
+				/>
 			) : (
 				<EmptyState
-					title="No text-generation models"
-					description="A model appears here when an enabled deployment exposes the text.generate operation through a compatible contract."
+					title="No models available"
+					description="A model appears here when an enabled deployment exposes an operation this playground can run, through a compatible contract."
 				/>
 			)}
 		</div>
