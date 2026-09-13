@@ -1,6 +1,11 @@
 import { MessageAttachments } from "./MessageAttachments";
 import { Reasoning, reasoningGroupAt } from "./Reasoning";
-import { CopyAction, UserBubble } from "./MessageParts";
+import {
+	MESSAGE_ACTION_ICON,
+	MESSAGE_ACTION,
+	CopyAction,
+	UserBubble,
+} from "./MessageParts";
 import type { PlaygroundMessage } from "./transport";
 import { ResponseDetails } from "./ResponseDetails";
 import { ResponseLoader } from "./ResponseLoader";
@@ -183,7 +188,7 @@ export function Conversation({
 							) : null}
 							{message.role === "assistant" ? (
 								<div
-									className={`-ml-2 mt-1 flex h-10 shrink-0 gap-0.5 lg:h-8 ${isStreaming(message) ? "pointer-events-none" : ""}`}
+									className={`-ml-2 mt-1 flex h-10 shrink-0 items-center gap-0.5 lg:h-8 ${isStreaming(message) ? "pointer-events-none" : ""}`}
 								>
 									<CopyAction
 										text={message.parts
@@ -199,12 +204,15 @@ export function Conversation({
 											variant="ghost"
 											size="sm"
 											mode="icon"
-											className="size-10 rounded-xl text-fg-muted lg:size-8"
+											className={MESSAGE_ACTION}
 											aria-label="Regenerate response"
 											disabled={busy || isStreaming(message)}
 											onClick={() => onRegenerate(message.id)}
 										>
-											<IconRotate2 className="size-5 lg:size-4.5" aria-hidden />
+											<IconRotate2
+												className={MESSAGE_ACTION_ICON}
+												aria-hidden
+											/>
 										</Button>
 									}
 									<ResponseDetails

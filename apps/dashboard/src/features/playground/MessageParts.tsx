@@ -2,6 +2,14 @@ import { IconCheck, IconChevronDown, IconCopy } from "@tabler/icons-react";
 import { useId, useLayoutEffect, useRef, useState } from "react";
 import { Button } from "#/components/ui/button";
 
+/**
+ * The geometry every action under a message shares: a 40px touch target that tightens to 32px from
+ * `lg`. One constant because the three of them sit in the same row — the details trigger is a
+ * dialog trigger rather than a `Button`, so nothing else keeps them the same size.
+ */
+export const MESSAGE_ACTION = "size-10 rounded-xl text-fg-muted lg:size-8";
+export const MESSAGE_ACTION_ICON = "size-5 lg:size-4.5";
+
 export function CopyAction({
 	text,
 	label,
@@ -25,7 +33,7 @@ export function CopyAction({
 			variant="ghost"
 			size="sm"
 			mode="icon"
-			className="size-10 rounded-xl text-fg-muted lg:size-8"
+			className={MESSAGE_ACTION}
 			aria-label={copied ? "Copied" : label}
 			title={copied ? "Copied" : label}
 			onClick={async () => {
@@ -38,9 +46,9 @@ export function CopyAction({
 			}}
 		>
 			{copied ? (
-				<IconCheck className="size-5 lg:size-4.5" aria-hidden />
+				<IconCheck className={MESSAGE_ACTION_ICON} aria-hidden />
 			) : (
-				<IconCopy className="size-5 lg:size-4.5" aria-hidden />
+				<IconCopy className={MESSAGE_ACTION_ICON} aria-hidden />
 			)}
 		</Button>
 	);
