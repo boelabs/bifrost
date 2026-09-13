@@ -261,3 +261,49 @@ test("empty settings do not invent a browser-only CSRF token", async () => {
 	});
 	assert.equal(csrfHeader, null);
 });
+
+test("a relative base URL is resolved against the page origin for every provider", async () => {
+	// `@ai-sdk/openai-compatible` builds its address with `new URL()` and throws on a bare path,
+	// which is exactly what the playground passes (`/api/v1`, this app's own relay).
+	const original = Reflect.get(globalThis, "window");
+	Reflect.set(globalThis, "window", {
+		location: { origin: "https://dash.test" },
+	});
+	try {
+		for (const endpoint of [
+			"chat.completions",
+			"responses",
+			"messages",
+		] as const) {
+			let requested: string | undefined;
+			const result = streamText({
+				model: modelFor(endpoint, "model", emptySettings(), {
+					baseURL: "/api/v1",
+					csrf: () => undefined,
+					fetch: async (input) => {
+						requested = String(input);
+						return streamResponse("");
+					},
+				}),
+				messages: [{ role: "user", content: "hello" }],
+				onError: () => {
+					/* Reported through the awaited promise below, not the console. */
+				},
+			});
+			// The address is the assertion; an empty stream is enough to reach it.
+			try {
+				await result.text;
+			} catch {
+				/* An empty stream never finishes; the address is already recorded. */
+			}
+			assert.equal(
+				requested?.startsWith("https://dash.test/api/v1/"),
+				true,
+				`${endpoint}: ${requested}`,
+			);
+		}
+	} finally {
+		if (original === undefined) Reflect.deleteProperty(globalThis, "window");
+		else Reflect.set(globalThis, "window", original);
+	}
+});
