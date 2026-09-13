@@ -189,8 +189,8 @@ function TranscriptionRunView({
 						size="sm"
 						mode="icon"
 						className={MESSAGE_ACTION}
-						aria-label="Transcribe this file again"
-						title="Transcribe this file again"
+						aria-label="Transcribe again"
+						title="Transcribe again"
 						disabled={run.state === "running"}
 						onClick={onRetry}
 					>
@@ -296,30 +296,45 @@ export function TranscriptionWorkspace({
 	async function transcribe(chosen: { file: File; url: string }) {
 		setLocalError(undefined);
 		setNotice(undefined);
-		const id = crypto.randomUUID();
-		setRuns((current) => [
-			...current,
-			{
-				id,
-				filename: chosen.file.name,
-				file: chosen.file,
-				audio: chosen.url,
-				mediaType: chosen.file.type,
-				model: model.id,
-				settings,
-				state: "running",
-				text: "",
-				segments: [],
-			},
-		]);
+		const run: TranscriptionRun = {
+			id: crypto.randomUUID(),
+			filename: chosen.file.name,
+			file: chosen.file,
+			audio: chosen.url,
+			mediaType: chosen.file.type,
+			model: model.id,
+			settings,
+			state: "running",
+			text: "",
+			segments: [],
+		};
+		setRuns((current) => [...current, run]);
 		// The run owns the object URL from here, so the picker can take another file.
 		setFile((current) => (current === chosen ? null : current));
+		await execute(run);
+	}
+
+	/**
+	 * Transcribes in the run's own place in the transcript: the same audio again replaces that run
+	 * rather than adding one, the way regenerating an answer does in the chat.
+	 */
+	async function execute(run: TranscriptionRun) {
+		const { id } = run;
+		// Under whatever is set now, not what was set then: the same rule the chat's regenerate follows.
+		update(id, {
+			state: "running",
+			text: "",
+			segments: [],
+			error: undefined,
+			model: model.id,
+			settings,
+		});
 		const controller = new AbortController();
 		request.current = controller;
 		const started = performance.now();
 		try {
 			const transcription = await runTranscription(
-				{ model: model.id, file: chosen.file, settings },
+				{ model: model.id, file: run.file, settings },
 				{ signal: controller.signal },
 			);
 			if (!alive.current) return;
@@ -390,9 +405,8 @@ export function TranscriptionWorkspace({
 					key={run.id}
 					run={run}
 					onCopy={copy}
-					// The same audio again, under whatever the settings say now.
 					onRetry={() => {
-						if (!busy) void transcribe({ file: run.file, url: run.audio });
+						if (!busy) void execute(run);
 					}}
 				/>
 			))}

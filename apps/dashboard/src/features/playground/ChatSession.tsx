@@ -159,7 +159,9 @@ export function ChatSession({
 							area.scrollHeight - area.scrollTop - area.clientHeight < 80;
 					setShowScrollDown(!follow.current);
 				}}
-				className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-6 [scrollbar-gutter:stable]"
+				// Bleeding into the shell's padding puts the scrollbar against the window edge, where a
+				// scrollbar belongs; the padding is given back inside so the text stays where it was.
+				className="-mr-4 md:-mr-8 min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-6 pr-4 md:pr-8 [scrollbar-gutter:stable]"
 			>
 				{messages.length ? (
 					<Conversation

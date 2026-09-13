@@ -162,8 +162,8 @@ export function EmbeddingRunView({
 						size="sm"
 						mode="icon"
 						className={MESSAGE_ACTION}
-						aria-label="Use these inputs again"
-						title="Use these inputs again"
+						aria-label="Embed again"
+						title="Embed again"
 						disabled={run.state === "running"}
 						onClick={onRetry}
 					>

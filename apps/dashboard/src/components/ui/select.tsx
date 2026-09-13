@@ -142,7 +142,14 @@ export function Select<Value = string>({
 	return (
 		<Field.Root disabled={props.disabled} name={props.name} width={width}>
 			{label && <Field.Label>{label}</Field.Label>}
-			<BaseSelect.Root {...props} items={props.items ?? items}>
+			{/**
+			 * Not modal by default. A modal popup locks page scroll, and locking it toggles the
+			 * document's scrollbar: on a platform with classic scrollbars the whole layout shifts by
+			 * its width as the list opens and closes — and a select nested in a dialog does it twice,
+			 * which reads as the page flashing. Nothing here needs the lock: this app scrolls inside
+			 * its own panes, and the select still closes on an outside press.
+			 */}
+			<BaseSelect.Root modal={false} {...props} items={props.items ?? items}>
 				<Trigger
 					aria-label={ariaLabel}
 					className={className}

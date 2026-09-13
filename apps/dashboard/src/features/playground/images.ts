@@ -52,6 +52,8 @@ export interface ImageRun {
 	prompt: string;
 	/** The source images an edit was run against, as data URLs, so the run reads on its own. */
 	sources: string[];
+	/** The same sources as files, so the run can be made again without re-attaching them. */
+	files: File[];
 	model: string;
 	settings: ImageSettings;
 	state: "running" | "completed" | "failed" | "stopped";

@@ -2,6 +2,7 @@
 
 import type { ReactNode, RefObject } from "react";
 import { ErrorNote } from "#/components/ui/page";
+import { useEffect } from "react";
 
 /**
  * The frame a capability's session is laid out in.
@@ -29,11 +30,28 @@ export function Workspace({
 	/** Anything that renders outside the flow, such as the capability's settings dialog. */
 	children?: ReactNode;
 }) {
+	/**
+	 * The height the last turn reserves below itself, so a new answer starts at the top of the view
+	 * instead of creeping up from the bottom. The chat sets the same variable; every transcript in
+	 * the playground is laid out against it.
+	 */
+	useEffect(() => {
+		const area = scroll.current;
+		if (!area) return;
+		const resize = new ResizeObserver(() => {
+			area.style.setProperty("--transcript-height", `${area.clientHeight}px`);
+		});
+		resize.observe(area);
+		return () => resize.disconnect();
+	}, [scroll]);
+
 	return (
 		<div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
 			<div
 				ref={scroll}
-				className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-6 [scrollbar-gutter:stable]"
+				// Bleeding into the shell's padding puts the scrollbar against the window edge, where a
+				// scrollbar belongs; the padding is given back inside so the text stays where it was.
+				className="-mr-4 md:-mr-8 min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-6 pr-4 md:pr-8 [scrollbar-gutter:stable]"
 			>
 				{empty ? (
 					<div className="flex h-full items-center justify-center px-4 pb-8 sm:hidden">

@@ -110,25 +110,39 @@ export function EmbeddingWorkspace({
 		}
 		setLocalError(undefined);
 		setNotice(undefined);
-		const id = crypto.randomUUID();
-		setRuns((current) => [
-			...current,
-			{
-				id,
-				inputs,
-				model: model.id,
-				settings,
-				state: "running",
-				vectors: [],
-			},
-		]);
+		const run: EmbeddingRun = {
+			id: crypto.randomUUID(),
+			inputs,
+			model: model.id,
+			settings,
+			state: "running",
+			vectors: [],
+		};
+		setRuns((current) => [...current, run]);
 		setDraft("");
+		await execute(run);
+	}
+
+	/**
+	 * Runs a batch in its own place in the transcript: asking for the same lines again replaces that
+	 * run rather than adding one, the way regenerating an answer does in the chat.
+	 */
+	async function execute(run: EmbeddingRun) {
+		const { id } = run;
+		// Under whatever is set now, not what was set then: the same rule the chat's regenerate follows.
+		update(id, {
+			state: "running",
+			vectors: [],
+			error: undefined,
+			model: model.id,
+			settings,
+		});
 		const controller = new AbortController();
 		request.current = controller;
 		const started = performance.now();
 		try {
 			const response = await runEmbeddings(
-				{ model: model.id, inputs, settings },
+				{ model: model.id, inputs: run.inputs, settings },
 				{ signal: controller.signal },
 			);
 			if (!alive.current) return;

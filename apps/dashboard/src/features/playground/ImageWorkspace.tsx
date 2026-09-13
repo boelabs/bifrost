@@ -118,12 +118,11 @@ export function ImageWorkspace({
 			return;
 		}
 		setLocalError(undefined);
-		const id = crypto.randomUUID();
-		const attached = sources.map((source) => source.file);
 		const run: ImageRun = {
-			id,
+			id: crypto.randomUUID(),
 			prompt: prompt.trim(),
 			sources: sources.map((source) => source.url),
+			files: sources.map((source) => source.file),
 			model: model.id,
 			settings,
 			state: "running",
@@ -132,12 +131,31 @@ export function ImageWorkspace({
 		setRuns((current) => [...current, run]);
 		setPrompt("");
 		setSources([]);
+		await execute(run);
+	}
+
+	/**
+	 * Runs a turn, in its own place in the transcript.
+	 *
+	 * Asking for the same thing again replaces that run rather than adding one: a second attempt at
+	 * one prompt is the same turn, the way regenerating an answer is in the chat.
+	 */
+	async function execute(run: ImageRun) {
+		const { id } = run;
+		// Under whatever is set now, not what was set then: the same rule the chat's regenerate follows.
+		update(id, {
+			state: "running",
+			images: [],
+			error: undefined,
+			model: model.id,
+			settings,
+		});
 		const controller = new AbortController();
 		request.current = controller;
 		const started = performance.now();
 		try {
 			const response = await runImages(
-				{ model: model.id, prompt: run.prompt, files: attached, settings },
+				{ model: model.id, prompt: run.prompt, files: run.files, settings },
 				{ signal: controller.signal },
 			);
 			if (!alive.current) return;
@@ -193,8 +211,7 @@ export function ImageWorkspace({
 					key={run.id}
 					run={run}
 					onRetry={() => {
-						setPrompt(run.prompt);
-						setSettings(run.settings);
+						if (!busy) void execute(run);
 					}}
 				/>
 			))}
