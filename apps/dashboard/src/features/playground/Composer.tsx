@@ -33,6 +33,8 @@ export function Composer({
 	modelPicker,
 	placeholder = "Write a message...",
 	showAttach = true,
+	readOnly = false,
+	canSend,
 }: {
 	prompt: string;
 	onPrompt: (value: string) => void;
@@ -59,6 +61,10 @@ export function Composer({
 	 * a thing anywhere, and a permanently dead button is worse than none.
 	 */
 	showAttach?: boolean;
+	/** For a capability whose request is a file: there is nothing to type into the box. */
+	readOnly?: boolean;
+	/** Overrides "there is a draft" as the test for whether this composer can be sent. */
+	canSend?: boolean;
 }) {
 	const input = useRef<HTMLInputElement>(null);
 	const [dragging, setDragging] = useState(false);
@@ -122,6 +128,7 @@ export function Composer({
 						dir="auto"
 						rows={1}
 						value={prompt}
+						readOnly={readOnly}
 						style={{ height, overflowY }}
 						placeholder={placeholder}
 						className="mt-4 w-full min-w-0 resize-none bg-transparent pt-0 pb-4 align-bottom text-base font-normal leading-6.5 text-fg outline-none placeholder:truncate placeholder:text-fg-muted"
@@ -211,7 +218,11 @@ export function Composer({
 							aria-label={busy ? "Stop response" : "Send message"}
 							title={busy ? "Stop response" : "Send message"}
 							className="hover:bg-primary active:bg-primary"
-							disabled={!busy && (reading || (!prompt.trim() && !files.length))}
+							disabled={
+								!busy &&
+								(reading ||
+									!(canSend ?? (prompt.trim().length > 0 || files.length > 0)))
+							}
 							onClick={busy ? onStop : undefined}
 						>
 							{busy ? (
