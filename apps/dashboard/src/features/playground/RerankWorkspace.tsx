@@ -355,8 +355,7 @@ export function RerankWorkspace({
 					key={run.id}
 					run={run}
 					onRetry={() => {
-						setQuery(run.query);
-						setDraft(run.documents.join("\n"));
+						if (!busy) void execute(run);
 					}}
 				/>
 			))}

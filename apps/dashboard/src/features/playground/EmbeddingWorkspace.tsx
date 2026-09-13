@@ -187,7 +187,9 @@ export function EmbeddingWorkspace({
 					key={run.id}
 					run={run}
 					onCopy={copy}
-					onRetry={() => setDraft(run.inputs.join("\n"))}
+					onRetry={() => {
+						if (!busy) void execute(run);
+					}}
 				/>
 			))}
 			composer={
