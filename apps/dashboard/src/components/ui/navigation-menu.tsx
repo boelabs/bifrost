@@ -155,10 +155,13 @@ export function NavigationMenuPositioner({
 	borderRadius,
 	width,
 	sideOffset = 8,
+	// Against the viewport, not the document — see `select.tsx` for what `absolute` costs.
+	positionMethod = "fixed",
 	...props
 }: NavigationMenuPositionerProps) {
 	return (
 		<BaseNavigationMenu.Positioner
+			positionMethod={positionMethod}
 			{...props}
 			sideOffset={sideOffset}
 			className={mergeClassName("z-50 outline-none", className)}

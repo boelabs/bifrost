@@ -88,10 +88,13 @@ export function ContextMenuPositioner({
 	style,
 	borderRadius,
 	width,
+	// Against the viewport, not the document — see `select.tsx` for what `absolute` costs.
+	positionMethod = "fixed",
 	...props
 }: ContextMenuPositionerProps) {
 	return (
 		<BaseContextMenu.Positioner
+			positionMethod={positionMethod}
 			{...props}
 			className={mergeClassName("z-50 outline-none", className)}
 			style={mergeStyle({ borderRadius, width }, style)}
