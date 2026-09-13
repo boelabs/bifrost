@@ -112,6 +112,21 @@ export function createSessionFetch(
 	};
 }
 
+/**
+ * The address a provider is handed, always absolute.
+ *
+ * The playground's own base is this app's `/api/v1` relay, a root-relative path — and
+ * `@ai-sdk/openai-compatible` builds its request address with `new URL()`, which rejects one
+ * ("Failed to construct 'URL': Invalid URL"). The other two providers concatenate strings and
+ * survive it, so resolving here keeps all three on the same address.
+ */
+function absoluteBaseURL(baseURL: string): string {
+	if (/^[a-z][a-z\d+.-]*:\/\//i.test(baseURL)) return baseURL;
+	if (typeof window === "undefined")
+		throw new Error("A relative gateway base URL needs a document origin.");
+	return new URL(baseURL, window.location.origin).toString();
+}
+
 export function modelFor(
 	endpoint: PublicEndpoint,
 	publicModel: string,
@@ -119,16 +134,16 @@ export function modelFor(
 	options: {
 		fetch?: FetchLike;
 		/**
-		 * The gateway's `/v1`, absolute. The browser calls it directly — inference streams token by
-		 * token and a Server Action would buffer it — so this is a cross-origin credentialed
-		 * request, exactly like signing in. Required rather than guessed: the address is served
-		 * rather than compiled in, so only the caller can know it.
+		 * The `/v1` the request is sent to — either absolute, or relative to this app's own origin
+		 * (which is what the playground passes: the route behind it relays to the gateway and keeps
+		 * the stream a stream). Required rather than guessed: the address is served rather than
+		 * compiled in, so only the caller can know it.
 		 */
 		baseURL: string;
 		csrf?: () => string | undefined;
 	},
 ): LanguageModel {
-	const { baseURL } = options;
+	const baseURL = absoluteBaseURL(options.baseURL);
 	// The SDK providers type their `fetch` option as the whole ambient `fetch`, which under Bun's
 	// types includes `preconnect` — a connection hint none of them ever calls. The assertion is
 	// confined to this boundary so the option and the test stubs stay honest about what is used.
