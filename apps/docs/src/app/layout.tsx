@@ -34,14 +34,6 @@ export const metadata: Metadata = {
 	},
 	description:
 		"Bifrost by Boelabs: a provider-agnostic AI gateway with OpenAI and Anthropic-compatible APIs.",
-	icons: {
-		icon: [
-			{ url: "/favicon.svg", type: "image/svg+xml" },
-			{ url: "/favicon.ico", sizes: "any" },
-		],
-		apple: "/apple-touch-icon.png",
-	},
-	manifest: "/site.webmanifest",
 };
 
 export const viewport: Viewport = {
