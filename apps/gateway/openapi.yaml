@@ -1780,6 +1780,7 @@ paths:
       tags:
         - Admin
       summary: Decrypt a retained forensic payload sample
+      description: "Every finished operation keeps one sample until OBSERVABILITY_PAYLOAD_RETENTION_DAYS expires it. Each call is written to the payload access audit, including the ones that return nothing. 403 `payload_access_sealed` means the deployment runs with OBSERVABILITY_PAYLOAD_ACCESS=sealed: samples are still captured, and no credential reads them. 409 `payload_sample_unreadable` means the sample outlived the key that sealed it. Read GET /admin/logs/{id} first to know which of these to expect."
       parameters:
         - name: id
           in: path
@@ -1803,7 +1804,9 @@ paths:
                 required:
                   - data
                 additionalProperties: false
+        "403": *a1
         "404": *a1
+        "409": *a1
   /admin/observability/summary:
     get:
       tags:
@@ -5982,12 +5985,45 @@ components:
               type: string
             additionalProperties: {}
           description: Ordered upstream attempts for this operation.
+        payload:
+          $ref: "#/components/schemas/RetainedPayloadState"
       required:
         - id
         - requestId
         - attempts
+        - payload
       additionalProperties: true
-      description: A full operation record plus its ordered upstream-attempt timeline.
+      description: A full operation record, its ordered upstream-attempt timeline, and the state of its retained payload sample.
+    RetainedPayloadState:
+      type: object
+      properties:
+        retained:
+          type: boolean
+        readable:
+          type: boolean
+        access:
+          type: string
+          enum:
+            - open
+            - sealed
+        captureReason:
+          type:
+            - string
+            - "null"
+        expiresAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+            - type: "null"
+      required:
+        - retained
+        - readable
+        - access
+        - captureReason
+        - expiresAt
+      additionalProperties: false
+      description: Whether a retained request/response sample stands behind this operation, and whether it can be read. Describing it costs no audit entry; reading it does.
     ObservabilitySummary:
       type: object
       properties:

@@ -59,11 +59,19 @@ export const env = createEnv({
 		DATABASE_URL: z.url(),
 		REDIS_URL: z.url(),
 
-		OBSERVABILITY_SUCCESS_SAMPLE_RATE: z.coerce
-			.number()
-			.min(0)
-			.max(1)
-			.default(0.01),
+		/**
+		 * Who may read a retained request/response sample.
+		 *
+		 * `open` - a role with `payloads:read` can decrypt one, and every read is audited.
+		 * `sealed` - nobody can, through any credential: the gateway keeps capturing samples and
+		 * keeps them encrypted at rest, but `GET /admin/logs/:id/payload` refuses before it touches
+		 * the envelope, and the attempt is audited. It is a deployment-level decision on purpose -
+		 * an environment variable cannot be flipped by a compromised operator account.
+		 *
+		 * The key that seals a sample still lives in this process, so `sealed` is an access policy,
+		 * not a cryptographic guarantee against the gateway itself.
+		 */
+		OBSERVABILITY_PAYLOAD_ACCESS: z.enum(["open", "sealed"]).default("open"),
 		OBSERVABILITY_PAYLOAD_RETENTION_DAYS: z.coerce
 			.number()
 			.int()

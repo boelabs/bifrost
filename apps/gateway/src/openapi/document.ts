@@ -1561,6 +1561,8 @@ export function buildOpenApiDocument() {
 				get: {
 					tags: ["Admin"],
 					summary: "Decrypt a retained forensic payload sample",
+					description:
+						"Every finished operation keeps one sample until OBSERVABILITY_PAYLOAD_RETENTION_DAYS expires it. Each call is written to the payload access audit, including the ones that return nothing. 403 `payload_access_sealed` means the deployment runs with OBSERVABILITY_PAYLOAD_ACCESS=sealed: samples are still captured, and no credential reads them. 409 `payload_sample_unreadable` means the sample outlived the key that sealed it. Read GET /admin/logs/{id} first to know which of these to expect.",
 					parameters: [
 						{
 							name: "id",
@@ -1574,7 +1576,9 @@ export function buildOpenApiDocument() {
 							z.record(z.string(), z.unknown()),
 							"Decrypted forensic sample",
 						),
+						"403": errorResponse,
 						"404": errorResponse,
+						"409": errorResponse,
 					},
 				},
 			},

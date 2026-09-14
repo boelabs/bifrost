@@ -15,8 +15,8 @@ The current observability model uses four tables:
 |---|---|---|
 | `gateway_operations` | One row from request start through a verified terminal outcome. | 30 days operational target. |
 | `upstream_attempts` | One row per deployment interaction, inserted before the upstream call. | 30 days operational target. |
-| `payload_samples` | Redacted, AEAD-encrypted forensic samples. | 7 days by default. |
-| `payload_access_audit` | One immutable audit row for every forensic payload lookup, including misses. | Operator audit policy. |
+| `payload_samples` | Redacted, AEAD-encrypted forensic samples, one per finished operation. | 7 days by default. |
+| `payload_access_audit` | One immutable audit row for every forensic payload lookup, including the refused and the empty ones. | Operator audit policy. |
 
 An operation is either `in_progress` or `finished`. Its outcome is `success`, `incomplete`, `blocked`,
 `error`, `cancelled`, `abandoned`, or `unknown`. `degraded` is orthogonal: a recovered retry or fallback
@@ -60,15 +60,33 @@ attempts and included in `/admin/usage` aggregates.
 ## Payload privacy
 
 Ordinary rows contain summaries and HMAC fingerprints, never request or response bodies. IP addresses
-and user agents are fingerprinted rather than stored verbatim. The versioned encryption keyring
-encrypts 1% of healthy successes by default and every degraded, incomplete, blocked, failed, or
-cancelled operation. Encryption and fingerprinting use separate, purpose-bound derived
-subkeys; request, response, error, and attempt components are each capped at 32 KiB after recursive
-secret-field redaction.
+and user agents are fingerprinted rather than stored verbatim. Every finished operation keeps one
+sample under the versioned encryption keyring — the successful ones too, because a request that
+returned 200 and the wrong answer is the case you cannot reconstruct from metadata. Encryption and
+fingerprinting use separate, purpose-bound derived subkeys; request, response, error, and attempt
+components are each capped at 32 KiB after recursive secret-field redaction. What bounds the
+exposure is the retention window (`OBSERVABILITY_PAYLOAD_RETENTION_DAYS`), not chance.
 
-`GET /admin/logs/{operationId}/payload` is master-only. Every lookup writes a durable audit row and
-emits a structured audit log, including missing samples and failed decryptions; successful retrievals
-also update the sample access timestamp. The gateway never falls back to plaintext.
+### Reading one
+
+`GET /admin/logs/{operationId}/payload` needs `payloads:read` (master key, owner, or admin). Every
+lookup writes a durable audit row and emits a structured audit log carrying its outcome —
+`revealed`, `missing`, `sealed`, or `unreadable` — and a successful one also updates the sample's
+access timestamp. The gateway never falls back to plaintext.
+
+`GET /admin/logs/{operationId}` already reports whether a sample stands behind the operation and
+whether it can be read, so a caller (and the dashboard) can tell "swept by retention" from "sealed"
+without spending an audit entry to find out.
+
+### Sealing payloads
+
+`OBSERVABILITY_PAYLOAD_ACCESS=sealed` keeps capture exactly as it is and closes reading for
+everyone: the route refuses before it touches the envelope, so the plaintext never exists in the
+process, and the attempt is audited like any other. Reopening is a deployment change — the variable
+plus a restart — which is the point: no role, session, or stolen master key can lift it from the
+outside. The key that sealed the sample still lives in the gateway, so this is an access policy, not
+a cryptographic guarantee against the gateway itself; for that, shorten retention or run sealed and
+export nothing.
 
 ## OpenTelemetry
 

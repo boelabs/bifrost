@@ -1,0 +1,1 @@
+ALTER TABLE "payload_access_audit" DROP COLUMN "found";

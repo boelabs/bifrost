@@ -37,7 +37,11 @@ A condensed checklist. Each item links to the page with the full explanation.
 - [ ] `db:migrate` runs as a one-off step before rolling out new instances (the Compose stack does this
   automatically via its migration job).
 - [ ] `OBSERVABILITY_METADATA_RETENTION_DAYS`, `OBSERVABILITY_PAYLOAD_RETENTION_DAYS`, and
-  `RESPONSES_STATE_RETENTION_DAYS` match your actual compliance/storage requirements.
+  `RESPONSES_STATE_RETENTION_DAYS` match your actual compliance/storage requirements. Every finished
+  request keeps one encrypted payload sample, so the payload window is both the disk bill and the
+  exposure window.
+- [ ] `OBSERVABILITY_PAYLOAD_ACCESS` is a decision, not a default: `sealed` keeps capturing samples
+  and lets nobody read them, which is what a deployment handling regulated content wants.
 - [ ] You have a Postgres backup schedule. Redis needs none (fully rebuildable ephemeral state). See
   [Operations → Backups](/docs/operations#backups).
 

@@ -89,7 +89,7 @@ it. See [Operations → Health](/docs/operations) for how to wire the probes.
 ## Always log the request id
 
 Every response carries `x-request-id` (and echoes an inbound one if you send it). It is the join key
-between what the client saw and the encrypted forensic sample, when one was retained. When a user
+between what the client saw and the encrypted forensic sample kept for that operation. When a user
 reports an error, capture that id first — it turns a generic public message into the exact upstream
 cause. See [Observability](/docs/observability).
 

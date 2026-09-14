@@ -38,7 +38,7 @@ export interface AuditEntry {
 	targetType: string | null;
 	targetId: string | null;
 	requestId: string | null;
-	/** HTTP status of the audited call. Null for payload reads, which record found/not found instead. */
+	/** HTTP status of the audited call. Null for payload reads, which record their outcome instead. */
 	status: number | null;
 	ip: string | null;
 	metadata: Record<string, unknown>;
@@ -172,7 +172,7 @@ export async function listAuditPage(
 				requestId: row.requestId,
 				status: null,
 				ip: null,
-				metadata: { found: row.found },
+				metadata: { outcome: row.outcome },
 			}),
 		),
 	].sort((a, b) => b.at.getTime() - a.at.getTime());

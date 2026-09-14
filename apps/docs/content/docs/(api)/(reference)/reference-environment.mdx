@@ -33,7 +33,7 @@ must be set; everything else ships with a production-ready value.
 
 | Variable | Default | Controls |
 |---|---|---|
-| `OBSERVABILITY_SUCCESS_SAMPLE_RATE` | `0.01` | Sampling rate for non-degraded successful operations. Non-success and degraded operations are always sampled. |
+| `OBSERVABILITY_PAYLOAD_ACCESS` | `open` | Who may read a retained sample. `open`: a role with `payloads:read`, audited. `sealed`: nobody, through any credential — samples are still captured and encrypted, and the refused attempt is audited. |
 | `OBSERVABILITY_PAYLOAD_RETENTION_DAYS` | `7` | Encrypted forensic payload retention. |
 | `OBSERVABILITY_METADATA_RETENTION_DAYS` | `30` | Retention for completed operation and upstream-attempt metadata. |
 | `ADMIN_AUDIT_RETENTION_DAYS` | `365` | Retention for the `/admin` audit trail. Outlives operation metadata: one row per configuration change, asked about months later. |

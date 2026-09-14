@@ -634,7 +634,8 @@ export const payloadAccessAudit = pgTable(
 		operationId: uuid("operation_id").notNull(),
 		requestId: text("request_id").notNull(),
 		actor: text("actor").notNull(),
-		found: boolean("found").notNull(),
+		/** "revealed" | "missing" | "sealed" | "unreadable" - see getPayloadSample. */
+		outcome: text("outcome").notNull(),
 		accessedAt: timestamp("accessed_at", { withTimezone: true })
 			.notNull()
 			.defaultNow(),
