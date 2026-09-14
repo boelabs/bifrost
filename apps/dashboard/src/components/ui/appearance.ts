@@ -81,7 +81,7 @@ export function mergeStyle<State>(
 export const focusRing =
 	"outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
 export const controlStyles = tv({
-	base: "ui-control flex min-w-0 items-center gap-2 rounded-[var(--ui-radius-control)] border bg-surface text-fg outline-none transition-[color,background-color,border-color,box-shadow] placeholder:text-fg-muted focus-visible:border-focus focus-visible:ring-2 focus-visible:ring-focus/25 data-[focused]:border-focus data-[focused]:ring-2 data-[focused]:ring-focus/25 disabled:cursor-not-allowed disabled:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 aria-invalid:border-danger data-[invalid]:border-danger",
+	base: "ui-control flex min-w-0 items-center gap-2 rounded-[var(--ui-radius-control)] border text-fg outline-none transition-[color,background-color,border-color,box-shadow] placeholder:text-fg-muted focus-visible:border-focus focus-visible:ring-2 focus-visible:ring-focus/25 data-[focused]:border-focus data-[focused]:ring-2 data-[focused]:ring-focus/25 disabled:cursor-not-allowed disabled:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 aria-invalid:border-danger data-[invalid]:border-danger",
 	variants: {
 		size: {
 			xs: "min-h-7 px-2 py-1 text-xs",
@@ -89,13 +89,20 @@ export const controlStyles = tv({
 			md: "min-h-11 px-3 py-2.5 text-sm",
 			lg: "min-h-13 px-4 py-3 text-base",
 		},
+		/**
+		 * `filled` is the default: a control is a plane the operator writes on, not a rectangle drawn
+		 * with a line. A form of outlined controls inside an outlined card spends the same border on
+		 * two different jobs — separating regions and marking what is interactive — so neither reads
+		 * as either. The border comes back only where it carries something: focus, and invalid.
+		 */
 		variant: {
-			outlined: "border-border hover:border-fg-muted/60",
-			filled: "border-transparent bg-surface-2 hover:bg-secondary",
-			ghost: "border-transparent bg-transparent hover:bg-surface-2",
+			outlined: "border-border bg-surface hover:border-fg-muted/60",
+			filled:
+				"border-transparent bg-field placeholder:text-field-muted hover:bg-field-hover",
+			ghost: "border-transparent bg-transparent hover:bg-field",
 		},
 	},
-	defaultVariants: { size: "md", variant: "outlined" },
+	defaultVariants: { size: "md", variant: "filled" },
 });
 
 export const overlayFadeStyles =

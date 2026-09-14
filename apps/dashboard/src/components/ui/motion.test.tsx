@@ -10,17 +10,16 @@ import { Slider } from "./slider";
 
 describe("component motion and keyboard focus", () => {
 	test("buttons change state instantly without press movement in every variant and size", () => {
-		for (const variant of [
-			"primary",
-			"secondary",
-			"ghost",
-			"danger",
-			"soft",
-			"success",
-			"warning",
-			"link",
-		] as const) {
-			for (const size of ["xs", "sm", "md", "lg"] as const) {
+		/**
+		 * Read off `buttonStyles` rather than written out again here. A hand-kept list only ever
+		 * agrees with the component until someone adds a variant — and the point of this test is
+		 * that EVERY variant obeys the rule, which a stale list quietly stops checking.
+		 */
+		const { variant: variants, size: sizes } = buttonStyles.variants;
+		for (const variant of Object.keys(variants) as Array<
+			keyof typeof variants
+		>) {
+			for (const size of Object.keys(sizes) as Array<keyof typeof sizes>) {
 				for (const mode of ["default", "icon"] as const) {
 					const styles = buttonStyles({ variant, size, mode });
 					assert.match(styles, /\btransition-none\b/);
