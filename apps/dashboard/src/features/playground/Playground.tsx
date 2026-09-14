@@ -5,6 +5,7 @@ import { EmptyState, PageHeader } from "#/components/ui/page";
 import { EmbeddingWorkspace } from "./EmbeddingWorkspace";
 import { RerankWorkspace } from "./RerankWorkspace";
 import { ImageWorkspace } from "./ImageWorkspace";
+import { VideoWorkspace } from "./VideoWorkspace";
 import type { Capability } from "./capabilities";
 import { TextWorkspace } from "./TextWorkspace";
 import type { PublicEndpoint } from "./api";
@@ -72,6 +73,13 @@ export function Playground({ models }: { models: PlaygroundModel[] }) {
 				selection.capability === "image" ? (
 					<ImageWorkspace
 						key="image"
+						model={selected}
+						models={models}
+						onSelect={select}
+					/>
+				) : selection.capability === "video" ? (
+					<VideoWorkspace
+						key="video"
 						model={selected}
 						models={models}
 						onSelect={select}

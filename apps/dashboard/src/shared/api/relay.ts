@@ -7,9 +7,27 @@ import { gatewayUrl } from "#/shared/config/server.ts";
  * gateway. That is what removes CORS, `SameSite=None` and the need for the gateway to be public.
  *
  * Only the headers a gateway request actually needs are forwarded. `cookie` carries the operator's
- * session, `x-csrf-token` the double-submit value the gateway demands on every mutation.
+ * session, `x-csrf-token` the double-submit value the gateway demands on every mutation, and
+ * `range` the byte window a media element asks for when it seeks.
  */
-const FORWARDED = ["accept", "content-type", "cookie", "x-csrf-token"];
+const FORWARDED = ["accept", "content-type", "cookie", "range", "x-csrf-token"];
+
+/**
+ * What the answer is allowed to carry back. The media headers matter as much as `content-type`:
+ * without `accept-ranges` and `content-range` a `<video>` can play a generated file but cannot seek
+ * inside it, and without `content-length` it cannot show how long the file is.
+ */
+const RETURNED = [
+	"content-type",
+	"content-length",
+	"content-range",
+	"accept-ranges",
+	"content-disposition",
+	"cache-control",
+	"last-modified",
+	"etag",
+	"retry-after",
+];
 
 export async function relay(request: Request, path: string): Promise<Response> {
 	const headers = new Headers();
@@ -20,15 +38,20 @@ export async function relay(request: Request, path: string): Promise<Response> {
 
 	let upstream: Response;
 	try {
-		upstream = await fetch(gatewayUrl(path), {
-			method: request.method,
-			headers,
-			body: request.body,
-			// Required by fetch whenever a body is a stream.
-			...(request.body ? { duplex: "half" } : {}),
-			redirect: "manual",
-			cache: "no-store",
-		});
+		// The query string belongs to the gateway too — `?variant=` and `?limit=` are how several of
+		// its endpoints are asked a question at all — and the caller only ever knows the path.
+		upstream = await fetch(
+			gatewayUrl(`${path}${new URL(request.url).search}`),
+			{
+				method: request.method,
+				headers,
+				body: request.body,
+				// Required by fetch whenever a body is a stream.
+				...(request.body ? { duplex: "half" } : {}),
+				redirect: "manual",
+				cache: "no-store",
+			},
+		);
 	} catch {
 		// An unreachable gateway is this dashboard's problem to report, not an opaque 500: the
 		// caller is our own page, and it renders the message.
@@ -45,7 +68,7 @@ export async function relay(request: Request, path: string): Promise<Response> {
 		status: upstream.status,
 		statusText: upstream.statusText,
 	});
-	for (const name of ["content-type", "cache-control", "retry-after"]) {
+	for (const name of RETURNED) {
 		const value = upstream.headers.get(name);
 		if (value) response.headers.set(name, value);
 	}

@@ -5,7 +5,7 @@ import type { FetchLike } from "./api";
  * The browser's own calls to the gateway, for the operations that are a single request.
  *
  * Chat goes through the AI SDK (`api.ts`); everything else — images, embeddings, reranking,
- * transcription — is one request and one answer, so it is sent from here. Same route either way:
+ * transcription, and the two halves of a video job — is sent from here. Same route either way:
  * this app's `/api/v1` relay, with the operator's session cookie and the double-submit token the
  * gateway demands on a mutation. Nothing here ever carries an API key: the session is the
  * credential.
@@ -67,6 +67,20 @@ async function answer<T>(
 		return options.parse(text, response.headers.get("content-type")) as T;
 	if (body === undefined) throw new Error("The gateway returned no answer.");
 	return body as T;
+}
+
+/** A read, for the operations that answer a question rather than start work. */
+export async function gatewayGet<T>(
+	path: string,
+	options: GatewayRequest = {},
+): Promise<T> {
+	const response = await (options.fetch ?? fetch)(`${BASE}${path}`, {
+		method: "GET",
+		credentials: "include",
+		headers: headersFor(options),
+		...(options.signal ? { signal: options.signal } : {}),
+	});
+	return answer<T>(response, options);
 }
 
 export async function gatewayJson<T>(
