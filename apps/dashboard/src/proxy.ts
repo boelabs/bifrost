@@ -68,9 +68,22 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
 export const config = {
 	/**
-	 * Everything except Next's own assets: a redirect served for a stylesheet is a broken page, not
-	 * a login prompt. `"/"` is listed separately because the pattern below needs at least one
-	 * character after the slash, and without it the overview is the one route with no gate.
+	 * The session gates application routes. It does not gate assets or site metadata.
+	 *
+	 * A redirect served for a stylesheet is a broken page rather than a login prompt — and for
+	 * `robots.txt` it is worse than that: a crawler follows it to the sign-in screen and never reads
+	 * the `Disallow` that was the whole point of publishing one. The manifest is the same story from
+	 * the other side, because a browser fetches `<link rel="manifest">` without credentials, so a
+	 * gated manifest is broken even for an operator who is signed in.
+	 *
+	 * Hence the second clause: a root-level path with a file extension. Every route this app
+	 * actually serves is a bare path (`/keys`, `/api/v1/…`), so the two sets do not overlap, and a
+	 * metadata file convention added later — an `opengraph-image.png`, a `sitemap.xml` — is public
+	 * the day it appears instead of silently redirecting. `fonts/` stays listed because it carries a
+	 * slash and this clause deliberately does not reach into directories.
+	 *
+	 * `"/"` is listed separately because the pattern needs at least one character after the slash,
+	 * and without it the overview is the one route with no gate.
 	 */
-	matcher: ["/", "/((?!_next/static|_next/image|fonts/|favicon.ico).*)"],
+	matcher: ["/", "/((?!_next/static|_next/image|fonts/|[^/]+[.][a-z0-9]+$).*)"],
 };
