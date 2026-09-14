@@ -2,6 +2,7 @@
 
 import { NavSkeleton, UserMenuSkeleton } from "./ShellSkeletons.tsx";
 import type { OperatorIdentity } from "#/features/auth/common.ts";
+import { BifrostMark } from "#/shared/components/BifrostMark.tsx";
 import { SessionProvider } from "#/features/auth/session.tsx";
 import { Button } from "#/components/ui/button";
 import { SidebarNav } from "./SidebarNav.tsx";
@@ -72,6 +73,7 @@ export function AppShell({
 						>
 							<IconLayoutSidebarLeftExpand aria-hidden className="size-5" />
 						</Button>
+						<BifrostMark size={16} />
 						<span className="font-semibold">Bifrost</span>
 					</header>
 					<main
@@ -131,9 +133,14 @@ function SidebarContent({
 					collapsed ? "justify-center" : "justify-between",
 				)}
 			>
+				{/* Collapsed, the rail is 64px and the toggle already fills it; the mark would not fit
+				    beside it, and a brand that overflows its own sidebar is worse than no brand. */}
 				{!collapsed && (
-					<span className="truncate px-2 font-semibold tracking-tight">
-						Bifrost
+					<span className="flex min-w-0 items-center gap-2 px-2">
+						<BifrostMark size={16} />
+						<span className="truncate font-semibold tracking-tight">
+							Bifrost
+						</span>
 					</span>
 				)}
 				<Button

@@ -1,5 +1,10 @@
 <div align="center">
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="brand/bifrost-mark-dark.png">
+  <img src="brand/bifrost-mark-light.png" alt="" width="132">
+</picture>
+
 # Bifrost
 
 **One contract. Every model provider.**
