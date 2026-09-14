@@ -10,6 +10,7 @@ import { redis } from "#cache/redis.ts";
 import { test } from "node:test";
 
 import {
+	recordConfigurationFailure,
 	recordTransientFailure,
 	recordThrottleFailure,
 	type CircuitSettings,
@@ -478,6 +479,76 @@ test("circuit: the last routable deployment is never quarantined", {
 		// The failures were still counted, so the circuit opens the moment an alternative exists.
 		await drive(deployment, capacity, config, "failure", { mayOpen: true });
 		[snapshot] = await getCircuitSnapshots([{ deployment, capacity }]);
+		assert.equal(snapshot?.status, "cooldown");
+	} finally {
+		await cleanup([], [prefix(deployment), prefix(capacity)]);
+	}
+});
+
+test("circuit: a misconfigured deployment is quarantined at once when there is somewhere else to go", {
+	skip,
+}, async () => {
+	const id = randomUUID();
+	const deployment = deploymentSubject(id);
+	const capacity = capacitySubject(id, null);
+	const config = settings({ allowedFails: 10, baseCooldownMs: 5000 });
+	try {
+		const acquired = await acquireCircuitPermit(deployment, capacity, config);
+		assert.equal(acquired.allowed, true);
+		if (!acquired.allowed) return;
+		// No threshold to reach: bad credentials fail every request the same way, so one is proof.
+		await recordConfigurationFailure(
+			acquired.permit,
+			config,
+			{ class: "not_found", message: "model not found" },
+			300_000,
+			{ mayOpen: true },
+		);
+		const [snapshot] = await getCircuitSnapshots([{ deployment, capacity }]);
+		assert.equal(snapshot?.status, "cooldown");
+	} finally {
+		await cleanup([], [prefix(deployment), prefix(capacity)]);
+	}
+});
+
+test("circuit: the last deployment is not quarantined for being misconfigured", {
+	skip,
+}, async () => {
+	const id = randomUUID();
+	const deployment = deploymentSubject(id);
+	const capacity = capacitySubject(id, null);
+	const config = settings({ allowedFails: 0, baseCooldownMs: 5000 });
+	try {
+		// Repeatedly, because a misconfiguration never stops failing: every request must keep
+		// reaching the upstream and coming back with the error that says what is wrong, rather than
+		// being answered from a cooldown that will still be there five minutes later.
+		for (let i = 0; i < 3; i += 1) {
+			const acquired = await acquireCircuitPermit(deployment, capacity, config);
+			assert.equal(acquired.allowed, true);
+			if (!acquired.allowed) return;
+			await recordConfigurationFailure(
+				acquired.permit,
+				config,
+				{ class: "not_found", message: "model not found" },
+				300_000,
+				{ mayOpen: false },
+			);
+			const [snapshot] = await getCircuitSnapshots([{ deployment, capacity }]);
+			assert.equal(snapshot?.status, "available");
+		}
+
+		// The moment an alternative exists, failing over is the better answer after all.
+		const acquired = await acquireCircuitPermit(deployment, capacity, config);
+		assert.equal(acquired.allowed, true);
+		if (!acquired.allowed) return;
+		await recordConfigurationFailure(
+			acquired.permit,
+			config,
+			{ class: "not_found", message: "model not found" },
+			300_000,
+			{ mayOpen: true },
+		);
+		const [snapshot] = await getCircuitSnapshots([{ deployment, capacity }]);
 		assert.equal(snapshot?.status, "cooldown");
 	} finally {
 		await cleanup([], [prefix(deployment), prefix(capacity)]);

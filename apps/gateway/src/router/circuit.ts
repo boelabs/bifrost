@@ -145,6 +145,9 @@ else
   if existing then
     return { 0, 0 }
   end
+  -- Same veto as the threshold branch: quarantining the only way to reach a model does not protect
+  -- anything, it just replaces the error that says what is wrong with one that says "try later".
+  if not may_open then return { 0, 0 } end
   redis.call("SET", KEYS[4], "1", "PX", history_ttl)
 end
 
@@ -402,12 +405,22 @@ export async function recordTransientFailure(
 	return openedFor;
 }
 
-/** Immediately quarantines invalid deployment configuration (credentials/model access). */
+/**
+ * Immediately quarantines invalid deployment configuration (credentials/model access).
+ *
+ * Worth doing the moment there is somewhere else to route: a deployment whose credentials or model
+ * id are wrong will fail every request identically, and failing over at once is the whole point.
+ * When it is the last one, `mayOpen` is false and the failure opens nothing — see
+ * `TransientFailureOptions.mayOpen`, which this shares. A misconfiguration never heals on its own,
+ * so quarantining the last deployment only trades an error an operator can act on for five minutes
+ * of "temporarily unavailable", and then does it again on the next request, forever.
+ */
 export async function recordConfigurationFailure(
 	permit: CircuitPermit,
 	settings: CircuitSettings,
 	cause: CooldownCause,
 	cooldownMs: number,
+	options: TransientFailureOptions = {},
 ): Promise<number | null> {
 	const openedFor = await recordFailure(
 		permit.deployment,
@@ -422,13 +435,19 @@ export async function recordConfigurationFailure(
 		cooldownMs,
 		0.9 + Math.random() * 0.2,
 		settings.allowedFails,
-		true,
+		options.mayOpen ?? true,
 	);
 	await closeSubject(permit.capacity, permit.capacityMode, permit.token);
 	return openedFor;
 }
 
-/** Opens a shared capacity circuit without lowering deployment health. */
+/**
+ * Opens a shared capacity circuit without lowering deployment health.
+ *
+ * No veto here, deliberately: a throttled pool still answers 429 with the provider's own
+ * Retry-After, which is both honest and actionable, and the circuit is what stops the gateway from
+ * hammering a provider that has just asked it to stop.
+ */
 export async function recordThrottleFailure(
 	permit: CircuitPermit,
 	settings: CircuitSettings,
