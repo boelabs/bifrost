@@ -3,6 +3,7 @@ import type { ExecutionPolicyOverrides } from "#core/executionPolicy.ts";
 import { invalidatePublicModelGroups } from "#catalog/publicModels.ts";
 import type { TransportOverrides } from "#profiles/types.ts";
 import type { RuntimeModelMetadata } from "#db/schema.ts";
+import { declaredTransportFor } from "#catalog/types.ts";
 import { isUpstreamTransport } from "#core/transport.ts";
 import type { CatalogEntry } from "#catalog/types.ts";
 import { getAdapter } from "#adapters/registry.ts";
@@ -130,18 +131,22 @@ function selectedOperationIds(
 	return [...selected];
 }
 
-/** Per-operation transport = explicit override > adapter-inferred default. */
+/**
+ * Per-operation transport = explicit override > what the model declares > adapter-inferred default.
+ *
+ * This is the resolved view the dry run answers with, not a set of overrides to store: a deployment
+ * persists only what the operator actually chose, so that a default inherited today does not outrank
+ * a model's own declaration tomorrow.
+ */
 function resolveTransportOverrides(
 	adapter: NonNullable<ReturnType<typeof getAdapter>>,
 	requested: TransportOverrides | undefined,
 	operations: OperationId[],
+	meta: ReturnType<typeof resolveModelMetadata>,
 ): TransportOverrides {
 	const result: TransportOverrides = {};
 	for (const operationId of operations) {
 		const callType = callTypeForOperation(operationId);
-		const transport =
-			requested?.[operationId] ??
-			(callType ? adapter.transports?.[callType]?.default : undefined);
 		if (!callType || !adapter.supportedCallTypes.has(callType)) {
 			throw new GatewayError({
 				class: "bad_request",
@@ -149,6 +154,10 @@ function resolveTransportOverrides(
 				param: `operations.${operationId}`,
 			});
 		}
+		const transport =
+			requested?.[operationId] ??
+			declaredTransportFor(meta, operationId) ??
+			adapter.transports?.[callType]?.default;
 		if (!transport) {
 			throw new GatewayError({
 				class: "bad_request",
@@ -225,6 +234,7 @@ export async function previewDeployment(
 		adapter,
 		input.transportOverrides,
 		operationIds,
+		effective,
 	);
 	return {
 		publicModel: input.publicModel,

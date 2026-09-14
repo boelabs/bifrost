@@ -1,3 +1,4 @@
+import { UPSTREAM_TRANSPORTS } from "#core/transport.ts";
 import { OPERATION_IDS } from "#operations/registry.ts";
 import { CALL_TYPE_VALUES } from "#core/callType.ts";
 import { EFFORT_ORDER } from "#core/reasoning.ts";
@@ -195,8 +196,18 @@ const reasoningSchema = z
 		}
 	});
 
+/**
+ * The upstream protocol a model speaks for one operation. Accepted on every operation profile
+ * because the shape is the same wherever a provider serves one operation through several APIs;
+ * see `OperationTransport` for when declaring it is the right call.
+ */
+const transportField = {
+	transport: z.enum(UPSTREAM_TRANSPORTS).optional(),
+};
+
 const imageOperationProfileSchema = z
 	.object({
+		...transportField,
 		// ── Client contract (what it can request; the gateway validates against this) ──
 		maxPromptChars: z.int().positive().optional(),
 		maxInputImages: z.int().nonnegative().optional(),
@@ -261,6 +272,7 @@ const imageOperationProfileSchema = z
 
 const textGenerateProfileSchema = z
 	.object({
+		...transportField,
 		capabilities: capabilitiesSchema.optional(),
 		maxInputTokens: z.int().positive().optional(),
 		maxOutputTokens: z.int().positive().optional(),
@@ -287,6 +299,7 @@ const textGenerateProfileSchema = z
 
 const transcriptionOperationProfileSchema = z
 	.object({
+		...transportField,
 		responseFormats: z
 			.array(z.enum(["json", "text", "srt", "verbose_json", "vtt"]))
 			.min(1),
@@ -298,6 +311,7 @@ const transcriptionOperationProfileSchema = z
 
 const videoOperationProfileSchema = z
 	.object({
+		...transportField,
 		maxPromptChars: z.int().positive().optional(),
 		tasks: z
 			.array(
@@ -346,6 +360,7 @@ const videoOperationProfileSchema = z
 
 const embeddingOperationProfileSchema = z
 	.object({
+		...transportField,
 		dimensions: z.int().positive().optional(),
 		supportsDimensions: z.boolean().optional(),
 		minDimensions: z.int().positive().optional(),
@@ -390,6 +405,7 @@ const embeddingOperationProfileSchema = z
 
 const rerankOperationProfileSchema = z
 	.object({
+		...transportField,
 		documentModalities: z.array(z.enum(["text", "image"])).min(1),
 		imageSources: z
 			.array(z.enum(["url", "data_url"]))

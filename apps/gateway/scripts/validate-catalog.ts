@@ -1,5 +1,11 @@
 import { pendingReviewEntries } from "#catalog/needsHumanReview.ts";
+import { callTypeForOperation } from "#operations/registry.ts";
 import { loadCatalogDocument } from "#catalog/jsonCatalog.ts";
+import type { OperationId } from "#operations/registry.ts";
+import type { CatalogEntry } from "#catalog/types.ts";
+import { getAdapter } from "#adapters/registry.ts";
+
+import "#adapters/index.ts";
 
 const catalogs = [
 	{
@@ -50,6 +56,41 @@ const catalogs = [
 
 let total = 0;
 const pendingReview: string[] = [];
+const unrunnable: string[] = [];
+
+/**
+ * A transport a model declares but its adapter cannot run is a 404 from the provider at the first
+ * request, and a confusing one: the error names an upstream model, not the entry that chose the
+ * wrong API. The two are declared in different files, so only a check across both catches it.
+ */
+function checkDeclaredTransports(
+	adapterKey: string,
+	models: Record<string, CatalogEntry>,
+): void {
+	const adapter = getAdapter(adapterKey);
+	if (!adapter) {
+		unrunnable.push(`${adapterKey} has a catalog but no registered adapter`);
+		return;
+	}
+	for (const [model, entry] of Object.entries(models)) {
+		for (const [operationId, profile] of Object.entries(
+			entry.operations ?? {},
+		)) {
+			const declared = (profile as { transport?: string } | undefined)
+				?.transport;
+			if (declared === undefined) continue;
+			const callType = callTypeForOperation(operationId as OperationId);
+			const supported = callType
+				? adapter.transports?.[callType]?.supported
+				: undefined;
+			if (!supported?.includes(declared as never))
+				unrunnable.push(
+					`${adapterKey}/${model} declares transport "${declared}" for ${operationId}, ` +
+						`which the adapter does not support (supported: ${supported?.join(", ") || "none"})`,
+				);
+		}
+	}
+}
 
 for (const catalog of catalogs) {
 	const doc = loadCatalogDocument(catalog.url, {
@@ -63,6 +104,13 @@ for (const catalog of catalogs) {
 	// from models.dev) and marks them with needsHumanReview instead of applying them blindly. This is the
 	// gate that makes that marker mean something: a sync PR can't merge until a human clears every one.
 	pendingReview.push(...pendingReviewEntries(catalog.adapterKey, doc.models));
+	checkDeclaredTransports(catalog.adapterKey, doc.models);
+}
+
+if (unrunnable.length > 0) {
+	console.error("catalog validation failed: undeliverable transports:");
+	for (const item of unrunnable) console.error(`  - ${item}`);
+	process.exit(1);
 }
 
 if (pendingReview.length > 0) {
