@@ -1,6 +1,6 @@
+import { currentSessionIfReachable } from "#/features/auth/api.ts";
 import { ThemeSelect } from "#/shared/theme/ThemeSelect.tsx";
 import { SignInForm } from "#/features/auth/SignInForm.tsx";
-import { currentSessionIfReachable } from "#/features/auth/api.ts";
 import { Card } from "#/components/ui/card";
 import { redirect } from "next/navigation";
 

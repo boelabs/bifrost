@@ -15,12 +15,13 @@ export const baseOptions: BaseLayoutProps = {
 				<Image
 					src="/logo.svg"
 					alt=""
-					width={20}
-					height={20}
-					// The mark is drawn light-on-dark; invert it on a light background.
-					className="invert dark:invert-0"
+					width={26}
+					height={17}
+					// The mark is one colour on transparent, so the theme is a filter rather than a
+					// second file: black ink as drawn, flipped to white on a dark background.
+					className="dark:invert"
 				/>
-				<span className="font-medium">Boelabs / Bifrost</span>
+				<span className="font-medium">Bifrost</span>
 			</>
 		),
 	},

@@ -9,6 +9,14 @@ import "./globals.css";
 export const metadata: Metadata = {
 	title: "Bifrost",
 	description: "Operator dashboard for the Bifrost AI gateway.",
+	icons: {
+		icon: [
+			{ url: "/favicon.svg", type: "image/svg+xml" },
+			{ url: "/favicon.ico", sizes: "any" },
+		],
+		apple: "/apple-touch-icon.png",
+	},
+	manifest: "/site.webmanifest",
 };
 
 export const viewport: Viewport = {
