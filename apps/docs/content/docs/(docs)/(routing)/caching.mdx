@@ -18,7 +18,7 @@ Send the cache headers on the inference request:
 
 ```bash
 curl -X POST $BASE/v1/chat/completions \
-  -H "Authorization: Bearer unified-..." \
+  -H "Authorization: Bearer sk-..." \
   -H "x-unified-cache: true" -H "x-unified-cache-ttl: 600" \
   -H "content-type: application/json" -d '{
     "model": "general",

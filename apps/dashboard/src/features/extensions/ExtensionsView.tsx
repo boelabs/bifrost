@@ -5,6 +5,7 @@ import { type InstanceDraft, InstanceDialog } from "./InstanceDialog.tsx";
 import { createContext, Suspense, use, useMemo, useState } from "react";
 import { useMutation, useRowActions } from "#/shared/lib/mutation.ts";
 import { useNotify } from "#/shared/feedback/notifications.tsx";
+import { RowActions } from "#/shared/components/RowActions.tsx";
 import { Can, useSession } from "#/features/auth/session.tsx";
 import { Skeleton } from "#/shared/components/Skeleton.tsx";
 import { useConfirm } from "#/shared/feedback/confirm.tsx";
@@ -24,6 +25,7 @@ import {
 } from "./actions.ts";
 
 import {
+	IconVersions,
 	IconRefresh,
 	IconUpload,
 	IconTrash,
@@ -264,37 +266,31 @@ export function ExtensionsView({
 			header: "",
 			align: "end",
 			render: (row) => (
-				<div className="flex justify-end gap-1.5">
-					<Button
-						size="sm"
-						variant="ghost"
-						onClick={() => void openVersions(row.key)}
-					>
-						{versionsOf === row.key ? "Hide versions" : "Versions"}
-					</Button>
-					{editable ? (
-						<>
-							<Button
-								size="sm"
-								variant="ghost"
-								aria-label={`Upload a new version of ${row.key}`}
-								onClick={() => upload(row.key)}
-								mode="icon"
-							>
-								<IconUpload size={15} aria-hidden />
-							</Button>
-							<Button
-								size="sm"
-								variant="ghost"
-								aria-label={`Delete ${row.key}`}
-								onClick={() => void removeArtifact(row)}
-								mode="icon"
-							>
-								<IconTrash size={15} aria-hidden />
-							</Button>
-						</>
-					) : null}
-				</div>
+				<RowActions
+					label={`Actions for ${row.key}`}
+					actions={[
+						{
+							label: versionsOf === row.key ? "Hide versions" : "Versions",
+							icon: <IconVersions size={15} aria-hidden />,
+							onSelect: () => void openVersions(row.key),
+						},
+						...(editable
+							? [
+									{
+										label: "Upload a version",
+										icon: <IconUpload size={15} aria-hidden />,
+										onSelect: () => upload(row.key),
+									},
+									{
+										label: "Delete",
+										icon: <IconTrash size={15} aria-hidden />,
+										danger: true,
+										onSelect: () => void removeArtifact(row),
+									},
+								]
+							: []),
+					]}
+				/>
 			),
 		},
 	];
@@ -359,62 +355,56 @@ export function ExtensionsView({
 				const live = runtimeById.get(row.id);
 				if (!editable) return null;
 				return (
-					<div className="flex justify-end gap-1.5">
-						{live?.status === "runtime_disabled" ? (
-							<Button
-								size="sm"
-								variant="ghost"
-								aria-label={`Reset ${row.id}`}
-								onClick={() =>
-									void run(() => resetInstanceAction(row.id), {
-										success: `${row.id} reset in this replica`,
-										failure: "The instance could not be reset.",
-									})
-								}
-								mode="icon"
-							>
-								<IconRefresh size={15} aria-hidden />
-							</Button>
-						) : null}
-						<Button
-							size="sm"
-							variant="ghost"
-							aria-label={`Edit ${row.id}`}
-							onClick={() =>
-								setDraft({
-									id: row.id,
-									definition: row.definitionKey,
-									enabled: row.enabled,
-									critical: Boolean(
-										(row as { critical?: boolean | null }).critical,
-									),
-									priority: row.priority,
-									match: JSON.stringify(
-										(row as { match?: unknown }).match ?? {},
-										null,
-										2,
-									),
-									config: JSON.stringify(
-										(row as { config?: unknown }).config ?? {},
-										null,
-										2,
-									),
-								})
-							}
-							mode="icon"
-						>
-							<IconEdit size={15} aria-hidden />
-						</Button>
-						<Button
-							size="sm"
-							variant="ghost"
-							aria-label={`Delete ${row.id}`}
-							onClick={() => void removeInstance(row)}
-							mode="icon"
-						>
-							<IconTrash size={15} aria-hidden />
-						</Button>
-					</div>
+					<RowActions
+						label={`Actions for ${row.id}`}
+						actions={[
+							// A breaker trip disables an instance in one replica only, so the reset is
+							// offered only while this replica reports it tripped.
+							...(live?.status === "runtime_disabled"
+								? [
+										{
+											label: "Reset in this replica",
+											icon: <IconRefresh size={15} aria-hidden />,
+											onSelect: () =>
+												void run(() => resetInstanceAction(row.id), {
+													success: `${row.id} reset in this replica`,
+													failure: "The instance could not be reset.",
+												}),
+										},
+									]
+								: []),
+							{
+								label: "Edit",
+								icon: <IconEdit size={15} aria-hidden />,
+								onSelect: () =>
+									setDraft({
+										id: row.id,
+										definition: row.definitionKey,
+										enabled: row.enabled,
+										critical: Boolean(
+											(row as { critical?: boolean | null }).critical,
+										),
+										priority: row.priority,
+										match: JSON.stringify(
+											(row as { match?: unknown }).match ?? {},
+											null,
+											2,
+										),
+										config: JSON.stringify(
+											(row as { config?: unknown }).config ?? {},
+											null,
+											2,
+										),
+									}),
+							},
+							{
+								label: "Delete",
+								icon: <IconTrash size={15} aria-hidden />,
+								danger: true,
+								onSelect: () => void removeInstance(row),
+							},
+						]}
+					/>
 				);
 			},
 		},

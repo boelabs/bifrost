@@ -1,17 +1,17 @@
 "use client";
 
-import { type Column, DataTable, Dash, Mono } from "#/components/ui/datatable";
+import { IconBan, IconCheck, IconPencil, IconTrash } from "@tabler/icons-react";
+import { type Column, DataTable, Dash } from "#/components/ui/datatable";
 import { useSearchWriter } from "#/shared/lib/useSearchWriter.ts";
 import { Pagination } from "#/shared/components/Pagination.tsx";
 import { deleteKeyAction, updateKeyAction } from "./actions.ts";
-import { IconPencil, IconTrash } from "@tabler/icons-react";
+import { RowActions } from "#/shared/components/RowActions.tsx";
 import { formatCents, type VirtualKey } from "./common.ts";
 import { useConfirm } from "#/shared/feedback/confirm.tsx";
 import { type KeysFilters, PAGE_SIZE } from "./filters.ts";
 import { useRowActions } from "#/shared/lib/mutation.ts";
 import { useSession } from "#/features/auth/session.tsx";
 import { EmptyState } from "#/components/ui/page";
-import { Button } from "#/components/ui/button";
 import { Status } from "#/components/ui/status";
 import { useKeys } from "./KeysView.tsx";
 
@@ -78,11 +78,6 @@ export function KeysTable({
 			key: "name",
 			header: "Name",
 			render: (key) => <span className="font-medium">{key.name}</span>,
-		},
-		{
-			key: "prefix",
-			header: "Prefix",
-			render: (key) => <Mono>{key.keyPrefix}</Mono>,
 		},
 		{
 			key: "models",
@@ -164,29 +159,31 @@ export function KeysTable({
 			align: "end",
 			render: (key) =>
 				writable ? (
-					<div className="flex justify-end gap-1">
-						<Button size="sm" variant="ghost" onClick={() => void toggle(key)}>
-							{key.enabled ? "Disable" : "Enable"}
-						</Button>
-						<Button
-							size="sm"
-							variant="ghost"
-							aria-label={`Edit ${key.name}`}
-							onClick={() => edit(key)}
-							mode="icon"
-						>
-							<IconPencil size={15} aria-hidden />
-						</Button>
-						<Button
-							size="sm"
-							variant="ghost"
-							aria-label={`Delete ${key.name}`}
-							onClick={() => void remove(key)}
-							mode="icon"
-						>
-							<IconTrash size={15} aria-hidden />
-						</Button>
-					</div>
+					<RowActions
+						label={`Actions for ${key.name}`}
+						actions={[
+							{
+								label: key.enabled ? "Disable" : "Enable",
+								icon: key.enabled ? (
+									<IconBan size={15} aria-hidden />
+								) : (
+									<IconCheck size={15} aria-hidden />
+								),
+								onSelect: () => void toggle(key),
+							},
+							{
+								label: "Edit",
+								icon: <IconPencil size={15} aria-hidden />,
+								onSelect: () => edit(key),
+							},
+							{
+								label: "Delete",
+								icon: <IconTrash size={15} aria-hidden />,
+								danger: true,
+								onSelect: () => void remove(key),
+							},
+						]}
+					/>
 				) : null,
 		},
 	];

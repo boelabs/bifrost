@@ -10,7 +10,7 @@ deployments](/docs/creating-deployments) for the per-provider bodies.
 
 > You need two kinds of credentials and they are not the same thing:
 > the **master key** (`MASTER_KEY`, operator-only) administers the gateway, and **virtual keys**
-> (`unified-…`) are what your clients send. Never hand the master key to a client.
+> (`sk-…`) are what your clients send. Never hand the master key to a client.
 
 ## 1. Run the gateway
 
@@ -88,7 +88,7 @@ curl -X POST $BASE/admin/keys \
 The response contains the plaintext key **once** — store it now, it is never shown again:
 
 ```json
-{ "data": { "id": "…", "keyPrefix": "unified-abcd…", "key": "unified-…", "allowedModels": ["general"] } }
+{ "data": { "id": "…", "keyPrefix": "sk-abcdefg", "key": "sk-…", "allowedModels": ["general"] } }
 ```
 
 See [Virtual keys](/docs/virtual-keys) for budgets, RPM/TPM limits, and rotation.
@@ -99,7 +99,7 @@ Use the virtual key exactly as you would an OpenAI key, with `model` set to your
 
 ```bash
 curl -X POST $BASE/v1/chat/completions \
-  -H "Authorization: Bearer unified-..." -H "content-type: application/json" -d '{
+  -H "Authorization: Bearer sk-..." -H "content-type: application/json" -d '{
     "model": "general",
     "messages": [{ "role": "user", "content": "Say hello in one word." }]
   }'
@@ -110,7 +110,7 @@ Or with the official OpenAI SDK — this is the whole integration:
 ```python
 from openai import OpenAI
 
-client = OpenAI(base_url="http://localhost:4000/v1", api_key="unified-...")
+client = OpenAI(base_url="http://localhost:4000/v1", api_key="sk-...")
 resp = client.chat.completions.create(
     model="general",
     messages=[{"role": "user", "content": "Say hello in one word."}],
