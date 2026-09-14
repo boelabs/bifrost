@@ -37,6 +37,9 @@
 	--color-sidebar-border: var(--sidebar-border);
 	--color-surface: var(--surface);
 	--color-surface-2: var(--surface-2);
+	--color-field: var(--field);
+	--color-field-hover: var(--field-hover);
+	--color-field-muted: var(--field-muted);
 	--color-fg: var(--fg);
 	--color-fg-muted: var(--fg-muted);
 	--color-fg-disabled: var(--fg-disabled);
@@ -96,6 +99,20 @@
 	--ui-radius-item: var(--ui-radius-md);
 	--surface: oklch(95.51% 0 0);
 	--surface-2: oklch(88.53% 0 0);
+	/**
+	 * The ground a control stands on, instead of a line drawn around it.
+	 *
+	 * Derived rather than picked, and deliberately not symmetrical between the themes. Dark sits at
+	 * 1.40:1 from the page, roughly where the border it replaces already sat. Light sits at 1.25:1,
+	 * because a fill DARKER than its page reads heavier than one lighter than it: matched by the
+	 * numbers, the light fields came out looking disabled. Either way the hover steps AWAY from the
+	 * page — the old `filled` variant stepped toward it, so a control faded as the pointer arrived.
+	 *
+	 * `--field-muted` exists because `--fg-muted` only clears 3.9:1 here. A placeholder is still text.
+	 */
+	--field: oklch(88.24% 0 0);
+	--field-hover: oklch(83.24% 0 0);
+	--field-muted: oklch(48.46% 0 0);
 	--fg: oklch(32.11% 0 0);
 	--fg-muted: oklch(48.5% 0 0);
 	--fg-inverse: oklch(100% 0 0);
@@ -145,6 +162,9 @@
 	--sidebar-border: oklch(32.9% 0 0);
 	--surface: oklch(21.78% 0 0);
 	--surface-2: oklch(28.5% 0 0);
+	--field: oklch(32.54% 0 0);
+	--field-hover: oklch(36.73% 0 0);
+	--field-muted: oklch(69.11% 0 0);
 	--fg: oklch(88.53% 0 0);
 	--fg-muted: oklch(66% 0 0);
 	--fg-inverse: oklch(100% 0 0);

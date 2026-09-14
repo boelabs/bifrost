@@ -18,8 +18,12 @@ export const buttonStyles = tv({
 	variants: {
 		variant: {
 			primary: "bg-primary text-primary-fg hover:bg-primary-hover",
-			secondary:
-				"border-border bg-transparent text-fg hover:border-secondary hover:bg-secondary",
+			/**
+			 * Flat, not outlined. It is the companion to `primary` in the same row, and an outline
+			 * beside a solid pill reads as two different kinds of control rather than two weights of
+			 * the same one.
+			 */
+			secondary: "bg-secondary text-secondary-fg hover:bg-field-hover",
 			ghost:
 				"bg-transparent text-fg hover:bg-secondary hover:text-secondary-fg",
 			danger: "bg-danger text-danger-fg hover:bg-danger/80",
