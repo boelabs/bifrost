@@ -2,6 +2,7 @@
 
 import { NavSkeleton, UserMenuSkeleton } from "./ShellSkeletons.tsx";
 import type { OperatorIdentity } from "#/features/auth/common.ts";
+import { BifrostMark } from "#/shared/components/BifrostMark.tsx";
 import { SessionProvider } from "#/features/auth/session.tsx";
 import { Button } from "#/components/ui/button";
 import { SidebarNav } from "./SidebarNav.tsx";
@@ -72,7 +73,7 @@ export function AppShell({
 						>
 							<IconLayoutSidebarLeftExpand aria-hidden className="size-5" />
 						</Button>
-						<span className="font-semibold">Bifrost</span>
+						<BifrostMark size={18} />
 					</header>
 					<main
 						id="main-content"
@@ -131,9 +132,14 @@ function SidebarContent({
 					collapsed ? "justify-center" : "justify-between",
 				)}
 			>
+				{/* The mark alone: it spells the name, and setting the word beside it says the same
+				    thing twice. Collapsed, the 64px rail is the toggle's. */}
 				{!collapsed && (
-					<span className="truncate px-2 font-semibold tracking-tight">
-						Bifrost
+					// The inset goes on a wrapper, never on the image: Tailwind's preflight sets
+					// `height: auto`, so padding inside the declared width shrinks the mark's height
+					// with it and the bridge comes out flattened.
+					<span className="px-2">
+						<BifrostMark size={20} />
 					</span>
 				)}
 				<Button
