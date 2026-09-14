@@ -3,8 +3,10 @@ import { Conversation, groupMessages } from "./Conversation";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { PlaygroundMessage } from "./transport";
 import type { PlaygroundModel } from "./models";
+import { VideoRunView } from "./VideoRunView";
 import { ModelSelect } from "./ModelSelect";
 import { Metrics } from "./ResponseDetails";
+import type { VideoRun } from "./videos";
 import assert from "node:assert/strict";
 import { Markdown } from "./Markdown";
 import { test } from "node:test";
@@ -483,4 +485,102 @@ test("the model picker names the current model and is reachable as a labelled co
 	assert.match(html, /gpt-5/);
 	// The list lives in a portal, so the closed trigger must not leak the other names.
 	assert.doesNotMatch(html, /claude-opus-5/);
+});
+
+const videoRun: VideoRun = {
+	id: "run-1",
+	prompt: "A fox crossing a frozen river",
+	references: [],
+	model: "sora-2",
+	settings: { seconds: 8, aspectRatio: "16:9" },
+	state: "running",
+};
+
+test("a queued job waits behind the same loader as every other capability", () => {
+	const html = renderToStaticMarkup(
+		<VideoRunView run={videoRun} onRetry={() => {}} onCheck={() => {}} />,
+	);
+	assert.match(html, /Queued/);
+	assert.doesNotMatch(html, /<video/);
+	assert.match(html, /disabled[^>]*aria-label="Generate again"/);
+});
+
+test("reported progress becomes a bar, and an unreported one does not", () => {
+	const withProgress = renderToStaticMarkup(
+		<VideoRunView
+			run={{
+				...videoRun,
+				job: { id: "video_1", status: "in_progress", progress: 42 },
+			}}
+			onRetry={() => {}}
+			onCheck={() => {}}
+		/>,
+	);
+	assert.match(withProgress, /aria-valuenow="42"/);
+	assert.match(withProgress, /Generating/);
+	const without = renderToStaticMarkup(
+		<VideoRunView
+			run={{ ...videoRun, job: { id: "video_1", status: "in_progress" } }}
+			onRetry={() => {}}
+			onCheck={() => {}}
+		/>,
+	);
+	assert.doesNotMatch(without, /aria-valuenow/);
+});
+
+test("a finished video plays from the relay rather than from a blob", () => {
+	const html = renderToStaticMarkup(
+		<VideoRunView
+			run={{
+				...videoRun,
+				state: "completed",
+				job: { id: "video_1", status: "completed" },
+				durationMs: 94_000,
+			}}
+			onRetry={() => {}}
+			onCheck={() => {}}
+		/>,
+	);
+	assert.match(
+		html,
+		/src="\/api\/v1\/videos\/video_1\/content\?variant=video"/,
+	);
+	assert.match(html, /aria-label="Download video"/);
+	assert.match(html, /sora-2 · 8s · 16:9 · 94\.0s/);
+	assert.doesNotMatch(html, /aria-label="Check this job again"/);
+});
+
+test("a stopped run keeps its job, and says the provider has not stopped with it", () => {
+	const html = renderToStaticMarkup(
+		<VideoRunView
+			run={{
+				...videoRun,
+				state: "stopped",
+				job: { id: "video_1", status: "in_progress" },
+			}}
+			onRetry={() => {}}
+			onCheck={() => {}}
+		/>,
+	);
+	assert.match(html, /Stopped watching/);
+	assert.match(html, /may still be running on the provider/);
+	assert.match(html, /aria-label="Check this job again"/);
+});
+
+test("a failed job reports what the gateway said, and offers no player", () => {
+	const html = renderToStaticMarkup(
+		<VideoRunView
+			run={{
+				...videoRun,
+				state: "failed",
+				job: { id: "video_1", status: "failed" },
+				error: "The provider rejected the prompt.",
+			}}
+			onRetry={() => {}}
+			onCheck={() => {}}
+		/>,
+	);
+	assert.match(html, /role="alert"/);
+	assert.match(html, /The provider rejected the prompt\./);
+	assert.doesNotMatch(html, /<video/);
 });

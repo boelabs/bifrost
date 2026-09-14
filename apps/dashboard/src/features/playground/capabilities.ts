@@ -24,6 +24,14 @@ export const CAPABILITIES = [
 		description: "Generate and edit pictures",
 	},
 	{
+		// One operation, but not one request: the gateway answers with a job, and the playground
+		// watches it until the video exists. See `videos.ts`.
+		id: "video",
+		operations: ["video.generate"],
+		label: "Video",
+		description: "Generate video from a prompt",
+	},
+	{
 		id: "embedding",
 		operations: ["embedding.create"],
 		label: "Embeddings",
