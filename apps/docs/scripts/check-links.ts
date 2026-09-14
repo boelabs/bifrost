@@ -45,6 +45,16 @@ const assets = new Set<string>();
 for await (const entry of new Bun.Glob("**/*").scan(publicDir))
 	assets.add(`/${entry.replaceAll("\\", "/")}`);
 
+/**
+ * Prerendered route handlers land beside the pages as `<route>.body` — which is what every metadata
+ * file convention (`icon.svg`, `apple-icon.png`, `manifest.webmanifest`) becomes once it is
+ * generated rather than served from `public/`. They are real addresses, so a `<link>` to one
+ * resolves; counting them also means a page referencing a route that failed to build still fails
+ * here, which is the point of checking the output rather than the source.
+ */
+for await (const entry of new Bun.Glob("**/*.body").scan(app))
+	assets.add(`/${entry.replaceAll("\\", "/").replace(/\.body$/, "")}`);
+
 const failures = new Set<string>();
 const origin = "https://docs.example.com";
 for (const [route, page] of pages) {
