@@ -31,9 +31,6 @@ export const buttonStyles = tv({
 			ghost:
 				"bg-transparent text-fg hover:bg-secondary hover:text-secondary-fg",
 			danger: "bg-danger text-danger-fg hover:bg-danger/80",
-			soft: "bg-secondary text-secondary-fg hover:bg-secondary/70",
-			success: "bg-success text-success-fg hover:bg-success/80",
-			warning: "bg-warning text-warning-fg hover:bg-warning/80",
 			link: "bg-transparent text-fg underline-offset-4 hover:underline",
 		},
 		size: {
