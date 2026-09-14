@@ -148,7 +148,8 @@ API calls would come back 403. See [Security → Roles](/docs/security#roles).
 - **Playground** — real inference against a real deployment, billed and logged like any other
   request, attributed to the operator who sent it.
 - **Logs** — one row per operation with its outcome, timing and cost; opening one shows every
-  upstream attempt. Reading a retained payload sample is itself recorded in the audit trail.
+  upstream attempt. A retained payload is offered only when there is one to open and the deployment
+  allows it, and reading it is itself recorded in the audit trail.
 - **Extensions** — uploaded modules and the instances running them, with live status from the replica
   answering the page.
 - **Settings** — router behaviour, fallback chains and the response cache.

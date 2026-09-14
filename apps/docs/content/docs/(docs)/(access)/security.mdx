@@ -151,9 +151,17 @@ rotation procedure for both `MASTER_KEY` and the encryption keyring, see
 
 ## Observability payloads
 
-Forensic samples use purpose-bound AEAD envelopes under the versioned keyring, expire automatically,
-and never fall back to plaintext. HMAC fingerprints use a separate derived subkey.
-OpenTelemetry never receives payload bodies. See [Environment variables](/docs/reference-environment)
+Every finished operation keeps one forensic sample: purpose-bound AEAD envelopes under the versioned
+keyring, redacted and size-capped, expiring on their own and never falling back to plaintext. HMAC
+fingerprints use a separate derived subkey. OpenTelemetry never receives payload bodies.
+
+Two dials bound the exposure, and neither is chance:
+`OBSERVABILITY_PAYLOAD_RETENTION_DAYS` decides how long a sample exists, and
+`OBSERVABILITY_PAYLOAD_ACCESS=sealed` decides that nobody reads it — no role, not the master key.
+Sealing is deliberately an environment variable: reopening payloads takes a deployment change, so it
+is not something a compromised operator account can do. The sealing key still lives in the gateway,
+so treat `sealed` as an access policy rather than a guarantee against the gateway itself. Refused
+attempts are audited like successful reads. See [Environment variables](/docs/reference-environment)
 and [Observability](/docs/observability).
 
 ## Runtime extensions

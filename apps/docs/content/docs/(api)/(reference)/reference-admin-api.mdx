@@ -74,8 +74,8 @@ the API.
 | Route | Purpose |
 |---|---|
 | `GET /admin/logs` | Paginated operation summaries. Filters include `outcome`, `degraded`, `active`, `terminalVerified`, `failureKind`, `failurePhase`, duration, model, key, request id, cache, and time range. |
-| `GET /admin/logs/:operationId` | Full operation record and ordered upstream-attempt timeline. |
-| `GET /admin/logs/:operationId/payload` | Decrypt a retained forensic sample. Requires `payloads:read` (master, owner, or admin) and is audit logged; returns 404 when no sample exists. |
+| `GET /admin/logs/:operationId` | Full operation record, ordered upstream-attempt timeline, and whether a retained sample exists and can be read (`payload.retained`, `payload.readable`, `payload.access`). |
+| `GET /admin/logs/:operationId/payload` | Decrypt the retained forensic sample kept for every finished operation. Requires `payloads:read` (master, owner, or admin) and is audit logged, outcome included. 403 `payload_access_sealed` when the deployment runs `OBSERVABILITY_PAYLOAD_ACCESS=sealed`, 404 once retention has swept the sample, 409 when it outlived its key. |
 | `GET /admin/observability/summary` | Outcomes, degraded/stalled/active/abandoned counts, retries, and latency percentiles for `window=5m|1h|24h`. |
 | `GET /admin/usage` | Consumer usage/cost and estimated upstream cost across every attempt; group by `public_model`, `virtual_key`, `actor`, `hour`, `day`, or `none`. Filterable by `actor`. See [Cost accounting](/docs/cost-accounting). |
 

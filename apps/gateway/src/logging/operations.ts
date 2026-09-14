@@ -697,36 +697,31 @@ export function completeOperation(
 							);
 					});
 
-					const shouldCapture =
-						outcome !== "success" ||
-						degraded ||
-						Math.random() < env.OBSERVABILITY_SUCCESS_SAMPLE_RATE;
-					const envelope = shouldCapture
-						? encryptJson(
-								{
-									request: boundedPayloadComponent(input.requestBody),
-									response: boundedPayloadComponent(input.responseBody),
-									error: boundedPayloadComponent(input.error),
-									attempts: boundedPayloadComponent(input.attempts),
-								},
-								"observability-payload",
-							)
-						: null;
-					if (envelope) {
-						await db
-							.insert(payloadSamples)
-							.values({
-								operationId,
-								captureReason:
-									outcome === "success" && !degraded ? "sample" : outcome,
-								envelope,
-								expiresAt: new Date(
-									Date.now() +
-										env.OBSERVABILITY_PAYLOAD_RETENTION_DAYS * 86_400_000,
-								),
-							})
-							.onConflictDoNothing();
-					}
+					// Every finished operation keeps a sample. Sampling the successful ones was a
+					// storage decision that cost the operator the one case they always need: the
+					// request that "worked" and still returned the wrong thing. What limits the
+					// exposure is retention, redaction and OBSERVABILITY_PAYLOAD_ACCESS - not luck.
+					const envelope = encryptJson(
+						{
+							request: boundedPayloadComponent(input.requestBody),
+							response: boundedPayloadComponent(input.responseBody),
+							error: boundedPayloadComponent(input.error),
+							attempts: boundedPayloadComponent(input.attempts),
+						},
+						"observability-payload",
+					);
+					await db
+						.insert(payloadSamples)
+						.values({
+							operationId,
+							captureReason: degraded ? "degraded" : outcome,
+							envelope,
+							expiresAt: new Date(
+								Date.now() +
+									env.OBSERVABILITY_PAYLOAD_RETENTION_DAYS * 86_400_000,
+							),
+						})
+						.onConflictDoNothing();
 					await redis.del(operationLeaseKey(operationId));
 				}, input.requestId),
 			),
@@ -845,34 +840,78 @@ export async function reconcileAbandonedOperations(
 	return rows.length;
 }
 
+/**
+ * What a read of a retained sample produced. Every branch is audited, including the ones that
+ * return nothing: "who tried" is as much a part of the trail as "who saw".
+ */
+export type PayloadReadOutcome =
+	| "revealed"
+	/** No sample: the operation predates capture, or retention already swept it. */
+	| "missing"
+	/** OBSERVABILITY_PAYLOAD_ACCESS=sealed. The envelope was never touched. */
+	| "sealed"
+	/** The sample outlived the key that sealed it. */
+	| "unreadable";
+
+export type PayloadSampleRead =
+	| { outcome: "revealed"; payload: unknown }
+	| { outcome: Exclude<PayloadReadOutcome, "revealed"> };
+
+/** Whether this deployment lets anyone read retained samples at all. */
+export function payloadAccessIsOpen(): boolean {
+	return env.OBSERVABILITY_PAYLOAD_ACCESS === "open";
+}
+
+/**
+ * Decrypts one retained sample, or explains why it cannot.
+ *
+ * Refusal comes first and costs nothing: a sealed gateway answers without reading the row, so the
+ * plaintext never exists in this process, and the attempt is still recorded.
+ */
 export async function getPayloadSample(
 	operationId: string,
-	audit: { requestId: string },
-) {
+	audit: { requestId: string; actor: string },
+): Promise<PayloadSampleRead> {
+	const record = async (outcome: PayloadReadOutcome) => {
+		await db.insert(payloadAccessAudit).values({
+			operationId,
+			requestId: audit.requestId,
+			actor: audit.actor,
+			outcome,
+		});
+		log.warn("audit", "observability payload queried", {
+			operationId,
+			requestId: audit.requestId,
+			actor: audit.actor,
+			outcome,
+		});
+	};
+	if (!payloadAccessIsOpen()) {
+		await record("sealed");
+		return { outcome: "sealed" };
+	}
 	const [row] = await db
 		.select()
 		.from(payloadSamples)
 		.where(eq(payloadSamples.operationId, operationId))
 		.limit(1);
-	const found = row !== undefined && row.expiresAt > new Date();
-	await db.insert(payloadAccessAudit).values({
-		operationId,
-		requestId: audit.requestId,
-		actor: "master",
-		found,
-	});
-	log.warn("audit", "observability payload queried", {
-		operationId,
-		requestId: audit.requestId,
-		actor: "master",
-		found,
-	});
-	if (!found || !row) return null;
+	if (row === undefined || row.expiresAt <= new Date()) {
+		await record("missing");
+		return { outcome: "missing" };
+	}
+	let payload: unknown;
+	try {
+		payload = decryptPayload(row.envelope);
+	} catch {
+		await record("unreadable");
+		return { outcome: "unreadable" };
+	}
+	await record("revealed");
 	await db
 		.update(payloadSamples)
 		.set({ accessedAt: new Date() })
 		.where(eq(payloadSamples.id, row.id));
-	return decryptPayload(row.envelope);
+	return { outcome: "revealed", payload };
 }
 
 export function startOperationMaintenance(): () => void {

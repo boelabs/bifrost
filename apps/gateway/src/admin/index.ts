@@ -60,6 +60,12 @@ import {
 } from "#db/repos/router.ts";
 
 import {
+	operationPersistenceStatus,
+	payloadAccessIsOpen,
+	getPayloadSample,
+} from "#logging/operations.ts";
+
+import {
 	resetExtensionInstance,
 	reloadExtensions,
 	extensionStatus,
@@ -81,11 +87,6 @@ import {
 	advanceResponseCacheEpoch,
 	invalidateResponseCache,
 } from "#cache/responseCache.ts";
-
-import {
-	operationPersistenceStatus,
-	getPayloadSample,
-} from "#logging/operations.ts";
 
 /** Strips the hash before returning a virtual key. */
 function publicKey(row: VirtualKeyRow) {
@@ -663,33 +664,43 @@ adminApp.get("/logs", async (c) => {
 });
 
 adminApp.get("/logs/:id/payload", async (c) => {
-	let payload: Awaited<ReturnType<typeof getPayloadSample>>;
-	try {
-		payload = await getPayloadSample(c.req.param("id"), {
-			requestId: getRequestId(c),
-		});
-	} catch (error) {
-		// A sample outlives the key that sealed it: after a keyring rotation that retired the active
-		// id, or when a database is carried between environments. That is an ordinary operational
-		// state, not a crash, and the operator needs to be told which of the two they are looking at
-		// rather than receiving an unhandled 500.
-		throw new GatewayError({
-			class: "not_found",
-			status: 409,
-			// The admin error handler republishes `message` to the operator, so it carries the whole
-			// explanation; a separate publicMessage would be dropped.
-			message: `Payload sample for operation "${c.req.param("id")}" was encrypted with a key this gateway no longer has. Its metadata is still readable.`,
-			code: "payload_sample_unreadable",
-			cause: error,
-		});
+	const id = c.req.param("id");
+	const read = await getPayloadSample(id, {
+		requestId: getRequestId(c),
+		actor: actorOf(getAuth(c)),
+	});
+	// The admin error handler republishes `message` to the operator, so each branch carries its whole
+	// explanation; a separate publicMessage would be dropped.
+	switch (read.outcome) {
+		case "revealed":
+			return ok(c, read.payload);
+		case "sealed":
+			// A 403 no role can lift: the gateway reads no payload for any credential until
+			// OBSERVABILITY_PAYLOAD_ACCESS is changed and the process restarted.
+			throw new GatewayError({
+				class: "permission",
+				message:
+					"Retained payloads are sealed on this gateway (OBSERVABILITY_PAYLOAD_ACCESS=sealed). Samples are still captured and encrypted at rest; no credential can read one until the deployment opens access.",
+				code: "payload_access_sealed",
+			});
+		case "unreadable":
+			// A sample outlives the key that sealed it: after a keyring rotation that retired the
+			// active id, or when a database is carried between environments. That is an ordinary
+			// operational state, not a crash, and the operator needs to be told which of the two they
+			// are looking at rather than receiving an unhandled 500.
+			throw new GatewayError({
+				class: "not_found",
+				status: 409,
+				message: `Payload sample for operation "${id}" was encrypted with a key this gateway no longer has. Its metadata is still readable.`,
+				code: "payload_sample_unreadable",
+			});
+		default:
+			throw new GatewayError({
+				class: "not_found",
+				message: "No retained payload sample exists for this operation",
+				code: "payload_sample_not_found",
+			});
 	}
-	if (payload === null)
-		throw new GatewayError({
-			class: "not_found",
-			message: "No retained payload sample exists for this operation",
-			code: "payload_sample_not_found",
-		});
-	return ok(c, payload);
 });
 
 adminApp.get("/logs/:id", async (c) => {
@@ -700,7 +711,17 @@ adminApp.get("/logs/:id", async (c) => {
 			message: "Gateway operation not found",
 			code: "operation_not_found",
 		});
-	return ok(c, detail);
+	// `readable` is the question the caller actually has - is there a payload I can open right now -
+	// and it is answered here rather than left to the client to infer from a gateway-wide setting.
+	const access = payloadAccessIsOpen() ? "open" : "sealed";
+	return ok(c, {
+		...detail,
+		payload: {
+			...detail.payload,
+			access,
+			readable: detail.payload.retained && access === "open",
+		},
+	});
 });
 
 adminApp.get("/observability/summary", async (c) => {

@@ -2004,7 +2004,10 @@ export interface paths {
 			path?: never;
 			cookie?: never;
 		};
-		/** Decrypt a retained forensic payload sample */
+		/**
+		 * Decrypt a retained forensic payload sample
+		 * @description Every finished operation keeps one sample until OBSERVABILITY_PAYLOAD_RETENTION_DAYS expires it. Each call is written to the payload access audit, including the ones that return nothing. 403 `payload_access_sealed` means the deployment runs with OBSERVABILITY_PAYLOAD_ACCESS=sealed: samples are still captured, and no credential reads them. 409 `payload_sample_unreadable` means the sample outlived the key that sealed it. Read GET /admin/logs/{id} first to know which of these to expect.
+		 */
 		get: {
 			parameters: {
 				query?: never;
@@ -2029,7 +2032,9 @@ export interface paths {
 						};
 					};
 				};
+				403: components["responses"]["Error"];
 				404: components["responses"]["Error"];
+				409: components["responses"]["Error"];
 			};
 		};
 		put?: never;
@@ -3764,7 +3769,7 @@ export interface components {
 		} & {
 			[key: string]: unknown;
 		};
-		/** @description A full operation record plus its ordered upstream-attempt timeline. */
+		/** @description A full operation record, its ordered upstream-attempt timeline, and the state of its retained payload sample. */
 		OperationDetail: {
 			/** Format: uuid */
 			id: string;
@@ -3773,8 +3778,18 @@ export interface components {
 			attempts: {
 				[key: string]: unknown;
 			}[];
+			payload: components["schemas"]["RetainedPayloadState"];
 		} & {
 			[key: string]: unknown;
+		};
+		/** @description Whether a retained request/response sample stands behind this operation, and whether it can be read. Describing it costs no audit entry; reading it does. */
+		RetainedPayloadState: {
+			retained: boolean;
+			readable: boolean;
+			/** @enum {string} */
+			access: "open" | "sealed";
+			captureReason: string | null;
+			expiresAt: string | null;
 		};
 		ObservabilitySummary: {
 			totals: {

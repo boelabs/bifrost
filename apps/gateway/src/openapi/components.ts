@@ -1424,6 +1424,24 @@ export const OperationSummaryRow = loose(
 	},
 );
 
+export const RetainedPayloadState = z
+	.object({
+		/** False once retention has swept the sample, or for operations older than capture. */
+		retained: z.boolean(),
+		/** Whether GET /admin/logs/{id}/payload would return it: retained and access open. */
+		readable: z.boolean(),
+		/** Gateway-wide OBSERVABILITY_PAYLOAD_ACCESS. `sealed` refuses every credential. */
+		access: z.enum(["open", "sealed"]),
+		/** Why the sample was kept: the operation outcome, or "degraded". */
+		captureReason: nullableString,
+		expiresAt: z.union([timestamp, z.null()]),
+	})
+	.meta({
+		id: "RetainedPayloadState",
+		description:
+			"Whether a retained request/response sample stands behind this operation, and whether it can be read. Describing it costs no audit entry; reading it does.",
+	});
+
 export const OperationDetail = loose(
 	{
 		id: z.uuid(),
@@ -1431,11 +1449,12 @@ export const OperationDetail = loose(
 		attempts: z.array(z.record(z.string(), z.unknown())).meta({
 			description: "Ordered upstream attempts for this operation.",
 		}),
+		payload: RetainedPayloadState,
 	},
 	{
 		id: "OperationDetail",
 		description:
-			"A full operation record plus its ordered upstream-attempt timeline.",
+			"A full operation record, its ordered upstream-attempt timeline, and the state of its retained payload sample.",
 	},
 );
 

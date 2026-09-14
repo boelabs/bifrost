@@ -8,6 +8,20 @@
       "when": 1789254055334,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789422191511,
+      "tag": "0001_payload_access_outcome",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789422202988,
+      "tag": "0002_drop_payload_access_found",
+      "breakpoints": true
     }
   ]
 }

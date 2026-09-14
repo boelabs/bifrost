@@ -1,7 +1,12 @@
 import { and, count, desc, eq, gte, lte, sql, type SQL } from "drizzle-orm";
-import { gatewayOperations, upstreamAttempts } from "#db/schema.ts";
 import type { Page, PageResult } from "./deployments.ts";
 import { db } from "#db/client.ts";
+
+import {
+	gatewayOperations,
+	upstreamAttempts,
+	payloadSamples,
+} from "#db/schema.ts";
 
 export type GatewayOperationRow = typeof gatewayOperations.$inferSelect;
 
@@ -97,6 +102,13 @@ export async function listOperationsPage(
 	return { rows, total: Number(totalRow[0]?.value ?? 0) };
 }
 
+/**
+ * One operation, its attempt timeline, and whether a retained sample still stands behind it.
+ *
+ * The sample is described, never returned: reading one is a separate, audited call. Describing it
+ * here is what lets an operator be told "swept by retention" instead of being offered a button that
+ * spends an audit entry to discover the same thing.
+ */
 export async function getOperationDetail(id: string) {
 	return db.transaction(
 		async (tx) => {
@@ -106,12 +118,30 @@ export async function getOperationDetail(id: string) {
 				.where(eq(gatewayOperations.id, id))
 				.limit(1);
 			if (!operation) return null;
+			// Sequential, not Promise.all: both statements share the transaction's single connection.
 			const attempts = await tx
 				.select()
 				.from(upstreamAttempts)
 				.where(eq(upstreamAttempts.operationId, id))
 				.orderBy(upstreamAttempts.ordinal);
-			return { ...operation, attempts };
+			const [sample] = await tx
+				.select({
+					captureReason: payloadSamples.captureReason,
+					expiresAt: payloadSamples.expiresAt,
+				})
+				.from(payloadSamples)
+				.where(eq(payloadSamples.operationId, id))
+				.limit(1);
+			const retained = sample !== undefined && sample.expiresAt > new Date();
+			return {
+				...operation,
+				attempts,
+				payload: {
+					retained,
+					captureReason: retained ? sample.captureReason : null,
+					expiresAt: retained ? sample.expiresAt : null,
+				},
+			};
 		},
 		{
 			isolationLevel: "repeatable read",

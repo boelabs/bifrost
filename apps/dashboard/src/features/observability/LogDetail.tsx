@@ -31,6 +31,31 @@ function Block({ title, value }: { title: string; value: unknown }) {
 	);
 }
 
+interface PayloadState {
+	retained: boolean;
+	readable: boolean;
+	access: "open" | "sealed";
+	expiresAt: string | null;
+}
+
+/**
+ * What the operator is looking at before they click anything.
+ *
+ * The gateway keeps a sample of every finished operation, so the interesting cases are the two where
+ * a button would be a lie: a deployment that seals payloads, and a sample retention already swept.
+ */
+function payloadNote(sample: PayloadState | undefined): string {
+	if (!sample) return "Loading…";
+	if (sample.access === "sealed")
+		return "Sealed on this deployment: the gateway still captures and encrypts every sample, and no operator can read one here.";
+	if (!sample.retained)
+		return "Nothing retained for this operation — the retention window has passed.";
+	const until = sample.expiresAt
+		? ` Kept until ${new Date(sample.expiresAt).toLocaleString()}.`
+		: "";
+	return `The request and response as the gateway saw them. Reading it is recorded in the payload access audit.${until}`;
+}
+
 /**
  * One attempt of the operation. The gateway already decides what an attempt means — which
  * deployment, who owned the failure, at what phase — so this only has to stop hiding it.
@@ -124,6 +149,7 @@ export function LogDetail({
 
 	const attempts = (detail?.attempts ?? []) as Json[];
 	const opError = detail?.error as Json | null | undefined;
+	const sample = detail?.payload as PayloadState | undefined;
 
 	return (
 		<Modal
@@ -198,15 +224,14 @@ export function LogDetail({
 										Retained payload
 									</h4>
 									<p className="max-w-xl pt-1 text-fg-muted text-xs">
-										The request and response as the gateway saw them. Reading it
-										is recorded in the payload access audit.
+										{payloadNote(sample)}
 									</p>
 								</div>
-								{payload === null ? (
+								{payload === null && sample?.readable ? (
 									<Button
 										size="sm"
 										variant="secondary"
-										disabled={loadingPayload || !detail}
+										disabled={loadingPayload}
 										onClick={revealPayload}
 									>
 										{loadingPayload ? "Loading…" : "Reveal payload"}
