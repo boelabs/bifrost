@@ -3,6 +3,7 @@ import type { ExecutionPolicyOverrides } from "#core/executionPolicy.ts";
 import { invalidatePublicModelGroups } from "#catalog/publicModels.ts";
 import type { TransportOverrides } from "#profiles/types.ts";
 import type { RuntimeModelMetadata } from "#db/schema.ts";
+import { declaredTransportFor } from "#catalog/types.ts";
 import { isUpstreamTransport } from "#core/transport.ts";
 import type { CatalogEntry } from "#catalog/types.ts";
 import { getAdapter } from "#adapters/registry.ts";
@@ -130,18 +131,25 @@ function selectedOperationIds(
 	return [...selected];
 }
 
-/** Per-operation transport = explicit override > adapter-inferred default. */
+/**
+ * Validates the transport every selected operation will actually run on, and keeps only the ones
+ * the operator asked for.
+ *
+ * Storing the resolved value would be easier and is what this used to do — and it is why a model
+ * that speaks a second API could never be reached: the adapter's default was written into the
+ * deployment at creation, where nothing afterwards can tell an inherited default from a choice, and
+ * an inherited default outranks the model's own declaration forever. So an unchosen transport is
+ * stored as absent, and `resolveTransport` decides it per request from the model and the adapter.
+ */
 function resolveTransportOverrides(
 	adapter: NonNullable<ReturnType<typeof getAdapter>>,
 	requested: TransportOverrides | undefined,
 	operations: OperationId[],
+	meta: ReturnType<typeof resolveModelMetadata>,
 ): TransportOverrides {
 	const result: TransportOverrides = {};
 	for (const operationId of operations) {
 		const callType = callTypeForOperation(operationId);
-		const transport =
-			requested?.[operationId] ??
-			(callType ? adapter.transports?.[callType]?.default : undefined);
 		if (!callType || !adapter.supportedCallTypes.has(callType)) {
 			throw new GatewayError({
 				class: "bad_request",
@@ -149,6 +157,11 @@ function resolveTransportOverrides(
 				param: `operations.${operationId}`,
 			});
 		}
+		const chosen = requested?.[operationId];
+		const transport =
+			chosen ??
+			declaredTransportFor(meta, operationId) ??
+			adapter.transports?.[callType]?.default;
 		if (!transport) {
 			throw new GatewayError({
 				class: "bad_request",
@@ -166,7 +179,26 @@ function resolveTransportOverrides(
 				param: `transportOverrides.${operationId}`,
 			});
 		}
-		result[operationId] = transport;
+		if (chosen !== undefined) result[operationId] = chosen;
+	}
+	return result;
+}
+
+/** What each selected operation will run on, chosen or not — for the preview, never persisted. */
+function effectiveTransports(
+	adapter: NonNullable<ReturnType<typeof getAdapter>>,
+	overrides: TransportOverrides,
+	operations: OperationId[],
+	meta: ReturnType<typeof resolveModelMetadata>,
+): TransportOverrides {
+	const result: TransportOverrides = {};
+	for (const operationId of operations) {
+		const callType = callTypeForOperation(operationId);
+		const transport =
+			overrides[operationId] ??
+			declaredTransportFor(meta, operationId) ??
+			(callType ? adapter.transports?.[callType]?.default : undefined);
+		if (transport) result[operationId] = transport;
 	}
 	return result;
 }
@@ -225,6 +257,13 @@ export async function previewDeployment(
 		adapter,
 		input.transportOverrides,
 		operationIds,
+		effective,
+	);
+	const transports = effectiveTransports(
+		adapter,
+		transportOverrides,
+		operationIds,
+		effective,
 	);
 	return {
 		publicModel: input.publicModel,
@@ -242,8 +281,8 @@ export async function previewDeployment(
 				id: operationId,
 				...(callType ? { callType } : {}),
 				publicEndpoints: [...definition.publicEndpoints],
-				...(transportOverrides[operationId]
-					? { transport: transportOverrides[operationId] }
+				...(transports[operationId]
+					? { transport: transports[operationId] }
 					: {}),
 				profile: effective.operations?.[operationId] ?? null,
 			};

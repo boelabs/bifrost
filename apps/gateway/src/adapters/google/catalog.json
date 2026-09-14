@@ -15,6 +15,7 @@
 		"gemini-omni-1.1-flash": {
 			"operations": {
 				"video.generate": {
+					"transport": "interactions",
 					"maxPromptChars": 32000,
 					"tasks": [
 						"text_to_video",
@@ -50,7 +51,7 @@
 					}
 				}
 			},
-			"notes": "Uses the interactions transport. Output is limited to inline-safe 360p and 720p because this integration does not use the Files API. Pricing is intentionally omitted until async terminal video usage can be reconciled with operation accounting."
+			"notes": "Output is limited to inline-safe 360p and 720p because this integration does not use the Files API. Pricing is intentionally omitted until async terminal video usage can be reconciled with operation accounting."
 		},
 		"veo-3.1-generate-preview": {
 			"operations": {

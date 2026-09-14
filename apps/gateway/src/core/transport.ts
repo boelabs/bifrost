@@ -18,24 +18,7 @@
  *   - generate_videos:  Google Veo long-running video generation (:predictLongRunning)
  *   - interactions:     Google Interactions API (/interactions)
  */
-export type UpstreamTransport =
-	| "chat_completions"
-	| "responses"
-	| "generate_content"
-	| "messages"
-	| "images"
-	| "audio_transcriptions"
-	| "azure_audio_transcriptions_legacy"
-	| "embeddings"
-	| "embed_content"
-	| "openrouter_rerank"
-	| "cohere_rerank"
-	| "videos"
-	| "videos_async"
-	| "generate_videos"
-	| "interactions";
-
-const UPSTREAM_TRANSPORTS: readonly UpstreamTransport[] = [
+export const UPSTREAM_TRANSPORTS = [
 	"chat_completions",
 	"responses",
 	"generate_content",
@@ -52,6 +35,8 @@ const UPSTREAM_TRANSPORTS: readonly UpstreamTransport[] = [
 	"generate_videos",
 	"interactions",
 ] as const;
+
+export type UpstreamTransport = (typeof UPSTREAM_TRANSPORTS)[number];
 
 export function isUpstreamTransport(
 	value: unknown,
