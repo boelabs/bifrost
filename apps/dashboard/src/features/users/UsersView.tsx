@@ -2,8 +2,8 @@
 
 import { type Column, DataTable, Dash, Mono } from "#/components/ui/datatable";
 import { useMutation, useRowActions } from "#/shared/lib/mutation.ts";
-import { IconKey, IconTrash, IconUsers } from "@tabler/icons-react";
 import { useSearchWriter } from "#/shared/lib/useSearchWriter.ts";
+import { RowActions } from "#/shared/components/RowActions.tsx";
 import { Pagination } from "#/shared/components/Pagination.tsx";
 import { Select, SelectItem } from "#/components/ui/select";
 import { type UsersFilters, PAGE_SIZE } from "./filters.ts";
@@ -12,9 +12,16 @@ import { useSession } from "#/features/auth/session.tsx";
 import { SessionsDialog } from "./SessionsDialog.tsx";
 import { PasswordDialog } from "./PasswordDialog.tsx";
 import { EmptyState } from "#/components/ui/page";
-import { Button } from "#/components/ui/button";
 import { Status } from "#/components/ui/status";
 import { useState } from "react";
+
+import {
+	IconCheck,
+	IconUsers,
+	IconTrash,
+	IconBan,
+	IconKey,
+} from "@tabler/icons-react";
 
 import {
 	setPasswordAction,
@@ -184,46 +191,45 @@ export function UsersTable({
 			key: "actions",
 			header: "",
 			align: "end",
-			render: (user) => (
-				<div className="flex justify-end gap-1">
-					<Button
-						size="sm"
-						variant="ghost"
-						aria-label={`Sessions for ${user.username}`}
-						onClick={() => setInspecting(user)}
-						mode="icon"
-					>
-						<IconUsers size={15} aria-hidden />
-					</Button>
-					<Button
-						size="sm"
-						variant="ghost"
-						aria-label={`Reset password for ${user.username}`}
-						onClick={() => setResetting(user)}
-						mode="icon"
-					>
-						<IconKey size={15} aria-hidden />
-					</Button>
-					<Button
-						size="sm"
-						variant="ghost"
-						disabled={user.id === identity.user.id}
-						onClick={() => void toggle(user)}
-					>
-						{user.enabled ? "Disable" : "Enable"}
-					</Button>
-					<Button
-						size="sm"
-						variant="ghost"
-						aria-label={`Delete ${user.username}`}
-						disabled={user.id === identity.user.id}
-						onClick={() => void remove(user)}
-						mode="icon"
-					>
-						<IconTrash size={15} aria-hidden />
-					</Button>
-				</div>
-			),
+			render: (user) => {
+				// You cannot disable or delete yourself: the rule is shown, not hidden, so the row
+				// reads the same as everyone else's.
+				const self = user.id === identity.user.id;
+				return (
+					<RowActions
+						label={`Actions for ${user.username}`}
+						actions={[
+							{
+								label: "Sessions",
+								icon: <IconUsers size={15} aria-hidden />,
+								onSelect: () => setInspecting(user),
+							},
+							{
+								label: "Reset password",
+								icon: <IconKey size={15} aria-hidden />,
+								onSelect: () => setResetting(user),
+							},
+							{
+								label: user.enabled ? "Disable" : "Enable",
+								icon: user.enabled ? (
+									<IconBan size={15} aria-hidden />
+								) : (
+									<IconCheck size={15} aria-hidden />
+								),
+								disabled: self,
+								onSelect: () => void toggle(user),
+							},
+							{
+								label: "Delete",
+								icon: <IconTrash size={15} aria-hidden />,
+								danger: true,
+								disabled: self,
+								onSelect: () => void remove(user),
+							},
+						]}
+					/>
+				);
+			},
 		},
 	];
 

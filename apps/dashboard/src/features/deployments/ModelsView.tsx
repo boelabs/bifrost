@@ -3,7 +3,7 @@
 import { type Column, DataTable, Dash, Mono } from "#/components/ui/datatable";
 import { deleteDeploymentAction, toggleDeploymentAction } from "./actions.ts";
 import { createContext, Suspense, use, useMemo, useState } from "react";
-import { IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
+import { RowActions } from "#/shared/components/RowActions.tsx";
 import { Can, useSession } from "#/features/auth/session.tsx";
 import { Skeleton } from "#/shared/components/Skeleton.tsx";
 import { useConfirm } from "#/shared/feedback/confirm.tsx";
@@ -14,6 +14,14 @@ import { useRefresh } from "#/shared/lib/useRefresh.ts";
 import { EmptyState } from "#/components/ui/page";
 import { Button } from "#/components/ui/button";
 import { Status } from "#/components/ui/status";
+
+import {
+	IconPencil,
+	IconCheck,
+	IconTrash,
+	IconPlus,
+	IconBan,
+} from "@tabler/icons-react";
 
 import {
 	type AdapterSummary,
@@ -281,29 +289,31 @@ function PublicModelCard({
 			align: "end",
 			render: (row) =>
 				writable ? (
-					<div className="flex justify-end gap-1">
-						<Button size="sm" variant="ghost" onClick={() => onToggle(row)}>
-							{row.enabled ? "Disable" : "Enable"}
-						</Button>
-						<Button
-							size="sm"
-							variant="ghost"
-							aria-label={`Edit deployment ${row.upstreamModel}`}
-							onClick={() => onEdit(row)}
-							mode="icon"
-						>
-							<IconPencil size={15} aria-hidden />
-						</Button>
-						<Button
-							size="sm"
-							variant="ghost"
-							aria-label={`Delete deployment ${row.upstreamModel}`}
-							onClick={() => onDelete(row)}
-							mode="icon"
-						>
-							<IconTrash size={15} aria-hidden />
-						</Button>
-					</div>
+					<RowActions
+						label={`Actions for deployment ${row.upstreamModel}`}
+						actions={[
+							{
+								label: row.enabled ? "Disable" : "Enable",
+								icon: row.enabled ? (
+									<IconBan size={15} aria-hidden />
+								) : (
+									<IconCheck size={15} aria-hidden />
+								),
+								onSelect: () => onToggle(row),
+							},
+							{
+								label: "Edit",
+								icon: <IconPencil size={15} aria-hidden />,
+								onSelect: () => onEdit(row),
+							},
+							{
+								label: "Delete",
+								icon: <IconTrash size={15} aria-hidden />,
+								danger: true,
+								onSelect: () => onDelete(row),
+							},
+						]}
+					/>
 				) : null,
 		},
 	];

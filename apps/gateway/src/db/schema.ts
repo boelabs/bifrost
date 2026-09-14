@@ -449,7 +449,7 @@ export const virtualKeys = pgTable(
 		id: uuid("id").defaultRandom().primaryKey(),
 		/** SHA-256 (hex) of the key. The plaintext key is only shown when created. */
 		keyHash: text("key_hash").notNull(),
-		/** Readable prefix to show in UIs/logs, e.g. "unified-AbCd". */
+		/** Readable head of the key, for searching and for logs, e.g. "sk-AbCdEfG". */
 		keyPrefix: text("key_prefix").notNull(),
 		name: text("name").notNull(),
 		/** Actor that created the key ("master-key", "root", "user:<uuid>"). NULL for pre-existing rows. */

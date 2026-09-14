@@ -4,6 +4,7 @@ import { type Column, DataTable, Mono } from "#/components/ui/datatable";
 import { useMutation, useRowActions } from "#/shared/lib/mutation.ts";
 import { clearCacheAction, deleteFallbackAction } from "./actions.ts";
 import { useNotify } from "#/shared/feedback/notifications.tsx";
+import { RowActions } from "#/shared/components/RowActions.tsx";
 import { Can, useSession } from "#/features/auth/session.tsx";
 import { useConfirm } from "#/shared/feedback/confirm.tsx";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
@@ -105,15 +106,17 @@ export function SettingsView({
 			align: "end",
 			render: (row) =>
 				editable ? (
-					<Button
-						size="sm"
-						variant="ghost"
-						aria-label={`Delete the ${row.reason} chain for ${row.primaryModel}`}
-						onClick={() => void removeChain(row)}
-						mode="icon"
-					>
-						<IconTrash size={15} aria-hidden />
-					</Button>
+					<RowActions
+						label={`Actions for the ${row.reason} chain of ${row.primaryModel}`}
+						actions={[
+							{
+								label: "Delete chain",
+								icon: <IconTrash size={15} aria-hidden />,
+								danger: true,
+								onSelect: () => void removeChain(row),
+							},
+						]}
+					/>
 				) : null,
 		},
 	];

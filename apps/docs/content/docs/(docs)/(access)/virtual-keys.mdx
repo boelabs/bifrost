@@ -14,7 +14,7 @@ All key management is on the admin API and requires the **master key**:
 Authorization: Bearer $MASTER_KEY
 ```
 
-> Keys are stored as a SHA-256 hash. The plaintext `unified-…` value is returned **only once**, at
+> Keys are stored as a SHA-256 hash. The plaintext `sk-…` value is returned **only once**, at
 > creation. There is no way to recover it later — if it is lost, delete the key and issue a new one.
 
 ## Create a key
@@ -38,8 +38,8 @@ The response includes the plaintext key once:
   "data": {
     "id": "…",
     "name": "frontend-prod",
-    "keyPrefix": "unified-abcd…",
-    "key": "unified-…",
+    "keyPrefix": "sk-abcdefg",
+    "key": "sk-…",
     "allowedModels": ["general", "image-default"],
     "maxBudgetCents": 50000,
     "budgetReset": "monthly",

@@ -27,7 +27,6 @@ export function formatCents(value: string | number | null | undefined): string {
  */
 export const KEY_HEADERS = [
 	"Name",
-	"Prefix",
 	"Models",
 	"Spend",
 	"Limits",

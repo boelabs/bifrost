@@ -81,9 +81,18 @@ export function hashVirtualKey(raw: string): string {
 	return createHash("sha256").update(raw).digest("hex");
 }
 
-/** Generates a random "unified-..." key (url-safe). */
+/**
+ * Generates a random `sk-...` key (url-safe).
+ *
+ * `sk-` because every client library, secret scanner and developer already reads those two letters
+ * as "this is a secret key, do not paste it anywhere". The gateway is OpenAI-shaped on the wire, and
+ * its keys may as well be recognisable in the same way.
+ *
+ * Changing this is safe for keys already issued: a key is found by the SHA-256 of the whole string,
+ * never by its prefix, so the old ones keep working untouched.
+ */
 function generateRawKey(): string {
-	return `unified-${randomBytes(24).toString("base64url")}`;
+	return `sk-${randomBytes(24).toString("base64url")}`;
 }
 
 export async function createVirtualKey(
