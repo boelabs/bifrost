@@ -22,8 +22,12 @@ export const buttonStyles = tv({
 			 * Flat, not outlined. It is the companion to `primary` in the same row, and an outline
 			 * beside a solid pill reads as two different kinds of control rather than two weights of
 			 * the same one.
+			 *
+			 * On `--field`, the same ground the inputs stand on — not on `--secondary`. The search
+			 * button sits against its own search box, and two greys a point and a half apart read as
+			 * a mistake rather than as a distinction.
 			 */
-			secondary: "bg-secondary text-secondary-fg hover:bg-field-hover",
+			secondary: "bg-field text-fg hover:bg-field-hover",
 			ghost:
 				"bg-transparent text-fg hover:bg-secondary hover:text-secondary-fg",
 			danger: "bg-danger text-danger-fg hover:bg-danger/80",

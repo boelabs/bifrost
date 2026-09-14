@@ -120,17 +120,20 @@
 	--border: oklch(85.76% 0 0);
 	--focus: oklch(48.91% 0 0);
 	/**
-	 * Lightened from 48.6%: the old primary read as near-black against the off-white ground. 56% is as
-	 * far as it goes while white label text still clears 4.5:1 — past that the button gets friendlier
-	 * and its text stops being readable.
+	 * The one control that is meant to be found without looking for it.
+	 *
+	 * It sat at 56%, which cleared white label text by 4.65:1 and the page by only 4.08:1 — legible,
+	 * but no louder than the things around it. 46% doubles neither: it reads at 6.25:1 against the
+	 * page and 7.13:1 under its own label, while staying a grey rather than the near-black an earlier
+	 * pass was right to move away from.
 	 */
-	--primary: oklch(56% 0 0);
+	--primary: oklch(46% 0 0);
 	/**
 	 * An explicit hover shade rather than an opacity step: fading the primary toward the page ground
 	 * lightens it, and white label text on the lightened result stops clearing 4.5:1 — the button would
 	 * become hardest to read exactly while the pointer is on it.
 	 */
-	--primary-hover: oklch(48.6% 0 0);
+	--primary-hover: oklch(38% 0 0);
 	--primary-fg: oklch(100% 0 0);
 	--secondary: oklch(90.67% 0 0);
 	--secondary-fg: oklch(32.11% 0 0);
@@ -171,8 +174,8 @@
 	--fg-disabled: oklch(47% 0 0);
 	--border: oklch(32.9% 0 0);
 	--focus: oklch(70.58% 0 0);
-	--primary: oklch(70.58% 0 0);
-	--primary-hover: oklch(78% 0 0);
+	--primary: oklch(84% 0 0);
+	--primary-hover: oklch(90% 0 0);
 	--primary-fg: oklch(21.78% 0 0);
 	--secondary: oklch(30.92% 0 0);
 	--secondary-fg: oklch(88.53% 0 0);
