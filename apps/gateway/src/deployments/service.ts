@@ -132,14 +132,11 @@ function selectedOperationIds(
 }
 
 /**
- * Validates the transport every selected operation will actually run on, and keeps only the ones
- * the operator asked for.
+ * Per-operation transport = explicit override > what the model declares > adapter-inferred default.
  *
- * Storing the resolved value would be easier and is what this used to do — and it is why a model
- * that speaks a second API could never be reached: the adapter's default was written into the
- * deployment at creation, where nothing afterwards can tell an inherited default from a choice, and
- * an inherited default outranks the model's own declaration forever. So an unchosen transport is
- * stored as absent, and `resolveTransport` decides it per request from the model and the adapter.
+ * This is the resolved view the dry run answers with, not a set of overrides to store: a deployment
+ * persists only what the operator actually chose, so that a default inherited today does not outrank
+ * a model's own declaration tomorrow.
  */
 function resolveTransportOverrides(
 	adapter: NonNullable<ReturnType<typeof getAdapter>>,
@@ -157,9 +154,8 @@ function resolveTransportOverrides(
 				param: `operations.${operationId}`,
 			});
 		}
-		const chosen = requested?.[operationId];
 		const transport =
-			chosen ??
+			requested?.[operationId] ??
 			declaredTransportFor(meta, operationId) ??
 			adapter.transports?.[callType]?.default;
 		if (!transport) {
@@ -179,26 +175,7 @@ function resolveTransportOverrides(
 				param: `transportOverrides.${operationId}`,
 			});
 		}
-		if (chosen !== undefined) result[operationId] = chosen;
-	}
-	return result;
-}
-
-/** What each selected operation will run on, chosen or not — for the preview, never persisted. */
-function effectiveTransports(
-	adapter: NonNullable<ReturnType<typeof getAdapter>>,
-	overrides: TransportOverrides,
-	operations: OperationId[],
-	meta: ReturnType<typeof resolveModelMetadata>,
-): TransportOverrides {
-	const result: TransportOverrides = {};
-	for (const operationId of operations) {
-		const callType = callTypeForOperation(operationId);
-		const transport =
-			overrides[operationId] ??
-			declaredTransportFor(meta, operationId) ??
-			(callType ? adapter.transports?.[callType]?.default : undefined);
-		if (transport) result[operationId] = transport;
+		result[operationId] = transport;
 	}
 	return result;
 }
@@ -259,12 +236,6 @@ export async function previewDeployment(
 		operationIds,
 		effective,
 	);
-	const transports = effectiveTransports(
-		adapter,
-		transportOverrides,
-		operationIds,
-		effective,
-	);
 	return {
 		publicModel: input.publicModel,
 		adapterKey: input.adapterKey,
@@ -281,8 +252,8 @@ export async function previewDeployment(
 				id: operationId,
 				...(callType ? { callType } : {}),
 				publicEndpoints: [...definition.publicEndpoints],
-				...(transports[operationId]
-					? { transport: transports[operationId] }
+				...(transportOverrides[operationId]
+					? { transport: transportOverrides[operationId] }
 					: {}),
 				profile: effective.operations?.[operationId] ?? null,
 			};
