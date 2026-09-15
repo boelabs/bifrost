@@ -1,5 +1,6 @@
-import { and, count, desc, eq, gte, lte, sql, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, gte, lt, lte, sql, type SQL } from "drizzle-orm";
 import type { Page, PageResult } from "./deployments.ts";
+import type { PgColumn } from "drizzle-orm/pg-core";
 import { db } from "#db/client.ts";
 
 import {
@@ -150,7 +151,19 @@ export async function getOperationDetail(id: string) {
 	);
 }
 
-export async function operationSummary(since: Date) {
+/**
+ * The overview's numbers for one window.
+ *
+ * `until` is optional because the common call is "the last N days, up to now"; an explicit end is
+ * what lets the dashboard ask for a closed day ("yesterday") rather than only for trailing windows.
+ * `active` deliberately ignores both bounds: an in-progress operation is a fact about right now, not
+ * about the window being read.
+ */
+export async function operationSummary(since: Date, until?: Date) {
+	const started = (column: PgColumn) =>
+		until === undefined
+			? gte(column, since)
+			: and(gte(column, since), lt(column, until));
 	const rows = await db
 		.select({
 			outcome: gatewayOperations.outcome,
@@ -170,7 +183,7 @@ export async function operationSummary(since: Date) {
 			>`percentile_cont(0.95) within group (order by ${gatewayOperations.firstOutputMs})`,
 		})
 		.from(gatewayOperations)
-		.where(gte(gatewayOperations.startedAt, since))
+		.where(started(gatewayOperations.startedAt))
 		.groupBy(gatewayOperations.outcome);
 	const [active] = await db
 		.select({ value: count() })
@@ -192,21 +205,21 @@ export async function operationSummary(since: Date) {
 					>`percentile_cont(0.95) within group (order by ${gatewayOperations.firstOutputMs})`,
 				})
 				.from(gatewayOperations)
-				.where(gte(gatewayOperations.startedAt, since)),
+				.where(started(gatewayOperations.startedAt)),
 			db
 				.select({ key: gatewayOperations.publicModel, requests: count() })
 				.from(gatewayOperations)
-				.where(gte(gatewayOperations.startedAt, since))
+				.where(started(gatewayOperations.startedAt))
 				.groupBy(gatewayOperations.publicModel),
 			db
 				.select({ key: upstreamAttempts.adapterKey, attempts: count() })
 				.from(upstreamAttempts)
-				.where(gte(upstreamAttempts.startedAt, since))
+				.where(started(upstreamAttempts.startedAt))
 				.groupBy(upstreamAttempts.adapterKey),
 			db
 				.select({ key: upstreamAttempts.deploymentId, attempts: count() })
 				.from(upstreamAttempts)
-				.where(gte(upstreamAttempts.startedAt, since))
+				.where(started(upstreamAttempts.startedAt))
 				.groupBy(upstreamAttempts.deploymentId),
 			db
 				.select({
@@ -219,7 +232,7 @@ export async function operationSummary(since: Date) {
 				)
 				.where(
 					and(
-						gte(gatewayOperations.startedAt, since),
+						started(gatewayOperations.startedAt),
 						eq(upstreamAttempts.failureKind, "protocol"),
 					),
 				),
@@ -236,6 +249,7 @@ export async function operationSummary(since: Date) {
 	};
 	return {
 		since,
+		until: until ?? null,
 		active: Number(active?.value ?? 0),
 		outcomes: rows,
 		totals: {

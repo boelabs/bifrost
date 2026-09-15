@@ -1,7 +1,7 @@
 "use client";
 
+import type { UsageBucket, UsagePoint } from "./overview-data";
 import { ToggleGroup } from "#/components/ui/toggle-group";
-import type { HourlyUsage } from "./overview-data";
 import { Toggle } from "#/components/ui/toggle";
 import { Card } from "#/components/ui/card";
 import { useId, useState } from "react";
@@ -45,13 +45,25 @@ function formatValue(value: number, metric: Metric, short = false) {
 	return (short ? compact : count).format(value);
 }
 
-function intervalLabel(row: HourlyUsage) {
+function intervalLabel(row: UsagePoint, bucket: UsageBucket) {
 	const startDay = date.format(row.intervalStart);
+	if (bucket === "day") return `${startDay} UTC`;
 	const endDay = date.format(row.intervalEnd);
 	return `${startDay}, ${hour.format(row.intervalStart)}–${startDay === endDay ? "" : `${endDay}, `}${hour.format(row.intervalEnd)} UTC`;
 }
 
-export function ActivityChart({ rows }: { rows: HourlyUsage[] }) {
+/**
+ * `bucket` is the range's decision, not this component's: an hour per bar reads well across a day
+ * and turns into noise across a month, so a wide range arrives already grouped by day and only the
+ * labels have to follow.
+ */
+export function ActivityChart({
+	rows,
+	bucket = "hour",
+}: {
+	rows: UsagePoint[];
+	bucket?: UsageBucket;
+}) {
 	const titleId = useId();
 	const [metric, setMetric] = useState<Metric>("requests");
 	const [selectedHour, setSelectedHour] = useState<number | null>(null);
@@ -62,7 +74,7 @@ export function ActivityChart({ rows }: { rows: HourlyUsage[] }) {
 		...new Set([0, Math.floor((rows.length - 1) / 2), rows.length - 1]),
 	]
 		.map((index) => rows[index])
-		.filter((row): row is HourlyUsage => Boolean(row));
+		.filter((row): row is UsagePoint => Boolean(row));
 	const metricInfo = metrics[metric];
 
 	return (
@@ -72,7 +84,9 @@ export function ActivityChart({ rows }: { rows: HourlyUsage[] }) {
 					<h2 id={titleId} className="font-semibold">
 						Activity
 					</h2>
-					<p className="mt-1 text-fg-muted text-xs">Hourly usage · UTC</p>
+					<p className="mt-1 text-fg-muted text-xs">
+						{bucket === "day" ? "Daily" : "Hourly"} usage · UTC
+					</p>
 				</div>
 				<ToggleGroup
 					aria-label="Activity metric"
@@ -92,7 +106,7 @@ export function ActivityChart({ rows }: { rows: HourlyUsage[] }) {
 			{maximum > 0 ? (
 				<figure
 					className="mt-6"
-					aria-label={`Hourly ${metricInfo.label.toLowerCase()}`}
+					aria-label={`${bucket === "day" ? "Daily" : "Hourly"} ${metricInfo.label.toLowerCase()}`}
 					onPointerLeave={() => setSelectedHour(null)}
 				>
 					<div className="grid grid-cols-[2.75rem_minmax(0,1fr)] gap-x-3 gap-y-3">
@@ -129,7 +143,7 @@ export function ActivityChart({ rows }: { rows: HourlyUsage[] }) {
 										<button
 											key={row.timestamp}
 											type="button"
-											aria-label={`${intervalLabel(row)}: ${formatValue(row[metric], metric)} ${metricInfo.label.toLowerCase()}`}
+											aria-label={`${intervalLabel(row, bucket)}: ${formatValue(row[metric], metric)} ${metricInfo.label.toLowerCase()}`}
 											className={`flex h-full min-w-0 flex-1 cursor-pointer items-end rounded-sm focus-visible:outline-2 focus-visible:outline-focus ${active ? "bg-chart-1/10" : ""}`}
 											onPointerEnter={() => setSelectedHour(row.timestamp)}
 											onFocus={() => setSelectedHour(row.timestamp)}
@@ -151,14 +165,16 @@ export function ActivityChart({ rows }: { rows: HourlyUsage[] }) {
 							aria-hidden="true"
 						>
 							{ticks.map((row) => (
-								<span key={row.timestamp}>{hour.format(row.timestamp)}</span>
+								<span key={row.timestamp}>
+									{(bucket === "day" ? date : hour).format(row.timestamp)}
+								</span>
 							))}
 						</div>
 					</div>
 					<figcaption className="mt-4 flex min-h-8 flex-wrap items-start justify-between gap-x-3 gap-y-1 border-border/50 border-t pt-3 text-xs">
 						<span className="text-fg-muted">
 							{selected
-								? intervalLabel(selected)
+								? intervalLabel(selected, bucket)
 								: `Total ${metricInfo.label.toLowerCase()}`}
 						</span>
 						<span className="font-medium tabular-nums">

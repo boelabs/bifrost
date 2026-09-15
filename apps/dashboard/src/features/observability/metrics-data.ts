@@ -1,7 +1,7 @@
+import { resolveRange, DAY } from "#/shared/lib/range.ts";
 import type { DetailedMetrics } from "./api";
 import * as z from "zod/v4";
 
-const DAY = 86_400_000;
 export const metricsSearch = z.object({
 	period: z.enum(["today", "yesterday", "7d", "30d", "custom"]).catch("today"),
 	from: z.iso.date().optional().catch(undefined),
@@ -23,40 +23,19 @@ export const metricsSearch = z.object({
 });
 export type MetricsSearch = z.infer<typeof metricsSearch>;
 
+/**
+ * The metrics window, in the vocabulary every other table now uses.
+ *
+ * Metrics opens on "today" rather than the seven days the logs and the overview default to: this is
+ * the page someone opens while watching a deploy, and a week of history would bury the hour they
+ * came to look at. The arithmetic itself lives in `shared/lib/range.ts`, so the two cannot drift.
+ */
 export function metricsWindow(search: MetricsSearch, now = new Date()) {
-	const today = Date.parse(`${now.toISOString().slice(0, 10)}T00:00:00Z`);
-	let start = today;
-	let end = now.getTime();
-	if (search.period === "yesterday") {
-		start -= DAY;
-		end = today;
-	}
-	if (search.period === "7d") start -= 6 * DAY;
-	if (search.period === "30d") start -= 29 * DAY;
-	if (search.period === "custom") {
-		if (!search.from || !search.to)
-			throw new Error("Choose both dates for the custom range.");
-		if (search.from > search.to || search.to > now.toISOString().slice(0, 10))
-			throw new Error("Choose dates in order, ending today or earlier.");
-		start = Date.parse(`${search.from}T00:00:00Z`);
-		end = Math.min(Date.parse(`${search.to}T00:00:00Z`) + DAY, now.getTime());
-	}
-	if (
-		!Number.isFinite(start) ||
-		!Number.isFinite(end) ||
-		end < start ||
-		end - start > 31 * DAY
-	)
-		throw new Error(
-			"Choose an increasing range of at most 31 days, ending today or earlier.",
-		);
-	// A refresh precisely at midnight still needs a nonempty range.
-	end = Math.max(end, start + 1);
-	return {
-		start: new Date(start).toISOString(),
-		end: new Date(end).toISOString(),
-		bucket: end - start > 2 * DAY ? ("day" as const) : ("hour" as const),
-	};
+	const { start, end, bucket } = resolveRange(search, "today", now);
+	// Unreachable: metrics never offers "Everything", the one period without bounds.
+	if (start === undefined || end === undefined)
+		throw new Error("Choose a bounded range.");
+	return { start, end, bucket };
 }
 
 export const count = new Intl.NumberFormat("en-US");

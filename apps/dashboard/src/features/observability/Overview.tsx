@@ -1,9 +1,10 @@
 "use client";
 
 import { type Column, DataTable, Dash, Mono } from "#/components/ui/datatable";
-import { buildHourlyUsage, getOverviewMetrics } from "./overview-data";
+import { buildUsageSeries, getOverviewMetrics } from "./overview-data";
 import type { Readiness } from "#/shared/api/health.ts";
 import { RequestOutcomes } from "./RequestOutcomes";
+import type { UsageBucket } from "./overview-data";
 import { downloadCsv } from "#/shared/lib/csv.ts";
 import { ActivityChart } from "./ActivityChart";
 import { Button } from "#/components/ui/button";
@@ -212,9 +213,13 @@ export interface OverviewProps {
 	health: Summary;
 	byModel: UsageRow[];
 	byActor: UsageRow[];
-	byHour: UsageRow[];
+	/** Grouped by hour or by day, matching `bucket` — the range decides which. */
+	byInterval: UsageRow[];
 	start: string;
 	end: string;
+	bucket: UsageBucket;
+	/** The range in words, for the tables that have to say what "no usage" refers to. */
+	rangeLabel: string;
 }
 
 /**
@@ -228,12 +233,14 @@ export function Overview({
 	health,
 	byModel,
 	byActor,
-	byHour,
+	byInterval,
 	start,
 	end,
+	bucket,
+	rangeLabel,
 }: OverviewProps) {
 	const metrics = getOverviewMetrics(health, byModel);
-	const hourly = buildHourlyUsage(byHour, start, end);
+	const series = buildUsageSeries(byInterval, start, end, bucket);
 	const modelCount = byModel.filter(
 		(row) => row.key !== null && row.requests > 0,
 	).length;
@@ -311,7 +318,7 @@ export function Overview({
 			</section>
 
 			<div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-				<ActivityChart rows={hourly} />
+				<ActivityChart rows={series} bucket={bucket} />
 				<RequestOutcomes metrics={metrics} />
 			</div>
 
@@ -338,7 +345,7 @@ export function Overview({
 						caption="Usage by public model"
 						pagination={{ pageSize: 10 }}
 						className="self-start"
-						emptyMessage="No model usage in the last 24 hours."
+						emptyMessage={`No model usage in this range (${rangeLabel.toLowerCase()}).`}
 					/>
 				</section>
 				<section
@@ -363,7 +370,7 @@ export function Overview({
 						caption="Usage by actor"
 						pagination={{ pageSize: 10 }}
 						className="self-start"
-						emptyMessage="No actor usage in the last 24 hours."
+						emptyMessage={`No actor usage in this range (${rangeLabel.toLowerCase()}).`}
 					/>
 				</section>
 			</div>

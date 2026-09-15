@@ -17,7 +17,6 @@ import {
 	DEFAULT_PERIOD,
 	isFiltered,
 	PAGE_SIZE,
-	PERIODS,
 } from "./logFilters.ts";
 
 function relative(iso: string): string {
@@ -41,7 +40,7 @@ export function LogsTable({
 	const [inspecting, setInspecting] = useState<string | null>(null);
 	const filtered = isFiltered(filters);
 	// When the window is already "Everything", widening it is not the advice to give.
-	const everything = PERIODS[filters.period ?? DEFAULT_PERIOD].ms === null;
+	const everything = (filters.period ?? DEFAULT_PERIOD) === "all";
 	const offset = filters.offset ?? 0;
 
 	const columns: Column<OperationRow>[] = [

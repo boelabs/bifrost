@@ -30,8 +30,9 @@ terminals, and empty invalid responses are protocol errors. Only a verified term
 deployment health.
 
 `GET /admin/logs` lists operation summaries. `GET /admin/logs/{operationId}` returns the operation and
-its complete attempt timeline. `GET /admin/observability/summary?window=5m|1h|24h` returns outcome,
-stall, retry, active/abandoned, and latency aggregates.
+its complete attempt timeline. `GET /admin/observability/summary` returns outcome, stall, retry,
+active/abandoned, and latency aggregates — for a trailing `window=5m|1h|24h`, or for an explicit
+`start`/`end` range of at most 31 days, which is what the dashboard's own range control sends.
 
 ## Dashboard metrics
 

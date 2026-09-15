@@ -1,3 +1,4 @@
+import { type RangeKey, rangeSchema } from "#/shared/lib/range.ts";
 import { z } from "zod";
 
 export const PAGE_SIZE = 50;
@@ -15,27 +16,27 @@ export const OUTCOMES = [
 ] as const;
 
 /**
- * Windows an operator actually reasons in. "Everything" stays available because a quiet gateway may
- * have nothing at all in the last day, and an empty table with no way to widen the range reads as a
- * broken page rather than as a quiet one.
+ * Windows an operator actually reasons in, day-anchored like every other table — see
+ * `shared/lib/range.ts`. "Everything" stays available because a quiet gateway may have nothing at all
+ * in the last week, and an empty table with no way to widen the range reads as a broken page rather
+ * than as a quiet one.
  */
-export const PERIODS = {
-	"1h": { label: "Last hour", ms: 3_600_000 },
-	"24h": { label: "Last 24 hours", ms: 24 * 3_600_000 },
-	"7d": { label: "Last 7 days", ms: 7 * 24 * 3_600_000 },
-	"30d": { label: "Last 30 days", ms: 30 * 24 * 3_600_000 },
-	all: { label: "Everything", ms: null },
-} as const;
+export const LOG_PERIODS = [
+	"today",
+	"yesterday",
+	"7d",
+	"30d",
+	"custom",
+	"all",
+] as const satisfies readonly RangeKey[];
 
-export type Period = keyof typeof PERIODS;
-
-export const DEFAULT_PERIOD: Period = "24h";
+export const DEFAULT_PERIOD: RangeKey = "7d";
 
 const schema = z.object({
 	outcome: z.enum(OUTCOMES).optional().catch(undefined),
 	publicModel: z.string().min(1).optional().catch(undefined),
 	actor: z.string().min(1).optional().catch(undefined),
-	period: z.enum(["1h", "24h", "7d", "30d", "all"]).optional().catch(undefined),
+	...rangeSchema(LOG_PERIODS),
 	offset: z.coerce.number().int().min(0).optional().catch(undefined),
 });
 

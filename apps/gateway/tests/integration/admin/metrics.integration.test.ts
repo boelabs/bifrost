@@ -168,3 +168,43 @@ test("metrics: requires authentication and rejects invalid queries", async () =>
 	);
 	assert.equal(invalid.status, 400);
 });
+
+async function summary(query: Record<string, string>) {
+	const response = await app.request(
+		`/admin/observability/summary?${new URLSearchParams(query)}`,
+		{ headers: auth },
+	);
+	return response;
+}
+
+test("summary: an explicit range replaces the trailing window, end excluded", {
+	skip,
+}, async () => {
+	const response = await summary({ start, end });
+	assert.equal(response.status, 200);
+	const { data } = (await response.json()) as {
+		data: { totals: { requests: number }; since: string; until: string };
+	};
+	// Four of the five seeded operations start inside [start, end); the fifth starts exactly at the
+	// end, which a half-open window must leave to the next range rather than counting twice.
+	assert.equal(Number(data.totals.requests), 4);
+	assert.equal(new Date(data.until).toISOString(), end);
+});
+
+test("summary: rejects a backwards or oversized range, and still takes a window shortcut", {
+	skip,
+}, async () => {
+	assert.equal((await summary({ start: end, end: start })).status, 400);
+	assert.equal(
+		(
+			await summary({
+				start: "2035-01-01T00:00:00Z",
+				end: "2035-06-01T00:00:00Z",
+			})
+		).status,
+		400,
+	);
+	assert.equal((await summary({ start: "not-a-date" })).status, 400);
+	assert.equal((await summary({ window: "5m" })).status, 200);
+	assert.equal((await summary({ window: "3d" })).status, 400);
+});

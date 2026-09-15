@@ -1,4 +1,4 @@
-import { buildHourlyUsage, getOverviewMetrics } from "./overview-data.ts";
+import { buildUsageSeries, getOverviewMetrics } from "./overview-data.ts";
 import type { Summary, UsageRow } from "./api.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -159,7 +159,7 @@ test("hourly usage sorts cost-ordered rows, fills UTC gaps and preserves partial
 			consumerCostCents: 0.5,
 		}),
 	];
-	const buckets = buildHourlyUsage(rows, start, end);
+	const buckets = buildUsageSeries(rows, start, end);
 	assert.equal(buckets.length, 25);
 	assert.equal(buckets[0]?.timestamp, Date.parse("2026-09-07T13:00:00Z"));
 	assert.equal(buckets[0]?.intervalStart, Date.parse(start));
@@ -183,7 +183,7 @@ test("hourly usage sorts cost-ordered rows, fills UTC gaps and preserves partial
 });
 
 test("hourly usage merges equivalent UTC keys and ignores invalid or out-of-range rows", () => {
-	const buckets = buildHourlyUsage(
+	const buckets = buildUsageSeries(
 		[
 			usage("2026-09-08 00:00:00+00", { requests: 2, totalTokens: 50 }),
 			usage("2026-09-07T20:00:00-04:00", { requests: 3, totalTokens: 75 }),
@@ -205,15 +205,15 @@ test("hourly usage merges equivalent UTC keys and ignores invalid or out-of-rang
 test("hourly usage keeps a full empty window and excludes zero-width end buckets", () => {
 	const start = Date.parse("2026-09-07T00:00:00Z");
 	const end = Date.parse("2026-09-08T00:00:00Z");
-	const buckets = buildHourlyUsage([], start, end);
+	const buckets = buildUsageSeries([], start, end);
 	assert.equal(buckets.length, 24);
 	assert.equal(buckets.at(-1)?.intervalEnd, end);
 	assert.equal(
 		buckets.every((bucket) => bucket.requests === 0),
 		true,
 	);
-	assert.deepEqual(buildHourlyUsage([], end, start), []);
-	assert.deepEqual(buildHourlyUsage([], start, start), []);
-	assert.deepEqual(buildHourlyUsage([], "invalid", end), []);
-	assert.deepEqual(buildHourlyUsage([], start, Infinity), []);
+	assert.deepEqual(buildUsageSeries([], end, start), []);
+	assert.deepEqual(buildUsageSeries([], start, start), []);
+	assert.deepEqual(buildUsageSeries([], "invalid", end), []);
+	assert.deepEqual(buildUsageSeries([], start, Infinity), []);
 });

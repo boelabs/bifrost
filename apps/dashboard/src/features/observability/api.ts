@@ -54,10 +54,19 @@ export async function payloadSample(id: string) {
 	).data;
 }
 
-export async function summary(window: "5m" | "1h" | "24h" = "1h") {
+type SummaryQuery = NonNullable<
+	paths["/admin/observability/summary"]["get"]["parameters"]["query"]
+>;
+
+/**
+ * Lifecycle health for a window: either a trailing shortcut for a poller, or the explicit range a
+ * page's filter produced. Passing a bound makes the gateway ignore `window`, so the two never
+ * disagree about what is being summarized.
+ */
+export async function summary(query: SummaryQuery = { window: "1h" }) {
 	return unwrap(
 		await api.GET("/admin/observability/summary", {
-			params: { query: { window } },
+			params: { query },
 		}),
 	).data;
 }

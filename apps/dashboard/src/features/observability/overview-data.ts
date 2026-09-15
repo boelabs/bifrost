@@ -1,6 +1,7 @@
 import type { Summary, UsageRow } from "./api.ts";
 
 const HOUR_MS = 3_600_000;
+const DAY_MS = 24 * HOUR_MS;
 
 const usageFields = [
 	"requests",
@@ -27,11 +28,14 @@ type Outcome = (typeof terminalOutcomes)[number];
 type OutcomeCounts = Record<Outcome | "inProgress", number>;
 type UsageTotals = Omit<UsageRow, "key">;
 
-export type HourlyUsage = UsageRow & {
+/** One point of the activity series: an hour or a day, depending on how wide the range is. */
+export type UsagePoint = UsageRow & {
 	timestamp: number;
 	intervalStart: number;
 	intervalEnd: number;
 };
+
+export type UsageBucket = "hour" | "day";
 
 export interface OverviewMetrics extends UsageTotals {
 	/** Summary queries run independently from usage and can see a different request count. */
@@ -154,12 +158,20 @@ function timestamp(value: string | Date | number): number {
 	return new Date(value).getTime();
 }
 
-/** Rows must use the same range filter: aggregate values cannot be prorated at partial hours. */
-export function buildHourlyUsage(
+/**
+ * Fills the empty intervals of the activity series, so a quiet hour reads as a gap rather than
+ * disappearing and pulling the next bar next to one three hours older.
+ *
+ * Rows must use the same range filter and the same grouping: aggregate values cannot be prorated
+ * across a partial bucket.
+ */
+export function buildUsageSeries(
 	rows: readonly UsageRow[],
 	start: string | Date | number,
 	end: string | Date | number,
-): HourlyUsage[] {
+	bucket: UsageBucket = "hour",
+): UsagePoint[] {
+	const size = bucket === "day" ? DAY_MS : HOUR_MS;
 	const startMs = timestamp(start);
 	const endMs = timestamp(end);
 	if (
@@ -169,25 +181,25 @@ export function buildHourlyUsage(
 	) {
 		return [];
 	}
-	const buckets = new Map<number, HourlyUsage>();
+	const buckets = new Map<number, UsagePoint>();
 	for (
-		let hour = Math.floor(startMs / HOUR_MS) * HOUR_MS;
-		hour < endMs;
-		hour += HOUR_MS
+		let interval = Math.floor(startMs / size) * size;
+		interval < endMs;
+		interval += size
 	) {
-		buckets.set(hour, {
-			key: new Date(hour).toISOString(),
+		buckets.set(interval, {
+			key: new Date(interval).toISOString(),
 			...emptyUsage(),
-			timestamp: hour,
-			intervalStart: Math.max(hour, startMs),
-			intervalEnd: Math.min(hour + HOUR_MS, endMs),
+			timestamp: interval,
+			intervalStart: Math.max(interval, startMs),
+			intervalEnd: Math.min(interval + size, endMs),
 		});
 	}
 	for (const row of rows) {
 		if (typeof row.key !== "string") continue;
-		const hour = Math.floor(timestamp(row.key) / HOUR_MS) * HOUR_MS;
-		const bucket = buckets.get(hour);
-		if (bucket) addUsage(bucket, row);
+		const interval = Math.floor(timestamp(row.key) / size) * size;
+		const point = buckets.get(interval);
+		if (point) addUsage(point, row);
 	}
 	return [...buckets.values()];
 }
