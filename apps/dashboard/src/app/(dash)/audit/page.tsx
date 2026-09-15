@@ -1,11 +1,18 @@
-import { PAGE_SIZE, parseAuditFilters } from "#/features/audit/filters.ts";
 import { RouteBoundary } from "#/shared/components/RouteBoundary.tsx";
 import { AuditToolbar } from "#/features/audit/AuditToolbar.tsx";
 import { AuditTable } from "#/features/audit/AuditTable.tsx";
 import { AUDIT_HEADERS } from "#/features/audit/common.ts";
 import { listAudit } from "#/features/audit/api.ts";
+import { safeRange } from "#/shared/lib/range.ts";
 import { PageHeader } from "#/components/ui/page";
+import { connection } from "next/server";
 import { Suspense } from "react";
+
+import {
+	parseAuditFilters,
+	DEFAULT_PERIOD,
+	PAGE_SIZE,
+} from "#/features/audit/filters.ts";
 
 import {
 	ToolbarSkeleton,
@@ -52,12 +59,17 @@ async function Filters({ searchParams }: { searchParams: Params }) {
 
 async function Trail({ searchParams }: { searchParams: Params }) {
 	const filters = parseAuditFilters(await searchParams);
+	// A day-anchored range is relative to today, which a prerender has no value for.
+	await connection();
+	const range = safeRange(filters, DEFAULT_PERIOD);
 	const { data, pagination } = await listAudit({
 		limit: PAGE_SIZE,
 		offset: filters.offset ?? 0,
 		...(filters.kind ? { kind: filters.kind } : {}),
 		...(filters.actor ? { actor: filters.actor } : {}),
 		...(filters.action ? { action: filters.action } : {}),
+		...(range.start ? { start: range.start } : {}),
+		...(range.end ? { end: range.end } : {}),
 	});
 	return <AuditTable rows={data} total={pagination.total} filters={filters} />;
 }

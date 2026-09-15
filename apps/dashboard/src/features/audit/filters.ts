@@ -1,3 +1,4 @@
+import { type RangeKey, rangeSchema } from "#/shared/lib/range.ts";
 import { z } from "zod";
 
 /**
@@ -17,10 +18,29 @@ export const KINDS = {
 	payload_access: "Payload reads",
 } as const;
 
+export const AUDIT_PERIODS = [
+	"today",
+	"yesterday",
+	"7d",
+	"30d",
+	"custom",
+	"all",
+] as const satisfies readonly RangeKey[];
+
+/**
+ * The trail opens unbounded, unlike the tables that read operation rows.
+ *
+ * Entries are kept for a year and are consulted precisely when someone asks what happened months
+ * ago; a seven-day default would answer that question with an empty table. The range is there to
+ * narrow, not to hide.
+ */
+export const DEFAULT_PERIOD: RangeKey = "all";
+
 const schema = z.object({
 	kind: z.enum(["admin", "payload_access"]).optional().catch(undefined),
 	actor: z.string().min(1).optional().catch(undefined),
 	action: z.string().min(1).optional().catch(undefined),
+	...rangeSchema(AUDIT_PERIODS),
 	offset: z.coerce.number().int().min(0).optional().catch(undefined),
 });
 
@@ -37,5 +57,10 @@ export function parseAuditFilters(
 }
 
 export function isFiltered(filters: AuditFilters): boolean {
-	return Boolean(filters.kind || filters.actor || filters.action);
+	return Boolean(
+		filters.kind ||
+			filters.actor ||
+			filters.action ||
+			(filters.period && filters.period !== DEFAULT_PERIOD),
+	);
 }

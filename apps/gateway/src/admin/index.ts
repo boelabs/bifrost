@@ -1,5 +1,6 @@
 import { EXECUTION_POLICY_MAX_TOTAL_MS } from "#core/executionPolicy.ts";
 import { invalidateRouterSettingsCache } from "#router/settings.ts";
+import { Hono, type MiddlewareHandler, type Context } from "hono";
 import { invalidateVirtualKey } from "#auth/virtualKeyCache.ts";
 import { idempotencyMiddleware } from "#http/idempotency.ts";
 import { clearVirtualKeyBudget } from "#ratelimit/index.ts";
@@ -8,7 +9,6 @@ import { aggregateMetrics } from "#db/repos/metrics.ts";
 import { getRequestId } from "#http/requestContext.ts";
 import { probeArtifact } from "#extensions/source.ts";
 import { type AppEnv, actorOf } from "#auth/types.ts";
-import { Hono, type MiddlewareHandler } from "hono";
 import { listAuditPage } from "#db/repos/audit.ts";
 import { metricsQuery } from "./metricsSchema.ts";
 import { ok, paginated } from "#http/respond.ts";
@@ -724,21 +724,56 @@ adminApp.get("/logs/:id", async (c) => {
 	});
 });
 
-adminApp.get("/observability/summary", async (c) => {
-	const raw = c.req.query("window") ?? "1h";
-	const windows: Record<string, number> = {
-		"5m": 5 * 60_000,
-		"1h": 60 * 60_000,
-		"24h": 24 * 60 * 60_000,
-	};
-	const duration = windows[raw];
-	if (duration === undefined)
+const SUMMARY_WINDOWS: Record<string, number> = {
+	"5m": 5 * 60_000,
+	"1h": 60 * 60_000,
+	"24h": 24 * 60 * 60_000,
+};
+const SUMMARY_MAX_RANGE_MS = 31 * 86_400_000;
+
+/**
+ * The window to summarize: either a trailing shortcut (`window`) or an explicit `start`/`end`.
+ *
+ * The shortcuts stay because "how is the gateway doing right now" is the question this endpoint was
+ * built for, and a poller should not have to compute timestamps to ask it. An explicit range is what
+ * a dashboard needs to show a day, a week, or a closed yesterday — capped at the same 31 days as
+ * /observability/metrics, since both read the same operation rows.
+ */
+function summaryWindow(c: Context<AppEnv>): { since: Date; until?: Date } {
+	const start = c.req.query("start");
+	const end = c.req.query("end");
+	if (start === undefined && end === undefined) {
+		const raw = c.req.query("window") ?? "1h";
+		const duration = SUMMARY_WINDOWS[raw];
+		if (duration === undefined)
+			throw new GatewayError({
+				class: "bad_request",
+				message:
+					'window must be one of "5m", "1h", or "24h" — or pass an explicit start and end',
+				code: "invalid_observability_window",
+			});
+		return { since: new Date(Date.now() - duration) };
+	}
+	const since = start === undefined ? Number.NaN : Date.parse(start);
+	const until = end === undefined ? Date.now() : Date.parse(end);
+	if (!Number.isFinite(since) || !Number.isFinite(until))
 		throw new GatewayError({
 			class: "bad_request",
-			message: 'window must be one of "5m", "1h", or "24h"',
+			message: "start and end must be ISO-8601 timestamps",
 			code: "invalid_observability_window",
 		});
-	const summary = await operationSummary(new Date(Date.now() - duration));
+	if (until <= since || until - since > SUMMARY_MAX_RANGE_MS)
+		throw new GatewayError({
+			class: "bad_request",
+			message: "Choose an increasing time range of at most 31 days",
+			code: "invalid_observability_window",
+		});
+	return { since: new Date(since), until: new Date(until) };
+}
+
+adminApp.get("/observability/summary", async (c) => {
+	const { since, until } = summaryWindow(c);
+	const summary = await operationSummary(since, until);
 	const persistence = operationPersistenceStatus();
 	const requests = Number(summary.totals.requests);
 	const rate = (value: number) => (requests > 0 ? value / requests : 0);

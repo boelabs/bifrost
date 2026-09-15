@@ -1,12 +1,13 @@
 "use client";
 
+import { ALL, AUDIT_PERIODS, DEFAULT_PERIOD, KINDS } from "./filters.ts";
+import { RangeFilter } from "#/shared/components/RangeFilter.tsx";
 import { useSearchWriter } from "#/shared/lib/useSearchWriter.ts";
 import { SearchField } from "#/shared/components/SearchField.tsx";
 import { type AuditFilters, isFiltered } from "./filters.ts";
 import { Select, SelectItem } from "#/components/ui/select";
 import { IconFilterOff } from "@tabler/icons-react";
 import { Button } from "#/components/ui/button";
-import { ALL, KINDS } from "./filters.ts";
 
 /**
  * The filters. `filters` comes from the page, which parsed the URL with the same schema the loader
@@ -16,6 +17,12 @@ export function AuditToolbar({ filters }: { filters: AuditFilters }) {
 	const { filter, clear } = useSearchWriter(filters);
 	return (
 		<div className="flex flex-wrap items-center gap-2">
+			<RangeFilter
+				periods={AUDIT_PERIODS}
+				value={filters}
+				fallback={DEFAULT_PERIOD}
+				onChange={(patch) => filter(patch)}
+			/>
 			<Select
 				aria-label="Filter by kind"
 				size="sm"

@@ -138,9 +138,9 @@ API calls would come back 403. See [Security → Roles](/docs/security#roles).
 
 ## What each section is for
 
-- **Overview** — traffic, spend, tokens and reliability for the last 24 hours, plus whether Postgres,
+- **Overview** — traffic, spend, tokens and reliability over a range you pick, plus whether Postgres,
   Redis and the extension runtime are answering. Refreshes on its own; the switch stops it.
-- **Metrics** — the same numbers over a chosen window, filtered by model, deployment or operation.
+- **Metrics** — the same numbers in more detail, filtered by model, deployment or operation.
 - **Models** — public models and the deployment pool behind each one. Creating or editing a
   deployment validates the whole configuration against the adapter before it is written.
 - **API keys** — issuing, scoping, limiting and budgeting virtual keys. The secret is shown once, at

@@ -1,6 +1,7 @@
 "use client";
 
 import { RefreshControls } from "#/shared/components/RefreshControls.tsx";
+import { RangeFilter } from "#/shared/components/RangeFilter.tsx";
 import { SearchField } from "#/shared/components/SearchField.tsx";
 import { useSearchWriter } from "#/shared/lib/useSearchWriter.ts";
 import { Select, SelectItem } from "#/components/ui/select";
@@ -10,9 +11,9 @@ import { Button } from "#/components/ui/button";
 import {
 	type LogsFilters,
 	DEFAULT_PERIOD,
+	LOG_PERIODS,
 	isFiltered,
 	OUTCOMES,
-	PERIODS,
 	ALL,
 } from "./logFilters.ts";
 
@@ -37,25 +38,18 @@ export function LogsToolbar({
 	filters: LogsFilters;
 }) {
 	const { filter, clear } = useSearchWriter(filters);
-	const period = filters.period ?? DEFAULT_PERIOD;
 	const { outcome, publicModel } = filters;
 	const actor = filters.actor ?? "";
 	const filtered = isFiltered(filters);
 
 	return (
 		<div className="flex flex-wrap items-center gap-2">
-			<Select
-				aria-label="Time range"
-				size="sm"
-				value={period}
-				onValueChange={(key) => filter({ period: key ?? DEFAULT_PERIOD })}
-			>
-				{Object.entries(PERIODS).map(([key, value]) => (
-					<SelectItem key={key} value={key}>
-						{value.label}
-					</SelectItem>
-				))}
-			</Select>
+			<RangeFilter
+				periods={LOG_PERIODS}
+				value={filters}
+				fallback={DEFAULT_PERIOD}
+				onChange={(patch) => filter(patch)}
+			/>
 			<Select
 				aria-label="Filter by outcome"
 				size="sm"
@@ -95,7 +89,11 @@ export function LogsToolbar({
 				onSearch={(value) => filter({ actor: value })}
 			/>
 			{filtered ? (
-				<Button size="sm" variant="ghost" onClick={() => clear(["period"])}>
+				<Button
+					size="sm"
+					variant="ghost"
+					onClick={() => clear(["period", "from", "to"])}
+				>
 					<IconFilterOff size={15} aria-hidden className="mr-1" />
 					Clear filters
 				</Button>

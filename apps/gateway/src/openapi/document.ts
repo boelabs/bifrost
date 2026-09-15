@@ -1586,6 +1586,8 @@ export function buildOpenApiDocument() {
 				get: {
 					tags: ["Admin"],
 					summary: "Aggregate gateway lifecycle health",
+					description:
+						"Either a trailing `window` shortcut or an explicit `start`/`end` range of at most 31 days; passing either bound ignores `window`. `active` counts in-progress operations regardless of the window.",
 					parameters: [
 						{
 							name: "window",
@@ -1595,6 +1597,21 @@ export function buildOpenApiDocument() {
 								enum: ["5m", "1h", "24h"],
 								default: "1h",
 							},
+							description:
+								"Trailing window. Ignored when start or end is given.",
+						},
+						{
+							name: "start",
+							in: "query",
+							schema: { type: "string", format: "date-time" },
+							description: "Inclusive start of an explicit range.",
+						},
+						{
+							name: "end",
+							in: "query",
+							schema: { type: "string", format: "date-time" },
+							description:
+								"Exclusive end of an explicit range. Defaults to now.",
 						},
 					],
 					responses: {
@@ -1602,6 +1619,7 @@ export function buildOpenApiDocument() {
 							c.ObservabilitySummary,
 							"Lifecycle SLI summary",
 						),
+						"400": errorResponse,
 					},
 				},
 			},

@@ -4,6 +4,7 @@ import { LogsTable } from "#/features/observability/LogsTable.tsx";
 import { publicModelNames } from "#/features/deployments/api.ts";
 import { listLogs } from "#/features/observability/api.ts";
 import { PageHeader } from "#/components/ui/page";
+import { safeRange } from "#/shared/lib/range.ts";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
@@ -12,7 +13,6 @@ import {
 	DEFAULT_PERIOD,
 	LOG_HEADERS,
 	PAGE_SIZE,
-	PERIODS,
 } from "#/features/observability/logFilters.ts";
 
 import {
@@ -35,7 +35,7 @@ export default function LogsPage(props: PageProps<"/logs">) {
 		<>
 			<PageHeader
 				title="Logs"
-				description="Operation summaries. Request and response bodies are never persisted here — only metadata and, when sampling retained one, an encrypted forensic sample."
+				description="Operation summaries. Request and response bodies are never persisted in these rows — only metadata, alongside the encrypted forensic sample kept for every finished request."
 			>
 				{/*
 				 * Two boundaries, for two different waits: this one covers the model list the filter
@@ -73,18 +73,17 @@ async function Filters({ searchParams }: { searchParams: Params }) {
 
 async function Operations({ searchParams }: { searchParams: Params }) {
 	const filters = parseLogsFilters(await searchParams);
-	// The window is relative to now, which a prerender has no value for.
+	// The window is anchored to today, which a prerender has no value for.
 	await connection();
-	const period = PERIODS[filters.period ?? DEFAULT_PERIOD];
+	const range = safeRange(filters, DEFAULT_PERIOD);
 	const { data, pagination } = await listLogs({
 		limit: PAGE_SIZE,
 		offset: filters.offset ?? 0,
 		...(filters.outcome ? { outcome: filters.outcome } : {}),
 		...(filters.publicModel ? { publicModel: filters.publicModel } : {}),
 		...(filters.actor ? { actor: filters.actor } : {}),
-		...(period.ms
-			? { start: new Date(Date.now() - period.ms).toISOString() }
-			: {}),
+		...(range.start ? { start: range.start } : {}),
+		...(range.end ? { end: range.end } : {}),
 	});
 	return <LogsTable rows={data} total={pagination.total} filters={filters} />;
 }

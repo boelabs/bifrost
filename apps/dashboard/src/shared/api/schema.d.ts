@@ -2052,11 +2052,19 @@ export interface paths {
 			path?: never;
 			cookie?: never;
 		};
-		/** Aggregate gateway lifecycle health */
+		/**
+		 * Aggregate gateway lifecycle health
+		 * @description Either a trailing `window` shortcut or an explicit `start`/`end` range of at most 31 days; passing either bound ignores `window`. `active` counts in-progress operations regardless of the window.
+		 */
 		get: {
 			parameters: {
 				query?: {
+					/** @description Trailing window. Ignored when start or end is given. */
 					window?: "5m" | "1h" | "24h";
+					/** @description Inclusive start of an explicit range. */
+					start?: string;
+					/** @description Exclusive end of an explicit range. Defaults to now. */
+					end?: string;
 				};
 				header?: never;
 				path?: never;
@@ -2075,6 +2083,7 @@ export interface paths {
 						};
 					};
 				};
+				400: components["responses"]["Error"];
 			};
 		};
 		put?: never;
