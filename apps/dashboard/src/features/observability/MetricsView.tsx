@@ -9,10 +9,11 @@ import { Metrics } from "./Metrics.tsx";
 /**
  * Wires the metrics view to the URL.
  *
- * `Metrics` itself stays a pure presentation component that reports a filter change and asks for a
- * refresh; this is the one place that knows those mean "push a query string" and "re-run the page's
- * Server Components". Both go through a transition, so changing a filter leaves the charts on screen
- * with the previous window until the new one is ready, instead of dropping to a skeleton.
+ * `Metrics` itself stays a pure presentation component that reports a filter change; this is the one
+ * place that knows it means "push a query string". It goes through a transition, so changing a
+ * filter leaves the charts on screen with the previous window until the new one is ready, instead of
+ * dropping to a skeleton. Refreshing belongs to the page header, outside this boundary, but its
+ * pending state is read here too: both replace what is on screen, and the body says so.
  */
 export function MetricsView({
 	data,
@@ -24,7 +25,7 @@ export function MetricsView({
 	search: MetricsSearch;
 }) {
 	const { set, pending: navigating } = useSearchWriter(search);
-	const { refresh, pending: refreshing } = useRefresh();
+	const { pending: refreshing } = useRefresh();
 	return (
 		<Metrics
 			data={data}
@@ -32,7 +33,6 @@ export function MetricsView({
 			search={search}
 			refreshing={navigating || refreshing}
 			onChange={(patch) => set(patch)}
-			onRefresh={refresh}
 		/>
 	);
 }

@@ -78,7 +78,7 @@ export function ActivityChart({
 	const metricInfo = metrics[metric];
 
 	return (
-		<Card className="min-w-0 p-5" aria-labelledby={titleId}>
+		<Card className="flex min-w-0 flex-col p-7" aria-labelledby={titleId}>
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div>
 					<h2 id={titleId} className="font-semibold">
@@ -105,13 +105,15 @@ export function ActivityChart({
 			</div>
 			{maximum > 0 ? (
 				<figure
-					className="mt-6"
+					className="mt-7 flex flex-1 flex-col"
 					aria-label={`${bucket === "day" ? "Daily" : "Hourly"} ${metricInfo.label.toLowerCase()}`}
 					onPointerLeave={() => setSelectedHour(null)}
 				>
-					<div className="grid grid-cols-[2.75rem_minmax(0,1fr)] gap-x-3 gap-y-3">
+					{/* The plot takes the height the card is given, so the chart fills whatever the
+					    column beside it sets rather than leaving a void under the bars. */}
+					<div className="grid flex-1 grid-cols-[2.75rem_minmax(0,1fr)] grid-rows-[minmax(11rem,1fr)_auto] gap-x-3 gap-y-3">
 						<div
-							className="relative h-32 text-right text-[10px] text-fg-muted tabular-nums sm:h-36"
+							className="relative h-full text-right text-[11px] text-fg-muted tabular-nums"
 							aria-hidden="true"
 						>
 							{[1, 0.5, 0].map((fraction) => (
@@ -124,7 +126,7 @@ export function ActivityChart({
 								</span>
 							))}
 						</div>
-						<div className="relative h-32 min-w-0 sm:h-36">
+						<div className="relative h-full min-w-0">
 							<div
 								className="pointer-events-none absolute inset-0 flex flex-col justify-between"
 								aria-hidden="true"
@@ -151,7 +153,7 @@ export function ActivityChart({
 											onClick={() => setSelectedHour(row.timestamp)}
 										>
 											<span
-												className={`w-full rounded-t-sm ${metricInfo.color} ${active ? "opacity-100" : "opacity-65"}`}
+												className={`w-full rounded-t-[0.3rem] ${metricInfo.color} ${active ? "opacity-100" : "opacity-65"}`}
 												style={{ height: `${(row[metric] / maximum) * 100}%` }}
 											/>
 										</button>
@@ -161,7 +163,7 @@ export function ActivityChart({
 						</div>
 						<div />
 						<div
-							className="flex justify-between text-[10px] text-fg-muted tabular-nums"
+							className="flex justify-between text-[11px] text-fg-muted tabular-nums"
 							aria-hidden="true"
 						>
 							{ticks.map((row) => (
@@ -183,7 +185,7 @@ export function ActivityChart({
 					</figcaption>
 				</figure>
 			) : (
-				<div className="flex min-h-56 flex-col items-center justify-center px-3 text-center">
+				<div className="flex min-h-64 flex-col items-center justify-center px-3 text-center">
 					<p className="font-medium text-sm">
 						No {metricInfo.label.toLowerCase()} recorded
 					</p>

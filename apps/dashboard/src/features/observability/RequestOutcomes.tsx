@@ -3,17 +3,26 @@
 import type { getOverviewMetrics } from "./overview-data";
 import { Card } from "#/components/ui/card";
 
+type Metrics = ReturnType<typeof getOverviewMetrics>;
+
 const count = new Intl.NumberFormat("en-US");
 const percent = new Intl.NumberFormat("en-US", {
 	style: "percent",
 	maximumFractionDigits: 1,
 });
 
-export function RequestOutcomes({
-	metrics,
-}: {
-	metrics: ReturnType<typeof getOverviewMetrics>;
-}) {
+function share(rate: number | null): string {
+	return rate === null ? "—" : percent.format(rate);
+}
+
+/**
+ * How finished requests ended: the headline rate, the proportions as one bar, and the counts.
+ *
+ * Paired with `Reliability` in the column beside the activity chart. They are two cards rather than
+ * one because they answer different questions — what the caller got back, and what the gateway had
+ * to do to deliver it — and stacking them fills the column the chart sets the height of.
+ */
+export function RequestOutcomes({ metrics }: { metrics: Metrics }) {
 	const outcomes = [
 		{
 			label: "Successful",
@@ -44,21 +53,19 @@ export function RequestOutcomes({
 	);
 
 	return (
-		<Card className="flex min-w-0 flex-col p-5">
+		<Card className="flex min-w-0 flex-col p-7">
 			<h2 className="font-semibold">Request outcomes</h2>
-			<p className="mt-1 text-xs text-fg-muted">
+			<p className="mt-1 text-fg-muted text-xs">
 				Reliability across finished requests
 			</p>
 			<div className="mt-5 flex items-baseline gap-2">
-				<span className="text-3xl font-semibold tracking-tight tabular-nums">
-					{metrics.successRate === null
-						? "—"
-						: percent.format(metrics.successRate)}
+				<span className="font-semibold text-[2rem] leading-none tracking-tight tabular-nums">
+					{share(metrics.successRate)}
 				</span>
-				<span className="text-xs text-fg-muted">success rate</span>
+				<span className="text-fg-muted text-xs">success rate</span>
 			</div>
 			<div
-				className="mt-4 flex h-2 gap-0.5 overflow-hidden rounded-full bg-surface-2"
+				className="mt-5 flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-surface-2"
 				aria-hidden
 			>
 				{outcomes.map(
@@ -74,7 +81,7 @@ export function RequestOutcomes({
 						),
 				)}
 			</div>
-			<dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-3">
+			<dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-3.5">
 				{outcomes.map((row) => (
 					<div
 						key={row.label}
@@ -94,11 +101,59 @@ export function RequestOutcomes({
 				))}
 			</dl>
 			<div className="mt-auto pt-5">
-				<div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/50 pt-3 text-xs text-fg-muted tabular-nums">
+				<div className="flex flex-wrap items-center justify-between gap-2 border-border/50 border-t pt-3 text-fg-muted text-xs tabular-nums">
 					<span>{count.format(metrics.finishedRequests)} finished</span>
 					<span>{count.format(metrics.outcomes.inProgress)} in progress</span>
 				</div>
 			</div>
+		</Card>
+	);
+}
+
+/**
+ * What the gateway had to do behind those outcomes.
+ *
+ * A request that succeeded after three attempts and one that succeeded first time are the same row
+ * in the card above; these are the counters that tell them apart, and the summary already carries
+ * them.
+ */
+export function Reliability({ metrics }: { metrics: Metrics }) {
+	const rows = [
+		{
+			label: "Requests with retries",
+			value: count.format(metrics.retried),
+			detail: share(metrics.retryRate),
+		},
+		{
+			label: "Degraded",
+			value: count.format(metrics.degraded),
+			detail: share(metrics.degradedRate),
+		},
+		{ label: "Stalled streams", value: count.format(metrics.stalls) },
+		{ label: "Protocol errors", value: count.format(metrics.protocolErrors) },
+	];
+	return (
+		<Card className="flex min-w-0 flex-col p-7">
+			<h2 className="font-semibold">Delivery</h2>
+			<p className="mt-1 text-fg-muted text-xs">
+				What it took to finish them, across all attempts
+			</p>
+			<dl className="mt-4 divide-y divide-border/50 text-sm">
+				{rows.map((row) => (
+					<div
+						key={row.label}
+						className="flex items-center justify-between gap-3 py-2.5"
+					>
+						<dt className="text-fg-muted">{row.label}</dt>
+						<dd className="flex items-baseline gap-2 tabular-nums">
+							<span className="font-medium">{row.value}</span>
+							{row.detail ? (
+								<span className="text-fg-muted text-xs">{row.detail}</span>
+							) : null}
+						</dd>
+					</div>
+				))}
+			</dl>
 		</Card>
 	);
 }

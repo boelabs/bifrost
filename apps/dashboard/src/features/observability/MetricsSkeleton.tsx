@@ -20,12 +20,12 @@ export function MetricsSkeleton() {
 					<Skeleton
 						// biome-ignore lint/suspicious/noArrayIndexKey: placeholder bars have no identity
 						key={index}
-						className="h-8 rounded-[var(--ui-radius-control)]"
+						className="h-10 rounded-[var(--ui-radius-control)]"
 						width={width}
 					/>
 				))}
 				<Skeleton
-					className="ml-auto h-8 rounded-[var(--ui-radius-control)]"
+					className="ml-auto h-10 rounded-[var(--ui-radius-control)]"
 					width="5.5rem"
 				/>
 			</div>

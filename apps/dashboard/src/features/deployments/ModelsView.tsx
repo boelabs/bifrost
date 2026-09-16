@@ -130,7 +130,7 @@ export function NewDeploymentButton() {
 		<Suspense
 			fallback={
 				<Skeleton
-					className="h-8 rounded-[var(--ui-radius-control)]"
+					className="h-10 rounded-[var(--ui-radius-control)]"
 					width="9.5rem"
 				/>
 			}

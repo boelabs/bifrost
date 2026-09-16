@@ -35,17 +35,22 @@ export default function OverviewPage(props: PageProps<"/">) {
 			>
 				<div className="flex flex-wrap items-center gap-3">
 					<Suspense
-						fallback={<Skeleton className="h-6 rounded-full" width="8.5rem" />}
+						fallback={<Skeleton className="h-7 rounded-full" width="8.5rem" />}
 					>
 						<Health />
 					</Suspense>
 					{/* Its own boundary, for the URL the control reads. */}
 					<Suspense
-						fallback={<Skeleton className="h-8 rounded-md" width="8.5rem" />}
+						fallback={
+							<Skeleton
+								className="h-10 rounded-[var(--ui-radius-control)]"
+								width="8.5rem"
+							/>
+						}
 					>
 						<Range searchParams={props.searchParams} />
 					</Suspense>
-					{/* On by default here, unlike every other page. */}
+					{/* The one page that ticks on its own: it is left open on a second screen. */}
 					<RefreshControls auto />
 				</div>
 			</PageHeader>

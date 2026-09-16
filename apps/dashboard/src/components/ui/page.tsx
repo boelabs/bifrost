@@ -10,9 +10,10 @@ import { tv } from "tailwind-variants";
  */
 const page = tv({
 	slots: {
-		header: "flex flex-wrap items-start justify-between gap-4 pb-6",
-		heading: "font-semibold text-2xl text-fg tracking-tight",
-		subtitle: "mt-1 max-w-2xl text-fg-muted text-sm",
+		header: "flex flex-wrap items-start justify-between gap-4 pb-7",
+		heading:
+			"font-semibold text-[1.75rem] text-fg leading-tight tracking-tight",
+		subtitle: "mt-1.5 max-w-2xl text-fg-muted text-sm",
 		actions: "flex items-center gap-2",
 	},
 });

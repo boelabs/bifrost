@@ -54,7 +54,7 @@ export function MetricsChart({
 	});
 	const label = options.find((option) => option.key === metric)?.label;
 	return (
-		<Card className="min-w-0 p-5" aria-labelledby={id}>
+		<Card className="min-w-0 p-7" aria-labelledby={id}>
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div>
 					<h2 id={id} className="font-semibold">

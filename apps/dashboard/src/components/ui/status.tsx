@@ -11,7 +11,7 @@ import type { HTMLAttributes } from "react";
  * second badge language.
  */
 const status = tv({
-	base: "inline-flex items-center justify-center gap-1.5 rounded-4xl px-2.5 py-1 font-semibold text-xs",
+	base: "inline-flex items-center justify-center gap-1.5 rounded-4xl px-3 py-1.5 font-semibold text-xs",
 	variants: {
 		tone: {
 			neutral: "bg-secondary text-secondary-fg",

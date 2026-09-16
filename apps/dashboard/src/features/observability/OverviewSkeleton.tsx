@@ -21,29 +21,36 @@ export function OverviewSkeleton() {
 		<div className="space-y-6">
 			<StatGridSkeleton count={4} />
 
-			<div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-				<ChartSkeleton height="9rem" />
-				<ChartSkeleton height="9rem" />
+			<div className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+				<ChartSkeleton height="14rem" />
+				<div className="grid content-start gap-5">
+					<ChartSkeleton height="8.5rem" />
+					<ChartSkeleton height="7rem" />
+				</div>
 			</div>
 
-			<div className="grid gap-x-4 gap-y-3 lg:grid-cols-2">
+			<div className="grid items-start gap-5 xl:grid-cols-2">
 				{[
 					{ headers: BY_MODEL, title: "9rem", caption: "16rem" },
 					{ headers: BY_ACTOR, title: "5rem", caption: "18rem" },
 				].map(({ headers, title, caption }) => (
-					<section key={headers[0]} className="grid min-w-0 gap-3">
-						<div className="flex items-start justify-between gap-3 px-1">
+					<section
+						key={headers[0]}
+						className="min-w-0 rounded-[var(--ui-radius-surface)] border border-border/50 bg-card p-7"
+					>
+						<div className="flex items-start justify-between gap-3">
 							<div>
 								<Skeleton className="h-5" width={title} />
 								<Skeleton className="mt-2 h-3" width={caption} />
 							</div>
-							<Skeleton className="h-8" width="4.5rem" />
+							<Skeleton className="h-10 rounded-4xl" width="4.5rem" />
 						</div>
 						<TableSkeleton
 							headers={headers}
 							rows={10}
 							widths={["60%", "40%", "45%", "50%"]}
 							pagination
+							plain
 						/>
 					</section>
 				))}

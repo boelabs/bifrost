@@ -177,9 +177,9 @@ describe("styled control composition", () => {
 
 	test("icon mode squares the button at its size and drops label padding", () => {
 		for (const [size, square] of [
-			["xs", "size-7"],
-			["sm", "size-9"],
-			["md", "size-11"],
+			["xs", "size-8"],
+			["sm", "size-10"],
+			["md", "size-12"],
 			["lg", "size-14"],
 		] as const) {
 			const styles = buttonStyles({ size, mode: "icon" });
@@ -188,6 +188,6 @@ describe("styled control composition", () => {
 			// The padding that sizes a labelled button is exactly what makes an icon-only one wide.
 			assert.doesNotMatch(styles, /\bpx-\d/);
 		}
-		assert.match(buttonStyles({ size: "sm" }), /\bpx-3\b/);
+		assert.match(buttonStyles({ size: "sm" }), /\bpx-4\b/);
 	});
 });

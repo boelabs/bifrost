@@ -71,12 +71,12 @@ describe("shared component appearance", () => {
 		assert.equal(classes({ disabled: false }), "p-2");
 	});
 
-	test("all field sizes share the same radius, with a 44px default", () => {
+	test("all field sizes share the same radius, with a 48px default", () => {
 		for (const size of ["xs", "sm", "md", "lg"] as const) {
 			assert.ok(
 				controlStyles({ size }).includes("rounded-[var(--ui-radius-control)]"),
 			);
 		}
-		assert.ok(controlStyles().includes("min-h-11"));
+		assert.ok(controlStyles().includes("min-h-12"));
 	});
 });

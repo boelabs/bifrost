@@ -83,11 +83,17 @@ export const focusRing =
 export const controlStyles = tv({
 	base: "ui-control flex min-w-0 items-center gap-2 rounded-[var(--ui-radius-control)] border text-fg outline-none transition-[color,background-color,border-color,box-shadow] placeholder:text-fg-muted focus-visible:border-focus focus-visible:ring-2 focus-visible:ring-focus/25 data-[focused]:border-focus data-[focused]:ring-2 data-[focused]:ring-focus/25 disabled:cursor-not-allowed disabled:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 aria-invalid:border-danger data-[invalid]:border-danger",
 	variants: {
+		/**
+		 * One step taller and wider than the kit shipped with. A 36px row of filters above a 20px
+		 * corner reads as a toolbar bolted to a card; 40px, with the padding to match, reads as part
+		 * of it. The steps stay in lockstep with `buttonStyles`, which is what keeps a button and the
+		 * input beside it the same height.
+		 */
 		size: {
-			xs: "min-h-7 px-2 py-1 text-xs",
-			sm: "min-h-9 px-3 py-1.5 text-sm",
-			md: "min-h-11 px-3 py-2.5 text-sm",
-			lg: "min-h-13 px-4 py-3 text-base",
+			xs: "min-h-8 px-2.5 py-1 text-xs",
+			sm: "min-h-10 px-3.5 py-2 text-sm",
+			md: "min-h-12 px-4 py-3 text-sm",
+			lg: "min-h-14 px-5 py-3.5 text-base",
 		},
 		/**
 		 * `filled` is the default: a control is a plane the operator writes on, not a rectangle drawn
@@ -107,9 +113,9 @@ export const controlStyles = tv({
 
 export const overlayFadeStyles =
 	"transition-opacity duration-150 ease-out data-[starting-style]:opacity-0 data-[ending-style]:opacity-0 motion-reduce:transition-none";
-export const popupStyles = `z-50 max-h-[var(--available-height)] max-w-[calc(100vw-2rem)] overflow-auto rounded-[var(--ui-radius-surface)] border border-border/60 bg-popover p-1 text-popover-foreground shadow-lg outline-none ${overlayFadeStyles}`;
+export const popupStyles = `z-50 max-h-[var(--available-height)] max-w-[calc(100vw-2rem)] overflow-auto rounded-[var(--ui-radius-surface)] border border-border/60 bg-popover p-1.5 text-popover-foreground shadow-lg outline-none ${overlayFadeStyles}`;
 export const itemStyles =
-	"relative flex cursor-default items-center gap-2 rounded-[var(--ui-radius-item)] px-3 py-2 text-sm font-medium outline-none data-[highlighted]:bg-secondary data-[highlighted]:text-secondary-fg data-[disabled]:pointer-events-none data-[disabled]:text-fg-disabled";
+	"relative flex cursor-default items-center gap-2 rounded-[var(--ui-radius-item)] px-3 py-2.5 text-sm font-medium outline-none data-[highlighted]:bg-secondary data-[highlighted]:text-secondary-fg data-[disabled]:pointer-events-none data-[disabled]:text-fg-disabled";
 export const labelStyles = "text-sm font-medium text-fg";
 export const descriptionStyles = "text-sm text-fg-muted";
 export const errorStyles = "text-sm text-danger";

@@ -32,7 +32,7 @@ export default function ExtensionsPage() {
 			>
 				<div className="flex items-center gap-2">
 					<Suspense
-						fallback={<Skeleton className="h-6 rounded-full" width="7.5rem" />}
+						fallback={<Skeleton className="h-7 rounded-full" width="7.5rem" />}
 					>
 						<RuntimeBadge />
 					</Suspense>
@@ -87,7 +87,7 @@ function ExtensionsSkeleton() {
 							<Skeleton className="mt-2 h-3.5" width="30rem" />
 						</div>
 						<Skeleton
-							className="h-8 rounded-[var(--ui-radius-control)]"
+							className="h-10 rounded-[var(--ui-radius-control)]"
 							width="8rem"
 						/>
 					</div>

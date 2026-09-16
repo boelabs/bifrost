@@ -54,6 +54,11 @@ export interface DataTableProps<T> extends AppearanceProps, EffectProps {
 	search?: { getText: (row: T) => string; placeholder?: string };
 	filters?: readonly DataTableFilter<T>[];
 	toolbar?: ReactNode;
+	/**
+	 * `framed` draws the table's own card. `plain` removes it, for a table that already sits inside
+	 * one — two nested surfaces read as a box in a box rather than as one panel.
+	 */
+	variant?: "framed" | "plain";
 	/** Client pagination over the complete rows collection; disabled by default. */
 	pagination?: false | { pageSize?: number };
 	loading?: boolean;
@@ -73,6 +78,7 @@ export function DataTable<T>({
 	search,
 	filters = [],
 	toolbar,
+	variant = "framed",
 	pagination = false,
 	loading = false,
 	emptyMessage = "No results found.",
@@ -124,10 +130,12 @@ export function DataTable<T>({
 	const sizes = [...new Set([10, 25, 50, pageSize])].sort((a, b) => a - b);
 	const frameStyle = appearanceStyle({ borderRadius, width }, style);
 	const radius = frameStyle.borderRadius ?? "var(--ui-radius-surface)";
+	const framed = variant === "framed";
 	return (
 		<div
 			className={cn(
-				"min-w-0 rounded-[var(--ui-radius-surface)] p-1",
+				"min-w-0 rounded-[var(--ui-radius-surface)]",
+				framed && "p-1",
 				effectClassName(effect),
 				className,
 			)}
@@ -135,7 +143,12 @@ export function DataTable<T>({
 			aria-busy={loading}
 		>
 			{(search || filters.length > 0 || toolbar) && (
-				<div className="flex flex-wrap items-center gap-3 p-3">
+				<div
+					className={cn(
+						"flex flex-wrap items-center gap-3",
+						framed ? "p-3" : "pb-4",
+					)}
+				>
 					{search && (
 						<div className="w-full sm:w-64">
 							<Input
@@ -199,7 +212,11 @@ export function DataTable<T>({
 			)}
 			{/* Contain the absolutely positioned screen-reader caption while scrolling. */}
 			<div
-				className="relative overflow-x-auto rounded-[max(0px,calc(var(--table-radius)-0.25rem))] border border-border/50 bg-card"
+				className={cn(
+					"relative overflow-x-auto",
+					framed &&
+						"rounded-[max(0px,calc(var(--table-radius)-0.25rem))] border border-border/50 bg-card",
+				)}
 				style={
 					{
 						"--table-radius":
@@ -232,7 +249,7 @@ export function DataTable<T>({
 												: undefined
 										}
 										className={cn(
-											"whitespace-nowrap px-4 py-3 text-left font-medium text-fg-muted text-xs",
+											"whitespace-nowrap px-5 py-4 text-left font-medium text-fg-muted text-xs",
 											column.align === "end" && "text-right",
 										)}
 									>
@@ -274,7 +291,7 @@ export function DataTable<T>({
 									<td
 										key={column.key}
 										className={cn(
-											"px-4 py-3 align-middle text-fg",
+											"px-5 py-4 align-middle text-fg",
 											column.align === "end" && "text-right",
 										)}
 									>
@@ -287,7 +304,7 @@ export function DataTable<T>({
 							<tr>
 								<td
 									colSpan={Math.max(columns.length, 1)}
-									className="px-4 py-10 text-center text-fg-muted"
+									className="px-5 py-12 text-center text-fg-muted"
 								>
 									<span role="status">
 										{loading ? "Loading..." : emptyMessage}
@@ -299,7 +316,12 @@ export function DataTable<T>({
 				</table>
 			</div>
 			{pagination && (
-				<div className="flex flex-wrap items-center justify-between gap-3 p-3">
+				<div
+					className={cn(
+						"flex flex-wrap items-center justify-between gap-3",
+						framed ? "p-3" : "pt-4",
+					)}
+				>
 					<p className="text-sm text-fg-muted" role="status">
 						{filtered.length ? currentPage * pageSize + 1 : 0}–
 						{Math.min((currentPage + 1) * pageSize, filtered.length)} of{" "}

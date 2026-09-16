@@ -29,7 +29,7 @@ export function ModelsSkeleton() {
 							<Skeleton className="h-6" width="11rem" />
 							<Skeleton className="mt-1.5 h-3" width="17rem" />
 						</div>
-						<Skeleton className="h-6 rounded-full" width="6rem" />
+						<Skeleton className="h-7 rounded-full" width="6rem" />
 					</div>
 					<TableSkeleton
 						headers={HEADERS}
