@@ -17,7 +17,12 @@ export const OVERVIEW_PERIODS = [
 	"custom",
 ] as const satisfies readonly RangeKey[];
 
-export const DEFAULT_PERIOD: RangeKey = "7d";
+/**
+ * Today, like the metrics page: the overview opens on the shift the operator is in, and a week of
+ * history averages away the hour they came to look at. Every other window is one click away and
+ * survives in the URL.
+ */
+export const DEFAULT_PERIOD: RangeKey = "today";
 
 const schema = z.object(rangeSchema(OVERVIEW_PERIODS));
 
