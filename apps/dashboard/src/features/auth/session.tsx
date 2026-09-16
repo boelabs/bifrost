@@ -2,8 +2,8 @@
 
 import { createContext, useCallback, useMemo, use } from "react";
 import type { OperatorIdentity, Permission } from "./common.ts";
+import { leaveFor, logout } from "./browser.ts";
 import { useRouter } from "next/navigation";
-import { logout } from "./browser.ts";
 
 interface SessionValue {
 	identity: OperatorIdentity;
@@ -44,21 +44,11 @@ export function useSession(): SessionValue {
 	const router = useRouter();
 
 	/**
-	 * Signing out leaves by loading a document, not by asking the router to navigate.
-	 *
-	 * `router.replace()` would keep the tab: the router holds on to the tree it navigated away from
-	 * and shows it again, React state and all, the moment this tab is signed in once more. What
-	 * `refresh()` drops is the *server's* half — every Server Component re-runs — while the operator's
-	 * client state rides through the sign-out untouched: the filters they typed, a dialog they left
-	 * open, a playground conversation. A session boundary is exactly where none of that should
-	 * survive, and a document load is the only thing that guarantees it.
-	 *
-	 * The cookie is gone by then, so `src/proxy.ts` decides where the new document goes.
+	 * Signing out leaves by loading a document, not by asking the router to navigate — see `leaveFor`
+	 * for why a session boundary is a document load. The cookie is gone by the time it runs, so
+	 * `src/proxy.ts` decides where the new document goes.
 	 */
-	const signOut = useCallback(async () => {
-		await logout();
-		window.location.replace("/auth");
-	}, []);
+	const signOut = useCallback(() => logout().then(() => leaveFor("/auth")), []);
 
 	const refresh = useCallback(() => router.refresh(), [router]);
 

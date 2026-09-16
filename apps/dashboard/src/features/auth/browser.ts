@@ -61,3 +61,21 @@ export async function logout(): Promise<void> {
 	// A session that is already gone is the state the caller wanted; only a real failure is news.
 	if (!response.ok && response.status !== 401) throw await failure(response);
 }
+
+/**
+ * Leaves this page for `path` by loading a document, and never comes back.
+ *
+ * Crossing the session boundary is a document load, in both directions. `router.replace()` keeps the
+ * tab: the router holds on to the tree it navigated away from and shows it again — React state and
+ * all — the next time this tab lands there. Across a sign-in or a sign-out that means one operator's
+ * filters, open dialogs and half-written playground turns waiting for the next one, sitting behind
+ * data that was re-read for somebody else. Only a new document clears it.
+ *
+ * The promise never settles, on purpose: this page has no future, and a caller showing "Signing in…"
+ * should go on showing it until the new document is on screen rather than flicking back to a button
+ * that invites a second click for the length of the load.
+ */
+export function leaveFor(path: string): Promise<never> {
+	window.location.replace(path);
+	return new Promise<never>(() => {});
+}

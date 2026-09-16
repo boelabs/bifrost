@@ -3,10 +3,9 @@
 import { ErrorNote } from "#/components/ui/page";
 import { Button } from "#/components/ui/button";
 import { useState, useTransition } from "react";
+import { leaveFor, login } from "./browser.ts";
 import { Input } from "#/components/ui/input";
-import { useRouter } from "next/navigation";
 import { Form } from "#/components/ui/form";
-import { login } from "./browser.ts";
 
 /**
  * `next` comes from the page, which read it out of the URL — the same value `src/proxy.ts` put there
@@ -14,44 +13,31 @@ import { login } from "./browser.ts";
  * page has already rejected anything else.
  */
 export function SignInForm({ next }: { next: string }) {
-	const router = useRouter();
 	const [error, setError] = useState<string | null>(null);
-	const [signingIn, setSigningIn] = useState(false);
 	/**
-	 * The navigation away from this form is a transition, not a flag that is set and never cleared.
-	 *
-	 * Signing in does not unmount this screen for good: the router keeps the tree it navigated away
-	 * from, and shows that same tree again — React state and all — when an expired session sends the
-	 * operator back here without a document load. A `pending` boolean left `true` because "the page
-	 * is leaving anyway" comes back with it, and the button they need is disabled with no way out
-	 * but a reload. `useTransition` cannot get stuck that way: it is false again the moment the
-	 * navigation commits.
+	 * Signing in is a transition, not a flag that is set and never cleared. The form is not
+	 * necessarily gone once it is submitted — a rejected password leaves the operator right here —
+	 * and a `pending` that only the success path clears is one edit away from sticking.
 	 */
-	const [navigating, startNavigating] = useTransition();
-	const pending = signingIn || navigating;
+	const [pending, startSigningIn] = useTransition();
 
-	async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+	function onSubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		setError(null);
-		setSigningIn(true);
 		const form = new FormData(event.currentTarget);
-		try {
-			await login(String(form.get("username")), String(form.get("password")));
-			startNavigating(() => {
-				// Cleared inside the transition, so the button stays "Signing in…" until the next
-				// screen is on the page rather than flicking back for the length of the navigation.
-				setSigningIn(false);
-				// The gateway's Set-Cookie has landed by now, so the next request to this app carries
-				// the session. `refresh()` is what makes the Server Components re-read it.
-				router.replace(next);
-				router.refresh();
-			});
-		} catch (cause) {
-			// The gateway answers every rejected login identically, on purpose: nothing here should
-			// hint at whether the account exists.
-			setError(cause instanceof Error ? cause.message : "Sign in failed.");
-			setSigningIn(false);
-		}
+		startSigningIn(async () => {
+			try {
+				await login(String(form.get("username")), String(form.get("password")));
+			} catch (cause) {
+				// The gateway answers every rejected login identically, on purpose: nothing here
+				// should hint at whether the account exists.
+				setError(cause instanceof Error ? cause.message : "Sign in failed.");
+				return;
+			}
+			// The gateway's Set-Cookie has landed, so the document this asks for carries the session.
+			// It never comes back — see `leaveFor` for why a session boundary is a document load.
+			await leaveFor(next);
+		});
 	}
 
 	return (

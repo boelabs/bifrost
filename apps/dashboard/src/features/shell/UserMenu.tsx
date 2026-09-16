@@ -39,8 +39,8 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
 	 * actually leaves. This one did not: the router used to keep the tree it navigated away from and
 	 * show it again, React state and all, when the tab signed back in — and the menu item read
 	 * "Signing out…", disabled, for an operator who had only just arrived. `signOut` loads a document
-	 * now (`features/auth/session.tsx`), and this cannot get stuck either way: the transition runs
-	 * until the request settles, which on the way out means until the document is replaced.
+	 * now (`features/auth/session.tsx`), and the transition runs for exactly as long as the work does:
+	 * until the sign-out fails, or until that document replaces this one.
 	 */
 	const [pending, startSigningOut] = useTransition();
 	const [error, setError] = useState<string>();
