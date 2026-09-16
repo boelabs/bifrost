@@ -2,13 +2,13 @@
 
 import { SearchableSelect, Select, SelectItem } from "#/components/ui/select";
 import { type Column, DataTable } from "#/components/ui/datatable";
-import { EmptyState, PageHeader } from "#/components/ui/page";
-import { IconRefresh } from "@tabler/icons-react";
+import { EmptyState } from "#/components/ui/page";
 import { Button } from "#/components/ui/button";
 import { MetricsChart } from "./MetricsChart";
 import { Input } from "#/components/ui/input";
 import type { DetailedMetrics } from "./api";
 import { Card } from "#/components/ui/card";
+import { StatCard } from "./StatCard";
 import { useState } from "react";
 
 import {
@@ -35,31 +35,6 @@ const operations = [
 	["rerank", "Reranking"],
 ] as const;
 
-function Stat({
-	label,
-	value,
-	detail,
-	exact,
-}: {
-	label: string;
-	value: string;
-	detail: string;
-	exact?: string;
-}) {
-	return (
-		<Card className="min-w-0 p-5">
-			<h2 className="text-sm font-medium text-fg-muted">{label}</h2>
-			<p
-				className="mt-3 text-3xl font-semibold tracking-tight tabular-nums"
-				title={exact}
-			>
-				{value}
-			</p>
-			<p className="mt-2 text-xs text-fg-muted">{detail}</p>
-		</Card>
-	);
-}
-
 function Breakdown({ data }: { data: DetailedMetrics }) {
 	const requests = data.requests;
 	const outcomes = [
@@ -81,8 +56,8 @@ function Breakdown({ data }: { data: DetailedMetrics }) {
 	];
 	const tokens = data.attempts;
 	return (
-		<div className="grid gap-4 lg:grid-cols-2">
-			<Card className="p-5">
+		<div className="grid gap-5 lg:grid-cols-2">
+			<Card className="p-7">
 				<h2 className="font-semibold">Request outcomes</h2>
 				<p className="mt-1 text-xs text-fg-muted">
 					Final result after all attempts. In-progress requests are excluded
@@ -110,7 +85,7 @@ function Breakdown({ data }: { data: DetailedMetrics }) {
 					))}
 				</div>
 			</Card>
-			<Card className="p-5">
+			<Card className="p-7">
 				<h2 className="font-semibold">Deployment token breakdown</h2>
 				<p className="mt-1 text-xs text-fg-muted">
 					Reported upstream usage, including retries. Reasoning and cache are
@@ -151,14 +126,13 @@ export function Metrics({
 	search,
 	refreshing,
 	onChange,
-	onRefresh,
 }: {
 	data: DetailedMetrics;
 	options: Pick<DetailedMetrics, "models" | "deployments">;
 	search: MetricsSearch;
+	/** Covers a filter navigation as well as a refresh: both replace what is on screen. */
 	refreshing: boolean;
 	onChange: (patch: Partial<MetricsSearch>) => void;
-	onRefresh: () => void;
 }) {
 	const [from, setFrom] = useState(search.from ?? data.start.slice(0, 10));
 	const [to, setTo] = useState(search.to ?? data.end.slice(0, 10));
@@ -354,285 +328,268 @@ export function Metrics({
 		},
 	];
 	return (
-		<>
-			<PageHeader
-				title="Metrics"
-				description="Explore consumption, performance and reliability across public models and deployments."
-			>
-				<Button
-					variant="secondary"
-					size="sm"
-					disabled={refreshing}
-					onClick={onRefresh}
-				>
-					<IconRefresh aria-hidden className="size-4" />
-					{refreshing ? "Refreshing…" : "Refresh"}
-				</Button>
-			</PageHeader>
-			<div className="space-y-6" aria-busy={refreshing}>
-				<Card className="p-4">
-					<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-						<Select
-							label="Period · UTC"
-							size="sm"
-							value={search.period}
-							onValueChange={(period) => {
-								if (period)
-									onChange({
-										period: period as MetricsSearch["period"],
-										...(period === "custom" ? { from, to } : {}),
-									});
-							}}
-						>
-							{[
-								["today", "Today"],
-								["yesterday", "Yesterday"],
-								["7d", "Last 7 days"],
-								["30d", "Last 30 days"],
-								["custom", "Custom dates"],
-							].map(([value, label]) => (
-								<SelectItem key={value} value={value}>
-									{label}
-								</SelectItem>
-							))}
-						</Select>
-						<Select
-							label="Operation"
-							size="sm"
-							value={search.operation ?? "all"}
-							onValueChange={(value) =>
+		<div className="space-y-6" aria-busy={refreshing}>
+			<Card className="p-5">
+				<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+					<Select
+						label="Period · UTC"
+						size="sm"
+						value={search.period}
+						onValueChange={(period) => {
+							if (period)
 								onChange({
-									operation:
-										value === "all"
-											? undefined
-											: (value as MetricsSearch["operation"]),
-									publicModel: undefined,
-									deploymentId: undefined,
-								})
-							}
-						>
-							<SelectItem value="all">All operations</SelectItem>
-							{operations.map(([value, label]) => (
-								<SelectItem key={value} value={value}>
-									{label}
-								</SelectItem>
-							))}
-						</Select>
-						<SearchableSelect
-							label="Public model"
+									period: period as MetricsSearch["period"],
+									...(period === "custom" ? { from, to } : {}),
+								});
+						}}
+					>
+						{[
+							["today", "Today"],
+							["yesterday", "Yesterday"],
+							["7d", "Last 7 days"],
+							["30d", "Last 30 days"],
+							["custom", "Custom dates"],
+						].map(([value, label]) => (
+							<SelectItem key={value} value={value}>
+								{label}
+							</SelectItem>
+						))}
+					</Select>
+					<Select
+						label="Operation"
+						size="sm"
+						value={search.operation ?? "all"}
+						onValueChange={(value) =>
+							onChange({
+								operation:
+									value === "all"
+										? undefined
+										: (value as MetricsSearch["operation"]),
+								publicModel: undefined,
+								deploymentId: undefined,
+							})
+						}
+					>
+						<SelectItem value="all">All operations</SelectItem>
+						{operations.map(([value, label]) => (
+							<SelectItem key={value} value={value}>
+								{label}
+							</SelectItem>
+						))}
+					</Select>
+					<SearchableSelect
+						label="Public model"
+						size="sm"
+						items={modelOptions}
+						value={search.publicModel ?? null}
+						onValueChange={(value) =>
+							onChange({
+								publicModel: value ?? undefined,
+								deploymentId: undefined,
+							})
+						}
+						searchPlaceholder="All public models"
+					/>
+					<SearchableSelect
+						label="Deployment"
+						size="sm"
+						items={deploymentOptions}
+						value={search.deploymentId ?? null}
+						onValueChange={(value) =>
+							onChange({ deploymentId: value ?? undefined })
+						}
+						searchPlaceholder="All deployments"
+					/>
+				</div>
+				{search.period === "custom" && (
+					<form
+						className="mt-4 flex flex-wrap items-end gap-3"
+						onSubmit={(event) => {
+							event.preventDefault();
+							if (rangeValid) onChange({ from, to });
+						}}
+					>
+						<Input
+							label="From (UTC)"
+							type="date"
 							size="sm"
-							items={modelOptions}
-							value={search.publicModel ?? null}
-							onValueChange={(value) =>
-								onChange({
-									publicModel: value ?? undefined,
-									deploymentId: undefined,
-								})
-							}
-							searchPlaceholder="All public models"
+							value={from}
+							onChange={(event) => setFrom(event.target.value)}
+							required
 						/>
-						<SearchableSelect
-							label="Deployment"
+						<Input
+							label="Through (UTC)"
+							type="date"
 							size="sm"
-							items={deploymentOptions}
-							value={search.deploymentId ?? null}
-							onValueChange={(value) =>
-								onChange({ deploymentId: value ?? undefined })
-							}
-							searchPlaceholder="All deployments"
+							value={to}
+							onChange={(event) => setTo(event.target.value)}
+							required
 						/>
-					</div>
-					{search.period === "custom" && (
-						<form
-							className="mt-4 flex flex-wrap items-end gap-3"
-							onSubmit={(event) => {
-								event.preventDefault();
-								if (rangeValid) onChange({ from, to });
-							}}
-						>
-							<Input
-								label="From (UTC)"
-								type="date"
-								size="sm"
-								value={from}
-								onChange={(event) => setFrom(event.target.value)}
-								required
-							/>
-							<Input
-								label="Through (UTC)"
-								type="date"
-								size="sm"
-								value={to}
-								onChange={(event) => setTo(event.target.value)}
-								required
-							/>
-							<Button
-								type="submit"
-								variant="secondary"
-								size="sm"
-								disabled={!rangeValid || refreshing}
-							>
-								Apply dates
-							</Button>
-							<p className="pb-2 text-xs text-fg-muted">
-								Up to 31 days. End date is included.
-							</p>
-						</form>
-					)}
-					{(search.publicModel || search.deploymentId || search.operation) && (
 						<Button
-							className="mt-3"
-							variant="link"
+							type="submit"
+							variant="secondary"
 							size="sm"
-							onClick={() =>
-								onChange({
-									publicModel: undefined,
-									deploymentId: undefined,
-									operation: undefined,
-								})
-							}
+							disabled={!rangeValid || refreshing}
 						>
-							Clear model, deployment and operation filters
+							Apply dates
 						</Button>
-					)}
-					<p className="mt-3 text-xs text-fg-muted">
-						{new Date(data.start).toLocaleString("en-US", { timeZone: "UTC" })}{" "}
-						– {new Date(data.end).toLocaleString("en-US", { timeZone: "UTC" })}{" "}
-						UTC
-					</p>
-				</Card>
-				{search.deploymentId && (
-					<p className="rounded-lg border border-border bg-secondary/40 p-3 text-sm text-fg-muted">
-						Request metrics cover requests that used this deployment, including
-						any fallback. Deployment tokens and errors cover only its own
-						attempts.
-					</p>
+						<p className="pb-2 text-xs text-fg-muted">
+							Up to 31 days. End date is included.
+						</p>
+					</form>
 				)}
-				<section
-					aria-label="Metrics summary"
-					className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
-				>
-					<Stat
-						label="Deployment tokens"
-						value={reportedTokens(attempts, true)}
-						exact={reportedTokens(attempts)}
-						detail={`${count.format(attempts.usageReported)} / ${count.format(attempts.attempts)} attempts reported usage · includes retries`}
-					/>
-					<Stat
-						label="Requests"
-						value={compact.format(requests.requests)}
-						exact={count.format(requests.requests)}
-						detail={`${rate(requests.success, requests.finished)} successful · ${count.format(requests.requests - requests.finished)} in progress`}
-					/>
-					<Stat
-						label="Consumer cost"
-						value={money(requests.consumerCostCents)}
-						detail={`${money(requests.upstreamCostCents)} recorded upstream cost · selected requests`}
-					/>
-					<Stat
-						label="Deployment errors"
-						value={count.format(attempts.errors)}
-						detail={`${rate(attempts.errors, attempts.finished)} of finished attempts · ${count.format(requests.errors)} final request errors`}
-					/>
-					<Stat
-						label="Request latency · p95"
-						value={duration(requests.p95DurationMs)}
-						detail={`${duration(requests.p50DurationMs)} median · ${duration(requests.p95FirstOutputMs)} first output p95`}
-					/>
-					<Stat
-						label="Request tokens"
-						value={reportedTokens(requests, true)}
-						exact={reportedTokens(requests)}
-						detail={`${count.format(requests.cacheHits)} cache hits · ${count.format(requests.degraded)} degraded requests`}
-					/>
-				</section>
-				{requests.requests === 0 ? (
-					<EmptyState
-						title="No activity in this period"
-						description="Change the dates or clear filters. Metrics appear after the gateway records traffic."
-					/>
-				) : (
-					<>
-						<div className="grid gap-4 xl:grid-cols-2">
-							<MetricsChart data={data} />
-							<MetricsChart data={data} upstream />
-						</div>
-						<Breakdown data={data} />
-						<section className="space-y-3">
-							<div>
-								<h2 className="font-semibold">By deployment</h2>
-								<p className="mt-1 text-xs text-fg-muted">
-									An executable route to a provider. Select one to inspect its
-									consumption and failures. Error rates use finished attempts.
-								</p>
-							</div>
-							<DataTable
-								rows={[...data.deployments].sort(
-									(a, b) => b.totalTokens - a.totalTokens,
-								)}
-								columns={deployments}
-								rowKey={(row) => row.key ?? "none"}
-								caption="Deployment metrics"
-								search={{
-									getText: (row) => `${row.label} ${row.adapter} ${row.key}`,
-									placeholder: "Search deployments…",
-								}}
-								pagination={{ pageSize: 10 }}
-								emptyMessage="No upstream attempts. Requests may have been cached or rejected before routing."
-							/>
-						</section>
-						<section className="space-y-3">
-							<div>
-								<h2 className="font-semibold">By public model</h2>
-								<p className="mt-1 text-xs text-fg-muted">
-									The model name clients request. Each request is counted once,
-									even if it required several attempts.
-								</p>
-							</div>
-							<DataTable
-								rows={data.models}
-								columns={models}
-								rowKey={(row) => row.key ?? "none"}
-								caption="Public model metrics"
-								search={{
-									getText: (row) => row.key ?? "",
-									placeholder: "Search public models…",
-								}}
-								pagination={{ pageSize: 10 }}
-							/>
-						</section>
-						<section className="space-y-3">
-							<div>
-								<h2 className="font-semibold">Deployment failures</h2>
-								<p className="mt-1 text-xs text-fg-muted">
-									Failed attempts, including failures recovered by retries or
-									fallback.
-								</p>
-							</div>
-							<DataTable
-								rows={[...data.failures].sort((a, b) => b.count - a.count)}
-								columns={failures}
-								rowKey={(row) =>
-									JSON.stringify([
-										row.deploymentId,
-										row.kind,
-										row.phase,
-										row.status,
-									])
-								}
-								caption="Deployment failure breakdown"
-								pagination={{ pageSize: 10 }}
-								emptyMessage="No deployment errors recorded in this period."
-							/>
-						</section>
-					</>
+				{(search.publicModel || search.deploymentId || search.operation) && (
+					<Button
+						className="mt-3"
+						variant="link"
+						size="sm"
+						onClick={() =>
+							onChange({
+								publicModel: undefined,
+								deploymentId: undefined,
+								operation: undefined,
+							})
+						}
+					>
+						Clear model, deployment and operation filters
+					</Button>
 				)}
-				<p role="status" className="text-xs text-fg-muted">
-					Based on retained records, grouped by request start in UTC. Deleted
-					deployments remain visible while their history is retained. Refresh to
-					include new traffic and completed requests.
+				<p className="mt-3 text-xs text-fg-muted">
+					{new Date(data.start).toLocaleString("en-US", { timeZone: "UTC" })} –{" "}
+					{new Date(data.end).toLocaleString("en-US", { timeZone: "UTC" })} UTC
 				</p>
-			</div>
-		</>
+			</Card>
+			{search.deploymentId && (
+				<p className="rounded-lg border border-border bg-secondary/40 p-3 text-sm text-fg-muted">
+					Request metrics cover requests that used this deployment, including
+					any fallback. Deployment tokens and errors cover only its own
+					attempts.
+				</p>
+			)}
+			<section
+				aria-label="Metrics summary"
+				className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3"
+			>
+				<StatCard
+					label="Deployment tokens"
+					value={reportedTokens(attempts, true)}
+					exact={reportedTokens(attempts)}
+					detail={`${count.format(attempts.usageReported)} / ${count.format(attempts.attempts)} attempts reported usage · includes retries`}
+				/>
+				<StatCard
+					label="Requests"
+					value={compact.format(requests.requests)}
+					exact={count.format(requests.requests)}
+					detail={`${rate(requests.success, requests.finished)} successful · ${count.format(requests.requests - requests.finished)} in progress`}
+				/>
+				<StatCard
+					label="Consumer cost"
+					value={money(requests.consumerCostCents)}
+					detail={`${money(requests.upstreamCostCents)} recorded upstream cost · selected requests`}
+				/>
+				<StatCard
+					label="Deployment errors"
+					value={count.format(attempts.errors)}
+					detail={`${rate(attempts.errors, attempts.finished)} of finished attempts · ${count.format(requests.errors)} final request errors`}
+				/>
+				<StatCard
+					label="Request latency · p95"
+					value={duration(requests.p95DurationMs)}
+					detail={`${duration(requests.p50DurationMs)} median · ${duration(requests.p95FirstOutputMs)} first output p95`}
+				/>
+				<StatCard
+					label="Request tokens"
+					value={reportedTokens(requests, true)}
+					exact={reportedTokens(requests)}
+					detail={`${count.format(requests.cacheHits)} cache hits · ${count.format(requests.degraded)} degraded requests`}
+				/>
+			</section>
+			{requests.requests === 0 ? (
+				<EmptyState
+					title="No activity in this period"
+					description="Change the dates or clear filters. Metrics appear after the gateway records traffic."
+				/>
+			) : (
+				<>
+					<div className="grid gap-4 xl:grid-cols-2">
+						<MetricsChart data={data} />
+						<MetricsChart data={data} upstream />
+					</div>
+					<Breakdown data={data} />
+					<section className="space-y-3">
+						<div>
+							<h2 className="font-semibold">By deployment</h2>
+							<p className="mt-1 text-xs text-fg-muted">
+								An executable route to a provider. Select one to inspect its
+								consumption and failures. Error rates use finished attempts.
+							</p>
+						</div>
+						<DataTable
+							rows={[...data.deployments].sort(
+								(a, b) => b.totalTokens - a.totalTokens,
+							)}
+							columns={deployments}
+							rowKey={(row) => row.key ?? "none"}
+							caption="Deployment metrics"
+							search={{
+								getText: (row) => `${row.label} ${row.adapter} ${row.key}`,
+								placeholder: "Search deployments…",
+							}}
+							pagination={{ pageSize: 10 }}
+							emptyMessage="No upstream attempts. Requests may have been cached or rejected before routing."
+						/>
+					</section>
+					<section className="space-y-3">
+						<div>
+							<h2 className="font-semibold">By public model</h2>
+							<p className="mt-1 text-xs text-fg-muted">
+								The model name clients request. Each request is counted once,
+								even if it required several attempts.
+							</p>
+						</div>
+						<DataTable
+							rows={data.models}
+							columns={models}
+							rowKey={(row) => row.key ?? "none"}
+							caption="Public model metrics"
+							search={{
+								getText: (row) => row.key ?? "",
+								placeholder: "Search public models…",
+							}}
+							pagination={{ pageSize: 10 }}
+						/>
+					</section>
+					<section className="space-y-3">
+						<div>
+							<h2 className="font-semibold">Deployment failures</h2>
+							<p className="mt-1 text-xs text-fg-muted">
+								Failed attempts, including failures recovered by retries or
+								fallback.
+							</p>
+						</div>
+						<DataTable
+							rows={[...data.failures].sort((a, b) => b.count - a.count)}
+							columns={failures}
+							rowKey={(row) =>
+								JSON.stringify([
+									row.deploymentId,
+									row.kind,
+									row.phase,
+									row.status,
+								])
+							}
+							caption="Deployment failure breakdown"
+							pagination={{ pageSize: 10 }}
+							emptyMessage="No deployment errors recorded in this period."
+						/>
+					</section>
+				</>
+			)}
+			<p role="status" className="text-xs text-fg-muted">
+				Based on retained records, grouped by request start in UTC. Deleted
+				deployments remain visible while their history is retained. Refresh to
+				include new traffic and completed requests.
+			</p>
+		</div>
 	);
 }

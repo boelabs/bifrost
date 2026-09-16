@@ -2,16 +2,16 @@
 
 import { type Column, DataTable, Dash, Mono } from "#/components/ui/datatable";
 import { buildUsageSeries, getOverviewMetrics } from "./overview-data";
+import { type StatusProps, Status } from "#/components/ui/status";
+import { RequestOutcomes, Reliability } from "./RequestOutcomes";
 import type { Readiness } from "#/shared/api/health.ts";
-import { RequestOutcomes } from "./RequestOutcomes";
 import type { UsageBucket } from "./overview-data";
 import { downloadCsv } from "#/shared/lib/csv.ts";
 import { ActivityChart } from "./ActivityChart";
 import { Button } from "#/components/ui/button";
-import { Status } from "#/components/ui/status";
 import type { Summary, UsageRow } from "./api";
 import { Card } from "#/components/ui/card";
-import type { ReactNode } from "react";
+import { StatCard } from "./StatCard";
 
 import {
 	IconCurrencyDollar,
@@ -47,45 +47,14 @@ function duration(ms: number | null): string {
 	return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(2)} s`;
 }
 
-function MetricCard({
-	label,
-	value,
-	exact,
-	icon: Icon,
-	description,
-	children,
-}: {
-	label: string;
-	value: string;
-	exact?: string;
-	icon: typeof IconActivity;
-	description: string;
-	children: ReactNode;
-}) {
-	return (
-		<Card className="flex min-w-0 flex-col p-5">
-			<div className="flex items-center justify-between gap-3">
-				<h2 className="font-medium text-sm text-fg-muted">{label}</h2>
-				<Icon
-					aria-hidden
-					className="size-4.5 shrink-0 text-fg-muted"
-					stroke={1.6}
-				/>
-			</div>
-			<p
-				className="mt-4 text-3xl font-semibold tracking-tight tabular-nums"
-				title={exact}
-			>
-				{value}
-			</p>
-			<p className="mt-1 text-xs text-fg-muted">{description}</p>
-			<div className="mt-auto pt-5">
-				<div className="flex min-h-9 items-center justify-between gap-3 border-t border-border/50 pt-3 text-xs tabular-nums">
-					{children}
-				</div>
-			</div>
-		</Card>
-	);
+/**
+ * Green only when the rate deserves it. A tile coloured for success at 80% teaches an operator to
+ * stop reading the colour, so anything below 99% is stated in the neutral pill instead.
+ */
+function successTone(rate: number | null): StatusProps["tone"] {
+	if (rate === null) return "neutral";
+	if (rate >= 0.99) return "success";
+	return rate >= 0.95 ? "warning" : "danger";
 }
 
 const usageColumns: Column<UsageRow>[] = [
@@ -209,6 +178,59 @@ function UsageExport({ rows, name }: { rows: UsageRow[]; name: string }) {
 	);
 }
 
+/**
+ * A usage table and the heading that says what it counts, in one surface.
+ *
+ * The heading sits inside the card rather than above it because the two are one statement: a title
+ * floating on the page ground reads as a section containing a card, which is one box more than there
+ * is. `variant="plain"` is what lets the table drop its own frame and use this one.
+ */
+function UsagePanel({
+	id,
+	title,
+	description,
+	rows,
+	columns,
+	caption,
+	export: name,
+	emptyMessage,
+}: {
+	id: string;
+	title: string;
+	description: string;
+	rows: UsageRow[];
+	columns: Column<UsageRow>[];
+	caption: string;
+	export: string;
+	emptyMessage: string;
+}) {
+	return (
+		<Card className="flex min-w-0 flex-col p-7" aria-labelledby={id}>
+			<div className="flex items-start justify-between gap-3">
+				<div>
+					<h2 id={id} className="font-semibold">
+						{title}
+					</h2>
+					<p className="mt-1 text-fg-muted text-xs">{description}</p>
+				</div>
+				<div className="-mt-1 -mr-2">
+					<UsageExport rows={rows} name={name} />
+				</div>
+			</div>
+			<DataTable
+				rows={rows}
+				columns={columns}
+				rowKey={(row) => row.key ?? "none"}
+				caption={caption}
+				variant="plain"
+				pagination={{ pageSize: 10 }}
+				className="mt-5"
+				emptyMessage={emptyMessage}
+			/>
+		</Card>
+	);
+}
+
 export interface OverviewProps {
 	health: Summary;
 	byModel: UsageRow[];
@@ -255,124 +277,83 @@ export function Overview({
 		<div className="space-y-6">
 			<section
 				aria-label="Usage summary"
-				className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+				className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"
 			>
-				<MetricCard
+				<StatCard
 					label="Requests"
 					value={compact.format(metrics.requests)}
 					exact={count.format(metrics.requests)}
 					icon={IconActivity}
-					description={`Across ${modelCount} public ${modelCount === 1 ? "model" : "models"}`}
-				>
-					<span className="text-fg-muted">Successful outcomes</span>
-					<span title="Share of finished requests" className="font-medium">
-						{metrics.successRate === null
-							? "—"
-							: percent.format(metrics.successRate)}
-					</span>
-				</MetricCard>
-				<MetricCard
+					note={{
+						text:
+							metrics.successRate === null
+								? "no outcomes"
+								: `${percent.format(metrics.successRate)} success`,
+						tone: successTone(metrics.successRate),
+					}}
+					detail={`Across ${modelCount} public ${modelCount === 1 ? "model" : "models"}`}
+				/>
+				<StatCard
 					label="Tokens"
 					value={compact.format(metrics.totalTokens)}
 					exact={count.format(metrics.totalTokens)}
 					icon={IconStack2}
-					description="Reported usage across all models"
-				>
-					<span title={`${count.format(metrics.promptTokens)} input tokens`}>
-						<span className="text-fg-muted">Input </span>
-						<span className="font-medium">
-							{compact.format(metrics.promptTokens)}
-						</span>
-					</span>
-					<span
-						title={`${count.format(metrics.completionTokens)} output tokens`}
-					>
-						<span className="text-fg-muted">Output </span>
-						<span className="font-medium">
-							{compact.format(metrics.completionTokens)}
-						</span>
-					</span>
-				</MetricCard>
-				<MetricCard
+					note={{
+						text: `${compact.format(metrics.completionTokens)} output`,
+						exact: `${count.format(metrics.completionTokens)} output tokens`,
+					}}
+					detail={`${compact.format(metrics.promptTokens)} input tokens reported`}
+				/>
+				<StatCard
 					label="Consumer cost"
 					value={cost(metrics.consumerCostCents)}
 					icon={IconCurrencyDollar}
-					description={`${cost(metrics.upstreamCostCents)} upstream cost`}
-				>
-					<span className="text-fg-muted">Average / request</span>
-					<span className="font-medium">
-						{metrics.requests > 0
-							? cost(metrics.consumerCostCents / metrics.requests)
-							: "—"}
-					</span>
-				</MetricCard>
-				<MetricCard
+					note={{
+						text:
+							metrics.requests > 0
+								? `${cost(metrics.consumerCostCents / metrics.requests)}/req`
+								: "no requests",
+					}}
+					detail={`${cost(metrics.upstreamCostCents)} upstream cost`}
+				/>
+				<StatCard
 					label="First output · p95"
 					value={duration(metrics.p95FirstOutputMs)}
 					icon={IconClock}
-					description="Time to first generated output"
-				>
-					<span className="text-fg-muted">Requests with retries</span>
-					<span className="font-medium">{count.format(metrics.retried)}</span>
-				</MetricCard>
+					note={{ text: `${count.format(metrics.retried)} retried` }}
+					detail="Time to first generated output"
+				/>
 			</section>
 
-			<div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+			<div className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
 				<ActivityChart rows={series} bucket={bucket} />
-				<RequestOutcomes metrics={metrics} />
+				<div className="grid min-w-0 gap-5 content-start">
+					<RequestOutcomes metrics={metrics} />
+					<Reliability metrics={metrics} />
+				</div>
 			</div>
 
-			<div className="grid gap-x-4 gap-y-3 lg:grid-cols-2">
-				<section
-					aria-labelledby="models-heading"
-					className="row-span-2 grid min-w-0 grid-rows-subgrid gap-3"
-				>
-					<div className="flex items-start justify-between gap-3 px-1">
-						<div>
-							<h2 id="models-heading" className="font-semibold">
-								By public model
-							</h2>
-							<p className="mt-1 text-xs text-fg-muted">
-								Request volume, token usage and consumer cost.
-							</p>
-						</div>
-						<UsageExport rows={models} name="usage-by-model" />
-					</div>
-					<DataTable
-						rows={models}
-						columns={usageColumns}
-						rowKey={(row) => row.key ?? "none"}
-						caption="Usage by public model"
-						pagination={{ pageSize: 10 }}
-						className="self-start"
-						emptyMessage={`No model usage in this range (${rangeLabel.toLowerCase()}).`}
-					/>
-				</section>
-				<section
-					aria-labelledby="actors-heading"
-					className="row-span-2 grid min-w-0 grid-rows-subgrid gap-3"
-				>
-					<div className="flex items-start justify-between gap-3 px-1">
-						<div>
-							<h2 id="actors-heading" className="font-semibold">
-								By actor
-							</h2>
-							<p className="mt-1 text-xs text-fg-muted">
-								Includes operator traffic from the playground and manual tests.
-							</p>
-						</div>
-						<UsageExport rows={actors} name="usage-by-actor" />
-					</div>
-					<DataTable
-						rows={actors}
-						columns={actorColumns}
-						rowKey={(row) => row.key ?? "none"}
-						caption="Usage by actor"
-						pagination={{ pageSize: 10 }}
-						className="self-start"
-						emptyMessage={`No actor usage in this range (${rangeLabel.toLowerCase()}).`}
-					/>
-				</section>
+			<div className="grid items-start gap-5 xl:grid-cols-2">
+				<UsagePanel
+					id="models-heading"
+					title="By public model"
+					description="Request volume, token usage and consumer cost."
+					rows={models}
+					columns={usageColumns}
+					caption="Usage by public model"
+					export="usage-by-model"
+					emptyMessage={`No model usage in this range (${rangeLabel.toLowerCase()}).`}
+				/>
+				<UsagePanel
+					id="actors-heading"
+					title="By actor"
+					description="Includes operator traffic from the playground and manual tests."
+					rows={actors}
+					columns={actorColumns}
+					caption="Usage by actor"
+					export="usage-by-actor"
+					emptyMessage={`No actor usage in this range (${rangeLabel.toLowerCase()}).`}
+				/>
 			</div>
 			<p className="px-1 text-xs text-fg-muted" role="status">
 				Updated at {updatedTime.format(new Date(end))} UTC · Usage reflects

@@ -1,4 +1,5 @@
 import { MetricsSkeleton } from "#/features/observability/MetricsSkeleton.tsx";
+import { RefreshControls } from "#/shared/components/RefreshControls.tsx";
 import { MetricsView } from "#/features/observability/MetricsView.tsx";
 import { RouteBoundary } from "#/shared/components/RouteBoundary.tsx";
 import { detailedMetrics } from "#/features/observability/api.ts";
@@ -22,10 +23,14 @@ import {
 export default function MetricsPage(props: PageProps<"/metrics">) {
 	return (
 		<>
+			{/* The only heading this page has. `Metrics` renders the body alone, so the title and
+			    the refresh control paint with the shell rather than waiting on the query. */}
 			<PageHeader
 				title="Metrics"
-				description="Throughput, latency, cost and failure shape for a window you choose."
-			/>
+				description="Explore consumption, performance and reliability across public models and deployments."
+			>
+				<RefreshControls />
+			</PageHeader>
 			<RouteBoundary title="Metrics could not be loaded" resetHref="/metrics">
 				<Suspense fallback={<MetricsSkeleton />}>
 					<Window searchParams={props.searchParams} />

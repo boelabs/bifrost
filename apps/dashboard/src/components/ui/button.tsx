@@ -34,10 +34,10 @@ export const buttonStyles = tv({
 			link: "bg-transparent text-fg underline-offset-4 hover:underline",
 		},
 		size: {
-			xs: "min-h-7 px-2 py-1 text-xs",
-			sm: "min-h-9 px-3 py-1.5 text-sm",
-			md: "min-h-11 px-4 py-2.5 text-base",
-			lg: "min-h-14 px-6 py-3.5 text-lg font-bold",
+			xs: "min-h-8 px-2.5 py-1 text-xs",
+			sm: "min-h-10 px-4 py-2 text-sm",
+			md: "min-h-12 px-5 py-3 text-base",
+			lg: "min-h-14 px-7 py-3.5 text-lg font-bold",
 		},
 		/**
 		 * Geometry, kept apart from scale: a button holding one icon has no text to give it width, so
@@ -57,9 +57,9 @@ export const buttonStyles = tv({
 		// `min-h` alone leaves the width to the content, which `aspect-square` cannot correct. Pinning
 		// both dimensions per size is what actually makes the square, at the same heights as the
 		// equivalent labelled button.
-		{ mode: "icon", size: "xs", class: "size-7" },
-		{ mode: "icon", size: "sm", class: "size-9" },
-		{ mode: "icon", size: "md", class: "size-11" },
+		{ mode: "icon", size: "xs", class: "size-8" },
+		{ mode: "icon", size: "sm", class: "size-10" },
+		{ mode: "icon", size: "md", class: "size-12" },
 		{ mode: "icon", size: "lg", class: "size-14" },
 	],
 	defaultVariants: { variant: "primary", size: "md", mode: "default" },

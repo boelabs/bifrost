@@ -50,6 +50,7 @@ export function TableSkeleton({
 	widths,
 	toolbar = false,
 	pagination = false,
+	plain = false,
 }: {
 	headers: readonly string[];
 	rows?: number;
@@ -59,6 +60,8 @@ export function TableSkeleton({
 	toolbar?: boolean;
 	/** The real table passes `pagination`, so it draws a row below the frame. */
 	pagination?: boolean;
+	/** Mirrors `DataTable`'s `variant="plain"`: no frame, because a card already provides one. */
+	plain?: boolean;
 }) {
 	const fill = (index: number) =>
 		widths?.[index] ?? ["70%", "45%", "60%", "35%", "55%"][index % 5] ?? "50%";
@@ -67,17 +70,31 @@ export function TableSkeleton({
 			role="status"
 			aria-label="Loading rows"
 			aria-busy="true"
-			className="min-w-0 rounded-[var(--ui-radius-surface)] p-1"
+			className={cn(
+				"min-w-0 rounded-[var(--ui-radius-surface)]",
+				!plain && "p-1",
+			)}
 		>
 			{toolbar ? (
-				<div className="flex flex-wrap items-center gap-3 p-3">
+				<div
+					className={cn(
+						"flex flex-wrap items-center gap-3",
+						plain ? "pb-4" : "p-3",
+					)}
+				>
 					<Skeleton
-						className="ml-auto h-8 rounded-[var(--ui-radius-control)]"
+						className="ml-auto h-10 rounded-[var(--ui-radius-control)]"
 						width="4.5rem"
 					/>
 				</div>
 			) : null}
-			<div className="relative overflow-x-auto rounded-[max(0px,calc(var(--ui-radius-surface)-0.25rem))] border border-border/50 bg-card">
+			<div
+				className={cn(
+					"relative overflow-x-auto",
+					!plain &&
+						"rounded-[max(0px,calc(var(--ui-radius-surface)-0.25rem))] border border-border/50 bg-card",
+				)}
+			>
 				<table className="w-full border-collapse text-sm">
 					<thead className="border-b border-border/50">
 						<tr>
@@ -87,7 +104,7 @@ export function TableSkeleton({
 									// biome-ignore lint/suspicious/noArrayIndexKey: position is the only identity here
 									key={`${header}-${index}`}
 									scope="col"
-									className="whitespace-nowrap px-4 py-3 text-left font-medium text-fg-muted text-xs"
+									className="whitespace-nowrap px-5 py-4 text-left font-medium text-fg-muted text-xs"
 								>
 									{header}
 								</th>
@@ -105,7 +122,7 @@ export function TableSkeleton({
 									<td
 										// biome-ignore lint/suspicious/noArrayIndexKey: position is the only identity here
 										key={`${header}-${column}`}
-										className="px-4 py-3 align-middle"
+										className="px-5 py-4 align-middle"
 									>
 										<Skeleton width={fill(column)} />
 									</td>
@@ -116,15 +133,20 @@ export function TableSkeleton({
 				</table>
 			</div>
 			{pagination ? (
-				<div className="flex flex-wrap items-center justify-between gap-3 p-3">
+				<div
+					className={cn(
+						"flex flex-wrap items-center justify-between gap-3",
+						plain ? "pt-4" : "p-3",
+					)}
+				>
 					<Skeleton className="h-5" width="9rem" />
 					<div className="flex flex-wrap items-center gap-3">
 						<Skeleton
-							className="h-8 rounded-[var(--ui-radius-control)]"
+							className="h-10 rounded-[var(--ui-radius-control)]"
 							width="8rem"
 						/>
 						<Skeleton
-							className="h-8 rounded-[var(--ui-radius-control)]"
+							className="h-10 rounded-[var(--ui-radius-control)]"
 							width="10rem"
 						/>
 					</div>
@@ -139,8 +161,8 @@ const CARD =
 	"rounded-[var(--ui-radius-surface)] border border-border/50 bg-card";
 
 /**
- * A row of summary tiles, laid out and padded like `MetricCard`: label and icon, the big number,
- * a caption, and the divided footer row that gives the card its height.
+ * A row of summary tiles, laid out and padded like `StatCard`: label and icon, the big number with
+ * its pill, and the caption below.
  */
 export function StatGridSkeleton({
 	count,
@@ -154,23 +176,18 @@ export function StatGridSkeleton({
 			role="status"
 			aria-label="Loading summary"
 			aria-busy="true"
-			className={cn("grid gap-4 sm:grid-cols-2 xl:grid-cols-4", className)}
+			className={cn("grid gap-5 sm:grid-cols-2 xl:grid-cols-4", className)}
 		>
 			{Array.from({ length: count }, (_, index) => (
 				// biome-ignore lint/suspicious/noArrayIndexKey: placeholder tiles have no identity
-				<div key={index} className={cn(CARD, "flex min-w-0 flex-col p-5")}>
-					<div className="flex items-center justify-between gap-3">
-						<Skeleton className="h-3.5" width="45%" />
+				<div key={index} className={cn(CARD, "flex min-w-0 flex-col p-7")}>
+					<div className="flex items-center gap-2.5">
 						<Skeleton className="size-4.5 shrink-0 rounded-md" />
+						<Skeleton className="h-4" width="45%" />
 					</div>
-					<Skeleton className="mt-4 h-8" width="60%" />
-					<Skeleton className="mt-1.5 h-3" width="70%" />
-					<div className="mt-auto pt-5">
-						<div className="flex min-h-9 items-center justify-between gap-3 border-t border-border/50 pt-3">
-							<Skeleton className="h-3" width="40%" />
-							<Skeleton className="h-3" width="20%" />
-						</div>
-					</div>
+					<Skeleton className="mt-6 h-8" width="55%" />
+					<Skeleton className="mt-3.5 h-7 rounded-4xl" width="45%" />
+					<Skeleton className="mt-6 h-3" width="70%" />
 				</div>
 			))}
 		</div>
@@ -190,7 +207,7 @@ export function ChartSkeleton({
 			role="status"
 			aria-label="Loading chart"
 			aria-busy="true"
-			className={cn(CARD, "min-w-0 p-5")}
+			className={cn(CARD, "min-w-0 p-7")}
 		>
 			{title ? (
 				<>
@@ -199,7 +216,7 @@ export function ChartSkeleton({
 				</>
 			) : null}
 			<Skeleton
-				className={cn("rounded-[var(--ui-radius-surface)]", title && "mt-6")}
+				className={cn("rounded-[var(--ui-radius-surface)]", title && "mt-7")}
 				style={{ height }}
 				width="100%"
 			/>
@@ -226,7 +243,7 @@ export function ToolbarSkeleton({
 					// the same size, and the list never reorders.
 					// biome-ignore lint/suspicious/noArrayIndexKey: placeholder bars have no identity
 					key={index}
-					className="h-8 rounded-[var(--ui-radius-control)]"
+					className="h-10 rounded-[var(--ui-radius-control)]"
 					width={width}
 				/>
 			))}

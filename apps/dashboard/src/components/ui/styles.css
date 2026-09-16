@@ -76,11 +76,19 @@
 	--chart-5: oklch(80.78% 0 0);
 	--sidebar: oklch(93.7% 0 0);
 	--sidebar-border: oklch(85.76% 0 0);
-	--ui-radius-sm: 0.375rem;
-	--ui-radius-md: 0.5rem;
-	--ui-radius-lg: 0.75rem;
-	--ui-radius-xl: 1rem;
-	--ui-radius-2xl: 1.5rem;
+	/**
+	 * Deliberately rounder than the 6/8/12 scale most component kits ship.
+	 *
+	 * The corner is the cheapest thing on screen that says which house a product belongs to, and at
+	 * 8px it says "a component library". A control at 16px and a surface at 20px read as one soft
+	 * plane each, which is what the rest of the chrome — the pill buttons, the pill status badges —
+	 * was already doing on its own.
+	 */
+	--ui-radius-sm: 0.5rem;
+	--ui-radius-md: 0.75rem;
+	--ui-radius-lg: 1rem;
+	--ui-radius-xl: 1.25rem;
+	--ui-radius-2xl: 1.75rem;
 	--ui-radius-control: var(--ui-radius-lg);
 	--ui-radius-surface: var(--ui-radius-xl);
 	/**
