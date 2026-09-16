@@ -1,5 +1,7 @@
+import { isUnauthenticated, unwrap as unwrapOrThrow } from "./errors.ts";
 import { CSRF_HEADER, CSRF_COOKIE, SAFE_METHODS } from "./csrf.ts";
 import { gatewayUrl } from "#/shared/config/server.ts";
+import { redirect } from "next/navigation";
 import createClient from "openapi-fetch";
 import { cookies } from "next/headers";
 import type { paths } from "./schema";
@@ -59,9 +61,39 @@ export const publicApi = createClient<paths>({
 	fetch: (request) => fetch(resolve(request)),
 });
 
+/**
+ * `unwrap`, plus the one answer that is not a failure to report.
+ *
+ * A 401 means the session is gone — idle out, revoked, expired — and there is nothing on any page of
+ * this dashboard for someone without one. Left as a thrown `ApiError` it renders as a failed panel
+ * inside a shell the operator can no longer use: `src/proxy.ts` only checks the session on a
+ * document request, and `app/(dash)/layout.tsx` does not re-run when the router moves between two
+ * pages that share it, so a sidebar click would otherwise land on "could not be loaded" and stay
+ * there until something forced a reload.
+ *
+ * `redirect()` is what the page boundaries are already built around: `shared/components/RouteBoundary`
+ * passes it through untouched rather than drawing it as an error, so it reaches the router and
+ * becomes a navigation to the login screen.
+ *
+ * Only the *gateway's* 401 goes through here. `features/auth/api.ts` reads the session by asking a
+ * question whose honest answer may be "no session", and checks the status itself before unwrapping —
+ * which is what keeps the login screen from redirecting to itself.
+ */
+export function unwrap<T>(result: {
+	data?: T;
+	error?: unknown;
+	response: Response;
+}): T {
+	try {
+		return unwrapOrThrow(result);
+	} catch (cause) {
+		if (isUnauthenticated(cause)) redirect("/auth");
+		throw cause;
+	}
+}
+
 export {
 	type GatewayErrorBody,
 	isUnauthenticated,
 	ApiError,
-	unwrap,
 } from "./errors.ts";

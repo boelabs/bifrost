@@ -1,3 +1,4 @@
+import { unstable_rethrow as rethrowFrameworkError } from "next/navigation";
 import { ApiError } from "#/shared/api/errors.ts";
 
 /**
@@ -27,6 +28,13 @@ export async function attempt<T>(
 	try {
 		return { ok: true, data: await run() };
 	} catch (cause) {
+		/**
+		 * `redirect()` and `notFound()` travel as thrown errors, and Next is the only thing that may
+		 * catch them. An expired session turns a write into a redirect to the login screen
+		 * (`shared/api/client.ts`); packaged as a result it would reach the operator as a toast
+		 * reading "NEXT_REDIRECT" and go nowhere.
+		 */
+		rethrowFrameworkError(cause);
 		if (cause instanceof ApiError)
 			return {
 				ok: false,

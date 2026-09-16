@@ -2,9 +2,9 @@
 
 import { ErrorNote } from "#/components/ui/page";
 import { Button } from "#/components/ui/button";
+import { useState, useTransition } from "react";
 import { Input } from "#/components/ui/input";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
 import { Form } from "#/components/ui/form";
 import { login } from "./browser.ts";
 
