@@ -1,5 +1,6 @@
 import { parsePublicModels, type PlaygroundModel } from "./models.ts";
-import { publicApi, unwrap } from "#/shared/api/client.ts";
+import { publicApi } from "#/shared/api/client.ts";
+import { unwrap } from "#/shared/api/errors.ts";
 import { cacheLife } from "next/cache";
 
 /**
@@ -8,6 +9,9 @@ import { cacheLife } from "next/cache";
  * Separate from the cached wrapper below so it can be tested without a Next cache scope: what the
  * tests care about is that a 503 propagates the gateway's message and that an empty list is not
  * mistaken for a failure, neither of which involves caching.
+ *
+ * The plain `unwrap`, not the session client's: this call carries no session, so it has none to
+ * lose, and the redirect that one raises on a 401 is not allowed inside a `'use cache'` scope.
  */
 export async function fetchPublicModels(): Promise<PlaygroundModel[]> {
 	return parsePublicModels(unwrap(await publicApi.GET("/v1/models")));
