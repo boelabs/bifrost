@@ -30,7 +30,8 @@ export const LOG_PERIODS = [
 	"all",
 ] as const satisfies readonly RangeKey[];
 
-export const DEFAULT_PERIOD: RangeKey = "7d";
+/** Today, like the overview and the metrics page; widening the window is one click away. */
+export const DEFAULT_PERIOD: RangeKey = "today";
 
 const schema = z.object({
 	outcome: z.enum(OUTCOMES).optional().catch(undefined),

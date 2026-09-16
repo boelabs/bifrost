@@ -26,9 +26,9 @@ export type MetricsSearch = z.infer<typeof metricsSearch>;
 /**
  * The metrics window, in the vocabulary every other table now uses.
  *
- * Metrics opens on "today" rather than the seven days the logs and the overview default to: this is
- * the page someone opens while watching a deploy, and a week of history would bury the hour they
- * came to look at. The arithmetic itself lives in `shared/lib/range.ts`, so the two cannot drift.
+ * Metrics opens on "today", as the overview and the logs do: this is the page someone opens while
+ * watching a deploy, and a week of history would bury the hour they came to look at. The arithmetic
+ * itself lives in `shared/lib/range.ts`, so the two cannot drift.
  */
 export function metricsWindow(search: MetricsSearch, now = new Date()) {
 	const { start, end, bucket } = resolveRange(search, "today", now);
