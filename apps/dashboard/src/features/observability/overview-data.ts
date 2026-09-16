@@ -149,10 +149,13 @@ export function getOverviewMetrics(
 
 function timestamp(value: string | Date | number): number {
 	if (typeof value === "string") {
-		const normalized = value
-			.trim()
-			.replace(/^(\d{4}-\d{2}-\d{2}) /, "$1T")
-			.replace(/([+-]\d{2})$/, "$1:00");
+		const text = value.trim().replace(/^(\d{4}-\d{2}-\d{2}) /, "$1T");
+		// Postgres writes a whole-hour offset as "+00"; ISO wants "+00:00". Only a value that
+		// carries a time can carry an offset — the day buckets arrive as a bare "2026-09-16",
+		// whose day would otherwise be read as one and turn the whole series into NaN.
+		const normalized = text.includes("T")
+			? text.replace(/([+-]\d{2})$/, "$1:00")
+			: text;
 		return Date.parse(normalized);
 	}
 	return new Date(value).getTime();

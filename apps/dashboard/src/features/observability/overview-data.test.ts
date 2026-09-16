@@ -217,3 +217,29 @@ test("hourly usage keeps a full empty window and excludes zero-width end buckets
 	assert.deepEqual(buildUsageSeries([], "invalid", end), []);
 	assert.deepEqual(buildUsageSeries([], start, Infinity), []);
 });
+
+test("daily usage lands in its own bucket, from the bare dates the gateway groups by", () => {
+	const start = Date.parse("2026-09-14T00:00:00Z");
+	const end = Date.parse("2026-09-17T09:30:00Z");
+	const buckets = buildUsageSeries(
+		[
+			usage("2026-09-14", { requests: 4, totalTokens: 200 }),
+			usage("2026-09-16", { requests: 6, consumerCostCents: 25 }),
+			usage("2026-09-20", { requests: 10 }),
+		],
+		start,
+		end,
+		"day",
+	);
+	assert.equal(buckets.length, 4);
+	assert.equal(buckets[0]?.requests, 4);
+	assert.equal(buckets[0]?.totalTokens, 200);
+	assert.equal(buckets[1]?.requests, 0);
+	assert.equal(buckets[2]?.requests, 6);
+	assert.equal(buckets[2]?.consumerCostCents, 25);
+	assert.equal(buckets[3]?.intervalEnd, end);
+	assert.equal(
+		buckets.reduce((sum, bucket) => sum + bucket.requests, 0),
+		10,
+	);
+});
