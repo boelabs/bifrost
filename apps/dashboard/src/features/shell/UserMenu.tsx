@@ -3,7 +3,7 @@
 import { isThemePreference } from "#/shared/theme/theme";
 import { useTheme } from "#/shared/theme/ThemeProvider";
 import { useSession } from "#/features/auth/session";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 
 import {
 	MenuRadioItemIndicator,
@@ -32,21 +32,31 @@ import {
 export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
 	const { identity, signOut } = useSession();
 	const { preference, setPreference } = useTheme();
-	const [pending, setPending] = useState(false);
+	/**
+	 * Signing out is a transition, not a flag that is set and never cleared.
+	 *
+	 * A `pending` boolean left `true` because "the page is leaving anyway" is only true while the page
+	 * actually leaves. This one did not: the router used to keep the tree it navigated away from and
+	 * show it again, React state and all, when the tab signed back in — and the menu item read
+	 * "Signing out…", disabled, for an operator who had only just arrived. `signOut` loads a document
+	 * now (`features/auth/session.tsx`), and this cannot get stuck either way: the transition runs
+	 * until the request settles, which on the way out means until the document is replaced.
+	 */
+	const [pending, startSigningOut] = useTransition();
 	const [error, setError] = useState<string>();
 	const name = identity.user.username ?? "Operator";
 	const role = identity.user.isRoot
 		? `${identity.user.role} · root`
 		: identity.user.role;
-	async function logout() {
-		setPending(true);
+	function logout() {
 		setError(undefined);
-		try {
-			await signOut();
-		} catch {
-			setError("Sign out failed. Please try again.");
-			setPending(false);
-		}
+		startSigningOut(async () => {
+			try {
+				await signOut();
+			} catch {
+				setError("Sign out failed. Please try again.");
+			}
+		});
 	}
 	return (
 		<div className="min-w-0">
@@ -123,7 +133,7 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
 							<MenuSeparator />
 							<MenuItem
 								disabled={pending}
-								onClick={() => void logout()}
+								onClick={logout}
 								className="flex items-center gap-2 text-danger"
 							>
 								<IconLogout aria-hidden className="size-4" />
