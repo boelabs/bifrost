@@ -198,3 +198,52 @@ test("maximum cost reservation uses the highest tier and rejects unknown pricing
 		1.4,
 	);
 });
+
+test("cache write lifetimes use distinct prices without double counting", () => {
+	const meta = {
+		pricing: {
+			inputCentsPerMTokens: 100,
+			outputCentsPerMTokens: 600,
+			cacheReadCentsPerMTokens: 10,
+			cacheWriteCentsPerMTokens: 125,
+			cacheWriteCentsPerMTokensByTtl: { "300": 125, "3600": 200 },
+		},
+	};
+	const usage = {
+		promptTokens: 2000,
+		completionTokens: 10,
+		totalTokens: 2010,
+		cacheReadTokens: 1500,
+		cacheWriteTokens: 300,
+		cacheWriteTokensByTtl: { "300": 100, "3600": 200 },
+	};
+	const cost = computeCost(meta, usage);
+	assert.ok(Math.abs(cost.cacheWriteCents - 0.0525) < 1e-10);
+	assert.ok(Math.abs(cost.totalCents - 0.0935) < 1e-10);
+	assert.equal(
+		computeCost(meta, { ...usage, cacheWriteTokensByTtl: { "7200": 300 } })
+			.cacheWriteCents,
+		0.0375,
+	);
+	const tiered = {
+		pricing: {
+			...meta.pricing,
+			tiers: [
+				{
+					aboveInputTokens: 1000,
+					cacheWriteCentsPerMTokensByTtl: { "3600": 400 },
+				},
+			],
+		},
+	};
+	assert.ok(
+		Math.abs(computeCost(tiered, usage).cacheWriteCents - 0.0925) < 1e-10,
+	);
+	assert.equal(
+		estimateMaximumCostCents(
+			{ pricing: { cacheWriteCentsPerMTokensByTtl: { "3600": 800 } } },
+			1000,
+		),
+		0.8,
+	);
+});

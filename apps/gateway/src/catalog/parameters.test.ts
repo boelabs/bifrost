@@ -97,3 +97,41 @@ test("allow policy leaves unsupported parameters untouched", () => {
 	]);
 	assert.deepEqual(result.droppedParameters, []);
 });
+
+test("prompt-cache policies participate in explicit model parameter support", () => {
+	const req: CanonicalChatRequest = {
+		...request(),
+		promptCachePolicy: { mode: "explicit" },
+		promptCacheRetention: "extended",
+		messagesTransport: { cacheControl: { type: "ephemeral" } },
+	};
+	const metadata: ResolvedModelMetadata = {
+		capabilities: meta.capabilities,
+		operations: {
+			"text.generate": {
+				parameters: {
+					prompt_cache_options: false,
+					prompt_cache_retention: false,
+					cache_control: false,
+				},
+			},
+		},
+	};
+	assert.throws(
+		() => applyUnsupportedParameterPolicy(req, metadata, "error"),
+		/does not support/,
+	);
+	const dropped = applyUnsupportedParameterPolicy(req, metadata, "drop");
+	assert.deepEqual(dropped.droppedParameters, [
+		"cache_control",
+		"prompt_cache_options",
+		"prompt_cache_retention",
+	]);
+	assert.equal(dropped.request.promptCachePolicy, undefined);
+	assert.equal(dropped.request.promptCacheRetention, undefined);
+	assert.equal(dropped.request.messagesTransport, undefined);
+	assert.deepEqual(
+		applyUnsupportedParameterPolicy(req, metadata, "allow").request,
+		req,
+	);
+});

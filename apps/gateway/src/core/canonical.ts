@@ -17,10 +17,12 @@ export type CanonicalRole =
 /**
  * Passthrough of `cache_control` (Anthropic-style prompt-caching breakpoint). It is opaque to the
  * core: filled in by the contract that understands it (Anthropic /messages) and emitted by the adapter
- * that supports it (Anthropic). Transports that do not support it (OpenAI, Google) simply ignore it.
+ * that supports it. Requests carrying these markers require a compatible native transport.
  */
 interface CanonicalCacheControlled {
 	cacheControl?: Record<string, unknown>;
+	/** End of an explicitly reusable input prefix. */
+	cacheBreakpoint?: boolean;
 }
 interface CanonicalTextPart extends CanonicalCacheControlled {
 	type: "text";
@@ -56,7 +58,9 @@ export type CanonicalContentPart =
 	| CanonicalAudioPart
 	| CanonicalFilePart;
 
-interface CanonicalToolCall {
+interface CanonicalToolCall extends CanonicalCacheControlled {
+	/** Original position among content blocks when prefix boundaries depend on tool order. */
+	contentIndex?: number;
 	id: string;
 	name: string;
 	/** Arguments as a JSON string (same as OpenAI). */
@@ -68,7 +72,7 @@ interface CanonicalToolCall {
 	extraContent?: Record<string, unknown>;
 }
 
-export interface CanonicalMessage {
+export interface CanonicalMessage extends CanonicalCacheControlled {
 	role: CanonicalRole;
 	content: string | CanonicalContentPart[] | null;
 	name?: string;
@@ -161,6 +165,7 @@ interface CanonicalChatTransportOptions {
 }
 
 interface CanonicalMessagesTransportOptions {
+	cacheControl?: Record<string, unknown>;
 	metadata?: Record<string, unknown>;
 	/** Exact Anthropic tool definitions when built-in tools cannot be represented as functions. */
 	rawTools?: Record<string, unknown>[];
@@ -209,6 +214,13 @@ export interface CanonicalChatRequest {
 	 * it (OpenAI chat/responses); the rest ignore it.
 	 */
 	promptCacheKey?: string;
+	/** Request-wide prefix-cache write policy. */
+	promptCachePolicy?: {
+		mode?: "implicit" | "explicit";
+		minimumTtlSeconds?: number;
+	};
+	/** Maximum retention policy, independent of the minimum write lifetime. */
+	promptCacheRetention?: "memory" | "extended" | null;
 	/**
 	 * Passthrough of "extra" keys to the upstream body that the gateway does NOT manage (e.g. top_k,
 	 * repetition_penalty, guided_json in vLLM). Each adapter merges them at the end WITHOUT overwriting

@@ -1,3 +1,7 @@
+import {
+	promptCacheOptionsSchema,
+	promptCacheRetentionSchema,
+} from "#contracts/openai/promptCache.ts";
 /**
  * OpenAPI component schemas, defined as Zod so the spec is generated — never hand-maintained.
  *
@@ -193,6 +197,10 @@ export const ChatCompletionRequest = loose(
 		response_format: ChatResponseFormat.optional(),
 		reasoning_effort: reasoningEffort.optional(),
 		reasoning: reasoningConfig.optional(),
+		prompt_cache_key: z.string().optional(),
+		prompt_cache_options: promptCacheOptionsSchema.optional(),
+		prompt_cache_retention: promptCacheRetentionSchema.optional(),
+		providerOptions: z.record(z.string(), z.unknown()).optional(),
 		plugins: z.array(FileParserPlugin).max(1).optional(),
 	},
 	{ id: "ChatCompletionRequest" },
@@ -201,6 +209,7 @@ export const ChatCompletionRequest = loose(
 export const MessagesRequest = loose(
 	{
 		model: z.string(),
+		cache_control: z.record(z.string(), z.unknown()).optional(),
 		max_tokens: z.int(),
 		messages: z.array(
 			loose(
@@ -279,6 +288,9 @@ export const ResponsesRequest = loose(
 		service_tier: z.string().optional(),
 		stream_options: loose({}, {}).optional(),
 		safety_identifier: z.string().max(64).optional(),
+		prompt_cache_options: promptCacheOptionsSchema.optional(),
+		prompt_cache_retention: promptCacheRetentionSchema.optional(),
+		providerOptions: z.record(z.string(), z.unknown()).optional(),
 		prompt_cache_key: z.string().max(64).optional(),
 		truncation: z.string().optional(),
 		context_management: z.array(loose({}, {})).optional(),
@@ -312,7 +324,11 @@ export const ResponsesRequest = loose(
 export const ResponsesUsage = z
 	.object({
 		input_tokens: z.int(),
-		input_tokens_details: z.object({ cached_tokens: z.int() }),
+		input_tokens_details: z.object({
+			cached_tokens: z.int(),
+			cache_write_tokens: z.int().optional(),
+			cache_write_tokens_by_ttl: z.record(z.string(), z.int()).optional(),
+		}),
 		output_tokens: z.int(),
 		output_tokens_details: z.object({ reasoning_tokens: z.int() }),
 		total_tokens: z.int(),

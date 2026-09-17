@@ -272,7 +272,7 @@ export function messagesRequestToCanonical(
 			const parts: CanonicalContentPart[] = [];
 			const toolCalls: NonNullable<CanonicalMessage["toolCalls"]> = [];
 			const thinkingBlocks: AnthropicThinkingBlock[] = [];
-			for (const b of blocks) {
+			for (const [blockIndex, b] of blocks.entries()) {
 				if (
 					b.type === "thinking" &&
 					typeof b.thinking === "string" &&
@@ -299,6 +299,12 @@ export function messagesRequestToCanonical(
 						id: decoded.id,
 						name: b.name ?? "",
 						arguments: JSON.stringify(b.input ?? {}),
+						...(blocks.some((block) => block.cache_control !== undefined)
+							? { contentIndex: blockIndex }
+							: {}),
+						...(b.cache_control !== undefined
+							? { cacheControl: b.cache_control }
+							: {}),
 						...(extraContent !== undefined ? { extraContent } : {}),
 					});
 				} else {
@@ -333,6 +339,9 @@ export function messagesRequestToCanonical(
 					role: "tool",
 					toolCallId: stripThoughtSignatureId(b.tool_use_id ?? ""),
 					content: toolResultToCanonical(b.content),
+					...(b.cache_control !== undefined
+						? { cacheControl: b.cache_control }
+						: {}),
 					...(b.is_error !== undefined ? { toolResultError: b.is_error } : {}),
 				});
 			} else {
@@ -357,6 +366,14 @@ export function messagesRequestToCanonical(
 	if (req.stop_sequences !== undefined) u.stop = req.stop_sequences;
 	if (req.metadata !== undefined) {
 		u.messagesTransport = { metadata: req.metadata };
+	}
+	if (req.cache_control !== undefined) {
+		assertNoManagedExtraBodyKeys(req.extra_body, ["cache_control"]);
+		u.messagesTransport = {
+			...u.messagesTransport,
+			cacheControl: req.cache_control,
+		};
+		u.requiresNativeWire = true;
 	}
 	const effort = reasoningEffortFromMessages(req);
 	const display = displayFromThinking(req.thinking);
@@ -428,6 +445,11 @@ export function messagesRequestToCanonical(
 			anthropicThinkingFromProviderFields(message.providerFields) !== undefined
 		)
 			return true;
+		if (
+			message.cacheControl !== undefined ||
+			message.toolCalls?.some((call) => call.cacheControl !== undefined)
+		)
+			return true;
 		return Array.isArray(message.content)
 			? message.content.some((part) => part.cacheControl !== undefined)
 			: false;
@@ -477,6 +499,14 @@ function usageToAnthropic(usage: Usage): Record<string, unknown> {
 		input_tokens: Math.max(0, usage.promptTokens - cacheRead - cacheWrite),
 		cache_creation_input_tokens: cacheWrite,
 		cache_read_input_tokens: cacheRead,
+		...(usage.cacheWriteTokensByTtl !== undefined
+			? {
+					cache_creation: {
+						ephemeral_5m_input_tokens: usage.cacheWriteTokensByTtl["300"] ?? 0,
+						ephemeral_1h_input_tokens: usage.cacheWriteTokensByTtl["3600"] ?? 0,
+					},
+				}
+			: {}),
 		output_tokens: usage.completionTokens,
 		...(usage.reasoningTokens !== undefined
 			? { output_tokens_details: { thinking_tokens: usage.reasoningTokens } }

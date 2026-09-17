@@ -29,6 +29,18 @@ import type {
 	CanonicalMessage,
 } from "#core/canonical.ts";
 
+import {
+	promptCacheBreakpointSchema,
+	promptCacheRetentionSchema,
+	promptCacheOptionsSchema,
+} from "./promptCache.ts";
+
+import {
+	normalizePromptCacheRequest,
+	readPromptCachePolicy,
+	readCacheBreakpoint,
+} from "./promptCache.ts";
+
 const reasoningEffortSchema = z.enum(EFFORT_ORDER);
 const reasoningSummarySchema = z.enum(["auto", "none", "concise", "detailed"]);
 const reasoningSchema = z
@@ -77,16 +89,23 @@ const CHAT_EXTRA_BODY_MANAGED_KEYS = [
 	"reasoning",
 	"reasoning_effort",
 	"prompt_cache_key",
+	"prompt_cache_options",
+	"prompt_cache_retention",
 	"plugins",
 	"extra_body",
 ] as const;
 
 const textPart = z
-	.object({ type: z.literal("text"), text: z.string() })
+	.object({
+		type: z.literal("text"),
+		text: z.string(),
+		prompt_cache_breakpoint: promptCacheBreakpointSchema.optional(),
+	})
 	.loose();
 const imagePart = z
 	.object({
 		type: z.literal("image_url"),
+		prompt_cache_breakpoint: promptCacheBreakpointSchema.optional(),
 		image_url: z
 			.object({
 				url: z.string(),
@@ -98,6 +117,7 @@ const imagePart = z
 const audioPart = z
 	.object({
 		type: z.literal("input_audio"),
+		prompt_cache_breakpoint: promptCacheBreakpointSchema.optional(),
 		input_audio: z
 			.object({ data: z.string(), format: z.enum(["wav", "mp3"]) })
 			.loose(),
@@ -109,6 +129,7 @@ const refusalPart = z
 const filePart = z
 	.object({
 		type: z.literal("file"),
+		prompt_cache_breakpoint: promptCacheBreakpointSchema.optional(),
 		file: z
 			.object({
 				file_id: z.string().optional(),
@@ -244,7 +265,10 @@ export const chatRequestSchema = z
 		reasoning_effort: reasoningEffortSchema.optional(),
 		reasoning: reasoningSchema.optional(),
 		prompt_cache_key: z.string().optional(),
+		prompt_cache_options: promptCacheOptionsSchema.optional(),
+		prompt_cache_retention: promptCacheRetentionSchema.optional(),
 		plugins: z.array(z.record(z.string(), z.unknown())).optional(),
+		providerOptions: z.record(z.string(), z.unknown()).optional(),
 		extra_body: z.record(z.string(), z.unknown()).optional(),
 	})
 	.loose();
@@ -264,6 +288,7 @@ const usageSchema = z
 			.object({
 				cached_tokens: z.number().optional(),
 				cache_write_tokens: z.number().optional(),
+				cache_write_tokens_by_ttl: z.record(z.string(), z.number()).optional(),
 				audio_tokens: z.number().optional(),
 			})
 			.optional(),
@@ -365,45 +390,52 @@ function mapContent(
 ): string | CanonicalContentPart[] | null {
 	if (content === null || content === undefined) return null;
 	if (typeof content === "string") return content;
-	return content.map((part): CanonicalContentPart => {
-		switch (part.type) {
-			case "text":
-				return { type: "text", text: part.text };
-			case "refusal":
-				return { type: "text", text: part.refusal };
-			case "image_url":
-				return part.image_url.detail !== undefined
-					? {
-							type: "image",
-							url: part.image_url.url,
-							detail: part.image_url.detail,
-						}
-					: { type: "image", url: part.image_url.url };
-			case "input_audio":
-				return {
-					type: "audio",
-					data: part.input_audio.data,
-					format: part.input_audio.format,
-				};
-			case "file": {
-				const f: CanonicalContentPart = { type: "file" };
-				if (part.file.file_id !== undefined) f.fileId = part.file.file_id;
-				if (part.file.file_data !== undefined) {
-					if (/^https:\/\//i.test(part.file.file_data))
-						f.fileUrl = part.file.file_data;
-					else f.fileData = part.file.file_data;
-				}
-				if (part.file.filename !== undefined) f.filename = part.file.filename;
-				return f;
+	return content.map(
+		(part): CanonicalContentPart =>
+			readCacheBreakpoint(part, mapContentPart(part)),
+	);
+}
+
+function mapContentPart(
+	part: z.infer<typeof contentPart>,
+): CanonicalContentPart {
+	switch (part.type) {
+		case "text":
+			return { type: "text", text: part.text };
+		case "refusal":
+			return { type: "text", text: part.refusal };
+		case "image_url":
+			return part.image_url.detail !== undefined
+				? {
+						type: "image",
+						url: part.image_url.url,
+						detail: part.image_url.detail,
+					}
+				: { type: "image", url: part.image_url.url };
+		case "input_audio":
+			return {
+				type: "audio",
+				data: part.input_audio.data,
+				format: part.input_audio.format,
+			};
+		case "file": {
+			const f: CanonicalContentPart = { type: "file" };
+			if (part.file.file_id !== undefined) f.fileId = part.file.file_id;
+			if (part.file.file_data !== undefined) {
+				if (/^https:\/\//i.test(part.file.file_data))
+					f.fileUrl = part.file.file_data;
+				else f.fileData = part.file.file_data;
 			}
-			default:
-				throw new GatewayError({
-					class: "bad_request",
-					message: `Unsupported content type: "${(part as { type: string }).type}"`,
-					param: "messages",
-				});
+			if (part.file.filename !== undefined) f.filename = part.file.filename;
+			return f;
 		}
-	});
+		default:
+			throw new GatewayError({
+				class: "bad_request",
+				message: `Unsupported content type: "${(part as { type: string }).type}"`,
+				param: "messages",
+			});
+	}
 }
 
 function mapMessage(m: z.infer<typeof messageSchema>): CanonicalMessage {
@@ -477,6 +509,7 @@ function mapResponseFormat(
 export function toCanonicalChatRequest(
 	req: OpenAIChatRequest,
 ): CanonicalChatRequest {
+	req = normalizePromptCacheRequest(req);
 	const u: CanonicalChatRequest = {
 		callType: "chat",
 		publicWire: "chat_completions",
@@ -575,6 +608,7 @@ export function toCanonicalChatRequest(
 	}
 	if (req.prompt_cache_key !== undefined)
 		u.promptCacheKey = req.prompt_cache_key;
+	readPromptCachePolicy(req, u);
 	if (req.extra_body !== undefined) {
 		assertNoManagedExtraBodyKeys(req.extra_body, CHAT_EXTRA_BODY_MANAGED_KEYS);
 		u.extraBody = req.extra_body;
@@ -615,7 +649,12 @@ function toOpenAIUsage(u: Usage): z.infer<typeof usageSchema> {
 				? { cached_tokens: u.cacheReadTokens }
 				: {}),
 			...(u.cacheWriteTokens !== undefined
-				? { cache_write_tokens: u.cacheWriteTokens }
+				? {
+						cache_write_tokens: u.cacheWriteTokens,
+						...(u.cacheWriteTokensByTtl !== undefined
+							? { cache_write_tokens_by_ttl: u.cacheWriteTokensByTtl }
+							: {}),
+					}
 				: {}),
 			...(u.promptAudioTokens !== undefined
 				? { audio_tokens: u.promptAudioTokens }

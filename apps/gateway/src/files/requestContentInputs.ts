@@ -1028,6 +1028,9 @@ function portableTextPart(
 	return {
 		type: "text",
 		text: `[Attached file: ${JSON.stringify(filename)}; type=${file.mimeType}]\n${text}\n[End attached file]`,
+		...(part.cacheBreakpoint !== undefined
+			? { cacheBreakpoint: part.cacheBreakpoint }
+			: {}),
 		...(part.cacheControl !== undefined
 			? { cacheControl: part.cacheControl }
 			: {}),
@@ -1260,6 +1263,9 @@ export class ContentInputResolver {
 				? { filename: part.filename ?? file.filename }
 				: {}),
 			...(part.detail !== undefined ? { detail: part.detail } : {}),
+			...(part.cacheBreakpoint !== undefined
+				? { cacheBreakpoint: part.cacheBreakpoint }
+				: {}),
 			...(part.cacheControl !== undefined
 				? { cacheControl: part.cacheControl }
 				: {}),

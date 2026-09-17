@@ -4,6 +4,7 @@ import { type BaseCreds, requireApiKeyCreds } from "#adapters/creds.ts";
 import { imageProfileFor, videoProfileFor } from "#catalog/types.ts";
 import { mapUpstreamHttpError } from "#adapters/upstreamError.ts";
 import { upstreamFetch } from "#gateway/instrumentedTransport.ts";
+import { assertNoPrefixCachePolicy } from "#core/promptCache.ts";
 import { looksLikeContextWindowError } from "#core/httpError.ts";
 import { resolveAdapterReasoning } from "#adapters/reasoning.ts";
 import { toGeminiSchema, toGeminiJsonSchema } from "./schema.ts";
@@ -274,6 +275,7 @@ function buildGeminiBody(
 	req: CanonicalChatRequest,
 	ctx: AdapterContext,
 ): GeminiBody {
+	assertNoPrefixCachePolicy(req);
 	const body: GeminiBody = { contents: [] };
 	const strictToolsRequested =
 		req.tools?.some((tool) => tool.strict === true) === true;

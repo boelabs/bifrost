@@ -45,7 +45,11 @@
 				"inputCentsPerMTokens": 500,
 				"outputCentsPerMTokens": 2500,
 				"cacheReadCentsPerMTokens": 50,
-				"cacheWriteCentsPerMTokens": 625
+				"cacheWriteCentsPerMTokens": 625,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 625,
+					"3600": 1000
+				}
 			}
 		},
 		"claude-opus-4-8": {
@@ -83,7 +87,11 @@
 				"inputCentsPerMTokens": 500,
 				"outputCentsPerMTokens": 2500,
 				"cacheReadCentsPerMTokens": 50,
-				"cacheWriteCentsPerMTokens": 625
+				"cacheWriteCentsPerMTokens": 625,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 625,
+					"3600": 1000
+				}
 			}
 		},
 		"claude-opus-4-7": {
@@ -121,7 +129,11 @@
 				"inputCentsPerMTokens": 500,
 				"outputCentsPerMTokens": 2500,
 				"cacheReadCentsPerMTokens": 50,
-				"cacheWriteCentsPerMTokens": 625
+				"cacheWriteCentsPerMTokens": 625,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 625,
+					"3600": 1000
+				}
 			}
 		},
 		"claude-opus-4-6": {
@@ -160,7 +172,11 @@
 				"inputCentsPerMTokens": 500,
 				"outputCentsPerMTokens": 2500,
 				"cacheReadCentsPerMTokens": 50,
-				"cacheWriteCentsPerMTokens": 625
+				"cacheWriteCentsPerMTokens": 625,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 625,
+					"3600": 1000
+				}
 			}
 		},
 		"claude-sonnet-5": {
@@ -198,7 +214,11 @@
 				"inputCentsPerMTokens": 200,
 				"outputCentsPerMTokens": 1000,
 				"cacheReadCentsPerMTokens": 20,
-				"cacheWriteCentsPerMTokens": 250
+				"cacheWriteCentsPerMTokens": 250,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 250,
+					"3600": 400
+				}
 			}
 		},
 		"claude-sonnet-4-6": {
@@ -237,7 +257,11 @@
 				"inputCentsPerMTokens": 300,
 				"outputCentsPerMTokens": 1500,
 				"cacheReadCentsPerMTokens": 30,
-				"cacheWriteCentsPerMTokens": 375
+				"cacheWriteCentsPerMTokens": 375,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 375,
+					"3600": 600
+				}
 			}
 		},
 		"claude-fable-5": {
@@ -274,7 +298,11 @@
 				"inputCentsPerMTokens": 1000,
 				"outputCentsPerMTokens": 5000,
 				"cacheReadCentsPerMTokens": 100,
-				"cacheWriteCentsPerMTokens": 1250
+				"cacheWriteCentsPerMTokens": 1250,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 1250,
+					"3600": 2000
+				}
 			}
 		},
 		"claude-mythos-5": {
@@ -297,7 +325,11 @@
 				"inputCentsPerMTokens": 1000,
 				"outputCentsPerMTokens": 5000,
 				"cacheReadCentsPerMTokens": 100,
-				"cacheWriteCentsPerMTokens": 1250
+				"cacheWriteCentsPerMTokens": 1250,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 1250,
+					"3600": 2000
+				}
 			}
 		},
 		"claude-sonnet-4-5": {
@@ -341,7 +373,11 @@
 				"inputCentsPerMTokens": 300,
 				"outputCentsPerMTokens": 1500,
 				"cacheReadCentsPerMTokens": 30,
-				"cacheWriteCentsPerMTokens": 375
+				"cacheWriteCentsPerMTokens": 375,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 375,
+					"3600": 600
+				}
 			}
 		},
 		"claude-opus-4-8-fast": {
@@ -377,7 +413,11 @@
 				"inputCentsPerMTokens": 1000,
 				"outputCentsPerMTokens": 5000,
 				"cacheReadCentsPerMTokens": 100,
-				"cacheWriteCentsPerMTokens": 1250
+				"cacheWriteCentsPerMTokens": 1250,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 1250,
+					"3600": 2000
+				}
 			}
 		},
 		"claude-opus-5-fast": {
@@ -413,7 +453,11 @@
 				"inputCentsPerMTokens": 1000,
 				"outputCentsPerMTokens": 5000,
 				"cacheReadCentsPerMTokens": 100,
-				"cacheWriteCentsPerMTokens": 1250
+				"cacheWriteCentsPerMTokens": 1250,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 1250,
+					"3600": 2000
+				}
 			},
 			"notes": "Gateway fast-mode alias for claude-opus-5. The adapter sends speed=\"fast\" with the required beta header; Anthropic access is required."
 		},
@@ -450,7 +494,11 @@
 				"inputCentsPerMTokens": 3000,
 				"outputCentsPerMTokens": 15000,
 				"cacheReadCentsPerMTokens": 300,
-				"cacheWriteCentsPerMTokens": 3750
+				"cacheWriteCentsPerMTokens": 3750,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 3750,
+					"3600": 6000
+				}
 			},
 			"deprecated": true,
 			"notes": "Anthropic removed fast mode for Claude Opus 4.7 on July 24, 2026. Use claude-opus-5-fast or claude-opus-4-8-fast."
@@ -485,7 +533,11 @@
 				"inputCentsPerMTokens": 500,
 				"outputCentsPerMTokens": 2500,
 				"cacheReadCentsPerMTokens": 50,
-				"cacheWriteCentsPerMTokens": 625
+				"cacheWriteCentsPerMTokens": 625,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 625,
+					"3600": 1000
+				}
 			}
 		},
 		"claude-haiku-4-5": {
@@ -519,7 +571,11 @@
 				"inputCentsPerMTokens": 100,
 				"outputCentsPerMTokens": 500,
 				"cacheReadCentsPerMTokens": 10,
-				"cacheWriteCentsPerMTokens": 125
+				"cacheWriteCentsPerMTokens": 125,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 125,
+					"3600": 200
+				}
 			}
 		},
 		"claude-opus-4-1": {
@@ -552,7 +608,11 @@
 				"inputCentsPerMTokens": 1500,
 				"outputCentsPerMTokens": 7500,
 				"cacheReadCentsPerMTokens": 150,
-				"cacheWriteCentsPerMTokens": 1875
+				"cacheWriteCentsPerMTokens": 1875,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 1875,
+					"3600": 3000
+				}
 			}
 		},
 		"claude-3-haiku": {
@@ -580,7 +640,11 @@
 				"inputCentsPerMTokens": 25,
 				"outputCentsPerMTokens": 125,
 				"cacheReadCentsPerMTokens": 3,
-				"cacheWriteCentsPerMTokens": 30
+				"cacheWriteCentsPerMTokens": 30,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 30,
+					"3600": 50
+				}
 			}
 		},
 		"claude-opus-4": {
@@ -609,7 +673,11 @@
 				"inputCentsPerMTokens": 1500,
 				"outputCentsPerMTokens": 7500,
 				"cacheReadCentsPerMTokens": 150,
-				"cacheWriteCentsPerMTokens": 1875
+				"cacheWriteCentsPerMTokens": 1875,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 1875,
+					"3600": 3000
+				}
 			}
 		},
 		"claude-sonnet-4": {
@@ -639,7 +707,11 @@
 				"inputCentsPerMTokens": 300,
 				"outputCentsPerMTokens": 1500,
 				"cacheReadCentsPerMTokens": 30,
-				"cacheWriteCentsPerMTokens": 375
+				"cacheWriteCentsPerMTokens": 375,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 375,
+					"3600": 600
+				}
 			}
 		},
 		"claude-fable-5-1": {
@@ -676,7 +748,11 @@
 				"inputCentsPerMTokens": 1000,
 				"outputCentsPerMTokens": 5000,
 				"cacheReadCentsPerMTokens": 25,
-				"cacheWriteCentsPerMTokens": 1250
+				"cacheWriteCentsPerMTokens": 1250,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 1250,
+					"3600": 2000
+				}
 			}
 		}
 	}

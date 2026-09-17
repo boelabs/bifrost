@@ -2518,6 +2518,17 @@ export interface components {
 			} & {
 				[key: string]: unknown;
 			};
+			prompt_cache_key?: string;
+			prompt_cache_options?: {
+				/** @enum {string} */
+				mode?: "implicit" | "explicit";
+				/** @constant */
+				ttl?: "30m";
+			};
+			prompt_cache_retention?: ("in_memory" | "24h") | null;
+			providerOptions?: {
+				[key: string]: unknown;
+			};
 			plugins?: components["schemas"]["FileParserPlugin"][];
 		} & {
 			[key: string]: unknown;
@@ -2583,6 +2594,16 @@ export interface components {
 				[key: string]: unknown;
 			};
 			safety_identifier?: string;
+			prompt_cache_options?: {
+				/** @enum {string} */
+				mode?: "implicit" | "explicit";
+				/** @constant */
+				ttl?: "30m";
+			};
+			prompt_cache_retention?: ("in_memory" | "24h") | null;
+			providerOptions?: {
+				[key: string]: unknown;
+			};
 			prompt_cache_key?: string;
 			truncation?: string;
 			context_management?: {
@@ -2653,6 +2674,9 @@ export interface components {
 		};
 		MessagesRequest: {
 			model: string;
+			cache_control?: {
+				[key: string]: unknown;
+			};
 			max_tokens: number;
 			messages: ({
 				/** @enum {string} */
@@ -3003,6 +3027,9 @@ export interface components {
 			outputCentsPerMTokens?: number;
 			cacheReadCentsPerMTokens?: number;
 			cacheWriteCentsPerMTokens?: number;
+			cacheWriteCentsPerMTokensByTtl?: {
+				[key: string]: number;
+			};
 			searchUnitCents?: number;
 			tiers?: {
 				aboveInputTokens: number;
@@ -3010,6 +3037,9 @@ export interface components {
 				outputCentsPerMTokens?: number;
 				cacheReadCentsPerMTokens?: number;
 				cacheWriteCentsPerMTokens?: number;
+				cacheWriteCentsPerMTokensByTtl?: {
+					[key: string]: number;
+				};
 			}[];
 		};
 		/** @description Advanced operation-to-transport override. Defaults normally come from the adapter. */
@@ -3393,6 +3423,10 @@ export interface components {
 			input_tokens: number;
 			input_tokens_details: {
 				cached_tokens: number;
+				cache_write_tokens?: number;
+				cache_write_tokens_by_ttl?: {
+					[key: string]: number;
+				};
 			};
 			output_tokens: number;
 			output_tokens_details: {

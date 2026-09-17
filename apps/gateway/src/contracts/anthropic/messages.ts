@@ -48,6 +48,7 @@ const messagesInputShape = {
 export const messagesRequestSchema = z
 	.object({
 		...messagesInputShape,
+		cache_control: z.record(z.string(), z.unknown()).optional(),
 		max_tokens: z.int().positive(), // required by Anthropic
 		stream: z.boolean().optional().default(false),
 		temperature: z.number().optional(),

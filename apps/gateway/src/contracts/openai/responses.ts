@@ -1,5 +1,10 @@
 import * as z from "zod/v4";
 
+import {
+	promptCacheRetentionSchema,
+	promptCacheOptionsSchema,
+} from "./promptCache.ts";
+
 const includeSchema = z
 	.union([z.string(), z.array(z.string())])
 	.transform((v) => (typeof v === "string" ? [v] : v));
@@ -64,9 +69,12 @@ export const responsesRequestSchema = z
 		stream_options: z.record(z.string(), z.unknown()).optional(),
 		safety_identifier: z.string().optional(),
 		prompt_cache_key: z.string().optional(),
+		prompt_cache_options: promptCacheOptionsSchema.optional(),
+		prompt_cache_retention: promptCacheRetentionSchema.optional(),
 		top_logprobs: z.int().optional(),
 		user: z.string().optional(),
 		plugins: z.array(z.record(z.string(), z.unknown())).optional(),
+		providerOptions: z.record(z.string(), z.unknown()).optional(),
 		extra_body: z.record(z.string(), z.unknown()).optional(),
 		/** Server-side conversation objects: accepted standalone, but not combinable with previous_response_id. */
 		conversation: z.unknown().optional(),

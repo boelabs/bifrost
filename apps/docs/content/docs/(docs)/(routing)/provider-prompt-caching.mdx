@@ -1,0 +1,164 @@
+---
+title: "Provider prompt caching"
+description: "Cache controls, token accounting, provider support, and diagnosis."
+---
+
+Provider prompt caching reuses computation at the model provider. It is separate from Bifrost's
+[Redis response cache](/docs/caching). A streamed request can use provider caching even though it is
+ineligible for the Redis response cache. `cacheHit` and the response-cache headers describe Redis;
+use token counters to measure provider caching.
+
+## Supported paths
+
+The public endpoint and upstream transport are independent. For example, a client using
+`/v1/chat/completions` can reach Azure through `/responses`. Bifrost normalizes provider usage before
+rendering JSON, SSE, or Responses WebSocket events. Public model aliases are replaced with the
+selected deployment's upstream model name.
+
+| Adapter | Implemented text transport | Cache handling |
+| --- | --- | --- |
+| `openai` | Responses, Chat Completions; native Responses WebSocket | Key, policy, retention and content breakpoints; read/write counters |
+| `azureopenai` | Responses, Chat Completions | Same controls; deployment determines model and feature support |
+| `azurefoundry` | Chat Completions | OpenAI-shaped cache fields; support depends on the deployed model |
+| `openaicompatible` | Chat Completions | Standard fields and documented usage aliases; backend support varies |
+| `anthropic` | Messages | Automatic and block-level `cache_control`; disjoint usage and write lifetimes |
+| `googleaistudio` | generateContent | `cachedContentTokenCount`; external `extra_body.cachedContent` references |
+| `deepseek` | Chat Completions, Responses | Nested cache counters; Chat also accepts `prompt_cache_hit_tokens` |
+| `moonshot` | Chat Completions | Top-level `usage.cached_tokens` mapped to cache reads |
+| `minimax` | Chat Completions | Nested cached-token usage |
+| `zai` | Chat Completions | Nested cached-token usage |
+| `vercel` | Responses, Chat Completions | Usage normalization and forwarding of `providerOptions`, including caching options |
+| `openrouter` | No text handler in this gateway | Registered for reranking; no prompt-cache text path |
+
+This lists gateway support, not a guarantee that every model exposes every feature. Text caching
+controls are not attached to embeddings, reranking, standalone images, transcription, or video jobs.
+The Google Interactions implementation in this repository is for video, not a second text route.
+
+## OpenAI and Azure
+
+Bifrost preserves `prompt_cache_key`, `prompt_cache_options`, `prompt_cache_retention`, and eligible
+content `prompt_cache_breakpoint` markers. Marked instruction blocks remain ordered blocks when
+translating Chat to Responses. File materialization preserves their markers too.
+
+For GPT-5.6, `mode: "explicit"` with no breakpoints disables caching. Older models use the legacy
+retention field and can reject the new policy. Azure PTU-M does not support explicit breakpoints.
+The documented minimum eligible prefix is 1,024 tokens. See
+[Azure prompt caching](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/prompt-caching)
+and [OpenAI prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching).
+
+With the standard AI SDK OpenAI provider, keep the `openai` options namespace even when changing
+`baseURL` and using a public alias:
+
+```ts
+import { createOpenAI } from "@ai-sdk/openai";
+import { streamText } from "ai";
+
+const gateway = createOpenAI({
+  baseURL: process.env.GATEWAY_BASE_URL,
+  apiKey: process.env.GATEWAY_API_KEY,
+});
+
+const result = streamText({
+  model: gateway("my-public-model"),
+  providerOptions: {
+    openai: {
+      promptCacheKey: "tenant:example:manual-v1",
+      promptCacheOptions: { mode: "explicit", ttl: "30m" },
+    },
+  },
+  messages: [{
+    role: "user",
+    content: [{
+      type: "text",
+      text: stableManual,
+      providerOptions: {
+        openai: { promptCacheBreakpoint: { mode: "explicit" } },
+      },
+    }, { type: "text", text: question }],
+  }],
+});
+
+const usage = await result.usage;
+console.log(usage.inputTokenDetails.cacheReadTokens);
+console.log(usage.inputTokenDetails.cacheWriteTokens);
+```
+
+Use a stable prefix long enough for the selected model. SDK versions differ: verify that the version
+in the application emits these options and exposes these counters. `generateText` uses the same
+options without streaming. With multi-step tool loops, inspect total usage as well as each step;
+a single step's zero does not describe the whole interaction.
+
+The earlier `extra_body` form of the two OpenAI policy fields remains accepted. Supplying the same
+control both directly and inside `extra_body` is rejected. A native policy that cannot be represented
+by Anthropic or Google is rejected rather than silently removed. Audio breakpoints require Chat
+Completions; Responses does not support that combination.
+
+## Other providers
+
+For Anthropic, `/v1/messages` accepts top-level automatic `cache_control` and explicit markers on
+system/content/tool blocks, including `tool_use` and `tool_result`. Native markers require a Messages
+upstream. OpenAI-shaped clients targeting Anthropic can request automatic caching through
+`extra_body: { cache_control: { type: "ephemeral" } }`. TTLs of `5m` and `1h` have different write
+prices. Bifrost merges cumulative initial/final stream usage, adds the three disjoint input buckets,
+and retains native `cache_creation` detail. See
+[Anthropic prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching).
+
+For Vercel, top-level REST `providerOptions: { gateway: { caching: "auto" } }` and its `extra_body`
+equivalent are forwarded. Bifrost does not silently enable a paid write policy. The adapter implements
+Chat and Responses, not Vercel's Messages endpoint. See
+[Vercel automatic caching](https://vercel.com/docs/ai-gateway/models-and-providers/automatic-caching).
+
+Google resource references must already exist in the selected provider project. Creating, extending,
+and deleting those resources is outside the gateway's inference API. See
+[generateContent](https://ai.google.dev/api/generate-content).
+DeepSeek, Moonshot, MiniMax, and Z.AI retain their provider-managed caching behavior; see
+[DeepSeek](https://api-docs.deepseek.com/guides/kv_cache/),
+[Moonshot usage](https://platform.kimi.ai/docs/api/chat),
+[MiniMax](https://platform.minimax.io/docs/api-reference/text-prompt-caching), and
+[Z.AI](https://docs.z.ai/guides/capabilities/cache).
+
+## Metrics and cost
+
+| Public protocol | Read tokens | Write tokens |
+| --- | --- | --- |
+| Chat Completions | `usage.prompt_tokens_details.cached_tokens` | `usage.prompt_tokens_details.cache_write_tokens` |
+| Responses JSON/SSE/WebSocket | `usage.input_tokens_details.cached_tokens` | `usage.input_tokens_details.cache_write_tokens` |
+| Messages JSON/SSE | `usage.cache_read_input_tokens` | `usage.cache_creation_input_tokens` |
+
+Chat clients must request `stream_options.include_usage: true` to receive stream usage. Bifrost always
+requests usage from Chat upstreams for its own accounting. Responses stream accounting uses the
+canonical chunks directly, so rendering cannot erase counters or turn an absent provider metric into
+an observed zero. Messages may carry the final input/cache totals in `message_delta`; consumers must
+apply that cumulative snapshot.
+
+Internally, reads and writes are disjoint subsets of total input. Ordinary input equals input minus
+reads minus writes. Anthropic's `input_tokens` instead excludes both cache buckets; the adapter adds
+them when normalizing, and the Messages renderer subtracts them again.
+
+`cacheWriteTokensByTtl` records write subsets by lifetime in seconds. Messages exposes the native
+`cache_creation` object; OpenAI-shaped responses use the optional Bifrost extension
+`cache_write_tokens_by_ttl` within input details. Operation metadata retains these buckets. Configure
+`cacheWriteCentsPerMTokensByTtl` in catalog or deployment pricing for distinct lifetime rates, e.g.
+`{"300": 625, "3600": 1000}`. Context tiers can override these rates. Unknown lifetime prices fall back
+to the configured aggregate write rate. Deployment pricing overrides replace the entire catalog
+pricing object, so include all needed rates. The Anthropic catalog includes both lifetimes.
+
+## Investigating zero cache reads
+
+1. Capture one logical request's public protocol, selected provider/deployment, upstream usage, public
+   usage, and SDK usage. Do not record credentials or full private prompts.
+2. Repeat a long stable prefix on the same deployment with the same key and a short changing suffix.
+   Wait for the first request to finish before checking reuse. Test JSON and streaming independently.
+3. Distinguish an explicit provider zero from missing usage or an SDK field that defaults to zero.
+   Responses and Messages may emit protocol-compatible zero defaults; internal optional counters
+   preserve whether the provider reported a value.
+4. If upstream reports a hit but the public response does not, investigate translation. If both carry
+   a hit but the application shows zero, investigate the SDK version and the usage field being read.
+5. If upstream reports zero, check prefix identity, eligibility, lifetime, write policy, provider
+   project/region, deployment changes, fallback and load. More context alone does not guarantee reuse.
+
+Bifrost's HTTP router does not pin a prompt cache key to a deployment. Different cache scopes or
+fallbacks can therefore reduce reuse. Use one compatible deployment while diagnosing; do not disable
+health fallback merely to increase a cache metric. A stable key is not a request for Bifrost to store
+provider KV state, and neither transport preservation nor a test suite guarantees a production hit
+percentage.

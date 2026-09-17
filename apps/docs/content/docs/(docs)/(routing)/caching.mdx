@@ -7,6 +7,8 @@ Bifrost can cache full responses in Redis and serve identical repeat requests wi
 provider. It is **opt-in per request** and **off by default** — nothing is cached unless the client
 asks for it.
 
+For provider-side prompt reuse and token counters, see [Provider prompt caching](/docs/provider-prompt-caching).
+
 ## Enable it per request
 
 Send the cache headers on the inference request:

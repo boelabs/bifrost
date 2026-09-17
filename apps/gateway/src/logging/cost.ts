@@ -30,6 +30,7 @@ function effectiveRates(p: PricingShape, promptTokens: number): PricingShape {
 	let output = p.outputCentsPerMTokens ?? 0;
 	let cacheRead = p.cacheReadCentsPerMTokens ?? p.inputCentsPerMTokens ?? 0;
 	let cacheWrite = p.cacheWriteCentsPerMTokens ?? p.inputCentsPerMTokens ?? 0;
+	let cacheWriteByTtl = p.cacheWriteCentsPerMTokensByTtl;
 
 	const tiers = [...(p.tiers ?? [])].sort(
 		(a, b) => a.aboveInputTokens - b.aboveInputTokens,
@@ -41,6 +42,11 @@ function effectiveRates(p: PricingShape, promptTokens: number): PricingShape {
 				output = t.outputCentsPerMTokens;
 			if (t.cacheReadCentsPerMTokens !== undefined)
 				cacheRead = t.cacheReadCentsPerMTokens;
+			if (t.cacheWriteCentsPerMTokensByTtl !== undefined)
+				cacheWriteByTtl = {
+					...cacheWriteByTtl,
+					...t.cacheWriteCentsPerMTokensByTtl,
+				};
 			if (t.cacheWriteCentsPerMTokens !== undefined)
 				cacheWrite = t.cacheWriteCentsPerMTokens;
 		}
@@ -50,6 +56,9 @@ function effectiveRates(p: PricingShape, promptTokens: number): PricingShape {
 		outputCentsPerMTokens: output,
 		cacheReadCentsPerMTokens: cacheRead,
 		cacheWriteCentsPerMTokens: cacheWrite,
+		...(cacheWriteByTtl !== undefined
+			? { cacheWriteCentsPerMTokensByTtl: cacheWriteByTtl }
+			: {}),
 		...(p.searchUnitCents !== undefined
 			? { searchUnitCents: p.searchUnitCents }
 			: {}),
@@ -81,7 +90,21 @@ export function computeCost(
 
 	const inputCents = nonCachedPrompt * inputRate;
 	const cacheReadCents = cacheRead * cacheReadRate;
-	const cacheWriteCents = cacheWrite * cacheWriteRate;
+	let cacheWriteCents = 0;
+	let remainingWrites = cacheWrite;
+	for (const [ttl, tokens] of Object.entries(
+		usage.cacheWriteTokensByTtl ?? {},
+	)) {
+		const count = Math.min(remainingWrites, Math.max(0, tokens));
+		cacheWriteCents +=
+			count *
+			((r.cacheWriteCentsPerMTokensByTtl?.[ttl] ??
+				r.cacheWriteCentsPerMTokens ??
+				0) /
+				1_000_000);
+		remainingWrites -= count;
+	}
+	cacheWriteCents += remainingWrites * cacheWriteRate;
 	const outputCents = usage.completionTokens * outputRate;
 	const searchUnitCents =
 		(usage.searchUnits ?? 0) * (meta.pricing?.searchUnitCents ?? 0);
@@ -93,6 +116,7 @@ export function computeCost(
 			configuredPricing.outputCentsPerMTokens !== undefined ||
 			configuredPricing.cacheReadCentsPerMTokens !== undefined ||
 			configuredPricing.cacheWriteCentsPerMTokens !== undefined ||
+			configuredPricing.cacheWriteCentsPerMTokensByTtl !== undefined ||
 			configuredPricing.searchUnitCents !== undefined ||
 			(configuredPricing.tiers?.length ?? 0) > 0);
 	const calculatedCents =
@@ -132,11 +156,13 @@ export function estimateMaximumCostCents(
 		pricing.outputCentsPerMTokens,
 		pricing.cacheReadCentsPerMTokens,
 		pricing.cacheWriteCentsPerMTokens,
+		...Object.values(pricing.cacheWriteCentsPerMTokensByTtl ?? {}),
 		...(pricing.tiers ?? []).flatMap((tier) => [
 			tier.inputCentsPerMTokens,
 			tier.outputCentsPerMTokens,
 			tier.cacheReadCentsPerMTokens,
 			tier.cacheWriteCentsPerMTokens,
+			...Object.values(tier.cacheWriteCentsPerMTokensByTtl ?? {}),
 		]),
 	].filter((rate): rate is number => rate !== undefined);
 	if (rates.length === 0 && pricing.searchUnitCents === undefined) return null;

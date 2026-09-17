@@ -127,6 +127,7 @@ export interface RuntimeModelMetadata {
 		cacheReadCentsPerMTokens?: number;
 		/** Cost in USD cents per 1M tokens written to cache (cache creation). */
 		cacheWriteCentsPerMTokens?: number;
+		cacheWriteCentsPerMTokensByTtl?: Record<string, number>;
 		/** Cost in USD cents per reranking search unit. */
 		searchUnitCents?: number;
 		/**
@@ -142,6 +143,7 @@ export interface RuntimeModelMetadata {
 			outputCentsPerMTokens?: number;
 			cacheReadCentsPerMTokens?: number;
 			cacheWriteCentsPerMTokens?: number;
+			cacheWriteCentsPerMTokensByTtl?: Record<string, number>;
 		}>;
 	};
 	maxInputTokens?: number;
