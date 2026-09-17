@@ -1,6 +1,7 @@
 import { and, count, desc, eq, gte, lt, lte, sql, type SQL } from "drizzle-orm";
 import type { Page, PageResult } from "./deployments.ts";
 import type { PgColumn } from "drizzle-orm/pg-core";
+import { cacheMetrics } from "./cacheMetrics.ts";
 import { db } from "#db/client.ts";
 
 import {
@@ -268,12 +269,14 @@ export async function aggregateOperationUsage(
 	const conds = conditions(filter);
 	const where = conds.length > 0 ? and(...conds) : undefined;
 	const metrics = {
+		...cacheMetrics(gatewayOperations),
+		usageReported: sql<number>`count(${gatewayOperations.totalTokens})::float8`,
 		requests: count(),
-		promptTokens: sql<number>`coalesce(sum(${gatewayOperations.promptTokens}), 0)::int`,
-		completionTokens: sql<number>`coalesce(sum(${gatewayOperations.completionTokens}), 0)::int`,
-		reasoningTokens: sql<number>`coalesce(sum(${gatewayOperations.reasoningTokens}), 0)::int`,
-		totalTokens: sql<number>`coalesce(sum(${gatewayOperations.totalTokens}), 0)::int`,
-		searchUnits: sql<number>`coalesce(sum(${gatewayOperations.searchUnits}), 0)::int`,
+		promptTokens: sql<number>`coalesce(sum(${gatewayOperations.promptTokens}), 0)::float8`,
+		completionTokens: sql<number>`coalesce(sum(${gatewayOperations.completionTokens}), 0)::float8`,
+		reasoningTokens: sql<number>`coalesce(sum(${gatewayOperations.reasoningTokens}), 0)::float8`,
+		totalTokens: sql<number>`coalesce(sum(${gatewayOperations.totalTokens}), 0)::float8`,
+		searchUnits: sql<number>`coalesce(sum(${gatewayOperations.searchUnits}), 0)::float8`,
 		consumerCostCents: sql<number>`coalesce(sum(${gatewayOperations.consumerCostCents}), 0)::float8`,
 		upstreamCostCents: sql<number>`coalesce(sum(${gatewayOperations.upstreamCostCents}), 0)::float8`,
 	};

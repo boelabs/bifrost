@@ -1,6 +1,7 @@
 import { callTypeForOperation } from "#operations/registry.ts";
 import type { metricsQuery } from "#admin/metricsSchema.ts";
 import { and, eq, gte, lt, sql } from "drizzle-orm";
+import { cacheMetrics } from "./cacheMetrics.ts";
 import { db } from "#db/client.ts";
 import type * as z from "zod/v4";
 
@@ -16,10 +17,7 @@ function tokenMetrics(table: typeof operations | typeof attempts) {
 			number | null
 		>`sum(${table.completionTokens})::float8`,
 		reasoningTokens: sql<number | null>`sum(${table.reasoningTokens})::float8`,
-		cacheReadTokens: sql<number | null>`sum(${table.cacheReadTokens})::float8`,
-		cacheWriteTokens: sql<
-			number | null
-		>`sum(${table.cacheWriteTokens})::float8`,
+		...cacheMetrics(table),
 		totalTokens: sql<number>`coalesce(sum(${table.totalTokens}), 0)::float8`,
 		searchUnits: sql<number | null>`sum(${table.searchUnits})::float8`,
 		usageReported: sql<number>`count(${table.totalTokens})::float8`,

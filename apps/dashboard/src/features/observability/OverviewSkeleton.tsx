@@ -6,8 +6,17 @@ import {
 } from "#/shared/components/Skeleton.tsx";
 
 /** The same headers `usageColumns` and `actorColumns` render, so the tables land in place. */
-const BY_MODEL = ["Public model", "Requests", "Tokens", "Cost"] as const;
-const BY_ACTOR = ["Actor", "Requests", "Cost"] as const;
+const BY_MODEL = [
+	"Public model",
+	"Requests",
+	"Total tokens",
+	"Cached input",
+	"Uncached input",
+	"Cache writes",
+	"Unclassified input",
+	"Cost",
+] as const;
+const BY_ACTOR = ["Actor", ...BY_MODEL.slice(1)] as const;
 
 /**
  * The overview while its numbers are in flight.
@@ -29,7 +38,8 @@ export function OverviewSkeleton() {
 				</div>
 			</div>
 
-			<div className="grid items-start gap-5 xl:grid-cols-2">
+			<ChartSkeleton height="17rem" />
+			<div className="grid items-start gap-5">
 				{[
 					{ headers: BY_MODEL, title: "9rem", caption: "16rem" },
 					{ headers: BY_ACTOR, title: "5rem", caption: "18rem" },

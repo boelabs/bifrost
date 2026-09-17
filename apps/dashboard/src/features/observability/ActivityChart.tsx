@@ -65,7 +65,7 @@ export function ActivityChart({
 	bucket?: UsageBucket;
 }) {
 	const titleId = useId();
-	const [metric, setMetric] = useState<Metric>("requests");
+	const [metric, setMetric] = useState<Metric>("totalTokens");
 	const [selectedHour, setSelectedHour] = useState<number | null>(null);
 	const selected = rows.find((row) => row.timestamp === selectedHour);
 	const total = rows.reduce((sum, row) => sum + row[metric], 0);

@@ -4,6 +4,7 @@ import { type Column, DataTable, Dash, Mono } from "#/components/ui/datatable";
 import { buildUsageSeries, getOverviewMetrics } from "./overview-data";
 import { type StatusProps, Status } from "#/components/ui/status";
 import { RequestOutcomes, Reliability } from "./RequestOutcomes";
+import { aggregateCacheUsage, tokenCount } from "./cache-usage";
 import type { Readiness } from "#/shared/api/health.ts";
 import type { UsageBucket } from "./overview-data";
 import { downloadCsv } from "#/shared/lib/csv.ts";
@@ -11,6 +12,7 @@ import { ActivityChart } from "./ActivityChart";
 import { Button } from "#/components/ui/button";
 import type { Summary, UsageRow } from "./api";
 import { Card } from "#/components/ui/card";
+import { CacheUsage } from "./CacheUsage";
 import { StatCard } from "./StatCard";
 
 import {
@@ -75,13 +77,37 @@ const usageColumns: Column<UsageRow>[] = [
 	},
 	{
 		key: "tokens",
-		header: "Tokens",
+		header: "Total tokens",
 		align: "end",
 		render: (row) => (
-			<span className="tabular-nums">{count.format(row.totalTokens)}</span>
+			<div className="tabular-nums">
+				<div>{count.format(row.totalTokens)}</div>
+				<div className="mt-1 text-xs text-fg-muted">
+					{count.format(row.promptTokens)} in ·{" "}
+					{count.format(row.completionTokens)} out
+				</div>
+			</div>
 		),
 		compare: (a, b) => a.totalTokens - b.totalTokens,
 	},
+	...(
+		[
+			["cacheReadTokens", "Cached input"],
+			["uncachedInputTokens", "Uncached input"],
+			["cacheWriteTokens", "Cache writes"],
+			["cacheUnreportedInputTokens", "Unclassified input"],
+		] as const
+	).map(
+		([key, header]): Column<UsageRow> => ({
+			key,
+			header,
+			align: "end",
+			render: (row) => (
+				<span className="tabular-nums">{tokenCount(row[key])}</span>
+			),
+			compare: (a, b) => (a[key] ?? -1) - (b[key] ?? -1),
+		}),
+	),
 	{
 		key: "cost",
 		header: "Cost",
@@ -100,24 +126,7 @@ const actorColumns: Column<UsageRow>[] = [
 		render: (row) => (row.key ? <Mono>{row.key}</Mono> : <Dash />),
 		compare: (a, b) => (a.key ?? "").localeCompare(b.key ?? ""),
 	},
-	{
-		key: "requests",
-		header: "Requests",
-		align: "end",
-		render: (row) => (
-			<span className="tabular-nums">{count.format(row.requests)}</span>
-		),
-		compare: (a, b) => a.requests - b.requests,
-	},
-	{
-		key: "cost",
-		header: "Cost",
-		align: "end",
-		render: (row) => (
-			<span className="tabular-nums">{cost(row.consumerCostCents)}</span>
-		),
-		compare: (a, b) => a.consumerCostCents - b.consumerCostCents,
-	},
+	...usageColumns.slice(1),
 ];
 
 /**
@@ -166,6 +175,16 @@ function UsageExport({ rows, name }: { rows: UsageRow[]; name: string }) {
 						["promptTokens", (row) => row.promptTokens],
 						["completionTokens", (row) => row.completionTokens],
 						["totalTokens", (row) => row.totalTokens],
+						["cacheReadTokens", (row) => row.cacheReadTokens ?? null],
+						["cacheWriteTokens", (row) => row.cacheWriteTokens ?? null],
+						["uncachedInputTokens", (row) => row.uncachedInputTokens ?? null],
+						[
+							"cacheUnreportedInputTokens",
+							(row) => row.cacheUnreportedInputTokens ?? null,
+						],
+						["cacheReadReported", (row) => row.cacheReadReported ?? null],
+						["cacheWriteReported", (row) => row.cacheWriteReported ?? null],
+						["usageReported", (row) => row.usageReported ?? null],
 						["consumerCostCents", (row) => row.consumerCostCents],
 						["upstreamCostCents", (row) => row.upstreamCostCents],
 					],
@@ -294,7 +313,7 @@ export function Overview({
 					detail={`Across ${modelCount} public ${modelCount === 1 ? "model" : "models"}`}
 				/>
 				<StatCard
-					label="Tokens"
+					label="Total tokens"
 					value={compact.format(metrics.totalTokens)}
 					exact={count.format(metrics.totalTokens)}
 					icon={IconStack2}
@@ -302,7 +321,7 @@ export function Overview({
 						text: `${compact.format(metrics.completionTokens)} output`,
 						exact: `${count.format(metrics.completionTokens)} output tokens`,
 					}}
-					detail={`${compact.format(metrics.promptTokens)} input tokens reported`}
+					detail={`${compact.format(metrics.promptTokens)} input tokens · includes cached input`}
 				/>
 				<StatCard
 					label="Consumer cost"
@@ -332,12 +351,15 @@ export function Overview({
 					<Reliability metrics={metrics} />
 				</div>
 			</div>
-
-			<div className="grid items-start gap-5 xl:grid-cols-2">
+			<CacheUsage
+				usage={aggregateCacheUsage(byModel)}
+				records={metrics.requests}
+			/>
+			<div className="grid items-start gap-5">
 				<UsagePanel
 					id="models-heading"
 					title="By public model"
-					description="Request volume, token usage and consumer cost."
+					description="Total = input + output. Cached, uncached and unclassified counts split the reported input."
 					rows={models}
 					columns={usageColumns}
 					caption="Usage by public model"

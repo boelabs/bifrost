@@ -6173,6 +6173,26 @@ components:
           items:
             type: object
             properties:
+              cacheReadTokens:
+                type:
+                  - number
+                  - "null"
+              cacheWriteTokens:
+                type:
+                  - number
+                  - "null"
+              uncachedInputTokens:
+                description: Input not read from cache, including cache writes; only rows reporting input and cache reads.
+                type:
+                  - number
+                  - "null"
+              cacheUnreportedInputTokens:
+                description: Known input tokens whose cache read count was not reported.
+                type: number
+              cacheReadReported:
+                type: number
+              cacheWriteReported:
+                type: number
               promptTokens:
                 type:
                   - number
@@ -6182,14 +6202,6 @@ components:
                   - number
                   - "null"
               reasoningTokens:
-                type:
-                  - number
-                  - "null"
-              cacheReadTokens:
-                type:
-                  - number
-                  - "null"
-              cacheWriteTokens:
                 type:
                   - number
                   - "null"
@@ -6242,11 +6254,11 @@ components:
               key:
                 type: string
             required:
+              - cacheReadTokens
+              - cacheWriteTokens
               - promptTokens
               - completionTokens
               - reasoningTokens
-              - cacheReadTokens
-              - cacheWriteTokens
               - totalTokens
               - searchUnits
               - usageReported
@@ -6273,6 +6285,26 @@ components:
           items:
             type: object
             properties:
+              cacheReadTokens:
+                type:
+                  - number
+                  - "null"
+              cacheWriteTokens:
+                type:
+                  - number
+                  - "null"
+              uncachedInputTokens:
+                description: Input not read from cache, including cache writes; only rows reporting input and cache reads.
+                type:
+                  - number
+                  - "null"
+              cacheUnreportedInputTokens:
+                description: Known input tokens whose cache read count was not reported.
+                type: number
+              cacheReadReported:
+                type: number
+              cacheWriteReported:
+                type: number
               promptTokens:
                 type:
                   - number
@@ -6282,14 +6314,6 @@ components:
                   - number
                   - "null"
               reasoningTokens:
-                type:
-                  - number
-                  - "null"
-              cacheReadTokens:
-                type:
-                  - number
-                  - "null"
-              cacheWriteTokens:
                 type:
                   - number
                   - "null"
@@ -6316,11 +6340,11 @@ components:
               key:
                 type: string
             required:
+              - cacheReadTokens
+              - cacheWriteTokens
               - promptTokens
               - completionTokens
               - reasoningTokens
-              - cacheReadTokens
-              - cacheWriteTokens
               - totalTokens
               - searchUnits
               - usageReported
@@ -6336,6 +6360,26 @@ components:
           items:
             type: object
             properties:
+              cacheReadTokens:
+                type:
+                  - number
+                  - "null"
+              cacheWriteTokens:
+                type:
+                  - number
+                  - "null"
+              uncachedInputTokens:
+                description: Input not read from cache, including cache writes; only rows reporting input and cache reads.
+                type:
+                  - number
+                  - "null"
+              cacheUnreportedInputTokens:
+                description: Known input tokens whose cache read count was not reported.
+                type: number
+              cacheReadReported:
+                type: number
+              cacheWriteReported:
+                type: number
               promptTokens:
                 type:
                   - number
@@ -6345,14 +6389,6 @@ components:
                   - number
                   - "null"
               reasoningTokens:
-                type:
-                  - number
-                  - "null"
-              cacheReadTokens:
-                type:
-                  - number
-                  - "null"
-              cacheWriteTokens:
                 type:
                   - number
                   - "null"
@@ -6407,11 +6443,11 @@ components:
                   - string
                   - "null"
             required:
+              - cacheReadTokens
+              - cacheWriteTokens
               - promptTokens
               - completionTokens
               - reasoningTokens
-              - cacheReadTokens
-              - cacheWriteTokens
               - totalTokens
               - searchUnits
               - usageReported
@@ -6438,6 +6474,26 @@ components:
           items:
             type: object
             properties:
+              cacheReadTokens:
+                type:
+                  - number
+                  - "null"
+              cacheWriteTokens:
+                type:
+                  - number
+                  - "null"
+              uncachedInputTokens:
+                description: Input not read from cache, including cache writes; only rows reporting input and cache reads.
+                type:
+                  - number
+                  - "null"
+              cacheUnreportedInputTokens:
+                description: Known input tokens whose cache read count was not reported.
+                type: number
+              cacheReadReported:
+                type: number
+              cacheWriteReported:
+                type: number
               promptTokens:
                 type:
                   - number
@@ -6447,14 +6503,6 @@ components:
                   - number
                   - "null"
               reasoningTokens:
-                type:
-                  - number
-                  - "null"
-              cacheReadTokens:
-                type:
-                  - number
-                  - "null"
-              cacheWriteTokens:
                 type:
                   - number
                   - "null"
@@ -6491,11 +6539,11 @@ components:
                   - string
                   - "null"
             required:
+              - cacheReadTokens
+              - cacheWriteTokens
               - promptTokens
               - completionTokens
               - reasoningTokens
-              - cacheReadTokens
-              - cacheWriteTokens
               - totalTokens
               - searchUnits
               - usageReported
@@ -6558,6 +6606,26 @@ components:
     RequestMetrics:
       type: object
       properties:
+        cacheReadTokens:
+          type:
+            - number
+            - "null"
+        cacheWriteTokens:
+          type:
+            - number
+            - "null"
+        uncachedInputTokens:
+          description: Input not read from cache, including cache writes; only rows reporting input and cache reads.
+          type:
+            - number
+            - "null"
+        cacheUnreportedInputTokens:
+          description: Known input tokens whose cache read count was not reported.
+          type: number
+        cacheReadReported:
+          type: number
+        cacheWriteReported:
+          type: number
         promptTokens:
           type:
             - number
@@ -6567,14 +6635,6 @@ components:
             - number
             - "null"
         reasoningTokens:
-          type:
-            - number
-            - "null"
-        cacheReadTokens:
-          type:
-            - number
-            - "null"
-        cacheWriteTokens:
           type:
             - number
             - "null"
@@ -6625,11 +6685,11 @@ components:
             - number
             - "null"
       required:
+        - cacheReadTokens
+        - cacheWriteTokens
         - promptTokens
         - completionTokens
         - reasoningTokens
-        - cacheReadTokens
-        - cacheWriteTokens
         - totalTokens
         - searchUnits
         - usageReported
@@ -6653,6 +6713,26 @@ components:
     AttemptMetrics:
       type: object
       properties:
+        cacheReadTokens:
+          type:
+            - number
+            - "null"
+        cacheWriteTokens:
+          type:
+            - number
+            - "null"
+        uncachedInputTokens:
+          description: Input not read from cache, including cache writes; only rows reporting input and cache reads.
+          type:
+            - number
+            - "null"
+        cacheUnreportedInputTokens:
+          description: Known input tokens whose cache read count was not reported.
+          type: number
+        cacheReadReported:
+          type: number
+        cacheWriteReported:
+          type: number
         promptTokens:
           type:
             - number
@@ -6662,14 +6742,6 @@ components:
             - number
             - "null"
         reasoningTokens:
-          type:
-            - number
-            - "null"
-        cacheReadTokens:
-          type:
-            - number
-            - "null"
-        cacheWriteTokens:
           type:
             - number
             - "null"
@@ -6694,11 +6766,11 @@ components:
             - number
             - "null"
       required:
+        - cacheReadTokens
+        - cacheWriteTokens
         - promptTokens
         - completionTokens
         - reasoningTokens
-        - cacheReadTokens
-        - cacheWriteTokens
         - totalTokens
         - searchUnits
         - usageReported
@@ -6711,6 +6783,28 @@ components:
     UsageRow:
       type: object
       properties:
+        cacheReadTokens:
+          type:
+            - number
+            - "null"
+        cacheWriteTokens:
+          type:
+            - number
+            - "null"
+        uncachedInputTokens:
+          description: Input not read from cache, including cache writes; only rows reporting input and cache reads.
+          type:
+            - number
+            - "null"
+        cacheUnreportedInputTokens:
+          description: Known input tokens whose cache read count was not reported.
+          type: number
+        cacheReadReported:
+          type: number
+        cacheWriteReported:
+          type: number
+        usageReported:
+          type: number
         key:
           type:
             - string

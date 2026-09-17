@@ -162,3 +162,26 @@ fallbacks can therefore reduce reuse. Use one compatible deployment while diagno
 health fallback merely to increase a cache metric. A stable key is not a request for Bifrost to store
 provider KV state, and neither transport preservation nor a test suite guarantees a production hit
 percentage.
+
+
+## Dashboard usage
+
+Overview shows recorded total tokens (input plus output) and defaults its activity chart to tokens.
+Usage tables and CSV exports include cache reads, writes, uncached input and unclassified input for
+models and actors. These input details are subsets, never additions to the total.
+
+- **Cached input**: input tokens read from the provider cache.
+- **Uncached input**: input minus cache reads, calculated per record only when both counts exist.
+  This includes cache writes; it is not the ordinary-input billing bucket described above.
+- **Unclassified input**: known input whose cache read count was not reported.
+- **Cache writes**: separately reported tokens written to cache. Missing writes remain unknown.
+
+The reuse percentage uses classified input only. Coverage counts show how many requests or attempts
+reported each counter. A dash means unreported; a reported zero remains zero. Missing usage is never
+estimated, and older gateways without these additional fields display unavailable cache details.
+
+Metrics shows provider cache usage across deployment attempts, including retries and fallbacks,
+with separate time-series controls and per-deployment reuse and reporting coverage. Request totals
+count each request once. Response-cache hits refer to Bifrost's own response cache, not provider
+prompt-cache hits. These surfaces use the retained operation and attempt records; changes do not
+backfill missing historical provider usage.

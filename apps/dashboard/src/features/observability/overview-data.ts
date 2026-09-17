@@ -1,3 +1,4 @@
+import { aggregateCacheUsage } from "./cache-usage";
 import type { Summary, UsageRow } from "./api.ts";
 
 const HOUR_MS = 3_600_000;
@@ -131,6 +132,7 @@ export function getOverviewMetrics(
 	const degraded = nonNegativeNumber(totals.degraded) ?? 0;
 	return {
 		...usage,
+		...aggregateCacheUsage(byModel),
 		summaryRequests,
 		activeRequests: nonNegativeNumber(source.active) ?? 0,
 		outcomes,

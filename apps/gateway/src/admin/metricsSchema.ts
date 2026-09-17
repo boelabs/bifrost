@@ -18,7 +18,26 @@ export const metricsQuery = z
 		{ message: "Choose an increasing time range of at most 31 days" },
 	);
 
+export const cacheUsage = {
+	cacheReadTokens: z.number().nullable().optional(),
+	cacheWriteTokens: z.number().nullable().optional(),
+	uncachedInputTokens: z
+		.number()
+		.nullable()
+		.optional()
+		.describe(
+			"Input not read from cache, including cache writes; only rows reporting input and cache reads.",
+		),
+	cacheUnreportedInputTokens: z
+		.number()
+		.optional()
+		.describe("Known input tokens whose cache read count was not reported."),
+	cacheReadReported: z.number().optional(),
+	cacheWriteReported: z.number().optional(),
+};
+
 const tokens = {
+	...cacheUsage,
 	promptTokens: z.number().nullable(),
 	completionTokens: z.number().nullable(),
 	reasoningTokens: z.number().nullable(),
