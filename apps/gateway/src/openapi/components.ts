@@ -1,7 +1,10 @@
+import { cacheUsage } from "#admin/metricsSchema.ts";
+
 import {
-	promptCacheOptionsSchema,
 	promptCacheRetentionSchema,
+	promptCacheOptionsSchema,
 } from "#contracts/openai/promptCache.ts";
+
 /**
  * OpenAPI component schemas, defined as Zod so the spec is generated — never hand-maintained.
  *
@@ -1379,6 +1382,8 @@ export const RouterSettingsState = z
 
 export const UsageRow = z
 	.object({
+		...cacheUsage,
+		usageReported: z.number().optional(),
 		/** The grouping value, or null for groupBy=none. */
 		key: nullableString,
 		requests: z.int(),

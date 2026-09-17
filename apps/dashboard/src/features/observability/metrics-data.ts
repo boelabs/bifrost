@@ -85,7 +85,7 @@ export function metricSeries(
 					: null
 				: isToken &&
 						row &&
-						(value === null || (field === "totalTokens" && !row.usageReported))
+						(value == null || (field === "totalTokens" && !row.usageReported))
 					? null
 					: typeof value === "number"
 						? value

@@ -2,12 +2,14 @@
 
 import { SearchableSelect, Select, SelectItem } from "#/components/ui/select";
 import { type Column, DataTable } from "#/components/ui/datatable";
+import { cacheReuseRate, tokenCount } from "./cache-usage";
 import { EmptyState } from "#/components/ui/page";
 import { Button } from "#/components/ui/button";
 import { MetricsChart } from "./MetricsChart";
 import { Input } from "#/components/ui/input";
 import type { DetailedMetrics } from "./api";
 import { Card } from "#/components/ui/card";
+import { CacheUsage } from "./CacheUsage";
 import { StatCard } from "./StatCard";
 import { useState } from "react";
 
@@ -213,6 +215,26 @@ export function Metrics({
 				</span>
 			),
 			compare: (a, b) => a.totalTokens - b.totalTokens,
+		},
+		{
+			key: "cache",
+			header: "Cached input",
+			align: "end",
+			render: (row) => (
+				<div className="tabular-nums">
+					<div>{tokenCount(row.cacheReadTokens)}</div>
+					<div className="mt-1 text-xs text-fg-muted">
+						{cacheReuseRate(row) === null
+							? "—"
+							: rate(
+									row.cacheReadTokens ?? 0,
+									(row.cacheReadTokens ?? 0) + (row.uncachedInputTokens ?? 0),
+								)}{" "}
+						reuse · {tokenCount(row.cacheReadReported)}/{row.attempts} reported
+					</div>
+				</div>
+			),
+			compare: (a, b) => (a.cacheReadTokens ?? -1) - (b.cacheReadTokens ?? -1),
 		},
 		{
 			key: "errors",
@@ -501,7 +523,7 @@ export function Metrics({
 					label="Request tokens"
 					value={reportedTokens(requests, true)}
 					exact={reportedTokens(requests)}
-					detail={`${count.format(requests.cacheHits)} cache hits · ${count.format(requests.degraded)} degraded requests`}
+					detail={`${count.format(requests.cacheHits)} response-cache hits · ${count.format(requests.degraded)} degraded requests`}
 				/>
 			</section>
 			{requests.requests === 0 ? (
@@ -515,6 +537,7 @@ export function Metrics({
 						<MetricsChart data={data} />
 						<MetricsChart data={data} upstream />
 					</div>
+					<CacheUsage usage={attempts} records={attempts.attempts} upstream />
 					<Breakdown data={data} />
 					<section className="space-y-3">
 						<div>

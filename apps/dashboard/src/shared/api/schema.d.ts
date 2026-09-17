@@ -3858,11 +3858,17 @@ export interface components {
 			requests: components["schemas"]["RequestMetrics"];
 			attempts: components["schemas"]["AttemptMetrics"];
 			series: {
+				cacheReadTokens: number | null;
+				cacheWriteTokens: number | null;
+				/** @description Input not read from cache, including cache writes; only rows reporting input and cache reads. */
+				uncachedInputTokens?: number | null;
+				/** @description Known input tokens whose cache read count was not reported. */
+				cacheUnreportedInputTokens?: number;
+				cacheReadReported?: number;
+				cacheWriteReported?: number;
 				promptTokens: number | null;
 				completionTokens: number | null;
 				reasoningTokens: number | null;
-				cacheReadTokens: number | null;
-				cacheWriteTokens: number | null;
 				totalTokens: number;
 				searchUnits: number | null;
 				usageReported: number;
@@ -3885,11 +3891,17 @@ export interface components {
 				key: string;
 			}[];
 			attemptSeries: {
+				cacheReadTokens: number | null;
+				cacheWriteTokens: number | null;
+				/** @description Input not read from cache, including cache writes; only rows reporting input and cache reads. */
+				uncachedInputTokens?: number | null;
+				/** @description Known input tokens whose cache read count was not reported. */
+				cacheUnreportedInputTokens?: number;
+				cacheReadReported?: number;
+				cacheWriteReported?: number;
 				promptTokens: number | null;
 				completionTokens: number | null;
 				reasoningTokens: number | null;
-				cacheReadTokens: number | null;
-				cacheWriteTokens: number | null;
 				totalTokens: number;
 				searchUnits: number | null;
 				usageReported: number;
@@ -3901,11 +3913,17 @@ export interface components {
 				key: string;
 			}[];
 			models: {
+				cacheReadTokens: number | null;
+				cacheWriteTokens: number | null;
+				/** @description Input not read from cache, including cache writes; only rows reporting input and cache reads. */
+				uncachedInputTokens?: number | null;
+				/** @description Known input tokens whose cache read count was not reported. */
+				cacheUnreportedInputTokens?: number;
+				cacheReadReported?: number;
+				cacheWriteReported?: number;
 				promptTokens: number | null;
 				completionTokens: number | null;
 				reasoningTokens: number | null;
-				cacheReadTokens: number | null;
-				cacheWriteTokens: number | null;
 				totalTokens: number;
 				searchUnits: number | null;
 				usageReported: number;
@@ -3928,11 +3946,17 @@ export interface components {
 				key: string | null;
 			}[];
 			deployments: {
+				cacheReadTokens: number | null;
+				cacheWriteTokens: number | null;
+				/** @description Input not read from cache, including cache writes; only rows reporting input and cache reads. */
+				uncachedInputTokens?: number | null;
+				/** @description Known input tokens whose cache read count was not reported. */
+				cacheUnreportedInputTokens?: number;
+				cacheReadReported?: number;
+				cacheWriteReported?: number;
 				promptTokens: number | null;
 				completionTokens: number | null;
 				reasoningTokens: number | null;
-				cacheReadTokens: number | null;
-				cacheWriteTokens: number | null;
 				totalTokens: number;
 				searchUnits: number | null;
 				usageReported: number;
@@ -3955,11 +3979,17 @@ export interface components {
 			}[];
 		};
 		RequestMetrics: {
+			cacheReadTokens: number | null;
+			cacheWriteTokens: number | null;
+			/** @description Input not read from cache, including cache writes; only rows reporting input and cache reads. */
+			uncachedInputTokens?: number | null;
+			/** @description Known input tokens whose cache read count was not reported. */
+			cacheUnreportedInputTokens?: number;
+			cacheReadReported?: number;
+			cacheWriteReported?: number;
 			promptTokens: number | null;
 			completionTokens: number | null;
 			reasoningTokens: number | null;
-			cacheReadTokens: number | null;
-			cacheWriteTokens: number | null;
 			totalTokens: number;
 			searchUnits: number | null;
 			usageReported: number;
@@ -3981,11 +4011,17 @@ export interface components {
 			p95FirstOutputMs: number | null;
 		};
 		AttemptMetrics: {
+			cacheReadTokens: number | null;
+			cacheWriteTokens: number | null;
+			/** @description Input not read from cache, including cache writes; only rows reporting input and cache reads. */
+			uncachedInputTokens?: number | null;
+			/** @description Known input tokens whose cache read count was not reported. */
+			cacheUnreportedInputTokens?: number;
+			cacheReadReported?: number;
+			cacheWriteReported?: number;
 			promptTokens: number | null;
 			completionTokens: number | null;
 			reasoningTokens: number | null;
-			cacheReadTokens: number | null;
-			cacheWriteTokens: number | null;
 			totalTokens: number;
 			searchUnits: number | null;
 			usageReported: number;
@@ -3996,6 +4032,15 @@ export interface components {
 			p95DurationMs: number | null;
 		};
 		UsageRow: {
+			cacheReadTokens?: number | null;
+			cacheWriteTokens?: number | null;
+			/** @description Input not read from cache, including cache writes; only rows reporting input and cache reads. */
+			uncachedInputTokens?: number | null;
+			/** @description Known input tokens whose cache read count was not reported. */
+			cacheUnreportedInputTokens?: number;
+			cacheReadReported?: number;
+			cacheWriteReported?: number;
+			usageReported?: number;
 			key: string | null;
 			requests: number;
 			promptTokens: number;

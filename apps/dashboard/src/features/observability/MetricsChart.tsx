@@ -16,6 +16,10 @@ const attemptOptions = [
 	{ key: "totalTokens", label: "Total" },
 	{ key: "promptTokens", label: "Input" },
 	{ key: "completionTokens", label: "Output" },
+	{ key: "cacheReadTokens", label: "Cached" },
+	{ key: "uncachedInputTokens", label: "Uncached" },
+	{ key: "cacheWriteTokens", label: "Writes" },
+	{ key: "cacheUnreportedInputTokens", label: "Unclassified" },
 	{ key: "errors", label: "Errors" },
 ];
 
@@ -66,6 +70,7 @@ export function MetricsChart({
 					</p>
 				</div>
 				<ToggleGroup
+					className="flex-wrap"
 					aria-label={
 						upstream ? "Deployment chart metric" : "Request chart metric"
 					}

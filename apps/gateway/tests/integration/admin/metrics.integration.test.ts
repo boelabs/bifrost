@@ -34,6 +34,9 @@ before(async () => {
 			cacheHit: index === 1,
 			degraded: index === 0,
 			totalTokens: index === 0 ? 100 : index === 1 ? 50 : null,
+			promptTokens: [80, 40, 30, null, null][index] ?? null,
+			cacheReadTokens: index === 0 ? 60 : index === 1 ? 0 : null,
+			cacheWriteTokens: index === 0 ? 10 : null,
 			consumerCostCents: index === 0 ? "3" : "0",
 			durationMs: index === 0 ? 1000 : null,
 		})),
@@ -73,6 +76,9 @@ before(async () => {
 			adapterKey: "anthropic",
 			outcome: "success",
 			totalTokens: 100,
+			promptTokens: 80,
+			cacheReadTokens: 60,
+			cacheWriteTokens: 10,
 			startedAt: new Date(start),
 			endedAt: new Date(start),
 		},
@@ -207,4 +213,37 @@ test("summary: rejects a backwards or oversized range, and still takes a window 
 	assert.equal((await summary({ start: "not-a-date" })).status, 400);
 	assert.equal((await summary({ window: "5m" })).status, 200);
 	assert.equal((await summary({ window: "3d" })).status, 400);
+});
+
+test("cache metrics preserve reported zeroes, partial coverage and request/attempt separation", {
+	skip,
+}, async () => {
+	const data = await query();
+	for (const row of [data.requests, data.series[0]!, data.models[0]!]) {
+		assert.equal(row.cacheReadTokens, 60);
+		assert.equal(row.cacheWriteTokens, 10);
+		assert.equal(row.uncachedInputTokens, 60);
+		assert.equal(row.cacheUnreportedInputTokens, 30);
+		assert.equal(row.cacheReadReported, 2);
+		assert.equal(row.cacheWriteReported, 1);
+	}
+	assert.equal(data.attempts.uncachedInputTokens, 20);
+	assert.equal(data.attempts.cacheReadReported, 1);
+	const missing = await query({ deploymentId: deploymentA });
+	assert.equal(missing.attempts.cacheReadTokens, null);
+	assert.equal(missing.attempts.uncachedInputTokens, null);
+	assert.equal(missing.attempts.cacheReadReported, 0);
+	for (const groupBy of ["none", "public_model", "actor", "hour", "day"]) {
+		const response = await app.request(
+			`/admin/usage?${new URLSearchParams({ start, end: "2035-01-01T23:59:59.999Z", publicModel: model, groupBy })}`,
+			{ headers: auth },
+		);
+		assert.equal(response.status, 200);
+		const body = (await response.json()) as { data: Record<string, unknown>[] };
+		assert.equal(body.data.length, 1);
+		assert.equal(body.data[0]?.cacheReadTokens, 60);
+		assert.equal(body.data[0]?.uncachedInputTokens, 60);
+		assert.equal(body.data[0]?.cacheUnreportedInputTokens, 30);
+		assert.equal(body.data[0]?.cacheReadReported, 2);
+	}
 });

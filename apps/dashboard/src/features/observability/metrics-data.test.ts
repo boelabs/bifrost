@@ -90,3 +90,27 @@ test("charts fill inactive intervals and preserve missing usage and latency", ()
 		[null, null, 500, null],
 	);
 });
+
+test("cache charts preserve absent legacy fields and distinguish zero from idle buckets", () => {
+	const data = {
+		start: "2026-09-08T00:00:00Z",
+		end: "2026-09-08T03:00:00Z",
+		bucket: "hour",
+		attemptSeries: [
+			{ key: "2026-09-08T00:00:00Z", cacheReadTokens: 0 },
+			{ key: "2026-09-08T01:00:00Z" },
+		],
+	} as DetailedMetrics;
+	assert.deepEqual(
+		metricSeries(data, "attemptSeries", "cacheReadTokens").map(
+			(row) => row.value,
+		),
+		[0, null, 0],
+	);
+	assert.deepEqual(
+		metricSeries(data, "attemptSeries", "uncachedInputTokens").map(
+			(row) => row.value,
+		),
+		[null, null, 0],
+	);
+});
