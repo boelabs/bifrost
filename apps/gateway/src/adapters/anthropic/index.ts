@@ -1,6 +1,7 @@
 import { summaryVisible, toUpstreamReasoningEffort } from "#core/reasoning.ts";
 import { type BaseCreds, requireApiKeyCreds } from "#adapters/creds.ts";
 import { mapUpstreamHttpError } from "#adapters/upstreamError.ts";
+import { assertNoPrefixCachePolicy } from "#core/promptCache.ts";
 import { looksLikeContextWindowError } from "#core/httpError.ts";
 import { resolveAdapterReasoning } from "#adapters/reasoning.ts";
 import type { ReasoningControlKind } from "#core/reasoning.ts";
@@ -51,6 +52,10 @@ interface AnthropicUsage {
 	output_tokens_details?: { thinking_tokens?: number | null } | null;
 	cache_read_input_tokens?: number;
 	cache_creation_input_tokens?: number;
+	cache_creation?: {
+		ephemeral_5m_input_tokens?: number;
+		ephemeral_1h_input_tokens?: number;
+	};
 }
 
 interface AnthropicContentBlock {
@@ -256,6 +261,9 @@ function buildMessages(req: CanonicalChatRequest): {
 						type: "tool_result",
 						tool_use_id: message.toolCallId ?? "",
 						content: contentToAnthropic(message.content),
+						...(message.cacheControl !== undefined
+							? { cache_control: message.cacheControl }
+							: {}),
 						...(message.toolResultError !== undefined
 							? { is_error: message.toolResultError }
 							: {}),
@@ -275,12 +283,18 @@ function buildMessages(req: CanonicalChatRequest): {
 				blocks.push({ type: "text", text: content });
 			else if (Array.isArray(content)) blocks.push(...content);
 			for (const toolCall of message.toolCalls ?? []) {
-				blocks.push({
+				const block = {
 					type: "tool_use",
 					id: toolCall.id,
 					name: toolCall.name,
 					input: parseToolArguments(toolCall.arguments),
-				});
+					...(toolCall.cacheControl !== undefined
+						? { cache_control: toolCall.cacheControl }
+						: {}),
+				};
+				if (toolCall.contentIndex !== undefined)
+					blocks.splice(toolCall.contentIndex, 0, block);
+				else blocks.push(block);
 			}
 			if (blocks.length > 0)
 				messages.push({ role: "assistant", content: blocks });
@@ -377,6 +391,7 @@ function buildBody(
 			param: "n",
 		});
 	}
+	assertNoPrefixCachePolicy(req);
 	const nativeModel = FAST_MODE_ALIASES.get(ctx.upstreamModel);
 	const body: Record<string, unknown> = {
 		model: nativeModel ?? ctx.upstreamModel,
@@ -388,6 +403,8 @@ function buildBody(
 	if (req.temperature !== undefined) body.temperature = req.temperature;
 	if (req.topP !== undefined) body.top_p = req.topP;
 	if (req.topK !== undefined) body.top_k = req.topK;
+	if (req.messagesTransport?.cacheControl !== undefined)
+		body.cache_control = req.messagesTransport.cacheControl;
 	if (req.messagesTransport?.metadata !== undefined)
 		body.metadata = req.messagesTransport.metadata;
 	if (req.stop !== undefined) body.stop_sequences = req.stop;
@@ -455,10 +472,19 @@ function mapUsage(usage: AnthropicUsage | undefined): Usage {
 		completionTokens: completion,
 		totalTokens: prompt + completion,
 	};
-	if (usage?.cache_read_input_tokens !== undefined)
-		out.cacheReadTokens = cacheRead;
-	if (usage?.cache_creation_input_tokens !== undefined)
+	if (usage?.cache_read_input_tokens != null) out.cacheReadTokens = cacheRead;
+	if (usage?.cache_creation_input_tokens != null)
 		out.cacheWriteTokens = cacheWrite;
+	if (usage?.cache_creation != null) {
+		out.cacheWriteTokensByTtl = {
+			...(usage.cache_creation.ephemeral_5m_input_tokens !== undefined
+				? { "300": usage.cache_creation.ephemeral_5m_input_tokens }
+				: {}),
+			...(usage.cache_creation.ephemeral_1h_input_tokens !== undefined
+				? { "3600": usage.cache_creation.ephemeral_1h_input_tokens }
+				: {}),
+		};
+	}
 	if (usage?.output_tokens_details?.thinking_tokens != null)
 		out.reasoningTokens = usage.output_tokens_details.thinking_tokens;
 	return out;
@@ -581,6 +607,38 @@ function mapStreamError(event: AnthropicStreamEvent): GatewayError {
 	});
 }
 
+function mergeStreamUsage(
+	previous: AnthropicUsage,
+	update: AnthropicUsage | undefined,
+): AnthropicUsage {
+	if (update === undefined) return previous;
+	const merged = { ...previous, ...update };
+	for (const field of [
+		"input_tokens",
+		"output_tokens",
+		"cache_read_input_tokens",
+		"cache_creation_input_tokens",
+	] as const) {
+		if (update[field] == null) {
+			if (previous[field] !== undefined) merged[field] = previous[field];
+			else delete merged[field];
+		}
+	}
+	if (
+		update.cache_creation_input_tokens != null &&
+		update.cache_creation_input_tokens !==
+			previous.cache_creation_input_tokens &&
+		update.cache_creation == null
+	)
+		delete merged.cache_creation;
+	if (
+		update.output_tokens_details == null &&
+		previous.output_tokens_details !== undefined
+	)
+		merged.output_tokens_details = previous.output_tokens_details;
+	return merged;
+}
+
 async function* parseStream(
 	stream: ReadableStream<Uint8Array>,
 	ctx: AdapterContext,
@@ -588,13 +646,8 @@ async function* parseStream(
 	let id = `msg_${randomUUID()}`;
 	let model = ctx.upstreamModel;
 	const created = Math.floor(Date.now() / 1000);
-	// `inputTokens` is only the NON-cached part (Anthropic semantics). The final canonical usage adds
-	// read+write to the prompt and exposes them as subsets (see mapUsage).
-	let inputTokens = 0;
-	let cacheReadTokens = 0;
-	let cacheWriteTokens = 0;
-	let completionTokens = 0;
-	let reasoningTokens: number | undefined;
+	// Usage events are cumulative snapshots; omitted fields retain their previous values.
+	let streamUsage: AnthropicUsage = {};
 	let pendingTerminal:
 		| {
 				finishReason: CanonicalFinishReason;
@@ -632,16 +685,7 @@ async function* parseStream(
 		if (event.type === "message_start") {
 			id = event.message?.id ?? id;
 			model = event.message?.model ?? model;
-			inputTokens = event.message?.usage?.input_tokens ?? inputTokens;
-			cacheReadTokens =
-				event.message?.usage?.cache_read_input_tokens ?? cacheReadTokens;
-			cacheWriteTokens =
-				event.message?.usage?.cache_creation_input_tokens ?? cacheWriteTokens;
-			completionTokens =
-				event.message?.usage?.output_tokens ?? completionTokens;
-			reasoningTokens =
-				event.message?.usage?.output_tokens_details?.thinking_tokens ??
-				reasoningTokens;
+			streamUsage = mergeStreamUsage(streamUsage, event.message?.usage);
 			yield attachAdapterDiagnostics(
 				{
 					id,
@@ -848,9 +892,7 @@ async function* parseStream(
 					code: "upstream_protocol_error",
 					message: "Anthropic emitted more than one terminal message_delta",
 				});
-			completionTokens = event.usage?.output_tokens ?? completionTokens;
-			reasoningTokens =
-				event.usage?.output_tokens_details?.thinking_tokens ?? reasoningTokens;
+			streamUsage = mergeStreamUsage(streamUsage, event.usage);
 			const finishReason = mapFinishReason(
 				event.delta?.stop_reason,
 				event.delta?.stop_reason === "tool_use",
@@ -861,16 +903,7 @@ async function* parseStream(
 					code: "upstream_protocol_error",
 					message: "Anthropic terminal message_delta omitted stop_reason",
 				});
-			const promptTokens = inputTokens + cacheReadTokens + cacheWriteTokens;
-			const usage: Usage = {
-				promptTokens,
-				completionTokens,
-				totalTokens: promptTokens + completionTokens,
-			};
-			if (cacheReadTokens > 0) usage.cacheReadTokens = cacheReadTokens;
-			if (cacheWriteTokens > 0) usage.cacheWriteTokens = cacheWriteTokens;
-			if (reasoningTokens !== undefined)
-				usage.reasoningTokens = reasoningTokens;
+			const usage = mapUsage(streamUsage);
 			pendingTerminal = {
 				finishReason,
 				stopSequence: event.delta?.stop_sequence ?? null,

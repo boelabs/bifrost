@@ -531,6 +531,12 @@ export function completeOperation(
 								responseSummary,
 								metadata: {
 									...input.metadata,
+									...(input.usage?.cacheWriteTokensByTtl !== undefined
+										? {
+												cacheWriteTokensByTtl:
+													input.usage.cacheWriteTokensByTtl,
+											}
+										: {}),
 									client: {
 										ipFingerprint: payloadFingerprint(input.ip),
 										userAgentFingerprint: payloadFingerprint(input.userAgent),

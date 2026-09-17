@@ -466,6 +466,11 @@
 				"outputCentsPerMTokens": { "type": "number", "minimum": 0 },
 				"cacheReadCentsPerMTokens": { "type": "number", "minimum": 0 },
 				"cacheWriteCentsPerMTokens": { "type": "number", "minimum": 0 },
+				"cacheWriteCentsPerMTokensByTtl": {
+					"type": "object",
+					"propertyNames": { "pattern": "^[1-9][0-9]*$" },
+					"additionalProperties": { "type": "number", "minimum": 0 }
+				},
 				"searchUnitCents": { "type": "number", "minimum": 0 },
 				"tiers": {
 					"type": "array",
@@ -482,7 +487,12 @@
 				"inputCentsPerMTokens": { "type": "number", "minimum": 0 },
 				"outputCentsPerMTokens": { "type": "number", "minimum": 0 },
 				"cacheReadCentsPerMTokens": { "type": "number", "minimum": 0 },
-				"cacheWriteCentsPerMTokens": { "type": "number", "minimum": 0 }
+				"cacheWriteCentsPerMTokens": { "type": "number", "minimum": 0 },
+				"cacheWriteCentsPerMTokensByTtl": {
+					"type": "object",
+					"propertyNames": { "pattern": "^[1-9][0-9]*$" },
+					"additionalProperties": { "type": "number", "minimum": 0 }
+				}
 			}
 		}
 	}

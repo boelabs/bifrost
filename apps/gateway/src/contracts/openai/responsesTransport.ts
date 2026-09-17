@@ -11,6 +11,7 @@
  * reasoning content for unstored responses.
  */
 
+import { writePromptCachePolicy, writeCacheBreakpoint } from "./promptCache.ts";
 import { mergeExtraBody } from "#core/extraBody.ts";
 import { GatewayError } from "#core/errors.ts";
 import type { SSEEvent } from "#core/sse.ts";
@@ -77,6 +78,8 @@ const OPENAI_RESPONSES_TRANSPORT_MANAGED_KEYS = [
 	"service_tier",
 	"safety_identifier",
 	"prompt_cache_key",
+	"prompt_cache_options",
+	"prompt_cache_retention",
 	"top_logprobs",
 	"max_tool_calls",
 	"user",
@@ -136,18 +139,24 @@ function partToInput(
 	switch (p.type) {
 		case "text":
 			return {
-				type: role === "assistant" ? "output_text" : "input_text",
+				type:
+					role === "assistant" && !p.cacheBreakpoint
+						? "output_text"
+						: "input_text",
 				text: p.text,
+				...writeCacheBreakpoint(p),
 			};
 		case "image":
 			return {
 				type: "input_image",
+				...writeCacheBreakpoint(p),
 				image_url: p.url,
 				detail: p.detail ?? "auto",
 			};
 		case "file":
 			return {
 				type: "input_file",
+				...writeCacheBreakpoint(p),
 				...(p.fileId !== undefined ? { file_id: p.fileId } : {}),
 				...(p.fileUrl !== undefined ? { file_url: p.fileUrl } : {}),
 				...(p.fileData !== undefined ? { file_data: p.fileData } : {}),
@@ -155,8 +164,18 @@ function partToInput(
 				...(p.detail !== undefined ? { detail: p.detail } : {}),
 			};
 		case "audio":
+			if (p.cacheBreakpoint)
+				throw new GatewayError({
+					class: "bad_request",
+					code: "unsupported_parameter",
+					param: "prompt_cache_breakpoint",
+					deploymentHealth: "neutral",
+					message:
+						"Responses does not support cache breakpoints on audio blocks; use Chat Completions",
+				});
 			return {
 				type: "input_audio",
+				...writeCacheBreakpoint(p),
 				input_audio: { data: p.data, format: p.format },
 			};
 	}
@@ -210,9 +229,22 @@ export function buildResponsesRequestBody(
 	assertResponsesRequestSupported(req);
 	const input: Record<string, unknown>[] = [];
 	const instructions: string[] = [];
+	const preserveInstructions =
+		req.responsesTransport?.rawInput === undefined &&
+		req.messages.some(
+			(m) =>
+				Array.isArray(m.content) && m.content.some((p) => p.cacheBreakpoint),
+		);
 
 	for (const m of req.messages) {
 		if (m.role === "system" || m.role === "developer") {
+			if (preserveInstructions) {
+				input.push({
+					role: m.role,
+					content: contentToInput(m.content, "user"),
+				});
+				continue;
+			}
 			if (typeof m.content === "string") instructions.push(m.content);
 			else if (Array.isArray(m.content)) {
 				instructions.push(
@@ -376,6 +408,7 @@ export function buildResponsesRequestBody(
 	if (safetyIdentifier !== undefined) body.safety_identifier = safetyIdentifier;
 	// The /responses contract carries it in responsesTransport; a /chat request routed to this
 	// transport (OpenAI uses /responses as its native transport) carries it in the top-level promptCacheKey.
+	Object.assign(body, writePromptCachePolicy(req));
 	const promptCacheKey =
 		req.responsesTransport?.promptCacheKey ?? req.promptCacheKey;
 	if (promptCacheKey !== undefined) body.prompt_cache_key = promptCacheKey;
@@ -396,7 +429,11 @@ export interface ResponsesUsage {
 	input_tokens?: number;
 	output_tokens?: number;
 	total_tokens?: number;
-	input_tokens_details?: { cached_tokens?: number };
+	input_tokens_details?: {
+		cached_tokens?: number;
+		cache_write_tokens_by_ttl?: Record<string, number>;
+		cache_write_tokens?: number;
+	};
 	output_tokens_details?: { reasoning_tokens?: number };
 }
 
@@ -406,10 +443,16 @@ export function parseResponsesUsage(
 	const usage: Usage = {
 		promptTokens: u?.input_tokens ?? 0,
 		completionTokens: u?.output_tokens ?? 0,
-		totalTokens: u?.total_tokens ?? 0,
+		totalTokens:
+			u?.total_tokens ?? (u?.input_tokens ?? 0) + (u?.output_tokens ?? 0),
 	};
-	if (u?.input_tokens_details?.cached_tokens !== undefined)
+	if (u?.input_tokens_details?.cached_tokens != null)
 		usage.cacheReadTokens = u.input_tokens_details.cached_tokens;
+	if (u?.input_tokens_details?.cache_write_tokens_by_ttl !== undefined)
+		usage.cacheWriteTokensByTtl =
+			u.input_tokens_details.cache_write_tokens_by_ttl;
+	if (u?.input_tokens_details?.cache_write_tokens != null)
+		usage.cacheWriteTokens = u.input_tokens_details.cache_write_tokens;
 	if (u?.output_tokens_details?.reasoning_tokens !== undefined)
 		usage.reasoningTokens = u.output_tokens_details.reasoning_tokens;
 	return usage;

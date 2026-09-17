@@ -10,6 +10,9 @@ export const pricingSchema = z
 		outputCentsPerMTokens: z.number().nonnegative().optional(),
 		cacheReadCentsPerMTokens: z.number().nonnegative().optional(),
 		cacheWriteCentsPerMTokens: z.number().nonnegative().optional(),
+		cacheWriteCentsPerMTokensByTtl: z
+			.record(z.string().regex(/^[1-9][0-9]*$/), z.number().nonnegative())
+			.optional(),
 		searchUnitCents: z.number().nonnegative().optional(),
 		tiers: z
 			.array(
@@ -20,6 +23,12 @@ export const pricingSchema = z
 						outputCentsPerMTokens: z.number().nonnegative().optional(),
 						cacheReadCentsPerMTokens: z.number().nonnegative().optional(),
 						cacheWriteCentsPerMTokens: z.number().nonnegative().optional(),
+						cacheWriteCentsPerMTokensByTtl: z
+							.record(
+								z.string().regex(/^[1-9][0-9]*$/),
+								z.number().nonnegative(),
+							)
+							.optional(),
 					})
 					.strict(),
 			)

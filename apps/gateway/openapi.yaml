@@ -2274,6 +2274,32 @@ components:
                 - concise
                 - detailed
           additionalProperties: true
+        prompt_cache_key:
+          type: string
+        prompt_cache_options:
+          type: object
+          properties:
+            mode:
+              type: string
+              enum:
+                - implicit
+                - explicit
+            ttl:
+              type: string
+              const: 30m
+          additionalProperties: false
+        prompt_cache_retention:
+          anyOf:
+            - type: string
+              enum:
+                - in_memory
+                - 24h
+            - type: "null"
+        providerOptions:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
         plugins:
           maxItems: 1
           type: array
@@ -2404,6 +2430,30 @@ components:
         safety_identifier:
           type: string
           maxLength: 64
+        prompt_cache_options:
+          type: object
+          properties:
+            mode:
+              type: string
+              enum:
+                - implicit
+                - explicit
+            ttl:
+              type: string
+              const: 30m
+          additionalProperties: false
+        prompt_cache_retention:
+          anyOf:
+            - type: string
+              enum:
+                - in_memory
+                - 24h
+            - type: "null"
+        providerOptions:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
         prompt_cache_key:
           type: string
           maxLength: 64
@@ -2532,6 +2582,11 @@ components:
       properties:
         model:
           type: string
+        cache_control:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
         max_tokens:
           type: integer
           minimum: -9007199254740991
@@ -3450,6 +3505,14 @@ components:
         cacheWriteCentsPerMTokens:
           type: number
           minimum: 0
+        cacheWriteCentsPerMTokensByTtl:
+          type: object
+          propertyNames:
+            type: string
+            pattern: ^[1-9][0-9]*$
+          additionalProperties:
+            type: number
+            minimum: 0
         searchUnitCents:
           type: number
           minimum: 0
@@ -3474,6 +3537,14 @@ components:
               cacheWriteCentsPerMTokens:
                 type: number
                 minimum: 0
+              cacheWriteCentsPerMTokensByTtl:
+                type: object
+                propertyNames:
+                  type: string
+                  pattern: ^[1-9][0-9]*$
+                additionalProperties:
+                  type: number
+                  minimum: 0
             required:
               - aboveInputTokens
             additionalProperties: false
@@ -4776,6 +4847,18 @@ components:
               type: integer
               minimum: -9007199254740991
               maximum: 9007199254740991
+            cache_write_tokens:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            cache_write_tokens_by_ttl:
+              type: object
+              propertyNames:
+                type: string
+              additionalProperties:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
           required:
             - cached_tokens
           additionalProperties: false

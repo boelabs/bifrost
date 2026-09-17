@@ -153,6 +153,8 @@ const FIELD_SPECS: readonly FieldSpec[] = [
 	{ field: "responseFormat", names: ["response_format", "structured_outputs"] },
 	{ field: "reasoning", names: ["reasoning", "reasoning_effort"] },
 	{ field: "promptCacheKey", names: ["prompt_cache_key"] },
+	{ field: "promptCachePolicy", names: ["prompt_cache_options"] },
+	{ field: "promptCacheRetention", names: ["prompt_cache_retention"] },
 ];
 
 type ResponsesTransport = NonNullable<
@@ -198,7 +200,10 @@ const CHAT_TRANSPORT_SPECS: ReadonlyArray<{
 const MESSAGES_TRANSPORT_SPECS: ReadonlyArray<{
 	field: keyof MessagesTransport;
 	names: readonly string[];
-}> = [{ field: "metadata", names: ["metadata"] }];
+}> = [
+	{ field: "metadata", names: ["metadata"] },
+	{ field: "cacheControl", names: ["cache_control"] },
+];
 
 function hasOwn(value: object, key: PropertyKey): boolean {
 	return Object.hasOwn(value, key);
@@ -256,6 +261,12 @@ function dropCanonicalField(
 			break;
 		case "promptCacheKey":
 			delete req.promptCacheKey;
+			break;
+		case "promptCachePolicy":
+			delete req.promptCachePolicy;
+			break;
+		case "promptCacheRetention":
+			delete req.promptCacheRetention;
 			break;
 		default:
 			break;

@@ -20,6 +20,8 @@ export interface Usage {
 	cacheReadTokens?: number;
 	/** Tokens written to cache (cache creation; billed at a premium). Subset of promptTokens. */
 	cacheWriteTokens?: number;
+	/** Write-token subsets keyed by minimum cache lifetime in seconds. */
+	cacheWriteTokensByTtl?: Record<string, number>;
 	/** Reasoning tokens. Subset of completionTokens. */
 	reasoningTokens?: number;
 	/** Audio input tokens. Subset of promptTokens. */

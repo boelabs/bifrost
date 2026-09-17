@@ -100,11 +100,6 @@ import {
 	encodeCompactionSummary,
 } from "./runtime/responseCompaction.ts";
 
-import {
-	parseResponsesUsage,
-	type ResponsesUsage,
-} from "#contracts/openai/responsesTransport.ts";
-
 interface PreparedResponsesRequest {
 	req: ResponsesRequest;
 	effectiveInput: ResponseInputItem[];
@@ -419,6 +414,7 @@ function streamResponses(
 			);
 			async function* transformedChunks() {
 				for await (const chunk of tapped) {
+					if (chunk.usage !== undefined) usage = chunk.usage;
 					log.progress();
 					yield await applyStreamEventExtensions(
 						c,
@@ -494,8 +490,6 @@ function streamResponses(
 									unified_routing: routingMetadata,
 								},
 							});
-						const finalUsage = completed?.usage as ResponsesUsage | undefined;
-						if (finalUsage) usage = parseResponsesUsage(finalUsage);
 					} catch {
 						completed = undefined;
 					}
@@ -1057,6 +1051,7 @@ async function executeResponsesWebSocketTurn(
 		);
 		async function* transformedChunks() {
 			for await (const chunk of tapped) {
+				if (chunk.usage !== undefined) usage = chunk.usage;
 				log.progress();
 				yield await applyStreamEventExtensions(
 					c,
@@ -1092,10 +1087,6 @@ async function executeResponsesWebSocketTurn(
 					internalResponse = internalData.response ?? null;
 					completedResponse =
 						(data.response as Record<string, unknown> | undefined) ?? null;
-					const responseUsage = completedResponse?.usage as
-						| ResponsesUsage
-						| undefined;
-					if (responseUsage) usage = parseResponsesUsage(responseUsage);
 					if (completedResponse) {
 						await persistResponseState({
 							auth,

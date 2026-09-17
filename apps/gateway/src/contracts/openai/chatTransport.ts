@@ -6,6 +6,7 @@
  * (chat.ts is the edge with the CLIENT; chatTransport.ts is the edge with the OpenAI PROVIDER.)
  */
 
+import { writePromptCachePolicy, writeCacheBreakpoint } from "./promptCache.ts";
 import { mergeExtraBody } from "#core/extraBody.ts";
 import { GatewayError } from "#core/errors.ts";
 import type { Usage } from "#core/usage.ts";
@@ -61,6 +62,8 @@ const OPENAI_CHAT_TRANSPORT_MANAGED_KEYS = [
 	"response_format",
 	"reasoning_effort",
 	"prompt_cache_key",
+	"prompt_cache_options",
+	"prompt_cache_retention",
 ] as const;
 
 /* ----------------------------------------------------- canonical -> OpenAI transport */
@@ -68,10 +71,11 @@ const OPENAI_CHAT_TRANSPORT_MANAGED_KEYS = [
 function toTransportPart(p: CanonicalContentPart): Record<string, unknown> {
 	switch (p.type) {
 		case "text":
-			return { type: "text", text: p.text };
+			return { type: "text", text: p.text, ...writeCacheBreakpoint(p) };
 		case "image":
 			return {
 				type: "image_url",
+				...writeCacheBreakpoint(p),
 				image_url: {
 					url: p.url,
 					...(p.detail !== undefined ? { detail: p.detail } : {}),
@@ -80,6 +84,7 @@ function toTransportPart(p: CanonicalContentPart): Record<string, unknown> {
 		case "audio":
 			return {
 				type: "input_audio",
+				...writeCacheBreakpoint(p),
 				input_audio: { data: p.data, format: p.format },
 			};
 		case "file": {
@@ -105,6 +110,7 @@ function toTransportPart(p: CanonicalContentPart): Record<string, unknown> {
 			}
 			return {
 				type: "file",
+				...writeCacheBreakpoint(p),
 				file: {
 					...(p.fileId !== undefined ? { file_id: p.fileId } : {}),
 					...(p.fileData !== undefined ? { file_data: p.fileData } : {}),
@@ -301,6 +307,7 @@ export function buildOpenAIChatBody(
 	}
 	if (req.responseFormat)
 		body.response_format = toTransportResponseFormat(req.responseFormat);
+	Object.assign(body, writePromptCachePolicy(req));
 	if (req.promptCacheKey !== undefined)
 		body.prompt_cache_key = req.promptCacheKey;
 	const spec = opts.reasoningSpec;
@@ -372,6 +379,7 @@ interface TransportUsage {
 	prompt_tokens_details?: {
 		cached_tokens?: number;
 		cache_write_tokens?: number;
+		cache_write_tokens_by_ttl?: Record<string, number>;
 		cache_creation_input_tokens?: number;
 		audio_tokens?: number;
 	};
@@ -382,6 +390,8 @@ interface TransportUsage {
 		rejected_prediction_tokens?: number;
 	};
 	cache_creation_input_tokens?: number;
+	cached_tokens?: number;
+	prompt_cache_hit_tokens?: number;
 	cost?: number;
 }
 
@@ -393,14 +403,19 @@ function mapUsage(u: TransportUsage | undefined | null): Usage {
 		completionTokens,
 		totalTokens: u?.total_tokens ?? promptTokens + completionTokens,
 	};
-	if (u?.prompt_tokens_details?.cached_tokens !== undefined) {
-		usage.cacheReadTokens = u.prompt_tokens_details.cached_tokens;
-	}
+	const cacheReadTokens =
+		u?.prompt_tokens_details?.cached_tokens ??
+		u?.prompt_cache_hit_tokens ??
+		u?.cached_tokens;
+	if (cacheReadTokens != null) usage.cacheReadTokens = cacheReadTokens;
+	if (u?.prompt_tokens_details?.cache_write_tokens_by_ttl !== undefined)
+		usage.cacheWriteTokensByTtl =
+			u.prompt_tokens_details.cache_write_tokens_by_ttl;
 	const cacheWriteTokens =
 		u?.prompt_tokens_details?.cache_write_tokens ??
 		u?.prompt_tokens_details?.cache_creation_input_tokens ??
 		u?.cache_creation_input_tokens;
-	if (cacheWriteTokens !== undefined) {
+	if (cacheWriteTokens != null) {
 		usage.cacheWriteTokens = cacheWriteTokens;
 	}
 	if (u?.prompt_tokens_details?.audio_tokens !== undefined) {

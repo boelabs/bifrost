@@ -43,6 +43,12 @@ import {
 } from "./responsesReasoning.ts";
 
 import {
+	normalizePromptCacheRequest,
+	readPromptCachePolicy,
+	readCacheBreakpoint,
+} from "./promptCache.ts";
+
+import {
 	type ReasoningSummary,
 	isReasoningEffort,
 	summaryForEffort,
@@ -80,6 +86,8 @@ const RESPONSES_EXTRA_BODY_MANAGED_KEYS = [
 	"stream_options",
 	"safety_identifier",
 	"prompt_cache_key",
+	"prompt_cache_options",
+	"prompt_cache_retention",
 	"top_logprobs",
 	"user",
 	"plugins",
@@ -208,7 +216,8 @@ function mapMessageContent(
 	if (Array.isArray(content)) {
 		const parts: CanonicalContentPart[] = [];
 		for (const p of content) {
-			const mapped = mapInputPart(p as Record<string, unknown>);
+			const part = p as Record<string, unknown>;
+			const mapped = readCacheBreakpoint(part, mapInputPart(part));
 			if (mapped) parts.push(mapped);
 		}
 		return parts;
@@ -348,6 +357,7 @@ export async function expandInputReferences(
 export function responsesRequestToCanonical(
 	req: ResponsesRequest,
 ): CanonicalChatRequest {
+	req = normalizePromptCacheRequest(req);
 	const messages: CanonicalMessage[] = [];
 	let requiresNativeInput = false;
 	if (req.instructions)
@@ -629,6 +639,7 @@ export function responsesRequestToCanonical(
 	}
 	if (req.prompt_cache_key !== undefined)
 		u.promptCacheKey = req.prompt_cache_key;
+	readPromptCachePolicy(req, u);
 	if (
 		(req.service_tier !== undefined &&
 			req.service_tier !== "auto" &&
@@ -686,7 +697,17 @@ export interface RenderOptions {
 export function toResponsesUsage(usage: Usage): Record<string, unknown> {
 	return {
 		input_tokens: usage.promptTokens,
-		input_tokens_details: { cached_tokens: usage.cacheReadTokens ?? 0 },
+		input_tokens_details: {
+			cached_tokens: usage.cacheReadTokens ?? 0,
+			...(usage.cacheWriteTokens !== undefined
+				? {
+						cache_write_tokens: usage.cacheWriteTokens,
+						...(usage.cacheWriteTokensByTtl !== undefined
+							? { cache_write_tokens_by_ttl: usage.cacheWriteTokensByTtl }
+							: {}),
+					}
+				: {}),
+		},
 		output_tokens: usage.completionTokens,
 		output_tokens_details: { reasoning_tokens: usage.reasoningTokens ?? 0 },
 		total_tokens: usage.totalTokens,

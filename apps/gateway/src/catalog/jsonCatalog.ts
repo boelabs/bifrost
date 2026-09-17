@@ -98,6 +98,17 @@ function assertStringArray(
 	for (const [i, item] of value.entries()) assertString(item, `${path}[${i}]`);
 }
 
+function validateCacheWritePrices(value: unknown, path: string): void {
+	if (value === undefined) return;
+	if (!isRecord(value)) fail(path, "must be an object");
+	for (const [ttl, rate] of Object.entries(value)) {
+		if (!/^[1-9][0-9]*$/.test(ttl))
+			fail(path, "keys must be positive lifetimes in seconds");
+		assertNumber(rate, `${path}.${ttl}`);
+		if (rate < 0) fail(`${path}.${ttl}`, "must be nonnegative");
+	}
+}
+
 function validatePricing(value: unknown, path: string): void {
 	if (value === undefined) return;
 	if (!isRecord(value)) fail(path, "must be an object");
@@ -110,10 +121,18 @@ function validatePricing(value: unknown, path: string): void {
 	]) {
 		if (value[key] !== undefined) assertNumber(value[key], `${path}.${key}`);
 	}
+	validateCacheWritePrices(
+		value.cacheWriteCentsPerMTokensByTtl,
+		`${path}.cacheWriteCentsPerMTokensByTtl`,
+	);
 	if (value.tiers !== undefined) {
 		if (!Array.isArray(value.tiers)) fail(`${path}.tiers`, "must be an array");
 		for (const [i, tier] of value.tiers.entries()) {
 			if (!isRecord(tier)) fail(`${path}.tiers[${i}]`, "must be an object");
+			validateCacheWritePrices(
+				tier.cacheWriteCentsPerMTokensByTtl,
+				`${path}.tiers[${i}].cacheWriteCentsPerMTokensByTtl`,
+			);
 			assertNumber(
 				tier.aboveInputTokens,
 				`${path}.tiers[${i}].aboveInputTokens`,

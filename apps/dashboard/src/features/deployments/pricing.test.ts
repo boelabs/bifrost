@@ -20,6 +20,7 @@ test("pricing: accepts complete tiered pricing and round-trips a clone", () => {
 		outputCentsPerMTokens: 600,
 		cacheReadCentsPerMTokens: 75,
 		cacheWriteCentsPerMTokens: 200,
+		cacheWriteCentsPerMTokensByTtl: { "300": 200, "3600": 300 },
 		searchUnitCents: 0.25,
 		tiers: [
 			{
@@ -28,6 +29,7 @@ test("pricing: accepts complete tiered pricing and round-trips a clone", () => {
 				outputCentsPerMTokens: 900,
 				cacheReadCentsPerMTokens: 150,
 				cacheWriteCentsPerMTokens: 400,
+				cacheWriteCentsPerMTokensByTtl: { "3600": 600 },
 			},
 			{ aboveInputTokens: 1_000_000, outputCentsPerMTokens: 1200 },
 		],
@@ -57,6 +59,8 @@ test("pricing: rejects invalid rates and malformed tiers", () => {
 		{ tiers: [{ aboveInputTokens: 1.5 }] },
 		{ tiers: [{ aboveInputTokens: 1 }, { aboveInputTokens: 1 }] },
 		{ tiers: [{ aboveInputTokens: 1, searchUnitCents: 1 }] },
+		{ cacheWriteCentsPerMTokensByTtl: { "0": 200 } },
+		{ cacheWriteCentsPerMTokensByTtl: { "3600": -1 } },
 		{ unexpected: 1 },
 	]) {
 		assert.throws(() => parsePricing(value), /Invalid pricing/);
