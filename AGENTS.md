@@ -56,6 +56,7 @@ does not currently have.
 - `apps/docs` — documentation site (Next.js App Router + [Fumadocs](https://fumadocs.dev), MDX),
   prerendered at build time. Package `@boelabs/docs`. Built and served on Bun.
 - `packages/tsconfig` — shared strict TypeScript config (`@boelabs/tsconfig`).
+- `docker/` — every Compose file and the stack's `.env.example`, with [its own README](docker/README.md).
 
 ## 3. Commands
 
@@ -265,7 +266,7 @@ and never quote or paste its contents into a commit, PR, issue, or any other sha
 
 Regardless of environment: secrets are **used, never displayed**. Load them into a command's
 environment or send them as headers; do not read, print, echo, log, or summarize a value. `.env*`
-files stay out of git except `.env.example`.
+files stay out of git except the committed `.env.example` templates.
 
 ## 10. Things that will bite you
 

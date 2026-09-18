@@ -8,6 +8,8 @@
 # not it: they are published with self-signed certificates, which Bun's TLS client rejects.
 #
 # Use compose.images.yaml instead to run everything — apps included — as one stack.
+name: bifrost-data
+
 services:
   postgres:
     image: postgres:18-alpine

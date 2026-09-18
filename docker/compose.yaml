@@ -1,5 +1,9 @@
 # Production/PaaS base. Services stay on the private Compose network; use
 # compose.local.yaml explicitly when host port bindings are needed.
+#
+# Build contexts are the repository root, one level up from this file.
+name: bifrost
+
 services:
   postgres:
     image: postgres:18-alpine
@@ -32,7 +36,7 @@ services:
   # leave its domain empty. The gateway waits for it to finish before starting.
   migrate:
     build:
-      context: .
+      context: ..
       dockerfile: apps/gateway/Dockerfile
     image: bifrost:local
     command: ["bun", "src/db/migrate.ts"]
@@ -49,7 +53,7 @@ services:
 
   gateway:
     build:
-      context: .
+      context: ..
       dockerfile: apps/gateway/Dockerfile
     image: bifrost:local
     environment:
@@ -92,7 +96,7 @@ services:
   # is not wanted — it is not running.
   dashboard:
     build:
-      context: .
+      context: ..
       dockerfile: apps/dashboard/Dockerfile
     image: bifrost-dashboard:local
     environment:

@@ -47,7 +47,7 @@ few seconds of errors per deployment are acceptable.
 
 **One resource per app.** The gateway, dashboard and docs are already three images on three domains;
 as three **Docker Image** resources Coolify can roll each one independently. Postgres and Redis live
-outside them: either a Compose stack of their own (`compose.data.yaml`) or the platform's own managed
+outside them: either a Compose stack of their own (`docker/compose.data.yaml`) or the platform's own managed
 services — on Coolify, with **SSL disabled**, because Bun's TLS client rejects the self-signed
 certificates those are published with (see [Troubleshooting](/docs/troubleshooting)).
 

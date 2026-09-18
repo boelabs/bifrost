@@ -1,7 +1,7 @@
 # Bifrost from published images. Nothing is built, so this file is complete on its own: paste it
 # into Coolify, Dokploy or Portainer, or run it anywhere Docker is installed.
 #
-#   curl -O https://raw.githubusercontent.com/boelabs/bifrost/main/compose.images.yaml
+#   curl -O https://raw.githubusercontent.com/boelabs/bifrost/main/docker/compose.images.yaml
 #   cp .env.example .env   # then fill it in
 #   docker compose -f compose.images.yaml up -d
 #
@@ -12,6 +12,8 @@
 # The gateway and the dashboard are two products, each with its own environment. The only
 # thing joining them is GATEWAY_URL on the dashboard: everything the browser needs, the
 # dashboard fetches itself, so the gateway never has to be exposed.
+name: bifrost
+
 services:
   postgres:
     image: postgres:18-alpine

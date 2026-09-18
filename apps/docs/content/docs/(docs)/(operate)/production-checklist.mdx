@@ -9,7 +9,7 @@ A condensed checklist. Each item links to the page with the full explanation.
 
 - [ ] `MASTER_KEY` and every `ENCRYPTION_KEYRING` value are strong, unique per environment, and live in a
   secret manager — not in the image, not in git, not in the Compose file's defaults.
-  `compose.local.yaml`'s secrets are development-only; the production `docker-compose.yml` base ships
+  `docker/compose.local.yaml`'s secrets are development-only; the production `docker/compose.yaml` base ships
   both empty and refuses to start until you set them. See [Security](/docs/security).
 - [ ] You have a rotation plan for both, and know the leaked-secret procedure —
   [Operations → Secrets](/docs/operations#secrets).

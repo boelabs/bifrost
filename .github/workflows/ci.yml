@@ -84,7 +84,7 @@ jobs:
           stack=false
           if [ "$gateway" = true ] || [ "$dashboard" = true ] || [ "$docs" = true ]; then
             stack=true
-          elif changed '^(docker-compose\.yml|compose\..*\.yaml|\.env\.example)$'; then
+          elif changed '^docker/'; then
             stack=true
           fi
 
@@ -102,16 +102,15 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Validate Docker Compose
+        working-directory: docker
         run: |
-          docker compose -f docker-compose.yml config --quiet
-          docker compose -f docker-compose.yml -f compose.local.yaml config --quiet
+          docker compose -f compose.yaml config --quiet
+          docker compose -f compose.yaml -f compose.local.yaml config --quiet
+          docker compose -f compose.docs.yaml config --quiet
           # The pull-based files people actually paste into Coolify or Portainer. Their required
           # variables are supplied here so a missing one fails CI rather than a deployment.
-          POSTGRES_PASSWORD=ci \
-            docker compose -f compose.images.yaml config --quiet
-          POSTGRES_PASSWORD=ci \
-            docker compose -f compose.data.yaml config --quiet
-          docker compose -f compose.docs.yaml config --quiet
+          POSTGRES_PASSWORD=ci docker compose -f compose.images.yaml config --quiet
+          POSTGRES_PASSWORD=ci docker compose -f compose.data.yaml config --quiet
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2

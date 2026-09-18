@@ -12,7 +12,7 @@ git clone https://github.com/boelabs/bifrost.git && cd bifrost
 
 MASTER_KEY=$(openssl rand -base64 48) \
 ENCRYPTION_KEY_HEX=$(openssl rand -hex 32) \
-docker compose -f docker-compose.yml -f compose.local.yaml up -d
+docker compose -f docker/compose.yaml -f docker/compose.local.yaml up -d
 ```
 
 This starts Postgres, Redis, the one-off migration job, the gateway (`127.0.0.1:4000`) and the docs

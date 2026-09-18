@@ -3,12 +3,12 @@ title: "Coolify"
 description: "Deploy Bifrost on Coolify with Docker Compose."
 ---
 
-[Coolify](https://coolify.io) deploys the repository's `docker-compose.yml` directly.
+[Coolify](https://coolify.io) deploys the repository's `docker/compose.yaml` directly.
 
 ## Deploy the Compose stack (recommended)
 
 1. **New Resource → Docker Compose**, and point it at this repository (or paste the
-   `docker-compose.yml`).
+   `docker/compose.yaml`).
 2. Set the secrets as environment variables in the Coolify UI:
 	- `MASTER_KEY` — `openssl rand -base64 48`
 	- `ENCRYPTION_KEYRING` — e.g. `{"primary":"<openssl rand -hex 32>"}`
@@ -16,7 +16,7 @@ description: "Deploy Bifrost on Coolify with Docker Compose."
 3. Deploy. The bundled `postgres` and `redis` run inside the stack's private network, the `migrate`
    job applies migrations, and the gateway comes up on internal port `4000`.
    The documentation site is not in this stack — it needs nothing from it. Deploy
-   `compose.docs.yaml` as a second resource if you want it published.
+   `docker/compose.docs.yaml` as a second resource if you want it published.
 4. Configure domains only for long-running HTTP services:
    - **gateway** — for example `https://api.example.com:4000`
    - **dashboard** (optional) — its **own** domain: `https://dash.example.com:3001`

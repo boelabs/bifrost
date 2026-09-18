@@ -5,6 +5,8 @@
 # it gets its own file rather than a service someone has to remember to delete.
 #
 #   DOCS_IMAGE=ghcr.io/boelabs/bifrost-docs:v1.0.0 docker compose -f compose.docs.yaml up -d
+name: bifrost-docs
+
 services:
   docs:
     image: ${DOCS_IMAGE:-ghcr.io/boelabs/bifrost-docs:latest}
