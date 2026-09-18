@@ -67,7 +67,11 @@ jobs:
           # Anything shared rebuilds all three: the lockfile and the patches decide what is installed
           # into every image, the workspace packages are linked into them, and a change to this
           # workflow changes how they are built.
-          if echo "$files" | grep -qE '^(packages/|patches/|scripts/|bun\.lock$|package\.json$|turbo\.json$|tsconfig\.json$|biome\.json$|\.github/workflows/)'; then
+          #
+          # Every app's package.json counts as shared, including the other apps'. The install is a
+          # workspace install: the gateway's Dockerfile copies apps/docs/package.json to resolve it,
+          # so a manifest belonging to one app can change another's image.
+          if echo "$files" | grep -qE '^(packages/|patches/|scripts/|bun\.lock$|package\.json$|turbo\.json$|tsconfig\.json$|biome\.json$|\.github/workflows/|apps/[^/]+/package\.json$)'; then
             echo "::notice::A shared path changed; treating every app as changed."
             everything
             exit 0
@@ -288,7 +292,11 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.tags.outputs.branch }}
           cache-from: type=gha,scope=ci-gateway
-          cache-to: type=gha,mode=max,scope=ci-gateway
+          # Only one writer. A pull request produces two runs — one for the push, one for the PR —
+          # building identical images, and both exporting to this scope race on it: the losing
+          # export is cancelled and fails a job whose builds all succeeded. Pull requests read
+          # the cache and leave writing to the push run.
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=ci-gateway' || '' }}
 
       # The dashboard ships in the same Compose stack; without this, an image that no longer
       # builds would reach a deployment with CI still green.
@@ -311,7 +319,11 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.tags.outputs.branch }}
           cache-from: type=gha,scope=ci-dashboard
-          cache-to: type=gha,mode=max,scope=ci-dashboard
+          # Only one writer. A pull request produces two runs — one for the push, one for the PR —
+          # building identical images, and both exporting to this scope race on it: the losing
+          # export is cancelled and fails a job whose builds all succeeded. Pull requests read
+          # the cache and leave writing to the push run.
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=ci-dashboard' || '' }}
 
       - name: Build docs image
         if: needs.changes.outputs.docs == 'true'
@@ -332,7 +344,11 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.tags.outputs.branch }}
           cache-from: type=gha,scope=ci-docs
-          cache-to: type=gha,mode=max,scope=ci-docs
+          # Only one writer. A pull request produces two runs — one for the push, one for the PR —
+          # building identical images, and both exporting to this scope race on it: the losing
+          # export is cancelled and fails a job whose builds all succeeded. Pull requests read
+          # the cache and leave writing to the push run.
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=ci-docs' || '' }}
 
   # Deployment is deliberately branch-agnostic: this job asks a map which resources belong to the
   # branch that was pushed, and does nothing when the branch is not in it. Adding a preview
