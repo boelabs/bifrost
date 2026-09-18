@@ -488,7 +488,7 @@
 			"pricing": {
 				"inputCentsPerMTokens": 30,
 				"outputCentsPerMTokens": 90,
-				"cacheReadCentsPerMTokens": 5.5
+				"cacheReadCentsPerMTokens": 5
 			}
 		},
 		"glm-4.5": {
@@ -666,8 +666,9 @@
 				}
 			},
 			"pricing": {
-				"outputCentsPerMTokens": 40,
-				"cacheReadCentsPerMTokens": 1,
+				"outputCentsPerMTokens": 0,
+				"cacheReadCentsPerMTokens": 0,
+				"inputCentsPerMTokens": 0,
 				"cacheWriteCentsPerMTokens": 0
 			}
 		},
@@ -704,9 +705,49 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 7.5,
-				"outputCentsPerMTokens": 25,
-				"cacheReadCentsPerMTokens": 1.5,
+				"inputCentsPerMTokens": 15,
+				"outputCentsPerMTokens": 50,
+				"cacheReadCentsPerMTokens": 3,
+				"cacheWriteCentsPerMTokens": 0
+			},
+			"notes": "Reasoning control mechanism unconfirmed against the provider's docs; left unspecified rather than guessed."
+		},
+		"glm-5.3-flashx": {
+			"operations": {
+				"text.generate": {
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 131072,
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true,
+						"top_p": true,
+						"frequency_penalty": true,
+						"presence_penalty": true,
+						"repetition_penalty": true,
+						"top_k": true,
+						"seed": true,
+						"min_p": true,
+						"response_format": true,
+						"logit_bias": true,
+						"structured_outputs": true,
+						"reasoning_effort": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"structuredOutputs": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 37,
+				"outputCentsPerMTokens": 125,
+				"cacheReadCentsPerMTokens": 7.5,
 				"cacheWriteCentsPerMTokens": 0
 			},
 			"notes": "Reasoning control mechanism unconfirmed against the provider's docs; left unspecified rather than guessed."

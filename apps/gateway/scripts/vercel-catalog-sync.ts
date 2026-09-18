@@ -2,6 +2,7 @@ import { fetchVercelModels } from "#catalog/sync/sources/vercel.ts";
 import { buildVercelCatalog } from "#catalog/sync/vercelCatalog.ts";
 import { mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { loadCatalogDocument } from "#catalog/jsonCatalog.ts";
+import { MODEL_CATALOG } from "#adapters/index.ts";
 import assert from "node:assert/strict";
 
 type Mode = "report" | "write" | "verify";
@@ -45,7 +46,9 @@ async function run(): Promise<void> {
 			`Vercel returned only ${sourceModels.length} models; refusing to trust or write a likely partial snapshot`,
 		);
 	}
-	const generated = buildVercelCatalog(sourceModels);
+	// Proxied models inherit their image request-contract from the first-party adapter that
+	// also serves them; Vercel's own model list describes none of it.
+	const generated = buildVercelCatalog(sourceModels, MODEL_CATALOG);
 	if (generated.report.includedModels === 0) {
 		throw new Error("Vercel returned no model types supported by this adapter");
 	}
@@ -68,6 +71,10 @@ async function run(): Promise<void> {
 		atomicWrite(CATALOG_URL, serialize(generated.document));
 		console.log(
 			`wrote Vercel catalog with ${generated.report.includedModels} models`,
+		);
+		console.log(
+			`image profiles inherited from a first-party adapter: ${generated.report.inheritedImageProfiles.length}, ` +
+				`without a reference: ${generated.report.imageProfilesWithoutReference.length}`,
 		);
 	} else if (runMode === "verify") {
 		const current = loadCatalogDocument(CATALOG_URL, {

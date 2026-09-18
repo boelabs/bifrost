@@ -24,7 +24,7 @@ export const imageGenerationRequestSchema = z
 		output_format: z.enum(["png", "jpeg", "webp"]).nullable().optional(),
 		partial_images: z.int().min(0).max(3).nullable().optional(),
 		quality: z
-			.enum(["standard", "hd", "low", "medium", "high", "auto"])
+			.enum(["standard", "hd", "low", "medium", "high", "xhigh", "max", "auto"])
 			.nullable()
 			.optional(),
 		response_format: z.literal("b64_json").nullable().optional(),
@@ -77,7 +77,7 @@ export const imageEditFieldsSchema = z
 		output_format: z.enum(["png", "jpeg", "webp"]).nullable().optional(),
 		partial_images: z.int().min(0).max(3).nullable().optional(),
 		quality: z
-			.enum(["standard", "low", "medium", "high", "auto"])
+			.enum(["standard", "low", "medium", "high", "xhigh", "max", "auto"])
 			.nullable()
 			.optional(),
 		response_format: z.literal("b64_json").nullable().optional(),

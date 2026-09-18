@@ -83,3 +83,46 @@ test("catalog images: gpt-image-1.5 resolves supportedCallTypes/image from the c
 	assert.ok(meta.supportedCallTypes?.includes("images.edits"));
 	assert.equal(meta.image?.supportsInputFidelity, true);
 });
+
+test("catalog images: GPT Image 2.5 raises the quality ladder, earlier models stop at high", () => {
+	for (const adapterKey of ["openai", "azureopenai"]) {
+		for (const model of ["gpt-image-2.5-sunburst", "gpt-image-2.5-flare"]) {
+			for (const operation of ["image.generate", "image.edit"] as const) {
+				const profile = getCatalogEntry(adapterKey, model)?.operations[
+					operation
+				];
+				assert.deepEqual(
+					profile?.qualities,
+					["auto", "low", "medium", "high", "xhigh", "max"],
+					`${adapterKey}/${model} ${operation}`,
+				);
+			}
+		}
+	}
+	// Azure publishes a far tighter prompt limit for the same models.
+	assert.equal(
+		getCatalogEntry("openai", "gpt-image-2.5-flare")?.operations[
+			"image.generate"
+		]?.maxPromptChars,
+		32_000,
+	);
+	assert.equal(
+		getCatalogEntry("azureopenai", "gpt-image-2.5-flare")?.operations[
+			"image.generate"
+		]?.maxPromptChars,
+		4_000,
+	);
+	// "Earlier GPT Image models support quality settings up to high."
+	assert.deepEqual(
+		getCatalogEntry("openai", "gpt-image-2")?.operations["image.generate"]
+			?.qualities,
+		["auto", "low", "medium", "high"],
+	);
+	assert.equal(
+		resolveModelMetadata(
+			"openai",
+			"gpt-image-2.5-flare",
+		).image?.qualities?.includes("max"),
+		true,
+	);
+});

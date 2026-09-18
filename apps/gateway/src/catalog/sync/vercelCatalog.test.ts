@@ -1,4 +1,5 @@
 import { buildVercelCatalog, pricingForVercelModel } from "./vercelCatalog.ts";
+import type { ReferenceCatalogs } from "./vercelCatalog.ts";
 import type { VercelModel } from "./sources/vercel.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -288,4 +289,75 @@ test("Vercel tier conversion uses the zero tier when a redundant base field is a
 		}),
 		{ inputCentsPerMTokens: 150 },
 	);
+});
+
+test("Vercel image models inherit the request contract of a first-party twin", () => {
+	const references: ReferenceCatalogs = {
+		googleaistudio: {
+			"gemini-3.1-flash-lite-image": {
+				operations: {
+					"image.generate": {
+						maxN: 1,
+						maxInputImages: 14,
+						qualities: ["auto", "low", "high"],
+						sizes: { "1024x1024": { aspectRatio: "1:1", imageSize: "1K" } },
+						// Gateway behavior of the native Gemini transport: must not leak here.
+						qualityMappings: { high: { thinkingLevel: "high" } },
+						supportsNativeStreaming: true,
+						outputFormats: ["png"],
+					},
+				},
+			},
+		},
+	};
+	const generated = buildVercelCatalog(
+		[{ id: "google/gemini-3.1-flash-lite-image", type: "image" }],
+		references,
+	);
+	assert.deepEqual(
+		generated.document.models["google/gemini-3.1-flash-lite-image"]?.operations[
+			"image.generate"
+		],
+		{
+			outputFormats: ["png", "jpeg", "webp"],
+			responseFormats: ["b64_json"],
+			autoSize: {},
+			nativeOutputFormat: false,
+			nativeOutputCompression: false,
+			maxInputImages: 14,
+			maxN: 1,
+			qualities: ["auto", "low", "high"],
+			sizes: { "1024x1024": { aspectRatio: "1:1", imageSize: "1K" } },
+		},
+	);
+	assert.deepEqual(generated.report.inheritedImageProfiles, [
+		{
+			id: "google/gemini-3.1-flash-lite-image",
+			operation: "image.generate",
+			from: "googleaistudio/gemini-3.1-flash-lite-image",
+			fields: ["maxInputImages", "maxN", "qualities", "sizes"],
+		},
+	]);
+	assert.deepEqual(generated.report.imageProfilesWithoutReference, []);
+});
+
+test("Vercel image models without a first-party twin keep the conservative profile", () => {
+	const generated = buildVercelCatalog(
+		[{ id: "bfl/flux-2-pro", type: "image" }],
+		{ googleaistudio: {} },
+	);
+	assert.deepEqual(
+		generated.document.models["bfl/flux-2-pro"]?.operations["image.generate"],
+		{
+			outputFormats: ["png", "jpeg", "webp"],
+			responseFormats: ["b64_json"],
+			autoSize: {},
+			nativeOutputFormat: false,
+			nativeOutputCompression: false,
+		},
+	);
+	assert.deepEqual(generated.report.inheritedImageProfiles, []);
+	assert.deepEqual(generated.report.imageProfilesWithoutReference, [
+		{ id: "bfl/flux-2-pro", operation: "image.generate" },
+	]);
 });

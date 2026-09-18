@@ -30,8 +30,9 @@ description: "Adapter key googleaistudio. Strict tools, embeddings routes, and i
   [Provider-specific fields](/docs/provider-specific-fields).
 - **Embeddings** accept text input and float vectors only through this gateway — no tokenized input,
   no `base64` encoding — regardless of what the catalog profile might otherwise allow.
-- **Image `quality` maps to native thinking** for Gemini image models: `auto` (or omitted) and `low` use
-  `thinkingLevel: minimal`; `high` uses `thinkingLevel: high`. Some image models expose only
+- **Image `quality` maps to native thinking** on the models that expose the control (Gemini 3.1 Flash
+  Image and Flash Lite Image): `auto` (or omitted) and `low` use `thinkingLevel: minimal`; `high` uses
+  `thinkingLevel: high`. Models without the control, such as Gemini 3 Pro Image, accept only
   `quality: auto`. See [Images](/docs/images).
 - **Veo** uses the Gemini `:predictLongRunning` REST flow. Image/video references must be data URLs
   because the REST request sends them as `inlineData`; multiple image references are forwarded as

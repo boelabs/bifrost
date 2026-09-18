@@ -2851,7 +2851,18 @@ export interface components {
 			output_compression?: number | null;
 			output_format?: ("png" | "jpeg" | "webp") | null;
 			partial_images?: number | null;
-			quality?: ("standard" | "hd" | "low" | "medium" | "high" | "auto") | null;
+			quality?:
+				| (
+						| "standard"
+						| "hd"
+						| "low"
+						| "medium"
+						| "high"
+						| "xhigh"
+						| "max"
+						| "auto"
+				  )
+				| null;
 			/** @default b64_json */
 			response_format: "b64_json" | null;
 			size?: string | null;
@@ -2880,7 +2891,9 @@ export interface components {
 			output_compression?: number | null;
 			output_format?: ("png" | "jpeg" | "webp") | null;
 			partial_images?: number | null;
-			quality?: ("standard" | "low" | "medium" | "high" | "auto") | null;
+			quality?:
+				| ("standard" | "low" | "medium" | "high" | "xhigh" | "max" | "auto")
+				| null;
 			/** @default b64_json */
 			response_format: "b64_json" | null;
 			size?: string | null;

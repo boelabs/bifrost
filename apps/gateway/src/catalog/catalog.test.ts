@@ -254,8 +254,8 @@ test("resolved model metadata exposes limits and reasoning defaults from catalog
 		"max",
 	]);
 	assert.equal(gpt56.reasoning?.upstreamEffortMap, undefined);
-	assert.equal(gpt56.pricing?.cacheWriteCentsPerMTokens, 625);
-	assert.equal(gpt56.pricing?.tiers?.[0]?.cacheWriteCentsPerMTokens, 1_250);
+	assert.equal(gpt56.pricing?.cacheWriteCentsPerMTokens, 500);
+	assert.equal(gpt56.pricing?.tiers?.[0]?.cacheWriteCentsPerMTokens, 1_000);
 
 	const openai = resolveModelMetadata("openai", "gpt-5.4");
 	assert.equal(openai.maxInputTokens, 1_050_000);

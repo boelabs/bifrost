@@ -1,6 +1,7 @@
 import type { VercelModelPricing, VercelModel } from "./sources/vercel.ts";
 import { EFFORT_ORDER, isReasoningEffort } from "#core/reasoning.ts";
 import type { ParameterSupportMap } from "#catalog/parameters.ts";
+import { candidateAdapterMappings } from "./providerIdentity.ts";
 import { dollarsPerTokenToCentsPerMillion } from "./pricing.ts";
 import type { CatalogDocument } from "#catalog/jsonCatalog.ts";
 import type { ReasoningEffort } from "#core/reasoning.ts";
@@ -65,6 +66,13 @@ export interface VercelCatalogReport {
 	multimodalRerankWithheld: string[];
 	orphanedRerankPricingOverrides: string[];
 	paidRerankModelsWithoutCost: string[];
+	inheritedImageProfiles: Array<{
+		id: string;
+		operation: string;
+		from: string;
+		fields: string[];
+	}>;
+	imageProfilesWithoutReference: Array<{ id: string; operation: string }>;
 }
 
 export interface VercelCatalogGeneration {
@@ -215,6 +223,7 @@ export function pricingForVercelModel(
 function languageEntry(
 	model: VercelModel,
 	report: VercelCatalogReport,
+	references: ReferenceCatalogs | undefined,
 ): CatalogEntry {
 	const tags = new Set(model.tags ?? []);
 	const reasoning = reasoningFor(model);
@@ -277,9 +286,21 @@ function languageEntry(
 			"text.generate": operation,
 			...(producesImages
 				? {
-						"image.generate": imageOperation(),
+						"image.generate": imageOperation(
+							"image.generate",
+							model,
+							report,
+							references,
+						),
 						...(input.includes("image")
-							? { "image.edit": imageOperation() }
+							? {
+									"image.edit": imageOperation(
+										"image.edit",
+										model,
+										report,
+										references,
+									),
+								}
 							: {}),
 					}
 				: {}),
@@ -306,10 +327,72 @@ function embeddingEntry(model: VercelModel): CatalogEntry {
 	};
 }
 
-function imageOperation(): NonNullable<
-	CatalogEntry["operations"]["image.generate"]
-> {
-	return {
+type ImageOperation = NonNullable<CatalogEntry["operations"]["image.generate"]>;
+
+/**
+ * The request-validation half of an image profile: what a caller may ask for. Vercel's `/v1/models`
+ * describes none of it, so on its own this adapter rejects every `quality`, every explicit `size`,
+ * and validates no input-image limits at all for models it merely proxies. When the same model is
+ * also served by a first-party adapter, that adapter's reviewed profile is the best statement we
+ * have of what the model accepts, so it is carried over.
+ *
+ * The gateway-behavior half is deliberately not inherited: `qualityMappings`, `autoSize` and the
+ * `native*` flags describe how one specific transport talks to the provider, and Vercel's is
+ * OpenAI-shaped (`quality` and `size` go up verbatim - see contracts/openai/imagesTransport.ts),
+ * not Gemini's native image config.
+ */
+const INHERITED_IMAGE_FIELDS = [
+	"maxPromptChars",
+	"maxInputImages",
+	"maxImageBytes",
+	"maxTotalInputBytes",
+	"maxN",
+	"supportsMask",
+	"supportsInputFidelity",
+	"supportsModeration",
+	"supportsStyle",
+	"supportsTransparentBackground",
+	"qualities",
+	"sizes",
+	"arbitrarySize",
+] as const satisfies ReadonlyArray<keyof ImageOperation>;
+
+/** Reviewed first-party profiles, keyed by adapter, that a proxied model may inherit from. */
+export type ReferenceCatalogs = Readonly<
+	Record<string, Readonly<Record<string, CatalogEntry>>>
+>;
+
+/**
+ * The first-party entry for a Vercel model id, e.g. `google/gemini-3.1-flash-image` ->
+ * googleaistudio's `gemini-3.1-flash-image`. Ambiguous prefixes (`openai/` is both openai and
+ * azureopenai) resolve to the rule that does not need an endpoint call to disambiguate, because
+ * Vercel's model list carries no endpoint data.
+ */
+function referenceEntryFor(
+	modelId: string,
+	references: ReferenceCatalogs | undefined,
+): { adapterKey: string; entry: CatalogEntry } | undefined {
+	if (!references) return undefined;
+	const candidates = candidateAdapterMappings(modelId).sort(
+		(a, b) =>
+			Number(a.requiresEndpointMatch ?? false) -
+			Number(b.requiresEndpointMatch ?? false),
+	);
+	for (const candidate of candidates) {
+		if (candidate.adapterKey === "vercel") continue; // never inherit from ourselves
+		const entry = references[candidate.adapterKey]?.[candidate.upstreamModel];
+		if (entry) return { adapterKey: candidate.adapterKey, entry };
+	}
+	return undefined;
+}
+
+function imageOperation(
+	operation: "image.generate" | "image.edit",
+	model: VercelModel,
+	report: VercelCatalogReport,
+	references: ReferenceCatalogs | undefined,
+): ImageOperation {
+	const base: ImageOperation = {
 		// The REST adapter always requests b64_json and can transcode these client formats.
 		outputFormats: ["png", "jpeg", "webp"],
 		responseFormats: ["b64_json"],
@@ -317,18 +400,54 @@ function imageOperation(): NonNullable<
 		nativeOutputFormat: false,
 		nativeOutputCompression: false,
 	};
+	const reference = referenceEntryFor(model.id, references);
+	const source = reference?.entry.operations[operation];
+	if (!reference || !source) {
+		report.imageProfilesWithoutReference.push({ id: model.id, operation });
+		return base;
+	}
+	const inherited: string[] = [];
+	for (const field of INHERITED_IMAGE_FIELDS) {
+		const value = source[field];
+		if (value === undefined) continue;
+		Object.assign(base, { [field]: structuredClone(value) });
+		inherited.push(field);
+	}
+	if (inherited.length === 0) {
+		report.imageProfilesWithoutReference.push({ id: model.id, operation });
+		return base;
+	}
+	report.inheritedImageProfiles.push({
+		id: model.id,
+		operation,
+		from: `${reference.adapterKey}/${
+			candidateAdapterMappings(model.id).find(
+				(candidate) => candidate.adapterKey === reference.adapterKey,
+			)?.upstreamModel ?? model.id
+		}`,
+		fields: inherited,
+	});
+	return base;
 }
 
 function imageEntry(
 	model: VercelModel,
 	report: VercelCatalogReport,
+	references: ReferenceCatalogs | undefined,
 ): CatalogEntry {
 	if (model.pricing?.image !== undefined) {
 		report.unrepresentedPricing.push({ id: model.id, field: "pricing.image" });
 	}
 	const pricing = pricingForVercelModel(model.pricing);
 	return {
-		operations: { "image.generate": imageOperation() },
+		operations: {
+			"image.generate": imageOperation(
+				"image.generate",
+				model,
+				report,
+				references,
+			),
+		},
 		...(pricing ? { pricing } : {}),
 	};
 }
@@ -378,6 +497,7 @@ function increment(record: Record<string, number>, key: string): void {
 
 export function buildVercelCatalog(
 	sourceModels: readonly VercelModel[],
+	references?: ReferenceCatalogs,
 ): VercelCatalogGeneration {
 	const report: VercelCatalogReport = {
 		sourceModels: sourceModels.length,
@@ -392,6 +512,8 @@ export function buildVercelCatalog(
 		multimodalRerankWithheld: [],
 		orphanedRerankPricingOverrides: [],
 		paidRerankModelsWithoutCost: [],
+		inheritedImageProfiles: [],
+		imageProfilesWithoutReference: [],
 	};
 	const models: Record<string, CatalogEntry> = {};
 	const seen = new Set<string>();
@@ -415,11 +537,11 @@ export function buildVercelCatalog(
 		}
 		const entry =
 			type === "language"
-				? languageEntry(model, report)
+				? languageEntry(model, report, references)
 				: type === "embedding"
 					? embeddingEntry(model)
 					: type === "image"
-						? imageEntry(model, report)
+						? imageEntry(model, report, references)
 						: rerankEntry(model, report);
 		models[model.id] = entry;
 		increment(report.includedByType, type);
