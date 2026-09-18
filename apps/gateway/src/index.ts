@@ -20,6 +20,7 @@ import { messagesCountTokensHandler } from "./endpoints/messagesCountTokens.ts";
 import { publicizeManagementError, isManagementPath } from "./admin/errors.ts";
 import { startResponseStateGcJob } from "./db/repos/responseStates.ts";
 import { requestContextMiddleware } from "./http/requestContext.ts";
+import { lifecyclePhase, isDraining } from "./runtime/lifecycle.ts";
 import { usesAnthropicErrorDialect } from "./http/errorDialect.ts";
 import { authApp, dashboardConfigHandler } from "./auth/routes.ts";
 import { startDashboardSessionGcJob } from "./auth/sessionGc.ts";
@@ -116,6 +117,15 @@ app.use("*", async (c, next) => {
 	}
 });
 
+// Draining. Once SIGTERM has arrived this process is on its way out, but it keeps serving until the
+// proxy notices (see runtime/shutdown.ts). `Connection: close` is how it tells a keep-alive pool not
+// to send the NEXT request down a socket that is about to be closed underneath it — without it, the
+// proxy happily reuses the connection and the client gets the reset instead of a clean handover.
+app.use("*", async (c, next) => {
+	await next();
+	if (isDraining()) c.header("connection", "close");
+});
+
 // Global error handler: translates GatewayError to the shape of each public contract.
 // /v1/messages/* -> Anthropic shape; everything else -> OpenAI shape.
 app.onError((err, c) => {
@@ -182,8 +192,12 @@ app.onError((err, c) => {
  */
 app.get("/health/live", (c) =>
 	c.json({
+		// Deliberately "ok" while draining too: liveness answers "is this process responsive?", and a
+		// container runtime that sees it fail restarts the container — cutting the drain short and
+		// killing exactly the requests the drain exists to protect.
 		status: "ok",
 		service: "Bifrost",
+		phase: lifecyclePhase(),
 		uptimeSeconds: Math.round(process.uptime()),
 		time: new Date().toISOString(),
 	}),
@@ -191,11 +205,27 @@ app.get("/health/live", (c) =>
 
 /**
  * READINESS. "Should this instance receive traffic right now?" — checks Postgres, Redis and the
- * extension runtime. Returns 503 + Retry-After when a dependency is down so the load balancer pulls
- * the instance out (WITHOUT restarting it); it rejoins automatically once dependencies recover. Wire
- * this to the readiness probe.
+ * extension runtime, and whether this process is shutting down. Returns 503 + Retry-After when a
+ * dependency is down so the load balancer pulls the instance out (WITHOUT restarting it); it rejoins
+ * automatically once dependencies recover. Wire this to the readiness probe.
  */
 async function readiness(c: Context) {
+	// A draining process is not a candidate for traffic, whatever its dependencies say. This answer
+	// is the first thing shutdown does, and the load balancer's poll of it is what lets the instance
+	// leave the rotation before it stops accepting connections.
+	if (isDraining()) {
+		c.header("retry-after", String(DEPENDENCY_RETRY_AFTER_SECONDS));
+		c.header("connection", "close");
+		return c.json(
+			{
+				status: "draining",
+				service: "Bifrost",
+				phase: lifecyclePhase(),
+				time: new Date().toISOString(),
+			},
+			503,
+		);
+	}
 	const [database, cache] = await Promise.all([pingDb(), pingRedis()]);
 	const extensions = extensionStatus();
 	const observability = operationPersistenceStatus();
@@ -287,8 +317,8 @@ const server = serve(
 
 installGracefulShutdown({
 	server,
+	releaseConnections: closeResponsesWebSockets,
 	stopJobs: [
-		closeResponsesWebSockets,
 		stopOperationMaintenance,
 		stopResponseStateGc,
 		stopExtensionReload,

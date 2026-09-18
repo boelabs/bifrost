@@ -68,8 +68,15 @@ services:
       DASH_ENABLED: ${DASH_ENABLED:-false}
       DASH_ROOT_USER: ${DASH_ROOT_USER:-}
       DASH_ROOT_PASSWORD: ${DASH_ROOT_PASSWORD:-}
+      # Shutdown budget. The gateway stays unready-but-serving for DRAIN_DELAY_MS so the proxy can
+      # take it out of rotation, then gives in-flight requests SHUTDOWN_TIMEOUT_MS to finish.
+      DRAIN_DELAY_MS: ${DRAIN_DELAY_MS:-15000}
+      SHUTDOWN_TIMEOUT_MS: ${SHUTDOWN_TIMEOUT_MS:-120000}
     expose:
       - "4000"
+    # Must exceed DRAIN_DELAY_MS + SHUTDOWN_TIMEOUT_MS plus teardown, or Docker SIGKILLs the process
+    # mid-drain and the whole sequence is theatre. Raise all three together.
+    stop_grace_period: 180s
     depends_on:
       postgres:
         condition: service_healthy
@@ -111,6 +118,10 @@ services:
     depends_on:
       gateway:
         condition: service_started
+    # The playground relays a live stream through this process; Next stops accepting connections on
+    # SIGTERM and waits for in-flight requests, so the grace period is what that wait is allowed to
+    # use.
+    stop_grace_period: 120s
     restart: unless-stopped
 
   docs:
@@ -123,6 +134,7 @@ services:
       PORT: 3000
     expose:
       - "3000"
+    stop_grace_period: 30s
     restart: unless-stopped
 
 volumes:

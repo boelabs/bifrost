@@ -1279,13 +1279,25 @@ export const responsesWebSocketHandler = upgradeWebSocket(
 	},
 );
 
-/** Stops accepting work on all live Responses sockets during process shutdown. */
-export function closeResponsesWebSockets(): void {
+/**
+ * Hangs up live Responses sockets during process shutdown.
+ *
+ * A WebSocket never ends on its own, so the drain has to end it — but not all at once. With
+ * `idleOnly` (the start of the drain) only sessions with nothing in flight are closed: the client
+ * reconnects to the incoming instance and loses nothing. Sessions mid-generation are left alone
+ * until the drain window closes, and only then get 1012 "service restarting", the code that tells a
+ * client to reconnect rather than to treat the close as an error.
+ */
+export function closeResponsesWebSockets(
+	options: { idleOnly?: boolean } = {},
+): void {
 	for (const session of activeResponsesWebSockets) {
+		const busy = session.activeAbort !== null || session.queuedTurns > 0;
+		if (options.idleOnly && busy) continue;
 		clearTimeout(session.timer);
 		session.activeAbort?.abort();
 		session.upstreams.close();
 		session.socket?.close(1012, "service restarting");
+		activeResponsesWebSockets.delete(session);
 	}
-	activeResponsesWebSockets.clear();
 }

@@ -1,0 +1,157 @@
+---
+title: "Rollouts"
+description: "Replacing a running gateway without dropping requests: draining, grace periods, and what your platform has to provide."
+---
+
+A deployment replaces a process that is in the middle of doing work. For most services that means a
+few interrupted requests; for a gateway that streams completions it means a client watching tokens
+arrive gets a connection reset instead of the rest of its answer.
+
+This page is about making that not happen, and about being precise on what "zero downtime" can and
+cannot mean.
+
+## What the gateway does on `SIGTERM`
+
+Closing the listener the instant the signal arrives is the version that drops traffic, because
+nothing upstream knows yet: the proxy is still routing to this container and its keep-alive pool
+still holds open sockets to it. So the gateway announces its departure before it acts on it.
+
+1. **Readiness flips.** `GET /health/ready` answers `503` with `{"status":"draining"}` immediately.
+   `GET /health/live` keeps answering `200` — liveness means "is this process responsive", and a
+   platform that saw it fail would *restart* the container, cutting short the very drain this
+   sequence exists to perform.
+2. **Background jobs stop**, and idle WebSocket sessions are closed with `1012 service restarting`.
+   A socket with nothing in flight reconnects to the incoming instance for free.
+3. **The process waits `DRAIN_DELAY_MS`, still serving normally.** This step looks like a no-op and
+   is the entire point: deregistration is asynchronous, there is no callback for it, and the only
+   way to know the proxy has stopped routing here is to give its health check time to observe the
+   `503`. Every response during this window also carries `Connection: close`, so a keep-alive pool
+   stops reusing sockets that are about to disappear.
+4. **The listener closes** and in-flight requests are given `SHUTDOWN_TIMEOUT_MS` to finish.
+   Streamed responses keep streaming; new connections are refused.
+5. **Whatever is left is forced**, the operation log is flushed, Postgres, Redis and telemetry are
+   closed, and the process exits.
+
+| Variable | Default | What it is |
+|---|---|---|
+| `DRAIN_DELAY_MS` | `15000` (`0` outside production) | Unready but still serving, so the proxy can deregister this instance. Set it to a few health-check intervals. |
+| `SHUTDOWN_TIMEOUT_MS` | `120000` | Grace for in-flight requests once the listener is closed. It must cover your **longest streamed completion**, which is minutes, not seconds. |
+
+> **Both are worthless unless the container runtime waits for them.** Docker's default `SIGKILL`
+> deadline is **10 seconds** — shorter than the drain — so the process is killed mid-sequence and
+> none of it happened. The Compose files in this repository set `stop_grace_period: 180s` on the
+> gateway for exactly this reason; on a PaaS, raise the equivalent setting (Coolify calls it **Stop
+> Grace Period**). Keep it above `DRAIN_DELAY_MS + SHUTDOWN_TIMEOUT_MS`, and raise all three
+> together.
+
+## What your platform has to provide
+
+The gateway can only do its half. The other half is scheduling:
+
+- **A health check the proxy actually acts on.** The drain delay buys nothing if the thing in front
+  of the gateway never polls `/health/ready`. Traefik, Envoy, an ALB and Kubernetes all do this when
+  configured; a plain reverse proxy pointed at a container name does not, and only learns the
+  container is gone when it disappears.
+- **Overlap.** The new instance must be accepting traffic *before* the old one stops. Without it
+  there is a window where nothing is serving, however graceful the shutdown is. This is the one
+  thing an application cannot provide for itself.
+- **Backward compatibility.** During the overlap the old and the new version run at the same time,
+  against the same database. See [Schema changes](#schema-changes-have-to-survive-the-overlap).
+
+## Coolify
+
+Coolify performs [rolling
+updates](https://coolify.io/docs/knowledge-base/rolling-updates) — start the replacement, wait for
+its health check, then stop the old container — for **Dockerfile, Docker Image, Nixpacks, Railpack
+and Static** resources. It explicitly does **not** do them for Docker Compose resources, which are
+reconciled by `docker compose up` instead.
+
+That distinction decides the topology:
+
+### One Compose resource (the simple path)
+
+Paste `compose.images.yaml`, get the whole stack in one place. Deployments are a `docker compose up`:
+each changed service is stopped and started again, so there is **no overlap** — in-flight requests
+drain cleanly thanks to the sequence above, but new requests arriving in the gap get a proxy error
+until the replacement is listening.
+
+Worth taking when the gateway is not yet serving traffic that cannot tolerate a few seconds of
+errors during a deployment. It is a real improvement over the default: the requests that were
+already running no longer die.
+
+### Separate resources per service (the zero-downtime path)
+
+The gateway, the dashboard and the docs are already three images with three domains — nothing forces
+them into one Compose file. Create the gateway as a **Docker Image** resource pointing at
+`ghcr.io/<owner>/bifrost-gateway:<tag>`, keep Postgres and Redis as Coolify services or in a Compose
+stack of their own, and Coolify will roll it.
+
+Then, in the resource's settings:
+
+- **Health check** → `GET /health/ready`. The rolling update waits on it, which is what makes the
+  replacement's readiness the trigger for the old container's removal.
+- **Stop Grace Period** (Configuration → Advanced → Operations) → above
+  `DRAIN_DELAY_MS + SHUTDOWN_TIMEOUT_MS`, e.g. **180**.
+- **No published host port.** Coolify falls back to stop-then-start when a port is bound on the
+  host, when *Consistent Container Names* is on, when a custom container name or a custom IP is set,
+  and for pull-request previews. Any one of those silently costs you the overlap.
+- **Migrations** are no longer run for you by the Compose stack's `migrate` job. Run
+  `bun src/db/migrate.ts` in the same image as a one-off before the rollout — see
+  [Upgrades](/docs/upgrades).
+
+## Schema changes have to survive the overlap
+
+This is the part that bites hardest, and it is not about connections at all. In any rolling update
+the old and the new version talk to the same database at the same time. A migration that renames or
+drops a column breaks the version that is still running.
+
+So every migration must work against the version before it as well — expand first, contract later:
+
+1. Add the new column. Write to both, read from the old one.
+2. Deploy the version that reads from the new one.
+3. Deploy the migration that drops the old one.
+
+Three deployments for a rename. It is tedious, and it is the difference between a rollout and an
+outage. Migrations here are also forward-only, so the same rule is what makes rolling an image
+*back* safe — see [Upgrades](/docs/upgrades).
+
+## Deploying from CI
+
+`.github/workflows/ci.yml` publishes an image per commit and then asks Coolify to deploy it, so what
+reaches an environment is exactly the artifact the tests ran against. Two tags per image:
+`sha-<commit>`, which never moves and is what a rollback pins to, and `<branch>`, which moves and is
+what a long-lived environment follows.
+
+Nothing about it is tied to `main`. The `deploy` job reads a branch-to-resource map and does nothing
+when the branch that was pushed is not in it:
+
+| Setting | Kind | Example |
+|---|---|---|
+| `COOLIFY_URL` | repository variable | `https://coolify.example.com` |
+| `COOLIFY_DEPLOY_MAP` | repository variable | `{"main": "<uuid>", "staging": "<uuid>,<uuid>"}` |
+| `COOLIFY_TOKEN` | repository secret | an API token with deploy permission |
+
+Point a Coolify resource at the `staging` tag, add `"staging"` to the map, and pushes to that branch
+roll it. Remove the line and they stop. The resource UUID is the last path segment of its URL in the
+Coolify dashboard.
+
+## What this still does not fix
+
+Being honest about the residue is more useful than claiming the problem is solved:
+
+- **A response in flight when the drain window expires is cut.** `SHUTDOWN_TIMEOUT_MS` bounds how
+  long a deployment waits; a stream longer than it does not survive. Clients should retry, and for
+  anything long-running that means idempotent requests, not just retries.
+- **WebSocket sessions mid-generation are closed** with `1012` at the end of the window. That code
+  means "reconnect", and a client that treats it as a fatal error will look like an outage.
+- **A single instance is a single point of failure** regardless of how it shuts down. Overlap needs
+  two, whether from a rolling update or from running more than one replica.
+- **Rolling updates do not guarantee zero downtime**, in Coolify's own words. They remove the
+  scheduled gap. Everything else — draining, schema compatibility, client retries — is the
+  application's job, which is what the rest of this page is about.
+
+## What to read next
+
+- [Upgrades](/docs/upgrades) — migrations, breaking changes and rollback.
+- [Production checklist](/docs/production-checklist) — pre-launch verification.
+- [Coolify](/docs/deploy-coolify) — setting the stack up in the first place.

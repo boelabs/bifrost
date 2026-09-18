@@ -28,7 +28,12 @@ A condensed checklist. Each item links to the page with the full explanation.
   dependency-aware endpoint, or a Postgres/Redis blip restarts every replica at once).
 - [ ] Readiness probe → `GET /health/ready` (pulls an unhealthy instance from the load balancer without
   restarting it).
-- [ ] Your orchestrator gives the container at least `SHUTDOWN_TIMEOUT_MS` to drain on `SIGTERM`.
+- [ ] Your orchestrator gives the container more than `DRAIN_DELAY_MS + SHUTDOWN_TIMEOUT_MS` before
+  `SIGKILL` (`stop_grace_period` in Compose, **Stop Grace Period** in Coolify). Docker's default is
+  10 seconds, which is shorter than the drain — the process is killed mid-sequence and every
+  in-flight stream dies with it. See [Rollouts](/docs/rollouts).
+- [ ] The proxy in front of the gateway polls `/health/ready` and acts on it. Without that, the
+  drain delay announces a departure nothing is listening for.
 - [ ] Replicas are safe to scale horizontally; shared quotas/circuits are in Redis and maintenance work
   is idempotent or transactionally claimed. See [Operations](/docs/operations).
 

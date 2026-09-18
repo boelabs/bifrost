@@ -41,6 +41,17 @@ Because Postgres/Redis live on the Compose network and the gateway connects over
 (`postgres://gateway:gateway@postgres:5432/bifrost`, `redis://redis:6379`), there is no TLS and
 therefore no [Bun TLS issue](/docs/troubleshooting).
 
+## Deployments and downtime
+
+Coolify does not perform rolling updates for Docker Compose resources — `docker compose up`
+reconciles the services itself, stopping and starting each changed one. The gateway drains on
+`SIGTERM` rather than dropping in-flight requests, but that only works if Coolify waits for it:
+raise **Stop Grace Period** above `DRAIN_DELAY_MS + SHUTDOWN_TIMEOUT_MS`.
+
+To get an actual overlap between the old and the new container, run the gateway as its own **Docker
+Image** resource instead of as part of the Compose stack. [Rollouts](/docs/rollouts) covers both
+topologies, the settings each one needs, and what still breaks.
+
 ## Using Coolify's standalone database / Redis services
 
 If you instead create Coolify's **standalone** Postgres and Redis services and connect the gateway to

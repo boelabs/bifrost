@@ -43,7 +43,15 @@ Redeploying a previous image is safe only while the migrations applied since the
 with it — a migration that dropped or rewrote data is not reversed by changing the image tag. Restore
 a pre-upgrade backup or ship a new forward migration instead.
 
+## Rolling out without dropping requests
+
+Everything above is about *what* changes. [Rollouts](/docs/rollouts) is about *how* the running
+process is replaced: the drain sequence on `SIGTERM`, the grace period your platform has to allow
+for it, and why a migration has to stay compatible with the version it is replacing while both are
+briefly live.
+
 ## What to read next
 
+- [Rollouts](/docs/rollouts) — replacing a running gateway without dropping requests.
 - [Operations](/docs/operations) — the day-to-day runbook.
 - [Production checklist](/docs/production-checklist) — pre-launch verification.

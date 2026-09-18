@@ -13,7 +13,7 @@ export interface paths {
 		};
 		/**
 		 * Liveness (process only, no dependencies)
-		 * @description Always 200 while the process is responsive. Does NOT check Postgres/Redis, so a dependency outage never triggers a restart. Wire this to the orchestrator's liveness probe.
+		 * @description Always 200 while the process is responsive — including while it is draining, because a failing liveness probe restarts the container and would cut the drain short. Does NOT check Postgres/Redis, so a dependency outage never triggers a restart either. Wire this to the orchestrator's liveness probe.
 		 */
 		get: {
 			parameters: {
@@ -50,7 +50,7 @@ export interface paths {
 		};
 		/**
 		 * Readiness (DB + Redis + extensions)
-		 * @description 200 when Postgres, Redis and the extension runtime are healthy; otherwise 503 with a Retry-After header. Wire this to the readiness probe so a dependency outage pulls the instance from the load balancer without restarting it.
+		 * @description 200 when Postgres, Redis and the extension runtime are healthy; otherwise 503 with a Retry-After header. Wire this to the readiness probe so a dependency outage pulls the instance from the load balancer without restarting it. It also answers 503 with `status: draining` from the moment SIGTERM arrives, while the process keeps serving in-flight traffic — that is how a rollout takes the instance out of rotation before the listener closes.
 		 */
 		get: {
 			parameters: {
@@ -68,7 +68,7 @@ export interface paths {
 					};
 					content?: never;
 				};
-				/** @description Not ready (a dependency is down) */
+				/** @description Not ready: a dependency is down, or the process is draining for shutdown */
 				503: {
 					headers: {
 						[name: string]: unknown;

@@ -5,6 +5,7 @@
 		"operations",
 		"observability",
 		"production-checklist",
+		"rollouts",
 		"upgrades",
 		"troubleshooting"
 	]

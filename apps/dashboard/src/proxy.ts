@@ -12,8 +12,13 @@ import { gatewayUrl } from "#/shared/config/server.ts";
  */
 const SESSION_COOKIE = "bifrost_session";
 
-/** `/api/auth` is the sign-in relay itself; gating it would make signing in require a session. */
-const PUBLIC = ["/auth", "/api/auth"];
+/**
+ * `/api/auth` is the sign-in relay itself; gating it would make signing in require a session.
+ * `/api/config` is the container healthcheck, which arrives without one — gated, it would answer
+ * every probe with a redirect to the login page and report the dashboard healthy for the wrong
+ * reason.
+ */
+const PUBLIC = ["/auth", "/api/auth", "/api/config"];
 
 /**
  * True only when the gateway actively rejects the session. An unreachable gateway is not a

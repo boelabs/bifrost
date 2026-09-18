@@ -138,6 +138,12 @@ bun run --filter @boelabs/bifrost db:migrate    # applies pending
 ```
 
 - Migrations are **forward-only** — never edit an applied migration; add a new one.
+- **Every migration must also work against the previous release.** A deployment overlaps the two:
+  the migration job runs while the old gateway is still serving, and a rolling update keeps both
+  versions live for a while. So a rename or a drop is three changes, not one — add the new column
+  and write to both, then ship the code that reads it, then drop the old one in a later migration.
+  A migration that breaks N−1 is an outage, not a schema change. See
+  [Rollouts](apps/docs/content/docs/(docs)/(operate)/rollouts.mdx).
 - Historical migrations contain hand-tuned DDL and stay immutable even after a later migration
   removes the structure; snapshots describe the schema at each point in time.
 - `pgEnum`s must be **`export const`** or drizzle-kit won't emit their `CREATE TYPE`.

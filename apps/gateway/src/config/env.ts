@@ -106,7 +106,24 @@ export const env = createEnv({
 			.positive()
 			.default(30_000_000),
 
-		SHUTDOWN_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
+		/**
+		 * How long the process keeps serving normally after SIGTERM while `/health/ready` already
+		 * answers 503. It is the time the load balancer needs to notice and stop routing here; set it
+		 * to a few health-check intervals. 0 disables the wait, which is why the default is 0 outside
+		 * production: there is no proxy in front of `bun run dev`, and a Ctrl-C that takes fifteen
+		 * seconds to return the prompt is a bug in the developer's day.
+		 */
+		DRAIN_DELAY_MS: z.coerce
+			.number()
+			.int()
+			.min(0)
+			.default(process.env.NODE_ENV === "production" ? 15_000 : 0),
+		/**
+		 * Grace given to in-flight requests once the listener is closed. It has to cover the longest
+		 * response this gateway serves, which for a streamed completion is minutes, not seconds — a
+		 * short value here cancels live streams on every deployment.
+		 */
+		SHUTDOWN_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
 
 		/** Consecutive hook failures before an extension instance is disabled for this process. */
 		EXTENSIONS_MAX_FAILURES: z.coerce.number().int().positive().default(3),

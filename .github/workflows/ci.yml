@@ -121,18 +121,147 @@ jobs:
   containers:
     name: Build container images
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Only used on `push`, to publish the images this commit was tested as. Pull requests build
+      # without pushing, so a fork never needs it.
+      packages: write
     env:
       DOCKER_BUILDKIT: 1
+      # amd64 only: these are per-commit images for our own environments, and emulating arm64 here
+      # would triple the build for an architecture nothing deploys to. Releases stay multi-arch.
+      PLATFORMS: linux/amd64
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      # Every branch gets images, not just main: an environment is a resource pointing at a tag, and
+      # which branch feeds which environment is the deployment's business, not this workflow's.
+      #
+      # Two tags per image. `sha-<commit>` never moves and is what a rollback pins to; `<branch>`
+      # moves, and is what a long-lived environment follows so a deployment is a pull rather than a
+      # reconfiguration. Neither is `latest` — that tag means "released" and belongs to release.yml.
+      - name: Derive image tags
+        id: tags
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          # A branch name is not a tag: slashes and anything outside [A-Za-z0-9._-] are illegal, and
+          # a tag may not start with a separator.
+          slug=$(printf '%s' "$REF_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9._-]/-/g' | sed 's/^[.-]*//' | cut -c1-120)
+          [ -n "$slug" ] || slug=build
+          {
+            echo "sha=sha-${GITHUB_SHA}"
+            echo "branch=$slug"
+            echo "registry=ghcr.io/${{ github.repository_owner }}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build gateway image
-        run: docker build --pull -f apps/gateway/Dockerfile -t bifrost:test .
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: apps/gateway/Dockerfile
+          platforms: ${{ env.PLATFORMS }}
+          # Always re-resolve the base image: a stale local oven/bun hides a broken upstream bump.
+          pull: true
+          push: ${{ github.event_name == 'push' }}
+          load: ${{ github.event_name != 'push' }}
+          tags: |
+            ${{ steps.tags.outputs.registry }}/bifrost-gateway:${{ steps.tags.outputs.sha }}
+            ${{ steps.tags.outputs.registry }}/bifrost-gateway:${{ steps.tags.outputs.branch }}
+          cache-from: type=gha,scope=ci-gateway
+          cache-to: type=gha,mode=max,scope=ci-gateway
 
       # The dashboard ships in the same Compose stack; without this, an image that no longer
       # builds would reach a deployment with CI still green.
       - name: Build dashboard image
-        run: docker build --pull -f apps/dashboard/Dockerfile -t bifrost-dashboard:test .
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: apps/dashboard/Dockerfile
+          platforms: ${{ env.PLATFORMS }}
+          # Always re-resolve the base image: a stale local oven/bun hides a broken upstream bump.
+          pull: true
+          push: ${{ github.event_name == 'push' }}
+          load: ${{ github.event_name != 'push' }}
+          tags: |
+            ${{ steps.tags.outputs.registry }}/bifrost-dashboard:${{ steps.tags.outputs.sha }}
+            ${{ steps.tags.outputs.registry }}/bifrost-dashboard:${{ steps.tags.outputs.branch }}
+          cache-from: type=gha,scope=ci-dashboard
+          cache-to: type=gha,mode=max,scope=ci-dashboard
 
       - name: Build docs image
-        run: docker build --pull -f apps/docs/Dockerfile -t bifrost-docs:test .
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: apps/docs/Dockerfile
+          platforms: ${{ env.PLATFORMS }}
+          # Always re-resolve the base image: a stale local oven/bun hides a broken upstream bump.
+          pull: true
+          push: ${{ github.event_name == 'push' }}
+          load: ${{ github.event_name != 'push' }}
+          tags: |
+            ${{ steps.tags.outputs.registry }}/bifrost-docs:${{ steps.tags.outputs.sha }}
+            ${{ steps.tags.outputs.registry }}/bifrost-docs:${{ steps.tags.outputs.branch }}
+          cache-from: type=gha,scope=ci-docs
+          cache-to: type=gha,mode=max,scope=ci-docs
+
+  # Deployment is deliberately branch-agnostic: this job asks a map which resources belong to the
+  # branch that was pushed, and does nothing when the branch is not in it. Adding a preview
+  # environment is a line in a repository variable, not a change to this file — and no branch is
+  # privileged, so a preview cannot be deployed by a path production does not also take.
+  #
+  #   COOLIFY_URL          repository variable, e.g. https://coolify.example.com
+  #   COOLIFY_DEPLOY_MAP   repository variable, JSON: {"main": "<uuid>,<uuid>", "staging": "<uuid>"}
+  #   COOLIFY_TOKEN        repository secret, an API token with deploy permission
+  deploy:
+    name: Deploy
+    needs: [quality, integration, containers]
+    if: github.event_name == 'push' && vars.COOLIFY_URL != '' && vars.COOLIFY_DEPLOY_MAP != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Resolve the resources for this branch
+        id: resolve
+        env:
+          DEPLOY_MAP: ${{ vars.COOLIFY_DEPLOY_MAP }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          uuids=$(printf '%s' "$DEPLOY_MAP" | jq -er --arg branch "$REF_NAME" '.[$branch] // ""')
+          if [ -z "$uuids" ]; then
+            echo "::notice::No Coolify resource is mapped to '$REF_NAME'; nothing to deploy."
+          fi
+          echo "uuids=$uuids" >> "$GITHUB_OUTPUT"
+
+      # Coolify pulls the image the resource points at, so this triggers a rollout of the tag that
+      # was just published for this branch. The resource's own Stop Grace Period is what gives the
+      # outgoing container time to drain (see the gateway's DRAIN_DELAY_MS/SHUTDOWN_TIMEOUT_MS).
+      - name: Trigger the deployment
+        if: steps.resolve.outputs.uuids != ''
+        env:
+          COOLIFY_URL: ${{ vars.COOLIFY_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          UUIDS: ${{ steps.resolve.outputs.uuids }}
+        run: |
+          set -euo pipefail
+          status=$(curl -sS -o response.json -w '%{http_code}' -X POST             -H "Authorization: Bearer $COOLIFY_TOKEN"             -H "Accept: application/json"             "${COOLIFY_URL%/}/api/v1/deploy?uuid=${UUIDS}")
+          # The body can carry a per-resource error while the request itself succeeded, so it is
+          # printed either way. It holds deployment ids, never credentials.
+          cat response.json
+          echo
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error::Coolify answered HTTP $status"
+            exit 1
+          fi

@@ -27,6 +27,9 @@ services:
       ENCRYPTION_KEYRING: '{"local":"${ENCRYPTION_KEY_HEX:-0000000000000000000000000000000000000000000000000000000000000000}"}'
       ACTIVE_ENCRYPTION_KEY_ID: ${ACTIVE_ENCRYPTION_KEY_ID:-local}
       OBJECT_STORAGE_URL: ${OBJECT_STORAGE_URL:-file:.source/object-storage}
+      # No proxy in front of a local stack, so there is nothing to deregister from: skip the wait
+      # and let `docker compose down` return immediately.
+      DRAIN_DELAY_MS: ${DRAIN_DELAY_MS:-0}
     ports:
       - "127.0.0.1:4000:4000"
 
