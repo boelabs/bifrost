@@ -66,6 +66,14 @@ export interface AdaptiveDeadlineScope {
 	incremental: boolean;
 	/** Deployments this request could still fail over to if the chosen one is abandoned. */
 	alternatives: number;
+	/**
+	 * Attempts this request has already spent on this deployment. The EWMA only moves on success, so
+	 * a narrowed deadline that just expired will be recomputed identically for the next attempt: the
+	 * retry re-runs an experiment whose result is already known. Each prior attempt therefore doubles
+	 * the granted budget, which is the router admitting that its estimate was wrong about THIS
+	 * request rather than repeating it until the attempt budget runs out.
+	 */
+	priorAttempts: number;
 }
 
 /**
@@ -100,7 +108,9 @@ export function adaptiveFirstOutputMs(
 		ttftEwmaMs <= 0
 	)
 		return configuredMs;
-	const budget = Math.ceil(ttftEwmaMs * adaptive.multiplier);
+	const budget = Math.ceil(
+		ttftEwmaMs * adaptive.multiplier * 2 ** Math.max(0, scope.priorAttempts),
+	);
 	return Math.min(configuredMs, Math.max(adaptive.floorMs, budget));
 }
 
