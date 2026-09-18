@@ -70,7 +70,7 @@ test("execution policy: the retry budget is never delegated to a deployment", ()
 
 const adaptive = { enabled: true, multiplier: 4, floorMs: 5_000 };
 /** Streaming, with a sibling to fall back to: the case narrowing was designed for. */
-const scope = { incremental: true, alternatives: 1 };
+const scope = { incremental: true, alternatives: 1, priorAttempts: 0 };
 
 test("adaptive deadline: a fast deployment gets a fraction of the pool's budget", () => {
 	// 1.2s typical first output under a 180s pool budget: fail over in ~5s, not three minutes.
@@ -115,6 +115,7 @@ test("adaptive deadline: a whole-response budget is never narrowed by a first-to
 		adaptiveFirstOutputMs(300_000, 3_000, adaptive, {
 			incremental: false,
 			alternatives: 3,
+			priorAttempts: 0,
 		}),
 		300_000,
 	);
@@ -127,7 +128,37 @@ test("adaptive deadline: nothing to fail over to means nothing to gain", () => {
 		adaptiveFirstOutputMs(180_000, 1_200, adaptive, {
 			incremental: true,
 			alternatives: 0,
+			priorAttempts: 0,
 		}),
 		180_000,
+	);
+});
+
+test("adaptive deadline: a retry does not repeat a budget that already expired", () => {
+	// 1.2s typical, 4x multiplier: 4.8s raised to the 5s floor, then 9.6s, then 19.2s. A deployment
+	// that missed its estimate is being told the estimate was wrong, not asked the same question.
+	assert.equal(
+		adaptiveFirstOutputMs(180_000, 1_200, adaptive, {
+			...scope,
+			priorAttempts: 1,
+		}),
+		9_600,
+	);
+	assert.equal(
+		adaptiveFirstOutputMs(180_000, 1_200, adaptive, {
+			...scope,
+			priorAttempts: 2,
+		}),
+		19_200,
+	);
+});
+
+test("adaptive deadline: escalation still stops at the configured deadline", () => {
+	assert.equal(
+		adaptiveFirstOutputMs(20_000, 1_200, adaptive, {
+			...scope,
+			priorAttempts: 8,
+		}),
+		20_000,
 	);
 });

@@ -234,6 +234,7 @@ function buildContext(
 	attemptStartedAt: number,
 	observed: DeploymentMetrics | undefined,
 	alternatives: number,
+	priorAttempts: number,
 ): { ctx: AdapterContext; cleanup: () => void } {
 	const configuredPolicy = resolveExecutionPolicy(
 		settings.executionPolicies[callType][opts.executionMode ?? "json"],
@@ -256,6 +257,7 @@ function buildContext(
 				{
 					incremental: (opts.executionMode ?? "json") === "stream",
 					alternatives,
+					priorAttempts,
 				},
 			),
 			remainingPreOutputMs,
@@ -706,6 +708,9 @@ export async function route<T>(
 						// meant to protect. Undercounting keeps the configured deadline; overcounting
 						// ends live requests.
 						selectableCandidates.length - 1,
+						// The counter already includes the attempt being built, so subtract it: what
+						// widens the budget is the attempts that came before and failed.
+						(attemptsByDeployment.get(chosen.row.id) ?? 1) - 1,
 					);
 					activeContext = instrumentedContext.ctx;
 					cleanupContext = instrumentedContext.cleanup;
