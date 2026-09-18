@@ -1,3 +1,4 @@
+import { PUBLIC_QUALITY_VALUES, normalizeQuality } from "#core/quality.ts";
 import type { ImageModelProfile } from "#core/images.ts";
 import { mergeExtraBodyDeep } from "#core/extraBody.ts";
 import { GatewayError } from "#core/errors.ts";
@@ -46,6 +47,11 @@ function directBody(
 	const localOutputFormat = profile?.nativeOutputFormat === false;
 	const localOutputCompression = profile?.nativeOutputCompression === false;
 	const resolvedSize = resolveImageSize(req, profile);
+	// `auto` expresses no choice, so nothing is sent; a rung is sent in the model's own vocabulary.
+	const nativeQuality =
+		req.quality === undefined || req.quality === "auto"
+			? undefined
+			: (profile?.qualityMappings?.[req.quality]?.quality ?? req.quality);
 	const body: Record<string, unknown> = {
 		model: upstreamModel,
 		prompt: req.prompt,
@@ -64,7 +70,7 @@ function directBody(
 		...(req.partialImages !== undefined && profile?.supportsNativeStreaming
 			? { partial_images: req.partialImages }
 			: {}),
-		...(req.quality !== undefined ? { quality: req.quality } : {}),
+		...(nativeQuality !== undefined ? { quality: nativeQuality } : {}),
 		response_format: "b64_json",
 		...(resolvedSize?.size !== undefined ? { size: resolvedSize.size } : {}),
 		...(req.stream && profile?.supportsNativeStreaming ? { stream: true } : {}),
@@ -169,6 +175,14 @@ function imageData(raw: unknown): CanonicalImageData {
 	});
 }
 
+/** An echoed quality, mapped back onto the ladder; undefined when it is not one we recognize. */
+function canonicalQuality(raw: unknown): ImageQuality | undefined {
+	return typeof raw === "string" &&
+		(PUBLIC_QUALITY_VALUES as readonly string[]).includes(raw)
+		? normalizeQuality(raw as (typeof PUBLIC_QUALITY_VALUES)[number])
+		: undefined;
+}
+
 export function parseDirectImagesResponse(
 	raw: unknown,
 ): CanonicalImageResponse {
@@ -179,6 +193,7 @@ export function parseDirectImagesResponse(
 			message: "Invalid Images API response",
 		});
 	const usage = imageUsage(body.usage);
+	const echoedQuality = canonicalQuality(body.quality);
 	return {
 		created:
 			typeof body.created === "number"
@@ -191,9 +206,7 @@ export function parseDirectImagesResponse(
 		...(typeof body.output_format === "string"
 			? { outputFormat: body.output_format as ImageOutputFormat }
 			: {}),
-		...(typeof body.quality === "string"
-			? { quality: body.quality as ImageQuality }
-			: {}),
+		...(echoedQuality !== undefined ? { quality: echoedQuality } : {}),
 		...(typeof body.size === "string" ? { size: body.size } : {}),
 		...(usage ? { usage } : {}),
 	};

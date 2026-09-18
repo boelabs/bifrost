@@ -1,3 +1,4 @@
+import { PUBLIC_QUALITY_VALUES, QUALITY_ORDER } from "#core/quality.ts";
 import { cacheUsage } from "#admin/metricsSchema.ts";
 
 import {
@@ -491,8 +492,8 @@ export const OpenRouterError = z
 
 /* -------------------------------------------------------------------- images */
 
-const nullableEnum = (values: [string, ...string[]]) =>
-	z.union([z.enum(values), z.null()]);
+const nullableEnum = (values: readonly [string, ...string[]]) =>
+	z.union([z.enum([...values] as [string, ...string[]]), z.null()]);
 const sizePattern = z.string().regex(/^(auto|[1-9][0-9]*x[1-9][0-9]*)$/);
 
 export const ImageGenerationRequest = z
@@ -505,16 +506,7 @@ export const ImageGenerationRequest = z
 		output_compression: nullableInteger.optional(),
 		output_format: nullableEnum(["png", "jpeg", "webp"]).optional(),
 		partial_images: nullableInteger.optional(),
-		quality: nullableEnum([
-			"standard",
-			"hd",
-			"low",
-			"medium",
-			"high",
-			"xhigh",
-			"max",
-			"auto",
-		]).optional(),
+		quality: nullableEnum(PUBLIC_QUALITY_VALUES).optional(),
 		response_format: nullableEnum(["b64_json"]).default("b64_json").optional(),
 		size: z.union([sizePattern, z.null()]).optional(),
 		stream: z.union([z.boolean(), z.null()]).default(false).optional(),
@@ -549,15 +541,7 @@ export const ImageEditRequest = z
 		output_compression: nullableInteger.optional(),
 		output_format: nullableEnum(["png", "jpeg", "webp"]).optional(),
 		partial_images: nullableInteger.optional(),
-		quality: nullableEnum([
-			"standard",
-			"low",
-			"medium",
-			"high",
-			"xhigh",
-			"max",
-			"auto",
-		]).optional(),
+		quality: nullableEnum(PUBLIC_QUALITY_VALUES).optional(),
 		response_format: nullableEnum(["b64_json"]).default("b64_json").optional(),
 		size: z.union([sizePattern, z.null()]).optional(),
 		stream: z.union([z.boolean(), z.null()]).default(false).optional(),
@@ -599,7 +583,7 @@ export const ImagesResponse = z
 		data: z.array(ImageData),
 		background: z.enum(["transparent", "opaque"]).optional(),
 		output_format: z.enum(["png", "jpeg", "webp"]).optional(),
-		quality: z.enum(["low", "medium", "high"]).optional(),
+		quality: z.enum(QUALITY_ORDER).optional(),
 		size: z.string().optional(),
 		usage: ImageUsage.optional(),
 	})
@@ -704,13 +688,7 @@ export const VideoCreateRequest = loose(
 		]).optional(),
 		seed: z.union([z.int(), z.null()]).optional(),
 		generate_audio: z.union([z.boolean(), z.null()]).optional(),
-		quality: nullableEnum([
-			"auto",
-			"low",
-			"medium",
-			"high",
-			"native",
-		]).optional(),
+		quality: nullableEnum(PUBLIC_QUALITY_VALUES).optional(),
 		user: nullableString
 			.optional()
 			.meta({ description: "Gateway-side attribution; never sent upstream." }),
@@ -742,7 +720,7 @@ export const VideoObject = z
 		remixed_from_video_id: nullableString.optional(),
 		seconds: z.string().optional(),
 		size: z.string().optional(),
-		quality: z.enum(["auto", "low", "medium", "high", "native"]).optional(),
+		quality: z.enum(QUALITY_ORDER).optional(),
 	})
 	.meta({ id: "VideoObject" });
 

@@ -2,6 +2,7 @@ import { UPSTREAM_TRANSPORTS } from "#core/transport.ts";
 import { OPERATION_IDS } from "#operations/registry.ts";
 import { CALL_TYPE_VALUES } from "#core/callType.ts";
 import { EFFORT_ORDER } from "#core/reasoning.ts";
+import { QUALITY_ORDER } from "#core/quality.ts";
 import * as z from "zod/v4";
 
 export const pricingSchema = z
@@ -229,20 +230,7 @@ const imageOperationProfileSchema = z
 		supportsStyle: z.boolean().optional(),
 		supportsTransparentBackground: z.boolean().optional(),
 		outputFormats: z.array(z.enum(["png", "jpeg", "webp"])).optional(),
-		qualities: z
-			.array(
-				z.enum([
-					"standard",
-					"hd",
-					"low",
-					"medium",
-					"high",
-					"xhigh",
-					"max",
-					"auto",
-				]),
-			)
-			.optional(),
+		qualities: z.array(z.enum(QUALITY_ORDER)).optional(),
 		responseFormats: z.array(z.literal("b64_json")).optional(),
 		sizes: z
 			.record(
@@ -279,18 +267,10 @@ const imageOperationProfileSchema = z
 		nativeOutputCompression: z.boolean().optional(),
 		qualityMappings: z
 			.partialRecord(
-				z.enum([
-					"standard",
-					"hd",
-					"low",
-					"medium",
-					"high",
-					"xhigh",
-					"max",
-					"auto",
-				]),
+				z.enum(QUALITY_ORDER),
 				z
 					.object({
+						quality: z.string().min(1).optional(),
 						thinkingLevel: z.enum(["minimal", "low", "high"]).optional(),
 					})
 					.strict(),
@@ -355,10 +335,7 @@ const videoOperationProfileSchema = z
 			.min(1)
 			.optional(),
 		durations: z.array(z.string().min(1)).min(1).optional(),
-		qualities: z
-			.array(z.enum(["auto", "low", "medium", "high", "native"]))
-			.min(1)
-			.optional(),
+		qualities: z.array(z.enum(QUALITY_ORDER)).min(1).optional(),
 		sizes: z
 			.record(
 				z.string(),

@@ -352,21 +352,21 @@ test("Gemini images: size auto omits imageConfig natively or maps the first prof
 	assert.equal(fallbackBody.generationConfig.imageConfig.imageSize, "1K");
 });
 
-test("Gemini 3.1 images: quality controls thinkingLevel; auto/low/omitted use minimal", async () => {
+test("Gemini 3.1 images: rungs map to thinkingLevel; auto/omitted send none", async () => {
 	const googleCtx = ctx("generate_content", "google");
 	googleCtx.meta.image = {
 		...profile,
-		qualities: ["auto", "low", "high"],
+		qualities: ["low", "high"],
 		qualityMappings: {
-			auto: { thinkingLevel: "minimal" },
 			low: { thinkingLevel: "minimal" },
 			high: { thinkingLevel: "high" },
 		},
 	};
 
 	for (const [quality, expected] of [
-		[undefined, "minimal"],
-		["auto", "minimal"],
+		// No choice expressed: nothing is sent, so Gemini's own default (minimal) applies.
+		[undefined, undefined],
+		["auto", undefined],
 		["low", "minimal"],
 		["high", "high"],
 	] as const) {
@@ -378,6 +378,10 @@ test("Gemini 3.1 images: quality controls thinkingLevel; auto/low/omitted use mi
 			googleCtx,
 		);
 		const body = JSON.parse(request.body as string);
-		assert.equal(body.generationConfig.thinkingConfig.thinkingLevel, expected);
+		assert.equal(
+			body.generationConfig.thinkingConfig?.thinkingLevel,
+			expected,
+			String(quality),
+		);
 	}
 });

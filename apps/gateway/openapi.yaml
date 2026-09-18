@@ -3060,14 +3060,15 @@ components:
           anyOf:
             - type: string
               enum:
-                - standard
-                - hd
+                - auto
                 - low
                 - medium
                 - high
                 - xhigh
                 - max
-                - auto
+                - standard
+                - hd
+                - native
             - type: "null"
         response_format:
           default: b64_json
@@ -3172,13 +3173,15 @@ components:
           anyOf:
             - type: string
               enum:
-                - standard
+                - auto
                 - low
                 - medium
                 - high
                 - xhigh
                 - max
-                - auto
+                - standard
+                - hd
+                - native
             - type: "null"
         response_format:
           default: b64_json
@@ -3311,6 +3314,10 @@ components:
                 - low
                 - medium
                 - high
+                - xhigh
+                - max
+                - standard
+                - hd
                 - native
             - type: "null"
         user:
@@ -5092,6 +5099,8 @@ components:
             - low
             - medium
             - high
+            - xhigh
+            - max
         size:
           type: string
         usage:
@@ -5220,11 +5229,11 @@ components:
         quality:
           type: string
           enum:
-            - auto
             - low
             - medium
             - high
-            - native
+            - xhigh
+            - max
       required:
         - id
         - object

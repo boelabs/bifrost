@@ -8,10 +8,11 @@ one accepts `parallel_tool_calls`, another ignores it silently upstream (which i
 The catalog declares, per model, which parameters are supported, and a global router setting decides
 what happens when a client sends one that isn't.
 
-This only applies to the **chat-shaped** endpoints — `/v1/chat/completions`, `/v1/messages`, and
-`/v1/responses`. Images, embeddings, and audio transcriptions validate their own parameters against the
-catalog profile unconditionally (always a hard `400 unsupported_parameter`); there is no configurable
-strategy for them, because those requests don't get routed across a heterogeneous pool the same way.
+The `parameters` map below applies to the **chat-shaped** endpoints — `/v1/chat/completions`,
+`/v1/messages`, and `/v1/responses`. Images, embeddings, and audio transcriptions validate their own
+parameters against the catalog profile unconditionally (a hard `400 unsupported_parameter`), with one
+exception: `quality` on image and video generation, which follows the same three strategies. See
+[Quality](/docs/parameter-policy#quality-on-image-and-video-generation).
 
 ## Declaring support in the catalog
 
@@ -47,6 +48,34 @@ or per-request override.
 route this request where it'll actually work" — a pool with mixed-capability deployments (e.g. one
 model that supports `seed` and one that doesn't) keeps serving requests that need it, as long as at
 least one deployment can.
+
+## `quality` on image and video generation
+
+Image and video models expose wildly different quality rungs — GPT Image 2.5 goes `low` through `max`,
+earlier GPT Image models stop at `high`, DALL·E speaks `standard`/`hd`, some Gemini image models
+translate the knob into a thinking level, and others have no knob at all. The gateway takes one
+canonical ladder — `low` &lt; `medium` &lt; `high` &lt; `xhigh` &lt; `max` — and reconciles the requested
+rung with whatever the chosen model declares:
+
+| Strategy | Behavior |
+|---|---|
+| `drop` (default) | **Snap** to the highest rung the model declares that does not exceed the request, or to its lowest rung when the request sits below all of them. A model with no rungs at all gets no `quality` field. |
+| `error` | Exclude any deployment that does not declare the requested rung from candidacy, exactly as it does for a chat parameter. The client only sees `400 unsupported_parameter` if **every** deployment in the pool lacks it. |
+| `allow` | Forward the rung verbatim and let the provider decide. |
+
+Snapping is what lets a request survive a fallback: a request for `max` that lands on a deployment
+whose ladder stops at `high` degrades instead of failing. It handles gaps too — on a model declaring
+only `low` and `high`, `max` resolves to `high` and `medium` resolves to `low`.
+
+`auto` is **not** a rung. It means "no choice expressed", so it is accepted for every model, never
+snapped, and never sent upstream — the model's own default applies. `standard`, `hd` and the video
+vocabulary's `native` are still accepted from clients and normalized onto the ladder
+(`standard` → `medium`, `hd` → `high`, `native` → `max`); a model that natively speaks one of them
+declares the translation back in its profile, so DALL·E still receives `hd` on the wire.
+
+When `drop` changes the rung, the operation log records a `qualityAdjustment` in its metadata with the
+requested and effective values, so a silent downgrade stays auditable — this matters because rungs
+carry real cost differences.
 
 ## Seeing what happened
 

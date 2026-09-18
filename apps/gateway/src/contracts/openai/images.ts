@@ -1,3 +1,4 @@
+import { PUBLIC_QUALITY_VALUES, normalizeQuality } from "#core/quality.ts";
 import { GatewayError } from "#core/errors.ts";
 import * as z from "zod/v4";
 
@@ -23,10 +24,7 @@ export const imageGenerationRequestSchema = z
 		output_compression: z.int().min(0).max(100).nullable().optional(),
 		output_format: z.enum(["png", "jpeg", "webp"]).nullable().optional(),
 		partial_images: z.int().min(0).max(3).nullable().optional(),
-		quality: z
-			.enum(["standard", "hd", "low", "medium", "high", "xhigh", "max", "auto"])
-			.nullable()
-			.optional(),
+		quality: z.enum(PUBLIC_QUALITY_VALUES).nullable().optional(),
 		response_format: z.literal("b64_json").nullable().optional(),
 		size: sizeSchema.nullable().optional(),
 		stream: z.boolean().nullable().optional().default(false),
@@ -76,10 +74,7 @@ export const imageEditFieldsSchema = z
 		output_compression: z.int().min(0).max(100).nullable().optional(),
 		output_format: z.enum(["png", "jpeg", "webp"]).nullable().optional(),
 		partial_images: z.int().min(0).max(3).nullable().optional(),
-		quality: z
-			.enum(["standard", "low", "medium", "high", "xhigh", "max", "auto"])
-			.nullable()
-			.optional(),
+		quality: z.enum(PUBLIC_QUALITY_VALUES).nullable().optional(),
 		response_format: z.literal("b64_json").nullable().optional(),
 		size: sizeSchema.nullable().optional(),
 		stream: z.boolean().nullable().optional().default(false),
@@ -145,7 +140,7 @@ export function generationToCanonical(
 			? { partialImages: defined(req.partial_images) }
 			: {}),
 		...(defined(req.quality) !== undefined
-			? { quality: defined(req.quality) }
+			? { quality: normalizeQuality(defined(req.quality)!) }
 			: {}),
 		responseFormat: "b64_json",
 		...(defined(req.size) !== undefined ? { size: defined(req.size) } : {}),
@@ -184,7 +179,7 @@ export function editToCanonical(
 			? { partialImages: defined(req.partial_images) }
 			: {}),
 		...(defined(req.quality) !== undefined
-			? { quality: defined(req.quality) }
+			? { quality: normalizeQuality(defined(req.quality)!) }
 			: {}),
 		responseFormat: "b64_json",
 		...(defined(req.size) !== undefined ? { size: defined(req.size) } : {}),
@@ -242,8 +237,7 @@ export function toOpenAIImagesResponse(
 		...(response.outputFormat !== undefined
 			? { output_format: response.outputFormat }
 			: {}),
-		...(response.quality !== undefined &&
-		!["auto", "standard", "hd"].includes(response.quality)
+		...(response.quality !== undefined && response.quality !== "auto"
 			? { quality: response.quality }
 			: {}),
 		...(response.size !== undefined && response.size !== "auto"

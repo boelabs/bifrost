@@ -78,7 +78,7 @@
 					"supportsTransparentBackground": true,
 					"supportsNativeStreaming": true,
 					"outputFormats": ["png", "jpeg", "webp"],
-					"qualities": ["auto", "low", "medium", "high", "xhigh", "max"],
+					"qualities": ["low", "medium", "high", "xhigh", "max"],
 					"responseFormats": ["b64_json"],
 					"autoSize": {},
 					"sizes": {
@@ -106,7 +106,7 @@
 					"supportsTransparentBackground": true,
 					"supportsNativeStreaming": true,
 					"outputFormats": ["png", "jpeg", "webp"],
-					"qualities": ["auto", "low", "medium", "high", "xhigh", "max"],
+					"qualities": ["low", "medium", "high", "xhigh", "max"],
 					"responseFormats": ["b64_json"],
 					"autoSize": {},
 					"sizes": {
@@ -139,7 +139,7 @@
 					"supportsTransparentBackground": true,
 					"supportsNativeStreaming": true,
 					"outputFormats": ["png", "jpeg", "webp"],
-					"qualities": ["auto", "low", "medium", "high", "xhigh", "max"],
+					"qualities": ["low", "medium", "high", "xhigh", "max"],
 					"responseFormats": ["b64_json"],
 					"autoSize": {},
 					"sizes": {
@@ -167,7 +167,7 @@
 					"supportsTransparentBackground": true,
 					"supportsNativeStreaming": true,
 					"outputFormats": ["png", "jpeg", "webp"],
-					"qualities": ["auto", "low", "medium", "high", "xhigh", "max"],
+					"qualities": ["low", "medium", "high", "xhigh", "max"],
 					"responseFormats": ["b64_json"],
 					"autoSize": {},
 					"sizes": {
