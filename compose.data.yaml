@@ -1,0 +1,46 @@
+# Postgres and Redis only — the stateful half of a split deployment.
+#
+# Use this when each app runs as its own resource so the platform can roll it without downtime (see
+# the Rollouts page). The apps are not here: they live as their own Docker Image resources and reach
+# these two over the shared network, addressing them by their full container name.
+#
+# Coolify's standalone Postgres and Redis services are the obvious alternative, and are deliberately
+# not it: they are published with self-signed certificates, which Bun's TLS client rejects.
+#
+# Use compose.images.yaml instead to run everything — apps included — as one stack.
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-gateway}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-bifrost}
+    volumes:
+      # PG18 moved PGDATA to /var/lib/postgresql/18/docker; the volume is mounted on the parent.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gateway} -d ${POSTGRES_DB:-bifrost}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+# No migration job here. It would need every variable the gateway needs — `migrate.ts` loads the
+# same validated environment — which would copy MASTER_KEY and the encryption keyring into a second
+# resource to run one SQL script. The gateway owns its schema instead: ongoing migrations run as its
+# pre-deployment command, and the first one, on an empty database, is run by hand.
+volumes:
+  pgdata:
+  redisdata:

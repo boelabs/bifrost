@@ -105,10 +105,12 @@ jobs:
         run: |
           docker compose -f docker-compose.yml config --quiet
           docker compose -f docker-compose.yml -f compose.local.yaml config --quiet
-          # The pull-based file people actually paste into Coolify or Portainer. Its required
+          # The pull-based files people actually paste into Coolify or Portainer. Their required
           # variables are supplied here so a missing one fails CI rather than a deployment.
           POSTGRES_PASSWORD=ci \
             docker compose -f compose.images.yaml config --quiet
+          POSTGRES_PASSWORD=ci \
+            docker compose -f compose.data.yaml config --quiet
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
