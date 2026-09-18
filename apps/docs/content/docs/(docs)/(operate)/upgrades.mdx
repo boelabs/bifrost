@@ -5,12 +5,19 @@ description: "How to roll out a new version safely: migrations, breaking changes
 
 ## Pulling a new image
 
-`docker/compose.yaml`'s `migrate` service is a one-off job that applies pending SQL migrations and
-exits; the `gateway` service depends on it completing before it starts. Pulling a new image and
-re-running `docker compose up -d` (or your PaaS's redeploy) re-runs that job automatically — you don't
-need a separate manual migration step for the bundled Compose stack. If you run the gateway outside
-Compose, run `bun run --filter @boelabs/bifrost db:migrate` yourself before rolling out new
-instances.
+The gateway applies pending migrations itself, at boot, before it starts listening. Pulling a new
+image is the whole upgrade — there is no migration step to sequence and nothing to remember,
+wherever you run it.
+
+Every replica does this behind a Postgres advisory lock, so a rollout to several of them serialises
+instead of racing, and the ones that lose the race find nothing pending. A migration that fails is
+fatal: the process exits rather than serve against a schema it does not understand, which leaves a
+rolling update on the previous version.
+
+Set `MIGRATE_ON_BOOT=false` if your deployment would rather own the step, and run
+`bun src/db/migrate.ts` in the gateway image yourself. Do not put that in a platform's
+"pre-deployment" hook — those usually run in the *outgoing* container, which is the old image and
+does not contain the new migration files.
 
 ## Migrations are forward-only
 

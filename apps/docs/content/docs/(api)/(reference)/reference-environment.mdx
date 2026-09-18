@@ -27,6 +27,7 @@ must be set; everything else ships with a production-ready value.
 | `PUBLIC_MODELS_RPM` | `600` | Per-process anonymous `/v1/models` requests allowed each minute per resolved client IP. `0` disables the limit. |
 | `NODE_ENV` | `development` | `development` \| `test` \| `production`. |
 | `LOG_LEVEL` | `info` | `debug` \| `info` \| `warn` \| `error`. |
+| `MIGRATE_ON_BOOT` | `true` | Apply pending migrations before the server listens. Every replica does it behind an advisory lock, so they serialise; a failure stops the process. |
 | `DRAIN_DELAY_MS` | `15000` (`0` outside production) | How long `/health/ready` answers `503` while the process keeps serving, so the proxy can deregister it before the listener closes. See [Rollouts](/docs/rollouts). |
 | `SHUTDOWN_TIMEOUT_MS` | `120000` | Grace for in-flight requests once the listener is closed. Must cover the longest streamed response. |
 

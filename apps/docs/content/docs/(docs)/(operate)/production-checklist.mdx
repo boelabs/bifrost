@@ -39,8 +39,9 @@ A condensed checklist. Each item links to the page with the full explanation.
 
 ## Data lifecycle
 
-- [ ] `db:migrate` runs as a one-off step before rolling out new instances (the Compose stack does this
-  automatically via its migration job).
+- [ ] Migrations are applied at boot (`MIGRATE_ON_BOOT`, the default), or you run them as your own
+  step — and either way every migration works against the version it replaces, because a rollout has
+  both live at once. See [Rollouts](/docs/rollouts).
 - [ ] `OBSERVABILITY_METADATA_RETENTION_DAYS`, `OBSERVABILITY_PAYLOAD_RETENTION_DAYS`, and
   `RESPONSES_STATE_RETENTION_DAYS` match your actual compliance/storage requirements. Every finished
   request keeps one encrypted payload sample, so the payload window is both the disk bill and the

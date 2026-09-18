@@ -9,6 +9,9 @@
 # documentation site is not here: it shares nothing with the gateway, so it lives in
 # compose.docs.yaml.
 #
+# There is no migration service: the gateway applies pending migrations at boot, behind an advisory
+# lock, so every replica can do it and only one does.
+#
 # The gateway and the dashboard are two products, each with its own environment. The only
 # thing joining them is GATEWAY_URL on the dashboard: everything the browser needs, the
 # dashboard fetches itself, so the gateway never has to be exposed.
@@ -43,23 +46,6 @@ services:
       retries: 10
     restart: unless-stopped
 
-  # Applies SQL migrations and exits. The gateway waits for it to finish.
-  migrate:
-    image: ${GATEWAY_IMAGE:-ghcr.io/boelabs/bifrost-gateway:latest}
-    command: ["bun", "src/db/migrate.ts"]
-    env_file:
-      # Optional so `docker compose config` works in a fresh checkout; in a real deployment this is
-      # where MASTER_KEY, ENCRYPTION_KEYRING and the DASH_* settings come from.
-      - path: .env
-        required: false
-    environment:
-      DATABASE_URL: ${DATABASE_URL:-postgres://gateway:${POSTGRES_PASSWORD}@postgres:5432/bifrost}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: "no"
-
   gateway:
     image: ${GATEWAY_IMAGE:-ghcr.io/boelabs/bifrost-gateway:latest}
     env_file:
@@ -84,8 +70,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
     restart: unless-stopped
 
   # Remove this service entirely if you do not want a dashboard — then set DASH_ENABLED=false so the

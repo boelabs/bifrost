@@ -13,14 +13,13 @@ description: "Deploy Bifrost on Coolify with Docker Compose."
 	- `MASTER_KEY` — `openssl rand -base64 48`
 	- `ENCRYPTION_KEYRING` — e.g. `{"primary":"<openssl rand -hex 32>"}`
 	- `ACTIVE_ENCRYPTION_KEY_ID` — `primary`
-3. Deploy. The bundled `postgres` and `redis` run inside the stack's private network, the `migrate`
-   job applies migrations, and the gateway comes up on internal port `4000`.
+3. Deploy. The bundled `postgres` and `redis` run inside the stack's private network, and the
+   gateway applies pending migrations at boot before coming up on internal port `4000`.
    The documentation site is not in this stack — it needs nothing from it. Deploy
    `docker/compose.docs.yaml` as a second resource if you want it published.
 4. Configure domains only for long-running HTTP services:
    - **gateway** — for example `https://api.example.com:4000`
    - **dashboard** (optional) — its **own** domain: `https://dash.example.com:3001`
-   - **migrate** — leave empty
 
 The dashboard is a separate product on a separate domain, so Coolify treats it like any other
 service: a hostname, a container port, done. There is no path prefix to preserve.
@@ -30,10 +29,8 @@ service name — `http://gateway:4000` — which means the gateway needs no doma
 want the API published. [Operator dashboard → Check it](/docs/dashboard#check-it) has a curl that
 tells you whether the dashboard can reach it.
 
-Coolify lists Compose services as possible domain targets and may therefore show **Domains for
-migrate**. That does not mean the job needs a domain: it runs once, exits, exposes no port, and must
-remain blank. The port suffix in a Coolify domain selects the internal container port; TLS still uses
-the normal public HTTPS port. Postgres and Redis must also remain internal.
+The port suffix in a Coolify domain selects the internal container port; TLS still uses the normal
+public HTTPS port. Postgres and Redis must remain internal.
 
 The base Compose file uses `expose`, not `ports`, so none of these services bypass Coolify's proxy or
 publish a raw host port.

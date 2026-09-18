@@ -34,6 +34,7 @@ import { getRequestId } from "./http/requestContext.ts";
 import { rerankHandler } from "./endpoints/rerank.ts";
 import { authMiddleware } from "./auth/middleware.ts";
 import { startTelemetry } from "./telemetry/index.ts";
+import { runMigrations } from "./db/migrations.ts";
 import { startVideoJobs } from "./videos/jobs.ts";
 import type { AppEnv } from "./auth/types.ts";
 import { adminApp } from "./admin/index.ts";
@@ -78,6 +79,22 @@ import {
 } from "./endpoints/models.ts";
 
 startTelemetry();
+
+// Before anything touches a table. The extension runtime, the background jobs and readiness itself
+// all query on boot, and against an un-migrated database every one of them fails — which looks like
+// an application fault rather than a missing step.
+if (env.MIGRATE_ON_BOOT) {
+	try {
+		await runMigrations();
+		log.info("db", "migrations up to date");
+	} catch (err) {
+		// Fatal on purpose. Serving against a schema this build does not understand is worse than not
+		// starting: an exit leaves the platform's rolling update on the previous version, which works.
+		log.error("db", "migrations failed; refusing to start", { err });
+		process.exit(1);
+	}
+}
+
 try {
 	await initializeExtensions();
 } catch (err) {
