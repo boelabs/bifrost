@@ -25,6 +25,21 @@ test("failure owner: a deadline the gateway imposed is not the provider's failur
 	);
 });
 
+test("failure owner: a narrowed deadline keeps the precise label, not the general one", () => {
+	// The router reports these as health-neutral, which the `gateway` branch also matches; the
+	// deadline is the more specific fact and the one an operator needs.
+	assert.equal(
+		failureOwner(
+			attempt({
+				errorClass: "timeout",
+				errorCode: "upstream_first_output_timeout",
+				deploymentHealth: "neutral",
+			}),
+		),
+		"gateway_deadline",
+	);
+});
+
 test("failure owner: a timeout the upstream itself reported stays the provider's", () => {
 	assert.equal(
 		failureOwner(
