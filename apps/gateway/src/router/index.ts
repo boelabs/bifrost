@@ -233,6 +233,7 @@ function buildContext(
 	opts: RouteOptions,
 	attemptStartedAt: number,
 	observed: DeploymentMetrics | undefined,
+	alternatives: number,
 ): { ctx: AdapterContext; cleanup: () => void } {
 	const configuredPolicy = resolveExecutionPolicy(
 		settings.executionPolicies[callType][opts.executionMode ?? "json"],
@@ -252,6 +253,10 @@ function buildContext(
 				configuredPolicy.firstOutputMs,
 				observed?.ttftMs,
 				settings.adaptiveTimeouts,
+				{
+					incremental: (opts.executionMode ?? "json") === "stream",
+					alternatives,
+				},
 			),
 			remainingPreOutputMs,
 		),
@@ -695,6 +700,12 @@ export async function route<T>(
 						deadlineOptions,
 						startedAt,
 						metrics.get(chosen.row.id),
+						// Only siblings inside the current pool are counted. A configured fallback is
+						// another way out, but reaching it costs a whole pool of attempts, so counting
+						// it here would re-enable narrowing for the single-deployment case this is
+						// meant to protect. Undercounting keeps the configured deadline; overcounting
+						// ends live requests.
+						selectableCandidates.length - 1,
 					);
 					activeContext = instrumentedContext.ctx;
 					cleanupContext = instrumentedContext.cleanup;
