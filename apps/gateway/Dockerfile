@@ -11,7 +11,7 @@
 # via a managed provider with a public-CA certificate. See the docs "Known errors" section.
 
 # ---- deps: production dependencies only, with Bun ----
-FROM oven/bun:1.4.0 AS deps
+FROM oven/bun:1.4 AS deps
 WORKDIR /app
 ENV NODE_ENV=production
 # Copy only the manifests + lockfile first so this layer caches until dependencies change.
@@ -23,7 +23,7 @@ COPY packages/tsconfig/package.json ./packages/tsconfig/package.json
 RUN bun install --frozen-lockfile --production --filter @boelabs/bifrost
 
 # ---- runtime: Bun ----
-FROM oven/bun:1.4.0 AS runtime
+FROM oven/bun:1.4 AS runtime
 WORKDIR /app/apps/gateway
 ENV NODE_ENV=production \
     PORT=4000
@@ -42,6 +42,16 @@ COPY --chown=bun:bun apps/gateway/src ./src
 # modules' `#extensions/sdk.ts` import resolves). WORKDIR is created as root, so the non-root `bun`
 # user cannot write there by default — give it ownership of the workdir and pre-create the cache dir.
 RUN mkdir -p ./.extensions-cache && chown bun:bun . ./.extensions-cache
+
+# curl, for the platform's health check rather than ours.
+#
+# The HEALTHCHECK below needs no tools — it runs `bun`, which is obviously present. But a PaaS that
+# defines its own check (Coolify, Dokploy) executes `curl` or `wget` INSIDE this container and fails
+# with "curl: not found" on an image that has neither, which reads as an unhealthy app and rolls the
+# deployment back. Debian's bun image ships no HTTP client at all, so one is installed here.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
 
 USER bun
 EXPOSE 4000

@@ -19,7 +19,7 @@
 #                 to reach it; the browser never leaves this app's own origin.
 
 # ---- deps: full install (the build needs devDependencies) ----
-FROM oven/bun:1.4.0 AS deps
+FROM oven/bun:1.4 AS deps
 WORKDIR /app
 COPY package.json bun.lock ./
 COPY patches ./patches
@@ -30,7 +30,7 @@ COPY packages/tsconfig/package.json ./packages/tsconfig/package.json
 RUN bun install --frozen-lockfile --filter @boelabs/dashboard
 
 # ---- build: next build under Bun; emits .next/standalone ----
-FROM oven/bun:1.4.0 AS build
+FROM oven/bun:1.4 AS build
 WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json bun.lock ./
@@ -47,7 +47,7 @@ RUN cd apps/dashboard && bun run build
 # There is no separate production-dependency install: `output: "standalone"` traces exactly the
 # modules the server actually imports and writes them into the bundle, which is also why nothing
 # here can resolve a package from npm at boot.
-FROM oven/bun:1.4.0 AS runtime
+FROM oven/bun:1.4 AS runtime
 WORKDIR /app/apps/dashboard
 ENV NODE_ENV=production \
     PORT=3001 \
@@ -60,6 +60,16 @@ COPY --chown=bun:bun --from=build /app/apps/dashboard/.next/standalone /app/
 # public/ are static files the server expects to find beside it.
 COPY --chown=bun:bun --from=build /app/apps/dashboard/.next/static ./.next/static
 COPY --chown=bun:bun --from=build /app/apps/dashboard/public ./public
+
+# curl, for the platform's health check rather than ours.
+#
+# The HEALTHCHECK below needs no tools — it runs `bun`, which is obviously present. But a PaaS that
+# defines its own check (Coolify, Dokploy) executes `curl` or `wget` INSIDE this container and fails
+# with "curl: not found" on an image that has neither, which reads as an unhealthy app and rolls the
+# deployment back. Debian's bun image ships no HTTP client at all, so one is installed here.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
 
 USER bun
 EXPOSE 3001
