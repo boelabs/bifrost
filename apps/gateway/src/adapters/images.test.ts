@@ -385,3 +385,46 @@ test("Gemini 3.1 images: rungs map to thinkingLevel; auto/omitted send none", as
 		);
 	}
 });
+
+test("OpenAI images: response_format goes only to models that have the field", async () => {
+	const generation = {
+		operation: "generation" as const,
+		model: "m",
+		prompt: "a cat",
+		stream: false,
+		responseFormat: "b64_json" as const,
+	};
+
+	// DALL·E returns URLs unless asked for base64, so the field must be sent.
+	const dalle = ctx("images");
+	dalle.meta.image = { ...profile, supportsNativeStreaming: false };
+	const withField = await openaiAdapter.imageGeneration!.buildRequest(
+		generation,
+		dalle,
+	);
+	assert.equal(
+		JSON.parse(withField.body as string).response_format,
+		"b64_json",
+	);
+
+	// The gpt-image series always returns base64 and rejects the parameter outright:
+	// Azure answers `Unknown parameter: 'response_format'` with a 400.
+	const gptImage = ctx("images");
+	gptImage.meta.image = {
+		...profile,
+		supportsNativeStreaming: false,
+		nativeResponseFormat: false,
+	};
+	const body = JSON.parse(
+		(await openaiAdapter.imageGeneration!.buildRequest(generation, gptImage))
+			.body as string,
+	);
+	assert.equal("response_format" in body, false);
+
+	// Edits go through the same body builder, so the multipart form drops it too.
+	const form = (await openaiAdapter.imageEdit!.buildRequest(
+		{ ...generation, operation: "edit", images: [] },
+		gptImage,
+	)) as { body: FormData };
+	assert.equal(form.body.has("response_format"), false);
+});

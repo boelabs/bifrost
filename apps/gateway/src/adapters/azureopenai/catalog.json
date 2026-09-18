@@ -93,7 +93,8 @@
 						"maxWidth": 3840,
 						"maxHeight": 3840,
 						"maxPixels": 8294400
-					}
+					},
+					"nativeResponseFormat": false
 				},
 				"image.edit": {
 					"maxPromptChars": 4000,
@@ -121,7 +122,8 @@
 						"maxWidth": 3840,
 						"maxHeight": 3840,
 						"maxPixels": 8294400
-					}
+					},
+					"nativeResponseFormat": false
 				}
 			},
 			"notes": "Azure lists this model but has not published a price for it yet; pricing is left out rather than assumed from the OpenAI rate."
@@ -154,7 +156,8 @@
 						"maxWidth": 3840,
 						"maxHeight": 3840,
 						"maxPixels": 8294400
-					}
+					},
+					"nativeResponseFormat": false
 				},
 				"image.edit": {
 					"maxPromptChars": 4000,
@@ -182,7 +185,8 @@
 						"maxWidth": 3840,
 						"maxHeight": 3840,
 						"maxPixels": 8294400
-					}
+					},
+					"nativeResponseFormat": false
 				}
 			},
 			"notes": "Azure lists this model but has not published a price for it yet; pricing is left out rather than assumed from the OpenAI rate."

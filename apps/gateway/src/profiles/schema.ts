@@ -265,6 +265,7 @@ const imageOperationProfileSchema = z
 		supportsNativeStreaming: z.boolean().optional(),
 		nativeOutputFormat: z.boolean().optional(),
 		nativeOutputCompression: z.boolean().optional(),
+		nativeResponseFormat: z.boolean().optional(),
 		qualityMappings: z
 			.partialRecord(
 				z.enum(QUALITY_ORDER),

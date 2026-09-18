@@ -151,7 +151,8 @@
 						"maxWidth": 3840,
 						"maxHeight": 3840,
 						"maxPixels": 8294400
-					}
+					},
+					"nativeResponseFormat": false
 				},
 				"image.edit": {
 					"maxPromptChars": 32000,
@@ -178,7 +179,8 @@
 						"maxWidth": 3840,
 						"maxHeight": 3840,
 						"maxPixels": 8294400
-					}
+					},
+					"nativeResponseFormat": false
 				}
 			},
 			"pricing": {
@@ -215,7 +217,8 @@
 						"maxWidth": 3840,
 						"maxHeight": 3840,
 						"maxPixels": 8294400
-					}
+					},
+					"nativeResponseFormat": false
 				},
 				"image.edit": {
 					"maxPromptChars": 32000,
@@ -243,7 +246,8 @@
 						"maxWidth": 3840,
 						"maxHeight": 3840,
 						"maxPixels": 8294400
-					}
+					},
+					"nativeResponseFormat": false
 				}
 			},
 			"pricing": {
@@ -280,7 +284,8 @@
 						"maxWidth": 3840,
 						"maxHeight": 3840,
 						"maxPixels": 8294400
-					}
+					},
+					"nativeResponseFormat": false
 				},
 				"image.edit": {
 					"maxPromptChars": 32000,
@@ -308,7 +313,8 @@
 						"maxWidth": 3840,
 						"maxHeight": 3840,
 						"maxPixels": 8294400
-					}
+					},
+					"nativeResponseFormat": false
 				}
 			},
 			"pricing": {
@@ -337,7 +343,8 @@
 						"1024x1024": {},
 						"1024x1536": {},
 						"1536x1024": {}
-					}
+					},
+					"nativeResponseFormat": false
 				},
 				"image.edit": {
 					"maxPromptChars": 32000,
@@ -357,7 +364,8 @@
 						"1024x1024": {},
 						"1024x1536": {},
 						"1536x1024": {}
-					}
+					},
+					"nativeResponseFormat": false
 				}
 			},
 			"pricing": {
@@ -386,7 +394,8 @@
 						"1024x1024": {},
 						"1024x1536": {},
 						"1536x1024": {}
-					}
+					},
+					"nativeResponseFormat": false
 				},
 				"image.edit": {
 					"maxPromptChars": 32000,
@@ -406,7 +415,8 @@
 						"1024x1024": {},
 						"1024x1536": {},
 						"1536x1024": {}
-					}
+					},
+					"nativeResponseFormat": false
 				}
 			},
 			"pricing": {
@@ -435,7 +445,8 @@
 						"1024x1024": {},
 						"1024x1536": {},
 						"1536x1024": {}
-					}
+					},
+					"nativeResponseFormat": false
 				},
 				"image.edit": {
 					"maxPromptChars": 32000,
@@ -455,7 +466,8 @@
 						"1024x1024": {},
 						"1024x1536": {},
 						"1536x1024": {}
-					}
+					},
+					"nativeResponseFormat": false
 				}
 			},
 			"pricing": {
@@ -484,7 +496,8 @@
 						"1024x1024": {},
 						"1024x1536": {},
 						"1536x1024": {}
-					}
+					},
+					"nativeResponseFormat": false
 				},
 				"image.edit": {
 					"maxPromptChars": 32000,
@@ -504,7 +517,8 @@
 						"1024x1024": {},
 						"1024x1536": {},
 						"1536x1024": {}
-					}
+					},
+					"nativeResponseFormat": false
 				}
 			}
 		},
