@@ -49,6 +49,26 @@ export interface AdaptiveDeadlineSettings {
 }
 
 /**
+ * The two conditions under which narrowing a first-output deadline is sound at all.
+ *
+ * Both are properties of the attempt being built, not of the deployment, which is why the router
+ * supplies them per attempt rather than storing them alongside the EWMA.
+ */
+export interface AdaptiveDeadlineScope {
+	/**
+	 * Whether first output really arrives before the answer is finished. In streaming mode it does:
+	 * the deadline covers the first event, and the measurement it is compared against means the same
+	 * thing. In JSON mode the upstream sends nothing until the whole completion exists, so
+	 * `firstOutputMs` is a total-generation budget and the EWMA is an average of past total
+	 * generations - a number that says how long SHORT answers took, applied to an answer whose
+	 * length is not known yet.
+	 */
+	incremental: boolean;
+	/** Deployments this request could still fail over to if the chosen one is abandoned. */
+	alternatives: number;
+}
+
+/**
  * Narrows the first-output deadline to what THIS deployment actually takes.
  *
  * A pool-wide budget has to accommodate its slowest member, so a deployment that normally answers
@@ -56,13 +76,23 @@ export interface AdaptiveDeadlineSettings {
  * request stuck behind it waits out the whole budget before failing over to a healthy sibling.
  * The EWMA is only an estimate, so the result never widens the configured deadline and never drops
  * below `floorMs`; a deployment with no measurement yet keeps the configured value.
+ *
+ * That whole argument rests on two premises, and `scope` is where they are checked rather than
+ * assumed. Failing over early is only worth anything when there is somewhere to fail over TO: with
+ * a single candidate the narrowed deadline cannot save a request, it can only end one that was
+ * still being served. And comparing an elapsed time against the EWMA is only meaningful when both
+ * measure the same event - which stops being true in JSON mode, where nothing arrives until the
+ * answer is complete and the EWMA therefore describes the length of past answers instead of the
+ * responsiveness of the upstream. When either premise fails the configured deadline stands.
  */
 export function adaptiveFirstOutputMs(
 	configuredMs: number,
 	ttftEwmaMs: number | null | undefined,
 	adaptive: AdaptiveDeadlineSettings,
+	scope: AdaptiveDeadlineScope,
 ): number {
 	if (!adaptive.enabled) return configuredMs;
+	if (!scope.incremental || scope.alternatives < 1) return configuredMs;
 	if (
 		ttftEwmaMs === null ||
 		ttftEwmaMs === undefined ||
