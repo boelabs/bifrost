@@ -32,7 +32,7 @@ Postgres/Redis certificates — see the docs' Known errors page.
 
 ```bash
 bun install
-docker compose -f docker-compose.yml -f compose.local.yaml up -d postgres redis
+docker compose -f docker/compose.yaml -f docker/compose.local.yaml up -d postgres redis
 cp apps/gateway/.env.example apps/gateway/.env    # then fill in the master key and encryption keyring
 bun run --filter @boelabs/bifrost db:migrate
 bun run --filter @boelabs/bifrost dev

@@ -1,5 +1,9 @@
 # Production/PaaS base. Services stay on the private Compose network; use
 # compose.local.yaml explicitly when host port bindings are needed.
+#
+# Build contexts are the repository root, one level up from this file.
+name: bifrost
+
 services:
   postgres:
     image: postgres:18-alpine
@@ -32,12 +36,11 @@ services:
   # leave its domain empty. The gateway waits for it to finish before starting.
   migrate:
     build:
-      context: .
+      context: ..
       dockerfile: apps/gateway/Dockerfile
     image: bifrost:local
     command: ["bun", "src/db/migrate.ts"]
     environment:
-      NODE_ENV: production
       MASTER_KEY: ${MASTER_KEY:-}
       ENCRYPTION_KEYRING: ${ENCRYPTION_KEYRING:-}
       ACTIVE_ENCRYPTION_KEY_ID: ${ACTIVE_ENCRYPTION_KEY_ID:-}
@@ -50,12 +53,10 @@ services:
 
   gateway:
     build:
-      context: .
+      context: ..
       dockerfile: apps/gateway/Dockerfile
     image: bifrost:local
     environment:
-      NODE_ENV: production
-      PORT: 4000
       # Required at deployment; intentionally empty instead of falling back to known credentials.
       # MASTER_KEY needs >= 32 chars. ENCRYPTION_KEYRING is a JSON id-to-64-hex-key object.
       MASTER_KEY: ${MASTER_KEY:-}
@@ -68,8 +69,15 @@ services:
       DASH_ENABLED: ${DASH_ENABLED:-false}
       DASH_ROOT_USER: ${DASH_ROOT_USER:-}
       DASH_ROOT_PASSWORD: ${DASH_ROOT_PASSWORD:-}
+      # Shutdown budget. The gateway stays unready-but-serving for DRAIN_DELAY_MS so the proxy can
+      # take it out of rotation, then gives in-flight requests SHUTDOWN_TIMEOUT_MS to finish.
+      DRAIN_DELAY_MS: ${DRAIN_DELAY_MS:-15000}
+      SHUTDOWN_TIMEOUT_MS: ${SHUTDOWN_TIMEOUT_MS:-120000}
     expose:
       - "4000"
+    # Must exceed DRAIN_DELAY_MS + SHUTDOWN_TIMEOUT_MS plus teardown, or Docker SIGKILLs the process
+    # mid-drain and the whole sequence is theatre. Raise all three together.
+    stop_grace_period: 180s
     depends_on:
       postgres:
         condition: service_healthy
@@ -88,12 +96,10 @@ services:
   # is not wanted — it is not running.
   dashboard:
     build:
-      context: .
+      context: ..
       dockerfile: apps/dashboard/Dockerfile
     image: bifrost-dashboard:local
     environment:
-      NODE_ENV: production
-      PORT: 3001
       # The only thing this container needs to know. The browser never talks to the gateway, so
       # the gateway does not have to be reachable from outside this network.
       GATEWAY_URL: ${GATEWAY_URL:-http://gateway:4000}
@@ -111,18 +117,10 @@ services:
     depends_on:
       gateway:
         condition: service_started
-    restart: unless-stopped
-
-  docs:
-    build:
-      context: .
-      dockerfile: apps/docs/Dockerfile
-    image: bifrost-docs:local
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-    expose:
-      - "3000"
+    # The playground relays a live stream through this process; Next stops accepting connections on
+    # SIGTERM and waits for in-flight requests, so the grace period is what that wait is allowed to
+    # use.
+    stop_grace_period: 120s
     restart: unless-stopped
 
 volumes:

@@ -19,7 +19,7 @@ Requirements: Bun 1.4+, Postgres 18+, Redis 8+ (full configuration in [Setup](/d
 ```bash
 git clone https://github.com/boelabs/bifrost.git && cd bifrost
 bun install
-docker compose -f docker-compose.yml -f compose.local.yaml up -d postgres redis
+docker compose -f docker/compose.yaml -f docker/compose.local.yaml up -d postgres redis
 ```
 
 Create `apps/gateway/.env` (see `apps/gateway/.env.example`) with at least:

@@ -32,20 +32,20 @@ issue.
 
 ## Compose files and naming
 
-- `docker-compose.yml` is the production/PaaS base. It uses `expose` for the gateway and docs, and
+- `docker/compose.yaml` is the production/PaaS base. It uses `expose` for the gateway and docs, and
   does not publish any service port on the host.
-- `compose.local.yaml` is an explicit development/host override. It binds Postgres (`5432`), Redis
+- `docker/compose.local.yaml` is an explicit development/host override. It binds Postgres (`5432`), Redis
   (`6379`), the gateway (`4000`), and docs (`3000`) to `127.0.0.1`.
 
 `.yaml` and `.yml` contain the same YAML syntax. [Modern Docker prefers
 `compose.yaml`](https://docs.docker.com/compose/intro/compose-application-model/), while
-`docker-compose.yml` remains the most broadly auto-detected name across Coolify, Dokploy, Portainer,
-and older Compose tooling, so this repository keeps `docker-compose.yml` for deployment portability.
-The local override is deliberately named `compose.local.yaml` so a PaaS does not load it implicitly.
+`docker/compose.yaml` remains the most broadly auto-detected name across Coolify, Dokploy, Portainer,
+and older Compose tooling, so this repository keeps `docker/compose.yaml` for deployment portability.
+The local override is deliberately named `docker/compose.local.yaml` so a PaaS does not load it implicitly.
 
 ## The Compose stack
 
-The repository ships a `docker-compose.yml` that brings up the whole stack:
+The repository ships a `docker/compose.yaml` that brings up the whole stack:
 
 - **postgres** (`postgres:18-alpine`) and **redis** (`redis:8-alpine`), with health checks and named
   volumes (`pgdata`, `redisdata`).
@@ -58,7 +58,7 @@ The repository ships a `docker-compose.yml` that brings up the whole stack:
   [Operator dashboard → Serving it](/docs/dashboard#serving-it).
 - **docs** (`:3000` internally) — this documentation site.
 
-Coolify and Dokploy deploy only `docker-compose.yml` and attach their proxy to the private network.
+Coolify and Dokploy deploy only `docker/compose.yaml` and attach their proxy to the private network.
 For a local machine or a host-level reverse proxy, merge the local override explicitly:
 
 ```bash
@@ -66,10 +66,10 @@ git clone https://github.com/boelabs/bifrost.git && cd bifrost
 
 MASTER_KEY=$(openssl rand -base64 48) \
 ENCRYPTION_KEY_HEX=$(openssl rand -hex 32) \
-docker compose -f docker-compose.yml -f compose.local.yaml up -d
+docker compose -f docker/compose.yaml -f docker/compose.local.yaml up -d
 ```
 
-`compose.local.yaml` supplies known development-only defaults. The production base intentionally
+`docker/compose.local.yaml` supplies known development-only defaults. The production base intentionally
 leaves both secrets empty, and the gateway refuses to start until they are configured. In
 Coolify/Portainer/Dokploy, set them in the UI. `DATABASE_URL` and `REDIS_URL` default to the internal
 `postgres`/`redis` services over plaintext and only need overriding if you point at managed instances

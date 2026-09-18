@@ -3,9 +3,9 @@ title: "Portainer"
 description: "Deploy Bifrost on Portainer as a Compose stack."
 ---
 
-[Portainer](https://www.portainer.io) deploys the repository's `docker-compose.yml` as a **Stack**.
+[Portainer](https://www.portainer.io) deploys the repository's `docker/compose.yaml` as a **Stack**.
 
-1. **Stacks → Add stack**, and either paste the `docker-compose.yml` or use the **Git repository**
+1. **Stacks → Add stack**, and either paste the `docker/compose.yaml` or use the **Git repository**
    option pointing at this repo.
 2. Under **Environment variables**, set:
 	- `MASTER_KEY` — `openssl rand -base64 48`

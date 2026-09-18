@@ -56,6 +56,7 @@ does not currently have.
 - `apps/docs` — documentation site (Next.js App Router + [Fumadocs](https://fumadocs.dev), MDX),
   prerendered at build time. Package `@boelabs/docs`. Built and served on Bun.
 - `packages/tsconfig` — shared strict TypeScript config (`@boelabs/tsconfig`).
+- `docker/` — every Compose file and the stack's `.env.example`, with [its own README](docker/README.md).
 
 ## 3. Commands
 
@@ -138,6 +139,12 @@ bun run --filter @boelabs/bifrost db:migrate    # applies pending
 ```
 
 - Migrations are **forward-only** — never edit an applied migration; add a new one.
+- **Every migration must also work against the previous release.** A deployment overlaps the two:
+  the migration job runs while the old gateway is still serving, and a rolling update keeps both
+  versions live for a while. So a rename or a drop is three changes, not one — add the new column
+  and write to both, then ship the code that reads it, then drop the old one in a later migration.
+  A migration that breaks N−1 is an outage, not a schema change. See
+  [Rollouts](apps/docs/content/docs/(docs)/(operate)/rollouts.mdx).
 - Historical migrations contain hand-tuned DDL and stay immutable even after a later migration
   removes the structure; snapshots describe the schema at each point in time.
 - `pgEnum`s must be **`export const`** or drizzle-kit won't emit their `CREATE TYPE`.
@@ -205,6 +212,20 @@ Fix cooldown reset on success
 - Keep unrelated formatter churn out of the diff: `bun run format` may reorder imports in untouched
   files (pre-existing drift) — restore those from the base branch.
 
+### Releases
+
+A release is a `v<semver>` tag. It publishes all three images — gateway, dashboard, docs — at **the
+same version**, even when only one of them changed. That is deliberate: the dashboard's API client
+is generated from the gateway's `openapi.yaml`, so independent version numbers would create a
+compatibility matrix somebody has to maintain, and republishing an unchanged image costs nothing.
+
+Everyday pushes do not produce releases. CI publishes `sha-<commit>` and `<branch>` tags, but only
+for `main` and for branches named in `COOLIFY_DEPLOY_MAP` — the registry is public, and a feature
+branch has no business leaving a package behind. Every other branch still builds the images, so a
+broken Dockerfile fails on the pull request. `latest` and the semver tags belong to
+[`release.yml`](.github/workflows/release.yml) alone, because a registry tag that moves with every
+commit is not the promise `latest` is supposed to make.
+
 ### Merging — the hard rule
 
 **Never merge to `main` while CI is not green.** `main` is branch-protected; auto-merge is disabled
@@ -245,7 +266,7 @@ and never quote or paste its contents into a commit, PR, issue, or any other sha
 
 Regardless of environment: secrets are **used, never displayed**. Load them into a command's
 environment or send them as headers; do not read, print, echo, log, or summarize a value. `.env*`
-files stay out of git except `.env.example`.
+files stay out of git except the committed `.env.example` templates.
 
 ## 10. Things that will bite you
 

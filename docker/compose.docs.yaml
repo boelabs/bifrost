@@ -1,0 +1,16 @@
+# The documentation site, on its own.
+#
+# It is not part of the gateway's stack and never was: it has no database, no cache, no shared
+# network and no variables. It is a prerendered site that happens to live in the same repository, so
+# it gets its own file rather than a service someone has to remember to delete.
+#
+#   DOCS_IMAGE=ghcr.io/boelabs/bifrost-docs:v1.0.0 docker compose -f compose.docs.yaml up -d
+name: bifrost-docs
+
+services:
+  docs:
+    image: ${DOCS_IMAGE:-ghcr.io/boelabs/bifrost-docs:latest}
+    expose:
+      - "3000"
+    stop_grace_period: 30s
+    restart: unless-stopped

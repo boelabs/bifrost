@@ -3,22 +3,23 @@ title: "Coolify"
 description: "Deploy Bifrost on Coolify with Docker Compose."
 ---
 
-[Coolify](https://coolify.io) deploys the repository's `docker-compose.yml` directly.
+[Coolify](https://coolify.io) deploys the repository's `docker/compose.yaml` directly.
 
 ## Deploy the Compose stack (recommended)
 
 1. **New Resource → Docker Compose**, and point it at this repository (or paste the
-   `docker-compose.yml`).
+   `docker/compose.yaml`).
 2. Set the secrets as environment variables in the Coolify UI:
 	- `MASTER_KEY` — `openssl rand -base64 48`
 	- `ENCRYPTION_KEYRING` — e.g. `{"primary":"<openssl rand -hex 32>"}`
 	- `ACTIVE_ENCRYPTION_KEY_ID` — `primary`
 3. Deploy. The bundled `postgres` and `redis` run inside the stack's private network, the `migrate`
    job applies migrations, and the gateway comes up on internal port `4000`.
+   The documentation site is not in this stack — it needs nothing from it. Deploy
+   `docker/compose.docs.yaml` as a second resource if you want it published.
 4. Configure domains only for long-running HTTP services:
    - **gateway** — for example `https://api.example.com:4000`
    - **dashboard** (optional) — its **own** domain: `https://dash.example.com:3001`
-   - **docs** (optional) — for example `https://docs.example.com:3000`
    - **migrate** — leave empty
 
 The dashboard is a separate product on a separate domain, so Coolify treats it like any other
@@ -40,6 +41,17 @@ publish a raw host port.
 Because Postgres/Redis live on the Compose network and the gateway connects over plaintext
 (`postgres://gateway:gateway@postgres:5432/bifrost`, `redis://redis:6379`), there is no TLS and
 therefore no [Bun TLS issue](/docs/troubleshooting).
+
+## Deployments and downtime
+
+Coolify does not perform rolling updates for Docker Compose resources — `docker compose up`
+reconciles the services itself, stopping and starting each changed one. The gateway drains on
+`SIGTERM` rather than dropping in-flight requests, but that only works if Coolify waits for it:
+raise **Stop Grace Period** above `DRAIN_DELAY_MS + SHUTDOWN_TIMEOUT_MS`.
+
+Compose is the right choice when you want the whole thing deployed as one unit. For rolling updates,
+run each app as its own **Docker Image** resource and keep only Postgres and Redis in a stack —
+[Rollouts](/docs/rollouts) covers both topologies and the settings each one needs.
 
 ## Using Coolify's standalone database / Redis services
 

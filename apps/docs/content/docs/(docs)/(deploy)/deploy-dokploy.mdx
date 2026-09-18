@@ -3,10 +3,10 @@ title: "Dokploy"
 description: "Deploy Bifrost on Dokploy with Docker Compose."
 ---
 
-[Dokploy](https://dokploy.com) deploys the repository's `docker-compose.yml` as a **Compose**
+[Dokploy](https://dokploy.com) deploys the repository's `docker/compose.yaml` as a **Compose**
 application.
 
-1. **Create → Compose**, and point it at this repository (or paste the `docker-compose.yml`).
+1. **Create → Compose**, and point it at this repository (or paste the `docker/compose.yaml`).
 2. Set the secrets in the application's environment settings:
 	- `MASTER_KEY` — `openssl rand -base64 48`
 	- `ENCRYPTION_KEYRING` — e.g. `{"primary":"<openssl rand -hex 32>"}`

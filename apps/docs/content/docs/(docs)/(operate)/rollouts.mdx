@@ -1,0 +1,135 @@
+---
+title: "Rollouts"
+description: "Replacing a running gateway without dropping requests: draining, grace periods, and the two deployment topologies."
+---
+
+A deployment replaces a process that is in the middle of doing work. For a gateway that streams
+completions, that means a client watching tokens arrive gets a connection reset instead of the rest
+of its answer.
+
+## Draining on `SIGTERM`
+
+Closing the listener the instant the signal arrives drops traffic: nothing upstream knows yet, so
+the proxy is still routing here and its keep-alive pool still holds sockets to this container. The
+gateway therefore announces its departure before acting on it.
+
+1. `GET /health/ready` answers `503 {"status":"draining"}` immediately. `GET /health/live` keeps
+   answering `200` — a failing liveness probe would *restart* the container and cut the drain short.
+2. Background jobs stop; idle WebSocket sessions are closed with `1012 service restarting`.
+3. The process waits `DRAIN_DELAY_MS`, **still serving normally**, so the proxy's health check
+   observes the `503` and stops routing here. Responses in this window carry `Connection: close`.
+4. The listener closes; in-flight requests get `SHUTDOWN_TIMEOUT_MS` to finish.
+5. What is left is forced, the operation log is flushed, dependencies close, the process exits.
+
+| Variable | Default | What it is |
+|---|---|---|
+| `DRAIN_DELAY_MS` | `15000` (`0` outside production) | Unready but still serving, so the proxy can deregister. A few health-check intervals. |
+| `SHUTDOWN_TIMEOUT_MS` | `120000` | Grace for in-flight requests. Must cover your longest streamed response. |
+
+> **Both are worthless unless the container runtime waits for them.** Docker's default `SIGKILL`
+> deadline is 10 seconds — shorter than the drain — so the process is killed mid-sequence. The
+> Compose files here set `stop_grace_period: 180s`; on a PaaS raise the equivalent (Coolify: **Stop
+> Grace Period**). Keep it above `DRAIN_DELAY_MS + SHUTDOWN_TIMEOUT_MS`.
+
+Draining is only half of it. The other half is overlap — the replacement accepting traffic before
+the old instance stops — and that is the platform's job, not the application's.
+
+## Two topologies
+
+Coolify performs [rolling updates](https://coolify.io/docs/knowledge-base/rolling-updates) — start
+the replacement, wait for its health check, then stop the old container — for Docker Image
+resources. It explicitly does **not** for Docker Compose resources, which `docker compose up`
+reconciles instead. So the choice is:
+
+**One Compose resource.** The whole stack in one place, deployed as a unit. No overlap: in-flight
+requests drain cleanly, but new ones hit a gap until the replacement is listening. Take it when a
+few seconds of errors per deployment are acceptable.
+
+**One resource per app.** The gateway, dashboard and docs are already three images on three domains;
+as three **Docker Image** resources Coolify can roll each one independently. Postgres and Redis live
+outside them: either a Compose stack of their own (`docker/compose.data.yaml`) or the platform's own managed
+services — on Coolify, with **SSL disabled**, because Bun's TLS client rejects the self-signed
+certificates those are published with (see [Troubleshooting](/docs/troubleshooting)).
+
+For the second, per resource:
+
+- **Health check** → `GET /health/ready` for the gateway, `GET /api/config` for the dashboard, `GET /`
+  for the docs, each on the app's own container port. Only the gateway drains: the other two stop
+  accepting connections on `SIGTERM` and finish what is in flight, which is what an operator UI and a
+  static site need.
+- **`interval x retries` must be shorter than `DRAIN_DELAY_MS`.** Coolify's proxy takes unhealthy
+  containers out of routing, which is what makes the drain's `503` do anything — but a container is
+  only marked unhealthy after that many consecutive failures. Leave the default ten retries on a
+  five-second interval and the listener closes fifty seconds before the proxy has noticed, which is
+  the failure the drain exists to prevent. Two retries on a five-second interval against a
+  fifteen-second delay leaves a comfortable margin.
+- **Start period** covers the slowest boot, not the fastest: the gateway connects to Postgres and
+  Redis and loads extensions before it is ready.
+- **Stop Grace Period** → above `DRAIN_DELAY_MS + SHUTDOWN_TIMEOUT_MS`, e.g. `180`.
+- **No published host port.** Coolify falls back to stop-then-start when a host port is bound, when
+  *Consistent Container Names* is on, with a custom container name or IP, and for PR previews.
+- **Connect To Predefined Network** (Configuration → Advanced). A Compose stack has its own network,
+  and a shared project or environment does not create connectivity. Once connected, address its
+  services by full name — `postgres-<uuid>:5432`, not `postgres:5432`.
+- **Migrations** move to the gateway's **pre-deployment command** (`bun src/db/migrate.ts`), since
+  the stack's `migrate` job no longer runs. Coolify runs it in the *outgoing* container, so the
+  schema changes while the old version is still serving — see below. It is skipped on the first
+  deployment, when no container exists yet; run that one by hand.
+
+## Schema changes must survive the overlap
+
+In any rolling update the old and the new version talk to the same database at once, and the
+pre-deployment migration runs while only the old one is live. A migration that renames or drops a
+column breaks it.
+
+Expand first, contract later: add the new column and write to both, ship the code that reads it,
+drop the old one in a later migration. Three deployments for a rename — and the same property is
+what makes rolling an image *back* safe.
+
+## Images and versions
+
+Three images, one per app: `ghcr.io/<owner>/bifrost-{gateway,dashboard,docs}`. A `v*` tag publishes
+all three at the same version, even when only one changed — the dashboard's API client is generated
+from the gateway's `openapi.yaml`, so a shared number removes a compatibility question instead of
+answering it. CI also publishes `sha-<commit>`, which never moves and is what a rollback pins to,
+and `<branch>`, which moves and is what an environment follows — for `main` and for the branches
+that are actually deployed, not for every branch.
+
+## Deploying from CI
+
+`.github/workflows/ci.yml` builds the images for a commit and asks Coolify to deploy them, so an
+environment gets the artifact the tests ran against. Nothing is tied to `main`: a branch that is not
+in the map is not deployed.
+
+| Setting | Kind |
+|---|---|
+| `COOLIFY_URL` | repository variable |
+| `COOLIFY_TOKEN` | repository secret, an API token with deploy permission |
+| `COOLIFY_DEPLOY_MAP` | repository variable |
+
+The shape of a branch's entry says which topology it runs — a string for one Compose resource, an
+object for one resource per app, where only the apps whose image changed are deployed:
+
+```json
+{
+  "main": { "gateway": "<uuid>", "dashboard": "<uuid>", "docs": "<uuid>" },
+  "staging": "<uuid>"
+}
+```
+
+Several keys may point at the same resource; it is deployed once. The UUID is the last path segment
+of a resource's URL in Coolify.
+
+## What this does not fix
+
+- A response still in flight when the drain window expires is cut. Clients should retry, which for
+  anything long-running means idempotent requests.
+- WebSocket sessions mid-generation are closed with `1012` at the end of the window. A client that
+  treats that as fatal will look like an outage.
+- Rolling updates do not guarantee zero downtime, in Coolify's own words. They remove the scheduled
+  gap; draining, schema compatibility and client retries are still yours.
+
+## What to read next
+
+- [Upgrades](/docs/upgrades) — migrations, breaking changes and rollback.
+- [Coolify](/docs/deploy-coolify) — setting the stack up in the first place.

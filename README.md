@@ -93,7 +93,7 @@ Requirements: Bun 1.4+, Postgres 18+, Redis 8+ (Docker optional, for local depen
 
 ```bash
 bun install
-docker compose -f docker-compose.yml -f compose.local.yaml up -d postgres redis
+docker compose -f docker/compose.yaml -f docker/compose.local.yaml up -d postgres redis
 cp apps/gateway/.env.example apps/gateway/.env
 bun run --filter @boelabs/bifrost db:migrate
 bun run --filter @boelabs/bifrost dev
@@ -124,14 +124,17 @@ Scope to one package with `--filter`, e.g. `bun run --filter @boelabs/bifrost de
 
 ## Production
 
-Published images, no checkout required — `compose.images.yaml` pulls them and is complete on its
-own, so it can be pasted straight into Coolify, Dokploy or Portainer:
+Published images, no checkout required — `docker/compose.images.yaml` pulls them and is complete on
+its own, so it can be pasted straight into Coolify, Dokploy or Portainer:
 
 ```bash
-curl -O https://raw.githubusercontent.com/boelabs/bifrost/main/compose.images.yaml
-curl -o .env https://raw.githubusercontent.com/boelabs/bifrost/main/.env.example  # then fill it in
+curl -O https://raw.githubusercontent.com/boelabs/bifrost/main/docker/compose.images.yaml
+curl -o .env https://raw.githubusercontent.com/boelabs/bifrost/main/docker/.env.example  # then fill it in
 docker compose -f compose.images.yaml up -d
 ```
+
+Every Compose file lives in [`docker/`](docker/), with a README covering the rest: running only
+Postgres and Redis, publishing the docs site on its own, and what a rolling update needs.
 
 | Image | |
 |---|---|
@@ -146,15 +149,15 @@ Neither image contains configuration, so one tag is promoted between environment
 rebuilt. See
 [Operator dashboard → Serving it](apps/docs/content/docs/(docs)/(operate)/dashboard.mdx).
 
-To build from a checkout instead, `docker-compose.yml` is the production/PaaS base — Postgres,
+To build from a checkout instead, `docker/compose.yaml` is the production/PaaS base — Postgres,
 Redis, a one-off migration job, the gateway, the dashboard and the docs site, without publishing
-host ports. Merge `compose.local.yaml` for a local single-host run with loopback ports and
+host ports. Merge `docker/compose.local.yaml` for a local single-host run with loopback ports and
 development-only secrets.
 
 ```bash
 MASTER_KEY=$(openssl rand -base64 48) \
 ENCRYPTION_KEY_HEX=$(openssl rand -hex 32) \
-docker compose -f docker-compose.yml -f compose.local.yaml up -d
+docker compose -f docker/compose.yaml -f docker/compose.local.yaml up -d
 ```
 
 Platform guides and the production runbook:
