@@ -251,7 +251,7 @@ async function handleVideoCreate(
 			httpStatus: 200,
 			usage,
 			cost: null,
-			ttftMs: log.elapsedMs(),
+			firstOutputMs: null,
 			responseBody: body,
 			metadata: {
 				...candidateMetadata(routing.candidate),

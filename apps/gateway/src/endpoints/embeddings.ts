@@ -109,7 +109,7 @@ export async function embeddingsHandler(c: Context<AppEnv>): Promise<Response> {
 			httpStatus: 200,
 			usage,
 			cost,
-			ttftMs: log.elapsedMs(),
+			firstOutputMs: null,
 			responseBody: embeddingsResponseLog(rendered),
 			metadata: {
 				...candidateMetadata(routing.candidate),

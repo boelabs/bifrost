@@ -418,12 +418,16 @@ export function recordRequestTelemetry(input: OperationLogInput): void {
 			lifecycle.firstReasoningAt - input.startTime.getTime(),
 			attrs,
 		);
+	// Recorded only from an observed first output. The previous fallback accepted whatever the
+	// endpoint supplied, which for a non-streamed call was its total duration - so the histogram
+	// mixed time-to-first-token with time-to-whole-answer under one name.
 	if (lifecycle?.firstOutputAt != null)
 		inst.firstOutput.record(
 			lifecycle.firstOutputAt - input.startTime.getTime(),
 			attrs,
 		);
-	else if (input.ttftMs != null) inst.firstOutput.record(input.ttftMs, attrs);
+	else if (input.firstOutputMs != null)
+		inst.firstOutput.record(input.firstOutputMs, attrs);
 	if (lifecycle?.maxInterEventGapMs != null)
 		inst.maxEventGap.record(lifecycle.maxInterEventGapMs, attrs);
 }

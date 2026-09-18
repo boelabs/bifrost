@@ -108,7 +108,7 @@ export async function rerankHandler(c: Context<AppEnv>): Promise<Response> {
 			httpStatus: 200,
 			usage,
 			cost,
-			ttftMs: log.elapsedMs(),
+			firstOutputMs: null,
 			responseBody: rerankResponseSummary(response, cost),
 			metadata: {
 				...candidateMetadata(routing.candidate),

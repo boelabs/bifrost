@@ -517,7 +517,7 @@ export function Metrics({
 				<StatCard
 					label="Request latency · p95"
 					value={duration(requests.p95DurationMs)}
-					detail={`${duration(requests.p50DurationMs)} median · ${duration(requests.p95FirstOutputMs)} first output p95`}
+					detail={`${duration(requests.p50DurationMs)} median · ${duration(requests.p95FirstOutputMs)} first output p95 (streamed)`}
 				/>
 				<StatCard
 					label="Request tokens"

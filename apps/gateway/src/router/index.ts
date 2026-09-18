@@ -848,10 +848,13 @@ export async function route<T>(
 												totalTokens: usage?.totalTokens ?? null,
 												completionTokens: usage?.completionTokens ?? null,
 												durationMs: endedAt - startedAt,
-												// A non-streaming attempt has no distinct first token, so its whole
-												// duration is the time to output and feeds the same estimate.
-												firstOutputMs:
-													attemptRecord.firstOutputMs ?? endedAt - startedAt,
+												// A non-streaming attempt has no distinct first token, so it
+												// contributes nothing here: substituting its duration taught the
+												// estimate that this deployment answers as fast as its shortest
+												// complete answers, and the adaptive deadline then held every
+												// longer generation to that. Its duration is already the
+												// `durationMs` above, which is what the latency estimate is for.
+												firstOutputMs: attemptRecord.firstOutputMs ?? null,
 											},
 											permit,
 											activeAttemptLease,

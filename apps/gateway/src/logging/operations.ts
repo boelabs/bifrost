@@ -391,6 +391,26 @@ function normalizedFailureKind(attempt: OperationAttemptInput): string | null {
 	return "internal";
 }
 
+/**
+ * When output began arriving, or `null` when the response had no such moment.
+ *
+ * Gated on `streamed` rather than taken on trust: this column feeds the first-output percentile,
+ * the stall filter and the dashboard, so one endpoint reporting a duration here is enough to make
+ * all three mean something else - which is how the column came to hold two quantities at once. A
+ * non-progressive response has no first output distinct from its last, and its total time is
+ * already recorded as `durationMs`, so there is nothing to preserve by inventing one.
+ */
+export function firstOutputMsOf(
+	streamed: boolean,
+	lifecycleFirstOutputAt: number | null,
+	input: Pick<OperationLogInput, "startTime" | "firstOutputMs">,
+): number | null {
+	if (!streamed) return null;
+	if (lifecycleFirstOutputAt !== null)
+		return lifecycleFirstOutputAt - input.startTime.getTime();
+	return input.firstOutputMs;
+}
+
 export function completeOperation(
 	operationId: string,
 	started: Promise<void>,
@@ -495,10 +515,11 @@ export function completeOperation(
 										: input.cost?.totalCents
 									)?.toFixed(10) ?? null,
 								durationMs: input.durationMs,
-								firstOutputMs:
-									lifecycle?.firstOutputAt != null
-										? lifecycle.firstOutputAt - input.startTime.getTime()
-										: input.ttftMs,
+								firstOutputMs: firstOutputMsOf(
+									streamed,
+									lifecycle?.firstOutputAt ?? null,
+									input,
+								),
 								firstEventMs:
 									lifecycle?.firstEventAt != null
 										? lifecycle.firstEventAt - input.startTime.getTime()

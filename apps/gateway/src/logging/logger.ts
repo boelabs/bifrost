@@ -16,7 +16,15 @@ export interface OperationLogInput {
 	usage: Usage | null;
 	cost: CostBreakdown | null;
 	durationMs: number;
-	ttftMs: number | null;
+	/**
+	 * When output began reaching the client (ms from handler entry), and `null` when that moment
+	 * does not exist - a response that is not progressive has no first output distinct from its
+	 * last. Filling it with the total duration in that case produces a number that is real but
+	 * answers a different question, and one already recorded as `durationMs`; averaged together
+	 * the two describe neither. Non-progressive responses therefore leave this null, exactly as
+	 * `upstreamTtftMs` below already does.
+	 */
+	firstOutputMs: number | null;
 	/** TTFT of the winning upstream (ms): fetch dispatch -> first token. null if there was no first token. */
 	upstreamTtftMs?: number | null;
 	cacheHit: boolean;
@@ -47,7 +55,7 @@ export function logOperation(input: OperationLogInput): void {
 		status: input.status,
 		httpStatus: input.httpStatus,
 		durationMs: input.durationMs,
-		ttftMs: input.ttftMs,
+		firstOutputMs: input.firstOutputMs,
 		retries: input.retries,
 		fallbackUsed: input.fallbackUsed,
 		cacheHit: input.cacheHit,

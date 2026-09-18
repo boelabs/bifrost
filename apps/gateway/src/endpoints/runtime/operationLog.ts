@@ -28,7 +28,7 @@ export type LogOutcome = Pick<
 	| "httpStatus"
 	| "usage"
 	| "cost"
-	| "ttftMs"
+	| "firstOutputMs"
 	| "responseBody"
 	| "metadata"
 	| "error"
@@ -247,14 +247,18 @@ export class OperationLogDraft {
 			httpStatus: error.httpStatus,
 			usage: null,
 			cost: null,
-			ttftMs: null,
+			firstOutputMs: null,
 			responseBody: null,
 			metadata: {},
 			error: error.toLog(),
 		});
 	}
 
-	/** Emits the log of a response served from cache (TTFT = local serving time). */
+	/**
+	 * Emits the log of a response served from cache. A cached body is handed over whole, so it has
+	 * no first output of its own; `durationMs` is the serving time and `cacheHit` says where it
+	 * came from.
+	 */
 	writeCacheHit(
 		body: unknown,
 		usage: Usage,
@@ -269,7 +273,7 @@ export class OperationLogDraft {
 			httpStatus: 200,
 			usage,
 			cost: null,
-			ttftMs: this.elapsedMs(),
+			firstOutputMs: null,
 			responseBody,
 			metadata: {
 				cached: true,
