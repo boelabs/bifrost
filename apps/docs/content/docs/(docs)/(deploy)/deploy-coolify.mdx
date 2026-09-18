@@ -48,10 +48,9 @@ reconciles the services itself, stopping and starting each changed one. The gate
 `SIGTERM` rather than dropping in-flight requests, but that only works if Coolify waits for it:
 raise **Stop Grace Period** above `DRAIN_DELAY_MS + SHUTDOWN_TIMEOUT_MS`.
 
-To get an actual overlap between the old and the new container, run the gateway — and only the
-gateway — as its own **Docker Image** resource instead of as part of the Compose stack, connected to
-the stack's network. [Rollouts](/docs/rollouts) covers both topologies, the settings each one needs,
-where the migrations then have to run, and what still breaks.
+Compose is the right choice when you want the whole thing deployed as one unit. For rolling updates,
+run each app as its own **Docker Image** resource and keep only Postgres and Redis in a stack —
+[Rollouts](/docs/rollouts) covers both topologies and the settings each one needs.
 
 ## Using Coolify's standalone database / Redis services
 
