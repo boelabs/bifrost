@@ -158,6 +158,12 @@ export interface ImageModelProfile {
 	nativeOutputFormat?: boolean;
 	nativeOutputCompression?: boolean;
 	/**
+	 * false when the provider has no `response_format` field for this model and rejects it. The
+	 * gpt-image series always returns base64 and errors on the parameter; DALL·E defaults to URLs and
+	 * needs it. Absent means "send it", which is what every provider that has the field expects.
+	 */
+	nativeResponseFormat?: boolean;
+	/**
 	 * Native translation of each canonical rung, for models that do not speak the ladder: `quality` is
 	 * the value sent upstream in place of the rung (DALL·E's `standard`/`hd`), `thinkingLevel` the
 	 * Gemini image models' thinking control. Keyed by rung - `auto` never reaches an adapter.

@@ -71,7 +71,9 @@ function directBody(
 			? { partial_images: req.partialImages }
 			: {}),
 		...(nativeQuality !== undefined ? { quality: nativeQuality } : {}),
-		response_format: "b64_json",
+		...(profile?.nativeResponseFormat === false
+			? {}
+			: { response_format: "b64_json" }),
 		...(resolvedSize?.size !== undefined ? { size: resolvedSize.size } : {}),
 		...(req.stream && profile?.supportsNativeStreaming ? { stream: true } : {}),
 		...(req.style !== undefined ? { style: req.style } : {}),
