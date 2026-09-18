@@ -292,7 +292,11 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.tags.outputs.branch }}
           cache-from: type=gha,scope=ci-gateway
-          cache-to: type=gha,mode=max,scope=ci-gateway
+          # Only one writer. A pull request produces two runs — one for the push, one for the PR —
+          # building identical images, and both exporting to this scope race on it: the losing
+          # export is cancelled and fails a job whose builds all succeeded. Pull requests read
+          # the cache and leave writing to the push run.
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=ci-gateway' || '' }}
 
       # The dashboard ships in the same Compose stack; without this, an image that no longer
       # builds would reach a deployment with CI still green.
@@ -315,7 +319,11 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.tags.outputs.branch }}
           cache-from: type=gha,scope=ci-dashboard
-          cache-to: type=gha,mode=max,scope=ci-dashboard
+          # Only one writer. A pull request produces two runs — one for the push, one for the PR —
+          # building identical images, and both exporting to this scope race on it: the losing
+          # export is cancelled and fails a job whose builds all succeeded. Pull requests read
+          # the cache and leave writing to the push run.
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=ci-dashboard' || '' }}
 
       - name: Build docs image
         if: needs.changes.outputs.docs == 'true'
@@ -336,7 +344,11 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.tags.outputs.branch }}
           cache-from: type=gha,scope=ci-docs
-          cache-to: type=gha,mode=max,scope=ci-docs
+          # Only one writer. A pull request produces two runs — one for the push, one for the PR —
+          # building identical images, and both exporting to this scope race on it: the losing
+          # export is cancelled and fails a job whose builds all succeeded. Pull requests read
+          # the cache and leave writing to the push run.
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,mode=max,scope=ci-docs' || '' }}
 
   # Deployment is deliberately branch-agnostic: this job asks a map which resources belong to the
   # branch that was pushed, and does nothing when the branch is not in it. Adding a preview
