@@ -1,6 +1,9 @@
 # Production/PaaS base. Services stay on the private Compose network; use
 # compose.local.yaml explicitly when host port bindings are needed.
 #
+# There is no migration service: the gateway applies pending migrations at boot, behind an advisory
+# lock, so every replica can do it and only one does.
+#
 # Build contexts are the repository root, one level up from this file.
 name: bifrost
 
@@ -31,25 +34,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-
-  # One-off job: applies SQL migrations and exits. PaaS domain selectors may list this service;
-  # leave its domain empty. The gateway waits for it to finish before starting.
-  migrate:
-    build:
-      context: ..
-      dockerfile: apps/gateway/Dockerfile
-    image: bifrost:local
-    command: ["bun", "src/db/migrate.ts"]
-    environment:
-      MASTER_KEY: ${MASTER_KEY:-}
-      ENCRYPTION_KEYRING: ${ENCRYPTION_KEYRING:-}
-      ACTIVE_ENCRYPTION_KEY_ID: ${ACTIVE_ENCRYPTION_KEY_ID:-}
-      DATABASE_URL: ${DATABASE_URL:-postgres://gateway:gateway@postgres:5432/bifrost}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: "no"
 
   gateway:
     build:
@@ -83,8 +67,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
     restart: unless-stopped
 
   # Operator dashboard. A separate product: its own image, its own port, and — in any real

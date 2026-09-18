@@ -64,24 +64,23 @@ For the second, per resource:
   the failure the drain exists to prevent. Two retries on a five-second interval against a
   fifteen-second delay leaves a comfortable margin.
 - **Start period** covers the slowest boot, not the fastest: the gateway connects to Postgres and
-  Redis and loads extensions before it is ready — and on an empty database it is not ready at all
-  until the migrations have run, so do that before the first health check decides anything.
+  Redis, applies any pending migrations and loads extensions before it is ready.
 - **Stop Grace Period** → above `DRAIN_DELAY_MS + SHUTDOWN_TIMEOUT_MS`, e.g. `180`.
 - **No published host port.** Coolify falls back to stop-then-start when a host port is bound, when
   *Consistent Container Names* is on, with a custom container name or IP, and for PR previews.
 - **Connect To Predefined Network** (Configuration → Advanced). A Compose stack has its own network,
   and a shared project or environment does not create connectivity. Once connected, address its
   services by full name — `postgres-<uuid>:5432`, not `postgres:5432`.
-- **Migrations** move to the gateway's **pre-deployment command** (`bun src/db/migrate.ts`), since
-  the stack's `migrate` job no longer runs. Coolify runs it in the *outgoing* container, so the
-  schema changes while the old version is still serving — see below. It is skipped on the first
-  deployment, when no container exists yet; run that one by hand.
+- **Migrations need no step at all.** The gateway applies them at boot, behind an advisory lock, so
+  every replica can try and only one does. Do not reach for a platform "pre-deployment" hook here:
+  those run in the *outgoing* container, which is the old image and does not contain the new
+  migration files.
 
 ## Schema changes must survive the overlap
 
-In any rolling update the old and the new version talk to the same database at once, and the
-pre-deployment migration runs while only the old one is live. A migration that renames or drops a
-column breaks it.
+In any rolling update the old and the new version talk to the same database at once: the incoming
+replica migrates on boot while the outgoing one is still serving. A migration that renames or drops
+a column breaks it.
 
 Expand first, contract later: add the new column and write to both, ship the code that reads it,
 drop the old one in a later migration. Three deployments for a rename — and the same property is

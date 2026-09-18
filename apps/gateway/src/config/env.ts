@@ -56,6 +56,18 @@ export const env = createEnv({
 		ENCRYPTION_KEYRING: encryptionKeyringString,
 		ACTIVE_ENCRYPTION_KEY_ID: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/),
 
+		/**
+		 * Apply pending migrations at boot, before the server listens. On by default because the
+		 * alternative — a separate job someone has to sequence — is the step that gets forgotten, and
+		 * a platform that runs a "pre-deployment" hook usually runs it in the OUTGOING container,
+		 * which does not even contain the new migration files.
+		 *
+		 * Every replica does this behind an advisory lock, so they serialise rather than race. A
+		 * failure is fatal: the process exits instead of serving against a schema it does not
+		 * understand, which leaves a rolling update on the previous version.
+		 */
+		MIGRATE_ON_BOOT: boolString.default(true),
+
 		DATABASE_URL: z.url(),
 		REDIS_URL: z.url(),
 

@@ -61,6 +61,6 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD bun -e "fetch('http://127.0.0.1:'+(process.env.PORT||4000)+'/health/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-# Migrations are intentionally NOT run here; run `bun src/db/migrate.ts` inside this image as a
-# one-off before rollout.
+# Migrations run at boot, behind an advisory lock so replicas serialise (MIGRATE_ON_BOOT=false to
+# turn that off). `bun src/db/migrate.ts` in this image still applies them as a one-off.
 CMD ["bun", "src/index.ts"]
