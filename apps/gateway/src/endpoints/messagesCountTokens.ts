@@ -114,7 +114,7 @@ export async function messagesCountTokensHandler(
 			httpStatus: 200,
 			usage: null,
 			cost: null,
-			ttftMs: log.elapsedMs(),
+			firstOutputMs: null,
 			responseBody: response,
 			metadata,
 			error: null,

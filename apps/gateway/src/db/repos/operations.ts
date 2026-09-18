@@ -195,6 +195,10 @@ export async function operationSummary(since: Date, until?: Date) {
 			db
 				.select({
 					requests: count(),
+					// The first-output clause is streaming-only by construction: a non-progressive
+					// response stores null there, and null fails the comparison. That is the intent
+					// - a non-streamed generation that legitimately ran long is not a stall, and the
+					// attempt-level clause below still catches one that actually hung.
 					stalls: sql<number>`count(*) filter (where ${gatewayOperations.firstOutputMs} > 30000 or ${gatewayOperations.maxInterEventGapMs} > 30000 or exists (select 1 from ${upstreamAttempts} a where a.operation_id = ${gatewayOperations.id} and a.failure_kind = 'timeout' and a.failure_phase = 'first_progress'))::int`,
 					retried: sql<number>`count(*) filter (where exists (select 1 from ${upstreamAttempts} a where a.operation_id = ${gatewayOperations.id} and a.ordinal > 1))::int`,
 					abandoned: sql<number>`count(*) filter (where ${gatewayOperations.outcome} = 'abandoned')::int`,

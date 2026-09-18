@@ -237,7 +237,8 @@ function streamChatCompletion(
 						: 200,
 				usage: finalUsage,
 				cost,
-				ttftMs: firstTokenAt !== null ? firstTokenAt - log.startedAt : null,
+				firstOutputMs:
+					firstTokenAt !== null ? firstTokenAt - log.startedAt : null,
 				responseBody: { streamed: true, content },
 				metadata,
 				error: streamError ? streamError.toLog() : null,
@@ -342,7 +343,7 @@ export async function chatCompletionsHandler(
 				httpStatus: 200,
 				usage: response.usage,
 				cost,
-				ttftMs: log.elapsedMs(), // non-stream: the response arrives complete at once
+				firstOutputMs: null, // non-stream: there is no first output distinct from the last
 				responseBody: oa,
 				metadata,
 				error: null,

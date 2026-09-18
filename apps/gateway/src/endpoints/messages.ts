@@ -218,7 +218,8 @@ function streamMessages(
 						: 200,
 				usage,
 				cost,
-				ttftMs: firstTokenAt !== null ? firstTokenAt - log.startedAt : null,
+				firstOutputMs:
+					firstTokenAt !== null ? firstTokenAt - log.startedAt : null,
 				responseBody: { streamed: true },
 				metadata,
 				error: streamError ? streamError.toLog() : null,
@@ -323,7 +324,7 @@ export async function messagesHandler(c: Context<AppEnv>): Promise<Response> {
 				httpStatus: 200,
 				usage,
 				cost,
-				ttftMs: log.elapsedMs(),
+				firstOutputMs: null,
 				responseBody: rendered,
 				metadata,
 				error: null,
