@@ -368,13 +368,16 @@ export function failureOwner(attempt: OperationAttemptInput): string | null {
 		attempt.errorCode === "downstream_backpressure"
 	)
 		return "client";
+	// Ahead of the `neutral` branch below: a deadline the router narrowed is reported as neutral
+	// precisely because the gateway set it, so the general answer would swallow the specific one
+	// and the attempts hardest to diagnose would be the ones labelled least precisely.
+	if (isGatewayDeadline(attempt)) return "gateway_deadline";
 	if (
 		attempt.failureKind === "gateway" ||
 		attempt.deploymentHealth === "neutral"
 	)
 		return "gateway";
 	if (attempt.failureKind === "configuration") return "deployment_config";
-	if (isGatewayDeadline(attempt)) return "gateway_deadline";
 	return "provider";
 }
 
