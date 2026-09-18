@@ -52,7 +52,9 @@ rejects (see [Troubleshooting](/docs/troubleshooting)).
 
 For the second, per resource:
 
-- **Health check** → `GET /health/ready` for the gateway, `GET /api/config` for the dashboard.
+- **Health check** → `GET /health/ready` for the gateway, `GET /api/config` for the dashboard, `GET /`
+  for the docs. Only the gateway drains: the other two stop accepting connections on `SIGTERM` and
+  finish what is in flight, which is what an operator UI and a static site need.
 - **Stop Grace Period** → above `DRAIN_DELAY_MS + SHUTDOWN_TIMEOUT_MS`, e.g. `180`.
 - **No published host port.** Coolify falls back to stop-then-start when a host port is bound, when
   *Consistent Container Names* is on, with a custom container name or IP, and for PR previews.
