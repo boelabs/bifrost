@@ -26,7 +26,9 @@ responses are **not part of the public contract**. `response_format` may be omit
 `output_format`, `output_compression`, `style`, `user`, `stream`, `partial_images`, and (edits only)
 `image`/`images` + `mask`. Which values are actually accepted for `size`/`quality`/`output_format` is
 per-model, declared in its catalog `image.generate`/`image.edit` profile — an unsupported combination
-returns `400 unsupported_parameter` before any upstream call.
+returns `400 unsupported_parameter` before any upstream call. The GPT Image 2.5 models add `xhigh` and
+`max` above `high`; earlier GPT Image models stop at `high`, and the DALL·E models use their own
+`standard`/`hd` pair.
 
 ## `size: "auto"` works everywhere
 
@@ -45,10 +47,11 @@ instead, add it via an operator-managed [runtime extension](/docs/extensions) ho
 
 ## Gemini: quality maps to thinking
 
-For Gemini 3.1 Flash Image and similar models, the `quality` parameter doesn't map to a rendering
-quality tier the way it does for OpenAI — it maps to native **thinking level**: `auto`/omitted and
-`low` use `thinkingLevel: minimal`; `high` uses `thinkingLevel: high`. Some Gemini image models expose
-only `quality: auto`. See [Providers → Google AI Studio](/docs/providers-google).
+For Gemini 3.1 Flash Image and Gemini 3.1 Flash Lite Image, the `quality` parameter doesn't map to a
+rendering quality tier the way it does for OpenAI — it maps to native **thinking level**: `auto`/omitted
+and `low` use `thinkingLevel: minimal`; `high` uses `thinkingLevel: high`. Gemini 3 Pro Image and
+Gemini 2.5 Flash Image expose no thinking control, so they accept only `quality: auto`.
+See [Providers → Google AI Studio](/docs/providers-google).
 
 ## Streaming
 
