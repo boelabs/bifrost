@@ -140,9 +140,13 @@ test("catalog: current models for each provider exist with their limits", () => 
 test("catalog: DeepSeek-V4 includes official pricing and native thinking/effort", () => {
 	const flash = resolveModelMetadata("deepseek", "deepseek-v4-flash");
 	const pro = resolveModelMetadata("deepseek", "deepseek-v4-pro");
-	assert.equal(flash.pricing?.inputCentsPerMTokens, 14);
-	assert.equal(flash.pricing?.cacheReadCentsPerMTokens, 0.28);
-	assert.equal(flash.pricing?.outputCentsPerMTokens, 28);
+	// Peak rates. deepseek-v4-flash is a retired name served by DeepSeek-V4.1-Flash and billed at
+	// the Flash price, so it carries deepseek-flash's pricing.
+	assert.equal(flash.pricing?.inputCentsPerMTokens, 30);
+	assert.equal(flash.pricing?.cacheReadCentsPerMTokens, 0.6);
+	assert.equal(flash.pricing?.outputCentsPerMTokens, 120);
+	assert.equal(pro.pricing?.inputCentsPerMTokens, 132);
+	assert.equal(pro.pricing?.outputCentsPerMTokens, 396);
 	assert.equal(flash.maxOutputTokens, 384000);
 	assert.equal(flash.capabilities.structuredOutputs, true);
 	assert.equal(flash.capabilities.strictTools, true);

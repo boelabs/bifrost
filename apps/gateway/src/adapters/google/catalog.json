@@ -1714,9 +1714,9 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 15,
-				"outputCentsPerMTokens": 60,
-				"cacheReadCentsPerMTokens": 1.5
+				"inputCentsPerMTokens": 0,
+				"outputCentsPerMTokens": 0,
+				"cacheReadCentsPerMTokens": 0
 			}
 		},
 		"gemini-3.1-flash-lite-preview": {
@@ -2727,7 +2727,9 @@
 				}
 			},
 			"pricing": {
-				"cacheReadCentsPerMTokens": 5
+				"inputCentsPerMTokens": 0,
+				"outputCentsPerMTokens": 0,
+				"cacheReadCentsPerMTokens": 0
 			},
 			"notes": "Reasoning control mechanism unconfirmed against the provider's docs; left unspecified rather than guessed."
 		},
