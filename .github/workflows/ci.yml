@@ -361,7 +361,13 @@ jobs:
           fi
 
           uuids=""
-          add() { [ -z "$1" ] && return 0; uuids="${uuids:+$uuids,}$1"; }
+          # Deduplicating matters: several app keys may point at the same resource when two services
+          # still share one Compose stack, and Coolify would otherwise be asked to deploy it twice.
+          add() {
+            [ -z "$1" ] && return 0
+            case ",$uuids," in *",$1,"*) return 0 ;; esac
+            uuids="${uuids:+$uuids,}$1"
+          }
 
           if [ "$(printf '%s' "$entry" | jq -r 'type')" = "string" ]; then
             # Whole-stack resource: one deployment covers everything, so the only question is

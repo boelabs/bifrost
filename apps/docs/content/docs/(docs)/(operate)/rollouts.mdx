@@ -79,12 +79,20 @@ Worth taking when the gateway is not yet serving traffic that cannot tolerate a 
 errors during a deployment. It is a real improvement over the default: the requests that were
 already running no longer die.
 
-### Separate resources per service (the zero-downtime path)
+### The gateway as its own resource (the zero-downtime path)
 
-The gateway, the dashboard and the docs are already three images with three domains — nothing forces
-them into one Compose file. Create the gateway as a **Docker Image** resource pointing at
-`ghcr.io/<owner>/bifrost-gateway:<tag>`, keep Postgres and Redis as Coolify services or in a Compose
-stack of their own, and Coolify will roll it.
+Only the gateway needs this. The dashboard is an operator UI and the docs are a static site — moving
+them buys little and costs the same work, so the smallest change that gets you a rolling gateway is:
+
+1. **Remove the `gateway` service from the Compose stack.** Postgres, Redis, `migrate`, the dashboard
+   and the docs stay where they are.
+2. **Create one Docker Image resource** pointing at `ghcr.io/<owner>/bifrost-gateway:<branch-or-version>`.
+3. **Put it on the stack's network.** A Compose stack gets its own network named after its UUID, and
+   a shared project or environment does **not** create connectivity between resources — only
+   *Configuration → Advanced → Connect To Predefined Network* does. Once connected, a service in
+   another stack is addressed by its **full name**: `DATABASE_URL` becomes
+   `postgres://gateway:…@postgres-<uuid>:5432/bifrost`, not `postgres:5432`. This is the step that
+   silently costs an afternoon.
 
 Then, in the resource's settings:
 
@@ -95,9 +103,13 @@ Then, in the resource's settings:
 - **No published host port.** Coolify falls back to stop-then-start when a port is bound on the
   host, when *Consistent Container Names* is on, when a custom container name or a custom IP is set,
   and for pull-request previews. Any one of those silently costs you the overlap.
-- **Migrations** are no longer run for you by the Compose stack's `migrate` job. Run
-  `bun src/db/migrate.ts` in the same image as a one-off before the rollout — see
-  [Upgrades](/docs/upgrades).
+- **Pre-deployment command** → `bun src/db/migrate.ts`. The stack's `migrate` job no longer runs for
+  a gateway-only deployment, so the migration needs a home. Coolify runs this in the **existing**
+  container before the new one starts — which means the schema changes while the *old* version is
+  still serving, and is exactly why every migration must stay compatible with the version it
+  replaces (see below). Two consequences worth knowing: a failing command aborts the deployment, and
+  it is **skipped on the very first deployment**, when there is no existing container — run the
+  migration by hand that once.
 
 ## Schema changes have to survive the overlap
 
@@ -171,6 +183,14 @@ triggered whenever any app — or a Compose file itself — changed. An **object
 service, which is what Coolify can roll without downtime; only the services whose image actually
 changed are deployed, and the rest are left running rather than drained and replaced by an identical
 build. The UUID is the last path segment of a resource's URL in the Coolify dashboard.
+
+The two shapes mix, which is what the recommended topology needs: the gateway on its own resource,
+the rest still sharing a stack. Point several keys at the same UUID and it is deployed once, however
+many of them changed.
+
+```json
+{ "main": { "gateway": "<gateway-uuid>", "dashboard": "<stack-uuid>", "docs": "<stack-uuid>" } }
+```
 
 Point a resource at the `staging` tag, add `"staging"` to the map, and pushes to that branch roll it.
 Remove the line and they stop.
