@@ -46,15 +46,25 @@ requests drain cleanly, but new ones hit a gap until the replacement is listenin
 few seconds of errors per deployment are acceptable.
 
 **One resource per app.** The gateway, dashboard and docs are already three images on three domains;
-as three **Docker Image** resources Coolify can roll each one independently. Postgres and Redis stay
-in a Compose stack of their own — `compose.data.yaml` — because Coolify's standalone services expose
-self-signed TLS, which Bun rejects (see [Troubleshooting](/docs/troubleshooting)).
+as three **Docker Image** resources Coolify can roll each one independently. Postgres and Redis live
+outside them: either a Compose stack of their own (`compose.data.yaml`) or the platform's own managed
+services — on Coolify, with **SSL disabled**, because Bun's TLS client rejects the self-signed
+certificates those are published with (see [Troubleshooting](/docs/troubleshooting)).
 
 For the second, per resource:
 
 - **Health check** → `GET /health/ready` for the gateway, `GET /api/config` for the dashboard, `GET /`
-  for the docs. Only the gateway drains: the other two stop accepting connections on `SIGTERM` and
-  finish what is in flight, which is what an operator UI and a static site need.
+  for the docs, each on the app's own container port. Only the gateway drains: the other two stop
+  accepting connections on `SIGTERM` and finish what is in flight, which is what an operator UI and a
+  static site need.
+- **`interval x retries` must be shorter than `DRAIN_DELAY_MS`.** Coolify's proxy takes unhealthy
+  containers out of routing, which is what makes the drain's `503` do anything — but a container is
+  only marked unhealthy after that many consecutive failures. Leave the default ten retries on a
+  five-second interval and the listener closes fifty seconds before the proxy has noticed, which is
+  the failure the drain exists to prevent. Two retries on a five-second interval against a
+  fifteen-second delay leaves a comfortable margin.
+- **Start period** covers the slowest boot, not the fastest: the gateway connects to Postgres and
+  Redis and loads extensions before it is ready.
 - **Stop Grace Period** → above `DRAIN_DELAY_MS + SHUTDOWN_TIMEOUT_MS`, e.g. `180`.
 - **No published host port.** Coolify falls back to stop-then-start when a host port is bound, when
   *Consistent Container Names* is on, with a custom container name or IP, and for PR previews.
