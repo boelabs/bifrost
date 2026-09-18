@@ -76,13 +76,21 @@ function checkDeclaredTransports(
 		for (const [operationId, profile] of Object.entries(
 			entry.operations ?? {},
 		)) {
+			const callType = callTypeForOperation(operationId as OperationId);
+			// A catalog entry that names an operation its adapter cannot execute is a promise the
+			// gateway breaks: nothing fails until an operator tries to deploy the model and
+			// deployments/service.ts refuses it. Catch it here instead.
+			if (!callType || !adapter.supportedCallTypes.has(callType)) {
+				unrunnable.push(
+					`${adapterKey}/${model} declares operation "${operationId}", ` +
+						`which the adapter does not implement`,
+				);
+				continue;
+			}
 			const declared = (profile as { transport?: string } | undefined)
 				?.transport;
 			if (declared === undefined) continue;
-			const callType = callTypeForOperation(operationId as OperationId);
-			const supported = callType
-				? adapter.transports?.[callType]?.supported
-				: undefined;
+			const supported = adapter.transports?.[callType]?.supported;
 			if (!supported?.includes(declared as never))
 				unrunnable.push(
 					`${adapterKey}/${model} declares transport "${declared}" for ${operationId}, ` +

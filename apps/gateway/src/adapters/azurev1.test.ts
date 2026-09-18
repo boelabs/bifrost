@@ -220,7 +220,7 @@ test("azurefoundry: Kimi is a fixed high reasoner without inventing an upstream 
 	}
 });
 
-test("azure adapters: modular transports without images", () => {
+test("azure adapters: modular transports", () => {
 	assert.deepEqual(azureopenaiAdapter.transports?.chat?.supported, [
 		"responses",
 		"chat_completions",
@@ -240,7 +240,9 @@ test("azure adapters: modular transports without images", () => {
 		azurefoundryAdapter.transports?.chat?.default,
 		"chat_completions",
 	);
-	assert.equal(azureopenaiAdapter.imageGeneration, undefined);
+	// Azure OpenAI serves images on its v1 surface; Azure AI Foundry does not.
+	assert.ok(azureopenaiAdapter.imageGeneration);
+	assert.ok(azureopenaiAdapter.imageEdit);
 	assert.ok(azureopenaiAdapter.embeddings);
 	assert.equal(azurefoundryAdapter.imageGeneration, undefined);
 	assert.equal(azurefoundryAdapter.embeddings, undefined);
@@ -282,4 +284,57 @@ test("azure v1: normalizes endpoint and rejects legacy deployments/api-version",
 			),
 		/query parameters/,
 	);
+});
+
+test("azureopenai: images reach the v1 surface with an api-version selector", async () => {
+	const imageRequest = {
+		operation: "generation" as const,
+		model: "public-model",
+		prompt: "a cat",
+		stream: false,
+		responseFormat: "b64_json" as const,
+	};
+	const base = context("images", "gpt-image-2.5-flare");
+	const generation = await azureopenaiAdapter.imageGeneration!.buildRequest(
+		imageRequest,
+		base,
+	);
+	// Azure only reaches /images/* with the selector, and its baseUrl may not carry a query string.
+	assert.equal(
+		generation.url,
+		"https://omni-resource.openai.azure.com/openai/v1/images/generations?api-version=preview",
+	);
+	assert.equal(
+		(generation.headers as Record<string, string>)["api-key"],
+		"azure-secret",
+	);
+
+	const edit = await azureopenaiAdapter.imageEdit!.buildRequest(
+		{ ...imageRequest, operation: "edit", images: [] },
+		base,
+	);
+	assert.equal(
+		edit.url,
+		"https://omni-resource.openai.azure.com/openai/v1/images/edits?api-version=preview",
+	);
+
+	// An operator may pin a dated version instead of the preview default.
+	const pinned = await azureopenaiAdapter.imageGeneration!.buildRequest(
+		imageRequest,
+		{
+			...base,
+			credentials: { ...base.credentials, apiVersion: "2026-04-01" },
+		},
+	);
+	assert.equal(
+		pinned.url,
+		"https://omni-resource.openai.azure.com/openai/v1/images/generations?api-version=2026-04-01",
+	);
+
+	// Chat keeps the bare v1 path it has always used.
+	const chat = azureopenaiAdapter.chat!.buildRequest(
+		request,
+		context("responses", "public-model"),
+	);
+	assert.equal(chat.url.includes("api-version"), false);
 });

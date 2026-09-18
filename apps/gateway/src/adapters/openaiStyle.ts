@@ -109,6 +109,11 @@ export interface OpenAIStyleConfig {
 	 * status and provider. Receives the upstream message and the body. `null` = no change.
 	 */
 	refineBadRequest?: (message: string, body: unknown) => ErrorClass | null;
+	/**
+	 * Final say over an image request's URL. Azure v1 reaches its image surface only with an
+	 * `?api-version=` query parameter, and its base URL is not allowed to carry one.
+	 */
+	finalizeImageRequestUrl?: (url: string, ctx: AdapterContext) => string;
 	/** Image protocols this adapter implements. Absent = chat only. */
 	imageTransports?: readonly Extract<
 		UpstreamTransport,
@@ -501,11 +506,14 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			async buildRequest(req, ctx) {
 				const c = resolveCreds(ctx);
 				const profile = imageProfileFor(ctx.meta, operation);
+				const requestUrl = (path: string): string =>
+					config.finalizeImageRequestUrl?.(`${c.base}${path}`, ctx) ??
+					`${c.base}${path}`;
 				if (ctx.transport === "images") {
 					if (operation === "edit") {
 						return {
 							method: "POST",
-							url: `${c.base}/images/edits`,
+							url: requestUrl("/images/edits"),
 							headers: buildAuthHeaders(c),
 							body: await buildDirectImageEditForm(
 								req,
@@ -516,7 +524,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 					}
 					return {
 						method: "POST",
-						url: `${c.base}/images/generations`,
+						url: requestUrl("/images/generations"),
 						headers: buildHeaders(c),
 						body: JSON.stringify(
 							buildDirectImageGenerationBody(req, ctx.upstreamModel, profile),
@@ -526,7 +534,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 				if (ctx.transport === "chat_completions") {
 					return {
 						method: "POST",
-						url: `${c.base}/chat/completions`,
+						url: requestUrl("/chat/completions"),
 						headers: buildHeaders(c),
 						body: JSON.stringify(
 							await buildOmniImageBody(req, ctx.upstreamModel, profile),
