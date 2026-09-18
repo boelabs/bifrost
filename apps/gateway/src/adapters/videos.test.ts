@@ -157,7 +157,7 @@ test("async videos transport forwards quality, seed, audio, references, and fram
 					prompt: "city",
 					aspectRatio: "9:16",
 					resolution: "1080p",
-					quality: "native",
+					quality: "max",
 					seed: 42,
 					generateAudio: true,
 					inputReferences: [
@@ -175,7 +175,7 @@ test("async videos transport forwards quality, seed, audio, references, and fram
 		prompt: "city",
 		aspect_ratio: "9:16",
 		resolution: "1080p",
-		quality: "native",
+		quality: "max",
 		seed: 42,
 		generate_audio: true,
 		input_references: [
@@ -768,7 +768,7 @@ test("contract normalizes aggregator-style and OpenAI request shapes to one cano
 	assert.equal(aggregatorStyle.resolution, "720p");
 	assert.equal(aggregatorStyle.seed, 1);
 	assert.equal(aggregatorStyle.generateAudio, false);
-	assert.equal(aggregatorStyle.quality, "native");
+	assert.equal(aggregatorStyle.quality, "max");
 	assert.deepEqual(aggregatorStyle.inputReferences, [
 		{ type: "image_url", url: "https://x/i.png" },
 	]);
@@ -804,7 +804,20 @@ test("contract normalizes aggregator-style and OpenAI request shapes to one cano
 			aspect_ratio: "16:9",
 		}),
 	);
-	for (const quality of ["standard", "hd"]) {
+	// The legacy spellings every vocabulary ever used are accepted and normalized onto the ladder.
+	for (const [quality, expected] of [
+		["standard", "medium"],
+		["hd", "high"],
+		["native", "max"],
+	] as const) {
+		assert.equal(
+			videoCreateToCanonical(
+				videoCreateRequestSchema.parse({ model: "m", prompt: "p", quality }),
+			).quality,
+			expected,
+		);
+	}
+	for (const quality of ["ultra", "best", ""]) {
 		assert.throws(() =>
 			videoCreateRequestSchema.parse({ model: "m", prompt: "p", quality }),
 		);

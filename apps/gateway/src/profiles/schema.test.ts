@@ -86,7 +86,7 @@ test("rerank profiles are strict, text-ready, and reserve image sources coherent
 });
 
 test("video profiles use portable quality and task vocabularies", () => {
-	const entry = (quality: string, task = "text_to_video") => ({
+	const entry = (quality = "high", task = "text_to_video") => ({
 		operations: {
 			"video.generate": {
 				durations: ["8"],
@@ -96,13 +96,14 @@ test("video profiles use portable quality and task vocabularies", () => {
 			},
 		},
 	});
-	for (const quality of ["auto", "low", "medium", "high", "native"]) {
+	for (const quality of ["low", "medium", "high", "xhigh", "max"]) {
 		assert.equal(
 			customCatalogEntrySchema.safeParse(entry(quality)).success,
 			true,
 		);
 	}
-	for (const quality of ["standard", "hd"]) {
+	// `auto` is not a rung, and the legacy spellings are normalized away at the contract boundary.
+	for (const quality of ["auto", "native", "standard", "hd"]) {
 		assert.equal(
 			customCatalogEntrySchema.safeParse(entry(quality)).success,
 			false,
@@ -116,12 +117,12 @@ test("video profiles use portable quality and task vocabularies", () => {
 		"extend",
 	]) {
 		assert.equal(
-			customCatalogEntrySchema.safeParse(entry("auto", task)).success,
+			customCatalogEntrySchema.safeParse(entry(undefined, task)).success,
 			true,
 		);
 	}
 	assert.equal(
-		customCatalogEntrySchema.safeParse(entry("auto", "remix")).success,
+		customCatalogEntrySchema.safeParse(entry(undefined, "remix")).success,
 		false,
 	);
 });

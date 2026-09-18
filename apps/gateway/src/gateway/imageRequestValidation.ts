@@ -1,3 +1,4 @@
+import type { UnsupportedParameterStrategy } from "#catalog/parameters.ts";
 import type { ResolvedModelMetadata } from "#catalog/types.ts";
 import type { CanonicalImageRequest } from "#core/images.ts";
 import { imageProfileFor } from "#catalog/types.ts";
@@ -13,9 +14,16 @@ function unsupported(param: string, message: string): never {
 	});
 }
 
+/**
+ * Candidate eligibility for an image request. `quality` is judged here only under the `error`
+ * strategy: under `drop`/`allow` a rung the model does not declare is reconciled per candidate by
+ * gateway/qualityResolution.ts instead of making the deployment ineligible, so a fallback onto a
+ * model with a shorter ladder degrades rather than failing.
+ */
 export function assertImageRequestSupported(
 	req: CanonicalImageRequest,
 	meta: ResolvedModelMetadata,
+	strategy: UnsupportedParameterStrategy = "error",
 ): void {
 	const profile = imageProfileFor(meta, req.operation);
 	if (!profile)
@@ -105,7 +113,12 @@ export function assertImageRequestSupported(
 			`The selected model does not support output_format=${req.outputFormat}.`,
 		);
 	}
-	if (req.quality && !profile.qualities?.includes(req.quality)) {
+	if (
+		strategy === "error" &&
+		req.quality &&
+		req.quality !== "auto" &&
+		!profile.qualities?.includes(req.quality)
+	) {
 		unsupported(
 			"quality",
 			`The selected model does not support quality=${req.quality}.`,

@@ -20,8 +20,13 @@ test("catalog images: GPT Image and Nano Banana declare operations/profiles", ()
 
 	const flash31 = getCatalogEntry("googleaistudio", "gemini-3.1-flash-image")
 		?.operations["image.generate"];
-	assert.deepEqual(flash31?.qualities, ["auto", "low", "high"]);
-	assert.equal(flash31?.qualityMappings?.auto?.thinkingLevel, "minimal");
+	// `auto` is not a rung: it is accepted for every model and never reaches an adapter, so it
+	// appears in neither the ladder nor the native mappings.
+	assert.deepEqual(flash31?.qualities, ["low", "high"]);
+	assert.deepEqual(Object.keys(flash31?.qualityMappings ?? {}), [
+		"low",
+		"high",
+	]);
 	assert.equal(flash31?.qualityMappings?.low?.thinkingLevel, "minimal");
 	assert.equal(flash31?.qualityMappings?.high?.thinkingLevel, "high");
 
@@ -29,7 +34,8 @@ test("catalog images: GPT Image and Nano Banana declare operations/profiles", ()
 		const gen = getCatalogEntry("googleaistudio", model)?.operations[
 			"image.generate"
 		];
-		assert.deepEqual(gen?.qualities, ["auto"], model);
+		// No thinking control at all, so no rungs are declared.
+		assert.equal(gen?.qualities, undefined, model);
 		assert.equal(gen?.qualityMappings, undefined, model);
 	}
 });
@@ -93,7 +99,7 @@ test("catalog images: GPT Image 2.5 raises the quality ladder, earlier models st
 				];
 				assert.deepEqual(
 					profile?.qualities,
-					["auto", "low", "medium", "high", "xhigh", "max"],
+					["low", "medium", "high", "xhigh", "max"],
 					`${adapterKey}/${model} ${operation}`,
 				);
 			}
@@ -116,7 +122,7 @@ test("catalog images: GPT Image 2.5 raises the quality ladder, earlier models st
 	assert.deepEqual(
 		getCatalogEntry("openai", "gpt-image-2")?.operations["image.generate"]
 			?.qualities,
-		["auto", "low", "medium", "high"],
+		["low", "medium", "high"],
 	);
 	assert.equal(
 		resolveModelMetadata(

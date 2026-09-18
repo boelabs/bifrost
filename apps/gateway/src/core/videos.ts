@@ -1,8 +1,10 @@
+import type { Quality, QualityLevel } from "./quality.ts";
 import type { Usage } from "./usage.ts";
 
 export type VideoStatus = "queued" | "in_progress" | "completed" | "failed";
 export type VideoAssetVariant = "video" | "thumbnail" | "spritesheet";
-export type VideoQuality = "auto" | "low" | "medium" | "high" | "native";
+/** The canonical ladder (see ./quality.ts), shared with image generation. */
+export type VideoQuality = Quality;
 
 export const VIDEO_TASKS = [
 	"text_to_video",
@@ -94,7 +96,8 @@ export interface VideoModelProfile {
 	tasks?: VideoTask[];
 	/** Accepted public durations, represented as seconds strings. */
 	durations?: string[];
-	qualities?: VideoQuality[];
+	/** The rungs this model exposes. Absent means it has no quality knob at all. */
+	qualities?: QualityLevel[];
 	sizes?: Record<string, VideoSizeMapping>;
 	supportsImageUrl?: boolean;
 	supportsAudioUrl?: boolean;

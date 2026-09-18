@@ -2853,14 +2853,15 @@ export interface components {
 			partial_images?: number | null;
 			quality?:
 				| (
-						| "standard"
-						| "hd"
+						| "auto"
 						| "low"
 						| "medium"
 						| "high"
 						| "xhigh"
 						| "max"
-						| "auto"
+						| "standard"
+						| "hd"
+						| "native"
 				  )
 				| null;
 			/** @default b64_json */
@@ -2892,7 +2893,17 @@ export interface components {
 			output_format?: ("png" | "jpeg" | "webp") | null;
 			partial_images?: number | null;
 			quality?:
-				| ("standard" | "low" | "medium" | "high" | "xhigh" | "max" | "auto")
+				| (
+						| "auto"
+						| "low"
+						| "medium"
+						| "high"
+						| "xhigh"
+						| "max"
+						| "standard"
+						| "hd"
+						| "native"
+				  )
 				| null;
 			/** @default b64_json */
 			response_format: "b64_json" | null;
@@ -2947,7 +2958,19 @@ export interface components {
 				| null;
 			seed?: number | null;
 			generate_audio?: boolean | null;
-			quality?: ("auto" | "low" | "medium" | "high" | "native") | null;
+			quality?:
+				| (
+						| "auto"
+						| "low"
+						| "medium"
+						| "high"
+						| "xhigh"
+						| "max"
+						| "standard"
+						| "hd"
+						| "native"
+				  )
+				| null;
 			/** @description Gateway-side attribution; never sent upstream. */
 			user?: string | null;
 			extra_body?: {
@@ -3518,7 +3541,7 @@ export interface components {
 			/** @enum {string} */
 			output_format?: "png" | "jpeg" | "webp";
 			/** @enum {string} */
-			quality?: "low" | "medium" | "high";
+			quality?: "low" | "medium" | "high" | "xhigh" | "max";
 			size?: string;
 			usage?: components["schemas"]["ImageUsage"];
 		};
@@ -3559,7 +3582,7 @@ export interface components {
 			seconds?: string;
 			size?: string;
 			/** @enum {string} */
-			quality?: "auto" | "low" | "medium" | "high" | "native";
+			quality?: "low" | "medium" | "high" | "xhigh" | "max";
 		};
 		VideoListResponse: {
 			/** @constant */

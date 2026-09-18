@@ -1,9 +1,12 @@
 import { assertImageRequestSupported } from "#gateway/imageRequestValidation.ts";
 import { executeImage, type ImageExecResult } from "#gateway/executor.ts";
 import { estimateTokenReservation } from "#router/tokenReservation.ts";
+import { withResolvedQuality } from "#gateway/qualityResolution.ts";
 import { candidateMetadata } from "#gateway/candidateMetadata.ts";
+import type { ResolvedModelMetadata } from "#catalog/types.ts";
 import { parseImageEditMultipart } from "#images/multipart.ts";
 import { OperationLogDraft } from "./runtime/operationLog.ts";
+import { getEffectiveSettings } from "#router/settings.ts";
 import { route, type RouteResult } from "#router/index.ts";
 import { imageResponseLog } from "#images/logging.ts";
 import { imageProfileFor } from "#catalog/types.ts";
@@ -98,6 +101,16 @@ async function handleImageRequest(
 		req = await applyCanonicalRequestExtensions(c, callType, req);
 		log.publicModel = req.model;
 		assertFinalModelAllowed(c, req.model);
+		const { unsupportedParameterStrategy } = await getEffectiveSettings();
+		/** Set when the served model's ladder could not honor the rung the client asked for. */
+		let qualityAdjustment: { from: string; to: string | null } | undefined;
+		/** The rung this model will actually be asked for, reconciled per candidate. */
+		const forCandidate = (candidate: { meta: ResolvedModelMetadata }) =>
+			withResolvedQuality(
+				req,
+				imageProfileFor(candidate.meta, req.operation)?.qualities,
+				unsupportedParameterStrategy,
+			);
 
 		routing = await route(
 			req.model,
@@ -108,20 +121,32 @@ async function handleImageRequest(
 				operationId: log.operationId,
 				executionMode: req.stream ? "stream" : "json",
 				candidateEligibility: (candidate) =>
-					assertImageRequestSupported(req, candidate.meta),
+					assertImageRequestSupported(
+						req,
+						candidate.meta,
+						unsupportedParameterStrategy,
+					),
 				tokenReservation: (candidate) =>
 					estimateTokenReservation(req, {
 						maxOutputTokens: candidate.meta.maxOutputTokens ?? 0,
 					}),
 				usageQuota: usageQuotaForRequest(c),
 			},
-			(candidate, ctx) => executeImage(candidate.adapter, req, ctx),
+			(candidate, ctx) => {
+				const { request, resolved } = forCandidate(candidate);
+				qualityAdjustment =
+					resolved.adjustedFrom !== undefined
+						? { from: resolved.adjustedFrom, to: resolved.quality ?? null }
+						: undefined;
+				return executeImage(candidate.adapter, request, ctx);
+			},
 		);
 		log.applyRouting(routing);
 		if (routing.value.kind === "json")
 			fallbackUsage = imageUsageToCore(routing.value.response.usage);
 		const metadata: Record<string, unknown> = {
 			...candidateMetadata(routing.candidate),
+			...(qualityAdjustment !== undefined ? { qualityAdjustment } : {}),
 			...(routing.value.kind === "stream"
 				? { streamLifecycle: routing.value.observation }
 				: { terminal: routing.value.terminal }),

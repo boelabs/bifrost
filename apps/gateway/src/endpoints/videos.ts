@@ -1,11 +1,14 @@
 import { assertVideoRequestSupported } from "#gateway/videoRequestValidation.ts";
 import { getObjectStore, type ObjectRange } from "#storage/objectStore.ts";
 import { estimateTokenReservation } from "#router/tokenReservation.ts";
+import { withResolvedQuality } from "#gateway/qualityResolution.ts";
 import { candidateMetadata } from "#gateway/candidateMetadata.ts";
 import { OperationLogDraft } from "./runtime/operationLog.ts";
+import { getEffectiveSettings } from "#router/settings.ts";
 import { route, type RouteResult } from "#router/index.ts";
 import type { AdapterContext } from "#adapters/types.ts";
 import { resolveTransport } from "#router/transport.ts";
+import { videoProfileFor } from "#catalog/types.ts";
 import { log as systemLog } from "#logging/log.ts";
 import { GatewayError } from "#core/errors.ts";
 import { getAuth } from "#auth/middleware.ts";
@@ -183,6 +186,9 @@ async function handleVideoCreate(
 	try {
 		await preflight(c, req.model);
 		const inputResolver = createVideoInputResolver(req, log.clientSignal);
+		const { unsupportedParameterStrategy } = await getEffectiveSettings();
+		/** The rung actually asked for, once reconciled with the model that serves the job. */
+		let effectiveQuality = req.quality;
 		routing = await route(
 			req.model,
 			"videos.generations",
@@ -191,7 +197,11 @@ async function handleVideoCreate(
 				requestId: log.requestId,
 				operationId: log.operationId,
 				candidateEligibility: (candidate) => {
-					assertVideoRequestSupported(req, candidate.meta);
+					assertVideoRequestSupported(
+						req,
+						candidate.meta,
+						unsupportedParameterStrategy,
+					);
 					inputResolver.assertCandidate(
 						candidate,
 						resolveTransport(candidate, "videos.generations"),
@@ -210,7 +220,13 @@ async function handleVideoCreate(
 					ctx.transport,
 				);
 				inputMetadata = resolved.metadata;
-				return candidate.adapter.videoGeneration!.submit(resolved.request, ctx);
+				const { request } = withResolvedQuality(
+					resolved.request,
+					videoProfileFor(candidate.meta)?.qualities,
+					unsupportedParameterStrategy,
+				);
+				effectiveQuality = request.quality;
+				return candidate.adapter.videoGeneration!.submit(request, ctx);
 			},
 		);
 		log.applyRouting(routing);
@@ -232,7 +248,7 @@ async function handleVideoCreate(
 			prompt: req.prompt,
 			seconds: req.seconds ?? null,
 			size: req.size ?? null,
-			quality: req.quality ?? null,
+			quality: effectiveQuality ?? null,
 			status: routing.value.status,
 			progress: routing.value.progress ?? 0,
 			error: routing.value.error ?? null,

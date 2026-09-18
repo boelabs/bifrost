@@ -213,13 +213,10 @@
 					"nativeOutputFormat": false,
 					"nativeOutputCompression": false,
 					"outputFormats": ["png", "jpeg", "webp"],
-					"qualities": ["auto", "low", "high"],
+					"qualities": ["low", "high"],
 					"responseFormats": ["b64_json"],
 					"autoSize": {},
 					"qualityMappings": {
-						"auto": {
-							"thinkingLevel": "minimal"
-						},
 						"low": {
 							"thinkingLevel": "minimal"
 						},
@@ -459,13 +456,10 @@
 					"nativeOutputFormat": false,
 					"nativeOutputCompression": false,
 					"outputFormats": ["png", "jpeg", "webp"],
-					"qualities": ["auto", "low", "high"],
+					"qualities": ["low", "high"],
 					"responseFormats": ["b64_json"],
 					"autoSize": {},
 					"qualityMappings": {
-						"auto": {
-							"thinkingLevel": "minimal"
-						},
 						"low": {
 							"thinkingLevel": "minimal"
 						},
@@ -715,7 +709,7 @@
 					"nativeOutputFormat": false,
 					"nativeOutputCompression": false,
 					"outputFormats": ["png", "jpeg", "webp"],
-					"qualities": ["auto", "low", "high"],
+					"qualities": ["low", "high"],
 					"responseFormats": ["b64_json"],
 					"autoSize": {},
 					"sizes": {
@@ -761,9 +755,6 @@
 						}
 					},
 					"qualityMappings": {
-						"auto": {
-							"thinkingLevel": "minimal"
-						},
 						"low": {
 							"thinkingLevel": "minimal"
 						},
@@ -781,7 +772,7 @@
 					"nativeOutputFormat": false,
 					"nativeOutputCompression": false,
 					"outputFormats": ["png", "jpeg", "webp"],
-					"qualities": ["auto", "low", "high"],
+					"qualities": ["low", "high"],
 					"responseFormats": ["b64_json"],
 					"autoSize": {},
 					"sizes": {
@@ -827,9 +818,6 @@
 						}
 					},
 					"qualityMappings": {
-						"auto": {
-							"thinkingLevel": "minimal"
-						},
 						"low": {
 							"thinkingLevel": "minimal"
 						},
@@ -856,7 +844,6 @@
 					"nativeOutputFormat": false,
 					"nativeOutputCompression": false,
 					"outputFormats": ["png", "jpeg", "webp"],
-					"qualities": ["auto"],
 					"responseFormats": ["b64_json"],
 					"autoSize": {},
 					"sizes": {
@@ -991,7 +978,6 @@
 					"nativeOutputFormat": false,
 					"nativeOutputCompression": false,
 					"outputFormats": ["png", "jpeg", "webp"],
-					"qualities": ["auto"],
 					"responseFormats": ["b64_json"],
 					"autoSize": {},
 					"sizes": {
@@ -1136,7 +1122,6 @@
 					"nativeOutputFormat": false,
 					"nativeOutputCompression": false,
 					"outputFormats": ["png", "jpeg", "webp"],
-					"qualities": ["auto"],
 					"responseFormats": ["b64_json"],
 					"autoSize": {},
 					"sizes": {
@@ -1181,7 +1166,6 @@
 					"nativeOutputFormat": false,
 					"nativeOutputCompression": false,
 					"outputFormats": ["png", "jpeg", "webp"],
-					"qualities": ["auto"],
 					"responseFormats": ["b64_json"],
 					"autoSize": {},
 					"sizes": {
@@ -1787,13 +1771,10 @@
 					"nativeOutputFormat": false,
 					"nativeOutputCompression": false,
 					"outputFormats": ["png", "jpeg", "webp"],
-					"qualities": ["auto", "low", "high"],
+					"qualities": ["low", "high"],
 					"responseFormats": ["b64_json"],
 					"autoSize": {},
 					"qualityMappings": {
-						"auto": {
-							"thinkingLevel": "minimal"
-						},
 						"low": {
 							"thinkingLevel": "minimal"
 						},
@@ -2033,13 +2014,10 @@
 					"nativeOutputFormat": false,
 					"nativeOutputCompression": false,
 					"outputFormats": ["png", "jpeg", "webp"],
-					"qualities": ["auto", "low", "high"],
+					"qualities": ["low", "high"],
 					"responseFormats": ["b64_json"],
 					"autoSize": {},
 					"qualityMappings": {
-						"auto": {
-							"thinkingLevel": "minimal"
-						},
 						"low": {
 							"thinkingLevel": "minimal"
 						},
@@ -2309,7 +2287,6 @@
 					"nativeOutputFormat": false,
 					"nativeOutputCompression": false,
 					"outputFormats": ["png", "jpeg", "webp"],
-					"qualities": ["auto"],
 					"responseFormats": ["b64_json"],
 					"autoSize": {},
 					"sizes": {
@@ -2444,7 +2421,6 @@
 					"nativeOutputFormat": false,
 					"nativeOutputCompression": false,
 					"outputFormats": ["png", "jpeg", "webp"],
-					"qualities": ["auto"],
 					"responseFormats": ["b64_json"],
 					"autoSize": {},
 					"sizes": {

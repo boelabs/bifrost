@@ -299,7 +299,7 @@ test("Vercel image models inherit the request contract of a first-party twin", (
 					"image.generate": {
 						maxN: 1,
 						maxInputImages: 14,
-						qualities: ["auto", "low", "high"],
+						qualities: ["low", "high"],
 						sizes: { "1024x1024": { aspectRatio: "1:1", imageSize: "1K" } },
 						// Gateway behavior of the native Gemini transport: must not leak here.
 						qualityMappings: { high: { thinkingLevel: "high" } },
@@ -326,7 +326,7 @@ test("Vercel image models inherit the request contract of a first-party twin", (
 			nativeOutputCompression: false,
 			maxInputImages: 14,
 			maxN: 1,
-			qualities: ["auto", "low", "high"],
+			qualities: ["low", "high"],
 			sizes: { "1024x1024": { aspectRatio: "1:1", imageSize: "1K" } },
 		},
 	);

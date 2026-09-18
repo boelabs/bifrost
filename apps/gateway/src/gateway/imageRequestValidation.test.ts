@@ -23,7 +23,7 @@ const meta: ResolvedModelMetadata = {
 		maxPromptChars: 100,
 		maxN: 1,
 		outputFormats: ["png", "webp"],
-		qualities: ["auto"],
+		qualities: ["medium"],
 		responseFormats: ["b64_json"],
 		sizes: { "1024x1024": {} },
 	},
@@ -121,7 +121,27 @@ test("image profile: missing allow-list means unsupported, not permissive", () =
 		/does not support output_format/,
 	);
 	assert.throws(
-		() => assertImageRequestSupported({ ...baseReq, quality: "auto" }, strict),
+		() => assertImageRequestSupported({ ...baseReq, quality: "high" }, strict),
 		/does not support quality/,
 	);
+	// A model that declares rungs still rejects one it does not name, but only under `error`.
+	const withRungs: ResolvedModelMetadata = {
+		...meta,
+		image: { ...meta.image, qualities: ["low", "medium"] },
+	};
+	assert.throws(
+		() =>
+			assertImageRequestSupported({ ...baseReq, quality: "max" }, withRungs),
+		/does not support quality/,
+	);
+	// `auto` expresses no choice, so it is accepted for every model - like `size: "auto"`.
+	assertImageRequestSupported({ ...baseReq, quality: "auto" }, withRungs);
+	// Under any strategy but `error` a rung is reconciled per candidate, never rejected here.
+	for (const strategy of ["drop", "allow"] as const) {
+		assertImageRequestSupported(
+			{ ...baseReq, quality: "max" },
+			withRungs,
+			strategy,
+		);
+	}
 });

@@ -565,7 +565,10 @@ async function buildGeminiImageBody(
 	const imageConfig: Record<string, unknown> = {};
 	const profile = imageProfileFor(ctx.meta, req.operation);
 	const resolved = resolveImageSize(req, profile);
-	const qualityMapping = profile?.qualityMappings?.[req.quality ?? "auto"];
+	const qualityMapping =
+		req.quality !== undefined && req.quality !== "auto"
+			? profile?.qualityMappings?.[req.quality]
+			: undefined;
 	if (resolved?.aspectRatio) imageConfig.aspectRatio = resolved.aspectRatio;
 	if (resolved?.imageSize) imageConfig.imageSize = resolved.imageSize;
 	const body: Record<string, unknown> = {

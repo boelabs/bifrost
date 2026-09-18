@@ -2925,7 +2925,6 @@
 					"maxImageBytes": 20000000,
 					"maxTotalInputBytes": 20000000,
 					"maxN": 1,
-					"qualities": ["auto"],
 					"sizes": {
 						"1024x1024": {
 							"aspectRatio": "1:1"
@@ -2970,7 +2969,6 @@
 					"maxImageBytes": 20000000,
 					"maxTotalInputBytes": 20000000,
 					"maxN": 1,
-					"qualities": ["auto"],
 					"sizes": {
 						"1024x1024": {
 							"aspectRatio": "1:1"
@@ -3174,7 +3172,6 @@
 					"maxImageBytes": 20000000,
 					"maxTotalInputBytes": 20000000,
 					"maxN": 1,
-					"qualities": ["auto"],
 					"sizes": {
 						"1024x1024": {
 							"aspectRatio": "1:1",
@@ -3309,7 +3306,6 @@
 					"maxImageBytes": 20000000,
 					"maxTotalInputBytes": 20000000,
 					"maxN": 1,
-					"qualities": ["auto"],
 					"sizes": {
 						"1024x1024": {
 							"aspectRatio": "1:1",
@@ -3480,7 +3476,7 @@
 					"maxImageBytes": 20000000,
 					"maxTotalInputBytes": 20000000,
 					"maxN": 1,
-					"qualities": ["auto", "low", "high"],
+					"qualities": ["low", "high"],
 					"sizes": {
 						"512x512": {
 							"aspectRatio": "1:1",
@@ -3715,7 +3711,7 @@
 					"maxImageBytes": 20000000,
 					"maxTotalInputBytes": 20000000,
 					"maxN": 1,
-					"qualities": ["auto", "low", "high"],
+					"qualities": ["low", "high"],
 					"sizes": {
 						"512x512": {
 							"aspectRatio": "1:1",
@@ -3986,7 +3982,7 @@
 					"maxImageBytes": 20000000,
 					"maxTotalInputBytes": 20000000,
 					"maxN": 1,
-					"qualities": ["auto", "low", "high"],
+					"qualities": ["low", "high"],
 					"sizes": {
 						"512x512": {
 							"aspectRatio": "1:1",
@@ -4221,7 +4217,7 @@
 					"maxImageBytes": 20000000,
 					"maxTotalInputBytes": 20000000,
 					"maxN": 1,
-					"qualities": ["auto", "low", "high"],
+					"qualities": ["low", "high"],
 					"sizes": {
 						"512x512": {
 							"aspectRatio": "1:1",
@@ -4529,7 +4525,7 @@
 					"maxImageBytes": 20000000,
 					"maxTotalInputBytes": 20000000,
 					"maxN": 1,
-					"qualities": ["auto", "low", "high"],
+					"qualities": ["low", "high"],
 					"sizes": {
 						"1024x1024": {
 							"aspectRatio": "1:1",
@@ -4584,7 +4580,7 @@
 					"maxImageBytes": 20000000,
 					"maxTotalInputBytes": 20000000,
 					"maxN": 1,
-					"qualities": ["auto", "low", "high"],
+					"qualities": ["low", "high"],
 					"sizes": {
 						"1024x1024": {
 							"aspectRatio": "1:1",
@@ -8828,7 +8824,7 @@
 					"supportsInputFidelity": true,
 					"supportsModeration": true,
 					"supportsTransparentBackground": true,
-					"qualities": ["auto", "low", "medium", "high"],
+					"qualities": ["low", "medium", "high"],
 					"sizes": {
 						"1024x1024": {},
 						"1024x1536": {},
@@ -8858,7 +8854,7 @@
 					"supportsInputFidelity": false,
 					"supportsModeration": true,
 					"supportsTransparentBackground": true,
-					"qualities": ["auto", "low", "medium", "high"],
+					"qualities": ["low", "medium", "high"],
 					"sizes": {
 						"1024x1024": {},
 						"1024x1536": {},
@@ -8888,7 +8884,7 @@
 					"supportsInputFidelity": true,
 					"supportsModeration": true,
 					"supportsTransparentBackground": true,
-					"qualities": ["auto", "low", "medium", "high"],
+					"qualities": ["low", "medium", "high"],
 					"sizes": {
 						"1024x1024": {},
 						"1024x1536": {},
@@ -8917,7 +8913,7 @@
 					"supportsMask": true,
 					"supportsInputFidelity": true,
 					"supportsModeration": true,
-					"qualities": ["auto", "low", "medium", "high"],
+					"qualities": ["low", "medium", "high"],
 					"sizes": {
 						"1024x1024": {},
 						"1024x1536": {},
@@ -8955,7 +8951,7 @@
 					"supportsInputFidelity": true,
 					"supportsModeration": true,
 					"supportsTransparentBackground": true,
-					"qualities": ["auto", "low", "medium", "high", "xhigh", "max"],
+					"qualities": ["low", "medium", "high", "xhigh", "max"],
 					"sizes": {
 						"1024x1024": {},
 						"1024x1536": {},
@@ -8993,7 +8989,7 @@
 					"supportsInputFidelity": true,
 					"supportsModeration": true,
 					"supportsTransparentBackground": true,
-					"qualities": ["auto", "low", "medium", "high", "xhigh", "max"],
+					"qualities": ["low", "medium", "high", "xhigh", "max"],
 					"sizes": {
 						"1024x1024": {},
 						"1024x1536": {},

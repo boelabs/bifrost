@@ -1,18 +1,12 @@
+import type { Quality, QualityLevel } from "./quality.ts";
 import type { Usage } from "./usage.ts";
 
 export type ImageOperation = "generation" | "edit";
 export type ImageOutputFormat = "png" | "jpeg" | "webp";
 export type ImageBackground = "transparent" | "opaque" | "auto";
-export type ImageQuality =
-	| "standard"
-	| "hd"
-	| "low"
-	| "medium"
-	| "high"
-	// GPT Image 2.5 raises the ladder above "high"; earlier models stop there.
-	| "xhigh"
-	| "max"
-	| "auto";
+/** The canonical ladder (see ./quality.ts). DALL·E's `standard`/`hd` are normalized away at the
+ * contract boundary and translated back per model via `qualityMappings`. */
+export type ImageQuality = Quality;
 type ImageResponseFormat = "b64_json";
 
 /** A file validated and stored temporarily during a multipart request. */
@@ -134,7 +128,8 @@ export interface ImageModelProfile {
 	supportsStyle?: boolean;
 	supportsTransparentBackground?: boolean;
 	outputFormats?: ImageOutputFormat[];
-	qualities?: ImageQuality[];
+	/** The rungs this model exposes. Absent means it has no quality knob at all. */
+	qualities?: QualityLevel[];
 	responseFormats?: ImageResponseFormat[];
 	/**
 	 * Exact accepted dimensions. The first entry is the model's default: `size: "auto"` (or an
@@ -162,9 +157,16 @@ export interface ImageModelProfile {
 	/** false when the gateway must transcode the format/compression and not forward those fields. */
 	nativeOutputFormat?: boolean;
 	nativeOutputCompression?: boolean;
-	/** Native translations of the public `quality` knob for image models with thinking. */
+	/**
+	 * Native translation of each canonical rung, for models that do not speak the ladder: `quality` is
+	 * the value sent upstream in place of the rung (DALL·E's `standard`/`hd`), `thinkingLevel` the
+	 * Gemini image models' thinking control. Keyed by rung - `auto` never reaches an adapter.
+	 */
 	qualityMappings?: Partial<
-		Record<ImageQuality, { thinkingLevel?: "minimal" | "low" | "high" }>
+		Record<
+			QualityLevel,
+			{ quality?: string; thinkingLevel?: "minimal" | "low" | "high" }
+		>
 	>;
 }
 

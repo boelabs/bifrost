@@ -29,7 +29,7 @@ stays accept-compatible with OpenAI's Sora shape:
 | `input_references` | Array of `{type: "image_url"\|"audio_url"\|"video_url", ...}` parts. `input_reference` (single, `image_url` or `file_id`) is the OpenAI-style alias. |
 | `frame_images` | First/last frame conditioning (`frame_type: "first_frame"\|"last_frame"`) for models that support it. |
 | `seed`, `generate_audio` | Forwarded only when the model profile declares support. |
-| `quality` | Gateway extension: `auto`, `low`, `medium`, `high`, or `native`. Validated and forwarded only when the profile declares `qualities`. |
+| `quality` | Gateway extension on the shared ladder: `auto`, `low`, `medium`, `high`, `xhigh`, or `max` (`native` is still accepted and normalized to `max`). Reconciled with the model's declared `qualities` under the [parameter policy](/docs/parameter-policy#quality-on-image-and-video-generation), and forwarded only when the profile declares rungs. |
 | `user` | Gateway-side attribution only. It is stored with the job and **never** forwarded upstream. |
 | `extra_body` | Provider-specific passthrough merged into the upstream request body. |
 

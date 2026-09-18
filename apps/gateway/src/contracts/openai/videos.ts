@@ -1,3 +1,4 @@
+import { PUBLIC_QUALITY_VALUES, normalizeQuality } from "#core/quality.ts";
 import * as z from "zod/v4";
 
 import {
@@ -91,10 +92,7 @@ export const videoCreateRequestSchema = z
 		resolution: z.enum(VIDEO_RESOLUTIONS).nullable().optional(),
 		seed: z.number().int().nullable().optional(),
 		generate_audio: z.boolean().nullable().optional(),
-		quality: z
-			.enum(["auto", "low", "medium", "high", "native"])
-			.nullable()
-			.optional(),
+		quality: z.enum(PUBLIC_QUALITY_VALUES).nullable().optional(),
 		user: z.string().nullable().optional(),
 		extra_body: extraBodySchema.optional(),
 	})
@@ -190,7 +188,7 @@ export function videoCreateToCanonical(
 	const generateAudio = defined(req.generate_audio);
 	if (generateAudio !== undefined) canonical.generateAudio = generateAudio;
 	const quality = defined(req.quality);
-	if (quality !== undefined) canonical.quality = quality;
+	if (quality !== undefined) canonical.quality = normalizeQuality(quality);
 	const user = defined(req.user);
 	if (user !== undefined) canonical.user = user;
 	if (req.extra_body !== undefined) canonical.extraBody = req.extra_body;

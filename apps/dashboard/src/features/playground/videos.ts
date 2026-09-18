@@ -46,7 +46,8 @@ export const VIDEO_QUALITIES = [
 	"low",
 	"medium",
 	"high",
-	"native",
+	"xhigh",
+	"max",
 ] as const;
 
 /** What may be attached as a guiding asset, and what the file picker therefore offers. */

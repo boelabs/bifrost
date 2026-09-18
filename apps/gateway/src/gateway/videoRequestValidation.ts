@@ -1,4 +1,5 @@
 import type { CanonicalVideoRequest, VideoModelProfile } from "#core/videos.ts";
+import type { UnsupportedParameterStrategy } from "#catalog/parameters.ts";
 import type { ResolvedModelMetadata } from "#catalog/types.ts";
 import { videoProfileFor } from "#catalog/types.ts";
 import { resolveVideoSize } from "#core/videos.ts";
@@ -159,9 +160,11 @@ function assertReferencesSupported(
 	}
 }
 
+/** See assertImageRequestSupported: `quality` is judged here only under the `error` strategy. */
 export function assertVideoRequestSupported(
 	req: CanonicalVideoRequest,
 	meta: ResolvedModelMetadata,
+	strategy: UnsupportedParameterStrategy = "error",
 ): void {
 	const profile = videoProfileFor(meta);
 	if (!profile) {
@@ -193,7 +196,12 @@ export function assertVideoRequestSupported(
 		);
 	}
 	assertDimensionsSupported(req, profile);
-	if (req.quality && !profile.qualities?.includes(req.quality)) {
+	if (
+		strategy === "error" &&
+		req.quality &&
+		req.quality !== "auto" &&
+		!profile.qualities?.includes(req.quality)
+	) {
 		unsupported(
 			"quality",
 			`The selected model does not support quality=${req.quality}.`,
