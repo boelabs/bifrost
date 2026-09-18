@@ -23,6 +23,8 @@ export const IMAGE_QUALITIES = [
 	"low",
 	"medium",
 	"high",
+	"xhigh",
+	"max",
 	"standard",
 	"hd",
 ] as const;

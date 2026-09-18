@@ -3065,6 +3065,8 @@ components:
                 - low
                 - medium
                 - high
+                - xhigh
+                - max
                 - auto
             - type: "null"
         response_format:
@@ -3174,6 +3176,8 @@ components:
                 - low
                 - medium
                 - high
+                - xhigh
+                - max
                 - auto
             - type: "null"
         response_format:

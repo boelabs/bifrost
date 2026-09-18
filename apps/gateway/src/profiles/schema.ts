@@ -230,7 +230,18 @@ const imageOperationProfileSchema = z
 		supportsTransparentBackground: z.boolean().optional(),
 		outputFormats: z.array(z.enum(["png", "jpeg", "webp"])).optional(),
 		qualities: z
-			.array(z.enum(["standard", "hd", "low", "medium", "high", "auto"]))
+			.array(
+				z.enum([
+					"standard",
+					"hd",
+					"low",
+					"medium",
+					"high",
+					"xhigh",
+					"max",
+					"auto",
+				]),
+			)
 			.optional(),
 		responseFormats: z.array(z.literal("b64_json")).optional(),
 		sizes: z
@@ -268,7 +279,16 @@ const imageOperationProfileSchema = z
 		nativeOutputCompression: z.boolean().optional(),
 		qualityMappings: z
 			.partialRecord(
-				z.enum(["standard", "hd", "low", "medium", "high", "auto"]),
+				z.enum([
+					"standard",
+					"hd",
+					"low",
+					"medium",
+					"high",
+					"xhigh",
+					"max",
+					"auto",
+				]),
 				z
 					.object({
 						thinkingLevel: z.enum(["minimal", "low", "high"]).optional(),

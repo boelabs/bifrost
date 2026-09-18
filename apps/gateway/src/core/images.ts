@@ -9,6 +9,9 @@ export type ImageQuality =
 	| "low"
 	| "medium"
 	| "high"
+	// GPT Image 2.5 raises the ladder above "high"; earlier models stop there.
+	| "xhigh"
+	| "max"
 	| "auto";
 type ImageResponseFormat = "b64_json";
 
