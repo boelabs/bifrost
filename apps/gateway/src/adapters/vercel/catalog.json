@@ -193,7 +193,7 @@
 			"pricing": {
 				"inputCentsPerMTokens": 130,
 				"outputCentsPerMTokens": 780,
-				"cacheReadCentsPerMTokens": 26,
+				"cacheReadCentsPerMTokens": 13,
 				"cacheWriteCentsPerMTokens": 162.5,
 				"tiers": [
 					{
@@ -432,7 +432,7 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 5
+				"inputCentsPerMTokens": 1
 			}
 		},
 		"alibaba/qwen3-max": {
@@ -586,8 +586,8 @@
 						"reasoning": false,
 						"structuredOutputs": false
 					},
-					"maxInputTokens": 131072,
-					"maxOutputTokens": 32768,
+					"maxInputTokens": 262114,
+					"maxOutputTokens": 262114,
 					"modalities": {
 						"input": ["text"],
 						"output": ["text"]
@@ -616,8 +616,8 @@
 						"reasoning": true,
 						"structuredOutputs": false
 					},
-					"maxInputTokens": 131072,
-					"maxOutputTokens": 32768,
+					"maxInputTokens": 262144,
+					"maxOutputTokens": 262144,
 					"modalities": {
 						"input": ["text"],
 						"output": ["text"]
@@ -776,7 +776,7 @@
 			"pricing": {
 				"inputCentsPerMTokens": 10,
 				"outputCentsPerMTokens": 40,
-				"cacheReadCentsPerMTokens": 0.1,
+				"cacheReadCentsPerMTokens": 1,
 				"cacheWriteCentsPerMTokens": 12.5
 			}
 		},
@@ -814,16 +814,16 @@
 			},
 			"pricing": {
 				"inputCentsPerMTokens": 40,
-				"outputCentsPerMTokens": 240,
+				"outputCentsPerMTokens": 250,
 				"cacheReadCentsPerMTokens": 4,
 				"cacheWriteCentsPerMTokens": 50,
 				"tiers": [
 					{
 						"aboveInputTokens": 256001,
-						"inputCentsPerMTokens": 120,
-						"outputCentsPerMTokens": 720,
-						"cacheReadCentsPerMTokens": 12,
-						"cacheWriteCentsPerMTokens": 150
+						"inputCentsPerMTokens": 50,
+						"outputCentsPerMTokens": 300,
+						"cacheReadCentsPerMTokens": 5,
+						"cacheWriteCentsPerMTokens": 62.5
 					}
 				]
 			}
@@ -900,7 +900,7 @@
 			"pricing": {
 				"inputCentsPerMTokens": 50,
 				"outputCentsPerMTokens": 300,
-				"cacheReadCentsPerMTokens": 10,
+				"cacheReadCentsPerMTokens": 5,
 				"cacheWriteCentsPerMTokens": 62.5,
 				"tiers": [
 					{
@@ -1164,7 +1164,7 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 16,
+				"inputCentsPerMTokens": 15,
 				"outputCentsPerMTokens": 47,
 				"cacheReadCentsPerMTokens": 1.6,
 				"cacheWriteCentsPerMTokens": 20
@@ -1179,7 +1179,7 @@
 						"reasoning": true,
 						"structuredOutputs": false
 					},
-					"maxInputTokens": 1000000,
+					"maxInputTokens": 262144,
 					"maxOutputTokens": 128000,
 					"modalities": {
 						"input": ["image", "text"],
@@ -1205,8 +1205,7 @@
 			"pricing": {
 				"inputCentsPerMTokens": 200,
 				"outputCentsPerMTokens": 600,
-				"cacheReadCentsPerMTokens": 25,
-				"cacheWriteCentsPerMTokens": 250
+				"cacheReadCentsPerMTokens": 25
 			}
 		},
 		"alibaba/qwen3.8-max-0902": {
@@ -1245,6 +1244,45 @@
 				"outputCentsPerMTokens": 600,
 				"cacheReadCentsPerMTokens": 25,
 				"cacheWriteCentsPerMTokens": 250
+			}
+		},
+		"alibaba/qwen3.8-omni-flash": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 131072,
+					"modalities": {
+						"input": ["image", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "fixed",
+						"levels": ["high"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 15,
+				"outputCentsPerMTokens": 47,
+				"cacheReadCentsPerMTokens": 1.6
 			}
 		},
 		"amazon/nova-2-lite": {
@@ -3781,9 +3819,9 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 6,
-				"outputCentsPerMTokens": 18,
-				"cacheReadCentsPerMTokens": 1.2
+				"inputCentsPerMTokens": 2.1,
+				"outputCentsPerMTokens": 6.3,
+				"cacheReadCentsPerMTokens": 0.42
 			}
 		},
 		"inclusionai/ling-3.0-flash-fin": {
@@ -4004,6 +4042,68 @@
 				"outputCentsPerMTokens": 0
 			}
 		},
+		"inference-net/schematron-v2-small": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 4096,
+					"modalities": {
+						"input": ["text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"max_tokens": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 5,
+				"outputCentsPerMTokens": 23,
+				"cacheReadCentsPerMTokens": 5
+			}
+		},
+		"inference-net/schematron-v2-turbo": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 8192,
+					"modalities": {
+						"input": ["text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"max_tokens": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 3,
+				"outputCentsPerMTokens": 15,
+				"cacheReadCentsPerMTokens": 3
+			}
+		},
 		"interfaze/interfaze-beta": {
 			"operations": {
 				"text.generate": {
@@ -4039,148 +4139,6 @@
 			"pricing": {
 				"inputCentsPerMTokens": 150,
 				"outputCentsPerMTokens": 350
-			}
-		},
-		"kwaipilot/kat-coder-air-v2.5": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": true,
-						"reasoning": true,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 256000,
-					"maxOutputTokens": 80000,
-					"modalities": {
-						"input": ["image", "text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"include_reasoning": true,
-						"max_tokens": true,
-						"reasoning": true,
-						"stop": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					},
-					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 15,
-				"outputCentsPerMTokens": 60,
-				"cacheReadCentsPerMTokens": 3
-			}
-		},
-		"kwaipilot/kat-coder-pro-v1": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": false,
-						"reasoning": false,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 256000,
-					"maxOutputTokens": 32000,
-					"modalities": {
-						"input": ["text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"max_tokens": true,
-						"stop": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 30,
-				"outputCentsPerMTokens": 120,
-				"cacheReadCentsPerMTokens": 6
-			}
-		},
-		"kwaipilot/kat-coder-pro-v2": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": false,
-						"reasoning": true,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 256000,
-					"maxOutputTokens": 256000,
-					"modalities": {
-						"input": ["text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"include_reasoning": true,
-						"max_tokens": true,
-						"reasoning": true,
-						"stop": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					},
-					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 30,
-				"outputCentsPerMTokens": 120,
-				"cacheReadCentsPerMTokens": 6
-			}
-		},
-		"kwaipilot/kat-coder-pro-v2.5": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": true,
-						"reasoning": true,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 256000,
-					"maxOutputTokens": 80000,
-					"modalities": {
-						"input": ["image", "text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"include_reasoning": true,
-						"max_tokens": true,
-						"reasoning": true,
-						"stop": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					},
-					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 74,
-				"outputCentsPerMTokens": 296,
-				"cacheReadCentsPerMTokens": 15
 			}
 		},
 		"meta/llama-3.1-70b": {
@@ -4899,7 +4857,8 @@
 			},
 			"pricing": {
 				"inputCentsPerMTokens": 30,
-				"outputCentsPerMTokens": 90
+				"outputCentsPerMTokens": 90,
+				"cacheReadCentsPerMTokens": 3
 			}
 		},
 		"mistral/codestral-embed": {
@@ -4910,67 +4869,8 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 15
-			}
-		},
-		"mistral/devstral-2": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": false,
-						"reasoning": false,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 256000,
-					"maxOutputTokens": 256000,
-					"modalities": {
-						"input": ["text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"max_tokens": true,
-						"stop": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 40,
-				"outputCentsPerMTokens": 200
-			}
-		},
-		"mistral/devstral-small-2": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": true,
-						"reasoning": false,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 256000,
-					"maxOutputTokens": 256000,
-					"modalities": {
-						"input": ["image", "text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"max_tokens": true,
-						"stop": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 10,
-				"outputCentsPerMTokens": 30
+				"inputCentsPerMTokens": 15,
+				"cacheReadCentsPerMTokens": 1.5
 			}
 		},
 		"mistral/ministral-14b": {
@@ -4982,7 +4882,7 @@
 						"reasoning": false,
 						"structuredOutputs": false
 					},
-					"maxInputTokens": 256000,
+					"maxInputTokens": 262144,
 					"maxOutputTokens": 256000,
 					"modalities": {
 						"input": ["image", "pdf", "text"],
@@ -5000,7 +4900,8 @@
 			},
 			"pricing": {
 				"inputCentsPerMTokens": 20,
-				"outputCentsPerMTokens": 20
+				"outputCentsPerMTokens": 20,
+				"cacheReadCentsPerMTokens": 2
 			}
 		},
 		"mistral/ministral-3b": {
@@ -5012,7 +4913,7 @@
 						"reasoning": false,
 						"structuredOutputs": false
 					},
-					"maxInputTokens": 128000,
+					"maxInputTokens": 131072,
 					"maxOutputTokens": 4000,
 					"modalities": {
 						"input": ["image", "text"],
@@ -5030,7 +4931,8 @@
 			},
 			"pricing": {
 				"inputCentsPerMTokens": 10,
-				"outputCentsPerMTokens": 10
+				"outputCentsPerMTokens": 10,
+				"cacheReadCentsPerMTokens": 1
 			}
 		},
 		"mistral/ministral-8b": {
@@ -5042,7 +4944,7 @@
 						"reasoning": false,
 						"structuredOutputs": false
 					},
-					"maxInputTokens": 128000,
+					"maxInputTokens": 262144,
 					"maxOutputTokens": 4000,
 					"modalities": {
 						"input": ["image", "text"],
@@ -5060,7 +4962,8 @@
 			},
 			"pricing": {
 				"inputCentsPerMTokens": 15,
-				"outputCentsPerMTokens": 15
+				"outputCentsPerMTokens": 15,
+				"cacheReadCentsPerMTokens": 1.5
 			}
 		},
 		"mistral/mistral-embed": {
@@ -5083,7 +4986,7 @@
 						"reasoning": false,
 						"structuredOutputs": false
 					},
-					"maxInputTokens": 256000,
+					"maxInputTokens": 262144,
 					"maxOutputTokens": 256000,
 					"modalities": {
 						"input": ["image", "text"],
@@ -5101,37 +5004,8 @@
 			},
 			"pricing": {
 				"inputCentsPerMTokens": 50,
-				"outputCentsPerMTokens": 150
-			}
-		},
-		"mistral/mistral-medium": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": true,
-						"reasoning": false,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 128000,
-					"maxOutputTokens": 64000,
-					"modalities": {
-						"input": ["image", "text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"max_tokens": true,
-						"stop": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 40,
-				"outputCentsPerMTokens": 200
+				"outputCentsPerMTokens": 150,
+				"cacheReadCentsPerMTokens": 5
 			}
 		},
 		"mistral/mistral-medium-3.5": {
@@ -5143,7 +5017,7 @@
 						"reasoning": true,
 						"structuredOutputs": false
 					},
-					"maxInputTokens": 256000,
+					"maxInputTokens": 262144,
 					"maxOutputTokens": 256000,
 					"modalities": {
 						"input": ["image", "text"],
@@ -5168,7 +5042,8 @@
 			},
 			"pricing": {
 				"inputCentsPerMTokens": 150,
-				"outputCentsPerMTokens": 750
+				"outputCentsPerMTokens": 750,
+				"cacheReadCentsPerMTokens": 15
 			}
 		},
 		"mistral/mistral-nemo": {
@@ -5176,14 +5051,14 @@
 				"text.generate": {
 					"capabilities": {
 						"tools": true,
-						"vision": true,
+						"vision": false,
 						"reasoning": false,
 						"structuredOutputs": false
 					},
-					"maxInputTokens": 128000,
-					"maxOutputTokens": 128000,
+					"maxInputTokens": 60288,
+					"maxOutputTokens": 16000,
 					"modalities": {
-						"input": ["image", "text"],
+						"input": ["text"],
 						"output": ["text"]
 					},
 					"contracts": ["chat.completions", "responses"],
@@ -5197,8 +5072,8 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 15,
-				"outputCentsPerMTokens": 15
+				"inputCentsPerMTokens": 4,
+				"outputCentsPerMTokens": 17
 			}
 		},
 		"mistral/mistral-small": {
@@ -5210,37 +5085,7 @@
 						"reasoning": false,
 						"structuredOutputs": false
 					},
-					"maxInputTokens": 32000,
-					"maxOutputTokens": 4000,
-					"modalities": {
-						"input": ["image", "text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"max_tokens": true,
-						"stop": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 10,
-				"outputCentsPerMTokens": 30
-			}
-		},
-		"mistral/pixtral-12b": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": true,
-						"reasoning": false,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 128000,
+					"maxInputTokens": 262144,
 					"maxOutputTokens": 4000,
 					"modalities": {
 						"input": ["image", "text"],
@@ -5258,7 +5103,8 @@
 			},
 			"pricing": {
 				"inputCentsPerMTokens": 15,
-				"outputCentsPerMTokens": 15
+				"outputCentsPerMTokens": 60,
+				"cacheReadCentsPerMTokens": 1.5
 			}
 		},
 		"moonshotai/kimi-k2": {
@@ -5337,10 +5183,10 @@
 						"reasoning": true,
 						"structuredOutputs": false
 					},
-					"maxInputTokens": 262114,
-					"maxOutputTokens": 262114,
+					"maxInputTokens": 256000,
+					"maxOutputTokens": 256000,
 					"modalities": {
-						"input": ["image", "text", "video"],
+						"input": ["image", "text"],
 						"output": ["text"]
 					},
 					"contracts": ["chat.completions", "responses"],
@@ -5362,8 +5208,7 @@
 			},
 			"pricing": {
 				"inputCentsPerMTokens": 60,
-				"outputCentsPerMTokens": 300,
-				"cacheReadCentsPerMTokens": 10
+				"outputCentsPerMTokens": 300
 			}
 		},
 		"moonshotai/kimi-k2.6": {
@@ -5485,7 +5330,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 131072,
@@ -5499,7 +5344,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
@@ -5640,7 +5487,8 @@
 			},
 			"pricing": {
 				"inputCentsPerMTokens": 5,
-				"outputCentsPerMTokens": 24
+				"outputCentsPerMTokens": 20,
+				"cacheReadCentsPerMTokens": 2.5
 			}
 		},
 		"nvidia/nemotron-3-super-120b-a12b": {
@@ -7790,8 +7638,8 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 5,
-				"outputCentsPerMTokens": 20
+				"inputCentsPerMTokens": 3,
+				"outputCentsPerMTokens": 14
 			}
 		},
 		"openai/gpt-oss-safeguard-120b": {
@@ -10253,6 +10101,43 @@
 				"inputCentsPerMTokens": 15,
 				"outputCentsPerMTokens": 50,
 				"cacheReadCentsPerMTokens": 3
+			}
+		},
+		"zai/glm-5.3-flashx": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 131072,
+					"modalities": {
+						"input": ["image", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"stop": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "fixed",
+						"levels": ["high"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 37,
+				"outputCentsPerMTokens": 125,
+				"cacheReadCentsPerMTokens": 7.5
 			}
 		},
 		"zai/glm-5v-turbo": {

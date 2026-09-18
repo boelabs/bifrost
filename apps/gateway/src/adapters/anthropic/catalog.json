@@ -405,7 +405,9 @@
 						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true,
-						"verbosity": true
+						"verbosity": true,
+						"temperature": true,
+						"reasoning_effort": true
 					}
 				}
 			},
@@ -445,7 +447,8 @@
 						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true,
-						"verbosity": true
+						"verbosity": true,
+						"reasoning_effort": true
 					}
 				}
 			},

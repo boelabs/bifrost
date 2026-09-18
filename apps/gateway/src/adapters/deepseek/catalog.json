@@ -135,9 +135,9 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 43.5,
-				"outputCentsPerMTokens": 87,
-				"cacheReadCentsPerMTokens": 0.36
+				"inputCentsPerMTokens": 66,
+				"outputCentsPerMTokens": 198,
+				"cacheReadCentsPerMTokens": 2.2
 			}
 		},
 		"deepseek-chat": {
@@ -352,7 +352,8 @@
 						"tools": true,
 						"vision": true,
 						"structuredOutputs": false
-					}
+					},
+					"maxInputTokens": 1000000
 				}
 			},
 			"pricing": {
@@ -360,6 +361,41 @@
 				"outputCentsPerMTokens": 60,
 				"cacheReadCentsPerMTokens": 0.3
 			}
+		},
+		"deepseek-flash": {
+			"operations": {
+				"text.generate": {
+					"maxOutputTokens": 384000,
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true,
+						"top_p": true,
+						"frequency_penalty": true,
+						"presence_penalty": true,
+						"logprobs": true,
+						"top_logprobs": true,
+						"response_format": true,
+						"reasoning_effort": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 1000000
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 15,
+				"outputCentsPerMTokens": 60,
+				"cacheReadCentsPerMTokens": 0.3
+			},
+			"notes": "Published alias for DeepSeek-V4.1-Flash (deepseek-v4.1-flash)."
 		},
 		"deepseek-v4-pro-0813": {
 			"operations": {
@@ -385,7 +421,8 @@
 						"tools": true,
 						"vision": false,
 						"structuredOutputs": false
-					}
+					},
+					"maxInputTokens": 1000000
 				}
 			},
 			"pricing": {

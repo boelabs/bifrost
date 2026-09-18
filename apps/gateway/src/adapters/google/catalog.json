@@ -259,6 +259,194 @@
 						"768x1376": {
 							"aspectRatio": "9:16",
 							"imageSize": "1K"
+						},
+						"256x1024": {
+							"aspectRatio": "1:4",
+							"imageSize": "512"
+						},
+						"512x2048": {
+							"aspectRatio": "1:4",
+							"imageSize": "1K"
+						},
+						"1024x4096": {
+							"aspectRatio": "1:4",
+							"imageSize": "2K"
+						},
+						"2048x8192": {
+							"aspectRatio": "1:4",
+							"imageSize": "4K"
+						},
+						"192x1536": {
+							"aspectRatio": "1:8",
+							"imageSize": "512"
+						},
+						"384x3072": {
+							"aspectRatio": "1:8",
+							"imageSize": "1K"
+						},
+						"768x6144": {
+							"aspectRatio": "1:8",
+							"imageSize": "2K"
+						},
+						"1536x12288": {
+							"aspectRatio": "1:8",
+							"imageSize": "4K"
+						},
+						"424x632": {
+							"aspectRatio": "2:3",
+							"imageSize": "512"
+						},
+						"1696x2528": {
+							"aspectRatio": "2:3",
+							"imageSize": "2K"
+						},
+						"3392x5056": {
+							"aspectRatio": "2:3",
+							"imageSize": "4K"
+						},
+						"632x424": {
+							"aspectRatio": "3:2",
+							"imageSize": "512"
+						},
+						"2528x1696": {
+							"aspectRatio": "3:2",
+							"imageSize": "2K"
+						},
+						"5056x3392": {
+							"aspectRatio": "3:2",
+							"imageSize": "4K"
+						},
+						"448x600": {
+							"aspectRatio": "3:4",
+							"imageSize": "512"
+						},
+						"896x1200": {
+							"aspectRatio": "3:4",
+							"imageSize": "1K"
+						},
+						"1792x2400": {
+							"aspectRatio": "3:4",
+							"imageSize": "2K"
+						},
+						"3584x4800": {
+							"aspectRatio": "3:4",
+							"imageSize": "4K"
+						},
+						"1024x256": {
+							"aspectRatio": "4:1",
+							"imageSize": "512"
+						},
+						"2048x512": {
+							"aspectRatio": "4:1",
+							"imageSize": "1K"
+						},
+						"4096x1024": {
+							"aspectRatio": "4:1",
+							"imageSize": "2K"
+						},
+						"8192x2048": {
+							"aspectRatio": "4:1",
+							"imageSize": "4K"
+						},
+						"600x448": {
+							"aspectRatio": "4:3",
+							"imageSize": "512"
+						},
+						"1200x896": {
+							"aspectRatio": "4:3",
+							"imageSize": "1K"
+						},
+						"2400x1792": {
+							"aspectRatio": "4:3",
+							"imageSize": "2K"
+						},
+						"4800x3584": {
+							"aspectRatio": "4:3",
+							"imageSize": "4K"
+						},
+						"464x576": {
+							"aspectRatio": "4:5",
+							"imageSize": "512"
+						},
+						"928x1152": {
+							"aspectRatio": "4:5",
+							"imageSize": "1K"
+						},
+						"1856x2304": {
+							"aspectRatio": "4:5",
+							"imageSize": "2K"
+						},
+						"3712x4608": {
+							"aspectRatio": "4:5",
+							"imageSize": "4K"
+						},
+						"576x464": {
+							"aspectRatio": "5:4",
+							"imageSize": "512"
+						},
+						"1152x928": {
+							"aspectRatio": "5:4",
+							"imageSize": "1K"
+						},
+						"2304x1856": {
+							"aspectRatio": "5:4",
+							"imageSize": "2K"
+						},
+						"4608x3712": {
+							"aspectRatio": "5:4",
+							"imageSize": "4K"
+						},
+						"1536x192": {
+							"aspectRatio": "8:1",
+							"imageSize": "512"
+						},
+						"3072x384": {
+							"aspectRatio": "8:1",
+							"imageSize": "1K"
+						},
+						"6144x768": {
+							"aspectRatio": "8:1",
+							"imageSize": "2K"
+						},
+						"12288x1536": {
+							"aspectRatio": "8:1",
+							"imageSize": "4K"
+						},
+						"384x688": {
+							"aspectRatio": "9:16",
+							"imageSize": "512"
+						},
+						"1536x2752": {
+							"aspectRatio": "9:16",
+							"imageSize": "2K"
+						},
+						"3072x5504": {
+							"aspectRatio": "9:16",
+							"imageSize": "4K"
+						},
+						"688x384": {
+							"aspectRatio": "16:9",
+							"imageSize": "512"
+						},
+						"2752x1536": {
+							"aspectRatio": "16:9",
+							"imageSize": "2K"
+						},
+						"5504x3072": {
+							"aspectRatio": "16:9",
+							"imageSize": "4K"
+						},
+						"1584x672": {
+							"aspectRatio": "21:9",
+							"imageSize": "1K"
+						},
+						"3168x1344": {
+							"aspectRatio": "21:9",
+							"imageSize": "2K"
+						},
+						"6336x2688": {
+							"aspectRatio": "21:9",
+							"imageSize": "4K"
 						}
 					}
 				},
@@ -317,6 +505,194 @@
 						"768x1376": {
 							"aspectRatio": "9:16",
 							"imageSize": "1K"
+						},
+						"256x1024": {
+							"aspectRatio": "1:4",
+							"imageSize": "512"
+						},
+						"512x2048": {
+							"aspectRatio": "1:4",
+							"imageSize": "1K"
+						},
+						"1024x4096": {
+							"aspectRatio": "1:4",
+							"imageSize": "2K"
+						},
+						"2048x8192": {
+							"aspectRatio": "1:4",
+							"imageSize": "4K"
+						},
+						"192x1536": {
+							"aspectRatio": "1:8",
+							"imageSize": "512"
+						},
+						"384x3072": {
+							"aspectRatio": "1:8",
+							"imageSize": "1K"
+						},
+						"768x6144": {
+							"aspectRatio": "1:8",
+							"imageSize": "2K"
+						},
+						"1536x12288": {
+							"aspectRatio": "1:8",
+							"imageSize": "4K"
+						},
+						"424x632": {
+							"aspectRatio": "2:3",
+							"imageSize": "512"
+						},
+						"1696x2528": {
+							"aspectRatio": "2:3",
+							"imageSize": "2K"
+						},
+						"3392x5056": {
+							"aspectRatio": "2:3",
+							"imageSize": "4K"
+						},
+						"632x424": {
+							"aspectRatio": "3:2",
+							"imageSize": "512"
+						},
+						"2528x1696": {
+							"aspectRatio": "3:2",
+							"imageSize": "2K"
+						},
+						"5056x3392": {
+							"aspectRatio": "3:2",
+							"imageSize": "4K"
+						},
+						"448x600": {
+							"aspectRatio": "3:4",
+							"imageSize": "512"
+						},
+						"896x1200": {
+							"aspectRatio": "3:4",
+							"imageSize": "1K"
+						},
+						"1792x2400": {
+							"aspectRatio": "3:4",
+							"imageSize": "2K"
+						},
+						"3584x4800": {
+							"aspectRatio": "3:4",
+							"imageSize": "4K"
+						},
+						"1024x256": {
+							"aspectRatio": "4:1",
+							"imageSize": "512"
+						},
+						"2048x512": {
+							"aspectRatio": "4:1",
+							"imageSize": "1K"
+						},
+						"4096x1024": {
+							"aspectRatio": "4:1",
+							"imageSize": "2K"
+						},
+						"8192x2048": {
+							"aspectRatio": "4:1",
+							"imageSize": "4K"
+						},
+						"600x448": {
+							"aspectRatio": "4:3",
+							"imageSize": "512"
+						},
+						"1200x896": {
+							"aspectRatio": "4:3",
+							"imageSize": "1K"
+						},
+						"2400x1792": {
+							"aspectRatio": "4:3",
+							"imageSize": "2K"
+						},
+						"4800x3584": {
+							"aspectRatio": "4:3",
+							"imageSize": "4K"
+						},
+						"464x576": {
+							"aspectRatio": "4:5",
+							"imageSize": "512"
+						},
+						"928x1152": {
+							"aspectRatio": "4:5",
+							"imageSize": "1K"
+						},
+						"1856x2304": {
+							"aspectRatio": "4:5",
+							"imageSize": "2K"
+						},
+						"3712x4608": {
+							"aspectRatio": "4:5",
+							"imageSize": "4K"
+						},
+						"576x464": {
+							"aspectRatio": "5:4",
+							"imageSize": "512"
+						},
+						"1152x928": {
+							"aspectRatio": "5:4",
+							"imageSize": "1K"
+						},
+						"2304x1856": {
+							"aspectRatio": "5:4",
+							"imageSize": "2K"
+						},
+						"4608x3712": {
+							"aspectRatio": "5:4",
+							"imageSize": "4K"
+						},
+						"1536x192": {
+							"aspectRatio": "8:1",
+							"imageSize": "512"
+						},
+						"3072x384": {
+							"aspectRatio": "8:1",
+							"imageSize": "1K"
+						},
+						"6144x768": {
+							"aspectRatio": "8:1",
+							"imageSize": "2K"
+						},
+						"12288x1536": {
+							"aspectRatio": "8:1",
+							"imageSize": "4K"
+						},
+						"384x688": {
+							"aspectRatio": "9:16",
+							"imageSize": "512"
+						},
+						"1536x2752": {
+							"aspectRatio": "9:16",
+							"imageSize": "2K"
+						},
+						"3072x5504": {
+							"aspectRatio": "9:16",
+							"imageSize": "4K"
+						},
+						"688x384": {
+							"aspectRatio": "16:9",
+							"imageSize": "512"
+						},
+						"2752x1536": {
+							"aspectRatio": "16:9",
+							"imageSize": "2K"
+						},
+						"5504x3072": {
+							"aspectRatio": "16:9",
+							"imageSize": "4K"
+						},
+						"1584x672": {
+							"aspectRatio": "21:9",
+							"imageSize": "1K"
+						},
+						"3168x1344": {
+							"aspectRatio": "21:9",
+							"imageSize": "2K"
+						},
+						"6336x2688": {
+							"aspectRatio": "21:9",
+							"imageSize": "4K"
 						}
 					}
 				}
@@ -325,7 +701,8 @@
 				"inputCentsPerMTokens": 50,
 				"outputCentsPerMTokens": 300,
 				"cacheReadCentsPerMTokens": 5
-			}
+			},
+			"notes": "Sizes follow Google's published aspect-ratio table. The 21:9 / 512px cell is omitted: the documented 792x168 is not a 21:9 frame, so it is left out rather than guessed."
 		},
 		"gemini-3.1-flash-lite-image": {
 			"operations": {
@@ -338,7 +715,7 @@
 					"nativeOutputFormat": false,
 					"nativeOutputCompression": false,
 					"outputFormats": ["png", "jpeg", "webp"],
-					"qualities": ["auto"],
+					"qualities": ["auto", "low", "high"],
 					"responseFormats": ["b64_json"],
 					"autoSize": {},
 					"sizes": {
@@ -361,6 +738,37 @@
 						"768x1376": {
 							"aspectRatio": "9:16",
 							"imageSize": "1K"
+						},
+						"896x1200": {
+							"aspectRatio": "3:4",
+							"imageSize": "1K"
+						},
+						"1200x896": {
+							"aspectRatio": "4:3",
+							"imageSize": "1K"
+						},
+						"928x1152": {
+							"aspectRatio": "4:5",
+							"imageSize": "1K"
+						},
+						"1152x928": {
+							"aspectRatio": "5:4",
+							"imageSize": "1K"
+						},
+						"1584x672": {
+							"aspectRatio": "21:9",
+							"imageSize": "1K"
+						}
+					},
+					"qualityMappings": {
+						"auto": {
+							"thinkingLevel": "minimal"
+						},
+						"low": {
+							"thinkingLevel": "minimal"
+						},
+						"high": {
+							"thinkingLevel": "high"
 						}
 					}
 				},
@@ -373,7 +781,7 @@
 					"nativeOutputFormat": false,
 					"nativeOutputCompression": false,
 					"outputFormats": ["png", "jpeg", "webp"],
-					"qualities": ["auto"],
+					"qualities": ["auto", "low", "high"],
 					"responseFormats": ["b64_json"],
 					"autoSize": {},
 					"sizes": {
@@ -396,6 +804,37 @@
 						"768x1376": {
 							"aspectRatio": "9:16",
 							"imageSize": "1K"
+						},
+						"896x1200": {
+							"aspectRatio": "3:4",
+							"imageSize": "1K"
+						},
+						"1200x896": {
+							"aspectRatio": "4:3",
+							"imageSize": "1K"
+						},
+						"928x1152": {
+							"aspectRatio": "4:5",
+							"imageSize": "1K"
+						},
+						"1152x928": {
+							"aspectRatio": "5:4",
+							"imageSize": "1K"
+						},
+						"1584x672": {
+							"aspectRatio": "21:9",
+							"imageSize": "1K"
+						}
+					},
+					"qualityMappings": {
+						"auto": {
+							"thinkingLevel": "minimal"
+						},
+						"low": {
+							"thinkingLevel": "minimal"
+						},
+						"high": {
+							"thinkingLevel": "high"
 						}
 					}
 				}
@@ -440,6 +879,106 @@
 						"1264x848": {
 							"aspectRatio": "3:2",
 							"imageSize": "1K"
+						},
+						"1696x2528": {
+							"aspectRatio": "2:3",
+							"imageSize": "2K"
+						},
+						"3392x5056": {
+							"aspectRatio": "2:3",
+							"imageSize": "4K"
+						},
+						"2528x1696": {
+							"aspectRatio": "3:2",
+							"imageSize": "2K"
+						},
+						"5056x3392": {
+							"aspectRatio": "3:2",
+							"imageSize": "4K"
+						},
+						"896x1200": {
+							"aspectRatio": "3:4",
+							"imageSize": "1K"
+						},
+						"1792x2400": {
+							"aspectRatio": "3:4",
+							"imageSize": "2K"
+						},
+						"3584x4800": {
+							"aspectRatio": "3:4",
+							"imageSize": "4K"
+						},
+						"1200x896": {
+							"aspectRatio": "4:3",
+							"imageSize": "1K"
+						},
+						"2400x1792": {
+							"aspectRatio": "4:3",
+							"imageSize": "2K"
+						},
+						"4800x3584": {
+							"aspectRatio": "4:3",
+							"imageSize": "4K"
+						},
+						"928x1152": {
+							"aspectRatio": "4:5",
+							"imageSize": "1K"
+						},
+						"1856x2304": {
+							"aspectRatio": "4:5",
+							"imageSize": "2K"
+						},
+						"3712x4608": {
+							"aspectRatio": "4:5",
+							"imageSize": "4K"
+						},
+						"1152x928": {
+							"aspectRatio": "5:4",
+							"imageSize": "1K"
+						},
+						"2304x1856": {
+							"aspectRatio": "5:4",
+							"imageSize": "2K"
+						},
+						"4608x3712": {
+							"aspectRatio": "5:4",
+							"imageSize": "4K"
+						},
+						"768x1376": {
+							"aspectRatio": "9:16",
+							"imageSize": "1K"
+						},
+						"1536x2752": {
+							"aspectRatio": "9:16",
+							"imageSize": "2K"
+						},
+						"3072x5504": {
+							"aspectRatio": "9:16",
+							"imageSize": "4K"
+						},
+						"1376x768": {
+							"aspectRatio": "16:9",
+							"imageSize": "1K"
+						},
+						"2752x1536": {
+							"aspectRatio": "16:9",
+							"imageSize": "2K"
+						},
+						"5504x3072": {
+							"aspectRatio": "16:9",
+							"imageSize": "4K"
+						},
+						"1584x672": {
+							"aspectRatio": "21:9",
+							"imageSize": "1K"
+						},
+						"3168x1344": {
+							"aspectRatio": "21:9",
+							"imageSize": "2K"
+						},
+						"6336x2688": {
+							"aspectRatio": "21:9",
+							"imageSize": "4K"
 						}
 					}
 				},
@@ -475,6 +1014,106 @@
 						"1264x848": {
 							"aspectRatio": "3:2",
 							"imageSize": "1K"
+						},
+						"1696x2528": {
+							"aspectRatio": "2:3",
+							"imageSize": "2K"
+						},
+						"3392x5056": {
+							"aspectRatio": "2:3",
+							"imageSize": "4K"
+						},
+						"2528x1696": {
+							"aspectRatio": "3:2",
+							"imageSize": "2K"
+						},
+						"5056x3392": {
+							"aspectRatio": "3:2",
+							"imageSize": "4K"
+						},
+						"896x1200": {
+							"aspectRatio": "3:4",
+							"imageSize": "1K"
+						},
+						"1792x2400": {
+							"aspectRatio": "3:4",
+							"imageSize": "2K"
+						},
+						"3584x4800": {
+							"aspectRatio": "3:4",
+							"imageSize": "4K"
+						},
+						"1200x896": {
+							"aspectRatio": "4:3",
+							"imageSize": "1K"
+						},
+						"2400x1792": {
+							"aspectRatio": "4:3",
+							"imageSize": "2K"
+						},
+						"4800x3584": {
+							"aspectRatio": "4:3",
+							"imageSize": "4K"
+						},
+						"928x1152": {
+							"aspectRatio": "4:5",
+							"imageSize": "1K"
+						},
+						"1856x2304": {
+							"aspectRatio": "4:5",
+							"imageSize": "2K"
+						},
+						"3712x4608": {
+							"aspectRatio": "4:5",
+							"imageSize": "4K"
+						},
+						"1152x928": {
+							"aspectRatio": "5:4",
+							"imageSize": "1K"
+						},
+						"2304x1856": {
+							"aspectRatio": "5:4",
+							"imageSize": "2K"
+						},
+						"4608x3712": {
+							"aspectRatio": "5:4",
+							"imageSize": "4K"
+						},
+						"768x1376": {
+							"aspectRatio": "9:16",
+							"imageSize": "1K"
+						},
+						"1536x2752": {
+							"aspectRatio": "9:16",
+							"imageSize": "2K"
+						},
+						"3072x5504": {
+							"aspectRatio": "9:16",
+							"imageSize": "4K"
+						},
+						"1376x768": {
+							"aspectRatio": "16:9",
+							"imageSize": "1K"
+						},
+						"2752x1536": {
+							"aspectRatio": "16:9",
+							"imageSize": "2K"
+						},
+						"5504x3072": {
+							"aspectRatio": "16:9",
+							"imageSize": "4K"
+						},
+						"1584x672": {
+							"aspectRatio": "21:9",
+							"imageSize": "1K"
+						},
+						"3168x1344": {
+							"aspectRatio": "21:9",
+							"imageSize": "2K"
+						},
+						"6336x2688": {
+							"aspectRatio": "21:9",
+							"imageSize": "4K"
 						}
 					}
 				}
@@ -515,6 +1154,21 @@
 						},
 						"1184x864": {
 							"aspectRatio": "4:3"
+						},
+						"896x1152": {
+							"aspectRatio": "4:5"
+						},
+						"1152x896": {
+							"aspectRatio": "5:4"
+						},
+						"768x1344": {
+							"aspectRatio": "9:16"
+						},
+						"1344x768": {
+							"aspectRatio": "16:9"
+						},
+						"1536x672": {
+							"aspectRatio": "21:9"
 						}
 					}
 				},
@@ -545,6 +1199,21 @@
 						},
 						"1184x864": {
 							"aspectRatio": "4:3"
+						},
+						"896x1152": {
+							"aspectRatio": "4:5"
+						},
+						"1152x896": {
+							"aspectRatio": "5:4"
+						},
+						"768x1344": {
+							"aspectRatio": "9:16"
+						},
+						"1344x768": {
+							"aspectRatio": "16:9"
+						},
+						"1536x672": {
+							"aspectRatio": "21:9"
 						}
 					}
 				}
@@ -1110,8 +1779,496 @@
 					}
 				},
 				"image.generate": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 14,
+					"maxImageBytes": 20000000,
+					"maxTotalInputBytes": 20000000,
+					"maxN": 1,
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto", "low", "high"],
 					"responseFormats": ["b64_json"],
-					"autoSize": {}
+					"autoSize": {},
+					"qualityMappings": {
+						"auto": {
+							"thinkingLevel": "minimal"
+						},
+						"low": {
+							"thinkingLevel": "minimal"
+						},
+						"high": {
+							"thinkingLevel": "high"
+						}
+					},
+					"sizes": {
+						"512x512": {
+							"aspectRatio": "1:1",
+							"imageSize": "512"
+						},
+						"1024x1024": {
+							"aspectRatio": "1:1",
+							"imageSize": "1K"
+						},
+						"2048x2048": {
+							"aspectRatio": "1:1",
+							"imageSize": "2K"
+						},
+						"4096x4096": {
+							"aspectRatio": "1:1",
+							"imageSize": "4K"
+						},
+						"848x1264": {
+							"aspectRatio": "2:3",
+							"imageSize": "1K"
+						},
+						"1264x848": {
+							"aspectRatio": "3:2",
+							"imageSize": "1K"
+						},
+						"1376x768": {
+							"aspectRatio": "16:9",
+							"imageSize": "1K"
+						},
+						"768x1376": {
+							"aspectRatio": "9:16",
+							"imageSize": "1K"
+						},
+						"256x1024": {
+							"aspectRatio": "1:4",
+							"imageSize": "512"
+						},
+						"512x2048": {
+							"aspectRatio": "1:4",
+							"imageSize": "1K"
+						},
+						"1024x4096": {
+							"aspectRatio": "1:4",
+							"imageSize": "2K"
+						},
+						"2048x8192": {
+							"aspectRatio": "1:4",
+							"imageSize": "4K"
+						},
+						"192x1536": {
+							"aspectRatio": "1:8",
+							"imageSize": "512"
+						},
+						"384x3072": {
+							"aspectRatio": "1:8",
+							"imageSize": "1K"
+						},
+						"768x6144": {
+							"aspectRatio": "1:8",
+							"imageSize": "2K"
+						},
+						"1536x12288": {
+							"aspectRatio": "1:8",
+							"imageSize": "4K"
+						},
+						"424x632": {
+							"aspectRatio": "2:3",
+							"imageSize": "512"
+						},
+						"1696x2528": {
+							"aspectRatio": "2:3",
+							"imageSize": "2K"
+						},
+						"3392x5056": {
+							"aspectRatio": "2:3",
+							"imageSize": "4K"
+						},
+						"632x424": {
+							"aspectRatio": "3:2",
+							"imageSize": "512"
+						},
+						"2528x1696": {
+							"aspectRatio": "3:2",
+							"imageSize": "2K"
+						},
+						"5056x3392": {
+							"aspectRatio": "3:2",
+							"imageSize": "4K"
+						},
+						"448x600": {
+							"aspectRatio": "3:4",
+							"imageSize": "512"
+						},
+						"896x1200": {
+							"aspectRatio": "3:4",
+							"imageSize": "1K"
+						},
+						"1792x2400": {
+							"aspectRatio": "3:4",
+							"imageSize": "2K"
+						},
+						"3584x4800": {
+							"aspectRatio": "3:4",
+							"imageSize": "4K"
+						},
+						"1024x256": {
+							"aspectRatio": "4:1",
+							"imageSize": "512"
+						},
+						"2048x512": {
+							"aspectRatio": "4:1",
+							"imageSize": "1K"
+						},
+						"4096x1024": {
+							"aspectRatio": "4:1",
+							"imageSize": "2K"
+						},
+						"8192x2048": {
+							"aspectRatio": "4:1",
+							"imageSize": "4K"
+						},
+						"600x448": {
+							"aspectRatio": "4:3",
+							"imageSize": "512"
+						},
+						"1200x896": {
+							"aspectRatio": "4:3",
+							"imageSize": "1K"
+						},
+						"2400x1792": {
+							"aspectRatio": "4:3",
+							"imageSize": "2K"
+						},
+						"4800x3584": {
+							"aspectRatio": "4:3",
+							"imageSize": "4K"
+						},
+						"464x576": {
+							"aspectRatio": "4:5",
+							"imageSize": "512"
+						},
+						"928x1152": {
+							"aspectRatio": "4:5",
+							"imageSize": "1K"
+						},
+						"1856x2304": {
+							"aspectRatio": "4:5",
+							"imageSize": "2K"
+						},
+						"3712x4608": {
+							"aspectRatio": "4:5",
+							"imageSize": "4K"
+						},
+						"576x464": {
+							"aspectRatio": "5:4",
+							"imageSize": "512"
+						},
+						"1152x928": {
+							"aspectRatio": "5:4",
+							"imageSize": "1K"
+						},
+						"2304x1856": {
+							"aspectRatio": "5:4",
+							"imageSize": "2K"
+						},
+						"4608x3712": {
+							"aspectRatio": "5:4",
+							"imageSize": "4K"
+						},
+						"1536x192": {
+							"aspectRatio": "8:1",
+							"imageSize": "512"
+						},
+						"3072x384": {
+							"aspectRatio": "8:1",
+							"imageSize": "1K"
+						},
+						"6144x768": {
+							"aspectRatio": "8:1",
+							"imageSize": "2K"
+						},
+						"12288x1536": {
+							"aspectRatio": "8:1",
+							"imageSize": "4K"
+						},
+						"384x688": {
+							"aspectRatio": "9:16",
+							"imageSize": "512"
+						},
+						"1536x2752": {
+							"aspectRatio": "9:16",
+							"imageSize": "2K"
+						},
+						"3072x5504": {
+							"aspectRatio": "9:16",
+							"imageSize": "4K"
+						},
+						"688x384": {
+							"aspectRatio": "16:9",
+							"imageSize": "512"
+						},
+						"2752x1536": {
+							"aspectRatio": "16:9",
+							"imageSize": "2K"
+						},
+						"5504x3072": {
+							"aspectRatio": "16:9",
+							"imageSize": "4K"
+						},
+						"1584x672": {
+							"aspectRatio": "21:9",
+							"imageSize": "1K"
+						},
+						"3168x1344": {
+							"aspectRatio": "21:9",
+							"imageSize": "2K"
+						},
+						"6336x2688": {
+							"aspectRatio": "21:9",
+							"imageSize": "4K"
+						}
+					}
+				},
+				"image.edit": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 14,
+					"maxImageBytes": 20000000,
+					"maxTotalInputBytes": 20000000,
+					"maxN": 1,
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto", "low", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"qualityMappings": {
+						"auto": {
+							"thinkingLevel": "minimal"
+						},
+						"low": {
+							"thinkingLevel": "minimal"
+						},
+						"high": {
+							"thinkingLevel": "high"
+						}
+					},
+					"sizes": {
+						"512x512": {
+							"aspectRatio": "1:1",
+							"imageSize": "512"
+						},
+						"1024x1024": {
+							"aspectRatio": "1:1",
+							"imageSize": "1K"
+						},
+						"2048x2048": {
+							"aspectRatio": "1:1",
+							"imageSize": "2K"
+						},
+						"4096x4096": {
+							"aspectRatio": "1:1",
+							"imageSize": "4K"
+						},
+						"848x1264": {
+							"aspectRatio": "2:3",
+							"imageSize": "1K"
+						},
+						"1264x848": {
+							"aspectRatio": "3:2",
+							"imageSize": "1K"
+						},
+						"1376x768": {
+							"aspectRatio": "16:9",
+							"imageSize": "1K"
+						},
+						"768x1376": {
+							"aspectRatio": "9:16",
+							"imageSize": "1K"
+						},
+						"256x1024": {
+							"aspectRatio": "1:4",
+							"imageSize": "512"
+						},
+						"512x2048": {
+							"aspectRatio": "1:4",
+							"imageSize": "1K"
+						},
+						"1024x4096": {
+							"aspectRatio": "1:4",
+							"imageSize": "2K"
+						},
+						"2048x8192": {
+							"aspectRatio": "1:4",
+							"imageSize": "4K"
+						},
+						"192x1536": {
+							"aspectRatio": "1:8",
+							"imageSize": "512"
+						},
+						"384x3072": {
+							"aspectRatio": "1:8",
+							"imageSize": "1K"
+						},
+						"768x6144": {
+							"aspectRatio": "1:8",
+							"imageSize": "2K"
+						},
+						"1536x12288": {
+							"aspectRatio": "1:8",
+							"imageSize": "4K"
+						},
+						"424x632": {
+							"aspectRatio": "2:3",
+							"imageSize": "512"
+						},
+						"1696x2528": {
+							"aspectRatio": "2:3",
+							"imageSize": "2K"
+						},
+						"3392x5056": {
+							"aspectRatio": "2:3",
+							"imageSize": "4K"
+						},
+						"632x424": {
+							"aspectRatio": "3:2",
+							"imageSize": "512"
+						},
+						"2528x1696": {
+							"aspectRatio": "3:2",
+							"imageSize": "2K"
+						},
+						"5056x3392": {
+							"aspectRatio": "3:2",
+							"imageSize": "4K"
+						},
+						"448x600": {
+							"aspectRatio": "3:4",
+							"imageSize": "512"
+						},
+						"896x1200": {
+							"aspectRatio": "3:4",
+							"imageSize": "1K"
+						},
+						"1792x2400": {
+							"aspectRatio": "3:4",
+							"imageSize": "2K"
+						},
+						"3584x4800": {
+							"aspectRatio": "3:4",
+							"imageSize": "4K"
+						},
+						"1024x256": {
+							"aspectRatio": "4:1",
+							"imageSize": "512"
+						},
+						"2048x512": {
+							"aspectRatio": "4:1",
+							"imageSize": "1K"
+						},
+						"4096x1024": {
+							"aspectRatio": "4:1",
+							"imageSize": "2K"
+						},
+						"8192x2048": {
+							"aspectRatio": "4:1",
+							"imageSize": "4K"
+						},
+						"600x448": {
+							"aspectRatio": "4:3",
+							"imageSize": "512"
+						},
+						"1200x896": {
+							"aspectRatio": "4:3",
+							"imageSize": "1K"
+						},
+						"2400x1792": {
+							"aspectRatio": "4:3",
+							"imageSize": "2K"
+						},
+						"4800x3584": {
+							"aspectRatio": "4:3",
+							"imageSize": "4K"
+						},
+						"464x576": {
+							"aspectRatio": "4:5",
+							"imageSize": "512"
+						},
+						"928x1152": {
+							"aspectRatio": "4:5",
+							"imageSize": "1K"
+						},
+						"1856x2304": {
+							"aspectRatio": "4:5",
+							"imageSize": "2K"
+						},
+						"3712x4608": {
+							"aspectRatio": "4:5",
+							"imageSize": "4K"
+						},
+						"576x464": {
+							"aspectRatio": "5:4",
+							"imageSize": "512"
+						},
+						"1152x928": {
+							"aspectRatio": "5:4",
+							"imageSize": "1K"
+						},
+						"2304x1856": {
+							"aspectRatio": "5:4",
+							"imageSize": "2K"
+						},
+						"4608x3712": {
+							"aspectRatio": "5:4",
+							"imageSize": "4K"
+						},
+						"1536x192": {
+							"aspectRatio": "8:1",
+							"imageSize": "512"
+						},
+						"3072x384": {
+							"aspectRatio": "8:1",
+							"imageSize": "1K"
+						},
+						"6144x768": {
+							"aspectRatio": "8:1",
+							"imageSize": "2K"
+						},
+						"12288x1536": {
+							"aspectRatio": "8:1",
+							"imageSize": "4K"
+						},
+						"384x688": {
+							"aspectRatio": "9:16",
+							"imageSize": "512"
+						},
+						"1536x2752": {
+							"aspectRatio": "9:16",
+							"imageSize": "2K"
+						},
+						"3072x5504": {
+							"aspectRatio": "9:16",
+							"imageSize": "4K"
+						},
+						"688x384": {
+							"aspectRatio": "16:9",
+							"imageSize": "512"
+						},
+						"2752x1536": {
+							"aspectRatio": "16:9",
+							"imageSize": "2K"
+						},
+						"5504x3072": {
+							"aspectRatio": "16:9",
+							"imageSize": "4K"
+						},
+						"1584x672": {
+							"aspectRatio": "21:9",
+							"imageSize": "1K"
+						},
+						"3168x1344": {
+							"aspectRatio": "21:9",
+							"imageSize": "2K"
+						},
+						"6336x2688": {
+							"aspectRatio": "21:9",
+							"imageSize": "4K"
+						}
+					}
 				}
 			},
 			"pricing": {
@@ -1144,15 +2301,281 @@
 					}
 				},
 				"image.generate": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 14,
+					"maxImageBytes": 20000000,
+					"maxTotalInputBytes": 20000000,
+					"maxN": 1,
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto"],
 					"responseFormats": ["b64_json"],
-					"autoSize": {}
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {
+							"aspectRatio": "1:1",
+							"imageSize": "1K"
+						},
+						"2048x2048": {
+							"aspectRatio": "1:1",
+							"imageSize": "2K"
+						},
+						"4096x4096": {
+							"aspectRatio": "1:1",
+							"imageSize": "4K"
+						},
+						"848x1264": {
+							"aspectRatio": "2:3",
+							"imageSize": "1K"
+						},
+						"1264x848": {
+							"aspectRatio": "3:2",
+							"imageSize": "1K"
+						},
+						"1696x2528": {
+							"aspectRatio": "2:3",
+							"imageSize": "2K"
+						},
+						"3392x5056": {
+							"aspectRatio": "2:3",
+							"imageSize": "4K"
+						},
+						"2528x1696": {
+							"aspectRatio": "3:2",
+							"imageSize": "2K"
+						},
+						"5056x3392": {
+							"aspectRatio": "3:2",
+							"imageSize": "4K"
+						},
+						"896x1200": {
+							"aspectRatio": "3:4",
+							"imageSize": "1K"
+						},
+						"1792x2400": {
+							"aspectRatio": "3:4",
+							"imageSize": "2K"
+						},
+						"3584x4800": {
+							"aspectRatio": "3:4",
+							"imageSize": "4K"
+						},
+						"1200x896": {
+							"aspectRatio": "4:3",
+							"imageSize": "1K"
+						},
+						"2400x1792": {
+							"aspectRatio": "4:3",
+							"imageSize": "2K"
+						},
+						"4800x3584": {
+							"aspectRatio": "4:3",
+							"imageSize": "4K"
+						},
+						"928x1152": {
+							"aspectRatio": "4:5",
+							"imageSize": "1K"
+						},
+						"1856x2304": {
+							"aspectRatio": "4:5",
+							"imageSize": "2K"
+						},
+						"3712x4608": {
+							"aspectRatio": "4:5",
+							"imageSize": "4K"
+						},
+						"1152x928": {
+							"aspectRatio": "5:4",
+							"imageSize": "1K"
+						},
+						"2304x1856": {
+							"aspectRatio": "5:4",
+							"imageSize": "2K"
+						},
+						"4608x3712": {
+							"aspectRatio": "5:4",
+							"imageSize": "4K"
+						},
+						"768x1376": {
+							"aspectRatio": "9:16",
+							"imageSize": "1K"
+						},
+						"1536x2752": {
+							"aspectRatio": "9:16",
+							"imageSize": "2K"
+						},
+						"3072x5504": {
+							"aspectRatio": "9:16",
+							"imageSize": "4K"
+						},
+						"1376x768": {
+							"aspectRatio": "16:9",
+							"imageSize": "1K"
+						},
+						"2752x1536": {
+							"aspectRatio": "16:9",
+							"imageSize": "2K"
+						},
+						"5504x3072": {
+							"aspectRatio": "16:9",
+							"imageSize": "4K"
+						},
+						"1584x672": {
+							"aspectRatio": "21:9",
+							"imageSize": "1K"
+						},
+						"3168x1344": {
+							"aspectRatio": "21:9",
+							"imageSize": "2K"
+						},
+						"6336x2688": {
+							"aspectRatio": "21:9",
+							"imageSize": "4K"
+						}
+					}
+				},
+				"image.edit": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 14,
+					"maxImageBytes": 20000000,
+					"maxTotalInputBytes": 20000000,
+					"maxN": 1,
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["auto"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {
+							"aspectRatio": "1:1",
+							"imageSize": "1K"
+						},
+						"2048x2048": {
+							"aspectRatio": "1:1",
+							"imageSize": "2K"
+						},
+						"4096x4096": {
+							"aspectRatio": "1:1",
+							"imageSize": "4K"
+						},
+						"848x1264": {
+							"aspectRatio": "2:3",
+							"imageSize": "1K"
+						},
+						"1264x848": {
+							"aspectRatio": "3:2",
+							"imageSize": "1K"
+						},
+						"1696x2528": {
+							"aspectRatio": "2:3",
+							"imageSize": "2K"
+						},
+						"3392x5056": {
+							"aspectRatio": "2:3",
+							"imageSize": "4K"
+						},
+						"2528x1696": {
+							"aspectRatio": "3:2",
+							"imageSize": "2K"
+						},
+						"5056x3392": {
+							"aspectRatio": "3:2",
+							"imageSize": "4K"
+						},
+						"896x1200": {
+							"aspectRatio": "3:4",
+							"imageSize": "1K"
+						},
+						"1792x2400": {
+							"aspectRatio": "3:4",
+							"imageSize": "2K"
+						},
+						"3584x4800": {
+							"aspectRatio": "3:4",
+							"imageSize": "4K"
+						},
+						"1200x896": {
+							"aspectRatio": "4:3",
+							"imageSize": "1K"
+						},
+						"2400x1792": {
+							"aspectRatio": "4:3",
+							"imageSize": "2K"
+						},
+						"4800x3584": {
+							"aspectRatio": "4:3",
+							"imageSize": "4K"
+						},
+						"928x1152": {
+							"aspectRatio": "4:5",
+							"imageSize": "1K"
+						},
+						"1856x2304": {
+							"aspectRatio": "4:5",
+							"imageSize": "2K"
+						},
+						"3712x4608": {
+							"aspectRatio": "4:5",
+							"imageSize": "4K"
+						},
+						"1152x928": {
+							"aspectRatio": "5:4",
+							"imageSize": "1K"
+						},
+						"2304x1856": {
+							"aspectRatio": "5:4",
+							"imageSize": "2K"
+						},
+						"4608x3712": {
+							"aspectRatio": "5:4",
+							"imageSize": "4K"
+						},
+						"768x1376": {
+							"aspectRatio": "9:16",
+							"imageSize": "1K"
+						},
+						"1536x2752": {
+							"aspectRatio": "9:16",
+							"imageSize": "2K"
+						},
+						"3072x5504": {
+							"aspectRatio": "9:16",
+							"imageSize": "4K"
+						},
+						"1376x768": {
+							"aspectRatio": "16:9",
+							"imageSize": "1K"
+						},
+						"2752x1536": {
+							"aspectRatio": "16:9",
+							"imageSize": "2K"
+						},
+						"5504x3072": {
+							"aspectRatio": "16:9",
+							"imageSize": "4K"
+						},
+						"1584x672": {
+							"aspectRatio": "21:9",
+							"imageSize": "1K"
+						},
+						"3168x1344": {
+							"aspectRatio": "21:9",
+							"imageSize": "2K"
+						},
+						"6336x2688": {
+							"aspectRatio": "21:9",
+							"imageSize": "4K"
+						}
+					}
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 100,
-				"outputCentsPerMTokens": 600,
-				"cacheReadCentsPerMTokens": 10,
-				"cacheWriteCentsPerMTokens": 18.75
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 1200,
+				"cacheReadCentsPerMTokens": 20,
+				"cacheWriteCentsPerMTokens": 37.5
 			}
 		},
 		"gemini-2.5-flash-lite-preview-09-2025": {
@@ -1218,7 +2641,15 @@
 				"inputCentsPerMTokens": 125,
 				"outputCentsPerMTokens": 1000,
 				"cacheReadCentsPerMTokens": 12.5,
-				"cacheWriteCentsPerMTokens": 37.5
+				"cacheWriteCentsPerMTokens": 37.5,
+				"tiers": [
+					{
+						"aboveInputTokens": 200000,
+						"inputCentsPerMTokens": 250,
+						"outputCentsPerMTokens": 1500,
+						"cacheReadCentsPerMTokens": 25
+					}
+				]
 			}
 		},
 		"gemini-2.5-pro-preview-05-06": {
@@ -1251,7 +2682,15 @@
 				"inputCentsPerMTokens": 125,
 				"outputCentsPerMTokens": 1000,
 				"cacheReadCentsPerMTokens": 12.5,
-				"cacheWriteCentsPerMTokens": 37.5
+				"cacheWriteCentsPerMTokens": 37.5,
+				"tiers": [
+					{
+						"aboveInputTokens": 200000,
+						"inputCentsPerMTokens": 250,
+						"outputCentsPerMTokens": 1500,
+						"cacheReadCentsPerMTokens": 25
+					}
+				]
 			}
 		},
 		"gemma-4-31b-it": {

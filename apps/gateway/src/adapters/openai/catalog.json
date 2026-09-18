@@ -502,17 +502,17 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 500,
-				"outputCentsPerMTokens": 3000,
-				"cacheReadCentsPerMTokens": 50,
-				"cacheWriteCentsPerMTokens": 625,
+				"inputCentsPerMTokens": 400,
+				"outputCentsPerMTokens": 2000,
+				"cacheReadCentsPerMTokens": 40,
+				"cacheWriteCentsPerMTokens": 500,
 				"tiers": [
 					{
 						"aboveInputTokens": 272000,
-						"inputCentsPerMTokens": 1000,
-						"outputCentsPerMTokens": 4500,
-						"cacheReadCentsPerMTokens": 100,
-						"cacheWriteCentsPerMTokens": 1250
+						"inputCentsPerMTokens": 800,
+						"outputCentsPerMTokens": 3000,
+						"cacheReadCentsPerMTokens": 80,
+						"cacheWriteCentsPerMTokens": 1000
 					}
 				]
 			}
@@ -549,17 +549,17 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 500,
-				"outputCentsPerMTokens": 3000,
-				"cacheReadCentsPerMTokens": 50,
-				"cacheWriteCentsPerMTokens": 625,
+				"inputCentsPerMTokens": 400,
+				"outputCentsPerMTokens": 2000,
+				"cacheReadCentsPerMTokens": 40,
+				"cacheWriteCentsPerMTokens": 500,
 				"tiers": [
 					{
 						"aboveInputTokens": 272000,
-						"inputCentsPerMTokens": 1000,
-						"outputCentsPerMTokens": 4500,
-						"cacheReadCentsPerMTokens": 100,
-						"cacheWriteCentsPerMTokens": 1250
+						"inputCentsPerMTokens": 800,
+						"outputCentsPerMTokens": 3000,
+						"cacheReadCentsPerMTokens": 80,
+						"cacheWriteCentsPerMTokens": 1000
 					}
 				]
 			}
@@ -596,17 +596,17 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 250,
-				"outputCentsPerMTokens": 1500,
-				"cacheReadCentsPerMTokens": 25,
-				"cacheWriteCentsPerMTokens": 312.5,
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 1200,
+				"cacheReadCentsPerMTokens": 20,
+				"cacheWriteCentsPerMTokens": 250,
 				"tiers": [
 					{
 						"aboveInputTokens": 272000,
-						"inputCentsPerMTokens": 500,
-						"outputCentsPerMTokens": 2250,
-						"cacheReadCentsPerMTokens": 50,
-						"cacheWriteCentsPerMTokens": 625
+						"inputCentsPerMTokens": 400,
+						"outputCentsPerMTokens": 1800,
+						"cacheReadCentsPerMTokens": 40,
+						"cacheWriteCentsPerMTokens": 500
 					}
 				]
 			}
@@ -643,17 +643,17 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 100,
-				"outputCentsPerMTokens": 600,
-				"cacheReadCentsPerMTokens": 10,
-				"cacheWriteCentsPerMTokens": 125,
+				"inputCentsPerMTokens": 20,
+				"outputCentsPerMTokens": 120,
+				"cacheReadCentsPerMTokens": 2,
+				"cacheWriteCentsPerMTokens": 25,
 				"tiers": [
 					{
 						"aboveInputTokens": 272000,
-						"inputCentsPerMTokens": 200,
-						"outputCentsPerMTokens": 900,
-						"cacheReadCentsPerMTokens": 20,
-						"cacheWriteCentsPerMTokens": 250
+						"inputCentsPerMTokens": 40,
+						"outputCentsPerMTokens": 180,
+						"cacheReadCentsPerMTokens": 4,
+						"cacheWriteCentsPerMTokens": 50
 					}
 				]
 			}
@@ -736,7 +736,14 @@
 			},
 			"pricing": {
 				"inputCentsPerMTokens": 3000,
-				"outputCentsPerMTokens": 18000
+				"outputCentsPerMTokens": 18000,
+				"tiers": [
+					{
+						"aboveInputTokens": 272000,
+						"inputCentsPerMTokens": 6000,
+						"outputCentsPerMTokens": 27000
+					}
+				]
 			}
 		},
 		"gpt-5.4": {
@@ -773,7 +780,15 @@
 			"pricing": {
 				"inputCentsPerMTokens": 250,
 				"outputCentsPerMTokens": 1500,
-				"cacheReadCentsPerMTokens": 25
+				"cacheReadCentsPerMTokens": 25,
+				"tiers": [
+					{
+						"aboveInputTokens": 272000,
+						"inputCentsPerMTokens": 500,
+						"outputCentsPerMTokens": 2250,
+						"cacheReadCentsPerMTokens": 50
+					}
+				]
 			}
 		},
 		"gpt-5.4-pro": {
@@ -809,7 +824,14 @@
 			},
 			"pricing": {
 				"inputCentsPerMTokens": 3000,
-				"outputCentsPerMTokens": 18000
+				"outputCentsPerMTokens": 18000,
+				"tiers": [
+					{
+						"aboveInputTokens": 272000,
+						"inputCentsPerMTokens": 6000,
+						"outputCentsPerMTokens": 27000
+					}
+				]
 			}
 		},
 		"gpt-5.4-mini": {
@@ -2741,7 +2763,16 @@
 				"inputCentsPerMTokens": 1000,
 				"outputCentsPerMTokens": 5000,
 				"cacheReadCentsPerMTokens": 100,
-				"cacheWriteCentsPerMTokens": 1250
+				"cacheWriteCentsPerMTokens": 1250,
+				"tiers": [
+					{
+						"aboveInputTokens": 272000,
+						"inputCentsPerMTokens": 2000,
+						"outputCentsPerMTokens": 7500,
+						"cacheReadCentsPerMTokens": 200,
+						"cacheWriteCentsPerMTokens": 2500
+					}
+				]
 			}
 		}
 	}
