@@ -14,15 +14,25 @@ export type FailReason =
 	| "no_candidates"
 	| "cooldown"
 	| "rate_limited"
-	| "attempt_budget"
+	| "attempt_limit"
+	| "pre_output_deadline"
 	| "exhausted";
 
 const attemptsLabel = (n: number): string =>
 	`${n} attempt${n === 1 ? "" : "s"}`;
 
 /** Readable phrase for the underlying cause (class of the last error), gateway info. */
-function causePhrase(cls: GatewayError["class"] | undefined): string {
-	switch (cls) {
+function causePhrase(last: GatewayError | undefined): string {
+	// A gateway deadline and an upstream that reported a timeout read identically from the class
+	// alone, and they send an operator to opposite places: one to the router settings, the other to
+	// the provider. The locally raised codes are the only way to tell them apart here.
+	if (
+		last?.code?.startsWith("upstream_") &&
+		last.code.endsWith("_timeout") &&
+		last.provider === undefined
+	)
+		return "deadlines set by this gateway, not upstream failures";
+	switch (last?.class) {
 		case "timeout":
 			return "upstream timeouts";
 		case "rate_limit":
@@ -140,9 +150,36 @@ export function buildRoutingError(p: {
 			...provider,
 		});
 	}
-	// exhausted / no_candidates: there were failed attempts (or no eligible deployment).
 	const cls = p.lastError?.class ?? "server";
-	const cause = p.lastError ? ` (cause: ${causePhrase(cls)})` : "";
+	const cause = p.lastError ? ` (cause: ${causePhrase(p.lastError)})` : "";
+
+	if (p.reason === "attempt_limit" || p.reason === "pre_output_deadline") {
+		/**
+		 * Deployments were available and were tried; what ran out was the request's own budget. The
+		 * generic answer below says "no deployments ... were able to handle the request", which reads
+		 * as an empty or broken pool and sends the operator to the deployment list - where they find
+		 * a healthy deployment and no explanation. Naming the budget that ended the request points at
+		 * the two settings that actually decide it.
+		 */
+		const spent =
+			p.reason === "attempt_limit"
+				? `${attemptsLabel(p.attempts)} were spent without a usable response`
+				: `its pre-output deadline passed after ${attemptsLabel(p.attempts)}`;
+		return new GatewayError({
+			class: cls,
+			message: internal,
+			publicMessage: `The request for public model "${p.publicModel}" ran out of routing budget${fbNote}: ${spent}${cause}. Retry, or raise the call type's attempt and pre-output limits if the request legitimately needs longer.`,
+			code: "routing_budget_exhausted",
+			...(p.lastError?.httpStatus ? { status: p.lastError.httpStatus } : {}),
+			...(p.lastError?.headers ? { headers: p.lastError.headers } : {}),
+			...(p.lastError?.retryAfterMs !== undefined
+				? { retryAfterMs: p.lastError.retryAfterMs }
+				: {}),
+			...provider,
+		});
+	}
+
+	// exhausted / no_candidates: there were failed attempts (or no eligible deployment).
 	return new GatewayError({
 		class: cls,
 		message: internal,
