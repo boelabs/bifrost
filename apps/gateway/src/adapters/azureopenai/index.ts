@@ -26,6 +26,9 @@ const base = makeAzurev1Adapter({
 		},
 	},
 	embeddings: true,
+	// POST {endpoint}/openai/v1/images/{generations,edits}
+	imageTransports: ["images"],
+	defaultImageTransport: "images",
 });
 
 /** Azure OpenAI with classic audio transcriptions and an explicit v1 audio opt-in. */

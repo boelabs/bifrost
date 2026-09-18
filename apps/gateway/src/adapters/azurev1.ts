@@ -58,6 +58,33 @@ export function normalizeAzurev1BaseUrl(value: string): string {
 	return url.toString().replace(/\/+$/, "");
 }
 
+/** Azure v1's default API version selector; its image surface is only reachable with it. */
+export const AZURE_V1_API_VERSION = "preview";
+
+/** Reads an operator-supplied `credentials.apiVersion`, falling back to `fallback`. */
+export function azureApiVersion(
+	value: unknown,
+	fallback: string,
+	label: string,
+): string {
+	if (value === undefined) return fallback;
+	if (typeof value !== "string" || value.trim() === "") {
+		throw new GatewayError({
+			class: "bad_request",
+			message: `${label}: credentials.apiVersion must be a non-empty string`,
+			param: "credentials.apiVersion",
+		});
+	}
+	return value.trim();
+}
+
+/** Adds (or replaces) the `api-version` query parameter on a built request URL. */
+export function withAzureApiVersion(url: string, version: string): string {
+	const parsed = new URL(url);
+	parsed.searchParams.set("api-version", version);
+	return parsed.toString();
+}
+
 export function azureRefineBadRequest(
 	message: string,
 	body: unknown,
@@ -119,10 +146,22 @@ export function makeAzurev1Adapter(
 		| "contentInputs"
 		| "embeddings"
 		| "supportsDeveloperRole"
+		| "imageTransports"
+		| "defaultImageTransport"
 	>,
 ) {
 	return makeOpenAIStyleAdapter({
 		...config,
+		// Azure rejects a baseUrl carrying a query string, so the selector is added per request.
+		finalizeImageRequestUrl: (url, ctx) =>
+			withAzureApiVersion(
+				url,
+				azureApiVersion(
+					(ctx.credentials as { apiVersion?: unknown }).apiVersion,
+					AZURE_V1_API_VERSION,
+					config.label,
+				),
+			),
 		maxTokensField: "max_completion_tokens",
 		...(config.supportsDeveloperRole !== undefined
 			? { supportsDeveloperRole: config.supportsDeveloperRole }
