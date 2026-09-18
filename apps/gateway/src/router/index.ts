@@ -508,7 +508,8 @@ export async function route<T>(
 
 			while (true) {
 				if (attempts >= attemptLimit || Date.now() >= preOutputDeadlineAt) {
-					reason = "attempt_budget";
+					reason =
+						attempts >= attemptLimit ? "attempt_limit" : "pre_output_deadline";
 					break;
 				}
 				if (attempts - poolStartedAt >= maxAttemptsPerPool) break;
@@ -1256,7 +1257,7 @@ export async function route<T>(
 						const jitterCeiling = Math.min(2000, 100 * 2 ** exponent);
 						const delay = minimum + Math.floor(Math.random() * jitterCeiling);
 						if (Date.now() + delay >= preOutputDeadlineAt) {
-							reason = "attempt_budget";
+							reason = "pre_output_deadline";
 							break;
 						}
 						await sleep(delay);
@@ -1356,7 +1357,7 @@ export async function route<T>(
 				);
 				const delay = minimum + Math.floor(Math.random() * jitterCeiling);
 				if (Date.now() + delay >= preOutputDeadlineAt) {
-					lastReason = "attempt_budget";
+					lastReason = "pre_output_deadline";
 					break;
 				}
 				await sleep(delay);

@@ -127,3 +127,50 @@ test("an exhausted pool reports the last error's own class and status", () => {
 	assert.match(error.publicMessage, /context window exceeded/);
 	assert.match(error.publicMessage, /3 attempts/);
 });
+
+test("an exhausted budget is not reported as an empty pool", () => {
+	const error = buildRoutingError({
+		...base(),
+		attempts: 6,
+		reason: "attempt_limit",
+		lastError: new GatewayError({
+			class: "timeout",
+			code: "upstream_first_output_timeout",
+			message: "Upstream execution exceeded the first output deadline",
+		}),
+	});
+	assert.equal(error.code, "routing_budget_exhausted");
+	assert.match(error.publicMessage, /ran out of routing budget/);
+	assert.match(error.publicMessage, /6 attempts were spent/);
+	// The deployment was there and was tried; saying otherwise sends the operator to the wrong page.
+	assert.doesNotMatch(error.publicMessage, /No deployments/);
+});
+
+test("a first-output deadline is named as the gateway's own, not the upstream's", () => {
+	const error = buildRoutingError({
+		...base(),
+		attempts: 6,
+		reason: "pre_output_deadline",
+		lastError: new GatewayError({
+			class: "timeout",
+			code: "upstream_first_output_timeout",
+			message: "Upstream execution exceeded the first output deadline",
+		}),
+	});
+	assert.match(error.publicMessage, /pre-output deadline passed/);
+	assert.match(error.publicMessage, /deadlines set by this gateway/);
+
+	// A timeout the upstream actually reported keeps pointing at the upstream.
+	const reported = buildRoutingError({
+		...base(),
+		attempts: 2,
+		reason: "exhausted",
+		lastError: new GatewayError({
+			class: "timeout",
+			code: "upstream_gateway_timeout",
+			message: "Upstream timed out",
+			provider: { status: 504 },
+		}),
+	});
+	assert.match(reported.publicMessage, /upstream timeouts/);
+});
