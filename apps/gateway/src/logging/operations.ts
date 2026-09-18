@@ -351,7 +351,17 @@ type OperationAttemptInput = {
 	diagnostics?: AdapterDiagnostics;
 };
 
-function failureOwner(attempt: OperationAttemptInput): string | null {
+/**
+ * Who ended the attempt.
+ *
+ * `provider` is reserved for a failure the upstream reported. A deadline is not one of those: the
+ * upstream was still working and the gateway stopped waiting, on a budget the gateway chose - and
+ * possibly narrowed on its own, well below what the operator configured. Reading those attempts as
+ * the provider's failure sends an operator to a provider status page for a limit that lives in
+ * their own router settings, which is exactly what `gateway_deadline` is here to prevent. It stays
+ * distinct from `gateway`, which means the gateway itself malfunctioned.
+ */
+export function failureOwner(attempt: OperationAttemptInput): string | null {
 	if (attempt.ok) return null;
 	if (
 		attempt.errorCode === "client_closed_request" ||
@@ -364,7 +374,22 @@ function failureOwner(attempt: OperationAttemptInput): string | null {
 	)
 		return "gateway";
 	if (attempt.failureKind === "configuration") return "deployment_config";
+	if (isGatewayDeadline(attempt)) return "gateway_deadline";
 	return "provider";
+}
+
+/**
+ * A deadline the gateway imposed, as opposed to a timeout the upstream itself reported. Every one
+ * of them is raised locally as `upstream_<phase>_timeout` with no provider status behind it; an
+ * upstream that answers 408 or 504 keeps `providerStatus` and stays the provider's failure.
+ */
+function isGatewayDeadline(attempt: OperationAttemptInput): boolean {
+	return (
+		attempt.errorClass === "timeout" &&
+		attempt.providerStatus === undefined &&
+		(attempt.errorCode?.startsWith("upstream_") ?? false) &&
+		(attempt.errorCode?.endsWith("_timeout") ?? false)
+	);
 }
 
 function normalizedFailurePhase(attempt: OperationAttemptInput): string | null {
