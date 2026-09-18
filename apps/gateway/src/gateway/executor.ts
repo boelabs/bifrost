@@ -129,13 +129,18 @@ async function parseBody(res: Response): Promise<unknown> {
 /** A handler's error mapper: turns a network error or a non-2xx upstream response into a GatewayError. */
 type MapError = (err: unknown, ctx: AdapterContext) => GatewayError;
 
-function firstOutputTimeout(): GatewayError {
+function firstOutputTimeout(ctx: AdapterContext): GatewayError {
 	return new GatewayError({
 		class: "timeout",
 		code: "upstream_first_output_timeout",
 		message: "Upstream execution exceeded the first output deadline",
 		failureKind: "transient",
-		deploymentHealth: "penalize",
+		// Missing a deadline the router shortened is evidence about the router's estimate, not about
+		// the deployment. Counting it as a health failure lets a narrowed deadline open the breaker
+		// on an upstream that was answering normally, and the cooldown then looks like corroboration.
+		deploymentHealth: ctx.executionPolicy?.firstOutputNarrowed
+			? "neutral"
+			: "penalize",
 	});
 }
 
@@ -154,13 +159,13 @@ export async function beforeFirstOutput<T>(
 ): Promise<T> {
 	const remaining = firstOutputRemaining(ctx);
 	if (remaining === null) return promise;
-	if (remaining <= 0) throw firstOutputTimeout();
+	if (remaining <= 0) throw firstOutputTimeout(ctx);
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	try {
 		return await Promise.race([
 			promise,
 			new Promise<never>((_, reject) => {
-				timer = setTimeout(() => reject(firstOutputTimeout()), remaining);
+				timer = setTimeout(() => reject(firstOutputTimeout(ctx)), remaining);
 			}),
 		]);
 	} finally {

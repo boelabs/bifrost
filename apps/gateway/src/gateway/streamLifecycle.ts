@@ -80,13 +80,19 @@ function protocolError(message: string): GatewayError {
 
 function timeoutError(
 	phase: "first_output" | "idle" | "reasoning_only",
+	policy?: ExecutionPolicy,
 ): GatewayError {
 	return new GatewayError({
 		class: "timeout",
 		code: `upstream_${phase}_timeout`,
 		message: `Upstream stream exceeded the ${phase.replaceAll("_", " ")} deadline`,
 		failureKind: "transient",
-		deploymentHealth: "penalize",
+		// Only the first-output deadline is ever narrowed by the router; the idle and reasoning-only
+		// budgets are the operator's as configured, so missing one of those stays the deployment's.
+		deploymentHealth:
+			phase === "first_output" && policy?.firstOutputNarrowed
+				? "neutral"
+				: "penalize",
 	});
 }
 
@@ -94,16 +100,20 @@ async function nextBefore<T>(
 	iterator: AsyncIterator<T>,
 	deadline: number | null,
 	phase: "first_output" | "idle" | "reasoning_only",
+	policy?: ExecutionPolicy,
 ): Promise<IteratorResult<T>> {
 	if (deadline === null) return iterator.next();
 	const remaining = deadline - Date.now();
-	if (remaining <= 0) throw timeoutError(phase);
+	if (remaining <= 0) throw timeoutError(phase, policy);
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	try {
 		return await Promise.race([
 			iterator.next(),
 			new Promise<never>((_, reject) => {
-				timer = setTimeout(() => reject(timeoutError(phase)), remaining);
+				timer = setTimeout(
+					() => reject(timeoutError(phase, policy)),
+					remaining,
+				);
 			}),
 		]);
 	} finally {
@@ -291,7 +301,7 @@ export function observeChatStream(
 					activeDeadline === reasoningDeadline && reasoningDeadline !== null
 						? "reasoning_only"
 						: progressPhase;
-				const next = await nextBefore(iterator, activeDeadline, phase);
+				const next = await nextBefore(iterator, activeDeadline, phase, policy);
 				if (next.done) {
 					observation.transportTerminator =
 						contextDiagnostics?.transportTerminator ?? "eof";
@@ -474,6 +484,7 @@ export function observeImageStream(
 					iterator,
 					deadline,
 					observation.firstOutputAt === null ? "first_output" : "idle",
+					policy,
 				);
 				if (next.done) {
 					observation.transportTerminator =
@@ -525,6 +536,7 @@ export function observeTranscriptionStream(
 					iterator,
 					deadline,
 					observation.firstOutputAt === null ? "first_output" : "idle",
+					policy,
 				);
 				if (next.done) {
 					observation.transportTerminator =

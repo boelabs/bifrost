@@ -247,21 +247,23 @@ function buildContext(
 	const remainingTotalMs = opts.totalDeadlineAt
 		? Math.max(1, opts.totalDeadlineAt - Date.now())
 		: configuredPolicy.totalMs;
+	const firstOutputMs = Math.min(
+		adaptiveFirstOutputMs(
+			configuredPolicy.firstOutputMs,
+			observed?.ttftMs,
+			settings.adaptiveTimeouts,
+			{
+				incremental: (opts.executionMode ?? "json") === "stream",
+				alternatives,
+				priorAttempts,
+			},
+		),
+		remainingPreOutputMs,
+	);
 	const executionPolicy = {
 		...configuredPolicy,
-		firstOutputMs: Math.min(
-			adaptiveFirstOutputMs(
-				configuredPolicy.firstOutputMs,
-				observed?.ttftMs,
-				settings.adaptiveTimeouts,
-				{
-					incremental: (opts.executionMode ?? "json") === "stream",
-					alternatives,
-					priorAttempts,
-				},
-			),
-			remainingPreOutputMs,
-		),
+		firstOutputMs,
+		firstOutputNarrowed: firstOutputMs < configuredPolicy.firstOutputMs,
 		totalMs: Math.min(configuredPolicy.totalMs, remainingTotalMs),
 	};
 	const controller = new AbortController();

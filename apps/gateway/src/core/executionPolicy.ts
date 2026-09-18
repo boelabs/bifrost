@@ -5,6 +5,14 @@ export const EXECUTION_POLICY_MAX_TOTAL_MS = 3_600_000;
 
 export interface ExecutionPolicy {
 	firstOutputMs: number;
+	/**
+	 * Whether `firstOutputMs` is below the deadline the operator configured, because the router
+	 * narrowed it for this attempt - adaptively, or against what is left of the request's own
+	 * pre-output window. It changes nothing about enforcement and everything about what expiry
+	 * means: a deployment that misses the operator's deadline is slow, while one that misses a
+	 * deadline the router invented has only shown the router's estimate to be wrong.
+	 */
+	firstOutputNarrowed?: boolean;
 	idleMs: number | null;
 	reasoningOnlyMs: number | null;
 	preCommitMs: number;

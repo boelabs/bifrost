@@ -133,6 +133,59 @@ describe("observeChatStream", () => {
 				(error as GatewayError).code,
 				"upstream_first_output_timeout",
 			);
+			// The operator's own deadline: missing it is the deployment's record.
+			assert.equal((error as GatewayError).deploymentHealth, "penalize");
+		}
+	});
+
+	test("a narrowed first-output deadline does not count against the deployment", async () => {
+		async function* source() {
+			await new Promise<void>((resolve) => setTimeout(resolve, 20));
+			yield chunk("late", "stop");
+		}
+		const observed = observeChatStream(source(), {
+			firstOutputMs: 5,
+			firstOutputNarrowed: true,
+			idleMs: 5,
+			reasoningOnlyMs: 20,
+			preCommitMs: 20,
+			totalMs: 50,
+			maxAttempts: 2,
+		});
+		try {
+			await drain(observed.items);
+			throw new Error("expected timeout");
+		} catch (error) {
+			assert.equal(
+				(error as GatewayError).code,
+				"upstream_first_output_timeout",
+			);
+			// The router shortened the deadline; the deployment never saw the operator's.
+			assert.equal((error as GatewayError).deploymentHealth, "neutral");
+		}
+	});
+
+	test("a narrowed first-output deadline still leaves the idle budget the operator's", async () => {
+		async function* source() {
+			yield chunk("first");
+			await new Promise<void>((resolve) => setTimeout(resolve, 20));
+			yield chunk("late", "stop");
+		}
+		const observed = observeChatStream(source(), {
+			firstOutputMs: 50,
+			firstOutputNarrowed: true,
+			idleMs: 5,
+			reasoningOnlyMs: 50,
+			preCommitMs: 50,
+			totalMs: 100,
+			maxAttempts: 2,
+		});
+		try {
+			await drain(observed.items);
+			throw new Error("expected timeout");
+		} catch (error) {
+			assert.equal((error as GatewayError).code, "upstream_idle_timeout");
+			assert.equal((error as GatewayError).deploymentHealth, "penalize");
 		}
 	});
 
