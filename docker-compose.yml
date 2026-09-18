@@ -37,7 +37,6 @@ services:
     image: bifrost:local
     command: ["bun", "src/db/migrate.ts"]
     environment:
-      NODE_ENV: production
       MASTER_KEY: ${MASTER_KEY:-}
       ENCRYPTION_KEYRING: ${ENCRYPTION_KEYRING:-}
       ACTIVE_ENCRYPTION_KEY_ID: ${ACTIVE_ENCRYPTION_KEY_ID:-}
@@ -54,8 +53,6 @@ services:
       dockerfile: apps/gateway/Dockerfile
     image: bifrost:local
     environment:
-      NODE_ENV: production
-      PORT: 4000
       # Required at deployment; intentionally empty instead of falling back to known credentials.
       # MASTER_KEY needs >= 32 chars. ENCRYPTION_KEYRING is a JSON id-to-64-hex-key object.
       MASTER_KEY: ${MASTER_KEY:-}
@@ -99,8 +96,6 @@ services:
       dockerfile: apps/dashboard/Dockerfile
     image: bifrost-dashboard:local
     environment:
-      NODE_ENV: production
-      PORT: 3001
       # The only thing this container needs to know. The browser never talks to the gateway, so
       # the gateway does not have to be reachable from outside this network.
       GATEWAY_URL: ${GATEWAY_URL:-http://gateway:4000}
@@ -122,19 +117,6 @@ services:
     # SIGTERM and waits for in-flight requests, so the grace period is what that wait is allowed to
     # use.
     stop_grace_period: 120s
-    restart: unless-stopped
-
-  docs:
-    build:
-      context: .
-      dockerfile: apps/docs/Dockerfile
-    image: bifrost-docs:local
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-    expose:
-      - "3000"
-    stop_grace_period: 30s
     restart: unless-stopped
 
 volumes:

@@ -15,10 +15,11 @@ description: "Deploy Bifrost on Coolify with Docker Compose."
 	- `ACTIVE_ENCRYPTION_KEY_ID` — `primary`
 3. Deploy. The bundled `postgres` and `redis` run inside the stack's private network, the `migrate`
    job applies migrations, and the gateway comes up on internal port `4000`.
+   The documentation site is not in this stack — it needs nothing from it. Deploy
+   `compose.docs.yaml` as a second resource if you want it published.
 4. Configure domains only for long-running HTTP services:
    - **gateway** — for example `https://api.example.com:4000`
    - **dashboard** (optional) — its **own** domain: `https://dash.example.com:3001`
-   - **docs** (optional) — for example `https://docs.example.com:3000`
    - **migrate** — leave empty
 
 The dashboard is a separate product on a separate domain, so Coolify treats it like any other

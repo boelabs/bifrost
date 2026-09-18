@@ -111,6 +111,7 @@ jobs:
             docker compose -f compose.images.yaml config --quiet
           POSTGRES_PASSWORD=ci \
             docker compose -f compose.data.yaml config --quiet
+          docker compose -f compose.docs.yaml config --quiet
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2

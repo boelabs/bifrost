@@ -5,7 +5,9 @@
 #   cp .env.example .env   # then fill it in
 #   docker compose -f compose.images.yaml up -d
 #
-# Use docker-compose.yml instead when you want to build from a checkout of this repository.
+# Use docker-compose.yml instead when you want to build from a checkout of this repository. The
+# documentation site is not here: it shares nothing with the gateway, so it lives in
+# compose.docs.yaml.
 #
 # The gateway and the dashboard are two products, each with its own environment. The only
 # thing joining them is GATEWAY_URL on the dashboard: everything the browser needs, the
@@ -49,7 +51,6 @@ services:
       - path: .env
         required: false
     environment:
-      NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL:-postgres://gateway:${POSTGRES_PASSWORD}@postgres:5432/bifrost}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
     depends_on:
@@ -65,8 +66,6 @@ services:
       - path: .env
         required: false
     environment:
-      NODE_ENV: production
-      PORT: 4000
       DATABASE_URL: ${DATABASE_URL:-postgres://gateway:${POSTGRES_PASSWORD}@postgres:5432/bifrost}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       # Shutdown budget. The gateway stays unready-but-serving for DRAIN_DELAY_MS so the proxy can
@@ -92,8 +91,6 @@ services:
   dashboard:
     image: ${DASHBOARD_IMAGE:-ghcr.io/boelabs/bifrost-dashboard:latest}
     environment:
-      NODE_ENV: production
-      PORT: 3001
       # The only address it needs. The browser never talks to the gateway directly, so the
       # gateway needs no public domain of its own.
       GATEWAY_URL: ${GATEWAY_URL:-http://gateway:4000}
@@ -106,17 +103,6 @@ services:
     # SIGTERM and waits for in-flight requests, so the grace period is what that wait is allowed to
     # use.
     stop_grace_period: 120s
-    restart: unless-stopped
-
-  # Optional: the documentation site. Delete it if you do not want it published.
-  docs:
-    image: ${DOCS_IMAGE:-ghcr.io/boelabs/bifrost-docs:latest}
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-    expose:
-      - "3000"
-    stop_grace_period: 30s
     restart: unless-stopped
 
 volumes:

@@ -37,9 +37,5 @@ services:
     ports:
       - "127.0.0.1:3001:3001"
 
-  docs:
-    ports:
-      - "127.0.0.1:3000:3000"
-
 volumes:
   miniodata:
