@@ -67,7 +67,11 @@ jobs:
           # Anything shared rebuilds all three: the lockfile and the patches decide what is installed
           # into every image, the workspace packages are linked into them, and a change to this
           # workflow changes how they are built.
-          if echo "$files" | grep -qE '^(packages/|patches/|scripts/|bun\.lock$|package\.json$|turbo\.json$|tsconfig\.json$|biome\.json$|\.github/workflows/)'; then
+          #
+          # Every app's package.json counts as shared, including the other apps'. The install is a
+          # workspace install: the gateway's Dockerfile copies apps/docs/package.json to resolve it,
+          # so a manifest belonging to one app can change another's image.
+          if echo "$files" | grep -qE '^(packages/|patches/|scripts/|bun\.lock$|package\.json$|turbo\.json$|tsconfig\.json$|biome\.json$|\.github/workflows/|apps/[^/]+/package\.json$)'; then
             echo "::notice::A shared path changed; treating every app as changed."
             everything
             exit 0
