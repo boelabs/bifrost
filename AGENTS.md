@@ -211,6 +211,18 @@ Fix cooldown reset on success
 - Keep unrelated formatter churn out of the diff: `bun run format` may reorder imports in untouched
   files (pre-existing drift) — restore those from the base branch.
 
+### Releases
+
+A release is a `v<semver>` tag. It publishes all three images — gateway, dashboard, docs — at **the
+same version**, even when only one of them changed. That is deliberate: the dashboard's API client
+is generated from the gateway's `openapi.yaml`, so independent version numbers would create a
+compatibility matrix somebody has to maintain, and republishing an unchanged image costs nothing.
+
+Everyday pushes do not produce releases. CI publishes `sha-<commit>` and `<branch>` tags for every
+push on every branch; `latest` and the semver tags belong to
+[`release.yml`](.github/workflows/release.yml) alone, because a registry tag that moves with every
+commit is not the promise `latest` is supposed to make.
+
 ### Merging — the hard rule
 
 **Never merge to `main` while CI is not green.** `main` is branch-protected; auto-merge is disabled

@@ -14,6 +14,87 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Which of the three apps this commit can possibly have changed.
+  #
+  # The filter is deliberately generous. "The gateway changed" is not only `apps/gateway/**`: a bump
+  # in `bun.lock`, a patch, a shared tsconfig or a root script changes what lands in its image just
+  # as surely, and a filter that misses one produces the worst failure mode there is — a deployment
+  # that reports success and ships the previous build. When in doubt this job says everything
+  # changed, and when it cannot work out a base commit at all (a new branch, a force push) it says
+  # so too.
+  changes:
+    name: Detect changed apps
+    runs-on: ubuntu-latest
+    outputs:
+      gateway: ${{ steps.filter.outputs.gateway }}
+      dashboard: ${{ steps.filter.outputs.dashboard }}
+      docs: ${{ steps.filter.outputs.docs }}
+      stack: ${{ steps.filter.outputs.stack }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # Both sides of the comparison have to be present locally.
+          fetch-depth: 0
+
+      - name: Compare against the base commit
+        id: filter
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+
+          everything() {
+            {
+              echo "gateway=true"
+              echo "dashboard=true"
+              echo "docs=true"
+              echo "stack=true"
+            } >> "$GITHUB_OUTPUT"
+          }
+
+          # A new branch reports an all-zero `before`, and a force push can report a commit that is
+          # no longer reachable. Neither is a reason to skip a build.
+          if [ -z "${BASE_SHA:-}" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            echo "::notice::No usable base commit; treating every app as changed."
+            everything
+            exit 0
+          fi
+
+          files=$(git diff --name-only "$BASE_SHA" "$GITHUB_SHA")
+          echo "Changed files:"
+          echo "$files" | sed 's/^/  /'
+
+          # Anything shared rebuilds all three: the lockfile and the patches decide what is installed
+          # into every image, the workspace packages are linked into them, and a change to this
+          # workflow changes how they are built.
+          if echo "$files" | grep -qE '^(packages/|patches/|scripts/|bun\.lock$|package\.json$|turbo\.json$|tsconfig\.json$|biome\.json$|\.github/workflows/)'; then
+            echo "::notice::A shared path changed; treating every app as changed."
+            everything
+            exit 0
+          fi
+
+          changed() { echo "$files" | grep -qE "$1"; }
+          gateway=false;   changed '^apps/gateway/'   && gateway=true
+          dashboard=false; changed '^apps/dashboard/' && dashboard=true
+          docs=false;      changed '^apps/docs/'      && docs=true
+
+          # The stack flag drives a single Compose resource, which redeploys as one unit: it also has
+          # to react to the Compose files and the environment template, which change a deployment
+          # without changing any image.
+          stack=false
+          if [ "$gateway" = true ] || [ "$dashboard" = true ] || [ "$docs" = true ]; then
+            stack=true
+          elif changed '^(docker-compose\.yml|compose\..*\.yaml|\.env\.example)$'; then
+            stack=true
+          fi
+
+          {
+            echo "gateway=$gateway"
+            echo "dashboard=$dashboard"
+            echo "docs=$docs"
+            echo "stack=$stack"
+          } >> "$GITHUB_OUTPUT"
+
   quality:
     name: Lint, typecheck & unit tests
     runs-on: ubuntu-latest
@@ -121,6 +202,7 @@ jobs:
   containers:
     name: Build container images
     runs-on: ubuntu-latest
+    needs: [changes]
     permissions:
       contents: read
       # Only used on `push`, to publish the images this commit was tested as. Pull requests build
@@ -167,6 +249,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build gateway image
+        if: needs.changes.outputs.gateway == 'true'
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           context: .
@@ -179,12 +262,17 @@ jobs:
           tags: |
             ${{ steps.tags.outputs.registry }}/bifrost-gateway:${{ steps.tags.outputs.sha }}
             ${{ steps.tags.outputs.registry }}/bifrost-gateway:${{ steps.tags.outputs.branch }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.tags.outputs.branch }}
           cache-from: type=gha,scope=ci-gateway
           cache-to: type=gha,mode=max,scope=ci-gateway
 
       # The dashboard ships in the same Compose stack; without this, an image that no longer
       # builds would reach a deployment with CI still green.
       - name: Build dashboard image
+        if: needs.changes.outputs.dashboard == 'true'
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           context: .
@@ -197,10 +285,15 @@ jobs:
           tags: |
             ${{ steps.tags.outputs.registry }}/bifrost-dashboard:${{ steps.tags.outputs.sha }}
             ${{ steps.tags.outputs.registry }}/bifrost-dashboard:${{ steps.tags.outputs.branch }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.tags.outputs.branch }}
           cache-from: type=gha,scope=ci-dashboard
           cache-to: type=gha,mode=max,scope=ci-dashboard
 
       - name: Build docs image
+        if: needs.changes.outputs.docs == 'true'
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           context: .
@@ -213,6 +306,10 @@ jobs:
           tags: |
             ${{ steps.tags.outputs.registry }}/bifrost-docs:${{ steps.tags.outputs.sha }}
             ${{ steps.tags.outputs.registry }}/bifrost-docs:${{ steps.tags.outputs.branch }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.tags.outputs.branch }}
           cache-from: type=gha,scope=ci-docs
           cache-to: type=gha,mode=max,scope=ci-docs
 
@@ -222,32 +319,79 @@ jobs:
   # privileged, so a preview cannot be deployed by a path production does not also take.
   #
   #   COOLIFY_URL          repository variable, e.g. https://coolify.example.com
-  #   COOLIFY_DEPLOY_MAP   repository variable, JSON: {"main": "<uuid>,<uuid>", "staging": "<uuid>"}
   #   COOLIFY_TOKEN        repository secret, an API token with deploy permission
+  #   COOLIFY_DEPLOY_MAP   repository variable, JSON, one entry per branch. The entry's shape says
+  #                        which topology that branch runs (see docs/rollouts):
+  #
+  #                          {"main": "<uuid>"}
+  #                            one Compose resource holding the whole stack. It redeploys as a unit,
+  #                            so it is triggered whenever any app — or a Compose file itself —
+  #                            changed.
+  #
+  #                          {"main": {"gateway": "<uuid>", "dashboard": "<uuid>"}}
+  #                            one resource per service, which is what Coolify can roll without
+  #                            downtime. Only the services whose image actually changed are
+  #                            redeployed; the rest are left alone rather than drained and replaced
+  #                            by an identical build.
   deploy:
     name: Deploy
-    needs: [quality, integration, containers]
+    needs: [changes, quality, integration, containers]
     if: github.event_name == 'push' && vars.COOLIFY_URL != '' && vars.COOLIFY_DEPLOY_MAP != ''
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - name: Resolve the resources for this branch
+      - name: Resolve the resources to deploy
         id: resolve
         env:
           DEPLOY_MAP: ${{ vars.COOLIFY_DEPLOY_MAP }}
           REF_NAME: ${{ github.ref_name }}
+          GATEWAY_CHANGED: ${{ needs.changes.outputs.gateway }}
+          DASHBOARD_CHANGED: ${{ needs.changes.outputs.dashboard }}
+          DOCS_CHANGED: ${{ needs.changes.outputs.docs }}
+          STACK_CHANGED: ${{ needs.changes.outputs.stack }}
         run: |
           set -euo pipefail
-          uuids=$(printf '%s' "$DEPLOY_MAP" | jq -er --arg branch "$REF_NAME" '.[$branch] // ""')
-          if [ -z "$uuids" ]; then
+
+          entry=$(printf '%s' "$DEPLOY_MAP" | jq -c --arg branch "$REF_NAME" '.[$branch] // empty')
+          if [ -z "$entry" ]; then
             echo "::notice::No Coolify resource is mapped to '$REF_NAME'; nothing to deploy."
+            echo "uuids=" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+
+          uuids=""
+          add() { [ -z "$1" ] && return 0; uuids="${uuids:+$uuids,}$1"; }
+
+          if [ "$(printf '%s' "$entry" | jq -r 'type')" = "string" ]; then
+            # Whole-stack resource: one deployment covers everything, so the only question is
+            # whether anything at all changed.
+            if [ "$STACK_CHANGED" = "true" ]; then
+              add "$(printf '%s' "$entry" | jq -r '.')"
+            else
+              echo "::notice::Nothing that reaches the stack changed; skipping."
+            fi
+          else
+            for app in gateway dashboard docs; do
+              case "$app" in
+                gateway)   app_changed="$GATEWAY_CHANGED" ;;
+                dashboard) app_changed="$DASHBOARD_CHANGED" ;;
+                docs)      app_changed="$DOCS_CHANGED" ;;
+              esac
+              uuid=$(printf '%s' "$entry" | jq -r --arg app "$app" '.[$app] // ""')
+              if [ "$app_changed" = "true" ] && [ -n "$uuid" ]; then
+                echo "Deploying $app"
+                add "$uuid"
+              fi
+            done
+            [ -n "$uuids" ] || echo "::notice::No mapped service changed; skipping."
+          fi
+
           echo "uuids=$uuids" >> "$GITHUB_OUTPUT"
 
-      # Coolify pulls the image the resource points at, so this triggers a rollout of the tag that
-      # was just published for this branch. The resource's own Stop Grace Period is what gives the
-      # outgoing container time to drain (see the gateway's DRAIN_DELAY_MS/SHUTDOWN_TIMEOUT_MS).
+      # Coolify pulls the image the resource points at, so this rolls out the tag that was just
+      # published for this branch. The resource's own Stop Grace Period is what gives the outgoing
+      # container time to drain (see the gateway's DRAIN_DELAY_MS/SHUTDOWN_TIMEOUT_MS).
       - name: Trigger the deployment
         if: steps.resolve.outputs.uuids != ''
         env:

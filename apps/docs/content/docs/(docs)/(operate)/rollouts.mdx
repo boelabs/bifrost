@@ -115,25 +115,75 @@ Three deployments for a rename. It is tedious, and it is the difference between 
 outage. Migrations here are also forward-only, so the same rule is what makes rolling an image
 *back* safe — see [Upgrades](/docs/upgrades).
 
+## Images, tags and versions
+
+Three images, one per app, in one registry — they are three processes on three domains, and nothing
+would be gained by welding them into one:
+
+```
+ghcr.io/<owner>/bifrost-gateway
+ghcr.io/<owner>/bifrost-dashboard
+ghcr.io/<owner>/bifrost-docs
+```
+
+Each carries tags from two different lifecycles, and it is worth keeping them straight:
+
+| Tag | Written by | Moves | For |
+|---|---|---|---|
+| `sha-<commit>` | CI, every push | never | pinning and rollback — the only tag that identifies one build forever |
+| `<branch>` | CI, every push | yes | an environment that follows a branch; a deployment is a pull, not a reconfiguration |
+| `1.4.0`, `1.4`, `latest` | `release.yml`, on a `v*` tag | `latest` does | anyone consuming these images, including you in production |
+
+**The three apps share one version number.** A `v1.4.0` tag publishes all three at `1.4.0`, even
+when only one of them changed. That is deliberate: the dashboard's API client is generated from the
+gateway's `openapi.yaml`, so "does dashboard 0.9 work with gateway 1.4?" is a question somebody has
+to answer, and the cheapest way to answer it is to make it impossible to ask. Republishing an
+unchanged image under a new number costs nothing — the layers are cached and the digest does not
+change.
+
+Per-commit images also carry `org.opencontainers.image.revision`, so a running container can be
+traced back to a commit with `docker inspect` rather than from memory.
+
 ## Deploying from CI
 
-`.github/workflows/ci.yml` publishes an image per commit and then asks Coolify to deploy it, so what
-reaches an environment is exactly the artifact the tests ran against. Two tags per image:
-`sha-<commit>`, which never moves and is what a rollback pins to, and `<branch>`, which moves and is
-what a long-lived environment follows.
-
-Nothing about it is tied to `main`. The `deploy` job reads a branch-to-resource map and does nothing
-when the branch that was pushed is not in it:
+`.github/workflows/ci.yml` publishes the images for a commit and then asks Coolify to deploy them,
+so what reaches an environment is exactly the artifact the tests ran against. Nothing about it is
+tied to `main`: the `deploy` job reads a branch-to-resource map and does nothing when the branch
+that was pushed is not in it.
 
 | Setting | Kind | Example |
 |---|---|---|
 | `COOLIFY_URL` | repository variable | `https://coolify.example.com` |
-| `COOLIFY_DEPLOY_MAP` | repository variable | `{"main": "<uuid>", "staging": "<uuid>,<uuid>"}` |
 | `COOLIFY_TOKEN` | repository secret | an API token with deploy permission |
+| `COOLIFY_DEPLOY_MAP` | repository variable | see below |
 
-Point a Coolify resource at the `staging` tag, add `"staging"` to the map, and pushes to that branch
-roll it. Remove the line and they stop. The resource UUID is the last path segment of its URL in the
-Coolify dashboard.
+The shape of a branch's entry says which topology it runs:
+
+```json
+{
+  "main": { "gateway": "<uuid>", "dashboard": "<uuid>", "docs": "<uuid>" },
+  "staging": "<uuid>"
+}
+```
+
+A **string** is one Compose resource holding the whole stack. It redeploys as a unit, so it is
+triggered whenever any app — or a Compose file itself — changed. An **object** is one resource per
+service, which is what Coolify can roll without downtime; only the services whose image actually
+changed are deployed, and the rest are left running rather than drained and replaced by an identical
+build. The UUID is the last path segment of a resource's URL in the Coolify dashboard.
+
+Point a resource at the `staging` tag, add `"staging"` to the map, and pushes to that branch roll it.
+Remove the line and they stop.
+
+### What counts as "changed"
+
+The `changes` job works it out from the diff, and errs heavily towards rebuilding. "The gateway
+changed" is not only `apps/gateway/**`: `bun.lock`, `patches/`, `packages/`, the root configs and
+this workflow all change what lands in its image, and any of them marks **all three** as changed. So
+does a base commit it cannot resolve, which is what a new branch or a force push looks like.
+
+That bias is on purpose. The failure mode of a filter that is too narrow is a green deployment that
+shipped the previous build, and that is far more expensive to discover than a rebuild nobody needed.
 
 ## What this still does not fix
 
