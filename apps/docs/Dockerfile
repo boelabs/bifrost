@@ -57,6 +57,16 @@ COPY --chown=bun:bun --from=build /app/apps/docs/.next/standalone /app/
 COPY --chown=bun:bun --from=build /app/apps/docs/.next/static ./.next/static
 COPY --chown=bun:bun --from=build /app/apps/docs/public ./public
 
+# curl, for the platform's health check rather than ours.
+#
+# The HEALTHCHECK below needs no tools — it runs `bun`, which is obviously present. But a PaaS that
+# defines its own check (Coolify, Dokploy) executes `curl` or `wget` INSIDE this container and fails
+# with "curl: not found" on an image that has neither, which reads as an unhealthy app and rolls the
+# deployment back. Debian's bun image ships no HTTP client at all, so one is installed here.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 USER bun
 EXPOSE 3000
 

@@ -64,7 +64,8 @@ For the second, per resource:
   the failure the drain exists to prevent. Two retries on a five-second interval against a
   fifteen-second delay leaves a comfortable margin.
 - **Start period** covers the slowest boot, not the fastest: the gateway connects to Postgres and
-  Redis and loads extensions before it is ready.
+  Redis and loads extensions before it is ready — and on an empty database it is not ready at all
+  until the migrations have run, so do that before the first health check decides anything.
 - **Stop Grace Period** → above `DRAIN_DELAY_MS + SHUTDOWN_TIMEOUT_MS`, e.g. `180`.
 - **No published host port.** Coolify falls back to stop-then-start when a host port is bound, when
   *Consistent Container Names* is on, with a custom container name or IP, and for PR previews.
