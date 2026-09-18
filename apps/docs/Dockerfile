@@ -13,7 +13,7 @@
 # image is the same everywhere and nothing needs to be passed at run time.
 
 # ---- deps: full install (the build needs devDependencies) ----
-FROM oven/bun:1.4.0 AS deps
+FROM oven/bun:1.4 AS deps
 WORKDIR /app
 COPY package.json bun.lock ./
 COPY patches ./patches
@@ -29,7 +29,7 @@ COPY packages/tsconfig/package.json ./packages/tsconfig/package.json
 RUN bun install --frozen-lockfile --filter @boelabs/docs --ignore-scripts
 
 # ---- build: next build under Bun; emits .next/standalone ----
-FROM oven/bun:1.4.0 AS build
+FROM oven/bun:1.4 AS build
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1
@@ -43,7 +43,7 @@ RUN cd apps/docs && bun run postinstall && bun run build
 # ---- runtime: Bun serving Next's standalone output ----
 # No separate production install: `output: "standalone"` traces exactly the modules the server
 # imports and writes them into the bundle, which is also why nothing here resolves from npm at boot.
-FROM oven/bun:1.4.0 AS runtime
+FROM oven/bun:1.4 AS runtime
 WORKDIR /app/apps/docs
 ENV NODE_ENV=production \
     PORT=3000 \
