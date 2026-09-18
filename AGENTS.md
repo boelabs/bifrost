@@ -218,8 +218,10 @@ same version**, even when only one of them changed. That is deliberate: the dash
 is generated from the gateway's `openapi.yaml`, so independent version numbers would create a
 compatibility matrix somebody has to maintain, and republishing an unchanged image costs nothing.
 
-Everyday pushes do not produce releases. CI publishes `sha-<commit>` and `<branch>` tags for every
-push on every branch; `latest` and the semver tags belong to
+Everyday pushes do not produce releases. CI publishes `sha-<commit>` and `<branch>` tags, but only
+for `main` and for branches named in `COOLIFY_DEPLOY_MAP` — the registry is public, and a feature
+branch has no business leaving a package behind. Every other branch still builds the images, so a
+broken Dockerfile fails on the pull request. `latest` and the semver tags belong to
 [`release.yml`](.github/workflows/release.yml) alone, because a registry tag that moves with every
 commit is not the promise `latest` is supposed to make.
 

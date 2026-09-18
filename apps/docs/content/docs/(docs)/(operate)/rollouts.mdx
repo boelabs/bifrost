@@ -80,7 +80,8 @@ Three images, one per app: `ghcr.io/<owner>/bifrost-{gateway,dashboard,docs}`. A
 all three at the same version, even when only one changed — the dashboard's API client is generated
 from the gateway's `openapi.yaml`, so a shared number removes a compatibility question instead of
 answering it. CI also publishes `sha-<commit>`, which never moves and is what a rollback pins to,
-and `<branch>`, which moves and is what an environment follows.
+and `<branch>`, which moves and is what an environment follows — for `main` and for the branches
+that are actually deployed, not for every branch.
 
 ## Deploying from CI
 

@@ -205,8 +205,8 @@ jobs:
     needs: [changes]
     permissions:
       contents: read
-      # Only used on `push`, to publish the images this commit was tested as. Pull requests build
-      # without pushing, so a fork never needs it.
+      # Only used when this commit's images are actually published — see "Derive image tags".
+      # Every other build stays local, so a fork never needs it.
       packages: write
     env:
       DOCKER_BUILDKIT: 1
@@ -219,29 +219,48 @@ jobs:
       - name: Set up Buildx
         uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
 
-      # Every branch gets images, not just main: an environment is a resource pointing at a tag, and
-      # which branch feeds which environment is the deployment's business, not this workflow's.
-      #
       # Two tags per image. `sha-<commit>` never moves and is what a rollback pins to; `<branch>`
       # moves, and is what a long-lived environment follows so a deployment is a pull rather than a
       # reconfiguration. Neither is `latest` — that tag means "released" and belongs to release.yml.
+      #
+      # Publishing is restricted to branches something actually runs: `main`, plus any branch named
+      # in COOLIFY_DEPLOY_MAP. The registry is public, so a feature branch has no business leaving a
+      # package behind — and the two sets have to be the same one, because deploying a branch whose
+      # image was never pushed would roll out a tag that does not exist. Everything else still
+      # BUILDS, so a broken Dockerfile fails on the pull request rather than after the merge.
       - name: Derive image tags
         id: tags
         env:
           REF_NAME: ${{ github.ref_name }}
+          EVENT: ${{ github.event_name }}
+          DEPLOY_MAP: ${{ vars.COOLIFY_DEPLOY_MAP }}
         run: |
+          set -euo pipefail
+
           # A branch name is not a tag: slashes and anything outside [A-Za-z0-9._-] are illegal, and
           # a tag may not start with a separator.
           slug=$(printf '%s' "$REF_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9._-]/-/g' | sed 's/^[.-]*//' | cut -c1-120)
           [ -n "$slug" ] || slug=build
+
+          publish=false
+          if [ "$EVENT" = "push" ]; then
+            if [ "$REF_NAME" = "main" ]; then
+              publish=true
+            elif [ -n "${DEPLOY_MAP:-}" ] && printf '%s' "$DEPLOY_MAP" | jq -e --arg b "$REF_NAME" 'has($b)' >/dev/null 2>&1; then
+              publish=true
+            fi
+          fi
+          [ "$publish" = true ] || echo "::notice::'$REF_NAME' is neither main nor a mapped branch; building without publishing."
+
           {
             echo "sha=sha-${GITHUB_SHA}"
             echo "branch=$slug"
             echo "registry=ghcr.io/${{ github.repository_owner }}"
+            echo "publish=$publish"
           } >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
-        if: github.event_name == 'push'
+        if: steps.tags.outputs.publish == 'true'
         uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
         with:
           registry: ghcr.io
@@ -257,8 +276,8 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
           # Always re-resolve the base image: a stale local oven/bun hides a broken upstream bump.
           pull: true
-          push: ${{ github.event_name == 'push' }}
-          load: ${{ github.event_name != 'push' }}
+          push: ${{ steps.tags.outputs.publish == 'true' }}
+          load: ${{ steps.tags.outputs.publish != 'true' }}
           tags: |
             ${{ steps.tags.outputs.registry }}/bifrost-gateway:${{ steps.tags.outputs.sha }}
             ${{ steps.tags.outputs.registry }}/bifrost-gateway:${{ steps.tags.outputs.branch }}
@@ -280,8 +299,8 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
           # Always re-resolve the base image: a stale local oven/bun hides a broken upstream bump.
           pull: true
-          push: ${{ github.event_name == 'push' }}
-          load: ${{ github.event_name != 'push' }}
+          push: ${{ steps.tags.outputs.publish == 'true' }}
+          load: ${{ steps.tags.outputs.publish != 'true' }}
           tags: |
             ${{ steps.tags.outputs.registry }}/bifrost-dashboard:${{ steps.tags.outputs.sha }}
             ${{ steps.tags.outputs.registry }}/bifrost-dashboard:${{ steps.tags.outputs.branch }}
@@ -301,8 +320,8 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
           # Always re-resolve the base image: a stale local oven/bun hides a broken upstream bump.
           pull: true
-          push: ${{ github.event_name == 'push' }}
-          load: ${{ github.event_name != 'push' }}
+          push: ${{ steps.tags.outputs.publish == 'true' }}
+          load: ${{ steps.tags.outputs.publish != 'true' }}
           tags: |
             ${{ steps.tags.outputs.registry }}/bifrost-docs:${{ steps.tags.outputs.sha }}
             ${{ steps.tags.outputs.registry }}/bifrost-docs:${{ steps.tags.outputs.branch }}
