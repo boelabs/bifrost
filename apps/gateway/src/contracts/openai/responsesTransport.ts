@@ -210,18 +210,71 @@ function contentToInput(
 		.filter((x): x is Record<string, unknown> => x !== null);
 }
 
+/**
+ * Which reasoning item an event belongs to.
+ *
+ * The item id is preferred because it survives reordering; the output index is the fallback for
+ * providers that only number their items. Neither means the event can be placed, hence `undefined`.
+ */
+function reasoningLaneKey(data: Record<string, unknown>): string | undefined {
+	if (typeof data.item_id === "string" && data.item_id.length > 0) {
+		return `id:${data.item_id}`;
+	}
+	if (
+		typeof data.output_index === "number" &&
+		Number.isInteger(data.output_index) &&
+		data.output_index >= 0
+	) {
+		return `index:${data.output_index}`;
+	}
+	return undefined;
+}
+
+/** The first of these that is actually a number. */
+function firstNumber(...values: unknown[]): number | undefined {
+	return values.find((value): value is number => typeof value === "number");
+}
+
+/** A tool message's payload in the shape Responses takes it: plain text, or input parts. */
+function toolOutputOf(
+	content: CanonicalMessage["content"],
+): string | Record<string, unknown>[] {
+	if (content === null) {
+		return "";
+	}
+	return typeof content === "string"
+		? content
+		: contentToInput(content, "user");
+}
+
+/** Marks a tool result as failed, in whichever of the two shapes it arrived. */
+function markToolFailure(
+	output: string | Record<string, unknown>[],
+): string | Record<string, unknown>[] {
+	if (typeof output === "string") {
+		return `[Tool execution failed] ${output}`;
+	}
+	return [{ type: "input_text", text: "[Tool execution failed]" }, ...output];
+}
+
+/** The first portable Chat control this request carries that Responses cannot express. */
+function unsupportedResponsesParam(
+	req: CanonicalChatRequest,
+): "n" | "stop" | "seed" | undefined {
+	if ((req.n ?? 1) !== 1) {
+		return "n";
+	}
+	if ((req.stop?.length ?? 0) > 0) {
+		return "stop";
+	}
+	return req.seed === undefined ? undefined : "seed";
+}
+
 /** Responses has no equivalent for these portable Chat controls. Never silently discard them. */
 export function assertResponsesRequestSupported(
 	req: CanonicalChatRequest,
 ): void {
-	const param =
-		(req.n ?? 1) === 1
-			? (req.stop?.length ?? 0) > 0
-				? "stop"
-				: req.seed === undefined
-					? undefined
-					: "seed"
-			: "n";
+	const param = unsupportedResponsesParam(req);
 	if (param !== undefined) {
 		throw new GatewayError({
 			class: "bad_request",
@@ -270,27 +323,11 @@ export function buildResponsesRequestBody(
 			continue;
 		}
 		if (m.role === "tool") {
-			const output =
-				typeof m.content === "string"
-					? m.content
-					: m.content === null
-						? ""
-						: contentToInput(m.content, "user");
+			const output = toolOutputOf(m.content);
 			input.push({
 				type: "function_call_output",
 				call_id: m.toolCallId ?? "",
-				output:
-					m.toolResultError === true
-						? typeof output === "string"
-							? `[Tool execution failed] ${output}`
-							: [
-									{
-										type: "input_text",
-										text: "[Tool execution failed]",
-									},
-									...output,
-								]
-						: output,
+				output: m.toolResultError === true ? markToolFailure(output) : output,
 			});
 			continue;
 		}
@@ -695,14 +732,7 @@ export async function* responsesEventsToCanonicalChunks(
 		data: Record<string, unknown>,
 		lane: "content" | "summary",
 	): boolean => {
-		const key =
-			typeof data.item_id === "string" && data.item_id.length > 0
-				? `id:${data.item_id}`
-				: typeof data.output_index === "number" &&
-						Number.isInteger(data.output_index) &&
-						data.output_index >= 0
-					? `index:${data.output_index}`
-					: undefined;
+		const key = reasoningLaneKey(data);
 		if (key === undefined) {
 			return true;
 		}
@@ -748,12 +778,7 @@ export async function* responsesEventsToCanonicalChunks(
 				| undefined;
 			const code =
 				typeof error?.code === "string" ? error.code : "upstream_stream_error";
-			const providerStatus =
-				typeof d.status === "number"
-					? d.status
-					: typeof response?.status === "number"
-						? response.status
-						: 502;
+			const providerStatus = firstNumber(d.status, response?.status) ?? 502;
 			const param = typeof error?.param === "string" ? error.param : null;
 			throw new GatewayError({
 				class:

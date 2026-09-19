@@ -488,6 +488,64 @@ function normalizedFailureKind(attempt: OperationAttemptInput): string | null {
 }
 
 /**
+ * How the request as a whole ended.
+ *
+ * A success without terminal evidence is an error: the gateway cannot claim an answer completed
+ * when nothing said so. A client that hung up, or a downstream that stopped reading, is neither —
+ * nobody failed, the request simply stopped being wanted.
+ */
+function operationOutcome(
+	status: string,
+	terminalVerified: boolean,
+	terminalOutcome: string | undefined,
+	// Whatever the error carried: this is log input, and its shape is not guaranteed.
+	errorCode: unknown,
+): "success" | "incomplete" | "blocked" | "cancelled" | "error" {
+	if (status !== "success") {
+		return errorCode === "client_closed_request" ||
+			errorCode === "downstream_backpressure"
+			? "cancelled"
+			: "error";
+	}
+	if (!terminalVerified) {
+		return "error";
+	}
+	if (terminalOutcome === "incomplete") {
+		return "incomplete";
+	}
+	if (terminalOutcome === "blocked") {
+		return "blocked";
+	}
+	return "success";
+}
+
+/** How an attempt ended, from the terminal evidence it carried. */
+function attemptOutcome(
+	attempt: OperationAttemptInput,
+): "success" | "incomplete" | "blocked" | "error" {
+	if (!attempt.ok) {
+		return "error";
+	}
+	if (attempt.terminalOutcome === "incomplete") {
+		return "incomplete";
+	}
+	if (attempt.terminalOutcome === "blocked") {
+		return "blocked";
+	}
+	return "success";
+}
+
+/** What this attempt should do to the deployment's health score. */
+function attemptHealthEffect(
+	attempt: OperationAttemptInput,
+): "reward" | "neutral" | "penalize" {
+	if (attempt.terminalVerified === true) {
+		return "reward";
+	}
+	return attempt.deploymentHealth === "neutral" ? "neutral" : "penalize";
+}
+
+/**
  * When output began arriving, or `null` when the response had no such moment.
  *
  * Gated on `streamed` rather than taken on trust: this column feeds the first-output percentile,
@@ -537,19 +595,12 @@ export function completeOperation(
 		| { maxBlockedMs?: number }
 		| undefined;
 	const terminalVerified = input.status === "success" && terminal != null;
-	const outcome =
-		input.status === "success"
-			? terminalVerified
-				? terminal?.outcome === "incomplete"
-					? "incomplete"
-					: terminal?.outcome === "blocked"
-						? "blocked"
-						: "success"
-				: "error"
-			: input.error?.code === "client_closed_request" ||
-					input.error?.code === "downstream_backpressure"
-				? "cancelled"
-				: "error";
+	const outcome = operationOutcome(
+		input.status,
+		terminalVerified,
+		terminal?.outcome,
+		input.error?.code,
+	);
 	const degraded =
 		input.retries > 0 ||
 		input.fallbackUsed ||
@@ -579,6 +630,20 @@ export function completeOperation(
 		...safeSummary(input.responseBody),
 		fingerprint: payloadFingerprint(input.responseBody),
 	};
+	/** What the summary measured, for responses no attempt reported a byte count for. */
+	const summaryBytes =
+		typeof responseSummary.bytes === "number" ? responseSummary.bytes : null;
+	/**
+	 * A request that finished without an upstream error but also without terminal evidence is
+	 * recorded as a gateway failure rather than as a clean success nobody can vouch for.
+	 */
+	const missingTerminalError = terminalVerified
+		? null
+		: {
+				class: "server",
+				code: "missing_terminal_evidence",
+				failure_kind: "gateway",
+			};
 	const persistenceTelemetry = startOperationChildTelemetry(
 		operationId,
 		"persistence",
@@ -639,11 +704,7 @@ export function completeOperation(
 										: null),
 								upstreamBytes: attempts.length > 0 ? upstreamBytes : null,
 								downstreamBytes:
-									downstreamBytes > 0
-										? downstreamBytes
-										: typeof responseSummary.bytes === "number"
-											? responseSummary.bytes
-											: null,
+									downstreamBytes > 0 ? downstreamBytes : summaryBytes,
 								endedAt: input.endTime,
 								lastProgressAt: input.endTime,
 								reasoning: input.metadata.reasoning ?? null,
@@ -669,13 +730,7 @@ export function completeOperation(
 											http_status: input.error.http_status,
 											failure_kind: input.error.failure_kind,
 										}
-									: terminalVerified
-										? null
-										: {
-												class: "server",
-												code: "missing_terminal_evidence",
-												failure_kind: "gateway",
-											},
+									: missingTerminalError,
 							})
 							.where(eq(gatewayOperations.id, operationId));
 
@@ -695,24 +750,13 @@ export function completeOperation(
 											deploymentLabel: attempt.label ?? null,
 											adapterKey: attempt.adapterKey ?? null,
 											transport: attempt.transport ?? null,
-											outcome: attempt.ok
-												? attempt.terminalOutcome === "incomplete"
-													? ("incomplete" as const)
-													: attempt.terminalOutcome === "blocked"
-														? ("blocked" as const)
-														: ("success" as const)
-												: ("error" as const),
+											outcome: attemptOutcome(attempt),
 											terminalVerified: attempt.terminalVerified === true,
 											transportTerminator: attempt.transportTerminator ?? null,
 											failureOwner: failureOwner(attempt),
 											failureKind: normalizedFailureKind(attempt),
 											failurePhase: normalizedFailurePhase(attempt),
-											healthEffect:
-												attempt.terminalVerified === true
-													? "reward"
-													: attempt.deploymentHealth === "neutral"
-														? "neutral"
-														: "penalize",
+											healthEffect: attemptHealthEffect(attempt),
 											httpStatus: attempt.httpStatus ?? null,
 											providerStatus: attempt.providerStatus ?? null,
 											durationMs,
