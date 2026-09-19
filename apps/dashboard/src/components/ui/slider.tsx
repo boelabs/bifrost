@@ -21,7 +21,7 @@ function Root<Value extends number | readonly number[]>({
 		<BaseSlider.Root
 			{...props}
 			className={mergeClassName(
-				"flex min-w-0 flex-col gap-2 data-[disabled]:opacity-50",
+				"flex min-w-0 flex-col gap-2 data-disabled:opacity-50",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

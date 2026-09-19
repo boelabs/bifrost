@@ -72,7 +72,7 @@ export function Tab({
 					size,
 					variant,
 					className:
-						"relative z-10 cursor-pointer justify-center whitespace-nowrap font-semibold text-fg-muted data-[active]:bg-surface data-[active]:text-primary data-[active]:shadow-sm",
+						"relative z-10 cursor-pointer justify-center whitespace-nowrap font-semibold text-fg-muted data-active:bg-surface data-active:text-primary data-active:shadow-sm",
 				}),
 				className,
 			)}

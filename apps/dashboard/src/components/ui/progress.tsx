@@ -60,7 +60,7 @@ export function ProgressIndicator({
 		<BaseProgress.Indicator
 			{...props}
 			className={mergeClassName(
-				"h-full rounded-[inherit] bg-primary transition-[width] duration-300 data-[indeterminate]:w-full data-[indeterminate]:animate-pulse motion-reduce:animate-none",
+				"h-full rounded-[inherit] bg-primary transition-[width] duration-300 data-indeterminate:w-full data-indeterminate:animate-pulse motion-reduce:animate-none",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

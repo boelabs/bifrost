@@ -44,8 +44,8 @@ describe("component motion and keyboard focus", () => {
 			assert.match(styles, /transition-opacity/);
 			assert.match(styles, /duration-150/);
 			assert.match(styles, /ease-out/);
-			assert.ok(styles.includes("data-[starting-style]:opacity-0"));
-			assert.ok(styles.includes("data-[ending-style]:opacity-0"));
+			assert.ok(styles.includes("data-starting-style:opacity-0"));
+			assert.ok(styles.includes("data-ending-style:opacity-0"));
 			assert.ok(styles.includes("motion-reduce:transition-none"));
 			assert.doesNotMatch(styles, /scale|translate|transform/);
 		}
@@ -60,12 +60,12 @@ describe("component motion and keyboard focus", () => {
 			</ToastProvider>,
 		);
 		assert.match(html, /duration-150 ease-out/);
-		assert.ok(html.includes("data-[starting-style]:opacity-0"));
-		assert.ok(html.includes("data-[ending-style]:opacity-0"));
-		assert.ok(html.includes("data-[swiping]:transition-none"));
+		assert.ok(html.includes("data-starting-style:opacity-0"));
+		assert.ok(html.includes("data-ending-style:opacity-0"));
+		assert.ok(html.includes("data-swiping:transition-none"));
 		assert.match(html, /--toast-swipe-movement-x/);
 		assert.match(html, /--toast-swipe-movement-y/);
-		assert.doesNotMatch(html, /scale|(?:starting|ending)-style\]:-?translate/);
+		assert.doesNotMatch(html, /scale|(?:starting|ending)-style:-?translate/);
 	});
 
 	test("drawers preserve directional swipes without scaling page content", () => {
@@ -74,7 +74,7 @@ describe("component motion and keyboard focus", () => {
 		assert.equal(typeof classes, "string");
 		assert.match(classes, /duration-150 ease-out/);
 		assert.ok(classes.includes("transition-[transform,translate,opacity]"));
-		assert.ok(classes.includes("data-[swiping]:transition-none"));
+		assert.ok(classes.includes("data-swiping:transition-none"));
 		assert.doesNotMatch(classes, /scale/);
 		for (const direction of ["up", "down", "left", "right"] as const) {
 			const axis = direction === "up" || direction === "down" ? "y" : "x";
@@ -82,7 +82,7 @@ describe("component motion and keyboard focus", () => {
 			for (const phase of ["starting", "ending"]) {
 				assert.ok(
 					classes.includes(
-						`data-[swipe-direction=${direction}]:data-[${phase}-style]:${sign}translate-${axis}-full`,
+						`data-[swipe-direction=${direction}]:data-${phase}-style:${sign}translate-${axis}-full`,
 					),
 				);
 			}

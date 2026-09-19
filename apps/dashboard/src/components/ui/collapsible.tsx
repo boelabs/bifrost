@@ -52,7 +52,7 @@ export function CollapsibleTrigger({
 					size,
 					variant,
 					className:
-						"cursor-pointer justify-between text-start font-semibold data-[panel-open]:text-primary [&>svg]:transition-transform data-[panel-open]:[&>svg]:rotate-180",
+						"cursor-pointer justify-between text-start font-semibold data-panel-open:text-primary [&>svg]:transition-transform data-panel-open:[&>svg]:rotate-180",
 				}),
 				className,
 			)}
@@ -72,7 +72,7 @@ export function CollapsiblePanel({
 		<BaseCollapsible.Panel
 			{...props}
 			className={mergeClassName(
-				"h-(--collapsible-panel-height) overflow-hidden text-fg-muted text-sm transition-[height,opacity] duration-200 data-[ending-style]:h-0 data-[starting-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0",
+				"h-(--collapsible-panel-height) overflow-hidden text-fg-muted text-sm transition-[height,opacity] duration-200 data-ending-style:h-0 data-starting-style:h-0 data-ending-style:opacity-0 data-starting-style:opacity-0",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

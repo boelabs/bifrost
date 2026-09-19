@@ -47,7 +47,7 @@ export function AccordionItem({
 		<BaseAccordion.Item
 			{...props}
 			className={mergeClassName(
-				"min-w-0 flex-1 border-border border-b last:border-b-0 data-[disabled]:opacity-50 group-data-[orientation=horizontal]/accordion:border-r group-data-[orientation=horizontal]/accordion:border-b-0 group-data-[orientation=horizontal]/accordion:last:border-r-0",
+				"min-w-0 flex-1 border-border border-b last:border-b-0 data-disabled:opacity-50 group-data-[orientation=horizontal]/accordion:border-r group-data-[orientation=horizontal]/accordion:border-b-0 group-data-[orientation=horizontal]/accordion:last:border-r-0",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -88,7 +88,7 @@ export function AccordionTrigger({
 					size,
 					variant,
 					className:
-						"w-full cursor-pointer justify-between text-start font-semibold data-[panel-open]:text-primary [&>svg]:shrink-0 [&>svg]:transition-transform data-[panel-open]:[&>svg]:rotate-180",
+						"w-full cursor-pointer justify-between text-start font-semibold data-panel-open:text-primary [&>svg]:shrink-0 [&>svg]:transition-transform data-panel-open:[&>svg]:rotate-180",
 				}),
 				className,
 			)}
@@ -108,7 +108,7 @@ export function AccordionPanel({
 		<BaseAccordion.Panel
 			{...props}
 			className={mergeClassName(
-				"h-(--accordion-panel-height) overflow-hidden text-fg-muted text-sm transition-[height,opacity] duration-200 data-[ending-style]:h-0 data-[starting-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0",
+				"h-(--accordion-panel-height) overflow-hidden text-fg-muted text-sm transition-[height,opacity] duration-200 data-ending-style:h-0 data-starting-style:h-0 data-ending-style:opacity-0 data-starting-style:opacity-0",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

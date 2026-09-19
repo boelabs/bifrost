@@ -14,7 +14,7 @@ import {
 } from "./appearance.ts";
 
 export const buttonStyles = tv({
-	base: `inline-flex shrink-0 appearance-none items-center justify-center gap-2 rounded-full border border-transparent font-semibold transition-none disabled:pointer-events-none disabled:opacity-50 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 ${focusRing}`,
+	base: `inline-flex shrink-0 appearance-none items-center justify-center gap-2 rounded-full border border-transparent font-semibold transition-none disabled:pointer-events-none disabled:opacity-50 data-disabled:pointer-events-none data-disabled:opacity-50 ${focusRing}`,
 	variants: {
 		variant: {
 			primary: "bg-primary text-primary-fg hover:bg-primary-hover",

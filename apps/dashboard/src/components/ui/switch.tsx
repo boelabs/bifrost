@@ -32,7 +32,7 @@ function Root({
 		<BaseSwitch.Root
 			{...props}
 			className={mergeClassName(
-				`${focusRing} ${sizes[size]} relative inline-flex shrink-0 items-center rounded-full border p-0.5 ${tracks[variant]} transition-colors data-[disabled]:cursor-not-allowed data-[checked]:border-primary data-[checked]:bg-primary data-[disabled]:opacity-50`,
+				`${focusRing} ${sizes[size]} relative inline-flex shrink-0 items-center rounded-full border p-0.5 ${tracks[variant]} transition-colors data-disabled:cursor-not-allowed data-checked:border-primary data-checked:bg-primary data-disabled:opacity-50`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -50,7 +50,7 @@ function Thumb({
 		<BaseSwitch.Thumb
 			{...props}
 			className={mergeClassName(
-				"block aspect-square h-full rounded-full bg-fg-muted shadow-sm transition-[margin,background-color] data-[checked]:ml-auto data-[checked]:bg-primary-fg",
+				"block aspect-square h-full rounded-full bg-fg-muted shadow-sm transition-[margin,background-color] data-checked:ml-auto data-checked:bg-primary-fg",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

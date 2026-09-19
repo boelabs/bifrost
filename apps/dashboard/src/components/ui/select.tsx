@@ -159,7 +159,7 @@ export function Select<Value = string>({
 					variant={variant}
 				>
 					<BaseSelect.Value
-						className="truncate data-[placeholder]:text-fg-muted"
+						className="truncate data-placeholder:text-fg-muted"
 						placeholder={placeholder}
 					/>
 					<BaseSelect.Icon>

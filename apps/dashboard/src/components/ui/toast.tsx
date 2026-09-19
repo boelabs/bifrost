@@ -68,7 +68,7 @@ export function ToastRoot({
 		<BaseToast.Root
 			{...props}
 			className={mergeClassName(
-				`${overlayFadeStyles} relative flex w-full shrink-0 flex-col gap-3 rounded-(--ui-radius-dialog) border border-border/60 bg-surface p-4 pr-10 text-fg shadow-xl outline-none transition-[opacity,transform] data-[limited]:hidden data-[swiping]:select-none data-[type=error]:border-danger/50 data-[type=success]:border-success/50 data-[swiping]:transition-none`,
+				`${overlayFadeStyles} relative flex w-full shrink-0 flex-col gap-3 rounded-(--ui-radius-dialog) border border-border/60 bg-surface p-4 pr-10 text-fg shadow-xl outline-none transition-[opacity,transform] data-limited:hidden data-swiping:select-none data-[type=error]:border-danger/50 data-[type=success]:border-success/50 data-swiping:transition-none`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, (state) => ({

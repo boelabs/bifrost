@@ -34,7 +34,7 @@ function Root({
 		<BaseCheckbox.Root
 			{...props}
 			className={mergeClassName(
-				`${focusRing} ${sizes[size]} inline-flex shrink-0 items-center justify-center rounded-(--ui-radius-item) border ${surfaces[variant]} transition-colors data-[disabled]:cursor-not-allowed data-[checked]:border-primary data-[indeterminate]:border-primary data-[invalid]:border-danger data-[checked]:bg-primary data-[indeterminate]:bg-primary data-[checked]:text-primary-fg data-[indeterminate]:text-primary-fg data-[disabled]:opacity-50`,
+				`${focusRing} ${sizes[size]} inline-flex shrink-0 items-center justify-center rounded-(--ui-radius-item) border ${surfaces[variant]} transition-colors data-disabled:cursor-not-allowed data-checked:border-primary data-indeterminate:border-primary data-invalid:border-danger data-checked:bg-primary data-indeterminate:bg-primary data-checked:text-primary-fg data-indeterminate:text-primary-fg data-disabled:opacity-50`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

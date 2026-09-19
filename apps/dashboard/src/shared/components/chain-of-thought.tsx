@@ -34,7 +34,7 @@ export function ChainOfThoughtHeader({
 }: ComponentProps<typeof CollapsibleTrigger> & { icon?: TablerIcon }) {
 	return (
 		<CollapsibleTrigger
-			className="flex h-auto w-full justify-start gap-2 px-0 py-1 font-normal text-fg-muted text-sm hover:text-fg data-[panel-open]:text-fg-muted"
+			className="flex h-auto w-full justify-start gap-2 px-0 py-1 font-normal text-fg-muted text-sm hover:text-fg data-panel-open:text-fg-muted"
 			{...props}
 		>
 			<span aria-hidden>
