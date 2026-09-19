@@ -806,7 +806,7 @@ function requireId(c: Context<AppEnv>): string {
 /** Loads a state within the key's scope or throws not_found with the OpenResponses shape. */
 async function loadStateOr404(c: Context<AppEnv>): Promise<{
 	id: string;
-	row: Awaited<ReturnType<typeof getResponseStateForScope>>;
+	row: NonNullable<Awaited<ReturnType<typeof getResponseStateForScope>>>;
 }> {
 	const id = requireId(c);
 	const row = await getResponseStateForScope(id, authVirtualKeyId(getAuth(c)));
@@ -827,7 +827,7 @@ export async function retrieveResponseHandler(
 	c: Context<AppEnv>,
 ): Promise<Response> {
 	const { row } = await loadStateOr404(c);
-	return c.json(row!.response as object);
+	return c.json(row.response as object);
 }
 
 /** DELETE /v1/responses/{id} - deletes the saved state. */
@@ -856,14 +856,16 @@ export async function listResponseInputItemsHandler(
 	c: Context<AppEnv>,
 ): Promise<Response> {
 	const { row } = await loadStateOr404(c);
-	const items = row!.requestInput;
+	const items = row.requestInput;
+	const [first] = items;
+	const last = items.at(-1);
 	const idOf = (it: Record<string, unknown>): string | null =>
 		typeof it.id === "string" ? it.id : null;
 	return c.json({
 		object: "list",
 		data: items,
-		first_id: items.length > 0 ? idOf(items[0]!) : null,
-		last_id: items.length > 0 ? idOf(items.at(-1)!) : null,
+		first_id: first ? idOf(first) : null,
+		last_id: last ? idOf(last) : null,
 		has_more: false,
 	});
 }

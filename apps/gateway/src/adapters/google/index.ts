@@ -287,8 +287,7 @@ function geminiThinkingConfig(
 	if (resolved === undefined) {
 		return undefined;
 	}
-	const { effort } = resolved;
-	const spec = ctx.meta.reasoning!;
+	const { effort, spec } = resolved;
 	const includeThoughts = summaryVisible(resolved.summary);
 	if (spec.kind === "gemini_level") {
 		const level =
@@ -1442,17 +1441,14 @@ function googleVideoBody(
 		});
 	}
 	const [videoRef] = videoRefs;
+	const [imageRef] = imageRefs;
 	if (videoRef) {
 		instance.video = {
 			inlineData: googleVideoInline(videoRef.url, "input_references", "video"),
 		};
-	} else if (imageRefs.length === 1) {
+	} else if (imageRefs.length === 1 && imageRef) {
 		instance.image = {
-			inlineData: googleVideoInline(
-				imageRefs[0]!.url,
-				"input_references",
-				"image",
-			),
+			inlineData: googleVideoInline(imageRef.url, "input_references", "image"),
 		};
 	} else if (imageRefs.length > 1) {
 		instance.referenceImages = googleReferenceImages(imageRefs);

@@ -354,7 +354,7 @@ function applyReasoning(
 		return;
 	}
 	const { effort } = resolved;
-	const spec = ctx.meta.reasoning!;
+	const { spec } = resolved;
 	const display = summaryVisible(resolved.summary) ? "summarized" : "omitted";
 
 	if (spec.kind === "anthropic_adaptive") {
