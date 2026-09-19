@@ -142,17 +142,17 @@ export interface AdapterDiagnostics {
 
 /** An adapter's canonical text handler. */
 export interface ChatHandler {
-	buildRequest(
+	buildRequest: (
 		req: CanonicalChatRequest,
 		ctx: AdapterContext,
-	): UpstreamHttpRequest;
-	parseResponse(raw: unknown, ctx: AdapterContext): CanonicalChatResponse;
-	parseStream(
+	) => UpstreamHttpRequest;
+	parseResponse: (raw: unknown, ctx: AdapterContext) => CanonicalChatResponse;
+	parseStream: (
 		stream: ReadableStream<Uint8Array>,
 		ctx: AdapterContext,
-	): AsyncIterable<CanonicalChatStreamChunk>;
+	) => AsyncIterable<CanonicalChatStreamChunk>;
 	/** Maps an upstream error (non-2xx HTTP, error body, exception) to a GatewayError. */
-	mapError(err: unknown, ctx: AdapterContext): GatewayError;
+	mapError: (err: unknown, ctx: AdapterContext) => GatewayError;
 }
 
 export interface MessageTokenCountRequest {
@@ -167,12 +167,15 @@ export interface MessageTokenCountResponse {
 
 /** Optional native implementation of Anthropic's Messages token-count endpoint. */
 export interface MessageTokenCountHandler {
-	buildRequest(
+	buildRequest: (
 		req: MessageTokenCountRequest,
 		ctx: AdapterContext,
-	): UpstreamHttpRequest;
-	parseResponse(raw: unknown, ctx: AdapterContext): MessageTokenCountResponse;
-	mapError(err: unknown, ctx: AdapterContext): GatewayError;
+	) => UpstreamHttpRequest;
+	parseResponse: (
+		raw: unknown,
+		ctx: AdapterContext,
+	) => MessageTokenCountResponse;
+	mapError: (err: unknown, ctx: AdapterContext) => GatewayError;
 }
 
 /**
@@ -186,80 +189,83 @@ export interface ResponsesWebSocketTurn {
 }
 
 export interface ResponsesWebSocketSession {
-	create(
+	create: (
 		req: CanonicalChatRequest,
 		options: {
 			previousResponseId?: string;
 			generate: boolean;
 			signal: AbortSignal;
 		},
-	): Promise<ResponsesWebSocketTurn>;
-	close(code?: number, reason?: string): void;
+	) => Promise<ResponsesWebSocketTurn>;
+	close: (code?: number, reason?: string) => void;
 	readonly closed: boolean;
 }
 
 export interface ResponsesWebSocketHandler {
-	connect(ctx: AdapterContext): Promise<ResponsesWebSocketSession>;
+	connect: (ctx: AdapterContext) => Promise<ResponsesWebSocketSession>;
 }
 
 export interface ImageHandler {
-	buildRequest(
+	buildRequest: (
 		req: CanonicalImageRequest,
 		ctx: AdapterContext,
-	):
+	) =>
 		| UpstreamHttpRequest<UpstreamBody>
 		| Promise<UpstreamHttpRequest<UpstreamBody>>;
-	parseResponse(
+	parseResponse: (
 		raw: unknown,
 		ctx: AdapterContext,
-	): CanonicalImageResponse | Promise<CanonicalImageResponse>;
-	parseStream?(
+	) => CanonicalImageResponse | Promise<CanonicalImageResponse>;
+	parseStream?: (
 		stream: ReadableStream<Uint8Array>,
 		ctx: AdapterContext,
-	): AsyncIterable<CanonicalImageStreamEvent>;
-	mapError(err: unknown, ctx: AdapterContext): GatewayError;
+	) => AsyncIterable<CanonicalImageStreamEvent>;
+	mapError: (err: unknown, ctx: AdapterContext) => GatewayError;
 }
 
 /** An adapter's canonical audio-transcription handler. */
 export interface TranscriptionHandler {
-	buildRequest(
+	buildRequest: (
 		req: CanonicalTranscriptionRequest,
 		ctx: AdapterContext,
-	):
+	) =>
 		| UpstreamHttpRequest<UpstreamBody>
 		| Promise<UpstreamHttpRequest<UpstreamBody>>;
 	/** `raw` is a JSON object (json/verbose_json) or a raw string (text/srt/vtt). */
-	parseResponse(
+	parseResponse: (
 		raw: unknown,
 		ctx: AdapterContext,
-	): CanonicalTranscriptionResponse;
-	parseStream?(
+	) => CanonicalTranscriptionResponse;
+	parseStream?: (
 		stream: ReadableStream<Uint8Array>,
 		ctx: AdapterContext,
-	): AsyncIterable<CanonicalTranscriptionStreamEvent>;
-	mapError(err: unknown, ctx: AdapterContext): GatewayError;
+	) => AsyncIterable<CanonicalTranscriptionStreamEvent>;
+	mapError: (err: unknown, ctx: AdapterContext) => GatewayError;
 }
 
 /** An adapter's canonical embeddings handler. No streaming. */
 export interface EmbeddingsHandler {
-	buildRequest(
+	buildRequest: (
 		req: CanonicalEmbeddingsRequest,
 		ctx: AdapterContext,
-	): UpstreamHttpRequest;
-	parseResponse(raw: unknown, ctx: AdapterContext): CanonicalEmbeddingsResponse;
-	mapError(err: unknown, ctx: AdapterContext): GatewayError;
+	) => UpstreamHttpRequest;
+	parseResponse: (
+		raw: unknown,
+		ctx: AdapterContext,
+	) => CanonicalEmbeddingsResponse;
+	mapError: (err: unknown, ctx: AdapterContext) => GatewayError;
 }
 
 /** An adapter's canonical reranking handler. No streaming. */
 export interface RerankHandler {
 	/** Whether the OpenRouter-shaped `provider` routing object can be honored. */
 	supportsProviderRouting?: boolean;
-	buildRequest(
+	buildRequest: (
 		req: CanonicalRerankRequest,
 		ctx: AdapterContext,
-	): UpstreamHttpRequest;
-	parseResponse(raw: unknown, ctx: AdapterContext): CanonicalRerankResponse;
-	mapError(err: unknown, ctx: AdapterContext): GatewayError;
+	) => UpstreamHttpRequest;
+	parseResponse: (raw: unknown, ctx: AdapterContext) => CanonicalRerankResponse;
+	mapError: (err: unknown, ctx: AdapterContext) => GatewayError;
 }
 
 export interface VideoJobRef {
@@ -271,22 +277,22 @@ export interface VideoJobRef {
 
 /** An adapter's async video-generation handler. */
 export interface VideoHandler {
-	submit(
+	submit: (
 		req: CanonicalVideoRequest,
 		ctx: AdapterContext,
-	): Promise<CanonicalVideoProviderJob>;
-	refresh(
+	) => Promise<CanonicalVideoProviderJob>;
+	refresh: (
 		job: VideoJobRef,
 		ctx: AdapterContext,
-	): Promise<CanonicalVideoProviderJob>;
-	download(
+	) => Promise<CanonicalVideoProviderJob>;
+	download: (
 		job: VideoJobRef,
 		variant: VideoAssetVariant,
 		ctx: AdapterContext,
-	): Promise<CanonicalVideoContent>;
+	) => Promise<CanonicalVideoContent>;
 	/** Best-effort upstream delete/cancel. Absent when the provider has no such endpoint. */
-	remove?(job: VideoJobRef, ctx: AdapterContext): Promise<void>;
-	mapError(err: unknown, ctx: AdapterContext): GatewayError;
+	remove?: (job: VideoJobRef, ctx: AdapterContext) => Promise<void>;
+	mapError: (err: unknown, ctx: AdapterContext) => GatewayError;
 }
 
 /**
@@ -304,10 +310,10 @@ export interface Adapter {
 	supportedCallTypes: ReadonlySet<CallType>;
 	chat?: ChatHandler;
 	/** Rejects requests whose guarantee cannot be honored by the resolved transport. */
-	assertChatRequestSupported?(
+	assertChatRequestSupported?: (
 		req: CanonicalChatRequest,
 		ctx: ChatSupportContext,
-	): void;
+	) => void;
 	messageTokenCount?: MessageTokenCountHandler;
 	/** Optional native persistent /responses WebSocket transport. */
 	responsesWebSocket?: ResponsesWebSocketHandler;

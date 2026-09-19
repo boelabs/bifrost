@@ -149,7 +149,7 @@ for (const busy of [true, false]) {
 			assert.match(
 				html,
 				new RegExp(
-					'<button(?=[^>]*aria-label="' + label + '")(?=[^>]*disabled)[^>]*>',
+					`<button(?=[^>]*aria-label="${label}")(?=[^>]*disabled)[^>]*>`,
 				),
 			);
 		}

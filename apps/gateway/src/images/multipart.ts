@@ -31,7 +31,7 @@ export interface ParsedImageEditMultipart {
 	fields: ImageEditFields;
 	images: CanonicalImageInput[];
 	mask?: CanonicalImageInput;
-	cleanup(): Promise<void>;
+	cleanup: () => Promise<void>;
 	logBody: Record<string, unknown>;
 }
 

@@ -78,10 +78,10 @@ function toHttpRange(range: ObjectRange): string {
 
 export interface ObjectStore {
 	readonly backend: "disabled" | "local" | "s3";
-	put(input: PutObjectInput): Promise<{ etag?: string }>;
-	get(key: string, range?: ObjectRange): Promise<StoredObject>;
-	head(key: string): Promise<Omit<StoredObject, "body">>;
-	delete(key: string): Promise<void>;
+	put: (input: PutObjectInput) => Promise<{ etag?: string }>;
+	get: (key: string, range?: ObjectRange) => Promise<StoredObject>;
+	head: (key: string) => Promise<Omit<StoredObject, "body">>;
+	delete: (key: string) => Promise<void>;
 }
 
 function notConfigured(): GatewayError {

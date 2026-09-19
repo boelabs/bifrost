@@ -27,14 +27,14 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync, statSync } from "node:fs";
 import path from "node:path";
 
-type ImportDeclaration = {
+interface ImportDeclaration {
 	bare: boolean;
 	codeLines: string[];
 	index: number;
 	multiline: boolean;
 	text: string;
 	weight: number;
-};
+}
 
 const SOURCE_EXTENSIONS = new Set([
 	".cjs",

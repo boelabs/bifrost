@@ -37,7 +37,7 @@ const ARRAY_FIELDS = new Set(["timestamp_granularities", "include"]);
 export interface ParsedTranscriptionMultipart {
 	fields: TranscriptionFields;
 	file: CanonicalAudioInput;
-	cleanup(): Promise<void>;
+	cleanup: () => Promise<void>;
 	logBody: Record<string, unknown>;
 }
 

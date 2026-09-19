@@ -93,18 +93,15 @@ export function CustomModelEditor({
 								>
 									{operation.label}
 								</Switch>
-								{profile === undefined ? null : (
-									<>
-										{operation.id === "text.generate" ? (
-											<TextProfile onChange={setProfile} profile={profile} />
-										) : (
-											<OperationFields
-												id={operation.id}
-												onChange={setProfile}
-												profile={profile}
-											/>
-										)}
-									</>
+								{profile === undefined ? null : operation.id ===
+									"text.generate" ? (
+									<TextProfile onChange={setProfile} profile={profile} />
+								) : (
+									<OperationFields
+										id={operation.id}
+										onChange={setProfile}
+										profile={profile}
+									/>
 								)}
 							</div>
 						);

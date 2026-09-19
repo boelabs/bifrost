@@ -1,6 +1,6 @@
 export interface AsyncTtlCache<T> {
-	get(): Promise<T>;
-	invalidate(): void;
+	get: () => Promise<T>;
+	invalidate: () => void;
 }
 
 /** Small process-local cache that coalesces concurrent loads and never caches failures. */

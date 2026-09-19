@@ -303,7 +303,7 @@ export async function buildOmniImageBody(
 	upstreamModel: string,
 	profile: ImageModelProfile | undefined,
 ): Promise<Record<string, unknown>> {
-	const content: Array<Record<string, unknown>> = [
+	const content: Record<string, unknown>[] = [
 		{ type: "text", text: req.prompt },
 	];
 	for (const input of req.images ?? []) {

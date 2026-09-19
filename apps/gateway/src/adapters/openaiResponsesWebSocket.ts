@@ -19,11 +19,11 @@ import {
 
 interface OpenAIResponsesWebSocketOptions {
 	label: string;
-	resolveConnection(ctx: AdapterContext): {
+	resolveConnection: (ctx: AdapterContext) => {
 		url: string;
 		headers: Record<string, string>;
 	};
-	mapError(err: unknown, ctx: AdapterContext): GatewayError;
+	mapError: (err: unknown, ctx: AdapterContext) => GatewayError;
 }
 
 interface QueuedEvent {

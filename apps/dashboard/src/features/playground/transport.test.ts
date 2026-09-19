@@ -108,7 +108,7 @@ test("Chat keeps summary parts separate across streaming, new turns and regenera
 	);
 	assert.equal(assistants.length, 2);
 	for (const request of requests.slice(1)) {
-		const assistant = (request.messages as Array<Record<string, unknown>>).find(
+		const assistant = (request.messages as Record<string, unknown>[]).find(
 			(message) => message.role === "assistant",
 		);
 		assert.deepEqual(assistant?.provider_specific_fields, {

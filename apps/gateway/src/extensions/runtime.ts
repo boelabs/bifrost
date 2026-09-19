@@ -49,7 +49,7 @@ interface ExtensionManifest {
 }
 
 export interface ExtensionInstanceSource {
-	load(): Promise<ExtensionManifest>;
+	load: () => Promise<ExtensionManifest>;
 }
 
 interface LoadedDefinition {
@@ -233,9 +233,9 @@ function schemaErrorMessage(error: unknown): string {
 
 function parseWithSchema<T>(
 	schema: {
-		safeParse(
+		safeParse: (
 			value: unknown,
-		): { success: true; data: T } | { success: false; error: unknown };
+		) => { success: true; data: T } | { success: false; error: unknown };
 	},
 	value: unknown,
 	label: string,

@@ -213,7 +213,7 @@ function candidateInputError(
 }
 
 function fileSource(part: CanonicalFilePart): ContentSource {
-	const present: Array<[ContentSource["kind"], string]> = [];
+	const present: [ContentSource["kind"], string][] = [];
 	if (part.fileId !== undefined) {
 		present.push(["provider_file_id", part.fileId]);
 	}

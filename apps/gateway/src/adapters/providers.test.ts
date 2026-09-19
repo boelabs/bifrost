@@ -33,7 +33,7 @@ function ctx(
 }
 
 test("new providers: default base URL, max_tokens, and auth", () => {
-	const cases: Array<[Adapter, string, string]> = [
+	const cases: [Adapter, string, string][] = [
 		[
 			deepseekAdapter,
 			"deepseek-chat",

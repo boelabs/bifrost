@@ -269,7 +269,7 @@ export function computeUsageCost(
 export interface CacheSlot {
 	hit: boolean;
 	body: unknown;
-	store(body: unknown, usage: Usage): void;
+	store: (body: unknown, usage: Usage) => void;
 }
 
 const NO_CACHE: CacheSlot = { hit: false, body: null, store: () => {} };

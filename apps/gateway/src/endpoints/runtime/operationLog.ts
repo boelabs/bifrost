@@ -197,7 +197,7 @@ export class OperationLogDraft {
 		}
 		this.attemptLog = list;
 		this.retries = Math.max(0, list.length - 1);
-		const last = list[list.length - 1]!;
+		const last = list.at(-1)!;
 		if (this.deploymentId === null && last.deploymentId) {
 			this.deploymentId = last.deploymentId;
 		}

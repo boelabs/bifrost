@@ -339,7 +339,7 @@ export async function beginUpstreamAttempt(input: {
 	}, input.requestId);
 }
 
-type OperationAttemptInput = {
+interface OperationAttemptInput {
 	deploymentId?: string;
 	label?: string;
 	adapterKey?: string;
@@ -377,7 +377,7 @@ type OperationAttemptInput = {
 	usage?: OperationLogInput["usage"];
 	estimatedCostCents?: number;
 	diagnostics?: AdapterDiagnostics;
-};
+}
 
 /**
  * Who ended the attempt.

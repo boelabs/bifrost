@@ -1,4 +1,4 @@
-export type CodeToken = {
+export interface CodeToken {
 	offset: number;
 	text: string;
 	light?: string;
@@ -6,19 +6,22 @@ export type CodeToken = {
 	style?: string;
 	weight?: string;
 	decoration?: string;
-};
+}
 
-export type CodeLine = { text: string; tokens: CodeToken[] };
-export type HighlightRequest = {
+export interface CodeLine {
+	text: string;
+	tokens: CodeToken[];
+}
+export interface HighlightRequest {
 	id: number;
 	code: string;
 	language: string;
-};
-export type HighlightReply = {
+}
+export interface HighlightReply {
 	id: number;
 	startLine: number;
 	lines: CodeLine[];
-};
+}
 export type HighlightResult = HighlightRequest & { lines: CodeLine[] };
 
 export function applyHighlight(

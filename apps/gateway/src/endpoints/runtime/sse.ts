@@ -14,8 +14,8 @@ interface SSEMessage {
 }
 
 interface SSEWriter {
-	write(value: string): Promise<unknown>;
-	writeSSE(message: SSEMessage): Promise<unknown>;
+	write: (value: string) => Promise<unknown>;
+	writeSSE: (message: SSEMessage) => Promise<unknown>;
 }
 
 export interface DownstreamWriteObservation {

@@ -1,10 +1,10 @@
 type Severity = "low" | "moderate" | "high" | "critical";
 
-type Advisory = {
+interface Advisory {
 	severity: Severity;
 	title?: string;
 	url?: string;
-};
+}
 
 const MINIMUM_SEVERITY: Severity = "high";
 const SEVERITY_RANK: Record<Severity, number> = {

@@ -22,7 +22,7 @@ export function ChainOfThought({
 }: ComponentProps<typeof CollapsibleRoot>) {
 	return (
 		<CollapsibleRoot
-			className={"not-prose w-full space-y-4" + className}
+			className={`not-prose w-full space-y-4${className}`}
 			{...props}
 		/>
 	);

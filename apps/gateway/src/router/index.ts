@@ -98,16 +98,16 @@ export interface RouteOptions {
 }
 
 export interface UsageQuotaLease {
-	settle(usage: Usage): Promise<void>;
-	release(): Promise<void>;
+	settle: (usage: Usage) => Promise<void>;
+	release: () => Promise<void>;
 }
 
 export interface UsageQuota {
-	assertCandidate(candidate: DeploymentCandidate): void;
-	reserve(
+	assertCandidate: (candidate: DeploymentCandidate) => void;
+	reserve: (
 		candidate: DeploymentCandidate,
 		reservedTokens: number,
-	): Promise<UsageQuotaLease>;
+	) => Promise<UsageQuotaLease>;
 }
 
 /** Executes the upstream call for a candidate; throws GatewayError on failure. */

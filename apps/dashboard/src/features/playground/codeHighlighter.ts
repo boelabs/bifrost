@@ -7,12 +7,12 @@ import type {
 	CodeLine,
 } from "./codeHighlight";
 
-type BlockState = {
+interface BlockState {
 	language: string;
 	prefix: string;
 	lineCount: number;
 	grammar: GrammarState | undefined;
-};
+}
 
 export async function createCodeHighlighter() {
 	const highlighter = await createHighlighter({

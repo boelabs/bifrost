@@ -444,8 +444,8 @@ async function settleCounter(
 }
 
 export interface VirtualKeyUsageLease {
-	settle(totalTokens: number, costCents: number): Promise<void>;
-	release(): Promise<void>;
+	settle: (totalTokens: number, costCents: number) => Promise<void>;
+	release: () => Promise<void>;
 }
 
 /** Atomically reserves the conservative token/cost upper bounds for one routed attempt. */

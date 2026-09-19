@@ -66,10 +66,10 @@ export interface ExtensionImageOutput {
 }
 
 export interface ExtensionLogger {
-	debug(message: string, fields?: Record<string, unknown>): void;
-	info(message: string, fields?: Record<string, unknown>): void;
-	warn(message: string, fields?: Record<string, unknown>): void;
-	error(message: string, fields?: Record<string, unknown>): void;
+	debug: (message: string, fields?: Record<string, unknown>) => void;
+	info: (message: string, fields?: Record<string, unknown>) => void;
+	warn: (message: string, fields?: Record<string, unknown>) => void;
+	error: (message: string, fields?: Record<string, unknown>) => void;
 }
 
 export interface ExtensionPublicAuth {
@@ -99,32 +99,32 @@ export interface ExtensionSetupContext {
 }
 
 export interface ExtensionSchema<T = unknown> {
-	safeParse(
+	safeParse: (
 		value: unknown,
-	): { success: true; data: T } | { success: false; error: unknown };
+	) => { success: true; data: T } | { success: false; error: unknown };
 }
 
 export interface ExtensionHooks<Config = unknown, Match = unknown> {
-	onCanonicalRequest?(
+	onCanonicalRequest?: (
 		ctx: ExtensionInstanceContext<Config, Match>,
 		request: ExtensionCanonicalRequest,
-	): MaybePromise<ExtensionCanonicalRequest | undefined>;
-	onCanonicalResponse?(
+	) => MaybePromise<ExtensionCanonicalRequest | undefined>;
+	onCanonicalResponse?: (
 		ctx: ExtensionInstanceContext<Config, Match>,
 		response: ExtensionCanonicalResponse,
-	): MaybePromise<ExtensionCanonicalResponse | undefined>;
-	onStreamEvent?(
+	) => MaybePromise<ExtensionCanonicalResponse | undefined>;
+	onStreamEvent?: (
 		ctx: ExtensionInstanceContext<Config, Match>,
 		event: ExtensionStreamEvent,
-	): MaybePromise<ExtensionStreamEvent | undefined>;
-	onImageOutput?(
+	) => MaybePromise<ExtensionStreamEvent | undefined>;
+	onImageOutput?: (
 		ctx: ExtensionInstanceContext<Config, Match>,
 		output: ExtensionImageOutput,
-	): MaybePromise<ExtensionImageOutput | Uint8Array | undefined>;
-	onError?(
+	) => MaybePromise<ExtensionImageOutput | Uint8Array | undefined>;
+	onError?: (
 		ctx: ExtensionInstanceContext<Config, Match>,
 		error: unknown,
-	): MaybePromise<void>;
+	) => MaybePromise<void>;
 }
 
 export interface ExtensionDefinition<Config = unknown, Match = unknown> {
@@ -135,12 +135,12 @@ export interface ExtensionDefinition<Config = unknown, Match = unknown> {
 	defaultCritical?: boolean;
 	configSchema?: ExtensionSchema<Config>;
 	matchSchema?: ExtensionSchema<Match>;
-	setup?(ctx: ExtensionSetupContext): MaybePromise<void>;
+	setup?: (ctx: ExtensionSetupContext) => MaybePromise<void>;
 	/**
 	 * Releases resources acquired in `setup` (timers, connections, …). Called when a hot-reload
 	 * removes this definition or replaces it with a different code version, so reloads do not leak.
 	 */
-	teardown?(ctx: ExtensionSetupContext): MaybePromise<void>;
+	teardown?: (ctx: ExtensionSetupContext) => MaybePromise<void>;
 	hooks: ExtensionHooks<Config, Match>;
 }
 

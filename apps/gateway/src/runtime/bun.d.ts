@@ -14,14 +14,14 @@ declare namespace Bun {
 	}
 
 	const password: {
-		hash(
+		hash: (
 			password: string | Uint8Array,
 			options?: PasswordHashOptions,
-		): Promise<string>;
-		verify(
+		) => Promise<string>;
+		verify: (
 			password: string | Uint8Array,
 			hash: string,
 			algorithm?: PasswordHashOptions["algorithm"],
-		): Promise<boolean>;
+		) => Promise<boolean>;
 	};
 }

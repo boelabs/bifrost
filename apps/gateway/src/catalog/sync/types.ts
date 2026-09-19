@@ -49,7 +49,7 @@ export interface SourceFetchResult {
 export interface CatalogSource {
 	readonly key: ExistenceSourceKey;
 	readonly label: string;
-	fetchModels(): Promise<SourceFetchResult>;
+	fetchModels: () => Promise<SourceFetchResult>;
 }
 
 /** Source reasoning-control observation, kept distinct from the reviewed canonical ReasoningSpec. */
@@ -88,5 +88,5 @@ export interface EnrichmentFetchResult {
 export interface EnrichmentSource {
 	readonly key: EnrichmentSourceKey;
 	readonly label: string;
-	fetchModels(): Promise<EnrichmentFetchResult>;
+	fetchModels: () => Promise<EnrichmentFetchResult>;
 }

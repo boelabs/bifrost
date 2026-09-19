@@ -103,19 +103,19 @@ export type TranscriptionExecResult =
 			observation: StreamObservation;
 	  };
 
-export type EmbeddingsExecResult = {
+export interface EmbeddingsExecResult {
 	kind: "json";
 	response: CanonicalEmbeddingsResponse;
 	terminal: CanonicalTerminal;
 	diagnostics: AdapterDiagnostics;
-};
+}
 
-export type RerankExecResult = {
+export interface RerankExecResult {
 	kind: "json";
 	response: CanonicalRerankResponse;
 	terminal: CanonicalTerminal;
 	diagnostics: AdapterDiagnostics;
-};
+}
 
 async function parseBody(res: Response): Promise<unknown> {
 	const text = await res.text();

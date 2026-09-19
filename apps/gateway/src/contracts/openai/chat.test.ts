@@ -127,8 +127,8 @@ test("OpenAI transport strips provider-specific tool-call extra_content", () => 
 		},
 		"gpt-x",
 	);
-	const messages = body.messages as Array<Record<string, unknown>>;
-	const toolCalls = messages[0]!.tool_calls as Array<Record<string, unknown>>;
+	const messages = body.messages as Record<string, unknown>[];
+	const toolCalls = messages[0]!.tool_calls as Record<string, unknown>[];
 	assert.equal(toolCalls[0]!.extra_content, undefined);
 });
 
@@ -149,7 +149,7 @@ test("OpenAI transport marks tool execution errors in portable content", () => {
 		},
 		"gpt-x",
 	);
-	const messages = body.messages as Array<Record<string, unknown>>;
+	const messages = body.messages as Record<string, unknown>[];
 	assert.equal(
 		messages[0]?.content,
 		"[Tool execution failed] permission denied",
@@ -164,10 +164,10 @@ test("OpenAI transport preserves or downgrades developer roles by capability", (
 		messages: [{ role: "developer" as const, content: "instructions" }],
 	};
 	const nativeMessages = buildOpenAIChatBody(request, "gpt-x")
-		.messages as Array<Record<string, unknown>>;
+		.messages as Record<string, unknown>[];
 	const compatibleMessages = buildOpenAIChatBody(request, "gpt-x", {
 		developerRole: "system",
-	}).messages as Array<Record<string, unknown>>;
+	}).messages as Record<string, unknown>[];
 	assert.equal(nativeMessages[0]?.role, "developer");
 	assert.equal(compatibleMessages[0]?.role, "system");
 });
@@ -902,7 +902,7 @@ test("chat native routing retains semantic requirements", () => {
 		{ verbosity: "low" },
 		{ web_search_options: { search_context_size: "low" } },
 		{ stream: true, stream_options: { include_obfuscation: true } },
-	] satisfies Array<Record<string, unknown>>) {
+	] satisfies Record<string, unknown>[]) {
 		const canonical = toCanonicalChatRequest(
 			chatRequestSchema.parse({
 				model: "chat-model",

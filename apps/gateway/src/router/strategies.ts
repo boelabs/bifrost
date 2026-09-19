@@ -30,7 +30,7 @@ function weightedRandom(
 			return c;
 		}
 	}
-	return candidates[candidates.length - 1]!;
+	return candidates.at(-1)!;
 }
 
 /** Picks the candidate with the lowest metric; ties -> random among the minimums. */

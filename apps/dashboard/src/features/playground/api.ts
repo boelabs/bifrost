@@ -143,7 +143,7 @@ function absoluteBaseURL(baseURL: string): string {
 export function modelFor(
 	endpoint: PublicEndpoint,
 	publicModel: string,
-	settings: PlaygroundSettings = emptySettings(),
+	settings: PlaygroundSettings,
 	options: {
 		fetch?: FetchLike;
 		/**

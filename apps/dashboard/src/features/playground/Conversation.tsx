@@ -247,10 +247,11 @@ export function groupMessages(
 ): PlaygroundMessage[][] {
 	const groups: PlaygroundMessage[][] = [];
 	for (const message of messages) {
-		if (message.role === "user" || !groups.length) {
+		const current = groups.at(-1);
+		if (message.role === "user" || !current) {
 			groups.push([message]);
 		} else {
-			groups[groups.length - 1].push(message);
+			current.push(message);
 		}
 	}
 	return groups;

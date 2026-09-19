@@ -863,7 +863,7 @@ export async function listResponseInputItemsHandler(
 		object: "list",
 		data: items,
 		first_id: items.length > 0 ? idOf(items[0]!) : null,
-		last_id: items.length > 0 ? idOf(items[items.length - 1]!) : null,
+		last_id: items.length > 0 ? idOf(items.at(-1)!) : null,
 		has_more: false,
 	});
 }

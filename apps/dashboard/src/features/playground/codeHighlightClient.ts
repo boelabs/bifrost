@@ -5,10 +5,10 @@ import {
 	type HighlightResult,
 } from "./codeHighlight";
 
-type Subscriber = {
+interface Subscriber {
 	callback: (result: HighlightResult) => void;
 	result?: HighlightResult;
-};
+}
 type WorkerPort = Pick<
 	Worker,
 	"postMessage" | "terminate" | "onmessage" | "onerror"

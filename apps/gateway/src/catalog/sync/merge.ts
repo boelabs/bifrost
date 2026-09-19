@@ -36,7 +36,7 @@ function resolveNumeric(
 	values: Partial<Record<NumericSourceKey, number>>,
 	relativeTolerance: number,
 ): ResolvedNumeric {
-	const entries = Object.entries(values) as Array<[NumericSourceKey, number]>;
+	const entries = Object.entries(values) as [NumericSourceKey, number][];
 	if (entries.length === 0) {
 		return { value: undefined, conflict: undefined };
 	}

@@ -152,7 +152,7 @@ test("rerank model discovery exposes operation, modality, search pricing, and re
 		});
 		assert.equal(detail.status, 200);
 		const detailBody = (await detail.json()) as {
-			data: Array<Record<string, unknown>>;
+			data: Record<string, unknown>[];
 		};
 		assert.equal(detailBody.data[0]?.upstreamModel, undefined);
 		assert.equal(detailBody.data[0]?.upstream_model, undefined);

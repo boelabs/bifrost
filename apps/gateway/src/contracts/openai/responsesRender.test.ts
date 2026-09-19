@@ -52,7 +52,7 @@ test("Responses transport marks tool execution errors in portable output", () =>
 		},
 		"gpt-x",
 	);
-	const input = body.input as Array<Record<string, unknown>>;
+	const input = body.input as Record<string, unknown>[];
 	assert.deepEqual(input[0], {
 		type: "function_call_output",
 		call_id: "call_1",
@@ -347,7 +347,7 @@ test("request->canonical: semantic Responses fields retain native requirements",
 		{ truncation: "auto" },
 		{ text: { verbosity: "low" } },
 		{ context_management: [{ type: "compaction" }] },
-	] satisfies Array<Record<string, unknown>>) {
+	] satisfies Record<string, unknown>[]) {
 		const u = responsesRequestToCanonical(
 			parse({ model: "gpt", input: "hi", ...nativeField }),
 		);
@@ -1590,7 +1590,7 @@ test("responses transport->edge: native reasoning_text streams beside summary ev
 					},
 				},
 			},
-		] as Array<Record<string, unknown>>) {
+		] as Record<string, unknown>[]) {
 			const type = event.type as string;
 			yield { event: type, data: JSON.stringify(event) };
 		}

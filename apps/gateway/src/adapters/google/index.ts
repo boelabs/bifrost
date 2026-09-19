@@ -1485,7 +1485,7 @@ function googleVideoUri(raw: Record<string, unknown>): string | undefined {
 		| Record<string, unknown>
 		| undefined;
 	const samples = generateVideoResponse?.generatedSamples as
-		| Array<Record<string, unknown>>
+		| Record<string, unknown>[]
 		| undefined;
 	const sampleVideo = samples?.[0]?.video as
 		| Record<string, unknown>
@@ -1495,7 +1495,7 @@ function googleVideoUri(raw: Record<string, unknown>): string | undefined {
 	}
 
 	const generatedVideos = response?.generatedVideos as
-		| Array<Record<string, unknown>>
+		| Record<string, unknown>[]
 		| undefined;
 	const video = generatedVideos?.[0]?.video as
 		| Record<string, unknown>

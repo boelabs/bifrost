@@ -21,9 +21,9 @@ const MIME_BY_FORMAT: Record<
 };
 
 interface ImageTransformHooks {
-	applyImageOutput?(
+	applyImageOutput?: (
 		output: ExtensionImageOutput,
-	): Promise<ExtensionImageOutput>;
+	) => Promise<ExtensionImageOutput>;
 }
 
 function formatFromMime(
