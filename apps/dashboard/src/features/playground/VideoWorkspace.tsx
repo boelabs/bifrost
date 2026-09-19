@@ -390,7 +390,9 @@ export function VideoWorkspace({
 							void addFiles(selected);
 						}}
 						onPrompt={setPrompt}
-						onRemove={() => {}}
+						onRemove={() => {
+							/* intentionally empty */
+						}}
 						onReset={() => {
 							stopAll();
 							setRuns([]);

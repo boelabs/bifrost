@@ -23,7 +23,10 @@ function context(over: Record<string, unknown>): AdapterContext {
 	} as AdapterContext;
 }
 
-const never = () => new Promise<never>(() => {});
+const never = () =>
+	new Promise<never>(() => {
+		/* intentionally empty */
+	});
 
 test("a first-output deadline the operator set is the deployment's to miss", async () => {
 	const ctx = context({

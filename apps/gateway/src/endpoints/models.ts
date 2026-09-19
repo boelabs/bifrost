@@ -391,7 +391,9 @@ export async function modelsWildcardHandler(
 ): Promise<Response> {
 	const { model, deployments } = wildcardModelId(c);
 	if (deployments) {
-		await authMiddleware()(c, async () => {});
+		await authMiddleware()(c, async () => {
+			/* intentionally empty */
+		});
 	} else {
 		enforcePublicModelRateLimit(c);
 	}

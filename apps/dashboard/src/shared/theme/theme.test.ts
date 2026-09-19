@@ -64,7 +64,16 @@ test("blocked storage is reported and does not prevent system theme initializati
 			},
 		},
 		matchMedia: () => ({ matches: true }),
-		document: { documentElement: { dataset, classList: { toggle() {} } } },
+		document: {
+			documentElement: {
+				dataset,
+				classList: {
+					toggle() {
+						/* intentionally empty */
+					},
+				},
+			},
+		},
 		console: {
 			warn() {
 				warned = true;

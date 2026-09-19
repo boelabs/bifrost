@@ -113,7 +113,10 @@ test("a second drain is refused rather than restarted", async () => {
 test("connections are forced when in-flight requests outlast the window", async () => {
 	const { steps, events, effects } = recorder({
 		// A request that never finishes: the listener stays open until the window closes.
-		closeServer: () => new Promise<void>(() => {}),
+		closeServer: () =>
+			new Promise<void>(() => {
+				/* intentionally empty */
+			}),
 	});
 	await runDrainSequence(effects, { drainDelayMs: 0, drainTimeoutMs: 5 });
 

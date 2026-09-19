@@ -439,8 +439,12 @@ export function TranscriptionWorkspace({
 							/>
 						}
 						onFiles={choose}
-						onPrompt={() => {}}
-						onRemove={() => {}}
+						onPrompt={() => {
+							/* intentionally empty */
+						}}
+						onRemove={() => {
+							/* intentionally empty */
+						}}
 						onReset={() => {
 							request.current?.abort();
 							setRuns([]);

@@ -81,6 +81,8 @@ export async function* parseSSE(
 		// If the consumer stops early (break/throw), propagate the cancellation to the upstream:
 		// close the provider's body instead of leaving it open. On normal termination it is a no-op.
 		// cancel() also releases the lock, so releaseLock() is not needed.
-		await reader.cancel().catch(() => {});
+		await reader.cancel().catch(() => {
+			/* intentionally empty */
+		});
 	}
 }

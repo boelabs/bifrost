@@ -375,9 +375,13 @@ export function RerankWorkspace({
 								onSelect={onSelect}
 							/>
 						}
-						onFiles={() => {}}
+						onFiles={() => {
+							/* intentionally empty */
+						}}
 						onPrompt={setQuery}
-						onRemove={() => {}}
+						onRemove={() => {
+							/* intentionally empty */
+						}}
 						onReset={() => {
 							request.current?.abort();
 							setRuns([]);

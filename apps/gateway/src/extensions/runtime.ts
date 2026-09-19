@@ -174,8 +174,12 @@ async function withHookGuard<R>(
 
 	const runPromise = (async () => run(combined))();
 	// If the hook keeps running after we lose the race, swallow its late rejection.
-	runPromise.catch(() => {});
-	let rejectAbort: (error: Error) => void = () => {};
+	runPromise.catch(() => {
+		/* intentionally empty */
+	});
+	let rejectAbort: (error: Error) => void = () => {
+		/* intentionally empty */
+	};
 	const onAbort = () => rejectAbort(abortReason(combined));
 	const abortPromise = new Promise<never>((_, reject) => {
 		rejectAbort = reject;

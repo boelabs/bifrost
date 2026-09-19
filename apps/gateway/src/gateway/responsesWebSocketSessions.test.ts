@@ -59,7 +59,9 @@ test("responses websocket sessions: private upstream ids continue only on the bo
 							upstreamResponseId: Promise.resolve(`upstream_${seen.length}`),
 						};
 					},
-					close() {},
+					close() {
+						/* intentionally empty */
+					},
 				};
 			},
 		},
@@ -171,7 +173,9 @@ test("responses websocket sessions: rehydrates full canonical input when upstrea
 							upstreamResponseId: Promise.resolve(`upstream_${call}`),
 						};
 					},
-					close() {},
+					close() {
+						/* intentionally empty */
+					},
 				};
 			},
 		},

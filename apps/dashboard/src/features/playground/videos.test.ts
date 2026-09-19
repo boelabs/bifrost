@@ -243,7 +243,9 @@ test("a failed job ends the watch rather than throwing", async () => {
 		});
 	const final = await pollVideo(job("queued"), {
 		fetch: stub,
-		sleep: async () => {},
+		sleep: async () => {
+			/* intentionally empty */
+		},
 	});
 	assert.equal(final.status, "failed");
 	assert.equal(final.error?.message, "The provider rejected the prompt.");

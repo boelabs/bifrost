@@ -723,7 +723,9 @@ export async function route<T>(
 					upstreamModel: chosen.upstreamModel,
 					startedAt,
 				});
-				let cleanupContext = () => {};
+				let cleanupContext = () => {
+					/* intentionally empty */
+				};
 				let activeContext: AdapterContext | undefined;
 				try {
 					const instrumentedContext = buildContext(

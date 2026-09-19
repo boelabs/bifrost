@@ -72,8 +72,12 @@ test("pending response reserves disabled actions and places the loader inside th
 		<Conversation
 			busy
 			messages={messages}
-			onCopy={async () => {}}
-			onRegenerate={() => {}}
+			onCopy={async () => {
+				/* intentionally empty */
+			}}
+			onRegenerate={() => {
+				/* intentionally empty */
+			}}
 		/>,
 	);
 	assert.match(html, /Generating response/);
@@ -102,8 +106,12 @@ test("every settled answer can be regenerated and metrics are accessed through a
 					metadata: { outputTokens: 15 },
 				},
 			]}
-			onCopy={async () => {}}
-			onRegenerate={() => {}}
+			onCopy={async () => {
+				/* intentionally empty */
+			}}
+			onRegenerate={() => {
+				/* intentionally empty */
+			}}
 		/>,
 	);
 	assert.equal(
@@ -136,8 +144,12 @@ for (const busy of [true, false]) {
 						metadata: { state: "streaming", outputTokens: 2 },
 					},
 				]}
-				onCopy={async () => {}}
-				onRegenerate={() => {}}
+				onCopy={async () => {
+					/* intentionally empty */
+				}}
+				onRegenerate={() => {
+					/* intentionally empty */
+				}}
 			/>,
 		);
 		assert.match(html, /Partial/);
@@ -169,8 +181,12 @@ test("active responses without metadata reserve actions while earlier answers st
 					parts: [{ type: "text", text: "Partial answer" }],
 				},
 			]}
-			onCopy={async () => {}}
-			onRegenerate={() => {}}
+			onCopy={async () => {
+				/* intentionally empty */
+			}}
+			onRegenerate={() => {
+				/* intentionally empty */
+			}}
 		/>,
 	);
 	assert.equal((html.match(/aria-label="Copy response"/g) ?? []).length, 2);
@@ -189,8 +205,12 @@ for (const state of ["completed", "stopped", "failed"] as const) {
 						metadata: { state },
 					},
 				]}
-				onCopy={async () => {}}
-				onRegenerate={() => {}}
+				onCopy={async () => {
+					/* intentionally empty */
+				}}
+				onRegenerate={() => {
+					/* intentionally empty */
+				}}
 			/>,
 		);
 		assert.match(html, /Copy response/);
@@ -228,8 +248,12 @@ test("streaming repairs unfinished emphasis and reasoning uses Markdown", () => 
 					parts: [{ type: "reasoning", text: "**Reasoning**", state: "done" }],
 				},
 			]}
-			onCopy={async () => {}}
-			onRegenerate={() => {}}
+			onCopy={async () => {
+				/* intentionally empty */
+			}}
+			onRegenerate={() => {
+				/* intentionally empty */
+			}}
 		/>,
 	);
 	assert.match(reasoning, /data-streamdown="strong"[^>]*>Reasoning/);
@@ -261,8 +285,12 @@ test("an empty assistant uses one loader in its content slot", () => {
 					metadata: { state: "streaming" },
 				},
 			]}
-			onCopy={async () => {}}
-			onRegenerate={() => {}}
+			onCopy={async () => {
+				/* intentionally empty */
+			}}
+			onRegenerate={() => {
+				/* intentionally empty */
+			}}
 		/>,
 	);
 	assert.equal((html.match(/role="status"/g) ?? []).length, 1);
@@ -288,8 +316,12 @@ test("reasoning starts visibly before text arrives and replaces the generic load
 					parts: [{ type: "reasoning", text: "", state: "streaming" }],
 				},
 			]}
-			onCopy={async () => {}}
-			onRegenerate={() => {}}
+			onCopy={async () => {
+				/* intentionally empty */
+			}}
+			onRegenerate={() => {
+				/* intentionally empty */
+			}}
 		/>,
 	);
 	assert.match(html, /Thinking/);
@@ -319,8 +351,12 @@ test("historical reasoning is collapsible and interrupted reasoning is not marke
 					],
 				},
 			]}
-			onCopy={async () => {}}
-			onRegenerate={() => {}}
+			onCopy={async () => {
+				/* intentionally empty */
+			}}
+			onRegenerate={() => {
+				/* intentionally empty */
+			}}
 		/>,
 	);
 	assert.match(html, /Reasoning interrupted/);
@@ -348,8 +384,12 @@ test("chain of thought groups reasoning across SDK step boundaries but separates
 					],
 				},
 			]}
-			onCopy={async () => {}}
-			onRegenerate={() => {}}
+			onCopy={async () => {
+				/* intentionally empty */
+			}}
+			onRegenerate={() => {
+				/* intentionally empty */
+			}}
 		/>,
 	);
 	assert.equal((html.match(/aria-label="Toggle reasoning"/g) ?? []).length, 2);
@@ -374,8 +414,12 @@ test("empty reasoning blocks retain visual feedback without numbered labels", ()
 					],
 				},
 			]}
-			onCopy={async () => {}}
-			onRegenerate={() => {}}
+			onCopy={async () => {
+				/* intentionally empty */
+			}}
+			onRegenerate={() => {
+				/* intentionally empty */
+			}}
 		/>,
 	);
 	assert.match(html, /Toggle reasoning/);
@@ -407,8 +451,12 @@ test("reasoning ends with a ready step and collapses once the answer starts", ()
 					],
 				},
 			]}
-			onCopy={async () => {}}
-			onRegenerate={() => {}}
+			onCopy={async () => {
+				/* intentionally empty */
+			}}
+			onRegenerate={() => {
+				/* intentionally empty */
+			}}
 		/>,
 	);
 	assert.match(html, />Ready</);
@@ -434,8 +482,12 @@ test("a failed response is reported inside its own turn, above its regenerate bu
 			busy={false}
 			error="Failed to construct 'URL': Invalid URL"
 			messages={failed}
-			onCopy={async () => {}}
-			onRegenerate={() => {}}
+			onCopy={async () => {
+				/* intentionally empty */
+			}}
+			onRegenerate={() => {
+				/* intentionally empty */
+			}}
 		/>,
 	);
 	const alert = html.indexOf('role="alert"');
@@ -453,8 +505,12 @@ test("a failure that left no turn behind still reports itself in the transcript"
 			busy={false}
 			error="The inference request failed."
 			messages={[messages[0]]}
-			onCopy={async () => {}}
-			onRegenerate={() => {}}
+			onCopy={async () => {
+				/* intentionally empty */
+			}}
+			onRegenerate={() => {
+				/* intentionally empty */
+			}}
 		/>,
 	);
 	assert.equal((html.match(/role="alert"/g) ?? []).length, 1);
@@ -478,7 +534,9 @@ test("the model picker names the current model and is reachable as a labelled co
 			capability="text"
 			modelId="gpt-5"
 			models={[model, { ...model, id: "claude-opus-5" }]}
-			onSelect={() => {}}
+			onSelect={() => {
+				/* intentionally empty */
+			}}
 		/>,
 	);
 	assert.match(html, /aria-label="Model"/);
@@ -498,7 +556,15 @@ const videoRun: VideoRun = {
 
 test("a queued job waits behind the same loader as every other capability", () => {
 	const html = renderToStaticMarkup(
-		<VideoRunView onCheck={() => {}} onRetry={() => {}} run={videoRun} />,
+		<VideoRunView
+			onCheck={() => {
+				/* intentionally empty */
+			}}
+			onRetry={() => {
+				/* intentionally empty */
+			}}
+			run={videoRun}
+		/>,
 	);
 	assert.match(html, /Queued/);
 	assert.doesNotMatch(html, /<video/);
@@ -508,8 +574,12 @@ test("a queued job waits behind the same loader as every other capability", () =
 test("reported progress becomes a bar, and an unreported one does not", () => {
 	const withProgress = renderToStaticMarkup(
 		<VideoRunView
-			onCheck={() => {}}
-			onRetry={() => {}}
+			onCheck={() => {
+				/* intentionally empty */
+			}}
+			onRetry={() => {
+				/* intentionally empty */
+			}}
 			run={{
 				...videoRun,
 				job: { id: "video_1", status: "in_progress", progress: 42 },
@@ -520,8 +590,12 @@ test("reported progress becomes a bar, and an unreported one does not", () => {
 	assert.match(withProgress, /Generating/);
 	const without = renderToStaticMarkup(
 		<VideoRunView
-			onCheck={() => {}}
-			onRetry={() => {}}
+			onCheck={() => {
+				/* intentionally empty */
+			}}
+			onRetry={() => {
+				/* intentionally empty */
+			}}
 			run={{ ...videoRun, job: { id: "video_1", status: "in_progress" } }}
 		/>,
 	);
@@ -531,8 +605,12 @@ test("reported progress becomes a bar, and an unreported one does not", () => {
 test("a finished video plays from the relay rather than from a blob", () => {
 	const html = renderToStaticMarkup(
 		<VideoRunView
-			onCheck={() => {}}
-			onRetry={() => {}}
+			onCheck={() => {
+				/* intentionally empty */
+			}}
+			onRetry={() => {
+				/* intentionally empty */
+			}}
 			run={{
 				...videoRun,
 				state: "completed",
@@ -553,8 +631,12 @@ test("a finished video plays from the relay rather than from a blob", () => {
 test("a stopped run keeps its job, and says the provider has not stopped with it", () => {
 	const html = renderToStaticMarkup(
 		<VideoRunView
-			onCheck={() => {}}
-			onRetry={() => {}}
+			onCheck={() => {
+				/* intentionally empty */
+			}}
+			onRetry={() => {
+				/* intentionally empty */
+			}}
 			run={{
 				...videoRun,
 				state: "stopped",
@@ -570,8 +652,12 @@ test("a stopped run keeps its job, and says the provider has not stopped with it
 test("a failed job reports what the gateway said, and offers no player", () => {
 	const html = renderToStaticMarkup(
 		<VideoRunView
-			onCheck={() => {}}
-			onRetry={() => {}}
+			onCheck={() => {
+				/* intentionally empty */
+			}}
+			onRetry={() => {
+				/* intentionally empty */
+			}}
 			run={{
 				...videoRun,
 				state: "failed",

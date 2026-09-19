@@ -122,10 +122,16 @@ export function usageQuotaForRequest(
 	const auth = getAuth(c);
 	if (auth.type !== "virtual") {
 		return {
-			assertCandidate: () => {},
+			assertCandidate: () => {
+				/* intentionally empty */
+			},
 			reserve: async () => ({
-				settle: async () => {},
-				release: async () => {},
+				settle: async () => {
+					/* intentionally empty */
+				},
+				release: async () => {
+					/* intentionally empty */
+				},
 			}),
 		};
 	}
@@ -272,7 +278,13 @@ export interface CacheSlot {
 	store: (body: unknown, usage: Usage) => void;
 }
 
-const NO_CACHE: CacheSlot = { hit: false, body: null, store: () => {} };
+const NO_CACHE: CacheSlot = {
+	hit: false,
+	body: null,
+	store: () => {
+		/* intentionally empty */
+	},
+};
 
 /**
  * Opt-in response cache for text endpoints (chat/responses/messages). Isolated per virtual key
@@ -307,7 +319,13 @@ export async function openResponseCache(opts: {
 			cached.usage,
 			opts.logBody ? opts.logBody(cached.body) : cached.body,
 		);
-		return { hit: true, body: cached.body, store: () => {} };
+		return {
+			hit: true,
+			body: cached.body,
+			store: () => {
+				/* intentionally empty */
+			},
+		};
 	}
 	return {
 		hit: false,

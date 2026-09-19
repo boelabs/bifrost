@@ -68,7 +68,9 @@ after(async () => {
 			throttleCooldownSeconds: originalSettings.throttleCooldownSeconds,
 			executionPolicies: originalSettings.executionPolicies,
 			retryAfterSeconds: originalSettings.retryAfterSeconds,
-		}).catch(() => {});
+		}).catch(() => {
+			/* intentionally empty */
+		});
 	}
 });
 

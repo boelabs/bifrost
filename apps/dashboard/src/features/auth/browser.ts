@@ -85,5 +85,7 @@ export async function logout(): Promise<void> {
  */
 export function leaveFor(path: string): Promise<never> {
 	window.location.replace(path);
-	return new Promise<never>(() => {});
+	return new Promise<never>(() => {
+		/* intentionally empty */
+	});
 }

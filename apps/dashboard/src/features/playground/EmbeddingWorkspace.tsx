@@ -201,9 +201,13 @@ export function EmbeddingWorkspace({
 								onSelect={onSelect}
 							/>
 						}
-						onFiles={() => {}}
+						onFiles={() => {
+							/* intentionally empty */
+						}}
 						onPrompt={setDraft}
-						onRemove={() => {}}
+						onRemove={() => {
+							/* intentionally empty */
+						}}
 						onReset={() => {
 							request.current?.abort();
 							setRuns([]);

@@ -104,7 +104,9 @@ test("unavailable workers fail without throwing and retry after the session ends
 	await tick();
 	assert.equal(attempts, 1);
 	first.release();
-	const next = client.subscribe(() => {});
+	const next = client.subscribe(() => {
+		/* intentionally empty */
+	});
 	next.update("new session", "ts");
 	await tick();
 	assert.equal(attempts, 2);

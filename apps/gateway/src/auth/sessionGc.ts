@@ -12,7 +12,9 @@ const REVOKED_GRACE_MS = 7 * 24 * 3_600_000;
  */
 export function startDashboardSessionGcJob(): () => void {
 	if (!env.DASH_ENABLED) {
-		return () => {};
+		return () => {
+			/* intentionally empty */
+		};
 	}
 	const run = (): void => {
 		void purgeDeadSessions(new Date(Date.now() - REVOKED_GRACE_MS))
