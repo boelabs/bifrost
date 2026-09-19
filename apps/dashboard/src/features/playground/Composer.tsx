@@ -75,7 +75,7 @@ export function Composer({
 		mobile,
 	);
 	return (
-		// biome-ignore lint/a11y/noNoninteractiveElementInteractions: onSubmit is the form element's own event.
+		// biome-ignore lint/a11y/noNoninteractiveElementInteractions: what the rule sees here is the drop target, not onSubmit (a plain `<form onSubmit>` passes) — and a drop target has no interactive role to give it. The keyboard path to the same thing is the attach button's file input below.
 		<form
 			aria-label="Message composer"
 			className="relative isolate w-full"
