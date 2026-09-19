@@ -22,7 +22,7 @@ export function ChainOfThought({
 }: ComponentProps<typeof CollapsibleRoot>) {
 	return (
 		<CollapsibleRoot
-			className={`not-prose w-full space-y-4${className}`}
+			className={`not-prose w-full space-y-4 ${className}`}
 			{...props}
 		/>
 	);
@@ -80,7 +80,7 @@ export function ChainOfThoughtStep({
 }) {
 	return (
 		<div
-			className={`group/step relative flex gap-2 text-base${STEP_TONES[status]}`}
+			className={`group/step relative flex gap-2 text-base ${STEP_TONES[status]}`}
 			data-chain-step={status}
 		>
 			<div className="relative mt-0.5 shrink-0">
