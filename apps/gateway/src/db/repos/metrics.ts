@@ -2,6 +2,7 @@ import { callTypeForOperation } from "#operations/registry.ts";
 import type { metricsQuery } from "#admin/metricsSchema.ts";
 import { and, eq, gte, lt, sql } from "drizzle-orm";
 import { cacheMetrics } from "./cacheMetrics.ts";
+import { writtenRow } from "#db/returning.ts";
 import { db } from "#db/client.ts";
 import type * as z from "zod/v4";
 
@@ -163,8 +164,8 @@ export async function aggregateMetrics(filter: z.infer<typeof metricsQuery>) {
 				start: start.toISOString(),
 				end: end.toISOString(),
 				bucket: filter.bucket,
-				requests: requests[0]!,
-				attempts: upstream[0]!,
+				requests: writtenRow(requests[0], "request metrics"),
+				attempts: writtenRow(upstream[0], "attempt metrics"),
 				series,
 				attemptSeries,
 				models,

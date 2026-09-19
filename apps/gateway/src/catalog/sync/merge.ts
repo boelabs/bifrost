@@ -262,7 +262,8 @@ export function mergeCatalogEntry(
 		changes.push(`${label}: ${current ?? "unset"} -> ${value}`);
 	}
 
-	entry.pricing ??= {};
+	// Bound once so the loop below writes through a value the type already knows is there.
+	const pricing = (entry.pricing ??= {});
 	for (const field of [
 		"inputCentsPerMTokens",
 		"outputCentsPerMTokens",
@@ -273,9 +274,9 @@ export function mergeCatalogEntry(
 			`pricing.${field}`,
 			pricingValues(candidate, modelsDevMatch, field),
 			PRICING_TOLERANCE,
-			entry.pricing[field],
+			pricing[field],
 			(value) => {
-				entry.pricing![field] = value;
+				pricing[field] = value;
 			},
 		);
 	}

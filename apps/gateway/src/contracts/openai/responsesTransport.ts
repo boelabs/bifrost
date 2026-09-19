@@ -838,10 +838,11 @@ export async function* responsesEventsToCanonicalChunks(
 			}
 			delta.reasoning = String(d.delta ?? "");
 			if (typeof d.item_id === "string" && d.item_id.length > 0) {
-				delta.providerFields = mergeProviderFields(
-					delta.providerFields,
-					providerFieldsWithOpenAIReasoningItemId(d.item_id),
-				)!;
+				delta.providerFields =
+					mergeProviderFields(
+						delta.providerFields,
+						providerFieldsWithOpenAIReasoningItemId(d.item_id),
+					) ?? {};
 			}
 			yield { ...base(), choices: [{ index: 0, delta, finishReason: null }] };
 			continue;

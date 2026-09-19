@@ -272,11 +272,11 @@ function mapToolChoice(
 	};
 	if (allowed.type === "allowed_tools" && Array.isArray(allowed.tools)) {
 		return {
-			allowedTools: allowed.tools
-				.filter(
-					(tool) => tool.type === "function" && typeof tool.name === "string",
-				)
-				.map((tool) => tool.name!),
+			allowedTools: allowed.tools.flatMap((tool) =>
+				tool.type === "function" && typeof tool.name === "string"
+					? [tool.name]
+					: [],
+			),
 			mode: allowed.mode === "required" ? "required" : "auto",
 		};
 	}
@@ -1211,7 +1211,10 @@ export async function* canonicalChunksToResponsesEvents(
 	const reasoningStateEvents = (
 		state: OpenAIReasoningStateItem,
 	): SSEEvent[] => {
-		const item = reasoningStateItems([state], null)[0]!;
+		const [item] = reasoningStateItems([state], null);
+		if (item === undefined) {
+			return [];
+		}
 		const outputIndex = nextOutputIndex++;
 		renderedReasoningState.add(state);
 		output.push(item);

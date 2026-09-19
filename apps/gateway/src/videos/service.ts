@@ -4,6 +4,7 @@ import { resolveModelMetadata } from "#catalog/index.ts";
 import type { AdapterContext } from "#adapters/types.ts";
 import { resolveTransport } from "#router/transport.ts";
 import { getAdapter } from "#adapters/registry.ts";
+import type { Adapter } from "#adapters/types.ts";
 import { GatewayError } from "#core/errors.ts";
 import { decryptRecord } from "#db/crypto.ts";
 import { randomUUID } from "node:crypto";
@@ -92,6 +93,8 @@ async function candidateFromJob(
 	mode: "json" | "stream" = "json",
 ): Promise<{
 	candidate: DeploymentCandidate;
+	/** Guaranteed present: an adapter without it is refused above. */
+	videoGeneration: NonNullable<Adapter["videoGeneration"]>;
 	ctx: AdapterContext;
 	cleanup: () => void;
 }> {
@@ -159,6 +162,7 @@ async function candidateFromJob(
 	};
 	return {
 		candidate,
+		videoGeneration: adapter.videoGeneration,
 		ctx,
 		cleanup: () => {
 			clearTimeout(timer);
@@ -219,9 +223,12 @@ export async function refreshVideoJob(
 			})) ?? row
 		);
 	}
-	const { candidate, ctx, cleanup } = await candidateFromJob(row, signal);
+	const { candidate, videoGeneration, ctx, cleanup } = await candidateFromJob(
+		row,
+		signal,
+	);
 	try {
-		const providerJob = await candidate.adapter.videoGeneration!.refresh(
+		const providerJob = await videoGeneration.refresh(
 			{
 				upstreamJobId: row.upstreamJobId,
 				upstreamGenerationId: row.upstreamGenerationId,
@@ -306,13 +313,13 @@ export async function ensureVideoAsset(
 		});
 	}
 
-	const { candidate, ctx, cleanup } = await candidateFromJob(
+	const { candidate, videoGeneration, ctx, cleanup } = await candidateFromJob(
 		row,
 		signal,
 		"stream",
 	);
 	try {
-		const content = await candidate.adapter.videoGeneration!.download(
+		const content = await videoGeneration.download(
 			{
 				upstreamJobId: row.upstreamJobId,
 				upstreamGenerationId: row.upstreamGenerationId,

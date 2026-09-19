@@ -38,10 +38,8 @@ export async function listDeploymentsPage(
 	if (opts.q) {
 		const like = `%${opts.q}%`;
 		conds.push(
-			or(
-				ilike(modelDeployments.publicModel, like),
-				ilike(modelDeployments.upstreamModel, like),
-			)!,
+			ilike(modelDeployments.publicModel, like),
+			ilike(modelDeployments.upstreamModel, like),
 		);
 	}
 	const where = conds.length > 0 ? and(...conds) : undefined;
