@@ -50,12 +50,12 @@ export const money = (cents: number) =>
 		currency: "USD",
 		maximumFractionDigits: 4,
 	}).format(cents / 100);
-export const duration = (ms: number | null) =>
-	ms === null
-		? "—"
-		: ms < 1000
-			? `${Math.round(ms)} ms`
-			: `${(ms / 1000).toFixed(2)} s`;
+export function duration(ms: number | null): string {
+	if (ms === null) {
+		return "—";
+	}
+	return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(2)} s`;
+}
 export const rate = (n: number, total: number) =>
 	total ? `${((n / total) * 100).toFixed(1)}%` : "—";
 export const reportedTokens = (
@@ -63,6 +63,31 @@ export const reportedTokens = (
 	short = false,
 ) =>
 	row.usageReported ? (short ? compact : count).format(row.totalTokens) : "—";
+
+/**
+ * One point of a series, where `null` means "no measurement" and `0` means "measured zero".
+ *
+ * A duration nobody recorded is a gap in the line, not a zero-millisecond request. Token counts
+ * are the same when the upstream reported no usage at all: charting them as zero would say the
+ * requests were free. Everything else counts events, where an absent bucket really is none.
+ */
+function pointValue(
+	field: string,
+	row: Record<string, unknown> | undefined,
+): number | null {
+	const value = row?.[field];
+	if (field.includes("Duration")) {
+		return typeof value === "number" ? value : null;
+	}
+	const unreportedTokens =
+		field.endsWith("Tokens") &&
+		row &&
+		(value == null || (field === "totalTokens" && !row.usageReported));
+	if (unreportedTokens) {
+		return null;
+	}
+	return typeof value === "number" ? value : 0;
+}
 
 export function metricSeries(
 	data: DetailedMetrics,
@@ -76,22 +101,7 @@ export function metricSeries(
 	const result: { timestamp: number; value: number | null }[] = [];
 	for (let timestamp = start; timestamp < end; timestamp += interval) {
 		const row = values.get(timestamp) as Record<string, unknown> | undefined;
-		const isToken = field.endsWith("Tokens");
-		const value = row?.[field];
-		result.push({
-			timestamp,
-			value: field.includes("Duration")
-				? typeof value === "number"
-					? value
-					: null
-				: isToken &&
-						row &&
-						(value == null || (field === "totalTokens" && !row.usageReported))
-					? null
-					: typeof value === "number"
-						? value
-						: 0,
-		});
+		result.push({ timestamp, value: pointValue(field, row) });
 	}
 	return result;
 }

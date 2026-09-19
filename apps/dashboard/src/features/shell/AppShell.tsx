@@ -119,11 +119,19 @@ function SidebarContent({
 	onToggle: () => void;
 	onNavigate?: () => void;
 }) {
-	const ToggleIcon = mobile
-		? IconX
+	// One value for the icon and the label, so the button cannot describe an action it does not do.
+	const toggle = mobile
+		? { Icon: IconX, label: "Close sidebar" }
 		: collapsed
-			? IconLayoutSidebarLeftExpand
-			: IconLayoutSidebarLeftCollapse;
+			? {
+					Icon: IconLayoutSidebarLeftExpand,
+					label: "Expand sidebar",
+				}
+			: {
+					Icon: IconLayoutSidebarLeftCollapse,
+					label: "Collapse sidebar",
+				};
+	const ToggleIcon = toggle.Icon;
 	return (
 		<>
 			<div
@@ -144,13 +152,7 @@ function SidebarContent({
 				)}
 				<Button
 					aria-expanded={!collapsed}
-					aria-label={
-						mobile
-							? "Close sidebar"
-							: collapsed
-								? "Expand sidebar"
-								: "Collapse sidebar"
-					}
+					aria-label={toggle.label}
 					mode="icon"
 					onClick={onToggle}
 					size="sm"

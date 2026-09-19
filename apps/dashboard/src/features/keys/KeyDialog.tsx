@@ -51,6 +51,12 @@ export function KeyDialog({
 	);
 	const [error, setError] = useState<string | null>(null);
 	const editing = existing !== undefined;
+	let submitLabel = "Create key";
+	if (pending) {
+		submitLabel = "Saving…";
+	} else if (editing) {
+		submitLabel = "Save changes";
+	}
 
 	function set<K extends keyof KeyDraft>(field: K, value: KeyDraft[K]) {
 		setDraft((current) => ({ ...current, [field]: value }));
@@ -199,7 +205,7 @@ export function KeyDialog({
 							Cancel
 						</Button>
 						<Button disabled={pending} type="submit">
-							{pending ? "Saving…" : editing ? "Save changes" : "Create key"}
+							{submitLabel}
 						</Button>
 					</DialogFooter>
 				</Form>

@@ -36,8 +36,14 @@ import {
 	ROLES,
 } from "./common.ts";
 
+const ROLE_TONES: Record<Role, "warning" | "neutral" | "muted"> = {
+	owner: "warning",
+	admin: "neutral",
+	viewer: "muted",
+};
+
 function roleTone(role: Role) {
-	return role === "owner" ? "warning" : role === "admin" ? "neutral" : "muted";
+	return ROLE_TONES[role];
 }
 
 /** The role legend, which needs no data and so belongs to the route's App Shell. */
