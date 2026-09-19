@@ -82,12 +82,14 @@ const Card = ({
 		style={appearanceStyle({ borderRadius, width }, style)}
 		{...props}
 	>
-		{(title || description) && (
+		{title || description ? (
 			<div className={styles.header()}>
-				{title && <h3 className={styles.title()}>{title}</h3>}
-				{description && <p className={styles.description()}>{description}</p>}
+				{title ? <h3 className={styles.title()}>{title}</h3> : null}
+				{description ? (
+					<p className={styles.description()}>{description}</p>
+				) : null}
 			</div>
-		)}
+		) : null}
 		{children}
 	</div>
 );

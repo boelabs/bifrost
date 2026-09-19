@@ -160,6 +160,7 @@ export function MetricsChart({
 							: "Select a bar to inspect its value"}
 					</span>
 					<span className="font-medium tabular-nums">
+						{/* biome-ignore lint/suspicious/noLeakedRender: label is a string; nothing falsy can leak. */}
 						{selected ? format(selected.value) : label}
 					</span>
 				</figcaption>

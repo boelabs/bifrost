@@ -145,11 +145,11 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
 					</MenuPositioner>
 				</MenuPortal>
 			</MenuRoot>
-			{error && (
+			{error ? (
 				<p className="px-2 py-1 text-danger text-xs" role="alert">
 					{error}
 				</p>
-			)}
+			) : null}
 		</div>
 	);
 }

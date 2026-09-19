@@ -141,7 +141,7 @@ export function Select<Value = string>({
 	);
 	return (
 		<Field.Root disabled={props.disabled} name={props.name} width={width}>
-			{label && <Field.Label>{label}</Field.Label>}
+			{label ? <Field.Label>{label}</Field.Label> : null}
 			{/**
 			 * Not modal by default. A modal popup locks page scroll, and locking it toggles the
 			 * document's scrollbar: on a platform with classic scrollbars the whole layout shifts by
@@ -188,7 +188,9 @@ export function Select<Value = string>({
 					</BaseSelect.Positioner>
 				</BaseSelect.Portal>
 			</BaseSelect.Root>
-			{description && <Field.Description>{description}</Field.Description>}
+			{description ? (
+				<Field.Description>{description}</Field.Description>
+			) : null}
 			<Field.Error>{errorMessage}</Field.Error>
 		</Field.Root>
 	);
@@ -229,7 +231,7 @@ export function SearchableSelect({
 	const labels = new Map(items.map((item) => [item.value, item.label]));
 	return (
 		<Field.Root disabled={props.disabled} name={props.name} width={width}>
-			{label && <Field.Label>{label}</Field.Label>}
+			{label ? <Field.Label>{label}</Field.Label> : null}
 			<Combobox.Root
 				{...props}
 				items={items.map((item) => item.value)}
@@ -265,7 +267,9 @@ export function SearchableSelect({
 					</Combobox.Positioner>
 				</Combobox.Portal>
 			</Combobox.Root>
-			{description && <Field.Description>{description}</Field.Description>}
+			{description ? (
+				<Field.Description>{description}</Field.Description>
+			) : null}
 			<Field.Error>{errorMessage}</Field.Error>
 		</Field.Root>
 	);

@@ -465,7 +465,7 @@ export function Metrics({
 						</p>
 					</form>
 				)}
-				{(search.publicModel || search.deploymentId || search.operation) && (
+				{search.publicModel || search.deploymentId || search.operation ? (
 					<Button
 						className="mt-3"
 						onClick={() =>
@@ -480,19 +480,19 @@ export function Metrics({
 					>
 						Clear model, deployment and operation filters
 					</Button>
-				)}
+				) : null}
 				<p className="mt-3 text-fg-muted text-xs">
 					{new Date(data.start).toLocaleString("en-US", { timeZone: "UTC" })} –{" "}
 					{new Date(data.end).toLocaleString("en-US", { timeZone: "UTC" })} UTC
 				</p>
 			</Card>
-			{search.deploymentId && (
+			{search.deploymentId ? (
 				<p className="rounded-lg border border-border bg-secondary/40 p-3 text-fg-muted text-sm">
 					Request metrics cover requests that used this deployment, including
 					any fallback. Deployment tokens and errors cover only its own
 					attempts.
 				</p>
-			)}
+			) : null}
 			<section
 				aria-label="Metrics summary"
 				className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3"

@@ -151,7 +151,7 @@ export function DataTable<T>({
 						framed ? "p-3" : "pb-4",
 					)}
 				>
-					{search && (
+					{search ? (
 						<div className="w-full sm:w-64">
 							<Input
 								aria-label={search.placeholder ?? "Search table"}
@@ -165,7 +165,7 @@ export function DataTable<T>({
 								value={query}
 							/>
 						</div>
-					)}
+					) : null}
 					{filters.map((filter) => (
 						<Select
 							aria-label={filter.label}
@@ -205,11 +205,11 @@ export function DataTable<T>({
 							Clear filters
 						</Button>
 					)}
-					{toolbar && (
+					{toolbar ? (
 						<div className="ml-auto flex flex-wrap items-center gap-2">
 							{toolbar}
 						</div>
-					)}
+					) : null}
 				</div>
 			)}
 			{/* Contain the absolutely positioned screen-reader caption while scrolling. */}
@@ -227,7 +227,7 @@ export function DataTable<T>({
 				}
 			>
 				<table className="w-full border-collapse text-sm" id={id}>
-					{caption && <caption className="sr-only">{caption}</caption>}
+					{caption ? <caption className="sr-only">{caption}</caption> : null}
 					<thead className="border-border/50 border-b">
 						<tr>
 							{columns.map((column) => {
@@ -309,6 +309,7 @@ export function DataTable<T>({
 									colSpan={Math.max(columns.length, 1)}
 								>
 									<span role="status">
+										{/* biome-ignore lint/suspicious/noLeakedRender: emptyMessage is a string prop with a default; nothing falsy can leak. */}
 										{loading ? "Loading..." : emptyMessage}
 									</span>
 								</td>
@@ -317,7 +318,7 @@ export function DataTable<T>({
 					</tbody>
 				</table>
 			</div>
-			{pagination && (
+			{pagination ? (
 				<div
 					className={cn(
 						"flex flex-wrap items-center justify-between gap-3",
@@ -381,7 +382,7 @@ export function DataTable<T>({
 						</nav>
 					</div>
 				</div>
-			)}
+			) : null}
 		</div>
 	);
 }

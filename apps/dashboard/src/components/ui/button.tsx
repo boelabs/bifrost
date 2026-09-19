@@ -98,7 +98,9 @@ export function Button({
 			disabled={disabled || loading}
 			style={mergeStyle({ borderRadius, width }, style)}
 		>
-			{loading && <IconLoader2 aria-hidden className="size-4 animate-spin" />}
+			{loading ? (
+				<IconLoader2 aria-hidden className="size-4 animate-spin" />
+			) : null}
 			{children}
 		</BaseButton>
 	);

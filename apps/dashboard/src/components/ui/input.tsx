@@ -52,9 +52,11 @@ export function Input({
 	);
 	const content = (
 		<>
-			{label && <Field.Label>{label}</Field.Label>}
+			{label ? <Field.Label>{label}</Field.Label> : null}
 			{control}
-			{description && <Field.Description>{description}</Field.Description>}
+			{description ? (
+				<Field.Description>{description}</Field.Description>
+			) : null}
 			{hasSupportingContent && <Field.Error>{errorMessage}</Field.Error>}
 		</>
 	);

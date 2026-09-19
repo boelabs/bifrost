@@ -237,11 +237,13 @@ export function Toaster({ portalProps, toastProps, ...props }: ToasterProps) {
 						<ToastRoot key={toast.id} {...toastProps} toast={toast}>
 							<ToastContent>
 								<ToastTitle>{toast.title}</ToastTitle>
-								{toast.description && (
+								{toast.description ? (
 									<ToastDescription>{toast.description}</ToastDescription>
-								)}
+								) : null}
 							</ToastContent>
-							{toast.actionProps && <ToastAction {...toast.actionProps} />}
+							{toast.actionProps ? (
+								<ToastAction {...toast.actionProps} />
+							) : null}
 							<ToastClose />
 						</ToastRoot>
 					);

@@ -22,6 +22,7 @@ export function RefreshControls({
 	return (
 		<Button disabled={pending} onClick={refresh} size="sm" variant="secondary">
 			<IconRefresh aria-hidden className="size-4" />
+			{/* biome-ignore lint/suspicious/noLeakedRender: label is a required string prop with a default; nothing falsy can leak. */}
 			{pending ? "Refreshing…" : label}
 		</Button>
 	);

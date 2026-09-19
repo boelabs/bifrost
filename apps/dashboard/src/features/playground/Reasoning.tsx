@@ -95,9 +95,9 @@ export function Reasoning({
 							)}
 						</ChainOfThoughtStep>
 					))}
-					{completed && (
+					{completed ? (
 						<ChainOfThoughtStep icon={IconCircleCheck} label="Ready" />
-					)}
+					) : null}
 				</div>
 			</ChainOfThoughtContent>
 		</ChainOfThought>
