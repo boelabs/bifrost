@@ -35,14 +35,20 @@ export function decodeCompactionSummary(value: unknown): string | undefined {
 			JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")),
 		);
 		const decoded = decryptJson(envelope, "response-compaction");
-		return decoded !== null &&
-			typeof decoded === "object" &&
-			!Array.isArray(decoded) &&
-			(decoded as Partial<CompactionPayload>).version === 2 &&
-			typeof (decoded as Partial<CompactionPayload>).summary === "string" &&
-			typeof (decoded as Partial<CompactionPayload>).expiresAt === "number" &&
-			(decoded as Partial<CompactionPayload>).expiresAt! > Date.now()
-			? (decoded as CompactionPayload).summary
+		if (
+			decoded === null ||
+			typeof decoded !== "object" ||
+			Array.isArray(decoded)
+		) {
+			return undefined;
+		}
+		const payload = decoded as Partial<CompactionPayload>;
+		const { version, summary, expiresAt } = payload;
+		return version === 2 &&
+			typeof summary === "string" &&
+			typeof expiresAt === "number" &&
+			expiresAt > Date.now()
+			? summary
 			: undefined;
 	} catch {
 		return undefined;
