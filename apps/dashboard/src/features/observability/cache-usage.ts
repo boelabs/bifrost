@@ -23,15 +23,17 @@ export function aggregateCacheUsage(rows: readonly CacheUsage[]): CacheUsage {
 		const values = rows
 			.map((row) => row[field])
 			.filter((value): value is number => typeof value === "number");
-		if (values.length > 0)
+		if (values.length > 0) {
 			total[field] = values.reduce((sum, value) => sum + value, 0);
+		}
 	}
 	return total;
 }
 
 export function cacheReuseRate(row: CacheUsage): number | null {
-	if (row.cacheReadTokens == null || row.uncachedInputTokens == null)
+	if (row.cacheReadTokens == null || row.uncachedInputTokens == null) {
 		return null;
+	}
 	const classified = row.cacheReadTokens + row.uncachedInputTokens;
 	return classified > 0 ? row.cacheReadTokens / classified : null;
 }

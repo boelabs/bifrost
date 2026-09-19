@@ -10,7 +10,7 @@
  */
 export function gatewayUrl(path = ""): string {
 	const raw = process.env.GATEWAY_URL?.trim();
-	if (!raw)
+	if (!raw) {
 		throw new Error(
 			"GATEWAY_URL is not set.\n" +
 				"\n" +
@@ -20,16 +20,20 @@ export function gatewayUrl(path = ""): string {
 				"\n" +
 				"Locally: cp .env.example .env\n",
 		);
+	}
 	let parsed: URL;
 	try {
 		parsed = new URL(raw);
-	} catch {
-		throw new Error(`GATEWAY_URL must be an absolute URL, got: ${raw}`);
+	} catch (cause) {
+		throw new Error(`GATEWAY_URL must be an absolute URL, got: ${raw}`, {
+			cause,
+		});
 	}
-	if (parsed.protocol !== "http:" && parsed.protocol !== "https:")
+	if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
 		throw new Error(
 			`GATEWAY_URL must be http or https, got: ${parsed.protocol}`,
 		);
+	}
 	// A trailing slash makes every `${base}${path}` produce a double slash.
 	return `${parsed.origin}${parsed.pathname.replace(/\/+$/, "")}${path}`;
 }

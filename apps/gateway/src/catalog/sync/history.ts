@@ -50,8 +50,9 @@ export function loadHistory(url: URL): SyncHistory {
 			confirmed: parsed.confirmed ?? {},
 		};
 	} catch (err) {
-		if ((err as { code?: unknown }).code === "ENOENT")
+		if ((err as { code?: unknown }).code === "ENOENT") {
 			return structuredClone(EMPTY);
+		}
 		throw err;
 	}
 }

@@ -112,9 +112,9 @@ data: [DONE]
 test("session fetch includes the browser session and removes provider credentials", async () => {
 	let input: Parameters<typeof fetch>[0] | undefined;
 	let init: RequestInit | undefined;
-	const fetchImpl: FetchLike = async (request, requestInit) => {
-		input = request;
-		init = requestInit;
+	const fetchImpl: FetchLike = async (target, options) => {
+		input = target;
+		init = options;
 		return new Response("{}", { status: 200 });
 	};
 
@@ -217,7 +217,9 @@ test("modelFor uses each real AI SDK provider while preserving the gateway reque
 		});
 
 		const text = await result.text;
-		if (endpoint !== "responses") assert.equal(text, "ok", endpoint);
+		if (endpoint !== "responses") {
+			assert.equal(text, "ok", endpoint);
+		}
 		assert.equal(body?.temperature, 0, endpoint);
 		assert.equal(
 			body?.store,
@@ -303,7 +305,10 @@ test("a relative base URL is resolved against the page origin for every provider
 			);
 		}
 	} finally {
-		if (original === undefined) Reflect.deleteProperty(globalThis, "window");
-		else Reflect.set(globalThis, "window", original);
+		if (original === undefined) {
+			Reflect.deleteProperty(globalThis, "window");
+		} else {
+			Reflect.set(globalThis, "window", original);
+		}
 	}
 });

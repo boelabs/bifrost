@@ -18,18 +18,18 @@ export function AuditToolbar({ filters }: { filters: AuditFilters }) {
 	return (
 		<div className="flex flex-wrap items-center gap-2">
 			<RangeFilter
-				periods={AUDIT_PERIODS}
-				value={filters}
 				fallback={DEFAULT_PERIOD}
 				onChange={(patch) => filter(patch)}
+				periods={AUDIT_PERIODS}
+				value={filters}
 			/>
 			<Select
 				aria-label="Filter by kind"
-				size="sm"
-				value={filters.kind ?? ALL}
 				onValueChange={(key) =>
 					filter({ kind: !key || key === ALL ? undefined : key })
 				}
+				size="sm"
+				value={filters.kind ?? ALL}
 			>
 				<SelectItem value={ALL}>Everything</SelectItem>
 				{Object.entries(KINDS).map(([value, label]) => (
@@ -40,19 +40,19 @@ export function AuditToolbar({ filters }: { filters: AuditFilters }) {
 			</Select>
 			<SearchField
 				label="Filter by actor"
+				onSearch={(value) => filter({ actor: value })}
 				placeholder="Actor"
 				value={filters.actor ?? ""}
-				onSearch={(value) => filter({ actor: value })}
 			/>
 			<SearchField
 				label="Filter by action"
+				onSearch={(value) => filter({ action: value })}
 				placeholder="DELETE, /admin/keys…"
 				value={filters.action ?? ""}
-				onSearch={(value) => filter({ action: value })}
 			/>
 			{isFiltered(filters) ? (
-				<Button size="sm" variant="ghost" onClick={() => clear()}>
-					<IconFilterOff size={15} aria-hidden className="mr-1" />
+				<Button onClick={() => clear()} size="sm" variant="ghost">
+					<IconFilterOff aria-hidden className="mr-1" size={15} />
 					Clear filters
 				</Button>
 			) : null}

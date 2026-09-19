@@ -190,9 +190,7 @@ test("a job is watched to completion, reporting progress as it arrives", async (
 	const stub: FetchLike = async (input) => {
 		assert.equal(String(input), "/api/v1/videos/video_1");
 		const answer = answers[call++];
-		return new Response(JSON.stringify(answer), {
-			headers: { "content-type": "application/json" },
-		});
+		return Response.json(answer);
 	};
 	const waits: number[] = [];
 	const seen: number[] = [];
@@ -211,10 +209,7 @@ test("a job is watched to completion, reporting progress as it arrives", async (
 });
 
 test("the interval stops growing at its ceiling", async () => {
-	const stub: FetchLike = async () =>
-		new Response(JSON.stringify(job("in_progress")), {
-			headers: { "content-type": "application/json" },
-		});
+	const stub: FetchLike = async () => Response.json(job("in_progress"));
 	const waits: number[] = [];
 	await assert.rejects(
 		pollVideo(job("queued"), {
@@ -224,7 +219,10 @@ test("the interval stops growing at its ceiling", async () => {
 			// The clock runs out on the fourth look, which is what ends this loop.
 			now: (() => {
 				let value = 0;
-				return () => (value += 1000);
+				return () => {
+					value += 1000;
+					return value;
+				};
 			})(),
 			timeoutMs: 3000,
 			sleep: async (ms) => {
@@ -238,17 +236,16 @@ test("the interval stops growing at its ceiling", async () => {
 
 test("a failed job ends the watch rather than throwing", async () => {
 	const stub: FetchLike = async () =>
-		new Response(
-			JSON.stringify({
-				id: "video_1",
-				status: "failed",
-				error: { message: "The provider rejected the prompt." },
-			}),
-			{ headers: { "content-type": "application/json" } },
-		);
+		Response.json({
+			id: "video_1",
+			status: "failed",
+			error: { message: "The provider rejected the prompt." },
+		});
 	const final = await pollVideo(job("queued"), {
 		fetch: stub,
-		sleep: async () => {},
+		sleep: async () => {
+			/* intentionally empty */
+		},
 	});
 	assert.equal(final.status, "failed");
 	assert.equal(final.error?.message, "The provider rejected the prompt.");

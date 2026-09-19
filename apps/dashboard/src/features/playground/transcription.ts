@@ -100,19 +100,27 @@ export function transcriptionForm(
 	const form = new FormData();
 	form.set("model", model);
 	form.set("file", file, file.name);
-	if (settings.responseFormat)
+	if (settings.responseFormat) {
 		form.set("response_format", settings.responseFormat);
-	if (settings.language) form.set("language", settings.language);
-	if (settings.prompt) form.set("prompt", settings.prompt);
-	if (settings.temperature !== undefined)
+	}
+	if (settings.language) {
+		form.set("language", settings.language);
+	}
+	if (settings.prompt) {
+		form.set("prompt", settings.prompt);
+	}
+	if (settings.temperature !== undefined) {
 		form.set("temperature", String(settings.temperature));
+	}
 	// Only `verbose_json` carries timestamps, so asking for them anywhere else is a rejection.
 	if (
 		settings.responseFormat === "verbose_json" &&
 		settings.timestampGranularities?.length
-	)
-		for (const granularity of settings.timestampGranularities)
+	) {
+		for (const granularity of settings.timestampGranularities) {
 			form.append("timestamp_granularities[]", granularity);
+		}
+	}
 	return form;
 }
 
@@ -126,7 +134,9 @@ export function transcriptionFrom(
 	body: string,
 	contentType: string | null,
 ): Transcription {
-	if (!contentType?.includes("json")) return { text: body, segments: [] };
+	if (!contentType?.includes("json")) {
+		return { text: body, segments: [] };
+	}
 	const parsed = transcriptionResponse.parse(JSON.parse(body));
 	const segments = (parsed.segments ?? []).flatMap(
 		(segment): TranscriptionSegment[] =>
@@ -135,16 +145,16 @@ export function transcriptionFrom(
 				: [
 						{
 							text: segment.text,
-							...(segment.start !== undefined ? { start: segment.start } : {}),
-							...(segment.end !== undefined ? { end: segment.end } : {}),
+							...(segment.start === undefined ? {} : { start: segment.start }),
+							...(segment.end === undefined ? {} : { end: segment.end }),
 						},
 					],
 	);
 	return {
 		text: parsed.text ?? segments.map((segment) => segment.text).join(" "),
 		segments,
-		...(parsed.language !== undefined ? { language: parsed.language } : {}),
-		...(parsed.duration !== undefined ? { duration: parsed.duration } : {}),
+		...(parsed.language === undefined ? {} : { language: parsed.language }),
+		...(parsed.duration === undefined ? {} : { duration: parsed.duration }),
 	};
 }
 

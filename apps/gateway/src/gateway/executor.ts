@@ -103,19 +103,19 @@ export type TranscriptionExecResult =
 			observation: StreamObservation;
 	  };
 
-export type EmbeddingsExecResult = {
+export interface EmbeddingsExecResult {
 	kind: "json";
 	response: CanonicalEmbeddingsResponse;
 	terminal: CanonicalTerminal;
 	diagnostics: AdapterDiagnostics;
-};
+}
 
-export type RerankExecResult = {
+export interface RerankExecResult {
 	kind: "json";
 	response: CanonicalRerankResponse;
 	terminal: CanonicalTerminal;
 	diagnostics: AdapterDiagnostics;
-};
+}
 
 async function parseBody(res: Response): Promise<unknown> {
 	const text = await res.text();
@@ -145,7 +145,9 @@ function firstOutputTimeout(ctx: AdapterContext): GatewayError {
 }
 
 function firstOutputRemaining(ctx: AdapterContext): number | null {
-	if (!ctx.executionPolicy) return null;
+	if (!ctx.executionPolicy) {
+		return null;
+	}
 	return Math.max(
 		0,
 		ctx.executionPolicy.firstOutputMs -
@@ -158,8 +160,12 @@ export async function beforeFirstOutput<T>(
 	ctx: AdapterContext,
 ): Promise<T> {
 	const remaining = firstOutputRemaining(ctx);
-	if (remaining === null) return promise;
-	if (remaining <= 0) throw firstOutputTimeout(ctx);
+	if (remaining === null) {
+		return promise;
+	}
+	if (remaining <= 0) {
+		throw firstOutputTimeout(ctx);
+	}
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	try {
 		return await Promise.race([
@@ -169,12 +175,16 @@ export async function beforeFirstOutput<T>(
 			}),
 		]);
 	} finally {
-		if (timer) clearTimeout(timer);
+		if (timer) {
+			clearTimeout(timer);
+		}
 	}
 }
 
 export function remainingExecutionPolicy(ctx: AdapterContext) {
-	if (!ctx.executionPolicy) return undefined;
+	if (!ctx.executionPolicy) {
+		return;
+	}
 	return {
 		...ctx.executionPolicy,
 		firstOutputMs: Math.max(1, firstOutputRemaining(ctx) ?? 1),
@@ -187,10 +197,16 @@ async function* mapStreamErrors<T>(
 	mapError: MapError,
 ): AsyncIterable<T> {
 	try {
-		for await (const item of items) yield item;
+		for await (const item of items) {
+			yield item;
+		}
 	} catch (error) {
-		if (GatewayError.is(error)) throw error;
-		if (ctx.signal?.aborted) throw abortGatewayError(ctx.signal);
+		if (GatewayError.is(error)) {
+			throw error;
+		}
+		if (ctx.signal?.aborted) {
+			throw abortGatewayError(ctx.signal);
+		}
 		throw mapError(error, ctx);
 	}
 }
@@ -204,14 +220,18 @@ export async function* traceUpstreamStream<T>(
 		: null;
 	let errorCode: string | null = null;
 	try {
-		for await (const item of items) yield item;
+		for await (const item of items) {
+			yield item;
+		}
 	} catch (error) {
 		errorCode = GatewayError.is(error)
 			? (error.code ?? error.class)
 			: "internal_error";
 		throw error;
 	} finally {
-		if (span) finishOperationChildTelemetry(span, errorCode);
+		if (span) {
+			finishOperationChildTelemetry(span, errorCode);
+		}
 	}
 }
 
@@ -233,16 +253,20 @@ async function dispatch(
 			upstreamFetch(ctx, httpReq.url, {
 				method: httpReq.method,
 				headers: httpReq.headers,
-				...(httpReq.body !== undefined ? { body: httpReq.body } : {}),
+				...(httpReq.body === undefined ? {} : { body: httpReq.body }),
 			}),
 			ctx,
 		);
 	} catch (err) {
-		if (GatewayError.is(err)) throw err;
+		if (GatewayError.is(err)) {
+			throw err;
+		}
 		throw mapError(err, ctx);
 	}
 
-	if (ctx.timings === undefined) ctx.timings = {};
+	if (ctx.timings === undefined) {
+		ctx.timings = {};
+	}
 	ctx.timings.headersAt = Date.now();
 	for (const name of [
 		"x-request-id",
@@ -262,9 +286,9 @@ async function dispatch(
 			{
 				status: res.status,
 				body: await beforeFirstOutput(parseBody(res), ctx),
-				...(retryAfter !== null
-					? { headers: { "retry-after": retryAfter } }
-					: {}),
+				...(retryAfter === null
+					? {}
+					: { headers: { "retry-after": retryAfter } }),
 			},
 			ctx,
 		);
@@ -355,10 +379,11 @@ export async function executeMessageTokenCount(
 	ctx: AdapterContext,
 ): Promise<MessageTokenCountResponse> {
 	const handler = adapter.messageTokenCount;
-	if (!handler)
+	if (!handler) {
 		throw new Error(
 			`Adapter "${adapter.key}" does not implement Messages token counting`,
 		);
+	}
 	const res = await dispatch(
 		handler.buildRequest(req, ctx),
 		ctx,
@@ -392,10 +417,11 @@ export async function executeImage(
 		req.operation === "generation"
 			? adapter.imageGeneration
 			: adapter.imageEdit;
-	if (!handler)
+	if (!handler) {
 		throw new Error(
 			`Adapter "${adapter.key}" does not implement images.${req.operation}`,
 		);
+	}
 
 	const res = await dispatch(
 		await handler.buildRequest(req, ctx),
@@ -426,7 +452,7 @@ export async function executeImage(
 		),
 		ctx,
 	);
-	if (response.data.length === 0)
+	if (response.data.length === 0) {
 		throw new GatewayError({
 			class: "server",
 			code: "upstream_protocol_error",
@@ -434,6 +460,7 @@ export async function executeImage(
 			failureKind: "transient",
 			deploymentHealth: "penalize",
 		});
+	}
 	return {
 		kind: "json",
 		response,
@@ -453,10 +480,11 @@ export async function executeTranscription(
 	ctx: AdapterContext,
 ): Promise<TranscriptionExecResult> {
 	const handler = adapter.audioTranscription;
-	if (!handler)
+	if (!handler) {
 		throw new Error(
 			`Adapter "${adapter.key}" does not implement audio.transcriptions`,
 		);
+	}
 
 	const res = await dispatch(
 		await handler.buildRequest(req, ctx),
@@ -498,8 +526,9 @@ export async function executeEmbeddings(
 	ctx: AdapterContext,
 ): Promise<EmbeddingsExecResult> {
 	const handler = adapter.embeddings;
-	if (!handler)
+	if (!handler) {
 		throw new Error(`Adapter "${adapter.key}" does not implement embeddings`);
+	}
 
 	const res = await dispatch(
 		handler.buildRequest(req, ctx),
@@ -513,7 +542,7 @@ export async function executeEmbeddings(
 		),
 		ctx,
 	);
-	if (response.data.length === 0)
+	if (response.data.length === 0) {
 		throw new GatewayError({
 			class: "server",
 			code: "upstream_protocol_error",
@@ -521,6 +550,7 @@ export async function executeEmbeddings(
 			failureKind: "transient",
 			deploymentHealth: "penalize",
 		});
+	}
 	return {
 		kind: "json",
 		response,
@@ -536,8 +566,9 @@ export async function executeRerank(
 	ctx: AdapterContext,
 ): Promise<RerankExecResult> {
 	const handler = adapter.rerank;
-	if (!handler)
+	if (!handler) {
 		throw new Error(`Adapter "${adapter.key}" does not implement rerank`);
+	}
 
 	const res = await dispatch(
 		handler.buildRequest(req, ctx),

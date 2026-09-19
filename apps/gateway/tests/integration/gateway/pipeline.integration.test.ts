@@ -90,7 +90,7 @@ const GEMINI_JSON = {
 
 const OPENAI_RESPONSES_JSON = {
 	id: "resp_up",
-	created_at: 1700000000,
+	created_at: 1_700_000_000,
 	model: "gpt-5.5",
 	status: "completed",
 	output: [
@@ -185,7 +185,9 @@ test("integration: one Gemini upstream feeds all 3 public contracts (json)", asy
 		async () => {
 			const result = await executeChat(googleAdapter, canonical, googleCtx);
 			assert.equal(result.kind, "json");
-			if (result.kind !== "json") return;
+			if (result.kind !== "json") {
+				return;
+			}
 			const u = result.response;
 
 			// Render a /v1/chat/completions
@@ -224,7 +226,9 @@ test("integration: /v1/responses request served by Google (non-OpenAI) and rende
 		async () => {
 			const result = await executeChat(googleAdapter, canonical, googleCtx);
 			assert.equal(result.kind, "json");
-			if (result.kind !== "json") return;
+			if (result.kind !== "json") {
+				return;
+			}
 			const out = canonicalToResponsesResponse(result.response, {
 				req: responsesRequestSchema.parse({ model: "grp", input: "hello" }),
 				publicModel: "grp",
@@ -248,7 +252,9 @@ test("integration: /v1/messages request served by OpenAI (/responses transport) 
 		async () => {
 			const result = await executeChat(openaiAdapter, canonical, openaiCtx);
 			assert.equal(result.kind, "json");
-			if (result.kind !== "json") return;
+			if (result.kind !== "json") {
+				return;
+			}
 			const msg = canonicalToMessagesResponse(result.response, {
 				publicModel: "grp",
 			}) as TestJsonObject;
@@ -277,11 +283,15 @@ test("integration: streaming Gemini -> /v1/responses events and /v1/chat chunks"
 		async () => {
 			const result = await executeChat(googleAdapter, canonical, googleCtx);
 			assert.equal(result.kind, "stream");
-			if (result.kind !== "stream") return;
+			if (result.kind !== "stream") {
+				return;
+			}
 
 			// Reusing the same canonical stream for two renders requires materializing it.
 			const chunks: CanonicalChatStreamChunk[] = [];
-			for await (const ch of result.chunks) chunks.push(ch);
+			for await (const ch of result.chunks) {
+				chunks.push(ch);
+			}
 			assert.equal(
 				chunks.map((c) => c.choices[0]?.delta.content ?? "").join(""),
 				"Hello",
@@ -297,7 +307,9 @@ test("integration: streaming Gemini -> /v1/responses events and /v1/chat chunks"
 
 			// -> /v1/responses events
 			async function* replay() {
-				for (const c of chunks) yield c;
+				for (const c of chunks) {
+					yield c;
+				}
 			}
 			const types: string[] = [];
 			let total: number | undefined;
@@ -305,9 +317,12 @@ test("integration: streaming Gemini -> /v1/responses events and /v1/chat chunks"
 				req: { model: "grp" } as never,
 				publicModel: "grp",
 			})) {
-				if (ev.event) types.push(ev.event);
-				if (ev.event === "response.completed")
+				if (ev.event) {
+					types.push(ev.event);
+				}
+				if (ev.event === "response.completed") {
 					total = JSON.parse(ev.data).response.usage.total_tokens;
+				}
 			}
 			assert.ok(types.includes("response.created"));
 			assert.ok(types.includes("response.output_text.delta"));

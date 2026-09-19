@@ -25,12 +25,14 @@ export function createFixedWindowRateLimiter(
 		if (count >= limit) {
 			return Math.max(
 				1,
-				Math.ceil((windowStart + WINDOW_MS - timestamp) / 1_000),
+				Math.ceil((windowStart + WINDOW_MS - timestamp) / 1000),
 			);
 		}
 		if (!counts.has(subject) && counts.size >= MAX_TRACKED_CLIENTS) {
 			const oldest = counts.keys().next().value;
-			if (oldest !== undefined) counts.delete(oldest);
+			if (oldest !== undefined) {
+				counts.delete(oldest);
+			}
 		}
 		counts.set(subject, count + 1);
 		return null;
@@ -43,11 +45,17 @@ const consumePublicModelRequest = createFixedWindowRateLimiter(
 
 /** Applies a deliberately generous abuse limit to anonymous model discovery. */
 export function enforcePublicModelRateLimit(c: Context<AppEnv>): void {
-	if (env.PUBLIC_MODELS_RPM === 0) return;
+	if (env.PUBLIC_MODELS_RPM === 0) {
+		return;
+	}
 	const ip = clientIp(c);
-	if (!ip) return;
+	if (!ip) {
+		return;
+	}
 	const retryAfter = consumePublicModelRequest(ip);
-	if (retryAfter === null) return;
+	if (retryAfter === null) {
+		return;
+	}
 	throw new GatewayError({
 		class: "rate_limit",
 		code: "rate_limit_exceeded",

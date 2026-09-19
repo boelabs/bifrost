@@ -73,7 +73,9 @@ test("admin operations exposes embeddings by operation, endpoint, and transport 
 		["vercel", "cohere_rerank"],
 	] as const) {
 		const adapter = body.data.adapters.find((item) => item.id === adapterId);
-		if (!adapter) throw new Error(`adapter ${adapterId} is not registered`);
+		if (!adapter) {
+			throw new Error(`adapter ${adapterId} is not registered`);
+		}
 		assert.ok(adapter.supportedCallTypes.includes("rerank"));
 		const operation = adapter.operations.find((item) => item.id === "rerank");
 		assert.equal(operation?.family, "reranking");
@@ -141,11 +143,12 @@ test("admin platform: rejects legacy provider field", async () => {
 		credentials: { apiKey: "k" },
 	});
 	assert.equal(parsed.success, false);
-	if (!parsed.success)
+	if (!parsed.success) {
 		assert.match(
 			parsed.error.issues.map((issue) => issue.message).join("; "),
 			/provider/,
 		);
+	}
 
 	const response = await app.request("/deployments/resolve", {
 		method: "POST",

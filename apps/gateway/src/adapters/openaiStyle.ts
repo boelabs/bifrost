@@ -26,6 +26,7 @@ import {
 	type CanonicalVideoProviderJob,
 	type CanonicalVideoRequest,
 	type VideoUrlReference,
+	type ResolvedVideoSize,
 	type VideoAssetVariant,
 	type VideoStatus,
 	resolveVideoSize,
@@ -162,6 +163,83 @@ export function contextWindowRefine(message: string): ErrorClass | null {
 	return looksLikeContextWindowError(message) ? "context_window" : null;
 }
 
+interface VideoErrorDetail {
+	code?: string | null;
+	message?: string;
+}
+
+/** An upstream video error, whether it arrived as a bare string or as an object. */
+function videoErrorDetail(raw: unknown): VideoErrorDetail | undefined {
+	if (typeof raw === "string") {
+		return { message: raw };
+	}
+	if (raw && typeof raw === "object") {
+		return raw as VideoErrorDetail;
+	}
+	return undefined;
+}
+
+/**
+ * The `error` field of a canonical video job, or nothing.
+ *
+ * A job can fail without saying so in an `error`: the status alone is the report, and the upstream
+ * status string is then the most specific code available.
+ */
+function videoErrorField(
+	detail: VideoErrorDetail | undefined,
+	status: VideoStatus,
+	upstreamStatus: unknown,
+): { error?: { code: string | null; message: string } } {
+	if (detail) {
+		return {
+			error: {
+				code:
+					detail.code ?? (status === "failed" ? String(upstreamStatus) : null),
+				message: detail.message ?? "Video generation failed",
+			},
+		};
+	}
+	if (status !== "failed") {
+		return {};
+	}
+	return {
+		error: {
+			code:
+				typeof upstreamStatus === "string" ? upstreamStatus : "video_failed",
+			message: "Video generation failed",
+		},
+	};
+}
+
+/**
+ * How a video request states its output size.
+ *
+ * The native aspect_ratio/resolution form is preferred when the profile maps to it; otherwise the
+ * exact pixel dimensions go out. The protocol treats the two as interchangeable.
+ */
+function videoSizeFields(
+	resolved: ResolvedVideoSize | undefined,
+): Record<string, unknown> {
+	if (resolved?.aspectRatio || resolved?.resolution) {
+		return {
+			...(resolved.aspectRatio ? { aspect_ratio: resolved.aspectRatio } : {}),
+			...(resolved.resolution ? { resolution: resolved.resolution } : {}),
+		};
+	}
+	return resolved?.size === undefined ? {} : { size: resolved.size };
+}
+
+/** One input reference, under the key its media type gives it. */
+function videoInputReference(ref: VideoUrlReference): Record<string, unknown> {
+	if (ref.type === "image_url") {
+		return { type: "image_url", image_url: { url: ref.url } };
+	}
+	if (ref.type === "audio_url") {
+		return { type: "audio_url", audio_url: { url: ref.url } };
+	}
+	return { type: "video_url", video_url: { url: ref.url } };
+}
+
 interface Creds extends BaseCreds {
 	organization?: string;
 }
@@ -187,8 +265,12 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			? config.normalizeBaseUrl(base)
 			: base.replace(/\/+$/, "");
 		const resolved: ResolvedCreds = { apiKey: c.apiKey, base: normalizedBase };
-		if (c.organization !== undefined) resolved.organization = c.organization;
-		if (c.headers !== undefined) resolved.headers = c.headers;
+		if (c.organization !== undefined) {
+			resolved.organization = c.organization;
+		}
+		if (c.headers !== undefined) {
+			resolved.headers = c.headers;
+		}
 		return resolved;
 	}
 
@@ -246,7 +328,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			res = await upstreamFetch(ctx, req.url, {
 				method: req.method,
 				headers: req.headers,
-				...(req.body !== undefined ? { body: req.body } : {}),
+				...(req.body === undefined ? {} : { body: req.body }),
 				...(ctx.signal ? { signal: ctx.signal } : {}),
 			});
 		} catch (err) {
@@ -326,12 +408,13 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			if (
 				json === null ||
 				typeof json !== "object" ||
-				(!("choices" in json) && !("usage" in json))
-			)
+				!("choices" in json || "usage" in json)
+			) {
 				recordUnknownAdapterEvent(
 					adapterContextDiagnostics(ctx),
 					"chat_completions.unknown_json_shape",
 				);
+			}
 			const chunk = parseOpenAIChatChunk(json);
 			const originalTerminalReason = (
 				json as { choices?: Array<{ finish_reason?: unknown }> }
@@ -342,7 +425,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 						originalTerminalReason: String(originalTerminalReason),
 					});
 		}
-		if (!transportDone)
+		if (!transportDone) {
 			throw new GatewayError({
 				class: "server",
 				code: "upstream_protocol_error",
@@ -350,6 +433,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 				failureKind: "transient",
 				deploymentHealth: "penalize",
 			});
+		}
 	}
 
 	async function* responsesStream(
@@ -390,7 +474,9 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 				});
 				originalTerminalReason = undefined;
 				terminal = undefined;
-			} else yield chunk;
+			} else {
+				yield chunk;
+			}
 		}
 	}
 
@@ -448,9 +534,9 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 							? "developer"
 							: "system",
 						supportsTopK: config.supportsTopK === true,
-						...(ctx.meta.reasoning !== undefined
-							? { reasoningSpec: ctx.meta.reasoning }
-							: {}),
+						...(ctx.meta.reasoning === undefined
+							? {}
+							: { reasoningSpec: ctx.meta.reasoning }),
 					}),
 				),
 			};
@@ -472,15 +558,11 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 							?.finish_reason;
 			const terminal =
 				ctx.transport === "responses"
-					? record.status === "incomplete"
-						? ({
-								outcome: "incomplete",
-								reason: response.choices[0]?.finishReason ?? "other",
-							} as const)
-						: ({
-								outcome: "completed",
-								reason: response.choices[0]?.finishReason ?? "other",
-							} as const)
+					? ({
+							outcome:
+								record.status === "incomplete" ? "incomplete" : "completed",
+							reason: response.choices[0]?.finishReason ?? "other",
+						} as const)
 					: undefined;
 			return originalTerminalReason == null && terminal === undefined
 				? response
@@ -578,10 +660,19 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 	): VideoStatus {
 		const status = String(raw ?? "");
 		if (dialect === "videos_async") {
-			if (status === "pending") return "queued";
-			if (status === "completed") return "completed";
-			if (status === "failed" || status === "cancelled" || status === "expired")
+			if (status === "pending") {
+				return "queued";
+			}
+			if (status === "completed") {
+				return "completed";
+			}
+			if (
+				status === "failed" ||
+				status === "cancelled" ||
+				status === "expired"
+			) {
 				return "failed";
+			}
 			// in_progress, plus any status this gateway does not know yet: keep polling; the
 			// job-runtime timeout is the safety net if it never terminates.
 			return "in_progress";
@@ -609,6 +700,8 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			case "completed":
 			case "failed":
 				return 100;
+			default:
+				return 0;
 		}
 	}
 
@@ -627,12 +720,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			});
 		}
 		const status = mapVideoStatus(value.status, dialect);
-		const error =
-			typeof value.error === "string"
-				? { message: value.error }
-				: value.error && typeof value.error === "object"
-					? (value.error as { code?: string | null; message?: string })
-					: undefined;
+		const error = videoErrorDetail(value.error);
 		return {
 			upstreamJobId,
 			...(typeof value.generation_id === "string"
@@ -643,26 +731,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 				: {}),
 			status,
 			progress: normalizeProgress(status, value.progress),
-			...(error
-				? {
-						error: {
-							code:
-								error.code ??
-								(status === "failed" ? String(value.status) : null),
-							message: error.message ?? "Video generation failed",
-						},
-					}
-				: status === "failed"
-					? {
-							error: {
-								code:
-									typeof value.status === "string"
-										? value.status
-										: "video_failed",
-								message: "Video generation failed",
-							},
-						}
-					: {}),
+			...videoErrorField(error, status, value.status),
 			...(value.usage && typeof value.usage === "object"
 				? { usage: value.usage as Record<string, unknown> }
 				: {}),
@@ -693,17 +762,17 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 		const body: Record<string, unknown> = {
 			model: ctx.upstreamModel,
 			prompt: req.prompt,
-			...(req.seconds !== undefined ? { seconds: req.seconds } : {}),
-			...(resolved?.size !== undefined ? { size: resolved.size } : {}),
+			...(req.seconds === undefined ? {} : { seconds: req.seconds }),
+			...(resolved?.size === undefined ? {} : { size: resolved.size }),
 			// Only reachable when the model profile declares support; the stock OpenAI
 			// Videos API accepts none of these three.
-			...(req.quality !== undefined ? { quality: req.quality } : {}),
-			...(req.seed !== undefined ? { seed: req.seed } : {}),
-			...(req.generateAudio !== undefined
-				? { generate_audio: req.generateAudio }
-				: {}),
+			...(req.quality === undefined ? {} : { quality: req.quality }),
+			...(req.seed === undefined ? {} : { seed: req.seed }),
+			...(req.generateAudio === undefined
+				? {}
+				: { generate_audio: req.generateAudio }),
 		};
-		const ref = refs[0];
+		const [ref] = refs;
 		if (ref) {
 			if (ref.type === "image_url") {
 				body.input_reference = { image_url: ref.url };
@@ -737,24 +806,13 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 		const body: Record<string, unknown> = {
 			model: ctx.upstreamModel,
 			prompt: req.prompt,
-			...(req.seconds !== undefined ? { duration: Number(req.seconds) } : {}),
-			// Prefer the native aspect_ratio/resolution form when the profile maps to it;
-			// otherwise send exact pixel dimensions. The protocol treats the two forms as interchangeable.
-			...(resolved?.aspectRatio || resolved?.resolution
-				? {
-						...(resolved.aspectRatio
-							? { aspect_ratio: resolved.aspectRatio }
-							: {}),
-						...(resolved.resolution ? { resolution: resolved.resolution } : {}),
-					}
-				: resolved?.size !== undefined
-					? { size: resolved.size }
-					: {}),
-			...(req.seed !== undefined ? { seed: req.seed } : {}),
-			...(req.generateAudio !== undefined
-				? { generate_audio: req.generateAudio }
-				: {}),
-			...(req.quality !== undefined ? { quality: req.quality } : {}),
+			...(req.seconds === undefined ? {} : { duration: Number(req.seconds) }),
+			...videoSizeFields(resolved),
+			...(req.seed === undefined ? {} : { seed: req.seed }),
+			...(req.generateAudio === undefined
+				? {}
+				: { generate_audio: req.generateAudio }),
+			...(req.quality === undefined ? {} : { quality: req.quality }),
 		};
 		const refs = req.inputReferences ?? [];
 		if (refs.some((ref) => ref.type === "file_id")) {
@@ -769,13 +827,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			(ref): ref is VideoUrlReference => ref.type !== "file_id",
 		);
 		if (urlRefs.length > 0) {
-			body.input_references = urlRefs.map((ref) =>
-				ref.type === "image_url"
-					? { type: "image_url", image_url: { url: ref.url } }
-					: ref.type === "audio_url"
-						? { type: "audio_url", audio_url: { url: ref.url } }
-						: { type: "video_url", video_url: { url: ref.url } },
-			);
+			body.input_references = urlRefs.map(videoInputReference);
 		}
 		if (req.frameImages && req.frameImages.length > 0) {
 			body.frame_images = req.frameImages.map((frame) => ({
@@ -901,8 +953,9 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			});
 		},
 		async remove(job, ctx) {
-			if (ctx.transport !== "videos" && ctx.transport !== "videos_async")
+			if (ctx.transport !== "videos" && ctx.transport !== "videos_async") {
 				return;
+			}
 			const c = resolveCreds(ctx);
 			await fetchJson(
 				{
@@ -970,8 +1023,8 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 		},
 	};
 
-	const imageTransports = config.imageTransports;
-	const videoTransports = config.videoTransports;
+	const { imageTransports } = config;
+	const { videoTransports } = config;
 	const chatTransports = config.supportedChatTransports ?? [
 		config.defaultTransport,
 	];
@@ -1019,11 +1072,15 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 		supportedCallTypes.add("images.generations");
 		supportedCallTypes.add("images.edits");
 	}
-	if (videoTransports && videoTransports.length > 0)
+	if (videoTransports && videoTransports.length > 0) {
 		supportedCallTypes.add("videos.generations");
-	if (config.audioTranscriptions)
+	}
+	if (config.audioTranscriptions) {
 		supportedCallTypes.add("audio.transcriptions");
-	if (config.embeddings) supportedCallTypes.add("embeddings");
+	}
+	if (config.embeddings) {
+		supportedCallTypes.add("embeddings");
+	}
 	const firstImageTransport = imageTransports?.[0];
 	const imageTransportConfig =
 		imageTransports && firstImageTransport
@@ -1050,7 +1107,9 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 		chat,
 		assertChatRequestSupported(req, ctx) {
 			config.assertChatRequestSupported?.(req, ctx);
-			if (ctx.transport === "responses") assertResponsesRequestSupported(req);
+			if (ctx.transport === "responses") {
+				assertResponsesRequestSupported(req);
+			}
 		},
 		...(config.responsesWebSocket
 			? {

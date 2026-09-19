@@ -9,11 +9,13 @@ export function ThemeSelect() {
 	return (
 		<Select<ThemePreference>
 			aria-label="Color theme"
-			value={preference}
 			onValueChange={(value) => {
-				if (value !== null) setPreference(value);
+				if (value !== null) {
+					setPreference(value);
+				}
 			}}
 			size="sm"
+			value={preference}
 			width="full"
 		>
 			<SelectItem value="system">System</SelectItem>

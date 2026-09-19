@@ -22,7 +22,7 @@ export function ChainOfThought({
 }: ComponentProps<typeof CollapsibleRoot>) {
 	return (
 		<CollapsibleRoot
-			className={"not-prose w-full space-y-4 " + className}
+			className={`not-prose w-full space-y-4 ${className}`}
 			{...props}
 		/>
 	);
@@ -34,7 +34,7 @@ export function ChainOfThoughtHeader({
 }: ComponentProps<typeof CollapsibleTrigger> & { icon?: TablerIcon }) {
 	return (
 		<CollapsibleTrigger
-			className="flex h-auto w-full justify-start gap-2 px-0 py-1 font-normal text-fg-muted text-sm hover:text-fg data-[panel-open]:text-fg-muted"
+			className="flex h-auto w-full justify-start gap-2 px-0 py-1 font-normal text-fg-muted text-sm hover:text-fg data-panel-open:text-fg-muted"
 			{...props}
 		>
 			<span aria-hidden>
@@ -53,12 +53,20 @@ export function ChainOfThoughtContent(
 ) {
 	return (
 		<CollapsiblePanel
-			keepMounted
 			className="motion-reduce:transition-none"
+			keepMounted
 			{...props}
 		/>
 	);
 }
+type StepStatus = "complete" | "active" | "pending";
+
+const STEP_TONES: Record<StepStatus, string> = {
+	active: "text-fg",
+	pending: "text-fg-muted/50",
+	complete: "text-fg-muted",
+};
+
 export function ChainOfThoughtStep({
 	icon: Icon = IconPoint,
 	label,
@@ -67,20 +75,13 @@ export function ChainOfThoughtStep({
 }: {
 	icon?: TablerIcon;
 	label?: ReactNode;
-	status?: "complete" | "active" | "pending";
+	status?: StepStatus;
 	children?: ReactNode;
 }) {
 	return (
 		<div
+			className={`group/step relative flex gap-2 text-base ${STEP_TONES[status]}`}
 			data-chain-step={status}
-			className={
-				"group/step relative flex gap-2 text-base " +
-				(status === "active"
-					? "text-fg"
-					: status === "pending"
-						? "text-fg-muted/50"
-						: "text-fg-muted")
-			}
 		>
 			<div className="relative mt-0.5 shrink-0">
 				<Icon aria-hidden className="size-4" />

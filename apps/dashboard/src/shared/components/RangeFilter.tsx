@@ -1,6 +1,7 @@
 "use client";
 
 import { PopoverRoot, PopoverTrigger, Popover } from "#/components/ui/popover";
+import type { Query } from "#/shared/lib/useSearchWriter.ts";
 import { Select, SelectItem } from "#/components/ui/select";
 import { IconCalendar } from "@tabler/icons-react";
 import { Button } from "#/components/ui/button";
@@ -51,7 +52,11 @@ export function RangeFilter({
 	value: RangeSearch;
 	/** The period in force when the URL carries none. */
 	fallback: RangeKey;
-	onChange: (patch: RangeSearch) => void;
+	/**
+	 * Typed as the writer's patch shape, not as `RangeSearch`: what comes back is on its way
+	 * into the query string, and `Query` is the only shape `useSearchWriter` accepts.
+	 */
+	onChange: (patch: Query) => void;
 	/** Set on pages that label their controls; toolbars label by `aria-label` instead. */
 	label?: string;
 }) {
@@ -71,10 +76,10 @@ export function RangeFilter({
 			<Select
 				aria-label={label ? undefined : "Time range"}
 				{...(label ? { label } : {})}
-				size="sm"
-				value={period}
 				onValueChange={(key) => {
-					if (!key) return;
+					if (!key) {
+						return;
+					}
 					const next = key as RangeKey;
 					if (next === "custom") {
 						// Opening the picker is the point of choosing "Custom dates"; applying whatever
@@ -85,6 +90,8 @@ export function RangeFilter({
 					}
 					onChange({ period: next, from: undefined, to: undefined });
 				}}
+				size="sm"
+				value={period}
 			>
 				{periods.map((key) => (
 					<SelectItem key={key} value={key}>
@@ -93,46 +100,48 @@ export function RangeFilter({
 				))}
 			</Select>
 			{period === "custom" ? (
-				<PopoverRoot open={open} onOpenChange={setOpen}>
+				<PopoverRoot onOpenChange={setOpen} open={open}>
 					<PopoverTrigger
-						render={<Button variant="secondary" size="sm" />}
 						aria-label="Choose custom dates"
+						render={<Button size="sm" variant="secondary" />}
 					>
-						<IconCalendar size={15} aria-hidden />
+						<IconCalendar aria-hidden size={15} />
 						{applied}
 					</PopoverTrigger>
-					<Popover className="w-72 p-4" aria-label="Custom date range">
+					<Popover aria-label="Custom date range" className="w-72 p-4">
 						<form
 							className="flex flex-col gap-3"
 							onSubmit={(event) => {
 								event.preventDefault();
-								if (!valid) return;
+								if (!valid) {
+									return;
+								}
 								onChange({ period: "custom", from, to });
 								setOpen(false);
 							}}
 						>
 							<Input
 								label="From (UTC)"
-								type="date"
-								size="sm"
-								value={from}
 								max={today}
 								onChange={(event) => setFrom(event.target.value)}
 								required
+								size="sm"
+								type="date"
+								value={from}
 							/>
 							<Input
 								label="Through (UTC)"
-								type="date"
-								size="sm"
-								value={to}
 								max={today}
 								onChange={(event) => setTo(event.target.value)}
 								required
+								size="sm"
+								type="date"
+								value={to}
 							/>
 							<p className="text-fg-muted text-xs">
 								Up to {MAX_RANGE_DAYS} days. The end date is included.
 							</p>
-							<Button type="submit" size="sm" disabled={!valid}>
+							<Button disabled={!valid} size="sm" type="submit">
 								Apply dates
 							</Button>
 						</form>

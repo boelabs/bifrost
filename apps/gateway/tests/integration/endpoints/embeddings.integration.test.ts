@@ -46,7 +46,7 @@ async function waitForOperation(requestId: string) {
 				offset: 0,
 				requestId,
 			});
-			const operation = page.rows[0];
+			const [operation] = page.rows;
 			const detail = operation ? await getOperationDetail(operation.id) : null;
 			return detail?.lifecycleState === "finished" ? detail : null;
 		},
@@ -231,6 +231,8 @@ test("POST /v1/embeddings routes, caches, and logs without storing vectors", {
 			await invalidateVirtualKey(virtualKey.row.keyHash);
 			await deleteVirtualKey(virtualKey.row.id);
 		}
-		if (deploymentId) await deleteDeployment(deploymentId);
+		if (deploymentId) {
+			await deleteDeployment(deploymentId);
+		}
 	}
 });

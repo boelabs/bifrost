@@ -13,7 +13,9 @@ export async function upstreamFetch(
 			...init,
 			...(ctx.signal ? { signal: ctx.signal } : {}),
 		});
-		if (!response.body) return response;
+		if (!response.body) {
+			return response;
+		}
 		ctx.transportStats ??= { upstreamBytes: 0 };
 		const stats = ctx.transportStats;
 		const counted = response.body.pipeThrough(
@@ -30,7 +32,9 @@ export async function upstreamFetch(
 			headers: response.headers,
 		});
 	} catch (error) {
-		if (ctx.signal?.aborted) throw abortGatewayError(ctx.signal, "headers");
+		if (ctx.signal?.aborted) {
+			throw abortGatewayError(ctx.signal, "headers");
+		}
 		throw error;
 	}
 }
@@ -45,20 +49,25 @@ export function upstreamWebSocket(
 	ctx.transportStats ??= { upstreamBytes: 0 };
 	const stats = ctx.transportStats;
 	socket.on("message", (data) => {
-		if (typeof data === "string")
+		if (typeof data === "string") {
 			stats.upstreamBytes += Buffer.byteLength(data);
-		else if (data instanceof ArrayBuffer)
+		} else if (data instanceof ArrayBuffer) {
 			stats.upstreamBytes += data.byteLength;
-		else if (Array.isArray(data))
+		} else if (Array.isArray(data)) {
 			stats.upstreamBytes += data.reduce(
 				(total, part) => total + part.byteLength,
 				0,
 			);
-		else stats.upstreamBytes += data.byteLength;
+		} else {
+			stats.upstreamBytes += data.byteLength;
+		}
 	});
 	const abort = () => socket.terminate();
-	if (ctx.signal?.aborted) abort();
-	else ctx.signal?.addEventListener("abort", abort, { once: true });
+	if (ctx.signal?.aborted) {
+		abort();
+	} else {
+		ctx.signal?.addEventListener("abort", abort, { once: true });
+	}
 	socket.once("close", () => ctx.signal?.removeEventListener("abort", abort));
 	return socket;
 }

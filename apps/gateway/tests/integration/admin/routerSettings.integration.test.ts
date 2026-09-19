@@ -40,12 +40,16 @@ function settingsPatch(row: RouterSettingsRow): RouterSettingsPatch {
 }
 
 before(async () => {
-	if (skip) return;
+	if (skip) {
+		return;
+	}
 	originalSettings = await getRouterSettings();
 });
 
 after(async () => {
-	if (!originalSettings) return;
+	if (!originalSettings) {
+		return;
+	}
 	await updateRouterSettings(settingsPatch(originalSettings));
 	invalidateRouterSettingsCache();
 });

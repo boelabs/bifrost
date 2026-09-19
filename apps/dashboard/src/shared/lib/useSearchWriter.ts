@@ -28,7 +28,9 @@ export function useSearchWriter(current: Query) {
 		(next: Query) => {
 			const params = new URLSearchParams();
 			for (const [key, value] of Object.entries(next)) {
-				if (value === undefined || value === null || value === "") continue;
+				if (value === undefined || value === null || value === "") {
+					continue;
+				}
 				params.set(key, String(value));
 			}
 			const query = params.toString();

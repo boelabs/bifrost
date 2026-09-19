@@ -50,23 +50,30 @@ type Mode = "report" | "verify";
 function argValue(name: string): string | undefined {
 	const prefix = `${name}=`;
 	const directIndex = process.argv.indexOf(name);
-	if (directIndex >= 0) return process.argv[directIndex + 1];
+	if (directIndex >= 0) {
+		return process.argv[directIndex + 1];
+	}
 	const item = process.argv.find((arg) => arg.startsWith(prefix));
 	return item?.slice(prefix.length);
 }
 
 function mode(): Mode {
 	const raw = argValue("--mode") ?? "report";
-	if (raw === "report" || raw === "verify") return raw;
+	if (raw === "report" || raw === "verify") {
+		return raw;
+	}
 	throw new Error("--mode must be report or verify");
 }
 
 function optionalLimit(): number | undefined {
 	const raw = argValue("--limit");
-	if (raw === undefined) return undefined;
+	if (raw === undefined) {
+		return undefined;
+	}
 	const value = Number(raw);
-	if (!Number.isInteger(value) || value <= 0)
+	if (!Number.isInteger(value) || value <= 0) {
 		throw new Error("--limit must be a positive integer");
+	}
 	return value;
 }
 
@@ -82,7 +89,9 @@ async function fetchExistenceResults(
 	const settled = await Promise.allSettled(sources.map((s) => s.fetchModels()));
 	return settled.map((result, index) => {
 		const source = sources[index]!;
-		if (result.status === "fulfilled") return result.value;
+		if (result.status === "fulfilled") {
+			return result.value;
+		}
 		console.error(
 			`source ${source.key} failed entirely: ${String(result.reason)}`,
 		);
@@ -122,9 +131,13 @@ function loadCatalogFiles(): Map<string, CatalogFile> {
 	const adaptersDir = new URL("../src/adapters/", import.meta.url);
 	const catalogs = new Map<string, CatalogFile>();
 	for (const dirent of readdirSync(adaptersDir, { withFileTypes: true })) {
-		if (!dirent.isDirectory()) continue;
+		if (!dirent.isDirectory()) {
+			continue;
+		}
 		const url = new URL(`${dirent.name}/catalog.json`, adaptersDir);
-		if (!existsSync(url)) continue;
+		if (!existsSync(url)) {
+			continue;
+		}
 		const document = loadCatalogDocument(url);
 		catalogs.set(document.provider.adapterKey, { url, document });
 	}
@@ -135,7 +148,9 @@ function findExistingKey(
 	models: Record<string, CatalogEntry>,
 	upstreamModel: string,
 ): string | undefined {
-	if (models[upstreamModel]) return upstreamModel;
+	if (models[upstreamModel]) {
+		return upstreamModel;
+	}
 	const normalized = normalizeTag(upstreamModel);
 	return Object.keys(models).find((key) => normalizeTag(key) === normalized);
 }
@@ -149,9 +164,13 @@ function collectKindsInUseByAdapter(
 		const seen: ReasoningControlKind[] = [];
 		for (const entry of Object.values(document.models)) {
 			const kind = entry.operations["text.generate"]?.reasoning?.kind;
-			if (kind && !seen.includes(kind)) seen.push(kind);
+			if (kind && !seen.includes(kind)) {
+				seen.push(kind);
+			}
 		}
-		if (seen.length > 0) result.set(adapterKey, seen);
+		if (seen.length > 0) {
+			result.set(adapterKey, seen);
+		}
 	}
 	return result;
 }
@@ -266,7 +285,9 @@ async function run(): Promise<void> {
 
 	for (const candidate of matched) {
 		const catalog = catalogs.get(candidate.adapterKey);
-		if (!catalog) continue; // adapter has no catalog.json (e.g. openaicompatible) - nothing to sync into
+		if (!catalog) {
+			continue; // adapter has no catalog.json (e.g. openaicompatible) - nothing to sync into
+		}
 
 		const existingKey = findExistingKey(
 			catalog.document.models,

@@ -30,7 +30,7 @@ export function ToolbarRoot({
 		<BaseToolbar.Root
 			{...props}
 			className={mergeClassName(
-				"flex w-fit max-w-full items-center gap-1 rounded-[var(--ui-radius-surface)] border border-border bg-surface p-1 data-[orientation=vertical]:flex-col data-[orientation=vertical]:items-stretch",
+				"flex w-fit max-w-full items-center gap-1 rounded-(--ui-radius-surface) border border-border bg-surface p-1 data-[orientation=vertical]:flex-col data-[orientation=vertical]:items-stretch",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -49,7 +49,7 @@ export function ToolbarGroup({
 		<BaseToolbar.Group
 			{...props}
 			className={mergeClassName(
-				"flex items-center gap-1 rounded-[var(--ui-radius-control)] data-[orientation=vertical]:flex-col data-[orientation=vertical]:items-stretch",
+				"flex items-center gap-1 rounded-(--ui-radius-control) data-[orientation=vertical]:flex-col data-[orientation=vertical]:items-stretch",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -122,8 +122,8 @@ export function ToolbarInput({
 	return (
 		<BaseToolbar.Input
 			{...props}
-			size={htmlSize}
 			className={mergeClassName(controlStyles({ size, variant }), className)}
+			size={htmlSize}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -140,7 +140,7 @@ export function ToolbarSeparator({
 		<BaseToolbar.Separator
 			{...props}
 			className={mergeClassName(
-				"shrink-0 bg-border data-[orientation=vertical]:mx-1 data-[orientation=vertical]:my-1 data-[orientation=vertical]:w-px data-[orientation=vertical]:self-stretch data-[orientation=horizontal]:my-1 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full",
+				"shrink-0 bg-border data-[orientation=vertical]:mx-1 data-[orientation=horizontal]:my-1 data-[orientation=vertical]:my-1 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-px data-[orientation=vertical]:self-stretch",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

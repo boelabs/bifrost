@@ -37,18 +37,24 @@ function effectiveRates(p: PricingShape, promptTokens: number): PricingShape {
 	);
 	for (const t of tiers) {
 		if (promptTokens > t.aboveInputTokens) {
-			if (t.inputCentsPerMTokens !== undefined) input = t.inputCentsPerMTokens;
-			if (t.outputCentsPerMTokens !== undefined)
+			if (t.inputCentsPerMTokens !== undefined) {
+				input = t.inputCentsPerMTokens;
+			}
+			if (t.outputCentsPerMTokens !== undefined) {
 				output = t.outputCentsPerMTokens;
-			if (t.cacheReadCentsPerMTokens !== undefined)
+			}
+			if (t.cacheReadCentsPerMTokens !== undefined) {
 				cacheRead = t.cacheReadCentsPerMTokens;
-			if (t.cacheWriteCentsPerMTokensByTtl !== undefined)
+			}
+			if (t.cacheWriteCentsPerMTokensByTtl !== undefined) {
 				cacheWriteByTtl = {
 					...cacheWriteByTtl,
 					...t.cacheWriteCentsPerMTokensByTtl,
 				};
-			if (t.cacheWriteCentsPerMTokens !== undefined)
+			}
+			if (t.cacheWriteCentsPerMTokens !== undefined) {
 				cacheWrite = t.cacheWriteCentsPerMTokens;
+			}
 		}
 	}
 	return {
@@ -56,12 +62,12 @@ function effectiveRates(p: PricingShape, promptTokens: number): PricingShape {
 		outputCentsPerMTokens: output,
 		cacheReadCentsPerMTokens: cacheRead,
 		cacheWriteCentsPerMTokens: cacheWrite,
-		...(cacheWriteByTtl !== undefined
-			? { cacheWriteCentsPerMTokensByTtl: cacheWriteByTtl }
-			: {}),
-		...(p.searchUnitCents !== undefined
-			? { searchUnitCents: p.searchUnitCents }
-			: {}),
+		...(cacheWriteByTtl === undefined
+			? {}
+			: { cacheWriteCentsPerMTokensByTtl: cacheWriteByTtl }),
+		...(p.searchUnitCents === undefined
+			? {}
+			: { searchUnitCents: p.searchUnitCents }),
 	};
 }
 
@@ -149,8 +155,10 @@ export function estimateMaximumCostCents(
 	totalTokens: number,
 	searchUnits = 0,
 ): number | null {
-	const pricing = meta.pricing;
-	if (pricing === undefined) return null;
+	const { pricing } = meta;
+	if (pricing === undefined) {
+		return null;
+	}
 	const rates = [
 		pricing.inputCentsPerMTokens,
 		pricing.outputCentsPerMTokens,
@@ -165,7 +173,9 @@ export function estimateMaximumCostCents(
 			...Object.values(tier.cacheWriteCentsPerMTokensByTtl ?? {}),
 		]),
 	].filter((rate): rate is number => rate !== undefined);
-	if (rates.length === 0 && pricing.searchUnitCents === undefined) return null;
+	if (rates.length === 0 && pricing.searchUnitCents === undefined) {
+		return null;
+	}
 	const maximumTokenRate = rates.length > 0 ? Math.max(...rates) : 0;
 	return (
 		(Math.max(0, totalTokens) * maximumTokenRate) / 1_000_000 +

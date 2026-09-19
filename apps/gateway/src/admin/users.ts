@@ -7,7 +7,7 @@ import { ok, paginated } from "#http/respond.ts";
 import { GatewayError } from "#core/errors.ts";
 import { parseJsonBody } from "#http/body.ts";
 import { Hono } from "hono";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 import {
 	getDashboardUserByUsername,
@@ -60,11 +60,12 @@ function publicUser(row: DashboardUserRow) {
 
 async function requireUser(id: string): Promise<DashboardUserRow> {
 	const row = await getDashboardUserById(id);
-	if (!row)
+	if (!row) {
 		throw new GatewayError({
 			class: "not_found",
 			message: `Dashboard user "${id}" does not exist`,
 		});
+	}
 	return row;
 }
 
@@ -127,9 +128,9 @@ dashboardUsersApp.post("/", async (c) => {
 		passwordHash: await hashPassword(input.password),
 		role: input.role,
 		createdBy: actorOf(getAuth(c)),
-		...(input.mustChangePassword !== undefined
-			? { mustChangePassword: input.mustChangePassword }
-			: {}),
+		...(input.mustChangePassword === undefined
+			? {}
+			: { mustChangePassword: input.mustChangePassword }),
 	});
 	return ok(c, publicUser(row), 201);
 });
@@ -152,18 +153,19 @@ dashboardUsersApp.patch("/:id", async (c) => {
 	const user = await requireUser(c.req.param("id"));
 	const input = await parseJsonBody(c, updateUserSchema);
 	const row = await updateDashboardUser(user.id, {
-		...(input.role !== undefined ? { role: input.role } : {}),
-		...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
-		...(input.mustChangePassword !== undefined
-			? { mustChangePassword: input.mustChangePassword }
-			: {}),
+		...(input.role === undefined ? {} : { role: input.role }),
+		...(input.enabled === undefined ? {} : { enabled: input.enabled }),
+		...(input.mustChangePassword === undefined
+			? {}
+			: { mustChangePassword: input.mustChangePassword }),
 	});
 	// A demotion or a disable must take effect now, not whenever the session happened to expire.
 	if (
 		(input.role !== undefined && input.role !== user.role) ||
 		input.enabled === false
-	)
+	) {
 		await revokeAll(user.id);
+	}
 	return ok(c, publicUser(row!));
 });
 

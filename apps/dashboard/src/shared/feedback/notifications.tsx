@@ -53,7 +53,11 @@ export function useNotify(): Notifier {
  * unexpected failure and gets a generic sentence rather than a stack trace in a toast.
  */
 export function describeError(cause: unknown, fallback: string): string {
-	if (cause instanceof ApiError) return cause.message;
-	if (cause instanceof Error && cause.message) return cause.message;
+	if (cause instanceof ApiError) {
+		return cause.message;
+	}
+	if (cause instanceof Error && cause.message) {
+		return cause.message;
+	}
 	return fallback;
 }

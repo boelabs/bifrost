@@ -1,6 +1,6 @@
 export interface AsyncTtlCache<T> {
-	get(): Promise<T>;
-	invalidate(): void;
+	get: () => Promise<T>;
+	invalidate: () => void;
 }
 
 /** Small process-local cache that coalesces concurrent loads and never caches failures. */
@@ -16,8 +16,12 @@ export function createAsyncTtlCache<T>(
 	return {
 		async get() {
 			const currentGeneration = generation;
-			if (cached && cached.expiresAt > now()) return cached.value;
-			if (inFlight?.generation === currentGeneration) return inFlight.promise;
+			if (cached && cached.expiresAt > now()) {
+				return cached.value;
+			}
+			if (inFlight?.generation === currentGeneration) {
+				return inFlight.promise;
+			}
 
 			const promise = load();
 			inFlight = { generation: currentGeneration, promise };
@@ -28,7 +32,9 @@ export function createAsyncTtlCache<T>(
 				}
 				return value;
 			} finally {
-				if (inFlight?.promise === promise) inFlight = undefined;
+				if (inFlight?.promise === promise) {
+					inFlight = undefined;
+				}
 			}
 		},
 		invalidate() {

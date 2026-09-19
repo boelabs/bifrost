@@ -46,11 +46,11 @@ test("rerank profiles are strict, text-ready, and reserve image sources coherent
 		operations: {
 			rerank: {
 				documentModalities: ["text"],
-				maxDocuments: 1_000,
-				maxQueryBytes: 1_024,
-				maxDocumentBytes: 2_048,
-				maxTotalDocumentBytes: 4_096,
-				maxTokensPerDocument: 4_096,
+				maxDocuments: 1000,
+				maxQueryBytes: 1024,
+				maxDocumentBytes: 2048,
+				maxTotalDocumentBytes: 4096,
+				maxTokensPerDocument: 4096,
 				maxTotalTokens: 32_768,
 				documentsPerSearchUnit: 100,
 			},

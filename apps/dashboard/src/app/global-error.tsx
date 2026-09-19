@@ -41,7 +41,7 @@ export default function GlobalError({
 					Reload the page. If it keeps happening, the dashboard process is
 					failing to render — its logs will say why.
 				</p>
-				<button type="button" onClick={reset}>
+				<button onClick={reset} type="button">
 					Try again
 				</button>
 				{error.digest ? (

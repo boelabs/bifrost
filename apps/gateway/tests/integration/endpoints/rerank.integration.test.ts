@@ -41,7 +41,7 @@ async function waitForOperation(
 				offset: 0,
 				requestId,
 			});
-			const operation = page.rows[0];
+			const [operation] = page.rows;
 			const detail = operation ? await getOperationDetail(operation.id) : null;
 			return detail && (!ready || ready(detail)) ? detail : null;
 		},
@@ -273,11 +273,14 @@ test("POST /v1/rerank routes OpenRouter preferences, falls back across adapters,
 		);
 	} finally {
 		for (const key of [virtualKey, deniedKey]) {
-			if (!key) continue;
+			if (!key) {
+				continue;
+			}
 			await invalidateVirtualKey(key.row.keyHash);
 			await deleteVirtualKey(key.row.id);
 		}
-		for (const deploymentId of deploymentIds)
+		for (const deploymentId of deploymentIds) {
 			await deleteDeployment(deploymentId);
+		}
 	}
 });

@@ -1,10 +1,5 @@
+import { pricingFromDollarStrings, type RawDollarPricing } from "../pricing.ts";
 import { fetchJsonWithRetry, isFetchComplete, boundedMap } from "../fetch.ts";
-
-import {
-	dollarsPerTokenToCentsPerMillion,
-	pricingFromDollarStrings,
-	type RawDollarPricing,
-} from "../pricing.ts";
 
 import type {
 	SourceFetchResult,
@@ -72,9 +67,15 @@ function extractEndpoints(raw: unknown): OpenRouterEndpoint[] {
 		data?: { endpoints?: OpenRouterEndpoint[] } | OpenRouterEndpoint[];
 		endpoints?: OpenRouterEndpoint[];
 	};
-	if (Array.isArray(value.data)) return value.data;
-	if (Array.isArray(value.data?.endpoints)) return value.data.endpoints;
-	if (Array.isArray(value.endpoints)) return value.endpoints;
+	if (Array.isArray(value.data)) {
+		return value.data;
+	}
+	if (Array.isArray(value.data?.endpoints)) {
+		return value.data.endpoints;
+	}
+	if (Array.isArray(value.endpoints)) {
+		return value.endpoints;
+	}
 	return [];
 }
 
@@ -91,12 +92,12 @@ function normalizeEndpoint(raw: OpenRouterEndpoint): SourceEndpoint {
 	return {
 		providerTag: raw.tag ?? raw.provider_name ?? "",
 		active: raw.status === undefined || raw.status === 0,
-		...(raw.context_length != null
-			? { contextLength: raw.context_length }
-			: {}),
-		...(raw.max_completion_tokens != null
-			? { maxCompletionTokens: raw.max_completion_tokens }
-			: {}),
+		...(raw.context_length == null
+			? {}
+			: { contextLength: raw.context_length }),
+		...(raw.max_completion_tokens == null
+			? {}
+			: { maxCompletionTokens: raw.max_completion_tokens }),
 		...(pricing ? { pricing } : {}),
 		...(raw.supported_parameters
 			? { supportedParameters: raw.supported_parameters }
@@ -114,13 +115,13 @@ function normalizeModel(
 	return {
 		source: "openrouter",
 		id: model.id,
-		...(model.name !== undefined ? { name: model.name } : {}),
+		...(model.name === undefined ? {} : { name: model.name }),
 		inputModalities: model.architecture?.input_modalities ?? [],
 		outputModalities: model.architecture?.output_modalities ?? [],
-		...(contextWindow != null ? { contextWindow } : {}),
-		...(model.top_provider?.max_completion_tokens != null
-			? { maxTokens: model.top_provider.max_completion_tokens }
-			: {}),
+		...(contextWindow == null ? {} : { contextWindow }),
+		...(model.top_provider?.max_completion_tokens == null
+			? {}
+			: { maxTokens: model.top_provider.max_completion_tokens }),
 		...(pricing ? { pricing } : {}),
 		...(model.supported_parameters
 			? { supportedParameters: model.supported_parameters }
@@ -155,4 +156,5 @@ export const openRouterSource: CatalogSource = {
 };
 
 // Re-exported for sources/openrouter.test.ts fixtures and for merge.ts's pricing conversion needs.
-export { dollarsPerTokenToCentsPerMillion, normalizeModel, normalizeEndpoint };
+export { dollarsPerTokenToCentsPerMillion } from "../pricing.ts";
+export { normalizeModel, normalizeEndpoint };

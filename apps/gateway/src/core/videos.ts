@@ -138,13 +138,15 @@ export function resolveVideoSize(
 			...(mapping?.resolution ? { resolution: mapping.resolution } : {}),
 		};
 	}
-	if (!req.aspectRatio && !req.resolution) return undefined;
+	if (!(req.aspectRatio || req.resolution)) {
+		return undefined;
+	}
 	const requestedResolution = req.resolution?.toLowerCase();
 	const match = Object.entries(profile?.sizes ?? {}).find(
-		([, mapping]) =>
-			(!req.aspectRatio || mapping.aspectRatio === req.aspectRatio) &&
+		([, candidate]) =>
+			(!req.aspectRatio || candidate.aspectRatio === req.aspectRatio) &&
 			(!requestedResolution ||
-				mapping.resolution?.toLowerCase() === requestedResolution),
+				candidate.resolution?.toLowerCase() === requestedResolution),
 	);
 	if (!match) {
 		return {
@@ -157,8 +159,8 @@ export function resolveVideoSize(
 	const resolution = mapping.resolution ?? req.resolution;
 	return {
 		size: mapping.size ?? key,
-		...(aspectRatio !== undefined ? { aspectRatio } : {}),
-		...(resolution !== undefined ? { resolution } : {}),
+		...(aspectRatio === undefined ? {} : { aspectRatio }),
+		...(resolution === undefined ? {} : { resolution }),
 	};
 }
 
@@ -219,7 +221,9 @@ export function sanitizeVideoRequestBody(value: unknown, depth = 0): unknown {
 			? redactedDataUrl(value)
 			: value;
 	}
-	if (depth >= 6 || value === null || typeof value !== "object") return value;
+	if (depth >= 6 || value === null || typeof value !== "object") {
+		return value;
+	}
 	if (Array.isArray(value)) {
 		return value.map((item) => sanitizeVideoRequestBody(item, depth + 1));
 	}

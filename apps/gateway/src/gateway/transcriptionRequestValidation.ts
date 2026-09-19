@@ -18,11 +18,12 @@ export function assertTranscriptionRequestSupported(
 	meta: ResolvedModelMetadata,
 ): void {
 	const profile = transcriptionProfileFor(meta);
-	if (!profile)
+	if (!profile) {
 		unsupported(
 			"model",
 			"The selected model has no audio transcription profile.",
 		);
+	}
 
 	if (!profile.responseFormats.includes(req.responseFormat)) {
 		unsupported(

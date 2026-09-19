@@ -47,7 +47,9 @@ function candidatesForModel(model: SourceModel): Array<{
 		const matchedEndpoint = model.endpoints.find((endpoint) =>
 			endpointBelongsToAdapter(endpoint.providerTag, mapping.adapterKey),
 		);
-		if (mapping.requiresEndpointMatch && !matchedEndpoint) continue;
+		if (mapping.requiresEndpointMatch && !matchedEndpoint) {
+			continue;
+		}
 		results.push({
 			adapterKey: mapping.adapterKey,
 			upstreamModel: mapping.upstreamModel,

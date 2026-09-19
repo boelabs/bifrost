@@ -18,7 +18,9 @@ function headersFromRaw(rawHeaders: string[]): Headers {
 	for (let index = 0; index + 1 < rawHeaders.length; index += 2) {
 		const name = rawHeaders[index];
 		const value = rawHeaders[index + 1];
-		if (name !== undefined && value !== undefined) headers.append(name, value);
+		if (name !== undefined && value !== undefined) {
+			headers.append(name, value);
+		}
 	}
 	return headers;
 }
@@ -64,16 +66,18 @@ function requestAddress(
 					return;
 				}
 				const bodyAllowed = ![101, 204, 205, 304].includes(status);
-				if (!bodyAllowed) incoming.resume();
+				if (!bodyAllowed) {
+					incoming.resume();
+				}
 				const body = bodyAllowed
 					? (Readable.toWeb(incoming) as ReadableStream<Uint8Array>)
 					: null;
 				resolve(
 					new Response(body, {
 						status,
-						...(incoming.statusMessage !== undefined
-							? { statusText: incoming.statusMessage }
-							: {}),
+						...(incoming.statusMessage === undefined
+							? {}
+							: { statusText: incoming.statusMessage }),
 						headers: headersFromRaw(incoming.rawHeaders),
 					}),
 				);
@@ -95,7 +99,9 @@ export async function fetchPinnedHttps(
 ): Promise<Response> {
 	let lastError: unknown;
 	for (const address of addresses) {
-		if (options.signal.aborted) throw options.signal.reason;
+		if (options.signal.aborted) {
+			throw options.signal.reason;
+		}
 		try {
 			return await requestAddress(url, address, options);
 		} catch (error) {

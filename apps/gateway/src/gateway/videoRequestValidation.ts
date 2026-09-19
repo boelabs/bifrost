@@ -47,7 +47,9 @@ function assertTaskInputs(req: CanonicalVideoRequest): void {
 		invalidTaskInput("frame_images", "A last frame requires a first frame.");
 	}
 
-	if (req.task === undefined) return;
+	if (req.task === undefined) {
+		return;
+	}
 	if (req.task === "text_to_video" && refs.length + frameImages.length > 0) {
 		invalidTaskInput(
 			"task",
@@ -72,13 +74,14 @@ function assertTaskInputs(req: CanonicalVideoRequest): void {
 			"reference_to_video requires input_references and cannot use frame_images.",
 		);
 	}
-	if (req.task === "edit" || req.task === "extend") {
-		if (videoCount !== 1 || frameImages.length > 0) {
-			invalidTaskInput(
-				"task",
-				`${req.task} requires exactly one video reference and cannot use frame_images.`,
-			);
-		}
+	if (
+		(req.task === "edit" || req.task === "extend") &&
+		(videoCount !== 1 || frameImages.length > 0)
+	) {
+		invalidTaskInput(
+			"task",
+			`${req.task} requires exactly one video reference and cannot use frame_images.`,
+		);
 	}
 }
 
@@ -92,10 +95,14 @@ function assertDimensionsSupported(
 			`The selected model does not support size=${req.size}.`,
 		);
 	}
-	if (!req.aspectRatio && !req.resolution) return;
+	if (!(req.aspectRatio || req.resolution)) {
+		return;
+	}
 	const resolved = resolveVideoSize(req, profile);
 	// Without a profile size table there is nothing to check against; the adapter forwards as-is.
-	if (!profile.sizes) return;
+	if (!profile.sizes) {
+		return;
+	}
 	if (!resolved?.size) {
 		const requested = [
 			...(req.aspectRatio ? [`aspect_ratio=${req.aspectRatio}`] : []),
@@ -129,13 +136,11 @@ function assertReferencesSupported(
 				"The selected model does not support file_id references.",
 			);
 		}
-		if (ref.type === "image_url") {
-			if (!profile.supportsImageUrl) {
-				unsupported(
-					"input_references",
-					"The selected model does not support image references.",
-				);
-			}
+		if (ref.type === "image_url" && !profile.supportsImageUrl) {
+			unsupported(
+				"input_references",
+				"The selected model does not support image references.",
+			);
 		}
 		if (ref.type === "audio_url" && !profile.supportsAudioUrl) {
 			unsupported(
@@ -150,13 +155,15 @@ function assertReferencesSupported(
 			);
 		}
 	}
-	if (req.frameImages && req.frameImages.length > 0) {
-		if (!profile.supportsFrameImages) {
-			unsupported(
-				"frame_images",
-				"The selected model does not support frame images.",
-			);
-		}
+	if (
+		req.frameImages &&
+		req.frameImages.length > 0 &&
+		!profile.supportsFrameImages
+	) {
+		unsupported(
+			"frame_images",
+			"The selected model does not support frame images.",
+		);
 	}
 }
 

@@ -14,7 +14,9 @@ const wantsSsl = /sslmode=(require|verify-full|verify-ca|prefer)/i.test(
 
 export const sql = postgres(env.DATABASE_URL, {
 	max: 10,
-	onnotice: () => {},
+	onnotice: () => {
+		/* intentionally empty */
+	},
 	ssl: wantsSsl ? "require" : false,
 });
 

@@ -24,6 +24,22 @@ import {
  * A transport nothing supports is a configuration error either way, but the message says which of
  * the three chose it: hunting for a deployment setting that was never made is how an afternoon goes.
  */
+/** How this deployment came by its transport, for the sentence that reports the mismatch. */
+function transportSource(
+	configuredOverride: string | undefined,
+	declared: string | undefined,
+	upstreamModel: string,
+	defaultTransport: string | undefined,
+): string {
+	if (configuredOverride !== undefined) {
+		return `is configured with transport "${configuredOverride}"`;
+	}
+	if (declared !== undefined) {
+		return `runs model "${upstreamModel}", which declares transport "${declared}"`;
+	}
+	return `falls back to the default transport "${defaultTransport}"`;
+}
+
 export function resolveTransport(
 	candidate: DeploymentCandidate,
 	callType: CallType,
@@ -45,12 +61,12 @@ export function resolveTransport(
 	const declared = operation
 		? declaredTransportFor(candidate.meta, operation.id)
 		: undefined;
-	const source =
-		configuredOverride !== undefined
-			? `is configured with transport "${configuredOverride}"`
-			: declared !== undefined
-				? `runs model "${candidate.upstreamModel}", which declares transport "${declared}"`
-				: `falls back to the default transport "${transports?.default}"`;
+	const source = transportSource(
+		configuredOverride,
+		declared,
+		candidate.upstreamModel,
+		transports?.default,
+	);
 	const supported = transports?.supported;
 	const transport =
 		configuredOverride ?? declared ?? transports?.default ?? "chat_completions";

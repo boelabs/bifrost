@@ -84,9 +84,7 @@ test("a prompt alone generates, and a prompt with sources edits", async () => {
 			url: String(input),
 			multipart: init?.body instanceof FormData,
 		});
-		return new Response(JSON.stringify({ created: 1, data: [] }), {
-			headers: { "content-type": "application/json" },
-		});
+		return Response.json({ created: 1, data: [] });
 	};
 	const options = { fetch: stub, csrf: () => "token" };
 	await runImages(

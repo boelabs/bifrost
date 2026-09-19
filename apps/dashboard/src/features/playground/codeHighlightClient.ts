@@ -5,10 +5,10 @@ import {
 	type HighlightResult,
 } from "./codeHighlight";
 
-type Subscriber = {
+interface Subscriber {
 	callback: (result: HighlightResult) => void;
 	result?: HighlightResult;
-};
+}
 type WorkerPort = Pick<
 	Worker,
 	"postMessage" | "terminate" | "onmessage" | "onerror"
@@ -24,16 +24,22 @@ export function createHighlightClient(createWorker: () => WorkerPort) {
 	let failed = false;
 
 	function schedule() {
-		if (timer || inFlight || !pending.size || failed) return;
+		if (timer || inFlight || !pending.size || failed) {
+			return;
+		}
 		timer = setTimeout(() => {
 			timer = undefined;
 			const request = pending.values().next().value;
-			if (!request) return;
+			if (!request) {
+				return;
+			}
 			try {
 				if (!worker) {
 					worker = createWorker();
 					worker.onmessage = (event: MessageEvent<HighlightReply>) => {
-						if (!inFlight || event.data.id !== inFlight.id) return;
+						if (!inFlight || event.data.id !== inFlight.id) {
+							return;
+						}
 						const subscriber = subscribers.get(inFlight.id);
 						if (subscriber) {
 							subscriber.result = applyHighlight(
@@ -73,7 +79,9 @@ export function createHighlightClient(createWorker: () => WorkerPort) {
 			subscribers.set(id, { callback });
 			return {
 				update(code: string, language: string) {
-					if (!subscribers.has(id) || failed) return;
+					if (!subscribers.has(id) || failed) {
+						return;
+					}
 					pending.set(id, { id, code, language });
 					schedule();
 				},

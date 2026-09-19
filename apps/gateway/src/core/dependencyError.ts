@@ -30,13 +30,18 @@ const DEPENDENCY_MESSAGE_RE =
 
 /** True if `err` looks like a transient dependency-connectivity failure rather than a request bug. */
 export function isDependencyError(err: unknown): boolean {
-	if (!err || typeof err !== "object") return false;
-	const code = (err as { code?: unknown }).code;
-	if (typeof code === "string" && DEPENDENCY_ERROR_CODES.has(code)) return true;
-	// ioredis raises this once it exhausts maxRetriesPerRequest against a down server.
-	if ((err as { name?: unknown }).name === "MaxRetriesPerRequestError")
+	if (!err || typeof err !== "object") {
+		return false;
+	}
+	const { code } = err as { code?: unknown };
+	if (typeof code === "string" && DEPENDENCY_ERROR_CODES.has(code)) {
 		return true;
-	const message = (err as { message?: unknown }).message;
+	}
+	// ioredis raises this once it exhausts maxRetriesPerRequest against a down server.
+	if ((err as { name?: unknown }).name === "MaxRetriesPerRequestError") {
+		return true;
+	}
+	const { message } = err as { message?: unknown };
 	return typeof message === "string" && DEPENDENCY_MESSAGE_RE.test(message);
 }
 

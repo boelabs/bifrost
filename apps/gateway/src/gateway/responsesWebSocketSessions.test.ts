@@ -41,7 +41,7 @@ test("responses websocket sessions: private upstream ids continue only on the bo
 				return {
 					closed: false,
 					async create(
-						request: CanonicalChatRequest,
+						canonical: CanonicalChatRequest,
 						options: {
 							previousResponseId?: string;
 							generate: boolean;
@@ -49,7 +49,7 @@ test("responses websocket sessions: private upstream ids continue only on the bo
 						},
 					) {
 						seen.push({
-							request,
+							request: canonical,
 							...(options.previousResponseId
 								? { previousResponseId: options.previousResponseId }
 								: {}),
@@ -59,7 +59,9 @@ test("responses websocket sessions: private upstream ids continue only on the bo
 							upstreamResponseId: Promise.resolve(`upstream_${seen.length}`),
 						};
 					},
-					close() {},
+					close() {
+						/* intentionally empty */
+					},
 				};
 			},
 		},
@@ -146,11 +148,11 @@ test("responses websocket sessions: rehydrates full canonical input when upstrea
 				return {
 					closed: false,
 					async create(
-						request: CanonicalChatRequest,
+						canonical: CanonicalChatRequest,
 						options: { previousResponseId?: string },
 					) {
 						seen.push({
-							request,
+							request: canonical,
 							...(options.previousResponseId
 								? { previousResponseId: options.previousResponseId }
 								: {}),
@@ -171,7 +173,9 @@ test("responses websocket sessions: rehydrates full canonical input when upstrea
 							upstreamResponseId: Promise.resolve(`upstream_${call}`),
 						};
 					},
-					close() {},
+					close() {
+						/* intentionally empty */
+					},
 				};
 			},
 		},
@@ -273,7 +277,9 @@ test("responses websocket sessions: generate:false stays local for providers wit
 	assert.equal(result.kind, "stream");
 	if (result.kind === "stream") {
 		const chunks: CanonicalChatStreamChunk[] = [];
-		for await (const chunk of result.chunks) chunks.push(chunk);
+		for await (const chunk of result.chunks) {
+			chunks.push(chunk);
+		}
 		assert.equal(chunks.length, 2);
 		assert.deepEqual(chunks[0]?.choices[0]?.delta, {});
 		assert.equal(chunks[0]?.choices[0]?.finishReason, null);

@@ -60,7 +60,7 @@ function Toggle({
 }) {
 	return (
 		<div className="flex flex-col gap-1">
-			<Switch checked={checked} onCheckedChange={onChange} disabled={disabled}>
+			<Switch checked={checked} disabled={disabled} onCheckedChange={onChange}>
 				{label}
 			</Switch>
 			<p className="max-w-3xl text-fg-muted text-xs">{description}</p>
@@ -123,8 +123,9 @@ export function RouterForm({
 		const allowedFailsByClass: Record<string, number> = {};
 		for (const cls of ERROR_CLASSES) {
 			const raw = form.get(`class:${cls}`);
-			if (typeof raw === "string" && raw.trim() !== "")
+			if (typeof raw === "string" && raw.trim() !== "") {
 				allowedFailsByClass[cls] = Number(raw);
+			}
 		}
 
 		try {
@@ -158,26 +159,26 @@ export function RouterForm({
 	const numberBox = (field: (typeof ROUTER_NUMERIC_FIELDS)[number]) => (
 		<Input
 			key={field.key}
+			min={field.min}
 			name={field.key}
 			type="number"
-			min={field.min}
 			{...(field.step === undefined ? {} : { step: field.step })}
-			label={field.unit ? `${field.label} (${field.unit})` : field.label}
+			defaultValue={String(settings?.[field.key] ?? "")}
 			description={field.hint}
 			disabled={!editable || (field.group === "deadlines" && !adaptive)}
-			defaultValue={String(settings?.[field.key] ?? "")}
+			label={field.unit ? `${field.label} (${field.unit})` : field.label}
 		/>
 	);
 
 	return (
-		<Form onSubmit={onSubmit} className="flex flex-col gap-6">
+		<Form className="flex flex-col gap-6" onSubmit={onSubmit}>
 			<div className="grid gap-6 sm:grid-cols-2">
 				<Select
-					label="Routing strategy"
 					description="How a request picks one deployment out of a public model's pool."
 					disabled={!editable}
-					value={strategy}
+					label="Routing strategy"
 					onValueChange={(key) => setStrategy(String(key) as never)}
+					value={strategy}
 				>
 					{ROUTING_STRATEGIES.map((value) => (
 						<SelectItem key={value} value={value}>
@@ -187,11 +188,11 @@ export function RouterForm({
 				</Select>
 
 				<Select
-					label="Unsupported parameters"
 					description="What happens when a request sends a parameter the target model does not support."
 					disabled={!editable}
-					value={parameters}
+					label="Unsupported parameters"
 					onValueChange={(key) => setParameters(String(key) as never)}
+					value={parameters}
 				>
 					{PARAMETER_STRATEGIES.map((value) => (
 						<SelectItem key={value} value={value}>
@@ -204,25 +205,25 @@ export function RouterForm({
 			<Section {...ROUTER_GROUPS[0]!}>
 				<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
 					<Input
-						name="failureRatePercent"
-						type="number"
-						min={1}
-						max={100}
-						label="Failure rate (%)"
-						description="Share of the window's attempts that must fail. 50 means half of them."
-						disabled={!editable}
 						defaultValue={String(
 							toPercent(settings?.failureRatePercent ?? 0.5),
 						)}
+						description="Share of the window's attempts that must fail. 50 means half of them."
+						disabled={!editable}
+						label="Failure rate (%)"
+						max={100}
+						min={1}
+						name="failureRatePercent"
+						type="number"
 					/>
 					{fieldsIn("opening").map(numberBox)}
 				</div>
 				<Toggle
-					label="Never quarantine the last deployment"
-					description="When a public model has nowhere else to route, count the failure but keep serving. A 503 from this gateway is less useful to the caller than the upstream's own error."
 					checked={protectLast}
-					onChange={setProtectLast}
+					description="When a public model has nowhere else to route, count the failure but keep serving. A 503 from this gateway is less useful to the caller than the upstream's own error."
 					disabled={!editable}
+					label="Never quarantine the last deployment"
+					onChange={setProtectLast}
 				/>
 			</Section>
 
@@ -234,11 +235,11 @@ export function RouterForm({
 
 			<Section {...ROUTER_GROUPS[2]!}>
 				<Toggle
-					label="Adapt deadlines to each deployment"
-					description="Use each deployment's measured first-output time instead of the pool-wide budget."
 					checked={adaptive}
-					onChange={setAdaptive}
+					description="Use each deployment's measured first-output time instead of the pool-wide budget."
 					disabled={!editable}
+					label="Adapt deadlines to each deployment"
+					onChange={setAdaptive}
 				/>
 				<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 					{fieldsIn("deadlines").map(numberBox)}
@@ -246,22 +247,22 @@ export function RouterForm({
 			</Section>
 
 			<Section
-				title="Budget per error class"
 				description={`Leave a box empty to inherit the ceiling above (${inheritedBudget}). A timeout and a 502 are both transient, and an upstream you know well rarely deserves the same tolerance for each.`}
+				title="Budget per error class"
 			>
 				<div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
 					{ERROR_CLASSES.map((cls) => (
 						<Input
-							key={cls}
-							name={`class:${cls}`}
-							type="number"
-							min={0}
-							label={cls}
-							placeholder={String(inheritedBudget)}
-							disabled={!editable}
 							defaultValue={
 								budgets[cls] === undefined ? "" : String(budgets[cls])
 							}
+							disabled={!editable}
+							key={cls}
+							label={cls}
+							min={0}
+							name={`class:${cls}`}
+							placeholder={String(inheritedBudget)}
+							type="number"
 						/>
 					))}
 				</div>
@@ -272,7 +273,7 @@ export function RouterForm({
 			{editable ? (
 				<div className="flex items-center justify-end gap-3">
 					{saved ? <span className="text-fg-muted text-sm">Saved.</span> : null}
-					<Button type="submit" disabled={pending}>
+					<Button disabled={pending} type="submit">
 						{pending ? "Saving…" : "Save router settings"}
 					</Button>
 				</div>

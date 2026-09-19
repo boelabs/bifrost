@@ -21,17 +21,46 @@ export function reasoningGroupAt(
 ): ReasoningPart[] {
 	for (let previous = index - 1; previous >= 0; previous--) {
 		const part = parts[previous];
-		if (part?.type === "step-start") continue;
-		if (part?.type === "reasoning") return [];
+		if (part?.type === "step-start") {
+			continue;
+		}
+		if (part?.type === "reasoning") {
+			return [];
+		}
 		break;
 	}
 	const group: ReasoningPart[] = [];
 	for (const [offset, part] of parts.slice(index).entries()) {
-		if (part.type === "reasoning")
+		if (part.type === "reasoning") {
 			group.push({ ...part, key: `reasoning-${index + offset}` });
-		else if (part.type !== "step-start") break;
+		} else if (part.type !== "step-start") {
+			break;
+		}
 	}
 	return group;
+}
+
+/** What the collapsed panel calls itself, which is also how it says the run ended. */
+function reasoningHeading(completed: boolean, interrupted: boolean): string {
+	if (completed) {
+		return "Reasoning";
+	}
+	return interrupted ? "Reasoning interrupted" : "Thinking";
+}
+
+/** What a reasoning step says when it produced no text of its own. */
+function emptyStepText(
+	stepStreaming: boolean,
+	streaming: boolean,
+	interrupted: boolean,
+): string {
+	if (streaming && stepStreaming) {
+		return "Thinking...";
+	}
+	if (interrupted && stepStreaming) {
+		return "Reasoning was interrupted before text was returned.";
+	}
+	return "The model did not return reasoning text.";
 }
 
 export function Reasoning({
@@ -46,19 +75,20 @@ export function Reasoning({
 	interrupted?: boolean;
 }) {
 	const completed = !interrupted && (!streaming || hasFollowingText);
-	const [open, setOpen] = useState(!completed && !hasFollowingText);
+	const [open, setOpen] = useState(!(completed || hasFollowingText));
 	useEffect(() => {
-		if (completed) setOpen(false);
+		if (completed) {
+			setOpen(false);
+		}
 	}, [completed]);
-	if (!steps.length) return null;
+	if (!steps.length) {
+		return null;
+	}
+	const heading = reasoningHeading(completed, interrupted);
 	return (
-		<ChainOfThought open={open} onOpenChange={setOpen}>
+		<ChainOfThought onOpenChange={setOpen} open={open}>
 			<ChainOfThoughtHeader aria-label="Toggle reasoning">
-				{completed
-					? "Reasoning"
-					: interrupted
-						? "Reasoning interrupted"
-						: "Thinking"}
+				{heading}
 			</ChainOfThoughtHeader>
 			<ChainOfThoughtContent>
 				<div className="space-y-4">
@@ -71,23 +101,23 @@ export function Reasoning({
 						>
 							{step.text.trim() ? (
 								<Markdown
-									text={step.text}
 									streaming={streaming && step.state === "streaming"}
+									text={step.text}
 								/>
 							) : (
 								<p className="text-fg-muted leading-7">
-									{streaming && step.state === "streaming"
-										? "Thinking..."
-										: interrupted && step.state === "streaming"
-											? "Reasoning was interrupted before text was returned."
-											: "The model did not return reasoning text."}
+									{emptyStepText(
+										step.state === "streaming",
+										streaming,
+										interrupted,
+									)}
 								</p>
 							)}
 						</ChainOfThoughtStep>
 					))}
-					{completed && (
+					{completed ? (
 						<ChainOfThoughtStep icon={IconCircleCheck} label="Ready" />
-					)}
+					) : null}
 				</div>
 			</ChainOfThoughtContent>
 		</ChainOfThought>

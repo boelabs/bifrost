@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import sharp from "sharp";
 
 import {
+	type CanonicalImageStreamEvent,
 	type CanonicalImageRequest,
 	type CanonicalImageInput,
 	type ImageModelProfile,
@@ -31,7 +32,7 @@ function ctx(
 ): AdapterContext {
 	return {
 		upstreamModel: "upstream-image",
-		transport: transport,
+		transport,
 		credentials:
 			adapter === "google"
 				? { apiKey: "google" }
@@ -192,12 +193,13 @@ test("OpenAI images: normalizes partial/completed SSE events", async () => {
 			controller.close();
 		},
 	});
-	const events = [];
+	const events: CanonicalImageStreamEvent[] = [];
 	for await (const event of openaiAdapter.imageGeneration!.parseStream!(
 		stream,
 		ctx("images"),
-	))
+	)) {
 		events.push(event);
+	}
 	assert.equal(events[0]?.kind, "partial");
 	assert.equal(events[1]?.kind, "completed");
 	assert.equal(
@@ -387,7 +389,7 @@ test("Gemini 3.1 images: rungs map to thinkingLevel; auto/omitted send none", as
 });
 
 test("OpenAI images: response_format goes only to models that have the field", async () => {
-	const generation = {
+	const request = {
 		operation: "generation" as const,
 		model: "m",
 		prompt: "a cat",
@@ -399,7 +401,7 @@ test("OpenAI images: response_format goes only to models that have the field", a
 	const dalle = ctx("images");
 	dalle.meta.image = { ...profile, supportsNativeStreaming: false };
 	const withField = await openaiAdapter.imageGeneration!.buildRequest(
-		generation,
+		request,
 		dalle,
 	);
 	assert.equal(
@@ -416,14 +418,14 @@ test("OpenAI images: response_format goes only to models that have the field", a
 		nativeResponseFormat: false,
 	};
 	const body = JSON.parse(
-		(await openaiAdapter.imageGeneration!.buildRequest(generation, gptImage))
+		(await openaiAdapter.imageGeneration!.buildRequest(request, gptImage))
 			.body as string,
 	);
 	assert.equal("response_format" in body, false);
 
 	// Edits go through the same body builder, so the multipart form drops it too.
 	const form = (await openaiAdapter.imageEdit!.buildRequest(
-		{ ...generation, operation: "edit", images: [] },
+		{ ...request, operation: "edit", images: [] },
 		gptImage,
 	)) as { body: FormData };
 	assert.equal(form.body.has("response_format"), false);

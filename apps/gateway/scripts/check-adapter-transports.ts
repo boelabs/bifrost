@@ -7,7 +7,9 @@ async function sourceFiles(directory: string): Promise<string[]> {
 	const nested = await Promise.all(
 		entries.map((entry) => {
 			const path = join(directory, entry.name);
-			if (entry.isDirectory()) return sourceFiles(path);
+			if (entry.isDirectory()) {
+				return sourceFiles(path);
+			}
 			return entry.isFile() &&
 				path.endsWith(".ts") &&
 				!path.endsWith(".test.ts")
@@ -23,9 +25,12 @@ for (const file of await sourceFiles(
 	fileURLToPath(new URL("../src/adapters", import.meta.url)),
 )) {
 	const source = await readFile(file, "utf8");
-	if (/\bfetch\s*\(/.test(source)) violations.push(`${file}: direct fetch()`);
-	if (/new\s+WebSocket\s*\(/.test(source))
+	if (/\bfetch\s*\(/.test(source)) {
+		violations.push(`${file}: direct fetch()`);
+	}
+	if (/new\s+WebSocket\s*\(/.test(source)) {
 		violations.push(`${file}: direct WebSocket construction`);
+	}
 }
 
 if (violations.length > 0) {

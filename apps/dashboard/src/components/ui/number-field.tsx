@@ -43,7 +43,7 @@ function Group({
 				controlStyles({
 					size,
 					variant,
-					className: "gap-0 p-0 overflow-hidden",
+					className: "gap-0 overflow-hidden p-0",
 				}),
 				className,
 			)}
@@ -62,7 +62,7 @@ function Input({
 		<BaseNumberField.Input
 			{...props}
 			className={mergeClassName(
-				"min-w-0 w-full flex-1 bg-transparent px-2 text-center tabular-nums outline-none disabled:cursor-not-allowed",
+				"w-full min-w-0 flex-1 bg-transparent px-2 text-center tabular-nums outline-none disabled:cursor-not-allowed",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

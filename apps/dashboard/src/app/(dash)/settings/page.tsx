@@ -15,8 +15,8 @@ export default function SettingsPage() {
 	return (
 		<>
 			<PageHeader
-				title="Settings"
 				description="Router behaviour, fallback chains, and the response cache. These apply to every deployment."
+				title="Settings"
 			/>
 			<RouteBoundary title="Settings could not be loaded">
 				<Suspense fallback={<SettingsSkeleton />}>
@@ -39,10 +39,10 @@ async function Configuration() {
 	]);
 	return (
 		<SettingsView
-			settings={settings}
-			sessions={sessions}
 			fallbacks={fallbacks}
 			models={models}
+			sessions={sessions}
+			settings={settings}
 		/>
 	);
 }
@@ -53,14 +53,14 @@ function SettingsSkeleton() {
 		<div className="flex flex-col gap-6">
 			{["24rem", "12.5rem", "12.5rem", "3rem"].map((height, index) => (
 				<div
+					className="rounded-(--ui-radius-surface) border border-border/50 bg-card p-6"
 					// biome-ignore lint/suspicious/noArrayIndexKey: placeholder cards have no identity
 					key={index}
-					className="rounded-[var(--ui-radius-surface)] border border-border/50 bg-card p-6"
 				>
 					<Skeleton className="h-5" width="8rem" />
 					<Skeleton className="mt-2 h-3.5" width="24rem" />
 					<Skeleton
-						className="mt-5 rounded-[var(--ui-radius-surface)]"
+						className="mt-5 rounded-(--ui-radius-surface)"
 						style={{ height }}
 						width="100%"
 					/>

@@ -13,7 +13,9 @@ interface PublicParameterConstraint {
 /** Common capabilities, not the catalog's optimistic union: requests use normal pool routing. */
 export function publicTextCapabilities(metas: ResolvedModelMetadata[]) {
 	const text = metas.filter((meta) => meta.operations?.["text.generate"]);
-	if (!text.length) return undefined;
+	if (!text.length) {
+		return;
+	}
 	const parameters = text.map(supportedParameterNames);
 	const supported = (parameters[0] ?? []).filter((name) =>
 		parameters.every((names) => names.includes(name)),
@@ -23,35 +25,53 @@ export function publicTextCapabilities(metas: ResolvedModelMetadata[]) {
 		const constraint: PublicParameterConstraint = {};
 		for (const meta of text) {
 			const entry = meta.operations?.["text.generate"]?.parameters?.[name];
-			if (typeof entry !== "object") continue;
-			if (entry.min !== undefined)
-				constraint.min = Math.max(constraint.min ?? -Infinity, entry.min);
-			if (entry.max !== undefined)
-				constraint.max = Math.min(constraint.max ?? Infinity, entry.max);
-			if (entry.values !== undefined)
+			if (typeof entry !== "object") {
+				continue;
+			}
+			if (entry.min !== undefined) {
+				constraint.min = Math.max(
+					constraint.min ?? Number.NEGATIVE_INFINITY,
+					entry.min,
+				);
+			}
+			if (entry.max !== undefined) {
+				constraint.max = Math.min(
+					constraint.max ?? Number.POSITIVE_INFINITY,
+					entry.max,
+				);
+			}
+			if (entry.values !== undefined) {
 				constraint.values = constraint.values
 					? constraint.values.filter((value) => entry.values?.includes(value))
 					: [...entry.values];
+			}
 		}
-		if (constraint.values)
+		if (constraint.values) {
 			constraint.values = constraint.values.filter(
 				(value) =>
 					typeof value !== "number" ||
-					(value >= (constraint.min ?? -Infinity) &&
-						value <= (constraint.max ?? Infinity)),
+					(value >= (constraint.min ?? Number.NEGATIVE_INFINITY) &&
+						value <= (constraint.max ?? Number.POSITIVE_INFINITY)),
 			);
-		if (Object.keys(constraint).length) constraints[name] = constraint;
+		}
+		if (Object.keys(constraint).length) {
+			constraints[name] = constraint;
+		}
 	}
 	const supportedParameters = supported.filter((name) => {
 		const constraint = constraints[name];
 		return (
 			!constraint ||
-			((constraint.min ?? -Infinity) <= (constraint.max ?? Infinity) &&
+			((constraint.min ?? Number.NEGATIVE_INFINITY) <=
+				(constraint.max ?? Number.POSITIVE_INFINITY) &&
 				constraint.values?.length !== 0)
 		);
 	});
-	for (const name of Object.keys(constraints))
-		if (!supportedParameters.includes(name)) delete constraints[name];
+	for (const name of Object.keys(constraints)) {
+		if (!supportedParameters.includes(name)) {
+			delete constraints[name];
+		}
+	}
 	const modalities = text.map(
 		(meta) =>
 			meta.operations?.["text.generate"]?.modalities?.input ??

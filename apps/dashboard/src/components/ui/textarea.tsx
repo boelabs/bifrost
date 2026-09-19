@@ -9,5 +9,5 @@ export interface TextareaProps extends Omit<InputProps, "type" | "render"> {
 }
 
 export function Textarea({ rows = 4, cols, ...props }: TextareaProps) {
-	return <Input {...props} render={<textarea rows={rows} cols={cols} />} />;
+	return <Input {...props} render={<textarea cols={cols} rows={rows} />} />;
 }

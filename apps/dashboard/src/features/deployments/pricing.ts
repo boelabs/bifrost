@@ -1,5 +1,5 @@
 import type { components } from "#/shared/api/schema";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 export type Pricing = NonNullable<
 	components["schemas"]["CreateDeployment"]["pricing"]
@@ -48,11 +48,14 @@ const pricingSchema = z
 	.strict();
 
 export function parsePricing(value: unknown): Pricing | undefined {
-	if (value === undefined || value === null) return undefined;
+	if (value === undefined || value === null) {
+		return undefined;
+	}
 	const result = pricingSchema.safeParse(value);
-	if (!result.success)
+	if (!result.success) {
 		throw new Error(
 			`Invalid pricing: ${result.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; ")}`,
 		);
+	}
 	return result.data;
 }

@@ -10,7 +10,7 @@ const runtime = {
 };
 
 test("persistence health recovers while retaining lifetime failure totals", () => {
-	let now = 1_000;
+	let now = 1000;
 	const tracker = new PersistenceHealthTracker(() => now);
 	tracker.recordFailure();
 	assert.equal(tracker.status(runtime).healthy, false);
@@ -23,7 +23,7 @@ test("persistence health recovers while retaining lifetime failure totals", () =
 });
 
 test("a queue drop recovers only after a later successful persistence", () => {
-	let now = 1_000;
+	let now = 1000;
 	const tracker = new PersistenceHealthTracker(() => now);
 	tracker.recordDrop();
 	assert.equal(tracker.status(runtime).healthy, false);
@@ -39,7 +39,7 @@ test("high queue pressure degrades current health", () => {
 });
 
 test("event ordering remains correct when the clock has millisecond ties", () => {
-	const tracker = new PersistenceHealthTracker(() => 1_000);
+	const tracker = new PersistenceHealthTracker(() => 1000);
 	tracker.recordSuccess();
 	tracker.recordFailure();
 	assert.equal(tracker.status(runtime).healthy, false);

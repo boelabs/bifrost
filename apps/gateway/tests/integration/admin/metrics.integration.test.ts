@@ -20,7 +20,9 @@ const start = "2035-01-01T00:00:00.000Z";
 const end = "2035-01-02T00:00:00.000Z";
 
 before(async () => {
-	if (skip) return;
+	if (skip) {
+		return;
+	}
 	await db.insert(gatewayOperations).values(
 		ids.map((id, index) => ({
 			id,
@@ -33,9 +35,9 @@ before(async () => {
 			terminalVerified: index !== 2,
 			cacheHit: index === 1,
 			degraded: index === 0,
-			totalTokens: index === 0 ? 100 : index === 1 ? 50 : null,
+			totalTokens: [100, 50, null, null, null][index] ?? null,
 			promptTokens: [80, 40, 30, null, null][index] ?? null,
-			cacheReadTokens: index === 0 ? 60 : index === 1 ? 0 : null,
+			cacheReadTokens: [60, 0, null, null, null][index] ?? null,
 			cacheWriteTokens: index === 0 ? 10 : null,
 			consumerCostCents: index === 0 ? "3" : "0",
 			durationMs: index === 0 ? 1000 : null,
@@ -98,7 +100,9 @@ before(async () => {
 });
 
 after(async () => {
-	if (skip) return;
+	if (skip) {
+		return;
+	}
 	await db
 		.delete(upstreamAttempts)
 		.where(inArray(upstreamAttempts.operationId, ids));
@@ -175,12 +179,12 @@ test("metrics: requires authentication and rejects invalid queries", async () =>
 	assert.equal(invalid.status, 400);
 });
 
-async function summary(query: Record<string, string>) {
-	const response = await app.request(
-		`/admin/observability/summary?${new URLSearchParams(query)}`,
+async function summary(params: Record<string, string>) {
+	const result = await app.request(
+		`/admin/observability/summary?${new URLSearchParams(params)}`,
 		{ headers: auth },
 	);
-	return response;
+	return result;
 }
 
 test("summary: an explicit range replaces the trailing window, end excluded", {

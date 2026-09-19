@@ -62,7 +62,9 @@ const configSchema = {
 };
 
 function isPrivileged(ctx) {
-	if (ctx.auth.type === "master") return !ctx.config.watermarkMaster;
+	if (ctx.auth.type === "master") {
+		return !ctx.config.watermarkMaster;
+	}
 	return (
 		ctx.auth.virtualKeyName !== undefined &&
 		ctx.config.allowlist.has(ctx.auth.virtualKeyName)
@@ -113,7 +115,9 @@ export default defineExtension({
 	configSchema,
 	hooks: {
 		async onImageOutput(ctx, output) {
-			if (isPrivileged(ctx)) return output;
+			if (isPrivileged(ctx)) {
+				return output;
+			}
 			try {
 				const svg = watermarkSvg(
 					output.width,
@@ -124,10 +128,13 @@ export default defineExtension({
 				let pipeline = sharp(Buffer.from(output.data)).composite([
 					{ input: svg, top: 0, left: 0 },
 				]);
-				if (output.format === "jpeg") pipeline = pipeline.jpeg({ quality: 90 });
-				else if (output.format === "webp")
+				if (output.format === "jpeg") {
+					pipeline = pipeline.jpeg({ quality: 90 });
+				} else if (output.format === "webp") {
 					pipeline = pipeline.webp({ quality: 90 });
-				else pipeline = pipeline.png();
+				} else {
+					pipeline = pipeline.png();
+				}
 				const data = await pipeline.toBuffer();
 				return { ...output, data: new Uint8Array(data) };
 			} catch (err) {

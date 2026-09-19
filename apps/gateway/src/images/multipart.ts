@@ -31,19 +31,29 @@ export interface ParsedImageEditMultipart {
 	fields: ImageEditFields;
 	images: CanonicalImageInput[];
 	mask?: CanonicalImageInput;
-	cleanup(): Promise<void>;
+	cleanup: () => Promise<void>;
 	logBody: Record<string, unknown>;
+}
+
+/** Which of the two upload slots a multipart file part belongs to, if either. */
+function uploadField(name: string): "image" | "mask" | null {
+	if (name === "image" || name === "image[]") {
+		return "image";
+	}
+	return name === "mask" ? "mask" : null;
 }
 
 function badMultipart(
 	message: string,
 	param: string | null = null,
+	cause?: unknown,
 ): GatewayError {
 	return new GatewayError({
 		class: "bad_request",
 		message,
 		param,
 		code: "invalid_multipart",
+		cause,
 	});
 }
 
@@ -60,19 +70,22 @@ function safeFilename(value: string): string {
 function parseScalarFields(fields: Record<string, string>): unknown {
 	const out: Record<string, unknown> = { ...fields };
 	for (const key of ["n", "output_compression", "partial_images"]) {
-		if (fields[key] !== undefined) out[key] = Number(fields[key]);
+		if (fields[key] !== undefined) {
+			out[key] = Number(fields[key]);
+		}
 	}
 	if (fields.stream !== undefined) {
-		if (fields.stream !== "true" && fields.stream !== "false")
+		if (fields.stream !== "true" && fields.stream !== "false") {
 			throw badMultipart("stream must be true or false", "stream");
+		}
 		out.stream = fields.stream === "true";
 	}
 	if (fields.extra_body !== undefined) {
 		let parsed: unknown;
 		try {
 			parsed = JSON.parse(fields.extra_body);
-		} catch {
-			throw badMultipart("extra_body must be valid JSON", "extra_body");
+		} catch (cause) {
+			throw badMultipart("extra_body must be valid JSON", "extra_body", cause);
 		}
 		if (
 			parsed === null ||
@@ -95,22 +108,29 @@ async function inspectUpload(
 			limitInputPixels: 100_000_000,
 			animated: true,
 		}).metadata();
-	} catch {
-		throw badMultipart(`Invalid image file "${file.filename}"`, file.field);
+	} catch (cause) {
+		throw badMultipart(
+			`Invalid image file "${file.filename}"`,
+			file.field,
+			cause,
+		);
 	}
-	const format = metadata.format;
+	const { format } = metadata;
 	if (
-		!metadata.width ||
-		!metadata.height ||
-		!["png", "jpeg", "webp"].includes(format ?? "")
+		!(
+			metadata.width &&
+			metadata.height &&
+			["png", "jpeg", "webp"].includes(format ?? "")
+		)
 	) {
 		throw badMultipart(
 			`Unsupported image format for "${file.filename}"`,
 			file.field,
 		);
 	}
-	if ((metadata.pages ?? 1) > 1)
+	if ((metadata.pages ?? 1) > 1) {
 		throw badMultipart("Animated images are not supported", file.field);
+	}
 	const mimeType = `image/${format}` as CanonicalImageInput["mimeType"];
 	return {
 		path: file.path,
@@ -119,7 +139,7 @@ async function inspectUpload(
 		sizeBytes: file.sizeBytes,
 		width: metadata.width,
 		height: metadata.height,
-		...(metadata.hasAlpha !== undefined ? { hasAlpha: metadata.hasAlpha } : {}),
+		...(metadata.hasAlpha === undefined ? {} : { hasAlpha: metadata.hasAlpha }),
 	};
 }
 
@@ -130,7 +150,9 @@ export async function parseImageEditMultipart(
 	if (!contentType?.toLowerCase().startsWith("multipart/form-data")) {
 		throw badMultipart("Content-Type must be multipart/form-data", null);
 	}
-	if (!request.body) throw badMultipart("Missing multipart body", null);
+	if (!request.body) {
+		throw badMultipart("Missing multipart body", null);
+	}
 
 	const dir = await mkdtemp(join(tmpdir(), "bifrost-images-"));
 	const cleanup = () => rm(dir, { recursive: true, force: true });
@@ -154,25 +176,25 @@ export async function parseImageEditMultipart(
 		});
 
 		bb.on("field", (name, value, info) => {
-			if (info.valueTruncated)
+			if (info.valueTruncated) {
 				failure ??= badMultipart(`Field "${name}" exceeds 64 KiB`, name);
-			if (fields[name] !== undefined)
+			}
+			if (fields[name] !== undefined) {
 				failure ??= badMultipart(`Duplicate field "${name}"`, name);
+			}
 			fields[name] = value;
 		});
 		bb.on("file", (name, stream, info) => {
-			const field =
-				name === "image" || name === "image[]"
-					? "image"
-					: name === "mask"
-						? "mask"
-						: null;
+			const field = uploadField(name);
 			if (!field) {
 				failure ??= badMultipart(`Unexpected file field "${name}"`, name);
 				stream.resume();
 				return;
 			}
-			if (field === "mask" && pending.some((file) => file.field === "mask")) {
+			if (
+				field === "mask" &&
+				pending.some((upload) => upload.field === "mask")
+			) {
 				failure ??= badMultipart("Only one mask is allowed", "mask");
 				stream.resume();
 				return;
@@ -235,11 +257,13 @@ export async function parseImageEditMultipart(
 		} finally {
 			request.signal.removeEventListener("abort", abort);
 		}
-		if (failure) throw failure;
+		if (failure) {
+			throw failure;
+		}
 
 		const parsed = imageEditFieldsSchema.safeParse(parseScalarFields(fields));
 		if (!parsed.success) {
-			const first = parsed.error.issues[0];
+			const [first] = parsed.error.issues;
 			throw new GatewayError({
 				class: "bad_request",
 				message: parsed.error.issues
@@ -252,20 +276,26 @@ export async function parseImageEditMultipart(
 		const inspected = await Promise.all(pending.map(inspectUpload));
 		const images = inspected.filter((_, i) => pending[i]?.field === "image");
 		const mask = inspected.find((_, i) => pending[i]?.field === "mask");
-		if (images.length === 0)
+		if (images.length === 0) {
 			throw badMultipart("At least one image file is required", "image");
-		if (images.length > 16)
+		}
+		if (images.length > 16) {
 			throw badMultipart("At most 16 input images are allowed", "image");
+		}
 		if (mask) {
-			const firstImage = images[0];
-			if (!firstImage)
+			const [firstImage] = images;
+			if (!firstImage) {
 				throw badMultipart("At least one image file is required", "image");
-			if (mask.mimeType !== "image/png")
+			}
+			if (mask.mimeType !== "image/png") {
 				throw badMultipart("mask must be a PNG image", "mask");
-			if (mask.sizeBytes > MAX_MASK_BYTES)
+			}
+			if (mask.sizeBytes > MAX_MASK_BYTES) {
 				throw badMultipart("mask exceeds 4 MB", "mask");
-			if (!mask.hasAlpha)
+			}
+			if (!mask.hasAlpha) {
 				throw badMultipart("mask must contain an alpha channel", "mask");
+			}
 			if (
 				mask.width !== firstImage.width ||
 				mask.height !== firstImage.height
@@ -307,7 +337,9 @@ export async function parseImageEditMultipart(
 		};
 	} catch (error) {
 		await cleanup();
-		if (GatewayError.is(error)) throw error;
+		if (GatewayError.is(error)) {
+			throw error;
+		}
 		throw badMultipart(
 			error instanceof Error ? error.message : "Invalid multipart body",
 			null,

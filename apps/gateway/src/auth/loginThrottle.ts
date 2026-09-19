@@ -13,7 +13,9 @@ const WINDOW_PREFIX = "login-fail";
 
 function keys(username: string, ip: string | null): string[] {
 	const list = [`${WINDOW_PREFIX}:u:${username.toLowerCase()}`];
-	if (ip) list.push(`${WINDOW_PREFIX}:i:${ip}`);
+	if (ip) {
+		list.push(`${WINDOW_PREFIX}:i:${ip}`);
+	}
 	return list;
 }
 
@@ -33,7 +35,9 @@ export async function assertLoginAllowed(
 	const locked = values.some(
 		(value) => value !== null && Number(value) >= loginMaxAttempts,
 	);
-	if (!locked) return;
+	if (!locked) {
+		return;
+	}
 	throw new GatewayError({
 		class: "rate_limit",
 		code: "login_locked_out",

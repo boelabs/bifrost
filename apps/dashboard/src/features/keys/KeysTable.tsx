@@ -20,13 +20,20 @@ import { useKeys } from "./KeysView.tsx";
  * The row says so beforehand, which is the whole point of storing a budget at all.
  */
 function budgetWarning(key: VirtualKey) {
-	if (key.maxBudgetCents === null || key.maxBudgetCents === 0) return null;
+	if (key.maxBudgetCents === null || key.maxBudgetCents === 0) {
+		return null;
+	}
 	const spent = Number.parseFloat(key.spendCents);
-	if (!Number.isFinite(spent)) return null;
+	if (!Number.isFinite(spent)) {
+		return null;
+	}
 	const share = spent / key.maxBudgetCents;
-	if (share >= 1) return <Status tone="danger">budget spent</Status>;
-	if (share >= 0.9)
+	if (share >= 1) {
+		return <Status tone="danger">budget spent</Status>;
+	}
+	if (share >= 0.9) {
 		return <Status tone="warning">{Math.round(share * 100)}% of budget</Status>;
+	}
 	return null;
 }
 
@@ -55,7 +62,9 @@ export function KeysTable({
 				"Any client still sending this key starts failing immediately, and the secret cannot be restored — a replacement is a new key.",
 			confirmLabel: "Delete key",
 		});
-		if (!confirmed) return;
+		if (!confirmed) {
+			return;
+		}
 		await act(key.id, {
 			optimistic: "removed",
 			action: () => deleteKeyAction(key.id),
@@ -96,13 +105,13 @@ export function KeysTable({
 				<div className="flex flex-wrap items-center gap-2">
 					<span>
 						{formatCents(key.spendCents)}
-						{key.maxBudgetCents !== null ? (
+						{key.maxBudgetCents === null ? null : (
 							<span className="text-fg-muted">
 								{" "}
 								/ {formatCents(key.maxBudgetCents)}
 								{key.budgetReset ? ` · ${key.budgetReset}` : ""}
 							</span>
-						) : null}
+						)}
 					</span>
 					{budgetWarning(key)}
 				</div>
@@ -131,12 +140,12 @@ export function KeysTable({
 					// Both the date and the "already expired" colour come from the operator's own clock
 					// and timezone, which the server does not have.
 					<span
-						suppressHydrationWarning
 						className={
 							Date.parse(key.expiresAt) < Date.now()
 								? "text-danger text-xs"
 								: "text-fg-muted text-xs"
 						}
+						suppressHydrationWarning
 					>
 						{new Date(key.expiresAt).toLocaleDateString()}
 					</span>
@@ -160,62 +169,63 @@ export function KeysTable({
 			render: (key) =>
 				writable ? (
 					<RowActions
-						label={`Actions for ${key.name}`}
 						actions={[
 							{
 								label: key.enabled ? "Disable" : "Enable",
 								icon: key.enabled ? (
-									<IconBan size={15} aria-hidden />
+									<IconBan aria-hidden size={15} />
 								) : (
-									<IconCheck size={15} aria-hidden />
+									<IconCheck aria-hidden size={15} />
 								),
 								onSelect: () => void toggle(key),
 							},
 							{
 								label: "Edit",
-								icon: <IconPencil size={15} aria-hidden />,
+								icon: <IconPencil aria-hidden size={15} />,
 								onSelect: () => edit(key),
 							},
 							{
 								label: "Delete",
-								icon: <IconTrash size={15} aria-hidden />,
+								icon: <IconTrash aria-hidden size={15} />,
 								danger: true,
 								onSelect: () => void remove(key),
 							},
 						]}
+						label={`Actions for ${key.name}`}
 					/>
 				) : null,
 		},
 	];
 
-	if (keys.length === 0)
+	if (keys.length === 0) {
 		return (
 			<EmptyState
-				title={searched ? "No keys match that search" : "No virtual keys yet"}
 				description={
 					searched
 						? "Names and key prefixes are searched; the secret itself is stored hashed and cannot be."
 						: "Create one to give a client scoped access without handing out the master key."
 				}
+				title={searched ? "No keys match that search" : "No virtual keys yet"}
 			/>
 		);
+	}
 
 	return (
 		<>
 			<DataTable
-				rows={keys}
+				caption="Virtual keys"
 				columns={columns}
 				rowKey={(key) => key.id}
-				caption="Virtual keys"
+				rows={keys}
 			/>
 			<Pagination
 				label="keys"
 				limit={PAGE_SIZE}
 				offset={offset}
-				total={total}
 				onOffsetChange={(next) =>
 					set({ offset: next === 0 ? undefined : next })
 				}
+				total={total}
 			/>
 		</>
 	);

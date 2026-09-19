@@ -28,10 +28,10 @@ const skip =
 	(await pgAvailable()) && (await redisAvailable())
 		? false
 		: "Postgres/Redis unavailable";
-const app = makeOpenAIContractTestApp((app) => {
-	app.post("/v1/chat/completions", chatCompletionsHandler);
-	app.post("/v1/responses", responsesHandler);
-	app.post("/v1/messages", messagesHandler);
+const app = makeOpenAIContractTestApp((instance) => {
+	instance.post("/v1/chat/completions", chatCompletionsHandler);
+	instance.post("/v1/responses", responsesHandler);
+	instance.post("/v1/messages", messagesHandler);
 });
 const upstreamUsage = {
 	input_tokens: 20,
@@ -126,8 +126,12 @@ async function deployment(adapterKey = "azureopenai") {
 async function operation(requestId: string) {
 	return eventually(
 		async () => {
-			const row = (await listOperationsPage({ limit: 1, offset: 0, requestId }))
-				.rows[0];
+			const { rows } = await listOperationsPage({
+				limit: 1,
+				offset: 0,
+				requestId,
+			});
+			const [row] = rows;
 			const detail = row ? await getOperationDetail(row.id) : null;
 			return detail?.lifecycleState === "finished" ? detail : null;
 		},
@@ -299,7 +303,7 @@ test("Chat tool results replay their reasoning state through the default Respons
 				return jsonResponse(completed);
 			},
 			async () => {
-				const initial = requests(row.publicModel)[0][1];
+				const [[, initial]] = requests(row.publicModel);
 				const tools = [
 					{
 						type: "function",

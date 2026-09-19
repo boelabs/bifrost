@@ -59,7 +59,7 @@ export function toGatewayError(
 
 /** Translates a zod validation error to the `bad_request` GatewayError, with the issue detail. */
 function zodToGatewayError(error: z.ZodError): GatewayError {
-	const first = error.issues[0];
+	const [first] = error.issues;
 	const describe = (issue: z.core.$ZodIssue): string =>
 		issue.path.length
 			? `${issue.path.join(".")}: ${issue.message}`
@@ -70,9 +70,9 @@ function zodToGatewayError(error: z.ZodError): GatewayError {
 		class: "bad_request",
 		message,
 		publicMessage:
-			publicMessage.length <= 4_096
+			publicMessage.length <= 4096
 				? publicMessage
-				: `${publicMessage.slice(0, 4_095)}…`,
+				: `${publicMessage.slice(0, 4095)}…`,
 		param: first ? first.path.join(".") : null,
 	});
 }
@@ -80,7 +80,9 @@ function zodToGatewayError(error: z.ZodError): GatewayError {
 /** Validates `json` against a zod schema; throws `bad_request` with the detail if it does not pass. */
 export function parseBody<T>(schema: z.ZodType<T>, json: unknown): T {
 	const parsed = schema.safeParse(json);
-	if (!parsed.success) throw zodToGatewayError(parsed.error);
+	if (!parsed.success) {
+		throw zodToGatewayError(parsed.error);
+	}
 	return parsed.data;
 }
 
@@ -98,7 +100,9 @@ export async function preflight(
 	assertModelAllowed(auth, model);
 	if (auth.type === "virtual") {
 		const limited = await enforceVirtualKey(auth.key);
-		if (options?.writeHeaders !== false) setHeaders(c, limited.headers);
+		if (options?.writeHeaders !== false) {
+			setHeaders(c, limited.headers);
+		}
 	}
 }
 
@@ -118,10 +122,16 @@ export function usageQuotaForRequest(
 	const auth = getAuth(c);
 	if (auth.type !== "virtual") {
 		return {
-			assertCandidate: () => {},
+			assertCandidate: () => {
+				/* intentionally empty */
+			},
 			reserve: async () => ({
-				settle: async () => {},
-				release: async () => {},
+				settle: async () => {
+					/* intentionally empty */
+				},
+				release: async () => {
+					/* intentionally empty */
+				},
 			}),
 		};
 	}
@@ -254,7 +264,9 @@ export function computeUsageCost(
 	meta: Pick<ResolvedModelMetadata, "pricing">,
 	usage: Usage | null,
 ): CostBreakdown | null {
-	if (!usage) return null;
+	if (!usage) {
+		return null;
+	}
 	const cost = computeCost(meta, usage);
 	return cost;
 }
@@ -263,10 +275,16 @@ export function computeUsageCost(
 export interface CacheSlot {
 	hit: boolean;
 	body: unknown;
-	store(body: unknown, usage: Usage): void;
+	store: (body: unknown, usage: Usage) => void;
 }
 
-const NO_CACHE: CacheSlot = { hit: false, body: null, store: () => {} };
+const NO_CACHE: CacheSlot = {
+	hit: false,
+	body: null,
+	store: () => {
+		/* intentionally empty */
+	},
+};
 
 /**
  * Opt-in response cache for text endpoints (chat/responses/messages). Isolated per virtual key
@@ -285,8 +303,9 @@ export async function openResponseCache(opts: {
 }): Promise<CacheSlot> {
 	const auth = getAuth(opts.c);
 	const cfg = cacheConfigFromHeaders((name) => opts.c.req.header(name));
-	if (auth.type !== "virtual" || !cfg.enabled || !opts.eligible)
+	if (auth.type !== "virtual" || !cfg.enabled || !opts.eligible) {
 		return NO_CACHE;
+	}
 
 	const epoch = await responseCacheEpoch();
 	const key = buildCacheKey(opts.namespace, auth.key.id, {
@@ -300,7 +319,13 @@ export async function openResponseCache(opts: {
 			cached.usage,
 			opts.logBody ? opts.logBody(cached.body) : cached.body,
 		);
-		return { hit: true, body: cached.body, store: () => {} };
+		return {
+			hit: true,
+			body: cached.body,
+			store: () => {
+				/* intentionally empty */
+			},
+		};
 	}
 	return {
 		hit: false,

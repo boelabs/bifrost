@@ -1,5 +1,5 @@
 import type { CostBreakdown } from "#logging/cost.ts";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 import type {
 	RerankProviderPreferences,
@@ -94,11 +94,24 @@ export function rerankRequestToCanonical(
 			type: "text" as const,
 			text: typeof document === "string" ? document : document.text,
 		})),
-		...(request.top_n !== undefined ? { topN: request.top_n } : {}),
-		...(request.provider !== undefined
-			? { provider: request.provider as RerankProviderPreferences }
-			: {}),
+		...(request.top_n === undefined ? {} : { topN: request.top_n }),
+		...(request.provider === undefined
+			? {}
+			: { provider: request.provider as RerankProviderPreferences }),
 	};
+}
+
+/** One document echoed back, under the key its own kind gives the payload. */
+function renderedDocument(
+	document: CanonicalRerankRequest["documents"][number],
+): Record<string, unknown> {
+	if (document.type === "text") {
+		return { text: document.text };
+	}
+	const text = document.text ? { text: document.text } : {};
+	return document.type === "image_url"
+		? { ...text, image: document.url }
+		: { ...text, image: document.dataUrl };
 }
 
 export function toOpenRouterRerankResponse(
@@ -106,37 +119,26 @@ export function toOpenRouterRerankResponse(
 	response: CanonicalRerankResponse,
 	cost: CostBreakdown | null,
 ): Record<string, unknown> {
-	const usage = response.usage;
+	const { usage } = response;
 	return {
-		...(response.id !== undefined ? { id: response.id } : {}),
+		...(response.id === undefined ? {} : { id: response.id }),
 		model: request.model,
-		...(response.provider !== undefined ? { provider: response.provider } : {}),
+		...(response.provider === undefined ? {} : { provider: response.provider }),
 		results: response.results.map((result) => {
 			const document = request.documents[result.index]!;
 			return {
 				index: result.index,
 				relevance_score: result.relevanceScore,
-				document:
-					document.type === "text"
-						? { text: document.text }
-						: document.type === "image_url"
-							? {
-									...(document.text ? { text: document.text } : {}),
-									image: document.url,
-								}
-							: {
-									...(document.text ? { text: document.text } : {}),
-									image: document.dataUrl,
-								},
+				document: renderedDocument(document),
 			};
 		}),
 		...(usage || cost
 			? {
 					usage: {
 						...(usage ? { total_tokens: usage.totalTokens } : {}),
-						...(usage?.searchUnits !== undefined
-							? { search_units: usage.searchUnits }
-							: {}),
+						...(usage?.searchUnits === undefined
+							? {}
+							: { search_units: usage.searchUnits }),
 						...(cost ? { cost: cost.totalCents / 100 } : {}),
 					},
 				}

@@ -49,8 +49,9 @@ describe("shared component appearance", () => {
 			(state: { disabled: boolean }) => ({ opacity: state.disabled ? 0.5 : 1 }),
 		);
 		assert.equal(typeof style, "function");
-		if (typeof style !== "function")
+		if (typeof style !== "function") {
 			throw new Error("Expected a style callback");
+		}
 		assert.deepEqual(style({ disabled: true }), {
 			width: "100%",
 			opacity: 0.5,
@@ -65,8 +66,9 @@ describe("shared component appearance", () => {
 		const classes = mergeClassName("p-2", (state: { disabled: boolean }) =>
 			state.disabled ? "p-4" : undefined,
 		);
-		if (typeof classes !== "function")
+		if (typeof classes !== "function") {
 			throw new Error("Expected a class callback");
+		}
 		assert.equal(classes({ disabled: true }), "p-4");
 		assert.equal(classes({ disabled: false }), "p-2");
 	});
@@ -74,7 +76,7 @@ describe("shared component appearance", () => {
 	test("all field sizes share the same radius, with a 48px default", () => {
 		for (const size of ["xs", "sm", "md", "lg"] as const) {
 			assert.ok(
-				controlStyles({ size }).includes("rounded-[var(--ui-radius-control)]"),
+				controlStyles({ size }).includes("rounded-(--ui-radius-control)"),
 			);
 		}
 		assert.ok(controlStyles().includes("min-h-12"));

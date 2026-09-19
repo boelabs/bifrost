@@ -216,7 +216,7 @@ test("async videos transport deletes the upstream job", async () => {
 
 test("async videos transport maps cancelled/expired to failed and keeps polling unknown statuses", async () => {
 	const handler = openaicompatibleAdapter.videoGeneration!;
-	const statuses: Array<[string, string]> = [
+	const statuses: [string, string][] = [
 		["cancelled", "failed"],
 		["expired", "failed"],
 		["some_future_state", "in_progress"],

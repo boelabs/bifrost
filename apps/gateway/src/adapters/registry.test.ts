@@ -20,7 +20,9 @@ const fakeChat = {} as ChatHandler;
 const BUILTIN_ADAPTERS = listAdapters();
 after(() => {
 	__resetRegistry();
-	for (const adapter of BUILTIN_ADAPTERS) registerAdapter(adapter);
+	for (const adapter of BUILTIN_ADAPTERS) {
+		registerAdapter(adapter);
+	}
 });
 
 test("registers and retrieves an adapter; validates CallTypes<->handlers", () => {

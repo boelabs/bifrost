@@ -66,11 +66,12 @@ test("rerank response validation rejects cardinality and invalid indexes", () =>
 			],
 		},
 	];
-	for (const response of cases)
+	for (const response of cases) {
 		assert.throws(
 			() => assertRerankResponseValid(request, response),
 			isProtocolError,
 		);
+	}
 });
 
 test("rerank response validation rejects non-finite or ascending scores", () => {

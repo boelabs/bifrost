@@ -1,5 +1,4 @@
 import type { CanonicalEmbeddingsRequest } from "#core/embeddings.ts";
-import type { CanonicalChatRequest } from "#core/canonical.ts";
 import { adapterDiagnostics } from "#adapters/diagnostics.ts";
 import type { AdapterContext } from "#adapters/types.ts";
 import { GatewayError } from "#core/errors.ts";
@@ -13,6 +12,11 @@ import {
 	openaiReasoningItemIdFromProviderFields,
 	openaiReasoningFromProviderFields,
 } from "#core/providerSpecificFields.ts";
+
+import type {
+	CanonicalChatStreamChunk,
+	CanonicalChatRequest,
+} from "#core/canonical.ts";
 
 const ctx: AdapterContext = {
 	upstreamModel: "gpt-5.5",
@@ -110,7 +114,7 @@ test("openai.buildRequest: /responses images default detail to auto", () => {
 		},
 		ctx,
 	);
-	const content = JSON.parse(r.body!).input[0].content;
+	const { content } = JSON.parse(r.body!).input[0];
 	assert.equal(content[0].detail, "auto");
 	assert.equal(content[1].detail, "high");
 });
@@ -293,7 +297,7 @@ test("openai.buildRequest: extraBody does not overwrite managed fields", () => {
 test("openai.parseResponse: /responses output -> canonical", () => {
 	const raw = {
 		id: "resp_1",
-		created_at: 1700000000,
+		created_at: 1_700_000_000,
 		model: "gpt-5.5",
 		status: "completed",
 		output: [
@@ -347,11 +351,15 @@ test("openai.parseStream: response.* events -> canonical deltas", async () => {
 	let lastFinish: string | null = null;
 	let total: number | undefined;
 	for await (const chunk of openaiAdapter.chat!.parseStream(stream, ctx)) {
-		if (chunk.choices[0]?.delta.content)
+		if (chunk.choices[0]?.delta.content) {
 			out.push(chunk.choices[0].delta.content);
-		if (chunk.choices[0]?.finishReason)
+		}
+		if (chunk.choices[0]?.finishReason) {
 			lastFinish = chunk.choices[0].finishReason;
-		if (chunk.usage) total = chunk.usage.totalTokens;
+		}
+		if (chunk.usage) {
+			total = chunk.usage.totalTokens;
+		}
 	}
 	assert.equal(out.join(""), "Hello");
 	assert.equal(lastFinish, "stop");
@@ -363,12 +371,13 @@ test("openai.parseStream: reasoning summary deltas preserve their native item id
 		`event: response.reasoning_summary_text.delta\ndata: {"type":"response.reasoning_summary_text.delta","item_id":"rs_native","delta":"Think"}\n\n` +
 		`event: response.output_item.done\ndata: {"type":"response.output_item.done","item":{"type":"reasoning","id":"rs_native","summary":[{"type":"summary_text","text":"Think"}],"encrypted_content":"enc-native"}}\n\n` +
 		`event: response.completed\ndata: {"type":"response.completed","response":{"status":"completed","output":[],"usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}}\n\n`;
-	const chunks = [];
+	const chunks: CanonicalChatStreamChunk[] = [];
 	for await (const chunk of openaiAdapter.chat!.parseStream(
 		new Response(sse).body!,
 		ctx,
-	))
+	)) {
 		chunks.push(chunk);
+	}
 
 	assert.equal(chunks[0]!.choices[0]!.delta.reasoning, "Think");
 	const summaryFields = chunks[0]!.choices[0]!.delta.providerFields;
@@ -523,7 +532,7 @@ test("openai.buildRequest: replays encrypted reasoning items before function cal
 		},
 		reasoningCtx,
 	);
-	const input = JSON.parse(r.body!).input;
+	const { input } = JSON.parse(r.body!);
 	assert.deepEqual(input[0], {
 		type: "reasoning",
 		id: "rs_1",
@@ -559,7 +568,7 @@ test("openai.parseResponse: reasoning encrypted_content -> message providerField
 		},
 		reasoningCtx,
 	);
-	const message = canonical.choices[0]!.message;
+	const { message } = canonical.choices[0]!;
 	assert.equal(message.reasoning, "thinking");
 	const fields = message.providerFields?.openai as Record<string, unknown>;
 	assert.deepEqual(fields.reasoning, [
@@ -681,7 +690,9 @@ test("openai.parseStream: reasoning output_item.done -> delta.providerFields (de
 				const state = openaiReasoningFromProviderFields(
 					choice.delta.providerFields,
 				);
-				if (state !== undefined) collected.push(...state);
+				if (state !== undefined) {
+					collected.push(...state);
+				}
 				terminalOutput =
 					openaiResponsesStreamOutputFromProviderFields(
 						choice.delta.providerFields,

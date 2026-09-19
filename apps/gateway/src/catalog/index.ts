@@ -46,7 +46,9 @@ function catalogIndexFor(
 	byAdapter: Record<string, CatalogEntry>,
 ): AdapterCatalogIndex {
 	const cached = adapterCatalogIndexes.get(byAdapter);
-	if (cached) return cached;
+	if (cached) {
+		return cached;
+	}
 	const entries = Object.entries(byAdapter);
 	const index: AdapterCatalogIndex = {
 		exact: new Map(entries),
@@ -63,14 +65,20 @@ function getAdapterCatalogEntry(
 	caseInsensitive = false,
 ): CatalogEntry | undefined {
 	const byAdapter = MODEL_CATALOG[adapterKey];
-	if (!byAdapter) return undefined;
+	if (!byAdapter) {
+		return undefined;
+	}
 	const index = catalogIndexFor(byAdapter);
 	const exact = index.exact.get(upstreamModel);
-	if (exact) return exact;
+	if (exact) {
+		return exact;
+	}
 	if (caseInsensitive) {
 		const normalized = upstreamModel.toLowerCase();
 		for (const [key, entry] of index.exact) {
-			if (key.toLowerCase() === normalized) return entry;
+			if (key.toLowerCase() === normalized) {
+				return entry;
+			}
 		}
 	}
 
@@ -81,8 +89,9 @@ function getAdapterCatalogEntry(
 				? upstreamModel.toLowerCase().startsWith(prefix.toLowerCase())
 				: upstreamModel.startsWith(prefix)) &&
 			isSnapshotSuffix(upstreamModel.slice(prefix.length))
-		)
+		) {
 			return entry;
+		}
 	}
 	return undefined;
 }
@@ -115,9 +124,9 @@ export function resolveModelMetadata(
 	const info = operations
 		? profileToRuntimeMetadata({
 				operations,
-				...(selected?.pricing !== undefined
-					? { pricing: selected.pricing }
-					: {}),
+				...(selected?.pricing === undefined
+					? {}
+					: { pricing: selected.pricing }),
 			})
 		: undefined;
 
@@ -133,16 +142,32 @@ export function resolveModelMetadata(
 		supportedCallTypes: [...supportedCallTypes],
 	};
 	const pricing = pricingOverride ?? info?.pricing;
-	if (pricing != null) meta.pricing = pricing;
-	if (info?.maxInputTokens !== undefined)
+	if (pricing != null) {
+		meta.pricing = pricing;
+	}
+	if (info?.maxInputTokens !== undefined) {
 		meta.maxInputTokens = info.maxInputTokens;
-	if (info?.maxOutputTokens !== undefined)
+	}
+	if (info?.maxOutputTokens !== undefined) {
 		meta.maxOutputTokens = info.maxOutputTokens;
-	if (reasoning !== undefined) meta.reasoning = reasoning;
-	if (info?.image !== undefined) meta.image = info.image;
-	if (info?.video !== undefined) meta.video = info.video;
-	if (info?.embedding !== undefined) meta.embedding = info.embedding;
-	if (info?.rerank !== undefined) meta.rerank = info.rerank;
-	if (info?.operations !== undefined) meta.operations = info.operations;
+	}
+	if (reasoning !== undefined) {
+		meta.reasoning = reasoning;
+	}
+	if (info?.image !== undefined) {
+		meta.image = info.image;
+	}
+	if (info?.video !== undefined) {
+		meta.video = info.video;
+	}
+	if (info?.embedding !== undefined) {
+		meta.embedding = info.embedding;
+	}
+	if (info?.rerank !== undefined) {
+		meta.rerank = info.rerank;
+	}
+	if (info?.operations !== undefined) {
+		meta.operations = info.operations;
+	}
 	return meta;
 }

@@ -139,21 +139,23 @@ export function editForm(
 	const form = new FormData();
 	form.set("model", model);
 	form.set("prompt", prompt);
-	for (const file of files) form.append("image", file, file.name);
-	for (const [key, value] of Object.entries(parameters(settings, "edit")))
+	for (const file of files) {
+		form.append("image", file, file.name);
+	}
+	for (const [key, value] of Object.entries(parameters(settings, "edit"))) {
 		form.set(key, String(value));
+	}
 	return form;
 }
 
 export function imagesFrom(response: ImagesResponse): GeneratedImage[] {
 	const mediaType = `image/${response.output_format ?? "png"}`;
-	return response.data.flatMap((entry) =>
-		entry.b64_json
-			? [{ url: `data:${mediaType};base64,${entry.b64_json}`, mediaType }]
-			: entry.url
-				? [{ url: entry.url, mediaType }]
-				: [],
-	);
+	return response.data.flatMap((entry) => {
+		if (entry.b64_json) {
+			return [{ url: `data:${mediaType};base64,${entry.b64_json}`, mediaType }];
+		}
+		return entry.url ? [{ url: entry.url, mediaType }] : [];
+	});
 }
 
 export async function runImages(

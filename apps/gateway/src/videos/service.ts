@@ -60,9 +60,9 @@ export function videoObjectFromRow(row: VideoJobRow): CanonicalVideoObject {
 		expiresAt: row.expiresAt,
 		error: (row.error as CanonicalVideoObject["error"]) ?? null,
 		remixedFromVideoId: null,
-		...(row.seconds !== null ? { seconds: row.seconds } : {}),
-		...(row.size !== null ? { size: row.size } : {}),
-		...(row.quality !== null ? { quality: row.quality as VideoQuality } : {}),
+		...(row.seconds === null ? {} : { seconds: row.seconds }),
+		...(row.size === null ? {} : { size: row.size }),
+		...(row.quality === null ? {} : { quality: row.quality as VideoQuality }),
 	};
 }
 
@@ -70,7 +70,9 @@ function nextPollAt(
 	job: CanonicalVideoProviderJob,
 	pollIntervalSeconds?: number,
 ): Date | null {
-	if (job.status === "completed" || job.status === "failed") return null;
+	if (job.status === "completed" || job.status === "failed") {
+		return null;
+	}
 	return new Date(
 		Date.now() +
 			(pollIntervalSeconds ?? env.VIDEO_JOB_POLL_INTERVAL_MS / 1000) * 1000,
@@ -127,8 +129,11 @@ async function candidateFromJob(
 	const controller = new AbortController();
 	const abortFromCaller = () =>
 		controller.abort({ owner: "client", type: "cancelled" });
-	if (signal?.aborted) abortFromCaller();
-	else signal?.addEventListener("abort", abortFromCaller, { once: true });
+	if (signal?.aborted) {
+		abortFromCaller();
+	} else {
+		signal?.addEventListener("abort", abortFromCaller, { once: true });
+	}
 	const timer = setTimeout(
 		() =>
 			controller.abort({
@@ -158,8 +163,9 @@ async function candidateFromJob(
 		cleanup: () => {
 			clearTimeout(timer);
 			signal?.removeEventListener("abort", abortFromCaller);
-			if (!controller.signal.aborted)
+			if (!controller.signal.aborted) {
 				controller.abort({ owner: "gateway", type: "settled" });
+			}
 		},
 	};
 }
@@ -196,7 +202,9 @@ export async function refreshVideoJob(
 	row: VideoJobRow,
 	signal?: AbortSignal,
 ): Promise<VideoJobRow> {
-	if (TERMINAL_STATUSES.has(row.status)) return row;
+	if (TERMINAL_STATUSES.has(row.status)) {
+		return row;
+	}
 	if (shouldTimeOut(row)) {
 		return (
 			(await updateVideoJobState(row.id, {
@@ -237,10 +245,14 @@ function variantExtension(
 	contentType: string,
 ): string {
 	if (variant === "video") {
-		if (contentType === "video/webm") return "webm";
+		if (contentType === "video/webm") {
+			return "webm";
+		}
 		return "mp4";
 	}
-	if (contentType === "image/png") return "png";
+	if (contentType === "image/png") {
+		return "png";
+	}
 	return "jpg";
 }
 
@@ -276,11 +288,14 @@ export async function ensureVideoAsset(
 		});
 	}
 	const existing = await getVideoAsset(inputRow.id, variant);
-	if (existing) return existing;
+	if (existing) {
+		return existing;
+	}
 
 	let row = inputRow;
-	if (!TERMINAL_STATUSES.has(row.status))
+	if (!TERMINAL_STATUSES.has(row.status)) {
 		row = await refreshVideoJob(row, signal);
+	}
 	if (row.status !== "completed") {
 		throw new GatewayError({
 			class: "bad_request",
@@ -313,9 +328,9 @@ export async function ensureVideoAsset(
 			key,
 			body: content.body,
 			contentType: content.contentType,
-			...(content.contentLength !== undefined
-				? { contentLength: content.contentLength }
-				: {}),
+			...(content.contentLength === undefined
+				? {}
+				: { contentLength: content.contentLength }),
 		});
 		return storeVideoAsset({
 			videoId: row.id,
@@ -410,7 +425,9 @@ export async function loadAndRefreshVideo(
 			message: `Video ${id} not found in scope`,
 		});
 	}
-	if (row.nextPollAt && row.nextPollAt.getTime() > Date.now()) return row;
+	if (row.nextPollAt && row.nextPollAt.getTime() > Date.now()) {
+		return row;
+	}
 	return refreshVideoJob(row, signal);
 }
 
@@ -449,8 +466,8 @@ export function storedContentHeaders(
 		"content-type": asset.contentType || contentTypeForKey(asset.objectKey),
 		"accept-ranges": "bytes",
 		"cache-control": "private, max-age=60",
-		...(asset.contentLength !== null
-			? { "content-length": String(asset.contentLength) }
-			: {}),
+		...(asset.contentLength === null
+			? {}
+			: { "content-length": String(asset.contentLength) }),
 	};
 }

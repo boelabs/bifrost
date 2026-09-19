@@ -31,7 +31,9 @@ test("awaitWithSSEHeartbeats preserves rejection", async () => {
 				new Promise<never>((_, reject) =>
 					setTimeout(() => reject(failure), 15),
 				),
-				async () => {},
+				async () => {
+					/* intentionally empty */
+				},
 				5,
 			),
 		(error: unknown) => error === failure,
@@ -41,8 +43,12 @@ test("awaitWithSSEHeartbeats preserves rejection", async () => {
 test("downstream observation distinguishes transport, semantic, and terminal writes", async () => {
 	const observation = newDownstreamWriteObservation();
 	const writer = {
-		async write() {},
-		async writeSSE() {},
+		async write() {
+			/* intentionally empty */
+		},
+		async writeSSE() {
+			/* intentionally empty */
+		},
 	};
 	await writeSSEHeartbeat(writer, observation);
 	assert.equal(observation.deliveryState, "opened");
@@ -69,7 +75,9 @@ test("downstream observation does not count rejected writes as delivered bytes",
 		() =>
 			writeSSE(
 				{
-					async write() {},
+					async write() {
+						/* intentionally empty */
+					},
 					async writeSSE() {
 						throw failure;
 					},

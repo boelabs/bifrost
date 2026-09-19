@@ -35,6 +35,16 @@ import {
  * boundaries and stream into skeletons of exactly their own size, so nothing below them moves when
  * the answer lands.
  */
+/** The sidebar button's icon and label, which have to agree on what pressing it does. */
+function sidebarToggle(mobile: boolean, collapsed: boolean) {
+	if (mobile) {
+		return { Icon: IconX, label: "Close sidebar" };
+	}
+	return collapsed
+		? { Icon: IconLayoutSidebarLeftExpand, label: "Expand sidebar" }
+		: { Icon: IconLayoutSidebarLeftCollapse, label: "Collapse sidebar" };
+}
+
 export function AppShell({
 	identity,
 	children,
@@ -48,56 +58,56 @@ export function AppShell({
 		<SessionProvider identity={identity}>
 			<div className="flex h-dvh overflow-hidden bg-surface">
 				<a
+					className="sr-only fixed top-2 left-2 z-50 rounded-lg bg-primary p-3 text-primary-fg focus:not-sr-only"
 					href="#main-content"
-					className="sr-only fixed left-2 top-2 z-50 rounded-lg bg-primary p-3 text-primary-fg focus:not-sr-only"
 				>
 					Skip to content
 				</a>
 				<aside
 					className={cn(
-						"hidden h-full shrink-0 flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200 motion-reduce:transition-none md:flex",
+						"hidden h-full shrink-0 flex-col border-sidebar-border border-r bg-sidebar transition-[width] duration-200 motion-reduce:transition-none md:flex",
 						collapsed ? "w-16" : "w-64",
 					)}
 				>
 					<SidebarContent collapsed={collapsed} onToggle={toggle} />
 				</aside>
 				<div className="flex min-w-0 flex-1 flex-col">
-					<header className="flex h-14 shrink-0 items-center gap-3 border-b border-border/40 px-4 md:hidden">
+					<header className="flex h-14 shrink-0 items-center gap-3 border-border/40 border-b px-4 md:hidden">
 						<Button
-							variant="ghost"
-							size="sm"
-							mode="icon"
-							aria-label="Open sidebar"
 							aria-expanded={mobileOpen}
+							aria-label="Open sidebar"
+							mode="icon"
 							onClick={() => setMobileOpen(true)}
+							size="sm"
+							variant="ghost"
 						>
 							<IconLayoutSidebarLeftExpand aria-hidden className="size-5" />
 						</Button>
 						<BifrostMark size={18} />
 					</header>
 					<main
+						className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 md:p-8"
 						id="main-content"
 						tabIndex={-1}
-						className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 md:p-8"
 					>
 						{children}
 					</main>
 				</div>
-				<DialogRoot open={mobileOpen} onOpenChange={setMobileOpen}>
+				<DialogRoot onOpenChange={setMobileOpen} open={mobileOpen}>
 					<DialogPortal>
 						<DialogBackdrop />
 						<DialogViewport className="justify-start p-0">
 							<DialogPopup
+								borderRadius={0}
 								className="h-dvh max-h-dvh max-w-[calc(100vw-3rem)] gap-0 bg-sidebar p-0"
 								width="18rem"
-								borderRadius={0}
 							>
 								<DialogTitle className="sr-only">Navigation</DialogTitle>
 								<SidebarContent
 									collapsed={false}
 									mobile
-									onToggle={() => setMobileOpen(false)}
 									onNavigate={() => setMobileOpen(false)}
+									onToggle={() => setMobileOpen(false)}
 								/>
 							</DialogPopup>
 						</DialogViewport>
@@ -119,11 +129,9 @@ function SidebarContent({
 	onToggle: () => void;
 	onNavigate?: () => void;
 }) {
-	const ToggleIcon = mobile
-		? IconX
-		: collapsed
-			? IconLayoutSidebarLeftExpand
-			: IconLayoutSidebarLeftCollapse;
+	// One value for the icon and the label, so the button cannot describe an action it does not do.
+	const toggle = sidebarToggle(mobile === true, collapsed);
+	const ToggleIcon = toggle.Icon;
 	return (
 		<>
 			<div
@@ -143,19 +151,13 @@ function SidebarContent({
 					</span>
 				)}
 				<Button
-					variant="ghost"
-					size="sm"
-					mode="icon"
-					aria-label={
-						mobile
-							? "Close sidebar"
-							: collapsed
-								? "Expand sidebar"
-								: "Collapse sidebar"
-					}
-					title={mobile ? "Close sidebar" : "Toggle sidebar (Ctrl/⌘ B)"}
 					aria-expanded={!collapsed}
+					aria-label={toggle.label}
+					mode="icon"
 					onClick={onToggle}
+					size="sm"
+					title={mobile ? "Close sidebar" : "Toggle sidebar (Ctrl/⌘ B)"}
+					variant="ghost"
 				>
 					<ToggleIcon aria-hidden className="size-5 text-fg-muted" />
 				</Button>
@@ -165,7 +167,7 @@ function SidebarContent({
 				className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2 py-2"
 			>
 				{!collapsed && (
-					<p className="px-3 pb-2 text-xs font-medium text-fg-muted">
+					<p className="px-3 pb-2 font-medium text-fg-muted text-xs">
 						Workspace
 					</p>
 				)}
@@ -176,7 +178,7 @@ function SidebarContent({
 					/>
 				</Suspense>
 			</nav>
-			<div className="shrink-0 border-t border-sidebar-border p-2">
+			<div className="shrink-0 border-sidebar-border border-t p-2">
 				<Suspense fallback={<UserMenuSkeleton collapsed={collapsed} />}>
 					<UserMenu collapsed={collapsed} />
 				</Suspense>

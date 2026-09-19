@@ -1,0 +1,157 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.5.13/schema.json",
+	"root": true,
+
+	// Ultracite is a pinned rule set on top of Biome, not a second tool: it only supplies
+	// configuration (`ultracite/biome/*`), and `bun run check` still calls Biome directly.
+	// Pinned exactly — a minor bump changes which rules are on, so it is its own pull request.
+	"extends": [
+		"ultracite/biome/core",
+		"ultracite/biome/react",
+		"ultracite/biome/next"
+	],
+
+	"files": {
+		"ignoreUnknown": false,
+		// Only the exclusions this repository adds: `.next`, `dist`, `coverage`, generated
+		// `schema.d.ts` and friends are already hard-ignored by the preset, and repeating a
+		// leading "**" here would cancel those out.
+		// *.svg: the preset turns on the HTML formatter, which also claims SVG — brand assets
+		// are not ours to reformat.
+		"includes": ["!**/src/db/migrations", "!**/.source", "!**/*.svg"]
+	},
+
+	// The repository's own formatting identity. Everything else comes from the preset.
+	// Without these two, adopting it would rewrite 701 of 706 files for nothing.
+	"formatter": {
+		"indentStyle": "tab"
+	},
+	"json": {
+		"formatter": {
+			"indentStyle": "tab"
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double",
+			"trailingCommas": "all"
+		},
+		// Bun globals the source touches; `@types/bun` is deliberately not installed (AGENTS.md §10).
+		"globals": ["Bun", "HTMLRewriter"]
+	},
+
+	"assist": {
+		"actions": {
+			"source": {
+				// Import order is owned by scripts/sort-imports.ts (by length, descending).
+				"organizeImports": "off",
+				// Reordering object, interface and type members is churn without a reader:
+				// these declarations are grouped by meaning, not alphabetically.
+				"useSortedKeys": "off",
+				"useSortedProperties": "off",
+				"useSortedInterfaceMembers": "off",
+				"useSortedTypeFields": "off"
+			}
+		}
+	},
+
+	"linter": {
+		"rules": {
+			/* ---------------------------------------------------------------- off
+			 * Rules that are wrong for this repository, not rules we have not got to.
+			 * Each one was measured against the tree before being turned off.
+			 */
+			"a11y": {
+				// Fires on the two composer surfaces — a file drop target and the
+				// click-to-focus wrapper around the textarea — and neither has an
+				// interactive role to give it. (A plain `<form onSubmit>` is not affected;
+				// the rule reads the drag handlers, not the submit.) The trade is real:
+				// a `<div onClick>` with no keyboard path elsewhere now goes uncaught.
+				"noNoninteractiveElementInteractions": "off"
+			},
+			"complexity": {
+				// `void promise` is the deliberate marker for a floating promise; the rule
+				// would have us drop the marker and keep the float.
+				"noVoid": "off",
+				// 97 functions. Splitting a router or a render function is a change to
+				// routing or rendering, not a codemod. See the "info" note below.
+				"noExcessiveCognitiveComplexity": "info"
+			},
+			"correctness": {
+				// Every flagged <img> renders model output or an operator upload, whose
+				// intrinsic size is unknown at render time; CSS constrains the box instead.
+				"useImageSize": "off"
+			},
+			"performance": {
+				// Sequential awaits here are deliberate — ordered writes and rate-limited
+				// upstreams. Promise.all would change behaviour, not just shape.
+				"noAwaitInLoops": "off",
+				// src/adapters/index.ts is the provider registry (AGENTS.md §7) and
+				// components/ui re-exports primitive parts. Neither app is bundled for size.
+				"noBarrelFile": "off",
+				// Would put useCallback around every inline handler in the dashboard. The
+				// re-render it prevents costs less than the indirection it adds.
+				"noJsxPropsBind": "off",
+				// A deliberate key removal: code downstream reads Object.keys(...).length,
+				// and `= undefined` leaves the key in place.
+				"noDelete": "off",
+				// 407 sites. Hoisting a /g regex to module scope makes it stateful across
+				// calls, so each one has to be read before it is moved.
+				"useTopLevelRegex": "info"
+			},
+			"style": {
+				// `for (let i = 0; i < n; i++)` — parity with oxlint's no-plusplus, no value here.
+				"noIncrementDecrement": "off",
+				// The rule only understands `new Error(msg, { cause })`. Every error in this
+				// codebase goes through GatewayError or a factory, so it sees nothing but
+				// false positives. Causes are still threaded through by hand.
+				"useErrorCause": "off",
+				// Components are PascalCase, modules camelCase. Renaming 231 files would
+				// break every import and every blame.
+				"useFilenamingConvention": "off",
+				// The one class component is MarkdownBoundary, and an error boundary needs
+				// componentDidCatch, which has no hook equivalent. Off rather than
+				// suppressed at the site, so a stray class component will not be caught.
+				"useReactFunctionComponents": "off",
+				/* --------------------------------------------------------------- info
+				 * Real findings that need judgement per site, not a codemod. Visible in the
+				 * editor, not a gate — the same treatment noNonNullAssertion already had.
+				 * Drive each count to zero and promote the rule back to "error".
+				 */
+				// 748 sites; most are justified by noUncheckedIndexedAccess.
+				"noNonNullAssertion": "info"
+			},
+			"suspicious": {
+				// `x == null` is the correct null-or-undefined test; the rule's fix drops
+				// the undefined half of it.
+				"noEqualsToNull": "off",
+				// 172 sites. Dropping `async` changes a rejected promise into a synchronous
+				// throw, so each one is a behavioural decision.
+				"useAwait": "info",
+				/*
+				 * 112 findings, sampled across all six of its message kinds. Not one was
+				 * actionable, and acting on them breaks things:
+				 *
+				 * - It does not model `noUncheckedIndexedAccess`, which this repository turns
+				 *   on (AGENTS.md §4). Dropping a `?.` it calls unnecessary fails `tsc`.
+				 * - It reports `while (true)` as an unnecessary condition (core/sse.ts,
+				 *   http/body.ts, gateway/streamLifecycle.ts).
+				 * - It does not track mutation of a class field or a ref across methods, so
+				 *   re-entrancy guards read as dead (`this.closed` in operationLog.ts would
+				 *   let an operation log be written twice).
+				 * - It calls reachable `keyof` switch cases unreachable: 28 of the 112 are the
+				 *   arms of dropCanonicalField in catalog/parameters.ts, and deleting them
+				 *   would stop unsupported parameters being dropped at all.
+				 * - Where the type really does say non-nullish, it is usually an `as` cast over
+				 *   an `unknown` catch binding or parsed JSON. Removing the guard compiles and
+				 *   then throws on the first non-object body.
+				 *
+				 * Left at "info" it would be 112 permanent false diagnostics in every editor,
+				 * which is how people learn to ignore the other three hundred rules. Re-measure
+				 * when Biome's inference reads the tsconfig.
+				 */
+				"noUnnecessaryConditions": "off"
+			}
+		}
+	}
+}

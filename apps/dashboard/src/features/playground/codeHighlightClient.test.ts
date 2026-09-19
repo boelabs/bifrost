@@ -45,7 +45,9 @@ test("highlight queue coalesces updates and preserves the final chunk", async ()
 		subscription.update("ab", "ts");
 		await tick();
 		assert.deepEqual(sent, [{ id: 1, code: "ab", language: "ts" }]);
-		for (let i = 0; i < 100; i++) subscription.update(`ab\n${i}`, "ts");
+		for (let i = 0; i < 100; i++) {
+			subscription.update(`ab\n${i}`, "ts");
+		}
 		await tick();
 		assert.equal(sent.length, 1);
 		reply(1, "ab");
@@ -102,7 +104,9 @@ test("unavailable workers fail without throwing and retry after the session ends
 	await tick();
 	assert.equal(attempts, 1);
 	first.release();
-	const next = client.subscribe(() => {});
+	const next = client.subscribe(() => {
+		/* intentionally empty */
+	});
 	next.update("new session", "ts");
 	await tick();
 	assert.equal(attempts, 2);

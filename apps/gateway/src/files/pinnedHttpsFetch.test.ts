@@ -37,7 +37,9 @@ async function startTcpSink(): Promise<TcpSink> {
 		port: address.port,
 		peer: first.promise,
 		close: async () => {
-			for (const socket of held) socket.destroy();
+			for (const socket of held) {
+				socket.destroy();
+			}
 			await new Promise<void>((resolve) => server.close(() => resolve()));
 		},
 	};

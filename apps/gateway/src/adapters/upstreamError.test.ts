@@ -67,7 +67,7 @@ test("upstream errors: public request detail redacts deployment secrets and is b
 			status: 422,
 			body: {
 				error: {
-					message: `Model ${upstreamModel} rejected credential ${secret}: ${"x".repeat(5_000)}`,
+					message: `Model ${upstreamModel} rejected credential ${secret}: ${"x".repeat(5000)}`,
 					param: `request.${upstreamModel}`,
 					code: "invalid_request",
 				},
@@ -81,7 +81,7 @@ test("upstream errors: public request detail redacts deployment secrets and is b
 		/private-upstream-model|sk-sensitive/,
 	);
 	assert.doesNotMatch(error.param ?? "", /private-upstream-model/);
-	assert.ok(error.publicMessage.length <= 4_096);
+	assert.ok(error.publicMessage.length <= 4096);
 	assert.match(error.publicMessage, /\[redacted\]/);
 });
 

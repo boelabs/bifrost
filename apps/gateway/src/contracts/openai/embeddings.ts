@@ -1,5 +1,5 @@
 import { assertNoManagedExtraBodyKeys } from "#core/extraBody.ts";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 import type {
 	CanonicalEmbeddingsResponse,
@@ -51,9 +51,9 @@ export function embeddingsRequestToCanonical(
 		model: req.model,
 		input: req.input as EmbeddingInput,
 		encodingFormat: req.encoding_format,
-		...(req.dimensions !== undefined ? { dimensions: req.dimensions } : {}),
-		...(req.user !== undefined ? { user: req.user } : {}),
-		...(req.extra_body !== undefined ? { extraBody: req.extra_body } : {}),
+		...(req.dimensions === undefined ? {} : { dimensions: req.dimensions }),
+		...(req.user === undefined ? {} : { user: req.user }),
+		...(req.extra_body === undefined ? {} : { extraBody: req.extra_body }),
 	};
 }
 

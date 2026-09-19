@@ -1,4 +1,4 @@
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 /**
  * One time range vocabulary for every table in the dashboard.
@@ -26,15 +26,11 @@ export type RangeKey = keyof typeof RANGES;
 /** The widest range any of these endpoints accepts: both read raw operation rows. */
 export const MAX_RANGE_DAYS = 31;
 
-/**
- * Declared as a type rather than an interface on purpose: the search writer takes a plain record of
- * query values, and only a type alias carries the implicit index signature that makes it one.
- */
-export type RangeSearch = {
+export interface RangeSearch {
 	period?: RangeKey | undefined;
 	from?: string | undefined;
 	to?: string | undefined;
-};
+}
 
 export interface ResolvedRange {
 	/** Absent only for "Everything", which asks the gateway for no bound at all. */
@@ -75,7 +71,9 @@ export function customRangeIsValid(
 	to: string | undefined,
 	now = new Date(),
 ): boolean {
-	if (!from || !to || from > to) return false;
+	if (!(from && to) || from > to) {
+		return false;
+	}
 	const span = Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`);
 	return (
 		Number.isFinite(span) &&
@@ -96,7 +94,9 @@ export function resolveRange(
 	now = new Date(),
 ): ResolvedRange {
 	const period = search.period ?? fallback;
-	if (period === "all") return { bucket: "day" };
+	if (period === "all") {
+		return { bucket: "day" };
+	}
 	const midnight = today(now);
 	let start = midnight;
 	let end = now.getTime();
@@ -104,27 +104,33 @@ export function resolveRange(
 		start -= DAY;
 		end = midnight;
 	}
-	if (period === "7d") start -= 6 * DAY;
-	if (period === "30d") start -= 29 * DAY;
+	if (period === "7d") {
+		start -= 6 * DAY;
+	}
+	if (period === "30d") {
+		start -= 29 * DAY;
+	}
 	if (period === "custom") {
-		if (!search.from || !search.to)
+		if (!(search.from && search.to)) {
 			throw new Error("Choose both dates for the custom range.");
-		if (!customRangeIsValid(search.from, search.to, now))
+		}
+		if (!customRangeIsValid(search.from, search.to, now)) {
 			throw new Error(
 				`Choose an increasing range of at most ${MAX_RANGE_DAYS} days, ending today or earlier.`,
 			);
+		}
 		start = Date.parse(`${search.from}T00:00:00Z`);
 		end = Math.min(Date.parse(`${search.to}T00:00:00Z`) + DAY, now.getTime());
 	}
 	if (
-		!Number.isFinite(start) ||
-		!Number.isFinite(end) ||
+		!(Number.isFinite(start) && Number.isFinite(end)) ||
 		end < start ||
 		end - start > MAX_RANGE_DAYS * DAY
-	)
+	) {
 		throw new Error(
 			`Choose an increasing range of at most ${MAX_RANGE_DAYS} days, ending today or earlier.`,
 		);
+	}
 	// A refresh precisely at midnight still needs a nonempty range.
 	end = Math.max(end, start + 1);
 	return {
@@ -153,7 +159,8 @@ export function safeRange(
 /** What the range covers, in words, for the one line that says what is on screen. */
 export function rangeLabel(search: RangeSearch, fallback: RangeKey): string {
 	const period = search.period ?? fallback;
-	if (period === "custom" && search.from && search.to)
+	if (period === "custom" && search.from && search.to) {
 		return `${search.from} to ${search.to} UTC`;
+	}
 	return RANGES[period];
 }

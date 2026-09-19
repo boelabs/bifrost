@@ -6,6 +6,7 @@
  * with `@types/node` and would change typechecking for the whole repository. The runtime is Bun
  * (see AGENTS.md §4); this just tells TypeScript about the one API we rely on.
  */
+// biome-ignore lint/style/noNamespace: an ambient global like `Bun.password` can only be declared as a namespace.
 declare namespace Bun {
 	interface PasswordHashOptions {
 		algorithm: "argon2id" | "argon2i" | "argon2d" | "bcrypt";
@@ -14,14 +15,14 @@ declare namespace Bun {
 	}
 
 	const password: {
-		hash(
+		hash: (
 			password: string | Uint8Array,
 			options?: PasswordHashOptions,
-		): Promise<string>;
-		verify(
+		) => Promise<string>;
+		verify: (
 			password: string | Uint8Array,
 			hash: string,
 			algorithm?: PasswordHashOptions["algorithm"],
-		): Promise<boolean>;
+		) => Promise<boolean>;
 	};
 }

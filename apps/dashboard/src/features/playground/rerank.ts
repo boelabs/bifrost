@@ -68,7 +68,7 @@ export function rerankBody(
 		model,
 		query,
 		documents,
-		...(settings.topN !== undefined ? { top_n: settings.topN } : {}),
+		...(settings.topN === undefined ? {} : { top_n: settings.topN }),
 	};
 }
 

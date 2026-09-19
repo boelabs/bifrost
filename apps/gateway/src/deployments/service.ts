@@ -88,6 +88,18 @@ export interface DeploymentPreview {
 	transportOverrides: TransportOverrides;
 }
 
+/**
+ * Pricing on an update: absent in the patch keeps whatever the deployment had, an explicit null
+ * clears it, and a value replaces it.
+ */
+function pricingField<T>(
+	patched: T | null | undefined,
+	existing: T | null | undefined,
+): { pricing?: T } {
+	const next = patched === undefined ? existing : patched;
+	return next ? { pricing: next } : {};
+}
+
 function validateCustomCatalogEntry(
 	adapter: NonNullable<ReturnType<typeof getAdapter>>,
 	entry: CatalogEntry,
@@ -123,10 +135,14 @@ function selectedOperationIds(
 	const selected = new Set<OperationId>();
 	for (const callType of meta.supportedCallTypes ?? []) {
 		const operation = operationForCallType(callType);
-		if (operation) selected.add(operation.id);
+		if (operation) {
+			selected.add(operation.id);
+		}
 	}
 	for (const operation of OPERATION_IDS) {
-		if (meta.operations?.[operation] !== undefined) selected.add(operation);
+		if (meta.operations?.[operation] !== undefined) {
+			selected.add(operation);
+		}
 	}
 	return [...selected];
 }
@@ -147,7 +163,7 @@ function resolveTransportOverrides(
 	const result: TransportOverrides = {};
 	for (const operationId of operations) {
 		const callType = callTypeForOperation(operationId);
-		if (!callType || !adapter.supportedCallTypes.has(callType)) {
+		if (!(callType && adapter.supportedCallTypes.has(callType))) {
 			throw new GatewayError({
 				class: "bad_request",
 				message: `Adapter "${adapter.key}" does not implement operation "${operationId}"`,
@@ -166,8 +182,10 @@ function resolveTransportOverrides(
 			});
 		}
 		if (
-			!isUpstreamTransport(transport) ||
-			!adapter.transports?.[callType]?.supported.includes(transport)
+			!(
+				isUpstreamTransport(transport) &&
+				adapter.transports?.[callType]?.supported.includes(transport)
+			)
 		) {
 			throw new GatewayError({
 				class: "bad_request",
@@ -203,7 +221,7 @@ export async function previewDeployment(
 			param: "catalogEntry",
 		});
 	}
-	if (!inCatalog && !input.catalogEntry) {
+	if (!(inCatalog || input.catalogEntry)) {
 		const message = `"${input.upstreamModel}" is not in the "${input.adapterKey}" catalog; provide catalogEntry for this custom model`;
 		throw new GatewayError({
 			class: "bad_request",
@@ -212,7 +230,9 @@ export async function previewDeployment(
 			param: "catalogEntry",
 		});
 	}
-	if (!inCatalog) validateCustomCatalogEntry(adapter, input.catalogEntry!);
+	if (!inCatalog) {
+		validateCustomCatalogEntry(adapter, input.catalogEntry!);
+	}
 	const effective = resolveModelMetadata(
 		input.adapterKey,
 		input.upstreamModel,
@@ -245,8 +265,9 @@ export async function previewDeployment(
 			const definition = OPERATIONS.find(
 				(candidate) => candidate.id === operationId,
 			);
-			if (!definition)
+			if (!definition) {
 				throw new Error(`Missing operation definition ${operationId}`);
+			}
 			const callType = callTypeForOperation(operationId);
 			return {
 				id: operationId,
@@ -289,10 +310,10 @@ export async function createDeployment(
 		pricing: input.pricing ?? null,
 		transportOverrides: input.transportOverrides ?? {},
 		executionPolicyOverrides: input.executionPolicyOverrides ?? {},
-		...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
-		...(input.weight !== undefined ? { weight: input.weight } : {}),
-		...(input.tpmLimit !== undefined ? { tpmLimit: input.tpmLimit } : {}),
-		...(input.rpmLimit !== undefined ? { rpmLimit: input.rpmLimit } : {}),
+		...(input.enabled === undefined ? {} : { enabled: input.enabled }),
+		...(input.weight === undefined ? {} : { weight: input.weight }),
+		...(input.tpmLimit === undefined ? {} : { tpmLimit: input.tpmLimit }),
+		...(input.rpmLimit === undefined ? {} : { rpmLimit: input.rpmLimit }),
 	});
 	invalidatePublicModelGroups();
 	return { row, preview };
@@ -310,22 +331,16 @@ export async function updateDeployment(
 		});
 	}
 	const catalogEntry =
-		patch.catalogEntry !== undefined
-			? (patch.catalogEntry ?? undefined)
-			: (existing.catalogEntry ?? undefined);
+		patch.catalogEntry === undefined
+			? (existing.catalogEntry ?? undefined)
+			: (patch.catalogEntry ?? undefined);
 	const input: PreviewDeploymentInput = {
 		publicModel: patch.publicModel ?? existing.publicModel,
 		adapterKey: existing.adapterKey,
 		upstreamModel: patch.upstreamModel ?? existing.upstreamModel,
 		transportOverrides: patch.transportOverrides ?? existing.transportOverrides,
 		...(catalogEntry ? { catalogEntry } : {}),
-		...(patch.pricing !== undefined
-			? patch.pricing
-				? { pricing: patch.pricing }
-				: {}
-			: existing.pricing
-				? { pricing: existing.pricing }
-				: {}),
+		...pricingField(patch.pricing, existing.pricing),
 	};
 	const preview = await previewDeployment(input);
 	const adapter = getAdapter(input.adapterKey);
@@ -347,8 +362,11 @@ export async function updateDeployment(
 		);
 		mergedCredentials = { ...current };
 		for (const [field, value] of Object.entries(patch.credentials)) {
-			if (value === null) delete mergedCredentials[field];
-			else mergedCredentials[field] = value;
+			if (value === null) {
+				delete mergedCredentials[field];
+			} else {
+				mergedCredentials[field] = value;
+			}
 		}
 		validateRequiredCredentials(adapter, mergedCredentials);
 	}
@@ -364,18 +382,18 @@ export async function updateDeployment(
 			enabled: patch.enabled ?? existing.enabled,
 			weight: patch.weight ?? existing.weight,
 			tpmLimit:
-				patch.tpmLimit !== undefined ? patch.tpmLimit : existing.tpmLimit,
+				patch.tpmLimit === undefined ? existing.tpmLimit : patch.tpmLimit,
 			rpmLimit:
-				patch.rpmLimit !== undefined ? patch.rpmLimit : existing.rpmLimit,
-			...(patch.pricing !== undefined ? { pricing: patch.pricing } : {}),
-			...(mergedCredentials !== undefined
-				? { credentials: mergedCredentials }
-				: {}),
-			...(patch.label !== undefined ? { label: patch.label } : {}),
-			...(patch.failureDomain !== undefined
-				? { failureDomain: patch.failureDomain }
-				: {}),
-			...(patch.metadata !== undefined ? { metadata: patch.metadata } : {}),
+				patch.rpmLimit === undefined ? existing.rpmLimit : patch.rpmLimit,
+			...(patch.pricing === undefined ? {} : { pricing: patch.pricing }),
+			...(mergedCredentials === undefined
+				? {}
+				: { credentials: mergedCredentials }),
+			...(patch.label === undefined ? {} : { label: patch.label }),
+			...(patch.failureDomain === undefined
+				? {}
+				: { failureDomain: patch.failureDomain }),
+			...(patch.metadata === undefined ? {} : { metadata: patch.metadata }),
 		});
 	} catch (error) {
 		if (error instanceof PublicModelReferencedError) {
@@ -387,11 +405,12 @@ export async function updateDeployment(
 		}
 		throw error;
 	}
-	if (!row)
+	if (!row) {
 		throw new GatewayError({
 			class: "not_found",
 			message: `Deployment "${id}" does not exist`,
 		});
+	}
 	invalidatePublicModelGroups();
 	return { row, preview };
 }

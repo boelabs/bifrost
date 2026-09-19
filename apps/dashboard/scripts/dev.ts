@@ -17,7 +17,8 @@ const dev = Bun.spawn(["bun", next, "dev", "--port", port], {
 });
 
 // Ctrl-C reaches this process; pass it on so Next tears its own server down cleanly.
-for (const signal of ["SIGINT", "SIGTERM"] as const)
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
 	process.on(signal, () => dev.kill(signal));
+}
 
 process.exit(await dev.exited);

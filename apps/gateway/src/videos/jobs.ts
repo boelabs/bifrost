@@ -7,7 +7,9 @@ export function startVideoJobs(): () => void {
 	const run = async (): Promise<void> => {
 		// Skip the tick if the previous one is still refreshing/downloading; job claiming
 		// makes overlap safe across instances, but there is no point stacking local passes.
-		if (running) return;
+		if (running) {
+			return;
+		}
 		running = true;
 		try {
 			await refreshDueVideoJobs().catch((err: unknown) => {
@@ -15,8 +17,9 @@ export function startVideoJobs(): () => void {
 			});
 			await deleteExpiredVideoAssets()
 				.then((deleted) => {
-					if (deleted > 0)
+					if (deleted > 0) {
 						log.info("videos", "deleted expired video assets", { deleted });
+					}
 				})
 				.catch((err: unknown) => {
 					log.error("videos", "asset gc failed", { err });

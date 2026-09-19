@@ -29,8 +29,9 @@ export async function listVirtualKeysPage(
 	opts: Page & VirtualKeyListFilter,
 ): Promise<PageResult<VirtualKeyRow>> {
 	const conds: SQL[] = [];
-	if (opts.enabled !== undefined)
+	if (opts.enabled !== undefined) {
 		conds.push(eq(virtualKeys.enabled, opts.enabled));
+	}
 	if (opts.publicModel) {
 		// allowedModels=[] means all; otherwise it must contain the public model.
 		conds.push(
@@ -167,22 +168,36 @@ export async function updateVirtualKey(
 	const set: Partial<typeof virtualKeys.$inferInsert> = {
 		updatedAt: new Date(),
 	};
-	if (input.name !== undefined) set.name = input.name;
-	if (input.allowedModels !== undefined)
+	if (input.name !== undefined) {
+		set.name = input.name;
+	}
+	if (input.allowedModels !== undefined) {
 		set.allowedModels = input.allowedModels;
-	if (input.maxBudgetCents !== undefined)
+	}
+	if (input.maxBudgetCents !== undefined) {
 		set.maxBudgetCents = input.maxBudgetCents;
+	}
 	if (input.budgetReset !== undefined) {
 		set.budgetReset = input.budgetReset;
 		set.budgetResetAt = input.budgetResetAt ?? nextResetAt(input.budgetReset);
 	} else if (input.budgetResetAt !== undefined) {
 		set.budgetResetAt = input.budgetResetAt;
 	}
-	if (input.tpm !== undefined) set.tpm = input.tpm;
-	if (input.rpm !== undefined) set.rpm = input.rpm;
-	if (input.enabled !== undefined) set.enabled = input.enabled;
-	if (input.expiresAt !== undefined) set.expiresAt = input.expiresAt;
-	if (input.resetSpend) set.spendCents = "0";
+	if (input.tpm !== undefined) {
+		set.tpm = input.tpm;
+	}
+	if (input.rpm !== undefined) {
+		set.rpm = input.rpm;
+	}
+	if (input.enabled !== undefined) {
+		set.enabled = input.enabled;
+	}
+	if (input.expiresAt !== undefined) {
+		set.expiresAt = input.expiresAt;
+	}
+	if (input.resetSpend) {
+		set.spendCents = "0";
+	}
 
 	const [row] = await db
 		.update(virtualKeys)
@@ -196,7 +211,9 @@ export async function addVirtualKeySpend(
 	id: string,
 	cents: number,
 ): Promise<void> {
-	if (!(cents > 0)) return;
+	if (!(cents > 0)) {
+		return;
+	}
 	await db
 		.update(virtualKeys)
 		.set({
@@ -226,7 +243,9 @@ export async function resetVirtualKeySpendIfDue(
 	budgetReset: "hourly" | "daily" | "weekly" | "monthly" | null,
 	now = new Date(),
 ): Promise<boolean> {
-	if (budgetReset === null) return false;
+	if (budgetReset === null) {
+		return false;
+	}
 	const rows = await db
 		.update(virtualKeys)
 		.set({

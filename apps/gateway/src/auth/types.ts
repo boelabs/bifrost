@@ -45,6 +45,10 @@ export function actorOf(auth: Auth): string {
 			return auth.session.userId === null
 				? "root"
 				: `user:${auth.session.userId}`;
+		default:
+			throw new Error(
+				`Unsupported auth type: ${(auth as { type: string }).type}`,
+			);
 	}
 }
 

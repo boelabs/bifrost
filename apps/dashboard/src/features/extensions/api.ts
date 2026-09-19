@@ -9,9 +9,9 @@ import { cache } from "react";
  * instances table — and they sit in different `<Suspense>` boundaries, so they ask separately.
  * `cache()` is what keeps that one call to the gateway instead of two.
  */
-export const runtimeStatus = cache(async () => {
-	return unwrap(await api.GET("/admin/extensions")).data;
-});
+export const runtimeStatus = cache(
+	async () => unwrap(await api.GET("/admin/extensions")).data,
+);
 
 export async function listArtifacts() {
 	return unwrap(await api.GET("/admin/extensions/artifacts")).data;
@@ -42,7 +42,9 @@ export async function deleteArtifact(key: string): Promise<void> {
 	const result = await api.DELETE("/admin/extensions/artifacts/{key}", {
 		params: { path: { key } },
 	});
-	if (result.error !== undefined) unwrap(result);
+	if (result.error !== undefined) {
+		unwrap(result);
+	}
 }
 
 export async function listInstances() {
@@ -71,7 +73,9 @@ export async function deleteInstance(id: string): Promise<void> {
 	const result = await api.DELETE("/admin/extensions/instances/{id}", {
 		params: { path: { id } },
 	});
-	if (result.error !== undefined) unwrap(result);
+	if (result.error !== undefined) {
+		unwrap(result);
+	}
 }
 
 /** Clears a breaker trip in the replica answering this request. */

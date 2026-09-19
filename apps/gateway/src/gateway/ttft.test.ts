@@ -18,7 +18,9 @@ async function drain(
 	gen: AsyncIterable<CanonicalChatStreamChunk>,
 ): Promise<number> {
 	let n = 0;
-	for await (const _ of gen) n++;
+	for await (const _ of gen) {
+		n++;
+	}
 	return n;
 }
 

@@ -44,11 +44,12 @@ test("idempotency: a repeated create replays instead of creating twice", {
 	const createdIds: string[] = [];
 
 	t.after(async () => {
-		for (const id of createdIds)
+		for (const id of createdIds) {
 			await app.request(`/admin/keys/${id}`, {
 				method: "DELETE",
 				headers: auth,
 			});
+		}
 		await releaseIdempotencyKey("master-key", idempotencyKey);
 	});
 
@@ -95,11 +96,12 @@ test("audit: the trail records the create and can be filtered", {
 	const name = `itest-audit-${crypto.randomUUID()}`;
 	let createdId: string | undefined;
 	t.after(async () => {
-		if (createdId)
+		if (createdId) {
 			await app.request(`/admin/keys/${createdId}`, {
 				method: "DELETE",
 				headers: auth,
 			});
+		}
 	});
 
 	const created = await createKey(name);

@@ -31,16 +31,20 @@ export async function aggregateMetrics(filter: z.infer<typeof metricsQuery>) {
 		gte(operations.startedAt, start),
 		lt(operations.startedAt, end),
 	];
-	if (filter.publicModel)
+	if (filter.publicModel) {
 		requestConditions.push(eq(operations.publicModel, filter.publicModel));
+	}
 	if (filter.operation) {
 		const callType = callTypeForOperation(filter.operation);
-		if (callType) requestConditions.push(eq(operations.callType, callType));
+		if (callType) {
+			requestConditions.push(eq(operations.callType, callType));
+		}
 	}
-	if (filter.deploymentId)
+	if (filter.deploymentId) {
 		requestConditions.push(
 			sql`exists (select 1 from ${attempts} selected where selected.operation_id = ${operations.id} and selected.deployment_id = ${filter.deploymentId})`,
 		);
+	}
 	const requestWhere = and(...requestConditions);
 	const attemptWhere = and(
 		...requestConditions,

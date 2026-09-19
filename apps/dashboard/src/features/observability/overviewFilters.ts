@@ -1,5 +1,5 @@
 import { type RangeKey, rangeSchema } from "#/shared/lib/range.ts";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 /**
  * The overview's query string: a time range, and nothing else.

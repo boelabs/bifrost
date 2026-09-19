@@ -63,11 +63,12 @@ test("dashboard auth: root session, roles, CSRF, and revocation", {
 }, async (t) => {
 	let createdUserId: string | undefined;
 	t.after(async () => {
-		if (createdUserId)
+		if (createdUserId) {
 			await app.request(`/admin/users/${createdUserId}`, {
 				method: "DELETE",
 				headers: masterAuth,
 			});
+		}
 	});
 
 	/* ---- the root operator authenticates from the environment, with no row ---- */

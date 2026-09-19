@@ -43,9 +43,15 @@ import type {
 function instanceTone(
 	status: string,
 ): "success" | "warning" | "danger" | "muted" {
-	if (status === "active") return "success";
-	if (status === "runtime_disabled") return "danger";
-	if (status === "disabled") return "muted";
+	if (status === "active") {
+		return "success";
+	}
+	if (status === "runtime_disabled") {
+		return "danger";
+	}
+	if (status === "disabled") {
+		return "muted";
+	}
 	return "warning";
 }
 
@@ -78,8 +84,8 @@ export function ExtensionsProvider({
 		<ExtensionsContext value={value}>
 			{children}
 			<UploadDialog
-				isOpen={uploading !== null}
 				initialKey={uploading?.key ?? null}
+				isOpen={uploading !== null}
 				onClose={() => setUploading(null)}
 				onSaved={() => {
 					refresh();
@@ -92,8 +98,9 @@ export function ExtensionsProvider({
 
 function useExtensions(): ExtensionsValue {
 	const value = use(ExtensionsContext);
-	if (!value)
+	if (!value) {
 		throw new Error("useExtensions must be used inside ExtensionsProvider");
+	}
 	return value;
 }
 
@@ -102,8 +109,8 @@ function UploadCode() {
 	const { upload } = useExtensions();
 	return (
 		<Can permissions={["settings:write"]}>
-			<Button size="sm" onClick={() => upload(null)}>
-				<IconUpload size={15} aria-hidden className="mr-2" />
+			<Button onClick={() => upload(null)} size="sm">
+				<IconUpload aria-hidden className="mr-2" size={15} />
 				Upload code
 			</Button>
 		</Can>
@@ -119,7 +126,7 @@ export function UploadCodeButton() {
 		<Suspense
 			fallback={
 				<Skeleton
-					className="h-10 rounded-[var(--ui-radius-control)]"
+					className="h-10 rounded-(--ui-radius-control)"
 					width="7.5rem"
 				/>
 			}
@@ -188,8 +195,12 @@ export function ExtensionsView({
 				: "Every uploaded version goes with it. Restoring means uploading the module again.",
 			confirmLabel: "Delete module",
 		});
-		if (!confirmed) return;
-		if (versionsOf === row.key) setVersionsOf(null);
+		if (!confirmed) {
+			return;
+		}
+		if (versionsOf === row.key) {
+			setVersionsOf(null);
+		}
 		await actOnArtifact(row.key, {
 			optimistic: "removed",
 			action: () => deleteArtifactAction(row.key),
@@ -205,7 +216,9 @@ export function ExtensionsView({
 				"It leaves the request path on every replica. The uploaded code stays, so it can be bound again later.",
 			confirmLabel: "Delete instance",
 		});
-		if (!confirmed) return;
+		if (!confirmed) {
+			return;
+		}
 		await actOnInstance(row.id, {
 			optimistic: "removed",
 			action: () => deleteInstanceAction(row.id),
@@ -223,14 +236,20 @@ export function ExtensionsView({
 			confirmLabel: "Activate version",
 			tone: "primary",
 		});
-		if (!confirmed) return;
+		if (!confirmed) {
+			return;
+		}
 		const result = await run(() => activateArtifactAction(key, version), {
 			success: `${key} now runs v${version}`,
 			failure: "The version could not be activated.",
 		});
-		if (!result.ok) return;
+		if (!result.ok) {
+			return;
+		}
 		const refreshed = await loadArtifactVersionsAction(key);
-		if (refreshed.ok) setVersions(refreshed.data as Artifact[]);
+		if (refreshed.ok) {
+			setVersions(refreshed.data as Artifact[]);
+		}
 	}
 
 	const artifactColumns: Column<Artifact>[] = [
@@ -267,29 +286,29 @@ export function ExtensionsView({
 			align: "end",
 			render: (row) => (
 				<RowActions
-					label={`Actions for ${row.key}`}
 					actions={[
 						{
 							label: versionsOf === row.key ? "Hide versions" : "Versions",
-							icon: <IconVersions size={15} aria-hidden />,
+							icon: <IconVersions aria-hidden size={15} />,
 							onSelect: () => void openVersions(row.key),
 						},
 						...(editable
 							? [
 									{
 										label: "Upload a version",
-										icon: <IconUpload size={15} aria-hidden />,
+										icon: <IconUpload aria-hidden size={15} />,
 										onSelect: () => upload(row.key),
 									},
 									{
 										label: "Delete",
-										icon: <IconTrash size={15} aria-hidden />,
+										icon: <IconTrash aria-hidden size={15} />,
 										danger: true,
 										onSelect: () => void removeArtifact(row),
 									},
 								]
 							: []),
 					]}
+					label={`Actions for ${row.key}`}
 				/>
 			),
 		},
@@ -323,7 +342,9 @@ export function ExtensionsView({
 			header: "In this replica",
 			render: (row) => {
 				const live = runtimeById.get(row.id);
-				if (!live) return <Status tone="muted">not loaded</Status>;
+				if (!live) {
+					return <Status tone="muted">not loaded</Status>;
+				}
 				return (
 					<div className="flex flex-col gap-1">
 						<div className="flex items-center gap-1.5">
@@ -353,10 +374,11 @@ export function ExtensionsView({
 			align: "end",
 			render: (row) => {
 				const live = runtimeById.get(row.id);
-				if (!editable) return null;
+				if (!editable) {
+					return null;
+				}
 				return (
 					<RowActions
-						label={`Actions for ${row.id}`}
 						actions={[
 							// A breaker trip disables an instance in one replica only, so the reset is
 							// offered only while this replica reports it tripped.
@@ -364,7 +386,7 @@ export function ExtensionsView({
 								? [
 										{
 											label: "Reset in this replica",
-											icon: <IconRefresh size={15} aria-hidden />,
+											icon: <IconRefresh aria-hidden size={15} />,
 											onSelect: () =>
 												void run(() => resetInstanceAction(row.id), {
 													success: `${row.id} reset in this replica`,
@@ -375,7 +397,7 @@ export function ExtensionsView({
 								: []),
 							{
 								label: "Edit",
-								icon: <IconEdit size={15} aria-hidden />,
+								icon: <IconEdit aria-hidden size={15} />,
 								onSelect: () =>
 									setDraft({
 										id: row.id,
@@ -399,11 +421,12 @@ export function ExtensionsView({
 							},
 							{
 								label: "Delete",
-								icon: <IconTrash size={15} aria-hidden />,
+								icon: <IconTrash aria-hidden size={15} />,
 								danger: true,
 								onSelect: () => void removeInstance(row),
 							},
 						]}
+						label={`Actions for ${row.id}`}
 					/>
 				);
 			},
@@ -427,8 +450,6 @@ export function ExtensionsView({
 							</div>
 							<Can permissions={["settings:write"]}>
 								<Button
-									size="sm"
-									variant="secondary"
 									disabled={definitions.length === 0}
 									onClick={() =>
 										setDraft({
@@ -441,28 +462,30 @@ export function ExtensionsView({
 											config: "",
 										})
 									}
+									size="sm"
+									variant="secondary"
 								>
-									<IconPlus size={15} aria-hidden className="mr-2" />
+									<IconPlus aria-hidden className="mr-2" size={15} />
 									New instance
 								</Button>
 							</Can>
 						</div>
 						{instanceRows.length === 0 ? (
 							<EmptyState
-								title="Nothing is running"
 								description={
 									definitions.length === 0
 										? "Upload a module first, then bind it to an instance."
 										: "Bind one of the uploaded definitions to an instance to put it in the request path."
 								}
+								title="Nothing is running"
 							/>
 						) : (
 							<DataTable
-								rows={instanceRows}
-								columns={instanceColumns}
-								rowKey={(row) => row.id}
 								caption="Extension instances"
+								columns={instanceColumns}
 								pagination={{ pageSize: 10 }}
+								rowKey={(row) => row.id}
+								rows={instanceRows}
 							/>
 						)}
 					</CardContent>
@@ -480,17 +503,17 @@ export function ExtensionsView({
 						</div>
 						{artifactRows.length === 0 ? (
 							<EmptyState
-								title="No modules uploaded"
 								description="Upload an ES module exporting a definition. It is probed before it is stored, so a module that does not load never reaches a request."
+								title="No modules uploaded"
 							/>
 						) : (
 							<>
 								<DataTable
-									rows={artifactRows}
-									columns={artifactColumns}
-									rowKey={(row) => row.key}
 									caption="Extension code"
+									columns={artifactColumns}
 									pagination={{ pageSize: 10 }}
+									rowKey={(row) => row.key}
+									rows={artifactRows}
 								/>
 								{versionsOf ? (
 									<div className="pt-4">
@@ -500,8 +523,8 @@ export function ExtensionsView({
 										<ul className="flex flex-col gap-1">
 											{versions.map((version) => (
 												<li
-													key={version.version}
 													className="flex items-center gap-3 text-sm"
+													key={version.version}
 												>
 													<Mono>v{version.version}</Mono>
 													<Status
@@ -516,11 +539,11 @@ export function ExtensionsView({
 													</span>
 													{editable && version.status !== "active" ? (
 														<Button
-															size="sm"
-															variant="ghost"
 															onClick={() =>
 																void activate(versionsOf, version.version)
 															}
+															size="sm"
+															variant="ghost"
 														>
 															Activate
 														</Button>
@@ -538,9 +561,9 @@ export function ExtensionsView({
 
 			{draft ? (
 				<InstanceDialog
-					key={draft.id || "new"}
-					draft={draft}
 					definitions={definitions}
+					draft={draft}
+					key={draft.id || "new"}
 					onClose={() => setDraft(null)}
 					onSaved={() => {
 						refresh();

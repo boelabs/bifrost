@@ -144,7 +144,9 @@ export interface AttemptLimits {
 }
 
 function positiveInteger(value: number): number {
-	if (!Number.isFinite(value) || value <= 0) return 0;
+	if (!Number.isFinite(value) || value <= 0) {
+		return 0;
+	}
 	return Math.min(Number.MAX_SAFE_INTEGER, Math.ceil(value));
 }
 
@@ -177,13 +179,15 @@ export async function onAttemptStart(
 		String(INFLIGHT_TTL),
 		String(WINDOW_TTL),
 	);
-	if (!Array.isArray(raw) || raw.length < 2)
+	if (!Array.isArray(raw) || raw.length < 2) {
 		throw new Error("Redis returned an invalid deployment admission result");
-	if (Number(raw[0]) === 1)
+	}
+	if (Number(raw[0]) === 1) {
 		return {
 			accepted: true,
 			lease: { id: leaseId, reservedTokens, bucket: b },
 		};
+	}
 	return { accepted: false, reason: Number(raw[1]) === 1 ? "rpm" : "tpm" };
 }
 
@@ -205,8 +209,9 @@ async function settleAttempt(
 		String(INFLIGHT_TTL),
 		String(WINDOW_TTL),
 	);
-	if (!Array.isArray(raw) || raw.length < 2)
+	if (!Array.isArray(raw) || raw.length < 2) {
 		throw new Error("Redis returned an invalid deployment settlement result");
+	}
 	return Number(raw[0]) === 1;
 }
 
@@ -220,8 +225,12 @@ export async function onAttemptFailure(
 	lease: AttemptLease,
 ): Promise<void> {
 	const settled = await settleAttempt(id, lease, 0);
-	if (!settled) return;
-	if (!penalizeHealth) return;
+	if (!settled) {
+		return;
+	}
+	if (!penalizeHealth) {
+		return;
+	}
 	await redis
 		.pipeline()
 		.incr(kFailures(id))
@@ -236,7 +245,9 @@ export async function onAttemptCancel(
 	lease: AttemptLease,
 ): Promise<void> {
 	await settleAttempt(id, lease, 0);
-	if (permit) await releaseCircuitPermit(permit);
+	if (permit) {
+		await releaseCircuitPermit(permit);
+	}
 }
 
 /** Gateway-local post-processing failure: neutral health, but retain any upstream token usage. */
@@ -247,11 +258,13 @@ export async function onAttemptGatewayFinish(
 	lease: AttemptLease,
 ): Promise<void> {
 	await settleAttempt(id, lease, actualTokens);
-	if (permit) await releaseCircuitPermit(permit);
+	if (permit) {
+		await releaseCircuitPermit(permit);
+	}
 }
 
 function ewma(previous: string | null, sample: number): number {
-	const old = previous === null ? NaN : Number(previous);
+	const old = previous === null ? Number.NaN : Number(previous);
 	return Number.isFinite(old)
 		? old * (1 - EWMA_ALPHA) + sample * EWMA_ALPHA
 		: sample;
@@ -265,7 +278,9 @@ export async function onSuccessFinish(
 	lease: AttemptLease,
 ): Promise<void> {
 	const settled = await settleAttempt(id, lease, telemetry.totalTokens ?? 0);
-	if (!settled) return;
+	if (!settled) {
+		return;
+	}
 	const [oldLatency = null, oldThroughput = null, oldTtft = null] =
 		await redis.mget(kLatencyMs(id), kThroughputTps(id), kTtftMs(id));
 	const latencyMs =
@@ -284,19 +299,24 @@ export async function onSuccessFinish(
 		.pipeline()
 		.incr(kSuccesses(id))
 		.expire(kSuccesses(id), HEALTH_TTL);
-	if (latencyMs !== null)
+	if (latencyMs !== null) {
 		pipe.set(kLatencyMs(id), String(latencyMs), "EX", HEALTH_TTL);
-	if (throughputTps !== null)
+	}
+	if (throughputTps !== null) {
 		pipe.set(kThroughputTps(id), String(throughputTps), "EX", HEALTH_TTL);
-	if (telemetry.firstOutputMs !== null && telemetry.firstOutputMs > 0)
+	}
+	if (telemetry.firstOutputMs !== null && telemetry.firstOutputMs > 0) {
 		pipe.set(
 			kTtftMs(id),
 			String(ewma(oldTtft, telemetry.firstOutputMs)),
 			"EX",
 			HEALTH_TTL,
 		);
+	}
 	await pipe.exec();
-	if (permit) await closeCircuits(permit);
+	if (permit) {
+		await closeCircuits(permit);
+	}
 }
 
 /** Current metrics (inflight/rpm/tpm) of several deployments. */
@@ -318,7 +338,9 @@ export async function fetchMetrics(
 	ids: string[],
 ): Promise<Map<string, DeploymentMetrics>> {
 	const map = new Map<string, DeploymentMetrics>();
-	if (ids.length === 0) return map;
+	if (ids.length === 0) {
+		return map;
+	}
 	const b = minuteBucket();
 	const pipe = redis.pipeline();
 	for (const id of ids) {

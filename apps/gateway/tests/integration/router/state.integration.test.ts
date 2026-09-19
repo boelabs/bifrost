@@ -66,7 +66,7 @@ async function cleanup(
 		`rt:tpm:${id}:${bucket}`,
 		`rt:tpm-reserved:${id}:${bucket}`,
 	]);
-	for (const prefix of circuitPrefixes) {
+	for (const circuitPrefix of circuitPrefixes) {
 		for (const suffix of [
 			"cooldown",
 			"cause",
@@ -74,10 +74,13 @@ async function cleanup(
 			"history",
 			"probe",
 			"attempts",
-		])
-			keys.push(`${prefix}:${suffix}`);
+		]) {
+			keys.push(`${circuitPrefix}:${suffix}`);
+		}
 	}
-	if (keys.length > 0) await redis.del(...keys);
+	if (keys.length > 0) {
+		await redis.del(...keys);
+	}
 }
 
 function prefix(subject: { kind: string; id: string }): string {
@@ -93,7 +96,9 @@ test("inflight/rpm: start counts, success/cancel release without penalty", {
 		const second = await onAttemptStart(id);
 		assert.equal(first.accepted, true);
 		assert.equal(second.accepted, true);
-		if (!first.accepted || !second.accepted) return;
+		if (!(first.accepted && second.accepted)) {
+			return;
+		}
 		let metrics = (await fetchMetrics([id])).get(id)!;
 		assert.equal(metrics.inflight, 2);
 		assert.equal(metrics.rpm, 2);
@@ -191,7 +196,9 @@ test("deployment TPM reservations are atomic and reconcile to actual usage", {
 			reservedTokens: 40,
 		});
 		assert.equal(next.accepted, true);
-		if (next.accepted) await onAttemptCancel(id, undefined, next.lease);
+		if (next.accepted) {
+			await onAttemptCancel(id, undefined, next.lease);
+		}
 		const metrics = (await fetchMetrics([id])).get(id)!;
 		assert.equal(metrics.tpm, 20);
 	} finally {
@@ -214,7 +221,9 @@ test("deployment TPM settlement reconciles the admission minute across a boundar
 			reservedTokens: 40,
 		});
 		assert.equal(admission.accepted, true);
-		if (!admission.accepted) return;
+		if (!admission.accepted) {
+			return;
+		}
 		Date.now = () => start + 60_000;
 		await onSuccessFinish(
 			id,
@@ -254,7 +263,9 @@ test("expired inflight leases self-heal while deployment traffic continues", {
 	try {
 		const abandoned = await onAttemptStart(id);
 		assert.equal(abandoned.accepted, true);
-		if (!abandoned.accepted) return;
+		if (!abandoned.accepted) {
+			return;
+		}
 		await redis.zadd(
 			`rt:v2:inflight-leases:${id}`,
 			Date.now() - 1,
@@ -262,7 +273,9 @@ test("expired inflight leases self-heal while deployment traffic continues", {
 		);
 		const active = await onAttemptStart(id);
 		assert.equal(active.accepted, true);
-		if (!active.accepted) return;
+		if (!active.accepted) {
+			return;
+		}
 		assert.equal((await fetchMetrics([id])).get(id)?.inflight, 1);
 
 		// A late settlement from the expired owner cannot decrement the active lease.
@@ -285,7 +298,9 @@ test("circuit: fixed failure window does not slide on every failure", {
 	try {
 		const first = await acquireCircuitPermit(deployment, capacity, config);
 		assert.equal(first.allowed, true);
-		if (!first.allowed) return;
+		if (!first.allowed) {
+			return;
+		}
 		await recordTransientFailure(first.permit, config, {
 			class: "server",
 			message: "first",
@@ -293,7 +308,9 @@ test("circuit: fixed failure window does not slide on every failure", {
 		await wait(90);
 		const second = await acquireCircuitPermit(deployment, capacity, config);
 		assert.equal(second.allowed, true);
-		if (!second.allowed) return;
+		if (!second.allowed) {
+			return;
+		}
 		await recordTransientFailure(second.permit, config, {
 			class: "server",
 			message: "second",
@@ -322,7 +339,9 @@ test("circuit: allowed failures are honored before cooldown, half-open admits on
 		for (const message of ["first", "second", "third"]) {
 			const acquired = await acquireCircuitPermit(deployment, capacity, config);
 			assert.equal(acquired.allowed, true);
-			if (!acquired.allowed) return;
+			if (!acquired.allowed) {
+				return;
+			}
 			await recordTransientFailure(acquired.permit, config, {
 				class: "server",
 				message,
@@ -350,10 +369,12 @@ test("circuit: allowed failures are honored before cooldown, half-open admits on
 			acquireCircuitPermit(deployment, capacity, config),
 			acquireCircuitPermit(deployment, capacity, config),
 		]);
-		assert.equal(probes.filter((probe) => probe.allowed).length, 1);
+		assert.equal(probes.filter((entry) => entry.allowed).length, 1);
 		const probe = probes.find((candidate) => candidate.allowed);
 		assert.ok(probe?.allowed);
-		if (!probe?.allowed) return;
+		if (!probe?.allowed) {
+			return;
+		}
 		assert.equal(probe.permit.deploymentMode, "half_open");
 		await recordTransientFailure(probe.permit, config, {
 			class: "server",
@@ -367,7 +388,9 @@ test("circuit: allowed failures are honored before cooldown, half-open admits on
 		await wait(2300);
 		const recovery = await acquireCircuitPermit(deployment, capacity, config);
 		assert.equal(recovery.allowed, true);
-		if (!recovery.allowed) return;
+		if (!recovery.allowed) {
+			return;
+		}
 		assert.equal(recovery.permit.deploymentMode, "half_open");
 		await closeCircuits(recovery.permit);
 		[snapshot] = await getCircuitSnapshots([{ deployment, capacity }]);
@@ -385,15 +408,19 @@ async function drive(
 	options: { mayOpen?: boolean } = {},
 ): Promise<"blocked" | "ok"> {
 	const acquired = await acquireCircuitPermit(deployment, capacity, config);
-	if (!acquired.allowed) return "blocked";
-	if (outcome === "success") await closeCircuits(acquired.permit);
-	else
+	if (!acquired.allowed) {
+		return "blocked";
+	}
+	if (outcome === "success") {
+		await closeCircuits(acquired.permit);
+	} else {
 		await recordTransientFailure(
 			acquired.permit,
 			config,
 			{ class: "server", message: "upstream" },
 			options,
 		);
+	}
 	return "ok";
 }
 
@@ -411,10 +438,12 @@ test("circuit: a minority of failures in a busy window does not open", {
 		failureWindowMs: 60_000,
 	});
 	try {
-		for (let i = 0; i < 7; i += 1)
+		for (let i = 0; i < 7; i += 1) {
 			assert.equal(await drive(deployment, capacity, config, "success"), "ok");
-		for (let i = 0; i < 3; i += 1)
+		}
+		for (let i = 0; i < 3; i += 1) {
 			assert.equal(await drive(deployment, capacity, config, "failure"), "ok");
+		}
 		// 3 failures in 10 attempts. The old absolute count would have quarantined this deployment
 		// twice over while it was serving 70% of its traffic successfully.
 		const [snapshot] = await getCircuitSnapshots([{ deployment, capacity }]);
@@ -440,11 +469,13 @@ test("circuit: the rate rule opens once the window carries enough traffic", {
 		maxCooldownMs: 60_000,
 	});
 	try {
-		for (let i = 0; i < 2; i += 1)
+		for (let i = 0; i < 2; i += 1) {
 			assert.equal(await drive(deployment, capacity, config, "success"), "ok");
+		}
 		// Attempts 3 and 4 fail, but the window has not reached the traffic floor yet.
-		for (let i = 0; i < 2; i += 1)
+		for (let i = 0; i < 2; i += 1) {
 			await drive(deployment, capacity, config, "failure");
+		}
 		let [snapshot] = await getCircuitSnapshots([{ deployment, capacity }]);
 		assert.equal(snapshot?.status, "available");
 
@@ -466,13 +497,14 @@ test("circuit: the last routable deployment is never quarantined", {
 	const config = settings({ allowedFails: 0, baseCooldownMs: 5000 });
 	try {
 		// Every rule says open; the veto is what keeps the pool serving.
-		for (let i = 0; i < 3; i += 1)
+		for (let i = 0; i < 3; i += 1) {
 			assert.equal(
 				await drive(deployment, capacity, config, "failure", {
 					mayOpen: false,
 				}),
 				"ok",
 			);
+		}
 		let [snapshot] = await getCircuitSnapshots([{ deployment, capacity }]);
 		assert.equal(snapshot?.status, "available");
 
@@ -495,7 +527,9 @@ test("circuit: a misconfigured deployment is quarantined at once when there is s
 	try {
 		const acquired = await acquireCircuitPermit(deployment, capacity, config);
 		assert.equal(acquired.allowed, true);
-		if (!acquired.allowed) return;
+		if (!acquired.allowed) {
+			return;
+		}
 		// No threshold to reach: bad credentials fail every request the same way, so one is proof.
 		await recordConfigurationFailure(
 			acquired.permit,
@@ -525,7 +559,9 @@ test("circuit: the last deployment is not quarantined for being misconfigured", 
 		for (let i = 0; i < 3; i += 1) {
 			const acquired = await acquireCircuitPermit(deployment, capacity, config);
 			assert.equal(acquired.allowed, true);
-			if (!acquired.allowed) return;
+			if (!acquired.allowed) {
+				return;
+			}
 			await recordConfigurationFailure(
 				acquired.permit,
 				config,
@@ -540,7 +576,9 @@ test("circuit: the last deployment is not quarantined for being misconfigured", 
 		// The moment an alternative exists, failing over is the better answer after all.
 		const acquired = await acquireCircuitPermit(deployment, capacity, config);
 		assert.equal(acquired.allowed, true);
-		if (!acquired.allowed) return;
+		if (!acquired.allowed) {
+			return;
+		}
 		await recordConfigurationFailure(
 			acquired.permit,
 			config,
@@ -584,7 +622,9 @@ test("circuit: a forced admission cannot escalate, and its success clears the ci
 			true,
 		);
 		assert.equal(forced.allowed, true);
-		if (!forced.allowed) return;
+		if (!forced.allowed) {
+			return;
+		}
 		assert.equal(forced.permit.deploymentMode, "forced");
 		// A forced attempt is a symptom of the open circuit, not evidence about the upstream.
 		assert.equal(
@@ -605,7 +645,9 @@ test("circuit: a forced admission cannot escalate, and its success clears the ci
 			true,
 		);
 		assert.ok(recovered.allowed);
-		if (!recovered.allowed) return;
+		if (!recovered.allowed) {
+			return;
+		}
 		await closeCircuits(recovered.permit);
 		[snapshot] = await getCircuitSnapshots([{ deployment, capacity }]);
 		assert.equal(snapshot?.status, "available");
@@ -629,7 +671,9 @@ test("circuit: the episode window does not slide on every failed probe", {
 	try {
 		const first = await acquireCircuitPermit(deployment, capacity, config);
 		assert.equal(first.allowed, true);
-		if (!first.allowed) return;
+		if (!first.allowed) {
+			return;
+		}
 		const openedFor = await recordTransientFailure(first.permit, config, {
 			class: "server",
 			message: "opens the episode",
@@ -643,7 +687,9 @@ test("circuit: the episode window does not slide on every failed probe", {
 		await wait(300);
 		const probe = await acquireCircuitPermit(deployment, capacity, config);
 		assert.equal(probe.allowed, true);
-		if (!probe.allowed) return;
+		if (!probe.allowed) {
+			return;
+		}
 		assert.equal(probe.permit.deploymentMode, "half_open");
 		const reopenedFor = await recordTransientFailure(probe.permit, config, {
 			class: "server",
@@ -675,7 +721,9 @@ test("circuit: an operator reset forgets the cooldown and the episode", {
 	try {
 		const acquired = await acquireCircuitPermit(deployment, capacity, config);
 		assert.equal(acquired.allowed, true);
-		if (!acquired.allowed) return;
+		if (!acquired.allowed) {
+			return;
+		}
 		await recordTransientFailure(acquired.permit, config, {
 			class: "server",
 			message: "quarantined",
@@ -692,7 +740,9 @@ test("circuit: an operator reset forgets the cooldown and the episode", {
 		// A reset deployment is routed to at full confidence, not as a half-open probe.
 		const recovered = await acquireCircuitPermit(deployment, capacity, config);
 		assert.equal(recovered.allowed, true);
-		if (!recovered.allowed) return;
+		if (!recovered.allowed) {
+			return;
+		}
 		assert.equal(recovered.permit.deploymentMode, "closed");
 	} finally {
 		await cleanup([], [prefix(deployment), prefix(capacity)]);
@@ -709,7 +759,9 @@ test("circuit: zero allowed failures opens on the first transient failure", {
 	try {
 		const acquired = await acquireCircuitPermit(deployment, capacity, config);
 		assert.equal(acquired.allowed, true);
-		if (!acquired.allowed) return;
+		if (!acquired.allowed) {
+			return;
+		}
 		await recordTransientFailure(acquired.permit, config, {
 			class: "server",
 			message: "first",
@@ -731,7 +783,9 @@ test("circuit: a successful call resets accumulated transient failures", {
 	try {
 		const first = await acquireCircuitPermit(deployment, capacity, config);
 		assert.equal(first.allowed, true);
-		if (!first.allowed) return;
+		if (!first.allowed) {
+			return;
+		}
 		await recordTransientFailure(first.permit, config, {
 			class: "server",
 			message: "first",
@@ -739,7 +793,9 @@ test("circuit: a successful call resets accumulated transient failures", {
 
 		const success = await acquireCircuitPermit(deployment, capacity, config);
 		assert.equal(success.allowed, true);
-		if (!success.allowed) return;
+		if (!success.allowed) {
+			return;
+		}
 		await closeCircuits(success.permit);
 
 		const afterSuccess = await acquireCircuitPermit(
@@ -748,7 +804,9 @@ test("circuit: a successful call resets accumulated transient failures", {
 			config,
 		);
 		assert.equal(afterSuccess.allowed, true);
-		if (!afterSuccess.allowed) return;
+		if (!afterSuccess.allowed) {
+			return;
+		}
 		await recordTransientFailure(afterSuccess.permit, config, {
 			class: "server",
 			message: "after success",
@@ -775,7 +833,9 @@ test("capacity circuit: Retry-After state is shared by one configured failure do
 	try {
 		const first = await acquireCircuitPermit(firstDeployment, capacity, config);
 		assert.equal(first.allowed, true);
-		if (!first.allowed) return;
+		if (!first.allowed) {
+			return;
+		}
 		await recordThrottleFailure(
 			first.permit,
 			config,
@@ -788,7 +848,9 @@ test("capacity circuit: Retry-After state is shared by one configured failure do
 			config,
 		);
 		assert.equal(second.allowed, false);
-		if (second.allowed) return;
+		if (second.allowed) {
+			return;
+		}
 		assert.equal(second.blockedBy, "capacity");
 		assert.ok(second.retryAfterMs > 0);
 

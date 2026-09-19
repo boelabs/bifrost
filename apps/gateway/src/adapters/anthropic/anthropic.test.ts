@@ -1,10 +1,14 @@
-import type { CanonicalChatRequest } from "#core/canonical.ts";
 import { adapterDiagnostics } from "#adapters/diagnostics.ts";
 import type { AdapterContext } from "#adapters/types.ts";
 import { anthropicAdapter } from "./index.ts";
 import type { Usage } from "#core/usage.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
+
+import type {
+	CanonicalChatStreamChunk,
+	CanonicalChatRequest,
+} from "#core/canonical.ts";
 
 const ctx: AdapterContext = {
 	upstreamModel: "claude-sonnet-4-5",
@@ -55,7 +59,9 @@ test("Anthropic preserves optional thinking usage from initial and terminal even
 		).body!;
 		let usage: Usage | undefined;
 		for await (const chunk of anthropicAdapter.chat!.parseStream(body, ctx)) {
-			if (chunk.usage) usage = chunk.usage;
+			if (chunk.usage) {
+				({ usage } = chunk);
+			}
 		}
 		assert.ok(usage);
 		assert.equal(usage.reasoningTokens, expected);
@@ -94,7 +100,7 @@ const budgetCtx: AdapterContext = {
 		reasoning: {
 			kind: "anthropic_budget",
 			levels: ["none", "low", "medium", "high"],
-			budgets: { low: 2048, medium: 8192, high: 16000 },
+			budgets: { low: 2048, medium: 8192, high: 16_000 },
 		},
 	},
 };
@@ -455,7 +461,7 @@ test("anthropic.buildRequest: legacy budget uses thinking.enabled and none uses 
 	);
 	assert.deepEqual(JSON.parse(high.body!).thinking, {
 		type: "enabled",
-		budget_tokens: 16000,
+		budget_tokens: 16_000,
 		display: "summarized",
 	});
 
@@ -569,7 +575,7 @@ test("anthropic.parseStream: text and tool JSON deltas stream as canonical chunk
 		`event: content_block_delta\ndata: {"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\\"q\\":"}}\n\n` +
 		`event: message_delta\ndata: {"type":"message_delta","delta":{"stop_reason":"tool_use"},"usage":{"output_tokens":8}}\n\n` +
 		`event: message_stop\ndata: {"type":"message_stop"}\n\n`;
-	const chunks = [];
+	const chunks: CanonicalChatStreamChunk[] = [];
 	for await (const chunk of anthropicAdapter.chat!.parseStream(
 		new Response(sse).body!,
 		ctx,
@@ -602,7 +608,7 @@ test("anthropic thinking state: signed and redacted blocks survive parse and rep
 		},
 		ctx,
 	);
-	const message = parsed.choices[0]!.message;
+	const { message } = parsed.choices[0]!;
 	assert.deepEqual(message.providerFields, {
 		anthropic: {
 			thinking_blocks: [
@@ -701,7 +707,9 @@ test("anthropic.parseStream: signature deltas become replayable message state", 
 		ctx,
 	)) {
 		const value = chunk.choices[0]?.delta.providerFields;
-		if (value !== undefined) fields.push(value);
+		if (value !== undefined) {
+			fields.push(value);
+		}
 	}
 	assert.deepEqual(fields.at(-1), {
 		anthropic: {
@@ -758,7 +766,7 @@ test("anthropic preserves matched stop sequences in responses and streams", asyn
 		`event: message_start\ndata: {"type":"message_start","message":{"id":"msg_1","model":"claude","usage":{"input_tokens":1},"content":[]}}\n\n` +
 		`event: message_delta\ndata: {"type":"message_delta","delta":{"stop_reason":"stop_sequence","stop_sequence":"<END>"},"usage":{"output_tokens":1}}\n\n` +
 		`event: message_stop\ndata: {"type":"message_stop"}\n\n`;
-	const chunks = [];
+	const chunks: CanonicalChatStreamChunk[] = [];
 	for await (const chunk of anthropicAdapter.chat!.parseStream(
 		new Response(sse).body!,
 		ctx,

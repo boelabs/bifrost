@@ -25,7 +25,7 @@ export function Skeleton({
 		<span
 			aria-hidden
 			className={cn(
-				"block h-4 animate-pulse rounded-[var(--ui-radius-control)] bg-fg/10 motion-reduce:animate-none",
+				"block h-4 animate-pulse rounded-(--ui-radius-control) bg-fg/10 motion-reduce:animate-none",
 				className,
 			)}
 			style={width ? { width, ...style } : style}
@@ -67,13 +67,10 @@ export function TableSkeleton({
 		widths?.[index] ?? ["70%", "45%", "60%", "35%", "55%"][index % 5] ?? "50%";
 	return (
 		<div
-			role="status"
-			aria-label="Loading rows"
 			aria-busy="true"
-			className={cn(
-				"min-w-0 rounded-[var(--ui-radius-surface)]",
-				!plain && "p-1",
-			)}
+			aria-label="Loading rows"
+			className={cn("min-w-0 rounded-(--ui-radius-surface)", !plain && "p-1")}
+			role="status"
 		>
 			{toolbar ? (
 				<div
@@ -83,7 +80,7 @@ export function TableSkeleton({
 					)}
 				>
 					<Skeleton
-						className="ml-auto h-10 rounded-[var(--ui-radius-control)]"
+						className="ml-auto h-10 rounded-(--ui-radius-control)"
 						width="4.5rem"
 					/>
 				</div>
@@ -96,15 +93,15 @@ export function TableSkeleton({
 				)}
 			>
 				<table className="w-full border-collapse text-sm">
-					<thead className="border-b border-border/50">
+					<thead className="border-border/50 border-b">
 						<tr>
 							{headers.map((header, index) => (
 								<th
+									className="whitespace-nowrap px-5 py-4 text-left font-medium text-fg-muted text-xs"
 									// Headers are a fixed list per page, and a blank one is legitimate (action columns).
 									// biome-ignore lint/suspicious/noArrayIndexKey: position is the only identity here
 									key={`${header}-${index}`}
 									scope="col"
-									className="whitespace-nowrap px-5 py-4 text-left font-medium text-fg-muted text-xs"
 								>
 									{header}
 								</th>
@@ -114,15 +111,15 @@ export function TableSkeleton({
 					<tbody>
 						{Array.from({ length: rows }, (_, row) => (
 							<tr
+								className="border-border/30 border-b last:border-0"
 								// biome-ignore lint/suspicious/noArrayIndexKey: placeholder rows have no identity
 								key={row}
-								className="border-b border-border/30 last:border-0"
 							>
 								{headers.map((header, column) => (
 									<td
+										className="px-5 py-4 align-middle"
 										// biome-ignore lint/suspicious/noArrayIndexKey: position is the only identity here
 										key={`${header}-${column}`}
-										className="px-5 py-4 align-middle"
 									>
 										<Skeleton width={fill(column)} />
 									</td>
@@ -142,11 +139,11 @@ export function TableSkeleton({
 					<Skeleton className="h-5" width="9rem" />
 					<div className="flex flex-wrap items-center gap-3">
 						<Skeleton
-							className="h-10 rounded-[var(--ui-radius-control)]"
+							className="h-10 rounded-(--ui-radius-control)"
 							width="8rem"
 						/>
 						<Skeleton
-							className="h-10 rounded-[var(--ui-radius-control)]"
+							className="h-10 rounded-(--ui-radius-control)"
 							width="10rem"
 						/>
 					</div>
@@ -157,8 +154,7 @@ export function TableSkeleton({
 }
 
 /** The frame a `Card` draws, so a placeholder can sit exactly where one will. */
-const CARD =
-	"rounded-[var(--ui-radius-surface)] border border-border/50 bg-card";
+const CARD = "rounded-(--ui-radius-surface) border border-border/50 bg-card";
 
 /**
  * A row of summary tiles, laid out and padded like `StatCard`: label and icon, the big number with
@@ -173,14 +169,14 @@ export function StatGridSkeleton({
 }) {
 	return (
 		<div
-			role="status"
-			aria-label="Loading summary"
 			aria-busy="true"
+			aria-label="Loading summary"
 			className={cn("grid gap-5 sm:grid-cols-2 xl:grid-cols-4", className)}
+			role="status"
 		>
 			{Array.from({ length: count }, (_, index) => (
 				// biome-ignore lint/suspicious/noArrayIndexKey: placeholder tiles have no identity
-				<div key={index} className={cn(CARD, "flex min-w-0 flex-col p-7")}>
+				<div className={cn(CARD, "flex min-w-0 flex-col p-7")} key={index}>
 					<div className="flex items-center gap-2.5">
 						<Skeleton className="size-4.5 shrink-0 rounded-md" />
 						<Skeleton className="h-4" width="45%" />
@@ -204,10 +200,10 @@ export function ChartSkeleton({
 }) {
 	return (
 		<div
-			role="status"
-			aria-label="Loading chart"
 			aria-busy="true"
+			aria-label="Loading chart"
 			className={cn(CARD, "min-w-0 p-7")}
+			role="status"
 		>
 			{title ? (
 				<>
@@ -216,7 +212,7 @@ export function ChartSkeleton({
 				</>
 			) : null}
 			<Skeleton
-				className={cn("rounded-[var(--ui-radius-surface)]", title && "mt-7")}
+				className={cn("rounded-(--ui-radius-surface)", title && "mt-7")}
 				style={{ height }}
 				width="100%"
 			/>
@@ -232,18 +228,18 @@ export function ToolbarSkeleton({
 }) {
 	return (
 		<div
-			role="status"
-			aria-label="Loading controls"
 			aria-busy="true"
+			aria-label="Loading controls"
 			className="flex flex-wrap items-center gap-2"
+			role="status"
 		>
 			{widths.map((width, index) => (
 				<Skeleton
+					className="h-10 rounded-(--ui-radius-control)"
 					// Keyed by position, not by width: a toolbar can legitimately hold two controls of
 					// the same size, and the list never reorders.
 					// biome-ignore lint/suspicious/noArrayIndexKey: placeholder bars have no identity
 					key={index}
-					className="h-10 rounded-[var(--ui-radius-control)]"
 					width={width}
 				/>
 			))}

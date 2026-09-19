@@ -18,7 +18,7 @@ export function Table({
 		<table
 			{...props}
 			className={cn(
-				"w-full border-separate border-spacing-0 rounded-[var(--ui-radius-surface)] border border-border text-sm",
+				"w-full border-separate border-spacing-0 rounded-(--ui-radius-surface) border border-border text-sm",
 				className,
 			)}
 			style={appearanceStyle({ borderRadius, width }, style)}
@@ -61,11 +61,11 @@ export function TableColumn({
 	return (
 		<th
 			{...props}
-			scope={scope}
 			className={cn(
-				"border-border/50 border-b px-4 py-3 text-left text-xs font-medium",
+				"border-border/50 border-b px-4 py-3 text-left font-medium text-xs",
 				className,
 			)}
+			scope={scope}
 		/>
 	);
 }
@@ -89,7 +89,7 @@ export function TableCaption({
 	return (
 		<caption
 			{...props}
-			className={cn("p-3 text-sm text-fg-muted", className)}
+			className={cn("p-3 text-fg-muted text-sm", className)}
 		/>
 	);
 }

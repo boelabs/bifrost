@@ -1,6 +1,6 @@
 import type { components } from "#/shared/api/schema";
 import { api, unwrap } from "#/shared/api/client.ts";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 import type {
 	CreateDeploymentInput,
@@ -55,15 +55,17 @@ export async function saveDeployment(
 		publicModel: body.publicModel,
 		adapterKey: body.adapterKey,
 		upstreamModel: body.upstreamModel,
-		...(body.catalogEntry !== undefined
-			? { catalogEntry: body.catalogEntry }
-			: {}),
-		...(body.pricing !== undefined ? { pricing: body.pricing } : {}),
-		...(body.transportOverrides !== undefined
-			? { transportOverrides: body.transportOverrides }
-			: {}),
+		...(body.catalogEntry === undefined
+			? {}
+			: { catalogEntry: body.catalogEntry }),
+		...(body.pricing === undefined ? {} : { pricing: body.pricing }),
+		...(body.transportOverrides === undefined
+			? {}
+			: { transportOverrides: body.transportOverrides }),
 	});
-	if (existingId === undefined) return createDeployment(body, idempotencyKey);
+	if (existingId === undefined) {
+		return createDeployment(body, idempotencyKey);
+	}
 	const { adapterKey: _adapterKey, credentials, ...patch } = body;
 	return updateDeployment(existingId, {
 		...patch,
@@ -78,7 +80,9 @@ export async function deleteDeployment(id: string): Promise<void> {
 	const result = await api.DELETE("/admin/deployments/{id}", {
 		params: { path: { id } },
 	});
-	if (result.error !== undefined) unwrap(result);
+	if (result.error !== undefined) {
+		unwrap(result);
+	}
 }
 
 const adapterRegistrySchema = z.object({

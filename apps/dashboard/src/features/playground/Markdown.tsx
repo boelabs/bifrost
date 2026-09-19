@@ -44,7 +44,7 @@ export class MarkdownBoundary extends Component<
 				<p className="mb-2 text-fg-muted text-xs" role="status">
 					Formatting could not load. Showing the original text.
 				</p>
-				<pre className="whitespace-pre-wrap break-words font-mono text-sm">
+				<pre className="wrap-break-word whitespace-pre-wrap font-mono text-sm">
 					{this.props.text}
 				</pre>
 			</div>
@@ -55,9 +55,11 @@ export class MarkdownBoundary extends Component<
 }
 
 function MarkdownBlock({ dir, ...props }: ComponentProps<typeof Block>) {
-	if (!props.content?.trim()) return null;
+	if (!props.content?.trim()) {
+		return null;
+	}
 	return (
-		<div dir={dir} className="playground-markdown-block min-w-0">
+		<div className="playground-markdown-block min-w-0" dir={dir}>
 			<Block {...props} />
 		</div>
 	);
@@ -69,17 +71,17 @@ const components: ComponentProps<typeof Streamdown>["components"] = {
 	),
 	a: ({ href, children }) => (
 		<a
-			href={href}
-			target="_blank"
-			rel="noopener noreferrer"
 			className="text-primary underline underline-offset-2 hover:opacity-80"
+			href={href}
+			rel="noopener noreferrer"
+			target="_blank"
 		>
 			{children}
 		</a>
 	),
 };
 
-export const Markdown = memo(function Markdown({
+export const Markdown = memo(function MarkdownBody({
 	text,
 	streaming = false,
 }: {
@@ -89,16 +91,16 @@ export const Markdown = memo(function Markdown({
 	return (
 		<MarkdownBoundary text={text}>
 			<Streamdown
-				skipHtml
-				dir="auto"
-				mode="streaming"
-				isAnimating={streaming}
 				BlockComponent={MarkdownBlock}
-				controls={false}
-				plugins={plugins}
-				icons={icons}
+				className="playground-markdown wrap-break-word w-full min-w-0 leading-7"
 				components={components}
-				className="playground-markdown w-full min-w-0 break-words leading-7"
+				controls={false}
+				dir="auto"
+				icons={icons}
+				isAnimating={streaming}
+				mode="streaming"
+				plugins={plugins}
+				skipHtml
 			>
 				{text}
 			</Streamdown>

@@ -78,9 +78,10 @@ export interface RerankProfile {
 }
 
 export function textFromRerankDocument(document: RerankDocument): string {
-	if (document.type !== "text")
+	if (document.type !== "text") {
 		throw new TypeError(
 			"The active rerank contract only supports text documents",
 		);
+	}
 	return document.text;
 }

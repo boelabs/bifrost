@@ -208,7 +208,7 @@ export class GatewayError extends Error {
 	constructor(opts: GatewayErrorOptions) {
 		super(
 			opts.message,
-			opts.cause !== undefined ? { cause: opts.cause } : undefined,
+			opts.cause === undefined ? undefined : { cause: opts.cause },
 		);
 		this.name = "GatewayError";
 		const meta = META[opts.class];
@@ -218,17 +218,22 @@ export class GatewayError extends Error {
 		this.publicClass = publicClass;
 		this.httpStatus = opts.status ?? publicMeta.httpStatus;
 		this.openaiType = publicMeta.openaiType;
-		this.code = opts.code !== undefined ? opts.code : publicMeta.defaultCode;
+		this.code = opts.code === undefined ? publicMeta.defaultCode : opts.code;
 		this.param = opts.param ?? null;
 		this.retryable = opts.retryable ?? meta.retryable;
 		// By default the client sees the class's GENERIC message; the detail stays in `message`.
 		this.publicMessage = opts.publicMessage ?? GENERIC_PUBLIC[publicClass];
-		if (opts.provider !== undefined) this.provider = opts.provider;
-		if (opts.headers !== undefined) this.headers = opts.headers;
+		if (opts.provider !== undefined) {
+			this.provider = opts.provider;
+		}
+		if (opts.headers !== undefined) {
+			this.headers = opts.headers;
+		}
 		this.routingScope = opts.routingScope ?? "candidate";
 		this.failureKind = opts.failureKind ?? defaultFailureKind(opts.class);
-		if (opts.retryAfterMs !== undefined)
+		if (opts.retryAfterMs !== undefined) {
 			this.retryAfterMs = Math.max(0, Math.floor(opts.retryAfterMs));
+		}
 		this.deploymentHealth =
 			opts.deploymentHealth ??
 			(this.routingScope === "request" ||
@@ -246,19 +251,19 @@ export class GatewayError extends Error {
 			code: this.code,
 			http_status: this.httpStatus,
 			message: this.message,
-			...(this.routingScope !== "candidate"
-				? { routing_scope: this.routingScope }
-				: {}),
-			...(this.deploymentHealth !== "penalize"
-				? { deployment_health: this.deploymentHealth }
-				: {}),
-			...(this.failureKind !== "transient"
-				? { failure_kind: this.failureKind }
-				: {}),
-			...(this.retryAfterMs !== undefined
-				? { retry_after_ms: this.retryAfterMs }
-				: {}),
-			...(this.provider !== undefined ? { provider: this.provider } : {}),
+			...(this.routingScope === "candidate"
+				? {}
+				: { routing_scope: this.routingScope }),
+			...(this.deploymentHealth === "penalize"
+				? {}
+				: { deployment_health: this.deploymentHealth }),
+			...(this.failureKind === "transient"
+				? {}
+				: { failure_kind: this.failureKind }),
+			...(this.retryAfterMs === undefined
+				? {}
+				: { retry_after_ms: this.retryAfterMs }),
+			...(this.provider === undefined ? {} : { provider: this.provider }),
 		};
 	}
 

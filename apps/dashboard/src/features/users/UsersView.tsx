@@ -36,8 +36,14 @@ import {
 	ROLES,
 } from "./common.ts";
 
+const ROLE_TONES: Record<Role, "warning" | "neutral" | "muted"> = {
+	owner: "warning",
+	admin: "neutral",
+	viewer: "muted",
+};
+
 function roleTone(role: Role) {
-	return role === "owner" ? "warning" : role === "admin" ? "neutral" : "muted";
+	return ROLE_TONES[role];
 }
 
 /** The role legend, which needs no data and so belongs to the route's App Shell. */
@@ -81,7 +87,9 @@ export function UsersTable({
 	const offset = filters.offset ?? 0;
 
 	async function changeRole(user: DashboardUser, role: Role) {
-		if (role === user.role) return;
+		if (role === user.role) {
+			return;
+		}
 		const confirmed = await confirm({
 			title: `Make ${user.username} ${role === "owner" ? "an owner" : `a ${role}`}?`,
 			description:
@@ -91,7 +99,9 @@ export function UsersTable({
 			confirmLabel: "Change role",
 			tone: "primary",
 		});
-		if (!confirmed) return;
+		if (!confirmed) {
+			return;
+		}
 		await act(user.id, {
 			optimistic: { role },
 			action: () => updateUserAction(user.id, { role }),
@@ -116,7 +126,9 @@ export function UsersTable({
 				"Their sessions end immediately and the account is gone. Their past actions stay in the audit trail.",
 			confirmLabel: "Delete operator",
 		});
-		if (!confirmed) return;
+		if (!confirmed) {
+			return;
+		}
 		await act(user.id, {
 			optimistic: "removed",
 			action: () => deleteUserAction(user.id),
@@ -137,9 +149,9 @@ export function UsersTable({
 			render: (user) => (
 				<Select
 					aria-label={`Role for ${user.username}`}
-					value={user.role}
 					disabled={user.id === identity.user.id}
 					onValueChange={(key) => void changeRole(user, key as Role)}
+					value={user.role}
 				>
 					{ROLES.map((role) => (
 						<SelectItem key={role} value={role}>
@@ -174,7 +186,7 @@ export function UsersTable({
 			render: (user) =>
 				user.lastLoginAt ? (
 					// The operator's own timezone, which the server does not have.
-					<span suppressHydrationWarning className="text-fg-muted text-xs">
+					<span className="text-fg-muted text-xs" suppressHydrationWarning>
 						{new Date(user.lastLoginAt).toLocaleString()}
 					</span>
 				) : (
@@ -197,36 +209,36 @@ export function UsersTable({
 				const self = user.id === identity.user.id;
 				return (
 					<RowActions
-						label={`Actions for ${user.username}`}
 						actions={[
 							{
 								label: "Sessions",
-								icon: <IconUsers size={15} aria-hidden />,
+								icon: <IconUsers aria-hidden size={15} />,
 								onSelect: () => setInspecting(user),
 							},
 							{
 								label: "Reset password",
-								icon: <IconKey size={15} aria-hidden />,
+								icon: <IconKey aria-hidden size={15} />,
 								onSelect: () => setResetting(user),
 							},
 							{
 								label: user.enabled ? "Disable" : "Enable",
 								icon: user.enabled ? (
-									<IconBan size={15} aria-hidden />
+									<IconBan aria-hidden size={15} />
 								) : (
-									<IconCheck size={15} aria-hidden />
+									<IconCheck aria-hidden size={15} />
 								),
 								disabled: self,
 								onSelect: () => void toggle(user),
 							},
 							{
 								label: "Delete",
-								icon: <IconTrash size={15} aria-hidden />,
+								icon: <IconTrash aria-hidden size={15} />,
 								danger: true,
 								disabled: self,
 								onSelect: () => void remove(user),
 							},
 						]}
+						label={`Actions for ${user.username}`}
 					/>
 				);
 			},
@@ -237,49 +249,49 @@ export function UsersTable({
 		<>
 			{users.length === 0 ? (
 				<EmptyState
-					title={
-						searched ? "No operators match that search" : "No operators yet"
-					}
 					description={
 						searched
 							? "Only usernames are searched."
 							: "Only the root operator can sign in. It lives in the environment, not here, so it never appears in this list."
 					}
+					title={
+						searched ? "No operators match that search" : "No operators yet"
+					}
 				/>
 			) : (
 				<>
 					<DataTable
-						rows={users}
+						caption="Dashboard users"
 						columns={columns}
 						rowKey={(user) => user.id}
-						caption="Dashboard users"
+						rows={users}
 					/>
 					<Pagination
 						label="operators"
 						limit={PAGE_SIZE}
 						offset={offset}
-						total={total}
 						onOffsetChange={(next) =>
 							set({ offset: next === 0 ? undefined : next })
 						}
+						total={total}
 					/>
 				</>
 			)}
 
 			<SessionsDialog
+				onClose={() => setInspecting(null)}
 				userId={inspecting?.id ?? null}
 				username={inspecting?.username ?? ""}
-				onClose={() => setInspecting(null)}
 			/>
 
 			<PasswordDialog
 				isOpen={resetting !== null}
-				pending={pending}
-				username={resetting?.username ?? ""}
 				onClose={() => setResetting(null)}
 				onSubmit={async (password) => {
 					const target = resetting;
-					if (!target) return false;
+					if (!target) {
+						return false;
+					}
 					const result = await run(
 						() => setPasswordAction(target.id, password),
 						{
@@ -289,6 +301,8 @@ export function UsersTable({
 					);
 					return result.ok;
 				}}
+				pending={pending}
+				username={resetting?.username ?? ""}
 			/>
 		</>
 	);

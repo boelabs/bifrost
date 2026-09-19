@@ -21,17 +21,23 @@ const MIME_BY_FORMAT: Record<
 };
 
 interface ImageTransformHooks {
-	applyImageOutput?(
+	applyImageOutput?: (
 		output: ExtensionImageOutput,
-	): Promise<ExtensionImageOutput>;
+	) => Promise<ExtensionImageOutput>;
 }
 
 function formatFromMime(
 	mime: string | undefined,
 ): ImageOutputFormat | undefined {
-	if (mime === "image/png") return "png";
-	if (mime === "image/jpeg") return "jpeg";
-	if (mime === "image/webp") return "webp";
+	if (mime === "image/png") {
+		return "png";
+	}
+	if (mime === "image/jpeg") {
+		return "jpeg";
+	}
+	if (mime === "image/webp") {
+		return "webp";
+	}
 	return undefined;
 }
 
@@ -52,11 +58,12 @@ async function transformImageData(
 	profile?: ImageModelProfile,
 	hooks?: ImageTransformHooks,
 ): Promise<CanonicalImageData> {
-	if (!image.b64Json)
+	if (!image.b64Json) {
 		throw new GatewayError({
 			class: "server",
 			message: "Upstream returned an empty image",
 		});
+	}
 
 	const input = decodeBase64(image.b64Json);
 	let pipeline = sharp(input, {
@@ -65,9 +72,11 @@ async function transformImageData(
 	});
 	const before = await pipeline.metadata();
 	if (
-		!before.width ||
-		!before.height ||
-		!["png", "jpeg", "webp"].includes(before.format ?? "")
+		!(
+			before.width &&
+			before.height &&
+			["png", "jpeg", "webp"].includes(before.format ?? "")
+		)
 	) {
 		throw new GatewayError({
 			class: "server",
@@ -84,9 +93,13 @@ async function transformImageData(
 
 	// Re-encoding is always intentional: Sharp discards all upstream metadata by default.
 	pipeline = pipeline.autoOrient();
-	if (outputFormat === "jpeg") pipeline = pipeline.jpeg({ quality });
-	else if (outputFormat === "webp") pipeline = pipeline.webp({ quality });
-	else pipeline = pipeline.png();
+	if (outputFormat === "jpeg") {
+		pipeline = pipeline.jpeg({ quality });
+	} else if (outputFormat === "webp") {
+		pipeline = pipeline.webp({ quality });
+	} else {
+		pipeline = pipeline.png();
+	}
 	let output = await pipeline.toBuffer();
 
 	let after = await sharp(output, {
@@ -95,9 +108,9 @@ async function transformImageData(
 	let format = after.format as ImageOutputFormat;
 	if (hooks?.applyImageOutput) {
 		const mimeType = MIME_BY_FORMAT[format];
-		const width = after.width;
-		const height = after.height;
-		if (!width || !height || !mimeType) {
+		const { width } = after;
+		const { height } = after;
+		if (!(width && height && mimeType)) {
 			throw new GatewayError({
 				class: "server",
 				message: "Image transform produced an unsupported output format",
@@ -160,7 +173,7 @@ export async function transformImageResponse(
 			transformImageData(image, req, profile, hooks),
 		),
 	);
-	const first = data[0];
+	const [first] = data;
 	const actualFormat =
 		req.outputFormat ??
 		response.outputFormat ??

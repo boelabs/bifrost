@@ -14,14 +14,17 @@ export class RouteLifecycle<TResult> {
 	#settled = false;
 
 	attach(route: RouteResult<TResult>): void {
-		if (this.#route !== null)
+		if (this.#route !== null) {
 			throw new Error("A route lifecycle cannot own more than one route");
+		}
 		this.#route = route;
 	}
 
 	/** Retains provider-reported usage so a later gateway post-processing failure is still charged. */
 	rememberUsage(usage: Usage | null): void {
-		if (this.#settled) return;
+		if (this.#settled) {
+			return;
+		}
 		this.#fallbackUsage = usage;
 	}
 
@@ -34,7 +37,9 @@ export class RouteLifecycle<TResult> {
 			downstream?: DownstreamWriteObservation;
 		} = {},
 	): Promise<void> {
-		if (this.#route === null || this.#settled) return;
+		if (this.#route === null || this.#settled) {
+			return;
+		}
 		this.#settled = true;
 		await this.#route.finish(
 			usage ?? this.#fallbackUsage,

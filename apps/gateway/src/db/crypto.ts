@@ -45,8 +45,9 @@ export interface EncEnvelope {
 }
 
 export function parseEncryptedEnvelope(value: unknown): EncEnvelope {
-	if (value === null || typeof value !== "object" || Array.isArray(value))
+	if (value === null || typeof value !== "object" || Array.isArray(value)) {
 		throw new Error("Encrypted envelope must be an object");
+	}
 	const candidate = value as Partial<EncEnvelope>;
 	if (
 		candidate.v !== 2 ||
@@ -64,10 +65,11 @@ export function parseEncryptedEnvelope(value: unknown): EncEnvelope {
 		typeof candidate.ct !== "string" ||
 		Buffer.from(candidate.iv, "base64").byteLength !== 12 ||
 		Buffer.from(candidate.tag, "base64").byteLength !== 16
-	)
+	) {
 		throw new Error(
 			"Encrypted envelope is invalid or references an unavailable key",
 		);
+	}
 	return candidate as EncEnvelope;
 }
 
@@ -82,10 +84,11 @@ function aad(
 
 function keyFor(id: string): Buffer {
 	const key = KEYRING.get(id);
-	if (!key)
+	if (!key) {
 		throw new Error(
 			`Encryption key "${id}" is not present in ENCRYPTION_KEYRING`,
 		);
+	}
 	return key;
 }
 
@@ -109,10 +112,10 @@ export function encryptJson(
 }
 
 export function decryptJson(
-	envelope: EncEnvelope,
+	raw: EncEnvelope,
 	expectedPurpose: EncryptionPurpose,
 ): unknown {
-	envelope = parseEncryptedEnvelope(envelope);
+	const envelope = parseEncryptedEnvelope(raw);
 	if (
 		envelope.v !== 2 ||
 		envelope.alg !== "A256GCM" ||
@@ -157,8 +160,9 @@ export function decryptRecord(
 	purpose: EncryptionPurpose,
 ): Record<string, unknown> {
 	const value = decryptJson(envelope, purpose);
-	if (value === null || typeof value !== "object" || Array.isArray(value))
+	if (value === null || typeof value !== "object" || Array.isArray(value)) {
 		throw new Error(`Encrypted ${purpose} payload must be an object`);
+	}
 	return value as Record<string, unknown>;
 }
 
@@ -167,7 +171,8 @@ export function decryptString(
 	purpose: EncryptionPurpose,
 ): string {
 	const value = decryptJson(envelope, purpose);
-	if (typeof value !== "string")
+	if (typeof value !== "string") {
 		throw new Error(`Encrypted ${purpose} payload must be a string`);
+	}
 	return value;
 }

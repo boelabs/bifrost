@@ -23,7 +23,9 @@ export async function saveDeploymentAction(
 		() => saveDeployment(body, existingId, idempotencyKey),
 		"The deployment could not be saved.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }
 
@@ -32,7 +34,9 @@ export async function toggleDeploymentAction(id: string, enabled: boolean) {
 		() => updateDeployment(id, { enabled }),
 		"The deployment could not be updated.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }
 
@@ -41,6 +45,8 @@ export async function deleteDeploymentAction(id: string) {
 		() => deleteDeployment(id),
 		"The deployment could not be deleted.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }

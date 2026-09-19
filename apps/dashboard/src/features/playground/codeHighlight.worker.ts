@@ -10,8 +10,11 @@ self.onmessage = (
 	work = work.then(async () => {
 		try {
 			const engine = await highlighter;
-			if ("release" in request) engine.release(request.release);
-			else self.postMessage(await engine.highlight(request));
+			if ("release" in request) {
+				engine.release(request.release);
+			} else {
+				self.postMessage(await engine.highlight(request));
+			}
 		} catch {
 			if ("id" in request) {
 				// A failed grammar must leave the current source visible.
@@ -20,7 +23,11 @@ self.onmessage = (
 					startLine: 0,
 					lines: request.code.split("\n").map((text) => ({ text, tokens: [] })),
 				} satisfies HighlightReply);
-				(await highlighter.catch(() => undefined))?.release(request.id);
+				try {
+					(await highlighter).release(request.id);
+				} catch {
+					// The engine never came up; there is nothing to release.
+				}
 			}
 		}
 	});

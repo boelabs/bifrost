@@ -7,7 +7,7 @@
 
 const DEFAULT_RETRIES = 3;
 const BASE_BACKOFF_MS = 400;
-const MAX_BACKOFF_MS = 8_000;
+const MAX_BACKOFF_MS = 8000;
 
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
@@ -24,7 +24,7 @@ export class FetchRetryError extends Error {
 
 	constructor(url: string, status: number | undefined, cause: unknown) {
 		super(
-			`Failed to fetch ${url}${status !== undefined ? ` (status ${status})` : ""}`,
+			`Failed to fetch ${url}${status === undefined ? "" : ` (status ${status})`}`,
 			{ cause },
 		);
 		this.name = "FetchRetryError";
@@ -44,7 +44,9 @@ export async function fetchJsonWithRetry<T>(
 	for (let attempt = 0; attempt <= retries; attempt++) {
 		try {
 			const response = await fetch(url, init);
-			if (response.ok) return (await response.json()) as T;
+			if (response.ok) {
+				return (await response.json()) as T;
+			}
 			lastStatus = response.status;
 			// 4xx other than 429 is not going to succeed on retry (bad request/not found) - fail fast.
 			if (response.status !== 429 && response.status < 500) {
@@ -53,11 +55,18 @@ export async function fetchJsonWithRetry<T>(
 			lastError = new FetchRetryError(url, response.status, undefined);
 		} catch (err) {
 			lastError = err;
-			if (err instanceof FetchRetryError && err.status !== undefined) {
-				if (err.status !== 429 && err.status < 500) throw err;
+			if (
+				err instanceof FetchRetryError &&
+				err.status !== undefined &&
+				err.status !== 429 &&
+				err.status < 500
+			) {
+				throw err;
 			}
 		}
-		if (attempt < retries) await sleep(backoffDelay(attempt));
+		if (attempt < retries) {
+			await sleep(backoffDelay(attempt));
+		}
 	}
 	throw new FetchRetryError(url, lastStatus, lastError);
 }
@@ -107,6 +116,8 @@ export function isFetchComplete(
 	attempted: number,
 	failedCount: number,
 ): boolean {
-	if (attempted === 0) return true;
+	if (attempted === 0) {
+		return true;
+	}
 	return failedCount / attempted <= 0.05;
 }

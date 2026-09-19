@@ -10,7 +10,8 @@
  * Formatting compatibility (biome):
  * - Only MOVES already-formatted lines; it never rewrites quotes, commas, `;`, or indentation, so
  *   the result remains valid for `biome format` (idempotent). Keep `organizeImports` disabled in
- *   biome.json so it does not compete by sorting alphabetically.
+ *   biome.jsonc so it does not compete by sorting alphabetically — the Ultracite preset turns it
+ *   on, and the override that turns it back off is what keeps this script authoritative.
  * - Side-effect-only imports (`import "#adapters/index.ts"`) are NOT reordered with other imports:
  *   their execution order is semantic, so they act as a barrier that splits the zone.
  *
@@ -27,14 +28,14 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync, statSync } from "node:fs";
 import path from "node:path";
 
-type ImportDeclaration = {
+interface ImportDeclaration {
 	bare: boolean;
 	codeLines: string[];
 	index: number;
 	multiline: boolean;
 	text: string;
 	weight: number;
-};
+}
 
 const SOURCE_EXTENSIONS = new Set([
 	".cjs",
@@ -67,15 +68,15 @@ const REPO_ROOTS = ["apps", "packages", "scripts"];
 const args = process.argv.slice(2);
 const explicitTargets = args.filter((arg) => !arg.startsWith("--"));
 
-const files = explicitTargets.length
+const targetFiles = explicitTargets.length
 	? await collectTargetFiles(explicitTargets)
 	: await collectWorkspaceFiles(REPO_ROOTS);
-const changed = await sortFiles(files);
+const changedCount = await sortFiles(targetFiles);
 
 console.log(
-	changed === 1
+	changedCount === 1
 		? "Sorted imports in 1 file."
-		: `Sorted imports in ${changed} files.`,
+		: `Sorted imports in ${changedCount} files.`,
 );
 
 async function sortFiles(files: string[]): Promise<number> {
@@ -91,7 +92,7 @@ async function sortFiles(files: string[]): Promise<number> {
 }
 
 async function sortFile(file: string): Promise<boolean> {
-	if (!isSourceFile(file) || !existsSync(file)) {
+	if (!(isSourceFile(file) && existsSync(file))) {
 		return false;
 	}
 

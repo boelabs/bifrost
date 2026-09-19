@@ -16,7 +16,10 @@ test("incremental highlighting matches whole blocks across multiline grammars", 
 		for (const [language, code] of [
 			[
 				"typescript",
-				`/* comment\nstill comment */\nconst template = \`first\n\${1 + 2} last\`;\nconst x = /a+/g;`,
+				// A template literal instead would only trade this for noUnusedTemplateLiteral:
+				// the fixture is TypeScript source, so it has to carry a literal `${`.
+				// biome-ignore lint/suspicious/noTemplateCurlyInString: see above.
+				"/* comment\nstill comment */\nconst template = `first\n${1 + 2} last`;\nconst x = /a+/g;",
 			],
 			["python", 'value = """first\nsecond\nlast"""\nprint(value)'],
 			["html", '<script>\nconst value = "hello";\n</script>\n<div>Text</div>'],
@@ -32,7 +35,9 @@ test("incremental highlighting matches whole blocks across multiline grammars", 
 					result.lines.map((line) => line.text).join("\n"),
 					request.code,
 				);
-				if (patch.startLine) assert.equal(result.lines[0], previous?.lines[0]);
+				if (patch.startLine) {
+					assert.equal(result.lines[0], previous?.lines[0]);
+				}
 				const expected = reference
 					.codeToTokens(request.code, {
 						lang: language,

@@ -31,7 +31,7 @@ export function ScrollAreaRoot({
 		<BaseScrollArea.Root
 			{...props}
 			className={mergeClassName(
-				"relative min-h-0 min-w-0 rounded-[var(--ui-radius-surface)]",
+				"relative min-h-0 min-w-0 rounded-(--ui-radius-surface)",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -85,7 +85,7 @@ export function ScrollAreaScrollbar({
 		<BaseScrollArea.Scrollbar
 			{...props}
 			className={mergeClassName(
-				"z-10 m-0.5 flex touch-none select-none rounded-full bg-surface-2/80 p-0.5 transition-opacity data-[orientation=vertical]:w-3 data-[orientation=horizontal]:h-3 data-[orientation=horizontal]:flex-col",
+				"z-10 m-0.5 flex touch-none select-none rounded-full bg-surface-2/80 p-0.5 transition-opacity data-[orientation=horizontal]:h-3 data-[orientation=vertical]:w-3 data-[orientation=horizontal]:flex-col",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

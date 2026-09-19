@@ -59,22 +59,24 @@ function textParameters(meta: ResolvedModelMetadata): ParameterSupportMap {
 	return meta.operations?.["text.generate"]?.parameters ?? {};
 }
 
+/** Whether one catalog entry says the parameter reaches the provider at all. */
+function entrySupport(
+	entry: boolean | { mode?: string },
+): "supported" | "unsupported" {
+	if (typeof entry === "boolean") {
+		return entry ? "supported" : "unsupported";
+	}
+	return entry.mode === "unsupported" || entry.mode === "ignored"
+		? "unsupported"
+		: "supported";
+}
+
 function parameterState(
 	meta: ResolvedModelMetadata,
 	name: string,
 ): ParameterState {
 	const entry = textParameters(meta)[name];
-	if (entry === undefined) return "unknown";
-	if (typeof entry === "boolean") return entry ? "supported" : "unsupported";
-	if (entry.mode === "unsupported" || entry.mode === "ignored")
-		return "unsupported";
-	if (
-		entry.mode === "supported" ||
-		entry.mode === "range" ||
-		entry.mode === "mapped"
-	)
-		return "supported";
-	return "supported";
+	return entry === undefined ? "unknown" : entrySupport(entry);
 }
 
 function explicitlyUnsupportedName(
@@ -97,7 +99,9 @@ const supportedParameterNamesCache = new WeakMap<
 export function supportedParameterNames(meta: ResolvedModelMetadata): string[] {
 	const params = textParameters(meta);
 	const cached = supportedParameterNamesCache.get(params);
-	if (cached) return cached;
+	if (cached) {
+		return cached;
+	}
 
 	const names = new Set<string>(DEFAULT_TEXT_PARAMETERS);
 	if (!meta.capabilities.tools) {
@@ -115,16 +119,12 @@ export function supportedParameterNames(meta: ResolvedModelMetadata): string[] {
 	}
 
 	for (const [name, entry] of Object.entries(params)) {
-		const state =
-			typeof entry === "boolean"
-				? entry
-					? "supported"
-					: "unsupported"
-				: entry.mode === "unsupported" || entry.mode === "ignored"
-					? "unsupported"
-					: "supported";
-		if (state === "unsupported") names.delete(name);
-		else names.add(name);
+		const state = entrySupport(entry);
+		if (state === "unsupported") {
+			names.delete(name);
+		} else {
+			names.add(name);
+		}
 	}
 	const result = [...names].sort();
 	supportedParameterNamesCache.set(params, result);
@@ -336,41 +336,63 @@ export function requestedUnsupportedParameters(
 ): string[] {
 	const unsupported = new Set<string>();
 	for (const spec of FIELD_SPECS) {
-		if (!hasOwn(req, spec.field)) continue;
+		if (!hasOwn(req, spec.field)) {
+			continue;
+		}
 		const name = explicitlyUnsupportedName(meta, spec.names);
-		if (name) unsupported.add(name);
+		if (name) {
+			unsupported.add(name);
+		}
 	}
 	for (const [name] of Object.entries(req.extraBody ?? {})) {
-		if (parameterState(meta, name) === "unsupported") unsupported.add(name);
+		if (parameterState(meta, name) === "unsupported") {
+			unsupported.add(name);
+		}
 	}
 	const transport = req.responsesTransport;
 	if (transport) {
 		for (const spec of RESPONSES_TRANSPORT_SPECS) {
-			if (!hasOwn(transport, spec.field)) continue;
+			if (!hasOwn(transport, spec.field)) {
+				continue;
+			}
 			const name = explicitlyUnsupportedName(meta, spec.names);
-			if (name) unsupported.add(name);
+			if (name) {
+				unsupported.add(name);
+			}
 		}
 		for (const [name] of Object.entries(transport.text ?? {})) {
-			if (parameterState(meta, name) === "unsupported") unsupported.add(name);
+			if (parameterState(meta, name) === "unsupported") {
+				unsupported.add(name);
+			}
 		}
 		for (const [name] of Object.entries(transport.reasoning ?? {})) {
-			if (parameterState(meta, name) === "unsupported") unsupported.add(name);
+			if (parameterState(meta, name) === "unsupported") {
+				unsupported.add(name);
+			}
 		}
 	}
-	const chatTransport = req.chatTransport;
+	const { chatTransport } = req;
 	if (chatTransport) {
 		for (const spec of CHAT_TRANSPORT_SPECS) {
-			if (!hasOwn(chatTransport, spec.field)) continue;
+			if (!hasOwn(chatTransport, spec.field)) {
+				continue;
+			}
 			const name = explicitlyUnsupportedName(meta, spec.names);
-			if (name) unsupported.add(name);
+			if (name) {
+				unsupported.add(name);
+			}
 		}
 	}
-	const messagesTransport = req.messagesTransport;
+	const { messagesTransport } = req;
 	if (messagesTransport) {
 		for (const spec of MESSAGES_TRANSPORT_SPECS) {
-			if (!hasOwn(messagesTransport, spec.field)) continue;
+			if (!hasOwn(messagesTransport, spec.field)) {
+				continue;
+			}
 			const name = explicitlyUnsupportedName(meta, spec.names);
-			if (name) unsupported.add(name);
+			if (name) {
+				unsupported.add(name);
+			}
 		}
 	}
 	return [...unsupported].sort();
@@ -381,7 +403,9 @@ export function assertSupportedChatParameters(
 	meta: ResolvedModelMetadata,
 ): void {
 	const unsupported = requestedUnsupportedParameters(req, meta);
-	if (unsupported.length === 0) return;
+	if (unsupported.length === 0) {
+		return;
+	}
 	throw new GatewayError({
 		class: "bad_request",
 		code: "unsupported_parameter",
@@ -407,80 +431,117 @@ export function applyUnsupportedParameterPolicy(
 	const next: CanonicalChatRequest = { ...req };
 	const dropped = new Set<string>();
 	for (const spec of FIELD_SPECS) {
-		if (!hasOwn(next, spec.field)) continue;
+		if (!hasOwn(next, spec.field)) {
+			continue;
+		}
 		const name = explicitlyUnsupportedName(meta, spec.names);
-		if (!name || !unsupported.has(name)) continue;
+		if (!(name && unsupported.has(name))) {
+			continue;
+		}
 		dropCanonicalField(next, spec.field);
 		dropped.add(name);
 	}
 	if (next.extraBody !== undefined) {
 		const extraBody = { ...next.extraBody };
 		for (const name of Object.keys(extraBody)) {
-			if (!unsupported.has(name)) continue;
+			if (!unsupported.has(name)) {
+				continue;
+			}
 			delete extraBody[name];
 			dropped.add(name);
 		}
-		if (isEmptyRecord(extraBody)) delete next.extraBody;
-		else next.extraBody = extraBody;
+		if (isEmptyRecord(extraBody)) {
+			delete next.extraBody;
+		} else {
+			next.extraBody = extraBody;
+		}
 	}
 	if (next.responsesTransport !== undefined) {
 		const transport: ResponsesTransport = { ...next.responsesTransport };
 		for (const spec of RESPONSES_TRANSPORT_SPECS) {
-			if (!hasOwn(transport, spec.field)) continue;
+			if (!hasOwn(transport, spec.field)) {
+				continue;
+			}
 			const name = explicitlyUnsupportedName(meta, spec.names);
-			if (!name || !unsupported.has(name)) continue;
+			if (!(name && unsupported.has(name))) {
+				continue;
+			}
 			dropResponsesField(transport, spec.field);
 			dropped.add(name);
 		}
 		if (transport.text !== undefined) {
 			const text = { ...transport.text };
 			for (const name of Object.keys(text)) {
-				if (!unsupported.has(name)) continue;
+				if (!unsupported.has(name)) {
+					continue;
+				}
 				delete text[name];
 				dropped.add(name);
 			}
-			if (isEmptyRecord(text)) delete transport.text;
-			else transport.text = text;
+			if (isEmptyRecord(text)) {
+				delete transport.text;
+			} else {
+				transport.text = text;
+			}
 		}
 		if (transport.reasoning !== undefined) {
 			const reasoning = { ...transport.reasoning };
 			for (const name of Object.keys(reasoning)) {
-				if (!unsupported.has(name)) continue;
+				if (!unsupported.has(name)) {
+					continue;
+				}
 				delete reasoning[name];
 				dropped.add(name);
 			}
-			if (isEmptyRecord(reasoning)) delete transport.reasoning;
-			else transport.reasoning = reasoning;
+			if (isEmptyRecord(reasoning)) {
+				delete transport.reasoning;
+			} else {
+				transport.reasoning = reasoning;
+			}
 		}
-		if (isEmptyRecord(transport as Record<string, unknown>))
+		if (isEmptyRecord(transport as Record<string, unknown>)) {
 			delete next.responsesTransport;
-		else next.responsesTransport = transport;
+		} else {
+			next.responsesTransport = transport;
+		}
 	}
 	if (next.chatTransport !== undefined) {
 		const transport: ChatTransport = { ...next.chatTransport };
 		for (const spec of CHAT_TRANSPORT_SPECS) {
-			if (!hasOwn(transport, spec.field)) continue;
+			if (!hasOwn(transport, spec.field)) {
+				continue;
+			}
 			const name = explicitlyUnsupportedName(meta, spec.names);
-			if (!name || !unsupported.has(name)) continue;
+			if (!(name && unsupported.has(name))) {
+				continue;
+			}
 			dropTransportField(transport, spec.field);
 			dropped.add(name);
 		}
-		if (isEmptyRecord(transport as Record<string, unknown>))
+		if (isEmptyRecord(transport as Record<string, unknown>)) {
 			delete next.chatTransport;
-		else next.chatTransport = transport;
+		} else {
+			next.chatTransport = transport;
+		}
 	}
 	if (next.messagesTransport !== undefined) {
 		const transport: MessagesTransport = { ...next.messagesTransport };
 		for (const spec of MESSAGES_TRANSPORT_SPECS) {
-			if (!hasOwn(transport, spec.field)) continue;
+			if (!hasOwn(transport, spec.field)) {
+				continue;
+			}
 			const name = explicitlyUnsupportedName(meta, spec.names);
-			if (!name || !unsupported.has(name)) continue;
+			if (!(name && unsupported.has(name))) {
+				continue;
+			}
 			dropTransportField(transport, spec.field);
 			dropped.add(name);
 		}
-		if (isEmptyRecord(transport as Record<string, unknown>))
+		if (isEmptyRecord(transport as Record<string, unknown>)) {
 			delete next.messagesTransport;
-		else next.messagesTransport = transport;
+		} else {
+			next.messagesTransport = transport;
+		}
 	}
 
 	return {

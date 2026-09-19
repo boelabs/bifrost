@@ -1,6 +1,6 @@
 import { PUBLIC_QUALITY_VALUES, normalizeQuality } from "#core/quality.ts";
 import { GatewayError } from "#core/errors.ts";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 import type {
 	CanonicalImageStreamEvent,
@@ -123,30 +123,30 @@ export function generationToCanonical(
 		model: req.model,
 		prompt: req.prompt,
 		stream: req.stream ?? false,
-		...(defined(req.background) !== undefined
-			? { background: defined(req.background) }
-			: {}),
-		...(defined(req.moderation) !== undefined
-			? { moderation: defined(req.moderation) }
-			: {}),
-		...(defined(req.n) !== undefined ? { n: defined(req.n) } : {}),
-		...(defined(req.output_compression) !== undefined
-			? { outputCompression: defined(req.output_compression) }
-			: {}),
-		...(defined(req.output_format) !== undefined
-			? { outputFormat: defined(req.output_format) }
-			: {}),
-		...(defined(req.partial_images) !== undefined
-			? { partialImages: defined(req.partial_images) }
-			: {}),
-		...(defined(req.quality) !== undefined
-			? { quality: normalizeQuality(defined(req.quality)!) }
-			: {}),
+		...(defined(req.background) === undefined
+			? {}
+			: { background: defined(req.background) }),
+		...(defined(req.moderation) === undefined
+			? {}
+			: { moderation: defined(req.moderation) }),
+		...(defined(req.n) === undefined ? {} : { n: defined(req.n) }),
+		...(defined(req.output_compression) === undefined
+			? {}
+			: { outputCompression: defined(req.output_compression) }),
+		...(defined(req.output_format) === undefined
+			? {}
+			: { outputFormat: defined(req.output_format) }),
+		...(defined(req.partial_images) === undefined
+			? {}
+			: { partialImages: defined(req.partial_images) }),
+		...(defined(req.quality) === undefined
+			? {}
+			: { quality: normalizeQuality(defined(req.quality)!) }),
 		responseFormat: "b64_json",
-		...(defined(req.size) !== undefined ? { size: defined(req.size) } : {}),
-		...(defined(req.style) !== undefined ? { style: defined(req.style) } : {}),
-		...(defined(req.user) !== undefined ? { user: defined(req.user) } : {}),
-		...(req.extra_body !== undefined ? { extraBody: req.extra_body } : {}),
+		...(defined(req.size) === undefined ? {} : { size: defined(req.size) }),
+		...(defined(req.style) === undefined ? {} : { style: defined(req.style) }),
+		...(defined(req.user) === undefined ? {} : { user: defined(req.user) }),
+		...(req.extra_body === undefined ? {} : { extraBody: req.extra_body }),
 	} as CanonicalImageRequest;
 }
 
@@ -162,36 +162,38 @@ export function editToCanonical(
 		images,
 		...(mask ? { mask } : {}),
 		stream: req.stream ?? false,
-		...(defined(req.background) !== undefined
-			? { background: defined(req.background) }
-			: {}),
-		...(defined(req.input_fidelity) !== undefined
-			? { inputFidelity: defined(req.input_fidelity) }
-			: {}),
-		...(defined(req.n) !== undefined ? { n: defined(req.n) } : {}),
-		...(defined(req.output_compression) !== undefined
-			? { outputCompression: defined(req.output_compression) }
-			: {}),
-		...(defined(req.output_format) !== undefined
-			? { outputFormat: defined(req.output_format) }
-			: {}),
-		...(defined(req.partial_images) !== undefined
-			? { partialImages: defined(req.partial_images) }
-			: {}),
-		...(defined(req.quality) !== undefined
-			? { quality: normalizeQuality(defined(req.quality)!) }
-			: {}),
+		...(defined(req.background) === undefined
+			? {}
+			: { background: defined(req.background) }),
+		...(defined(req.input_fidelity) === undefined
+			? {}
+			: { inputFidelity: defined(req.input_fidelity) }),
+		...(defined(req.n) === undefined ? {} : { n: defined(req.n) }),
+		...(defined(req.output_compression) === undefined
+			? {}
+			: { outputCompression: defined(req.output_compression) }),
+		...(defined(req.output_format) === undefined
+			? {}
+			: { outputFormat: defined(req.output_format) }),
+		...(defined(req.partial_images) === undefined
+			? {}
+			: { partialImages: defined(req.partial_images) }),
+		...(defined(req.quality) === undefined
+			? {}
+			: { quality: normalizeQuality(defined(req.quality)!) }),
 		responseFormat: "b64_json",
-		...(defined(req.size) !== undefined ? { size: defined(req.size) } : {}),
-		...(defined(req.user) !== undefined ? { user: defined(req.user) } : {}),
-		...(req.extra_body !== undefined ? { extraBody: req.extra_body } : {}),
+		...(defined(req.size) === undefined ? {} : { size: defined(req.size) }),
+		...(defined(req.user) === undefined ? {} : { user: defined(req.user) }),
+		...(req.extra_body === undefined ? {} : { extraBody: req.extra_body }),
 	} as CanonicalImageRequest;
 }
 
 function publicUsage(
 	usage: ImageUsage | undefined,
 ): Record<string, unknown> | undefined {
-	if (!usage) return undefined;
+	if (!usage) {
+		return undefined;
+	}
 	return {
 		input_tokens: usage.inputTokens,
 		output_tokens: usage.outputTokens,
@@ -226,26 +228,26 @@ export function toOpenAIImagesResponse(
 			}
 			return {
 				b64_json: image.b64Json,
-				...(image.revisedPrompt !== undefined
-					? { revised_prompt: image.revisedPrompt }
-					: {}),
+				...(image.revisedPrompt === undefined
+					? {}
+					: { revised_prompt: image.revisedPrompt }),
 			};
 		}),
 		...(response.background !== undefined && response.background !== "auto"
 			? { background: response.background }
 			: {}),
-		...(response.outputFormat !== undefined
-			? { output_format: response.outputFormat }
-			: {}),
+		...(response.outputFormat === undefined
+			? {}
+			: { output_format: response.outputFormat }),
 		...(response.quality !== undefined && response.quality !== "auto"
 			? { quality: response.quality }
 			: {}),
 		...(response.size !== undefined && response.size !== "auto"
 			? { size: response.size }
 			: {}),
-		...(response.usage !== undefined
-			? { usage: publicUsage(response.usage) }
-			: {}),
+		...(response.usage === undefined
+			? {}
+			: { usage: publicUsage(response.usage) }),
 	};
 }
 

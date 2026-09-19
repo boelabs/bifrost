@@ -119,8 +119,9 @@ function outputItemsFromResponse(
 }
 
 function responseId(response: Record<string, unknown>): string {
-	if (typeof response.id === "string" && response.id.length > 0)
+	if (typeof response.id === "string" && response.id.length > 0) {
 		return response.id;
+	}
 	throw new GatewayError({
 		class: "server",
 		message: "Rendered response is missing id",
@@ -197,19 +198,19 @@ export async function compactResponseHandler(
 		log.publicModel = compact.model;
 		const request = responsesRequestSchema.parse({
 			model: compact.model,
-			...(compact.input !== undefined ? { input: compact.input } : {}),
-			...(compact.previous_response_id != null
-				? { previous_response_id: compact.previous_response_id }
-				: {}),
+			...(compact.input === undefined ? {} : { input: compact.input }),
+			...(compact.previous_response_id == null
+				? {}
+				: { previous_response_id: compact.previous_response_id }),
 			instructions: [COMPACTION_INSTRUCTIONS, compact.instructions]
 				.filter(
 					(value): value is string =>
 						typeof value === "string" && value.length > 0,
 				)
 				.join("\n\n"),
-			...(compact.prompt_cache_key !== undefined
-				? { prompt_cache_key: compact.prompt_cache_key }
-				: {}),
+			...(compact.prompt_cache_key === undefined
+				? {}
+				: { prompt_cache_key: compact.prompt_cache_key }),
 			stream: false,
 			store: false,
 		});
@@ -227,13 +228,15 @@ export async function compactResponseHandler(
 			});
 		log.applyRouting(routing);
 		lifecycle.attach(routing);
-		if (routing.value.kind === "json")
+		if (routing.value.kind === "json") {
 			lifecycle.rememberUsage(routing.value.response.usage);
-		if (routing.value.kind !== "json")
+		}
+		if (routing.value.kind !== "json") {
 			throw new GatewayError({
 				class: "server",
 				message: "Compaction unexpectedly returned a stream",
 			});
+		}
 		const response = await applyCanonicalResponseExtensions(
 			c,
 			"chat",
@@ -241,13 +244,14 @@ export async function compactResponseHandler(
 			routing.value.response,
 		);
 		const summary = response.choices[0]?.message.content;
-		if (typeof summary !== "string" || summary.length === 0)
+		if (typeof summary !== "string" || summary.length === 0) {
 			throw new GatewayError({
 				class: "server",
 				message: "Compaction returned no summary",
 			});
+		}
 		await lifecycle.finish(response.usage);
-		const meta = routing.candidate.meta;
+		const { meta } = routing.candidate;
 		const cost = computeUsageCost(meta, response.usage);
 		const metadata: Record<string, unknown> = candidateMetadata(
 			routing.candidate,
@@ -257,11 +261,15 @@ export async function compactResponseHandler(
 			parameterPolicy,
 			settings.unsupportedParameterStrategy,
 		);
-		if (parameterMetadata) metadata.parameterPolicy = parameterMetadata;
+		if (parameterMetadata) {
+			metadata.parameterPolicy = parameterMetadata;
+		}
 		const contentInputMetadata = contentInputResolutionLogMetadata(
 			contentInputResolution,
 		);
-		if (contentInputMetadata) metadata.contentInputs = contentInputMetadata;
+		if (contentInputMetadata) {
+			metadata.contentInputs = contentInputMetadata;
+		}
 		const createdAt = Math.floor(Date.now() / 1000);
 		const body = {
 			id: `resp_${randomUUID()}`,
@@ -310,7 +318,9 @@ async function persistResponseState(opts: {
 }): Promise<void> {
 	// Opaque tool-call state round-trips statelessly through the client (thought signatures ride
 	// inside call ids); only client-requested storage (`store: true`) persists anything.
-	if (opts.req.store !== true) return;
+	if (opts.req.store !== true) {
+		return;
+	}
 	const output = opts.internalOutput ?? outputItemsFromResponse(opts.response);
 	const id = responseId(opts.response);
 	await storeResponseState({
@@ -370,13 +380,14 @@ function streamResponses(
 			);
 			const { routing, parameterPolicy, contentInputResolution } = routed;
 			log.applyRouting(routing);
-			if (routing.value.kind !== "stream")
+			if (routing.value.kind !== "stream") {
 				throw new GatewayError({
 					class: "server",
 					message: "Streaming Responses unexpectedly returned JSON",
 				});
-			const upstreamStartedAt = routing.upstreamStartedAt;
-			const meta = routing.candidate.meta;
+			}
+			const { upstreamStartedAt } = routing;
+			const { meta } = routing.candidate;
 			const renderOpts: RenderOptions = {
 				req: pipelineReq,
 				publicModel: routing.candidate.row.publicModel,
@@ -390,16 +401,22 @@ function streamResponses(
 				canonical.reasoning,
 				meta.capabilities.reasoning ? meta.reasoning : undefined,
 			);
-			if (reasoning) metadata.reasoning = reasoning;
+			if (reasoning) {
+				metadata.reasoning = reasoning;
+			}
 			const parameterMetadata = parameterPolicyLogMetadata(
 				parameterPolicy,
 				settings.unsupportedParameterStrategy,
 			);
-			if (parameterMetadata) metadata.parameterPolicy = parameterMetadata;
+			if (parameterMetadata) {
+				metadata.parameterPolicy = parameterMetadata;
+			}
 			const contentInputMetadata = contentInputResolutionLogMetadata(
 				contentInputResolution,
 			);
-			if (contentInputMetadata) metadata.contentInputs = contentInputMetadata;
+			if (contentInputMetadata) {
+				metadata.contentInputs = contentInputMetadata;
+			}
 			const routingMetadata = routingMetadataRequested(c)
 				? publicRoutingMetadata(routing, settings)
 				: null;
@@ -414,7 +431,9 @@ function streamResponses(
 			);
 			async function* transformedChunks() {
 				for await (const chunk of tapped) {
-					if (chunk.usage !== undefined) usage = chunk.usage;
+					if (chunk.usage !== undefined) {
+						({ usage } = chunk);
+					}
 					log.progress();
 					yield await applyStreamEventExtensions(
 						c,
@@ -437,11 +456,12 @@ function streamResponses(
 					const sequenced = JSON.parse(ev.data) as {
 						sequence_number?: unknown;
 					};
-					if (typeof sequenced.sequence_number === "number")
+					if (typeof sequenced.sequence_number === "number") {
 						nextFailureSequence = Math.max(
 							nextFailureSequence,
 							sequenced.sequence_number + 1,
 						);
+					}
 				} catch {
 					// Renderer validation remains authoritative for the event itself.
 				}
@@ -454,13 +474,14 @@ function streamResponses(
 								model?: string;
 							};
 						};
-						if (created.response?.id)
+						if (created.response?.id) {
 							responseIdentity = {
 								id: created.response.id,
 								createdAt:
 									created.response.created_at ?? Math.floor(Date.now() / 1000),
 								model: created.response.model ?? canonical.model,
 							};
+						}
 					} catch {
 						// The regular renderer validation below remains authoritative.
 					}
@@ -482,7 +503,7 @@ function streamResponses(
 							response?: Record<string, unknown> & { usage?: unknown };
 						};
 						completed = data.response;
-						if (routingMetadata && completed)
+						if (routingMetadata && completed) {
 							eventData = JSON.stringify({
 								...data,
 								response: {
@@ -490,6 +511,7 @@ function streamResponses(
 									unified_routing: routingMetadata,
 								},
 							});
+						}
 					} catch {
 						completed = undefined;
 					}
@@ -520,21 +542,26 @@ function streamResponses(
 					ev.event === "response.reasoning_summary_text.delta" ||
 					ev.event === "response.reasoning_text.delta" ||
 					ev.event === "response.function_call_arguments.delta"
-				)
+				) {
 					markDownstreamSemanticWritten(downstream);
+				}
 				if (
 					ev.event === "response.completed" ||
 					ev.event === "response.incomplete"
-				)
+				) {
 					markDownstreamTerminalWritten(downstream);
+				}
 			}
 			await writeSSE(stream, { data: "[DONE]" }, downstream);
-			if (firstTokenAt !== null)
+			if (firstTokenAt !== null) {
 				log.upstreamTtftMs = firstTokenAt - upstreamStartedAt;
+			}
 		} catch (error) {
 			streamError = toGatewayError(error);
 			log.applyFailedAttempts(streamError.attempts);
-			if (streamError.code === "downstream_backpressure") log.abortUpstream();
+			if (streamError.code === "downstream_backpressure") {
+				log.abortUpstream();
+			}
 			await notifyExtensionError(c, "chat", canonical.model, streamError);
 			if (
 				streamError.code !== "downstream_backpressure" &&
@@ -573,7 +600,7 @@ function streamResponses(
 				}
 			}
 		} finally {
-			if (routed)
+			if (routed) {
 				await routed.routing.finish(
 					usage,
 					lastChunkAt ?? undefined,
@@ -581,7 +608,9 @@ function streamResponses(
 					undefined,
 					downstream,
 				);
-			else finishDownstreamWriteObservation(downstream, streamError?.code);
+			} else {
+				finishDownstreamWriteObservation(downstream, streamError?.code);
+			}
 			const cost = routed
 				? computeUsageCost(routed.routing.candidate.meta, usage)
 				: null;
@@ -595,7 +624,7 @@ function streamResponses(
 				usage,
 				cost,
 				firstOutputMs:
-					firstTokenAt !== null ? firstTokenAt - log.startedAt : null,
+					firstTokenAt === null ? null : firstTokenAt - log.startedAt,
 				responseBody: { streamed: true },
 				metadata,
 				error: streamError ? streamError.toLog() : null,
@@ -636,16 +665,17 @@ export async function responsesHandler(c: Context<AppEnv>): Promise<Response> {
 			namespace: "responses",
 			payload: canonical as unknown as Record<string, unknown>,
 			eligible:
-				!canonical.stream &&
-				!canonical.tools?.length &&
+				!(canonical.stream || canonical.tools?.length) &&
 				pipelineReq.previous_response_id == null &&
 				pipelineReq.store !== true &&
 				!hasContentInputs(canonical),
 		});
-		if (cache.hit) return c.json(cache.body as object);
+		if (cache.hit) {
+			return c.json(cache.body as object);
+		}
 
 		const settings = await getEffectiveSettings();
-		if (canonical.stream)
+		if (canonical.stream) {
 			return streamResponses(
 				c,
 				log,
@@ -655,6 +685,7 @@ export async function responsesHandler(c: Context<AppEnv>): Promise<Response> {
 				canonical,
 				settings,
 			);
+		}
 		const { routing, parameterPolicy, contentInputResolution } =
 			await routeChat(c, canonical, log.requestId, settings, {
 				signal: log.clientSignal,
@@ -662,10 +693,11 @@ export async function responsesHandler(c: Context<AppEnv>): Promise<Response> {
 			});
 		log.applyRouting(routing);
 		lifecycle.attach(routing);
-		if (routing.value.kind === "json")
+		if (routing.value.kind === "json") {
 			lifecycle.rememberUsage(routing.value.response.usage);
-		const upstreamStartedAt = routing.upstreamStartedAt;
-		const meta = routing.candidate.meta;
+		}
+		const { upstreamStartedAt } = routing;
+		const { meta } = routing.candidate;
 		const renderOpts: RenderOptions = {
 			req: pipelineReq,
 			publicModel: routing.candidate.row.publicModel,
@@ -680,16 +712,22 @@ export async function responsesHandler(c: Context<AppEnv>): Promise<Response> {
 			canonical.reasoning,
 			meta.capabilities.reasoning ? meta.reasoning : undefined,
 		);
-		if (reasoning) metadata.reasoning = reasoning;
+		if (reasoning) {
+			metadata.reasoning = reasoning;
+		}
 		const parameterMetadata = parameterPolicyLogMetadata(
 			parameterPolicy,
 			settings.unsupportedParameterStrategy,
 		);
-		if (parameterMetadata) metadata.parameterPolicy = parameterMetadata;
+		if (parameterMetadata) {
+			metadata.parameterPolicy = parameterMetadata;
+		}
 		const contentInputMetadata = contentInputResolutionLogMetadata(
 			contentInputResolution,
 		);
-		if (contentInputMetadata) metadata.contentInputs = contentInputMetadata;
+		if (contentInputMetadata) {
+			metadata.contentInputs = contentInputMetadata;
+		}
 		const routingMetadata = routingMetadataRequested(c)
 			? publicRoutingMetadata(routing, settings)
 			: null;
@@ -703,7 +741,7 @@ export async function responsesHandler(c: Context<AppEnv>): Promise<Response> {
 				canonical.model,
 				routing.value.response,
 			);
-			const usage = response.usage;
+			const { usage } = response;
 			await lifecycle.finish(usage);
 			const cost = computeUsageCost(meta, usage);
 			const internalRendered = canonicalToResponsesResponse(
@@ -755,12 +793,13 @@ export async function responsesHandler(c: Context<AppEnv>): Promise<Response> {
 
 function requireId(c: Context<AppEnv>): string {
 	const id = c.req.param("id");
-	if (!id)
+	if (!id) {
 		throw new GatewayError({
 			class: "bad_request",
 			message: "Missing response id",
 			param: "id",
 		});
+	}
 	return id;
 }
 
@@ -824,7 +863,7 @@ export async function listResponseInputItemsHandler(
 		object: "list",
 		data: items,
 		first_id: items.length > 0 ? idOf(items[0]!) : null,
-		last_id: items.length > 0 ? idOf(items[items.length - 1]!) : null,
+		last_id: items.length > 0 ? idOf(items.at(-1)!) : null,
 		has_more: false,
 	});
 }
@@ -861,13 +900,15 @@ async function sendWebSocketJson(
 	value: unknown,
 	observation?: DownstreamWriteObservation,
 ): Promise<void> {
-	if (ws.readyState !== 1) return;
+	if (ws.readyState !== 1) {
+		return;
+	}
 	const startedAt = Date.now();
 	const serialized = JSON.stringify(value);
 	ws.send(serialized);
 	const raw = ws.raw as { bufferedAmount?: number } | undefined;
 	while ((raw?.bufferedAmount ?? 0) > 1_048_576) {
-		if (Date.now() - startedAt >= 30_000)
+		if (Date.now() - startedAt >= 30_000) {
 			throw new GatewayError({
 				class: "server",
 				code: "downstream_backpressure",
@@ -876,6 +917,7 @@ async function sendWebSocketJson(
 				deploymentHealth: "neutral",
 				retryable: false,
 			});
+		}
 		await new Promise<void>((resolve) => setTimeout(resolve, 10));
 	}
 	if (observation) {
@@ -887,14 +929,19 @@ async function sendWebSocketJson(
 }
 
 function websocketMessageText(value: unknown): string {
-	if (typeof value === "string") return value;
-	if (value instanceof ArrayBuffer) return Buffer.from(value).toString("utf8");
-	if (ArrayBuffer.isView(value))
+	if (typeof value === "string") {
+		return value;
+	}
+	if (value instanceof ArrayBuffer) {
+		return Buffer.from(value).toString("utf8");
+	}
+	if (ArrayBuffer.isView(value)) {
 		return Buffer.from(
 			value.buffer,
 			value.byteOffset,
 			value.byteLength,
 		).toString("utf8");
+	}
 	throw new GatewayError({
 		class: "bad_request",
 		code: "invalid_websocket_message",
@@ -909,7 +956,9 @@ async function executeResponsesWebSocketTurn(
 	rawMessage: unknown,
 ): Promise<void> {
 	const ws = session.socket;
-	if (ws?.readyState !== 1) return;
+	if (ws?.readyState !== 1) {
+		return;
+	}
 	const turnAbort = new AbortController();
 	session.activeAbort = turnAbort;
 	const requestId = randomUUID();
@@ -922,7 +971,9 @@ async function executeResponsesWebSocketTurn(
 
 	try {
 		const text = websocketMessageText(rawMessage);
-		if (Buffer.byteLength(text, "utf8") > RESPONSES_WEBSOCKET_MAX_MESSAGE_BYTES)
+		if (
+			Buffer.byteLength(text, "utf8") > RESPONSES_WEBSOCKET_MAX_MESSAGE_BYTES
+		) {
 			throw new GatewayError({
 				class: "bad_request",
 				status: 413,
@@ -930,6 +981,7 @@ async function executeResponsesWebSocketTurn(
 				message: "Responses WebSocket message exceeds 16 MiB",
 				publicMessage: "WebSocket message is too large.",
 			});
+		}
 		let json: unknown;
 		try {
 			json = JSON.parse(text);
@@ -999,10 +1051,11 @@ async function executeResponsesWebSocketTurn(
 			});
 		log.applyRouting(routing);
 		lifecycle.attach(routing);
-		if (routing.value.kind === "json")
+		if (routing.value.kind === "json") {
 			lifecycle.rememberUsage(routing.value.response.usage);
-		const upstreamStartedAt = routing.upstreamStartedAt;
-		const meta = routing.candidate.meta;
+		}
+		const { upstreamStartedAt } = routing;
+		const { meta } = routing.candidate;
 		const renderOpts: RenderOptions = {
 			req: pipelineReq,
 			publicModel: routing.candidate.row.publicModel,
@@ -1017,22 +1070,29 @@ async function executeResponsesWebSocketTurn(
 			canonical.reasoning,
 			meta.capabilities.reasoning ? meta.reasoning : undefined,
 		);
-		if (reasoning) metadata.reasoning = reasoning;
+		if (reasoning) {
+			metadata.reasoning = reasoning;
+		}
 		const parameterMetadata = parameterPolicyLogMetadata(
 			parameterPolicy,
 			settings.unsupportedParameterStrategy,
 		);
-		if (parameterMetadata) metadata.parameterPolicy = parameterMetadata;
+		if (parameterMetadata) {
+			metadata.parameterPolicy = parameterMetadata;
+		}
 		const contentInputMetadata = contentInputResolutionLogMetadata(
 			contentInputResolution,
 		);
-		if (contentInputMetadata) metadata.contentInputs = contentInputMetadata;
+		if (contentInputMetadata) {
+			metadata.contentInputs = contentInputMetadata;
+		}
 
-		if (routing.value.kind !== "stream")
+		if (routing.value.kind !== "stream") {
 			throw new GatewayError({
 				class: "server",
 				message: "Responses WebSocket turn unexpectedly returned JSON",
 			});
+		}
 
 		let firstTokenAt: number | null = null;
 		let lastChunkAt: number | null = null;
@@ -1052,7 +1112,9 @@ async function executeResponsesWebSocketTurn(
 		);
 		async function* transformedChunks() {
 			for await (const chunk of tapped) {
-				if (chunk.usage !== undefined) usage = chunk.usage;
+				if (chunk.usage !== undefined) {
+					({ usage } = chunk);
+				}
 				log.progress();
 				yield await applyStreamEventExtensions(
 					c,
@@ -1072,10 +1134,11 @@ async function executeResponsesWebSocketTurn(
 				let data: Record<string, unknown>;
 				try {
 					data = JSON.parse(clientEvent.data) as Record<string, unknown>;
-				} catch {
+				} catch (cause) {
 					throw new GatewayError({
 						class: "server",
 						message: "Rendered Responses event is not valid JSON",
+						cause,
 					});
 				}
 				if (
@@ -1131,10 +1194,11 @@ async function executeResponsesWebSocketTurn(
 			streamError = toGatewayError(error, "Error during WebSocket streaming");
 			throw streamError;
 		} finally {
-			if (firstTokenAt !== null)
+			if (firstTokenAt !== null) {
 				log.upstreamTtftMs = firstTokenAt - upstreamStartedAt;
+			}
 			await lifecycle.finish(usage, streamError, {
-				...(lastChunkAt !== null ? { finishedAt: lastChunkAt } : {}),
+				...(lastChunkAt === null ? {} : { finishedAt: lastChunkAt }),
 				downstream,
 			});
 			const cost = computeUsageCost(meta, usage);
@@ -1144,7 +1208,7 @@ async function executeResponsesWebSocketTurn(
 				usage,
 				cost,
 				firstOutputMs:
-					firstTokenAt !== null ? firstTokenAt - log.startedAt : null,
+					firstTokenAt === null ? null : firstTokenAt - log.startedAt,
 				responseBody: completedResponse ?? { streamed: true },
 				metadata,
 				error: streamError ? streamError.toLog() : null,
@@ -1156,19 +1220,26 @@ async function executeResponsesWebSocketTurn(
 		log.applyFailedAttempts(gatewayError.attempts);
 		await lifecycle.finish(null, gatewayError);
 		await notifyExtensionError(c, "chat", log.publicModel, gatewayError);
-		if (!logged) log.writeError(gatewayError);
+		if (!logged) {
+			log.writeError(gatewayError);
+		}
 		if (
 			referencedPreviousId &&
 			gatewayError.httpStatus >= 400 &&
 			gatewayError.httpStatus <= 599
 		) {
-			if (session.state?.id === referencedPreviousId) session.state = null;
+			if (session.state?.id === referencedPreviousId) {
+				session.state = null;
+			}
 			session.upstreams.invalidate(referencedPreviousId);
 		}
-		if (gatewayError.code !== "downstream_backpressure")
+		if (gatewayError.code !== "downstream_backpressure") {
 			await sendWebSocketJson(ws, websocketError(gatewayError));
+		}
 	} finally {
-		if (session.activeAbort === turnAbort) session.activeAbort = null;
+		if (session.activeAbort === turnAbort) {
+			session.activeAbort = null;
+		}
 		c.set("turnRequestId", undefined);
 		c.set("turnSignal", undefined);
 	}
@@ -1211,7 +1282,9 @@ export const responsesWebSocketHandler = upgradeWebSocket(
 		clearTimeout(session.timer);
 		session.timer = setTimeout(() => {
 			const ws = session.socket;
-			if (!ws) return;
+			if (!ws) {
+				return;
+			}
 			void sendWebSocketJson(
 				ws,
 				websocketError(
@@ -1233,7 +1306,7 @@ export const responsesWebSocketHandler = upgradeWebSocket(
 			},
 			onMessage(event) {
 				if (session.queuedTurns >= env.RESPONSES_WEBSOCKET_MAX_QUEUED_TURNS) {
-					if (session.socket)
+					if (session.socket) {
 						void sendWebSocketJson(
 							session.socket,
 							websocketError(
@@ -1245,6 +1318,7 @@ export const responsesWebSocketHandler = upgradeWebSocket(
 								}),
 							),
 						);
+					}
 					return;
 				}
 				session.queuedTurns += 1;
@@ -1252,11 +1326,12 @@ export const responsesWebSocketHandler = upgradeWebSocket(
 					.then(() => executeResponsesWebSocketTurn(c, session, event.data))
 					.catch((error) => {
 						const gatewayError = toGatewayError(error);
-						if (session.socket)
+						if (session.socket) {
 							void sendWebSocketJson(
 								session.socket,
 								websocketError(gatewayError),
 							);
+						}
 					})
 					.finally(() => {
 						session.queuedTurns -= 1;
@@ -1295,7 +1370,9 @@ export function closeResponsesWebSockets(
 ): void {
 	for (const session of activeResponsesWebSockets) {
 		const busy = session.activeAbort !== null || session.queuedTurns > 0;
-		if (options.idleOnly && busy) continue;
+		if (options.idleOnly && busy) {
+			continue;
+		}
 		clearTimeout(session.timer);
 		session.activeAbort?.abort();
 		session.upstreams.close();

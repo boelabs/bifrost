@@ -32,13 +32,17 @@ export function resolveQuality(
 	levels: readonly QualityLevel[] | undefined,
 	strategy: UnsupportedParameterStrategy,
 ): ResolvedQuality {
-	if (requested === undefined || requested === "auto")
+	if (requested === undefined || requested === "auto") {
 		return { quality: undefined };
-	if (strategy !== "drop") return { quality: requested };
+	}
+	if (strategy !== "drop") {
+		return { quality: requested };
+	}
 
 	const snapped = snapQuality(requested, levels);
-	if (snapped === undefined)
+	if (snapped === undefined) {
 		return { quality: undefined, adjustedFrom: requested };
+	}
 	return snapped === requested
 		? { quality: snapped }
 		: { quality: snapped, adjustedFrom: requested };
@@ -55,9 +59,14 @@ export function withResolvedQuality<T extends { quality?: Quality }>(
 	strategy: UnsupportedParameterStrategy,
 ): { request: T; resolved: ResolvedQuality } {
 	const resolved = resolveQuality(request.quality, levels, strategy);
-	if (resolved.quality === request.quality) return { request, resolved };
+	if (resolved.quality === request.quality) {
+		return { request, resolved };
+	}
 	const next = { ...request };
-	if (resolved.quality === undefined) delete next.quality;
-	else next.quality = resolved.quality;
+	if (resolved.quality === undefined) {
+		delete next.quality;
+	} else {
+		next.quality = resolved.quality;
+	}
 	return { request: next, resolved };
 }

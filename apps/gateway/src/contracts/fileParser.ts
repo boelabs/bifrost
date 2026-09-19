@@ -17,7 +17,9 @@ const PDF_ENGINES = new Set<PdfParserEngine>(["auto", "native", "pdf-text"]);
 export function fileParserOptionsFromPlugins(
 	plugins: PluginConfig[] | undefined,
 ): CanonicalFileParserOptions | undefined {
-	if (plugins === undefined) return undefined;
+	if (plugins === undefined) {
+		return undefined;
+	}
 	let resolved: CanonicalFileParserOptions | undefined;
 
 	for (const plugin of plugins) {
@@ -30,7 +32,9 @@ export function fileParserOptionsFromPlugins(
 				publicMessage: "Plugin enabled must be a boolean.",
 			});
 		}
-		if (plugin.enabled === false) continue;
+		if (plugin.enabled === false) {
+			continue;
+		}
 		if (plugin.id !== "file-parser") {
 			throw new GatewayError({
 				class: "bad_request",
@@ -50,7 +54,7 @@ export function fileParserOptionsFromPlugins(
 			});
 		}
 
-		const pdf = plugin.pdf;
+		const { pdf } = plugin;
 		if (
 			pdf !== undefined &&
 			(pdf === null || typeof pdf !== "object" || Array.isArray(pdf))

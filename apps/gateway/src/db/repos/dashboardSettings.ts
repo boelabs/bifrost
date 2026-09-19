@@ -20,20 +20,23 @@ export interface DashboardSettingsPatch {
  * is a singleton row that changes about once a year. A write clears it, so an operator editing the
  * policy sees it applied immediately; other replicas pick it up within the window.
  */
-const CACHE_MS = 5_000;
+const CACHE_MS = 5000;
 let cached: { row: DashboardSettingsRow; readAt: number } | undefined;
 
 export async function getDashboardSettings(): Promise<DashboardSettingsRow> {
-	if (cached && Date.now() - cached.readAt < CACHE_MS) return cached.row;
+	if (cached && Date.now() - cached.readAt < CACHE_MS) {
+		return cached.row;
+	}
 	const [row] = await db
 		.select()
 		.from(dashboardSettings)
 		.where(eq(dashboardSettings.id, 1))
 		.limit(1);
-	if (!row)
+	if (!row) {
 		throw new Error(
 			"dashboard_settings has no row 1; the migration seeds it, so the database is behind.",
 		);
+	}
 	cached = { row, readAt: Date.now() };
 	return row;
 }
@@ -46,7 +49,9 @@ export async function updateDashboardSettings(
 		.set({ ...patch, updatedAt: new Date() })
 		.where(eq(dashboardSettings.id, 1))
 		.returning();
-	if (!row) throw new Error("dashboard_settings has no row 1");
+	if (!row) {
+		throw new Error("dashboard_settings has no row 1");
+	}
 	cached = { row, readAt: Date.now() };
 	return row;
 }

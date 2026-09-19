@@ -7,9 +7,11 @@ import { isIP } from "node:net";
 function normalizeIp(value: string): string | null {
 	let candidate = value.trim();
 	const bracketed = /^\[([^\]]+)\](?::\d+)?$/.exec(candidate);
-	if (bracketed?.[1]) candidate = bracketed[1];
-	else if (/^\d+\.\d+\.\d+\.\d+:\d+$/.test(candidate))
+	if (bracketed?.[1]) {
+		[, candidate] = bracketed;
+	} else if (/^\d+\.\d+\.\d+\.\d+:\d+$/.test(candidate)) {
 		candidate = candidate.slice(0, candidate.lastIndexOf(":"));
+	}
 	return isIP(candidate) === 0 ? null : candidate;
 }
 
@@ -19,12 +21,15 @@ export function resolveClientIp(
 	trustedProxyHops: number,
 ): string | null {
 	const remote = remoteAddress === null ? null : normalizeIp(remoteAddress);
-	if (remote === null || trustedProxyHops <= 0 || forwardedFor === undefined)
+	if (remote === null || trustedProxyHops <= 0 || forwardedFor === undefined) {
 		return remote;
+	}
 	const forwarded: string[] = [];
 	for (const part of forwardedFor.split(",")) {
 		const address = normalizeIp(part);
-		if (address === null) return remote;
+		if (address === null) {
+			return remote;
+		}
 		forwarded.push(address);
 	}
 	const chain = [...forwarded, remote];

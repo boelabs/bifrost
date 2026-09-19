@@ -14,8 +14,9 @@ import type { OperatorIdentity } from "./common.ts";
  */
 export async function currentSession(): Promise<OperatorIdentity | null> {
 	const result = await api.GET("/auth/session", {});
-	if (result.response.status === 401 || result.response.status === 403)
+	if (result.response.status === 401 || result.response.status === 403) {
 		return null;
+	}
 	return unwrap(result).data;
 }
 

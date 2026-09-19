@@ -102,7 +102,9 @@ export function parsePublicModels(body: unknown): PlaygroundModel[] {
 						? [capability.id]
 						: [],
 			);
-			if (!availableCapabilities.length) return [];
+			if (!availableCapabilities.length) {
+				return [];
+			}
 			// Older catalogs only provide a union: do not infer safe optional controls or attachments.
 			const inputModalities = capabilities?.input_modalities ?? ["text"];
 			const parameterConstraints: Record<string, ParameterConstraint> = {};
@@ -110,11 +112,11 @@ export function parsePublicModels(body: unknown): PlaygroundModel[] {
 				capabilities?.parameter_constraints ?? {},
 			)) {
 				parameterConstraints[name] = {
-					...(constraint.min !== undefined ? { min: constraint.min } : {}),
-					...(constraint.max !== undefined ? { max: constraint.max } : {}),
-					...(constraint.values !== undefined
-						? { values: constraint.values }
-						: {}),
+					...(constraint.min === undefined ? {} : { min: constraint.min }),
+					...(constraint.max === undefined ? {} : { max: constraint.max }),
+					...(constraint.values === undefined
+						? {}
+						: { values: constraint.values }),
 				};
 			}
 			return [
@@ -130,9 +132,9 @@ export function parsePublicModels(body: unknown): PlaygroundModel[] {
 					reasoningEfforts: REASONING_EFFORTS.filter((effort) =>
 						capabilities?.reasoning_efforts.includes(effort),
 					),
-					...(capabilities?.max_output_tokens !== undefined
-						? { maxOutputTokens: capabilities.max_output_tokens }
-						: {}),
+					...(capabilities?.max_output_tokens === undefined
+						? {}
+						: { maxOutputTokens: capabilities.max_output_tokens }),
 				},
 			];
 		})
@@ -228,13 +230,14 @@ export function capabilitiesFor(
 	model: PlaygroundModel,
 	endpoint: PublicEndpoint,
 ): PlaygroundCapabilities {
-	if (!model.endpoints.includes(endpoint))
+	if (!model.endpoints.includes(endpoint)) {
 		return {
 			supportedParameters: [],
 			inputModalities: [],
 			parameterConstraints: {},
 			reasoningEfforts: [],
 		};
+	}
 	return {
 		...model,
 		supportedParameters: model.supportedParameters.filter((parameter) =>
@@ -296,7 +299,14 @@ export const TUNABLE = [
 		step: 0.05,
 		fallback: 0,
 	},
-	{ key: "seed", label: "Seed", min: 0, max: 2147483647, step: 1, fallback: 0 },
+	{
+		key: "seed",
+		label: "Seed",
+		min: 0,
+		max: 2_147_483_647,
+		step: 1,
+		fallback: 0,
+	},
 ] as const;
 export type TunableKey = (typeof TUNABLE)[number]["key"];
 
@@ -309,10 +319,11 @@ export function parameterValues(
 		constraint?.values?.filter(
 			(value): value is number =>
 				typeof value === "number" &&
-				value >= (constraint.min ?? -Infinity) &&
-				value <= (constraint.max ?? Infinity) &&
+				value >= (constraint.min ?? Number.NEGATIVE_INFINITY) &&
+				value <= (constraint.max ?? Number.POSITIVE_INFINITY) &&
 				(key !== "max_tokens" ||
-					(value > 0 && value <= (model.maxOutputTokens ?? Infinity))),
+					(value > 0 &&
+						value <= (model.maxOutputTokens ?? Number.POSITIVE_INFINITY))),
 		) ?? []
 	);
 }
@@ -330,18 +341,24 @@ export function tunablesFor(
 	endpoint: PublicEndpoint,
 ): Tunable[] {
 	return TUNABLE.flatMap((control): Tunable[] => {
-		if (!supports(model, control.key, endpoint)) return [];
+		if (!supports(model, control.key, endpoint)) {
+			return [];
+		}
 		const constraint = model.parameterConstraints[control.key];
 		// Enumerations are not continuous slider ranges; omit rather than offer invalid intermediate values.
-		if (constraint?.values !== undefined) return [];
+		if (constraint?.values !== undefined) {
+			return [];
+		}
 		const min = Math.max(control.min, constraint?.min ?? control.min);
 		const limit =
 			control.key === "max_tokens" ? model.maxOutputTokens : undefined;
 		const max = Math.min(
 			constraint?.max ?? limit ?? control.max,
-			limit ?? Infinity,
+			limit ?? Number.POSITIVE_INFINITY,
 		);
-		if (min > max) return [];
+		if (min > max) {
+			return [];
+		}
 		return [
 			{
 				...control,

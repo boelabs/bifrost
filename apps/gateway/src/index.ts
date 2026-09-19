@@ -140,36 +140,56 @@ app.use("*", async (c, next) => {
 // proxy happily reuses the connection and the client gets the reset instead of a clean handover.
 app.use("*", async (c, next) => {
 	await next();
-	if (isDraining()) c.header("connection", "close");
+	if (isDraining()) {
+		c.header("connection", "close");
+	}
 });
 
 // Global error handler: translates GatewayError to the shape of each public contract.
 // /v1/messages/* -> Anthropic shape; everything else -> OpenAI shape.
+/**
+ * The error as the gateway understands it, or null when it is none of its business.
+ *
+ * A reachable-dependency failure (Postgres/Redis down) becomes a 503 + Retry-After so clients back
+ * off and retry, instead of the opaque 500 a raw driver error would otherwise produce.
+ */
+function asGatewayError(err: unknown): GatewayError | null {
+	if (GatewayError.is(err)) {
+		return err;
+	}
+	return isDependencyError(err) ? dependencyUnavailable(err) : null;
+}
+
+/** The same error, in whichever dialect the endpoint that failed speaks. */
+function errorBody(
+	error: GatewayError,
+	isAnthropic: boolean,
+	isOpenRouterRerank: boolean,
+) {
+	if (isAnthropic) {
+		return error.toAnthropic();
+	}
+	return isOpenRouterRerank ? error.toOpenRouter() : error.toOpenAI();
+}
+
 app.onError((err, c) => {
 	const isAnthropic = usesAnthropicErrorDialect(c.req.path);
 	const isOpenRouterRerank = c.req.path === "/v1/rerank";
 	// A reachable-dependency failure (Postgres/Redis down) becomes a 503 + Retry-After so clients back
 	// off and retry, instead of the opaque 500 a raw driver error would otherwise produce.
-	const raw = GatewayError.is(err)
-		? err
-		: isDependencyError(err)
-			? dependencyUnavailable(err)
-			: null;
+	const raw = asGatewayError(err);
 	// On /admin and /auth the caller is an operator and the detail describes their own request, so it
 	// is published instead of the class's generic sentence. See admin/errors.ts.
 	const gatewayError =
 		raw && isManagementPath(c.req.path) ? publicizeManagementError(raw) : raw;
 	if (gatewayError) {
-		if (!GatewayError.is(err))
+		if (!GatewayError.is(err)) {
 			log.error("http", "dependency unavailable", { err });
+		}
 		for (const [name, value] of Object.entries(gatewayError.headers ?? {})) {
 			c.header(name, value);
 		}
-		const body = isAnthropic
-			? gatewayError.toAnthropic()
-			: isOpenRouterRerank
-				? gatewayError.toOpenRouter()
-				: gatewayError.toOpenAI();
+		const body = errorBody(gatewayError, isAnthropic, isOpenRouterRerank);
 		return c.json(body, gatewayError.httpStatus as ContentfulStatusCode);
 	}
 	log.error("http", "unhandled error", { err });
@@ -247,7 +267,9 @@ async function readiness(c: Context) {
 	const extensions = extensionStatus();
 	const observability = operationPersistenceStatus();
 	const ok = database && cache && extensions.healthy && observability.healthy;
-	if (!ok) c.header("retry-after", String(DEPENDENCY_RETRY_AFTER_SECONDS));
+	if (!ok) {
+		c.header("retry-after", String(DEPENDENCY_RETRY_AFTER_SECONDS));
+	}
 	return c.json(
 		{
 			status: ok ? "ok" : "degraded",
@@ -289,7 +311,9 @@ app.get("/auth/config", dashboardConfigHandler);
 // Human (dashboard) authentication. Mounted only when DASH_ENABLED, and deliberately OUTSIDE
 // adminApp: every /admin route requires an already-resolved operator identity, so the route that
 // creates one cannot live under it.
-if (env.DASH_ENABLED) app.route("/auth", authApp);
+if (env.DASH_ENABLED) {
+	app.route("/auth", authApp);
+}
 
 // Admin (CRUD of models and keys) - requires an operator identity (middleware inside adminApp).
 app.route("/admin", adminApp);

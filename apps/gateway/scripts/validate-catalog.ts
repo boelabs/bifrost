@@ -80,22 +80,25 @@ function checkDeclaredTransports(
 			// A catalog entry that names an operation its adapter cannot execute is a promise the
 			// gateway breaks: nothing fails until an operator tries to deploy the model and
 			// deployments/service.ts refuses it. Catch it here instead.
-			if (!callType || !adapter.supportedCallTypes.has(callType)) {
+			if (!(callType && adapter.supportedCallTypes.has(callType))) {
 				unrunnable.push(
 					`${adapterKey}/${model} declares operation "${operationId}", ` +
-						`which the adapter does not implement`,
+						"which the adapter does not implement",
 				);
 				continue;
 			}
 			const declared = (profile as { transport?: string } | undefined)
 				?.transport;
-			if (declared === undefined) continue;
+			if (declared === undefined) {
+				continue;
+			}
 			const supported = adapter.transports?.[callType]?.supported;
-			if (!supported?.includes(declared as never))
+			if (!supported?.includes(declared as never)) {
 				unrunnable.push(
 					`${adapterKey}/${model} declares transport "${declared}" for ${operationId}, ` +
 						`which the adapter does not support (supported: ${supported?.join(", ") || "none"})`,
 				);
+			}
 		}
 	}
 }
@@ -117,13 +120,17 @@ for (const catalog of catalogs) {
 
 if (unrunnable.length > 0) {
 	console.error("catalog validation failed: undeliverable transports:");
-	for (const item of unrunnable) console.error(`  - ${item}`);
+	for (const item of unrunnable) {
+		console.error(`  - ${item}`);
+	}
 	process.exit(1);
 }
 
 if (pendingReview.length > 0) {
 	console.error("catalog validation failed: entries pending human review:");
-	for (const item of pendingReview) console.error(`  - ${item}`);
+	for (const item of pendingReview) {
+		console.error(`  - ${item}`);
+	}
 	console.error(
 		"Verify each drafted field against the provider's actual docs, then clear needsHumanReview.",
 	);

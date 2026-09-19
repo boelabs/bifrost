@@ -37,7 +37,7 @@ export function makeVercelRerankHandler(
 					model: ctx.upstreamModel,
 					query: req.query,
 					documents: req.documents.map(textFromRerankDocument),
-					...(req.topN !== undefined ? { top_n: req.topN } : {}),
+					...(req.topN === undefined ? {} : { top_n: req.topN }),
 					return_documents: false,
 				}),
 			};
@@ -67,7 +67,7 @@ export function makeVercelRerankHandler(
 								promptTokens: totalTokens ?? 0,
 								completionTokens: 0,
 								totalTokens: totalTokens ?? 0,
-								...(searchUnits !== undefined ? { searchUnits } : {}),
+								...(searchUnits === undefined ? {} : { searchUnits }),
 							},
 						}
 					: {}),

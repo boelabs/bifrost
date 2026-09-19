@@ -16,6 +16,14 @@ import {
 	UserBubble,
 } from "./MessageParts";
 
+/** Whether a streamed part has anything to show yet; until one does, the loader stands in. */
+function hasVisibleOutput(part: PlaygroundMessage["parts"][number]): boolean {
+	if (part.type === "reasoning") {
+		return true;
+	}
+	return part.type === "text" ? Boolean(part.text) : part.type === "file";
+}
+
 export function Conversation({
 	messages,
 	busy,
@@ -57,19 +65,19 @@ export function Conversation({
 		<div className="mx-auto w-full space-y-10 pb-8 sm:max-w-2xl xl:max-w-3xl">
 			{groups.map((group) => (
 				<section
-					key={group[0].id}
 					aria-label="Conversation turn"
 					className="flex w-full flex-col gap-4 px-4 last:min-h-[calc(var(--transcript-height,0px)-3.5rem)]"
+					key={group[0].id}
 				>
 					{group.map((message) => (
 						<article
-							key={message.id}
 							aria-label={`${message.role === "user" ? "You" : "Assistant"} message`}
 							className={
 								message.role === "user"
 									? "group/message ml-auto flex min-h-17 w-full max-w-[90%] flex-col items-end gap-1"
 									: "group/message flex min-h-17 w-full min-w-0 flex-col gap-2"
 							}
+							key={message.id}
 						>
 							{message.metadata?.state === "stopped" ? (
 								<div className="mb-1 text-fg-muted text-xs">
@@ -87,42 +95,38 @@ export function Conversation({
 							) : null}
 							{message.role === "assistant" &&
 							isStreaming(message) &&
-							!message.parts.some((part) =>
-								part.type === "reasoning"
-									? true
-									: part.type === "text"
-										? Boolean(part.text)
-										: part.type === "file",
-							) ? (
+							!message.parts.some(hasVisibleOutput) ? (
 								<ResponseLoader />
 							) : null}
 							{message.parts.map((part, partIndex) => {
-								if (part.type === "text" && !part.text) return null;
+								if (part.type === "text" && !part.text) {
+									return null;
+								}
 								const key = `${message.id}-${part.type}-${partIndex}`;
-								if (part.type === "text")
+								if (part.type === "text") {
 									return message.role === "user" ? (
 										<UserBubble
-											key={key}
-											text={part.text}
 											hasAttachments={message.parts.some(
 												(entry) => entry.type === "file",
 											)}
+											key={key}
+											text={part.text}
 										/>
 									) : (
 										<Markdown
 											key={key}
-											text={part.text}
 											streaming={isStreaming(message)}
+											text={part.text}
 										/>
 									);
+								}
 								if (part.type === "reasoning") {
 									const steps = reasoningGroupAt(message.parts, partIndex);
-									if (!steps.length) return null;
+									if (!steps.length) {
+										return null;
+									}
 									return (
 										<Reasoning
-											key={key}
-											steps={steps}
-											streaming={isStreaming(message)}
 											hasFollowingText={message.parts
 												.slice(partIndex + 1)
 												.some(
@@ -133,19 +137,22 @@ export function Conversation({
 												message.metadata?.state === "stopped" ||
 												message.metadata?.state === "failed"
 											}
+											key={key}
+											steps={steps}
+											streaming={isStreaming(message)}
 										/>
 									);
 								}
-								if (part.type === "file" && message.role !== "user")
+								if (part.type === "file" && message.role !== "user") {
 									return (
-										<div key={key} className="my-2">
+										<div className="my-2" key={key}>
 											{part.mediaType.startsWith("image/") &&
 											part.url.startsWith("data:image/") ? (
 												// biome-ignore lint/performance/noImgElement: a data:/blob: attachment URL, which next/image has nothing to optimise
 												<img
-													src={part.url}
 													alt={part.filename ?? "Attached image"}
 													className="max-h-64 max-w-full rounded-lg object-contain"
+													src={part.url}
 												/>
 											) : (
 												<span className="break-all text-xs">
@@ -154,33 +161,35 @@ export function Conversation({
 											)}
 										</div>
 									);
-								if (part.type === "source-url")
+								}
+								if (part.type === "source-url") {
 									return (
 										<a
-											key={key}
+											className="block text-primary text-xs underline"
 											href={
 												/^https?:\/\//.test(part.url) ? part.url : undefined
 											}
-											target="_blank"
+											key={key}
 											rel="noopener noreferrer"
-											className="block text-primary text-xs underline"
+											target="_blank"
 										>
 											{part.title ?? part.url}
 										</a>
 									);
+								}
 								return null;
 							})}
 							{message.role === "user" ? (
-								<div className="flex w-fit self-end gap-1 px-2 opacity-100 transition-opacity lg:opacity-0 lg:group-focus-within/message:opacity-100 lg:group-hover/message:opacity-100">
+								<div className="flex w-fit gap-1 self-end px-2 opacity-100 transition-opacity lg:opacity-0 lg:group-hover/message:opacity-100 lg:group-focus-within/message:opacity-100">
 									<CopyAction
-										text={message.parts
-											.filter((part) => part.type === "text")
-											.map((part) => part.text)
-											.join("\n")}
 										label={
 											message.role === "user" ? "Copy message" : "Copy response"
 										}
 										onCopy={onCopy}
+										text={message.parts
+											.filter((part) => part.type === "text")
+											.map((part) => part.text)
+											.join("\n")}
 									/>
 								</div>
 							) : null}
@@ -189,36 +198,36 @@ export function Conversation({
 							) : null}
 							{message.role === "assistant" ? (
 								<div
-									className={`-ml-2 mt-1 flex h-10 shrink-0 items-center gap-0.5 lg:h-8 ${isStreaming(message) ? "pointer-events-none" : ""}`}
+									className={`mt-1 -ml-2 flex h-10 shrink-0 items-center gap-0.5 lg:h-8 ${isStreaming(message) ? "pointer-events-none" : ""}`}
 								>
 									<CopyAction
+										disabled={isStreaming(message)}
+										label="Copy response"
+										onCopy={onCopy}
 										text={message.parts
 											.filter((part) => part.type === "text")
 											.map((part) => part.text)
 											.join("\n")}
-										label="Copy response"
-										disabled={isStreaming(message)}
-										onCopy={onCopy}
 									/>
 									{
 										<Button
-											variant="ghost"
-											size="sm"
-											mode="icon"
-											className={MESSAGE_ACTION}
 											aria-label="Regenerate response"
+											className={MESSAGE_ACTION}
 											disabled={busy || isStreaming(message)}
+											mode="icon"
 											onClick={() => onRegenerate(message.id)}
+											size="sm"
+											variant="ghost"
 										>
 											<IconRotate2
-												className={MESSAGE_ACTION_ICON}
 												aria-hidden
+												className={MESSAGE_ACTION_ICON}
 											/>
 										</Button>
 									}
 									<ResponseDetails
-										metrics={message.metadata ?? {}}
 										disabled={isStreaming(message) || !message.metadata}
+										metrics={message.metadata ?? {}}
 									/>
 								</div>
 							) : null}
@@ -240,8 +249,12 @@ export function groupMessages(
 ): PlaygroundMessage[][] {
 	const groups: PlaygroundMessage[][] = [];
 	for (const message of messages) {
-		if (message.role === "user" || !groups.length) groups.push([message]);
-		else groups[groups.length - 1].push(message);
+		const current = groups.at(-1);
+		if (message.role === "user" || !current) {
+			groups.push([message]);
+		} else {
+			current.push(message);
+		}
 	}
 	return groups;
 }

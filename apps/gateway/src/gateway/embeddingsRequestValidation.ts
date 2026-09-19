@@ -18,16 +18,24 @@ function unsupported(param: string, message: string): never {
 }
 
 function inputCount(input: EmbeddingInput): number {
-	if (typeof input === "string") return 1;
-	if (input.length === 0) return 0;
-	const first = input[0];
-	if (typeof first === "string" || Array.isArray(first)) return input.length;
+	if (typeof input === "string") {
+		return 1;
+	}
+	if (input.length === 0) {
+		return 0;
+	}
+	const [first] = input;
+	if (typeof first === "string" || Array.isArray(first)) {
+		return input.length;
+	}
 	return 1;
 }
 
 function hasTokenInput(input: EmbeddingInput): boolean {
-	if (typeof input === "string") return false;
-	const first = input[0];
+	if (typeof input === "string") {
+		return false;
+	}
+	const [first] = input;
 	return typeof first === "number" || Array.isArray(first);
 }
 
@@ -40,10 +48,16 @@ function serializedInputBytes(input: unknown): number {
 }
 
 function eachInput(input: EmbeddingInput): unknown[] {
-	if (typeof input === "string") return [input];
-	if (input.length === 0) return [];
-	const first = input[0];
-	if (typeof first === "string" || Array.isArray(first)) return input;
+	if (typeof input === "string") {
+		return [input];
+	}
+	if (input.length === 0) {
+		return [];
+	}
+	const [first] = input;
+	if (typeof first === "string" || Array.isArray(first)) {
+		return input;
+	}
 	return [input];
 }
 
@@ -52,8 +66,9 @@ export function assertEmbeddingsRequestSupported(
 	meta: ResolvedModelMetadata,
 ): void {
 	const profile = embeddingProfileFor(meta);
-	if (!profile)
+	if (!profile) {
 		unsupported("model", "The selected model has no embeddings profile.");
+	}
 
 	if (
 		profile.encodingFormats &&
@@ -77,9 +92,9 @@ export function assertEmbeddingsRequestSupported(
 		if (req.dimensions < min || (max !== undefined && req.dimensions > max)) {
 			unsupported(
 				"dimensions",
-				max !== undefined
-					? `The selected model supports dimensions between ${min} and ${max}.`
-					: `The selected model supports dimensions >= ${min}.`,
+				max === undefined
+					? `The selected model supports dimensions >= ${min}.`
+					: `The selected model supports dimensions between ${min} and ${max}.`,
 			);
 		}
 	}

@@ -27,7 +27,7 @@
 export const TEARDOWN_TIMEOUT_MS = 10_000;
 
 /** Slack added to the absolute watchdog so it only fires when a phase deadline was missed. */
-export const WATCHDOG_SLACK_MS = 5_000;
+export const WATCHDOG_SLACK_MS = 5000;
 
 export interface DrainTimings {
 	/** Time spent unready but still serving, so the load balancer can deregister this instance. */
@@ -98,7 +98,9 @@ async function withTimeout(
 			}),
 		]);
 	} finally {
-		if (timer) clearTimeout(timer);
+		if (timer) {
+			clearTimeout(timer);
+		}
 	}
 }
 

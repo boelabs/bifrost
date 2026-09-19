@@ -12,25 +12,31 @@ export interface GatewayAbortReason {
 }
 
 function typedReason(signal: AbortSignal): GatewayAbortReason | null {
-	const reason = signal.reason;
-	if (reason === null || typeof reason !== "object") return null;
-	const candidate = reason as Partial<GatewayAbortReason>;
-	if (candidate.owner !== "client" && candidate.owner !== "gateway")
+	const { reason } = signal;
+	if (reason === null || typeof reason !== "object") {
 		return null;
+	}
+	const candidate = reason as Partial<GatewayAbortReason>;
+	if (candidate.owner !== "client" && candidate.owner !== "gateway") {
+		return null;
+	}
 	if (
 		candidate.type !== "cancelled" &&
 		candidate.type !== "timeout" &&
 		candidate.type !== "settled" &&
 		candidate.type !== "shutdown" &&
 		candidate.type !== "downstream_backpressure"
-	)
+	) {
 		return null;
+	}
 	return candidate as GatewayAbortReason;
 }
 
 /** An untyped aborted signal is conservatively treated as a client disconnect. */
 export function isClientAbortSignal(signal: AbortSignal): boolean {
-	if (!signal.aborted) return false;
+	if (!signal.aborted) {
+		return false;
+	}
 	const reason = typedReason(signal);
 	return reason === null || reason.owner === "client";
 }
@@ -40,7 +46,7 @@ export function abortGatewayError(
 	fallbackPhase = "streaming",
 ): GatewayError {
 	const reason = typedReason(signal);
-	if (reason?.owner === "client" || reason?.type === "cancelled")
+	if (reason?.owner === "client" || reason?.type === "cancelled") {
 		return new GatewayError({
 			class: "bad_request",
 			status: 499,
@@ -51,7 +57,8 @@ export function abortGatewayError(
 			routingScope: "request",
 			retryable: false,
 		});
-	if (reason?.type === "downstream_backpressure")
+	}
+	if (reason?.type === "downstream_backpressure") {
 		return new GatewayError({
 			class: "server",
 			code: "downstream_backpressure",
@@ -61,8 +68,9 @@ export function abortGatewayError(
 			routingScope: "request",
 			retryable: false,
 		});
+	}
 	const phase = reason?.phase ?? fallbackPhase;
-	if (reason?.type === "settled")
+	if (reason?.type === "settled") {
 		return new GatewayError({
 			class: "server",
 			code: "upstream_cancelled_after_settlement",
@@ -71,6 +79,7 @@ export function abortGatewayError(
 			deploymentHealth: "neutral",
 			retryable: false,
 		});
+	}
 	return new GatewayError({
 		class: "timeout",
 		code: `upstream_${phase}_timeout`,

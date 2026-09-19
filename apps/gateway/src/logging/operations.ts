@@ -37,12 +37,14 @@ const finalizationQueue: Array<{
 let drainingFinalizations = false;
 const SENSITIVE_KEY = /authorization|api[-_]?key|token|secret|password|cookie/i;
 const OPERATION_LEASE_TTL_SECONDS =
-	Math.ceil(EXECUTION_POLICY_MAX_TOTAL_MS / 1_000) + 300;
+	Math.ceil(EXECUTION_POLICY_MAX_TOTAL_MS / 1000) + 300;
 const operationLeaseKey = (operationId: string) =>
 	`observability:operation-lease:${operationId}`;
 
 async function drainFinalizations(): Promise<void> {
-	if (drainingFinalizations) return;
+	if (drainingFinalizations) {
+		return;
+	}
 	drainingFinalizations = true;
 	try {
 		while (finalizationQueue.length > 0) {
@@ -60,7 +62,9 @@ async function drainFinalizations(): Promise<void> {
 		}
 	} finally {
 		drainingFinalizations = false;
-		if (finalizationQueue.length > 0) queueMicrotask(drainFinalizations);
+		if (finalizationQueue.length > 0) {
+			queueMicrotask(drainFinalizations);
+		}
 	}
 }
 
@@ -94,15 +98,16 @@ async function retry(
 	task: () => Promise<void>,
 	requestId: string,
 ): Promise<void> {
-	for (const delay of [0, 50, 250, 1_000]) {
-		if (delay > 0)
+	for (const delay of [0, 50, 250, 1000]) {
+		if (delay > 0) {
 			await new Promise<void>((resolve) => setTimeout(resolve, delay));
+		}
 		try {
 			await task();
 			persistenceHealth.recordSuccess();
 			return;
 		} catch (err) {
-			if (delay === 1_000) {
+			if (delay === 1000) {
 				persistenceHealth.recordFailure();
 				recordPersistenceLoss("failed");
 				log.error("operation-log", "persistence failed after retries", {
@@ -121,23 +126,31 @@ function semanticByteCounts(value: unknown): {
 	let outputBytes = 0;
 	let reasoningBytes = 0;
 	const visit = (child: unknown, key: string, depth: number): void => {
-		if (depth > 8) return;
+		if (depth > 8) {
+			return;
+		}
 		if (typeof child === "string") {
 			const bytes = Buffer.byteLength(child);
-			if (/reasoning|thinking/i.test(key)) reasoningBytes += bytes;
-			else if (/content|text|output|arguments|transcript/i.test(key))
+			if (/reasoning|thinking/i.test(key)) {
+				reasoningBytes += bytes;
+			} else if (/content|text|output|arguments|transcript/i.test(key)) {
 				outputBytes += bytes;
+			}
 			return;
 		}
 		if (Array.isArray(child)) {
-			for (const item of child) visit(item, key, depth + 1);
+			for (const item of child) {
+				visit(item, key, depth + 1);
+			}
 			return;
 		}
-		if (child !== null && typeof child === "object")
+		if (child !== null && typeof child === "object") {
 			for (const [name, nested] of Object.entries(
 				child as Record<string, unknown>,
-			))
+			)) {
 				visit(nested, name, depth + 1);
+			}
+		}
 	};
 	visit(value, "", 0);
 	return { outputBytes, reasoningBytes };
@@ -155,14 +168,21 @@ function safeSummary(value: unknown): Record<string, unknown> {
 		type: Array.isArray(value) ? "array" : typeof value,
 		...semanticByteCounts(value),
 	};
-	if (Array.isArray(value)) summary.items = value.length;
+	if (Array.isArray(value)) {
+		summary.items = value.length;
+	}
 	if (value !== null && typeof value === "object" && !Array.isArray(value)) {
 		const record = value as Record<string, unknown>;
 		summary.fields = Object.keys(value as Record<string, unknown>).sort();
 		const counts: Record<string, number> = {};
-		for (const field of ["messages", "input", "tools", "attachments", "data"])
-			if (Array.isArray(record[field])) counts[field] = record[field].length;
-		if (Object.keys(counts).length > 0) summary.counts = counts;
+		for (const field of ["messages", "input", "tools", "attachments", "data"]) {
+			if (Array.isArray(record[field])) {
+				counts[field] = record[field].length;
+			}
+		}
+		if (Object.keys(counts).length > 0) {
+			summary.counts = counts;
+		}
 		const parameters: Record<string, string | number | boolean | null> = {};
 		for (const field of [
 			"stream",
@@ -184,17 +204,24 @@ function safeSummary(value: unknown): Record<string, unknown> {
 				typeof child === "string" ||
 				typeof child === "number" ||
 				typeof child === "boolean"
-			)
+			) {
 				parameters[field] = child;
+			}
 		}
-		if (Object.keys(parameters).length > 0) summary.parameters = parameters;
+		if (Object.keys(parameters).length > 0) {
+			summary.parameters = parameters;
+		}
 	}
 	return summary;
 }
 
 function redact(value: unknown): unknown {
-	if (Array.isArray(value)) return value.map(redact);
-	if (value === null || typeof value !== "object") return value;
+	if (Array.isArray(value)) {
+		return value.map(redact);
+	}
+	if (value === null || typeof value !== "object") {
+		return value;
+	}
 	return Object.fromEntries(
 		Object.entries(value as Record<string, unknown>).map(([key, child]) => [
 			key,
@@ -211,8 +238,9 @@ function boundedPayloadComponent(value: unknown): unknown {
 		return { unavailable: "not_serializable" };
 	}
 	const limit = env.OBSERVABILITY_PAYLOAD_MAX_BYTES;
-	if (Buffer.byteLength(redacted) <= limit)
+	if (Buffer.byteLength(redacted) <= limit) {
 		return JSON.parse(redacted) as unknown;
+	}
 	let clipped = redacted;
 	let serialized = JSON.stringify({ truncated: true, json: clipped });
 	while (Buffer.byteLength(serialized) > limit && clipped.length > 0) {
@@ -311,7 +339,7 @@ export async function beginUpstreamAttempt(input: {
 	}, input.requestId);
 }
 
-type OperationAttemptInput = {
+interface OperationAttemptInput {
 	deploymentId?: string;
 	label?: string;
 	adapterKey?: string;
@@ -349,7 +377,7 @@ type OperationAttemptInput = {
 	usage?: OperationLogInput["usage"];
 	estimatedCostCents?: number;
 	diagnostics?: AdapterDiagnostics;
-};
+}
 
 /**
  * Who ended the attempt.
@@ -362,22 +390,30 @@ type OperationAttemptInput = {
  * distinct from `gateway`, which means the gateway itself malfunctioned.
  */
 export function failureOwner(attempt: OperationAttemptInput): string | null {
-	if (attempt.ok) return null;
+	if (attempt.ok) {
+		return null;
+	}
 	if (
 		attempt.errorCode === "client_closed_request" ||
 		attempt.errorCode === "downstream_backpressure"
-	)
+	) {
 		return "client";
+	}
 	// Ahead of the `neutral` branch below: a deadline the router narrowed is reported as neutral
 	// precisely because the gateway set it, so the general answer would swallow the specific one
 	// and the attempts hardest to diagnose would be the ones labelled least precisely.
-	if (isGatewayDeadline(attempt)) return "gateway_deadline";
+	if (isGatewayDeadline(attempt)) {
+		return "gateway_deadline";
+	}
 	if (
 		attempt.failureKind === "gateway" ||
 		attempt.deploymentHealth === "neutral"
-	)
+	) {
 		return "gateway";
-	if (attempt.failureKind === "configuration") return "deployment_config";
+	}
+	if (attempt.failureKind === "configuration") {
+		return "deployment_config";
+	}
 	return "provider";
 }
 
@@ -396,27 +432,117 @@ function isGatewayDeadline(attempt: OperationAttemptInput): boolean {
 }
 
 function normalizedFailurePhase(attempt: OperationAttemptInput): string | null {
-	if (attempt.ok) return null;
-	if (attempt.errorCode === "downstream_backpressure") return "rendering";
-	if (attempt.errorCode?.includes("first_output")) return "first_progress";
-	if (attempt.errorCode?.includes("connect")) return "connect";
-	if (attempt.headersMs !== undefined) return "streaming";
-	if (attempt.errorCode?.includes("protocol")) return "rendering";
+	if (attempt.ok) {
+		return null;
+	}
+	if (attempt.errorCode === "downstream_backpressure") {
+		return "rendering";
+	}
+	if (attempt.errorCode?.includes("first_output")) {
+		return "first_progress";
+	}
+	if (attempt.errorCode?.includes("connect")) {
+		return "connect";
+	}
+	if (attempt.headersMs !== undefined) {
+		return "streaming";
+	}
+	if (attempt.errorCode?.includes("protocol")) {
+		return "rendering";
+	}
 	return "headers";
 }
 
 function normalizedFailureKind(attempt: OperationAttemptInput): string | null {
-	if (attempt.ok) return null;
-	if (attempt.errorCode === "client_closed_request") return "cancelled";
-	if (attempt.errorCode?.includes("protocol")) return "protocol";
-	if (attempt.errorClass === "timeout") return "timeout";
-	if (attempt.errorClass === "rate_limit") return "rate_limit";
-	if (attempt.errorClass === "context_window") return "context_window";
-	if (attempt.errorClass === "content_policy") return "content_policy";
-	if (attempt.errorClass === "auth") return "auth";
-	if ((attempt.providerStatus ?? 0) >= 500) return "upstream_server";
-	if (attempt.failureKind === "transient") return "network";
+	if (attempt.ok) {
+		return null;
+	}
+	if (attempt.errorCode === "client_closed_request") {
+		return "cancelled";
+	}
+	if (attempt.errorCode?.includes("protocol")) {
+		return "protocol";
+	}
+	if (attempt.errorClass === "timeout") {
+		return "timeout";
+	}
+	if (attempt.errorClass === "rate_limit") {
+		return "rate_limit";
+	}
+	if (attempt.errorClass === "context_window") {
+		return "context_window";
+	}
+	if (attempt.errorClass === "content_policy") {
+		return "content_policy";
+	}
+	if (attempt.errorClass === "auth") {
+		return "auth";
+	}
+	if ((attempt.providerStatus ?? 0) >= 500) {
+		return "upstream_server";
+	}
+	if (attempt.failureKind === "transient") {
+		return "network";
+	}
 	return "internal";
+}
+
+/**
+ * How the request as a whole ended.
+ *
+ * A success without terminal evidence is an error: the gateway cannot claim an answer completed
+ * when nothing said so. A client that hung up, or a downstream that stopped reading, is neither —
+ * nobody failed, the request simply stopped being wanted.
+ */
+function operationOutcome(
+	status: string,
+	terminalVerified: boolean,
+	terminalOutcome: string | undefined,
+	// Whatever the error carried: this is log input, and its shape is not guaranteed.
+	errorCode: unknown,
+): "success" | "incomplete" | "blocked" | "cancelled" | "error" {
+	if (status !== "success") {
+		return errorCode === "client_closed_request" ||
+			errorCode === "downstream_backpressure"
+			? "cancelled"
+			: "error";
+	}
+	if (!terminalVerified) {
+		return "error";
+	}
+	if (terminalOutcome === "incomplete") {
+		return "incomplete";
+	}
+	if (terminalOutcome === "blocked") {
+		return "blocked";
+	}
+	return "success";
+}
+
+/** How an attempt ended, from the terminal evidence it carried. */
+function attemptOutcome(
+	attempt: OperationAttemptInput,
+): "success" | "incomplete" | "blocked" | "error" {
+	if (!attempt.ok) {
+		return "error";
+	}
+	if (attempt.terminalOutcome === "incomplete") {
+		return "incomplete";
+	}
+	if (attempt.terminalOutcome === "blocked") {
+		return "blocked";
+	}
+	return "success";
+}
+
+/** What this attempt should do to the deployment's health score. */
+function attemptHealthEffect(
+	attempt: OperationAttemptInput,
+): "reward" | "neutral" | "penalize" {
+	if (attempt.terminalVerified === true) {
+		return "reward";
+	}
+	return attempt.deploymentHealth === "neutral" ? "neutral" : "penalize";
 }
 
 /**
@@ -433,9 +559,12 @@ export function firstOutputMsOf(
 	lifecycleFirstOutputAt: number | null,
 	input: Pick<OperationLogInput, "startTime" | "firstOutputMs">,
 ): number | null {
-	if (!streamed) return null;
-	if (lifecycleFirstOutputAt !== null)
+	if (!streamed) {
+		return null;
+	}
+	if (lifecycleFirstOutputAt !== null) {
 		return lifecycleFirstOutputAt - input.startTime.getTime();
+	}
 	return input.firstOutputMs;
 }
 
@@ -466,19 +595,12 @@ export function completeOperation(
 		| { maxBlockedMs?: number }
 		| undefined;
 	const terminalVerified = input.status === "success" && terminal != null;
-	const outcome =
-		input.status === "success"
-			? !terminalVerified
-				? "error"
-				: terminal?.outcome === "incomplete"
-					? "incomplete"
-					: terminal?.outcome === "blocked"
-						? "blocked"
-						: "success"
-			: input.error?.code === "client_closed_request" ||
-					input.error?.code === "downstream_backpressure"
-				? "cancelled"
-				: "error";
+	const outcome = operationOutcome(
+		input.status,
+		terminalVerified,
+		terminal?.outcome,
+		input.error?.code,
+	);
 	const degraded =
 		input.retries > 0 ||
 		input.fallbackUsed ||
@@ -508,6 +630,20 @@ export function completeOperation(
 		...safeSummary(input.responseBody),
 		fingerprint: payloadFingerprint(input.responseBody),
 	};
+	/** What the summary measured, for responses no attempt reported a byte count for. */
+	const summaryBytes =
+		typeof responseSummary.bytes === "number" ? responseSummary.bytes : null;
+	/**
+	 * A request that finished without an upstream error but also without terminal evidence is
+	 * recorded as a gateway failure rather than as a clean success nobody can vouch for.
+	 */
+	const missingTerminalError = terminalVerified
+		? null
+		: {
+				class: "server",
+				code: "missing_terminal_evidence",
+				failure_kind: "gateway",
+			};
 	const persistenceTelemetry = startOperationChildTelemetry(
 		operationId,
 		"persistence",
@@ -549,13 +685,13 @@ export function completeOperation(
 									input,
 								),
 								firstEventMs:
-									lifecycle?.firstEventAt != null
-										? lifecycle.firstEventAt - input.startTime.getTime()
-										: null,
+									lifecycle?.firstEventAt == null
+										? null
+										: lifecycle.firstEventAt - input.startTime.getTime(),
 								firstReasoningMs:
-									lifecycle?.firstReasoningAt != null
-										? lifecycle.firstReasoningAt - input.startTime.getTime()
-										: null,
+									lifecycle?.firstReasoningAt == null
+										? null
+										: lifecycle.firstReasoningAt - input.startTime.getTime(),
 								maxInterEventGapMs: lifecycle?.maxInterEventGapMs ?? null,
 								downstreamBlockedMs:
 									downstream?.maxBlockedMs ??
@@ -568,11 +704,7 @@ export function completeOperation(
 										: null),
 								upstreamBytes: attempts.length > 0 ? upstreamBytes : null,
 								downstreamBytes:
-									downstreamBytes > 0
-										? downstreamBytes
-										: typeof responseSummary.bytes === "number"
-											? responseSummary.bytes
-											: null,
+									downstreamBytes > 0 ? downstreamBytes : summaryBytes,
 								endedAt: input.endTime,
 								lastProgressAt: input.endTime,
 								reasoning: input.metadata.reasoning ?? null,
@@ -580,12 +712,12 @@ export function completeOperation(
 								responseSummary,
 								metadata: {
 									...input.metadata,
-									...(input.usage?.cacheWriteTokensByTtl !== undefined
-										? {
+									...(input.usage?.cacheWriteTokensByTtl === undefined
+										? {}
+										: {
 												cacheWriteTokensByTtl:
 													input.usage.cacheWriteTokensByTtl,
-											}
-										: {}),
+											}),
 									client: {
 										ipFingerprint: payloadFingerprint(input.ip),
 										userAgentFingerprint: payloadFingerprint(input.userAgent),
@@ -598,13 +730,7 @@ export function completeOperation(
 											http_status: input.error.http_status,
 											failure_kind: input.error.failure_kind,
 										}
-									: !terminalVerified
-										? {
-												class: "server",
-												code: "missing_terminal_evidence",
-												failure_kind: "gateway",
-											}
-										: null,
+									: missingTerminalError,
 							})
 							.where(eq(gatewayOperations.id, operationId));
 
@@ -624,24 +750,13 @@ export function completeOperation(
 											deploymentLabel: attempt.label ?? null,
 											adapterKey: attempt.adapterKey ?? null,
 											transport: attempt.transport ?? null,
-											outcome: attempt.ok
-												? attempt.terminalOutcome === "incomplete"
-													? ("incomplete" as const)
-													: attempt.terminalOutcome === "blocked"
-														? ("blocked" as const)
-														: ("success" as const)
-												: ("error" as const),
+											outcome: attemptOutcome(attempt),
 											terminalVerified: attempt.terminalVerified === true,
 											transportTerminator: attempt.transportTerminator ?? null,
 											failureOwner: failureOwner(attempt),
 											failureKind: normalizedFailureKind(attempt),
 											failurePhase: normalizedFailurePhase(attempt),
-											healthEffect:
-												attempt.terminalVerified === true
-													? "reward"
-													: attempt.deploymentHealth === "neutral"
-														? "neutral"
-														: "penalize",
+											healthEffect: attemptHealthEffect(attempt),
 											httpStatus: attempt.httpStatus ?? null,
 											providerStatus: attempt.providerStatus ?? null,
 											durationMs,
@@ -853,15 +968,19 @@ export async function reconcileAbandonedOperations(
 				lt(gatewayOperations.lastProgressAt, before),
 			),
 		)
-		.limit(1_000);
-	if (stale.length === 0) return 0;
+		.limit(1000);
+	if (stale.length === 0) {
+		return 0;
+	}
 	const leases = await redis.mget(
 		...stale.map((row) => operationLeaseKey(row.id)),
 	);
 	const expiredIds = stale
 		.filter((_row, index) => leases[index] === null)
 		.map((row) => row.id);
-	if (expiredIds.length === 0) return 0;
+	if (expiredIds.length === 0) {
+		return 0;
+	}
 	const rows = await db
 		.update(gatewayOperations)
 		.set({
@@ -972,10 +1091,11 @@ export async function getPayloadSample(
 export function startOperationMaintenance(): () => void {
 	const run = async () => {
 		const abandoned = await reconcileAbandonedOperations();
-		if (abandoned > 0)
+		if (abandoned > 0) {
 			log.error("operation-log", "reconciled abandoned operations", {
 				abandoned,
 			});
+		}
 		await db
 			.delete(payloadSamples)
 			.where(lte(payloadSamples.expiresAt, new Date()));
@@ -989,8 +1109,9 @@ export function startOperationMaintenance(): () => void {
 			Date.now() - env.ADMIN_AUDIT_RETENTION_DAYS * 86_400_000,
 		);
 		const audited = await purgeExpiredAuditEntries(auditCutoff);
-		if (audited > 0)
+		if (audited > 0) {
 			log.info("operation-log", "purged expired audit entries", { audited });
+		}
 		const expired = await db
 			.select({ id: gatewayOperations.id })
 			.from(gatewayOperations)
@@ -1000,7 +1121,7 @@ export function startOperationMaintenance(): () => void {
 					lt(gatewayOperations.endedAt, retentionCutoff),
 				),
 			)
-			.limit(1_000);
+			.limit(1000);
 		if (expired.length > 0) {
 			const ids = expired.map((row) => row.id);
 			await db.transaction(async (tx) => {

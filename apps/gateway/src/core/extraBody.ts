@@ -5,10 +5,14 @@ export function assertNoManagedExtraBodyKeys(
 	managedKeys: Iterable<string>,
 	param = "extra_body",
 ): void {
-	if (extraBody === undefined) return;
+	if (extraBody === undefined) {
+		return;
+	}
 	const managed = new Set(managedKeys);
 	for (const key of Object.keys(extraBody)) {
-		if (!managed.has(key)) continue;
+		if (!managed.has(key)) {
+			continue;
+		}
 		throw new GatewayError({
 			class: "bad_request",
 			message: `${param}.${key} collides with managed request parameter "${key}"`,
@@ -25,15 +29,18 @@ export function mergeExtraBody<T extends Record<string, unknown>>(
 	param = "extra_body",
 ): T {
 	assertNoManagedExtraBodyKeys(extraBody, managedKeys, param);
-	if (extraBody === undefined) return body;
+	if (extraBody === undefined) {
+		return body;
+	}
 	return { ...body, ...extraBody };
 }
 
 const DANGEROUS_KEYS = new Set(["__proto__", "prototype", "constructor"]);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-	if (value === null || typeof value !== "object" || Array.isArray(value))
+	if (value === null || typeof value !== "object" || Array.isArray(value)) {
 		return false;
+	}
 	const proto = Object.getPrototypeOf(value);
 	return proto === Object.prototype || proto === null;
 }
@@ -47,9 +54,16 @@ function validateJsonValue(value: unknown, path: string, depth: number): void {
 			param: path,
 		});
 	}
-	if (value === null || typeof value === "string" || typeof value === "boolean")
+	if (
+		value === null ||
+		typeof value === "string" ||
+		typeof value === "boolean"
+	) {
 		return;
-	if (typeof value === "number" && Number.isFinite(value)) return;
+	}
+	if (typeof value === "number" && Number.isFinite(value)) {
+		return;
+	}
 	if (Array.isArray(value)) {
 		for (const [index, item] of value.entries()) {
 			validateJsonValue(item, `${path}.${index}`, depth + 1);
@@ -89,7 +103,9 @@ export function mergeExtraBodyDeep<T extends Record<string, unknown>>(
 	managedPaths: Iterable<string> = [],
 	param = "extra_body",
 ): T {
-	if (extraBody === undefined) return body;
+	if (extraBody === undefined) {
+		return body;
+	}
 	validateJsonValue(extraBody, param, 0);
 	const encoded = JSON.stringify(extraBody);
 	if (Buffer.byteLength(encoded, "utf8") > 65_536) {

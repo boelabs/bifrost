@@ -25,12 +25,12 @@ export function BifrostMark({
 }) {
 	return (
 		<Image
-			src="/logo.svg"
 			alt="Bifrost"
-			width={Math.round((size * 1063) / 677)}
+			className={`dark:invert ${className}`}
 			height={size}
 			priority
-			className={`dark:invert ${className}`}
+			src="/logo.svg"
+			width={Math.round((size * 1063) / 677)}
 		/>
 	);
 }

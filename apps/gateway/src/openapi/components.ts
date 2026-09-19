@@ -25,7 +25,7 @@ import { OPERATION_IDS } from "#operations/registry.ts";
 import { CALL_TYPE_VALUES } from "#core/callType.ts";
 import { pricingSchema } from "#profiles/schema.ts";
 import { EFFORT_ORDER } from "#core/reasoning.ts";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 /** An object that accepts arbitrary extra keys (`additionalProperties: true`). */
 function loose(shape: z.ZodRawShape, meta: Record<string, unknown>): z.ZodType {
@@ -499,7 +499,7 @@ const sizePattern = z.string().regex(/^(auto|[1-9][0-9]*x[1-9][0-9]*)$/);
 export const ImageGenerationRequest = z
 	.object({
 		model: z.string().meta({ description: "public model" }),
-		prompt: z.string().min(1).max(32000),
+		prompt: z.string().min(1).max(32_000),
 		background: nullableEnum(["transparent", "opaque", "auto"]).optional(),
 		moderation: nullableEnum(["low", "auto"]).optional(),
 		n: nullableInteger.optional(),
@@ -522,7 +522,7 @@ export const ImageGenerationRequest = z
 export const ImageEditRequest = z
 	.object({
 		model: z.string(),
-		prompt: z.string().min(1).max(32000),
+		prompt: z.string().min(1).max(32_000),
 		image: z
 			.array(z.string().meta({ format: "binary" }))
 			.min(1)
@@ -631,7 +631,7 @@ export const VideoFrameImage = z
 export const VideoCreateRequest = loose(
 	{
 		model: z.string().meta({ description: "public model" }),
-		prompt: z.string().min(1).max(32000),
+		prompt: z.string().min(1).max(32_000),
 		task: nullableEnum([
 			"text_to_video",
 			"image_to_video",
@@ -1303,7 +1303,7 @@ export const DashboardSettings = z
 		sessionTtlMinutes: z.int().min(5).max(43_200).optional(),
 		sessionIdleMinutes: z.int().min(1).max(43_200).optional(),
 		loginMaxAttempts: z.int().min(1).max(100).optional(),
-		loginLockoutMinutes: z.int().min(1).max(1_440).optional(),
+		loginLockoutMinutes: z.int().min(1).max(1440).optional(),
 	})
 	.meta({
 		id: "DashboardSettings",

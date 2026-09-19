@@ -44,7 +44,9 @@ export async function deleteExpiredResponseStates(
 // (startResponseStateGcJob, wired in src/index.ts).
 async function pruneExpiredOccasionally(): Promise<void> {
 	const now = Date.now();
-	if (now - lastPruneAt < PRUNE_INTERVAL_MS) return;
+	if (now - lastPruneAt < PRUNE_INTERVAL_MS) {
+		return;
+	}
 	lastPruneAt = now;
 	await deleteExpiredResponseStates(new Date());
 }
@@ -58,8 +60,9 @@ export function startResponseStateGcJob(): () => void {
 	const run = (): void => {
 		void deleteExpiredResponseStates(new Date())
 			.then((deleted) => {
-				if (deleted > 0)
+				if (deleted > 0) {
 					log.info("response-states", "gc deleted expired rows", { deleted });
+				}
 			})
 			.catch((err: unknown) => {
 				log.error("response-states", "gc failed", { err });
@@ -153,7 +156,9 @@ export async function findResponseItemByIdForScope(
 			),
 		)
 		.limit(1);
-	if (!row) return undefined;
+	if (!row) {
+		return undefined;
+	}
 	return [...row.output, ...row.requestInput].find(
 		(it) => (it as { id?: unknown }).id === itemId,
 	);

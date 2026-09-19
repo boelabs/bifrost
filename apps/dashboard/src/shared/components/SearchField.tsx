@@ -37,35 +37,35 @@ export function SearchField({
 		>
 			<Input
 				aria-label={label}
-				size="sm"
-				value={draft}
+				className="w-56"
 				onValueChange={setDraft}
 				placeholder={placeholder}
-				className="w-56"
+				size="sm"
+				value={draft}
 			/>
 			{value ? (
 				<Button
-					type="button"
-					size="sm"
-					variant="ghost"
 					aria-label="Clear search"
+					mode="icon"
 					onClick={() => {
 						setDraft("");
 						onSearch("");
 					}}
-					mode="icon"
+					size="sm"
+					type="button"
+					variant="ghost"
 				>
-					<IconX size={15} aria-hidden />
+					<IconX aria-hidden size={15} />
 				</Button>
 			) : null}
 			<Button
-				type="submit"
-				size="sm"
-				variant="secondary"
 				aria-label={label}
 				mode="icon"
+				size="sm"
+				type="submit"
+				variant="secondary"
 			>
-				<IconSearch size={15} aria-hidden />
+				<IconSearch aria-hidden size={15} />
 			</Button>
 		</form>
 	);

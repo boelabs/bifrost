@@ -98,16 +98,16 @@ export interface RouteOptions {
 }
 
 export interface UsageQuotaLease {
-	settle(usage: Usage): Promise<void>;
-	release(): Promise<void>;
+	settle: (usage: Usage) => Promise<void>;
+	release: () => Promise<void>;
 }
 
 export interface UsageQuota {
-	assertCandidate(candidate: DeploymentCandidate): void;
-	reserve(
+	assertCandidate: (candidate: DeploymentCandidate) => void;
+	reserve: (
 		candidate: DeploymentCandidate,
 		reservedTokens: number,
-	): Promise<UsageQuotaLease>;
+	) => Promise<UsageQuotaLease>;
 }
 
 /** Executes the upstream call for a candidate; throws GatewayError on failure. */
@@ -193,10 +193,20 @@ export interface RouteResult<T> {
 
 type FallbackReason = "general" | "context_window" | "content_policy";
 
+/** The reason a fallback records for one failed attempt. */
+function fallbackReasonFor(errorClass: string): FallbackReason {
+	if (errorClass === "context_window") {
+		return "context_window";
+	}
+	return errorClass === "content_policy" ? "content_policy" : "general";
+}
+
 function fallbackReasonForFailures(
 	failures: Set<FallbackReason>,
 ): FallbackReason {
-	if (failures.size !== 1) return "general";
+	if (failures.size !== 1) {
+		return "general";
+	}
 	const [only] = failures;
 	return only ?? "general";
 }
@@ -209,7 +219,9 @@ async function settleSideEffects(
 ): Promise<void> {
 	const results = await Promise.allSettled(tasks);
 	for (const result of results) {
-		if (result.status === "fulfilled") continue;
+		if (result.status === "fulfilled") {
+			continue;
+		}
 		log.error("router-settlement", "settlement side effect failed", {
 			requestId,
 			err: result.reason,
@@ -218,7 +230,9 @@ async function settleSideEffects(
 }
 
 function terminalFromValue(value: unknown): CanonicalTerminal | null {
-	if (value === null || typeof value !== "object") return null;
+	if (value === null || typeof value !== "object") {
+		return null;
+	}
 	const record = value as {
 		terminal?: CanonicalTerminal;
 		observation?: { terminal?: CanonicalTerminal | null };
@@ -269,11 +283,13 @@ function buildContext(
 	const controller = new AbortController();
 	const abortFromClient = () =>
 		controller.abort({ owner: "client", type: "cancelled" });
-	if (opts.clientSignal.aborted) abortFromClient();
-	else
+	if (opts.clientSignal.aborted) {
+		abortFromClient();
+	} else {
 		opts.clientSignal.addEventListener("abort", abortFromClient, {
 			once: true,
 		});
+	}
 	const timeout = setTimeout(
 		() =>
 			controller.abort({
@@ -300,8 +316,9 @@ function buildContext(
 		cleanup: () => {
 			clearTimeout(timeout);
 			opts.clientSignal.removeEventListener("abort", abortFromClient);
-			if (!controller.signal.aborted)
+			if (!controller.signal.aborted) {
 				controller.abort({ owner: "gateway", type: "settled" });
+			}
 		},
 	};
 }
@@ -394,8 +411,9 @@ export async function route<T>(
 								opts.usageQuota?.assertCandidate(candidate);
 								return true;
 							} catch (error) {
-								if (!GatewayError.is(error) || error.class !== "bad_request")
+								if (!GatewayError.is(error) || error.class !== "bad_request") {
 									throw error;
+								}
 								eligibilityError ??= error;
 								return false;
 							}
@@ -432,7 +450,9 @@ export async function route<T>(
 			 * about the pool running dry, not about why one member of it failed.
 			 */
 			const mayOpenFor = (deploymentId: string): boolean => {
-				if (!settings.protectLastDeployment) return true;
+				if (!settings.protectLastDeployment) {
+					return true;
+				}
 				return candidates.some(
 					(candidate) =>
 						candidate.row.id !== deploymentId &&
@@ -484,21 +504,27 @@ export async function route<T>(
 				const snapshots = await getCircuitSnapshots(subjects);
 				snapshots.forEach((snapshot, index) => {
 					const subject = subjects[index];
-					if (!snapshot || !subject) return;
-					if (snapshot.status === "cooldown")
+					if (!(snapshot && subject)) {
+						return;
+					}
+					if (snapshot.status === "cooldown") {
 						blockedDeployments.add(subject.deployment.id);
-					if (snapshot.status === "rate_limited")
+					}
+					if (snapshot.status === "rate_limited") {
 						blockedCapacity.add(subject.capacity.id);
+					}
 					if (
 						snapshot.status === "half_open" &&
 						snapshot.blockedBy === "deployment"
-					)
+					) {
 						blockedDeployments.add(subject.deployment.id);
+					}
 					if (
 						snapshot.status === "half_open" &&
 						snapshot.blockedBy === "capacity"
-					)
+					) {
 						blockedCapacity.add(subject.capacity.id);
+					}
 					if (snapshot.retryAfterMs !== null) {
 						shortestRetryAfterMs =
 							shortestRetryAfterMs === undefined
@@ -514,7 +540,9 @@ export async function route<T>(
 						attempts >= attemptLimit ? "attempt_limit" : "pre_output_deadline";
 					break;
 				}
-				if (attempts - poolStartedAt >= maxAttemptsPerPool) break;
+				if (attempts - poolStartedAt >= maxAttemptsPerPool) {
+					break;
+				}
 				const selectableCandidates = candidates.filter((candidate) => {
 					const capacity = capacitySubject(
 						candidate.row.id,
@@ -566,13 +594,16 @@ export async function route<T>(
 					if (rescuable.length > 0) {
 						rescueSpent = true;
 						forceNextAdmission = true;
-						for (const candidate of rescuable)
+						for (const candidate of rescuable) {
 							blockedDeployments.delete(candidate.row.id);
+						}
 						continue;
 					}
-					if (rateLimitedDeployments.size > 0 || blockedCapacity.size > 0)
+					if (rateLimitedDeployments.size > 0 || blockedCapacity.size > 0) {
 						reason = "rate_limited";
-					else if (blockedDeployments.size > 0) reason = "cooldown";
+					} else if (blockedDeployments.size > 0) {
+						reason = "cooldown";
+					}
 					break;
 				}
 
@@ -601,9 +632,11 @@ export async function route<T>(
 				);
 				forceNextAdmission = false;
 				if (!permitResult.allowed) {
-					if (permitResult.blockedBy === "deployment")
+					if (permitResult.blockedBy === "deployment") {
 						blockedDeployments.add(chosen.row.id);
-					else blockedCapacity.add(capacity.id);
+					} else {
+						blockedCapacity.add(capacity.id);
+					}
 					shortestRetryAfterMs =
 						shortestRetryAfterMs === undefined
 							? permitResult.retryAfterMs
@@ -612,7 +645,7 @@ export async function route<T>(
 						permitResult.blockedBy === "capacity" ? "rate_limited" : "cooldown";
 					continue;
 				}
-				const permit = permitResult.permit;
+				const { permit } = permitResult;
 				let attemptLease: AttemptLease | null = null;
 				let usageQuotaLease: UsageQuotaLease | undefined;
 				const reservedTokens = opts.tokenReservation?.(chosen) ?? 0;
@@ -636,9 +669,11 @@ export async function route<T>(
 					attemptLease = admission.lease;
 				} catch (error) {
 					await usageQuotaLease?.release();
-					if (attemptLease)
+					if (attemptLease) {
 						await onAttemptCancel(chosen.row.id, permit, attemptLease);
-					else await releaseCircuitPermit(permit);
+					} else {
+						await releaseCircuitPermit(permit);
+					}
 					if (
 						GatewayError.is(error) &&
 						(error.code === "budget_exceeded" ||
@@ -652,10 +687,11 @@ export async function route<T>(
 					throw error;
 				}
 				const activeAttemptLease = attemptLease;
-				if (!activeAttemptLease)
+				if (!activeAttemptLease) {
 					throw new Error(
 						"Deployment admission completed without an attempt lease",
 					);
+				}
 
 				attemptsByDeployment.set(
 					chosen.row.id,
@@ -695,7 +731,9 @@ export async function route<T>(
 					upstreamModel: chosen.upstreamModel,
 					startedAt,
 				});
-				let cleanupContext = () => {};
+				let cleanupContext = () => {
+					/* intentionally empty */
+				};
 				let activeContext: AdapterContext | undefined;
 				try {
 					const instrumentedContext = buildContext(
@@ -721,7 +759,7 @@ export async function route<T>(
 					const ms = Date.now() - startedAt;
 					const attemptRecord: AttemptRecord = {
 						deploymentId: chosen.row.id,
-						...(chosen.row.label != null ? { label: chosen.row.label } : {}),
+						...(chosen.row.label == null ? {} : { label: chosen.row.label }),
 						adapterKey: chosen.adapter.key,
 						transport,
 						ms,
@@ -754,13 +792,14 @@ export async function route<T>(
 								terminalOverride,
 								downstream,
 							) => {
-								if (settled) return;
+								if (settled) {
+									return;
+								}
 								settled = true;
-								if (downstream)
-									finishDownstreamWriteObservation(
-										downstream,
-										streamError?.code,
-									);
+								let error = streamError;
+								if (downstream) {
+									finishDownstreamWriteObservation(downstream, error?.code);
+								}
 								cleanupContext();
 								const endedAt = finishedAt ?? Date.now();
 								attemptRecord.ms = endedAt - startedAt;
@@ -800,24 +839,28 @@ export async function route<T>(
 											: usageQuotaLease.release(),
 									]);
 								}
-								if (downstream)
+								if (downstream) {
 									attemptRecord.downstreamBlockedMs = downstream.maxBlockedMs;
-								if (downstream)
+								}
+								if (downstream) {
 									attemptRecord.downstreamBytes = downstream.bytes;
-								if (attemptRecord.usage)
+								}
+								if (attemptRecord.usage) {
 									attemptRecord.estimatedCostCents = computeCost(
 										chosen.meta,
 										attemptRecord.usage,
 									).totalCents;
+								}
 								if (
 									value !== null &&
 									typeof value === "object" &&
 									"diagnostics" in value &&
 									(value as { diagnostics?: AdapterDiagnostics }).diagnostics
-								)
+								) {
 									attemptRecord.diagnostics = (
 										value as { diagnostics: AdapterDiagnostics }
 									).diagnostics;
+								}
 								if (observation) {
 									attemptRecord.frames = observation.frames;
 									attemptRecord.metadataFrames = observation.metadataFrames;
@@ -826,27 +869,32 @@ export async function route<T>(
 									attemptRecord.toolFrames = observation.toolFrames;
 									attemptRecord.mediaFrames = observation.mediaFrames;
 									attemptRecord.usageFrames = observation.usageFrames;
-									if (observation.firstEventAt !== null)
+									if (observation.firstEventAt !== null) {
 										attemptRecord.firstEventMs =
 											observation.firstEventAt - startedAt;
-									if (observation.firstReasoningAt !== null)
+									}
+									if (observation.firstReasoningAt !== null) {
 										attemptRecord.firstReasoningMs =
 											observation.firstReasoningAt - startedAt;
-									if (observation.firstOutputAt !== null)
+									}
+									if (observation.firstOutputAt !== null) {
 										attemptRecord.firstOutputMs =
 											observation.firstOutputAt - startedAt;
+									}
 									attemptRecord.maxInterEventGapMs =
 										observation.maxInterEventGapMs;
 									attemptRecord.lastProgressAt =
 										observation.lastEventAt ?? endedAt;
-									if (observation.transportTerminator)
+									if (observation.transportTerminator) {
 										attemptRecord.transportTerminator =
 											observation.transportTerminator;
-									if (observation.diagnostics)
+									}
+									if (observation.diagnostics) {
 										attemptRecord.diagnostics = observation.diagnostics;
+									}
 								}
-								if (!streamError && !terminal) {
-									streamError = new GatewayError({
+								if (!(error || terminal)) {
+									error = new GatewayError({
 										class: "server",
 										code: "upstream_protocol_error",
 										message:
@@ -855,7 +903,7 @@ export async function route<T>(
 										deploymentHealth: "penalize",
 									});
 								}
-								if (!streamError && terminal) {
+								if (!error && terminal) {
 									attemptRecord.ok = true;
 									attemptRecord.terminalVerified = true;
 									attemptRecord.terminalOutcome = terminal.outcome;
@@ -886,22 +934,27 @@ export async function route<T>(
 									});
 									return;
 								}
-								if (!streamError) return;
+								if (!error) {
+									return;
+								}
 
-								attemptRecord.errorClass = streamError.class;
-								attemptRecord.errorCode = streamError.code;
-								attemptRecord.failureKind = streamError.failureKind;
-								attemptRecord.httpStatus = streamError.httpStatus;
-								if (streamError.deploymentHealth === "neutral")
+								attemptRecord.errorClass = error.class;
+								attemptRecord.errorCode = error.code;
+								attemptRecord.failureKind = error.failureKind;
+								attemptRecord.httpStatus = error.httpStatus;
+								if (error.deploymentHealth === "neutral") {
 									attemptRecord.deploymentHealth = "neutral";
-								if (streamError.provider?.status !== undefined)
-									attemptRecord.providerStatus = streamError.provider.status;
-								if (streamError.provider?.body !== undefined)
-									attemptRecord.providerBody = streamError.provider.body;
+								}
+								if (error.provider?.status !== undefined) {
+									attemptRecord.providerStatus = error.provider.status;
+								}
+								if (error.provider?.body !== undefined) {
+									attemptRecord.providerBody = error.provider.body;
+								}
 
 								if (
 									isClientAbortSignal(opts.clientSignal) ||
-									streamError.code === "client_closed_request"
+									error.code === "client_closed_request"
 								) {
 									attemptRecord.errorClass = "client_closed_request";
 									attemptRecord.failureKind = "request";
@@ -919,20 +972,20 @@ export async function route<T>(
 								}
 
 								const cause: CooldownCause = {
-									class: streamError.class,
-									message: streamError.message,
-									...(streamError.provider?.status !== undefined
-										? { status: streamError.provider.status }
-										: {}),
-									...(streamError.provider?.body !== undefined
-										? { body: streamError.provider.body }
-										: {}),
+									class: error.class,
+									message: error.message,
+									...(error.provider?.status === undefined
+										? {}
+										: { status: error.provider.status }),
+									...(error.provider?.body === undefined
+										? {}
+										: { body: error.provider.body }),
 								};
-								switch (streamError.failureKind) {
+								switch (error.failureKind) {
 									case "transient":
 										await settleSideEffects(
 											opts.requestId,
-											streamError.deploymentHealth === "neutral"
+											error.deploymentHealth === "neutral"
 												? [
 														onAttemptFailure(
 															chosen.row.id,
@@ -953,10 +1006,7 @@ export async function route<T>(
 																		permit,
 																		circuitSettings,
 																		cause,
-																		transientCharge(
-																			chosen.row.id,
-																			streamError.class,
-																		),
+																		transientCharge(chosen.row.id, error.class),
 																	),
 																]
 															: []),
@@ -987,7 +1037,7 @@ export async function route<T>(
 												circuitSettings,
 												cause,
 												Math.max(
-													streamError.retryAfterMs ?? 0,
+													error.retryAfterMs ?? 0,
 													settings.throttleCooldownSeconds * 1000,
 												),
 											),
@@ -1013,22 +1063,25 @@ export async function route<T>(
 											),
 										]);
 										break;
+									default:
+										break;
 								}
 								finishUpstreamAttemptTelemetry(attemptTelemetry, {
 									endedAt,
 									outcome: "error",
 									terminalVerified: false,
-									errorCode: streamError.code,
+									errorCode: error.code,
 								});
 							},
 						},
 					};
 				} catch (err) {
 					cleanupContext();
-					if (usageQuotaLease)
+					if (usageQuotaLease) {
 						await settleSideEffects(opts.requestId, [
 							usageQuotaLease.release(),
 						]);
+					}
 					// If the CLIENT cancelled (not an upstream timeout), it is NOT the deployment's fault:
 					// release the inflight, do not count toward allowed_fails/cooldown, and do not retry.
 					// Prevents quickly cancelling requests from putting the deployment pool into cooldown.
@@ -1042,7 +1095,7 @@ export async function route<T>(
 						await onAttemptCancel(chosen.row.id, permit, activeAttemptLease);
 						attemptLog.push({
 							deploymentId: chosen.row.id,
-							...(chosen.row.label != null ? { label: chosen.row.label } : {}),
+							...(chosen.row.label == null ? {} : { label: chosen.row.label }),
 							adapterKey: chosen.adapter.key,
 							transport,
 							ms: Date.now() - startedAt,
@@ -1093,7 +1146,7 @@ export async function route<T>(
 						await onAttemptCancel(chosen.row.id, permit, activeAttemptLease);
 						attemptLog.push({
 							deploymentId: chosen.row.id,
-							...(chosen.row.label != null ? { label: chosen.row.label } : {}),
+							...(chosen.row.label == null ? {} : { label: chosen.row.label }),
 							adapterKey: chosen.adapter.key,
 							transport,
 							ms: Date.now() - startedAt,
@@ -1122,12 +1175,12 @@ export async function route<T>(
 					const cause: CooldownCause = {
 						class: ge.class,
 						message: ge.message,
-						...(ge.provider?.status !== undefined
-							? { status: ge.provider.status }
-							: {}),
-						...(ge.provider?.body !== undefined
-							? { body: ge.provider.body }
-							: {}),
+						...(ge.provider?.status === undefined
+							? {}
+							: { status: ge.provider.status }),
+						...(ge.provider?.body === undefined
+							? {}
+							: { body: ge.provider.body }),
 					};
 					switch (ge.failureKind) {
 						case "transient": {
@@ -1193,11 +1246,13 @@ export async function route<T>(
 							await onAttemptCancel(chosen.row.id, permit, activeAttemptLease);
 							neutralCandidateError ??= ge;
 							break;
+						default:
+							break;
 					}
 					lastError = ge;
 					attemptLog.push({
 						deploymentId: chosen.row.id,
-						...(chosen.row.label != null ? { label: chosen.row.label } : {}),
+						...(chosen.row.label == null ? {} : { label: chosen.row.label }),
 						adapterKey: chosen.adapter.key,
 						transport,
 						ms: Date.now() - startedAt,
@@ -1221,25 +1276,22 @@ export async function route<T>(
 						...(ge.deploymentHealth === "neutral"
 							? { deploymentHealth: "neutral" as const }
 							: {}),
-						...(ge.provider?.status !== undefined
-							? { providerStatus: ge.provider.status }
-							: {}),
-						...(ge.provider?.body !== undefined
-							? { providerBody: ge.provider.body }
-							: {}),
+						...(ge.provider?.status === undefined
+							? {}
+							: { providerStatus: ge.provider.status }),
+						...(ge.provider?.body === undefined
+							? {}
+							: { providerBody: ge.provider.body }),
 					});
 
-					const failureReason: FallbackReason =
-						ge.class === "context_window"
-							? "context_window"
-							: ge.class === "content_policy"
-								? "content_policy"
-								: "general";
+					const failureReason = fallbackReasonFor(ge.class);
 					failureReasons.add(failureReason);
 
 					// Deterministic/non-retryable errors exhaust THIS deployment for the request, but do not
 					// cut the pool: the other deployments of the same public model are still tried.
-					if (!ge.retryable) requestExhaustedDeployments.add(chosen.row.id);
+					if (!ge.retryable) {
+						requestExhaustedDeployments.add(chosen.row.id);
+					}
 
 					const hasAttemptsLeft = candidates.some(
 						(candidate) =>
@@ -1322,7 +1374,9 @@ export async function route<T>(
 			primaryCandidates,
 			Math.max(1, attemptLimit - reservedFallbackAttempts),
 		);
-		if (primary.ok) return primary.result;
+		if (primary.ok) {
+			return primary.result;
+		}
 
 		let lastReason: FailReason = primary.reason;
 		let triedFallback = false;
@@ -1337,7 +1391,9 @@ export async function route<T>(
 				undefined,
 				Math.max(0, attemptLimit - attempts - laterFallbacks),
 			);
-			if (attempt.ok) return attempt.result;
+			if (attempt.ok) {
+				return attempt.result;
+			}
 			lastReason = attempt.reason;
 		}
 
@@ -1370,18 +1426,23 @@ export async function route<T>(
 
 			const roundStartedAt = attempts;
 			for (const retryModel of retryModels) {
-				if (attempts >= attemptLimit || Date.now() >= preOutputDeadlineAt)
+				if (attempts >= attemptLimit || Date.now() >= preOutputDeadlineAt) {
 					break;
+				}
 				const attempt = await tryPublicModel(
 					retryModel,
 					retryModel !== publicModel,
 					undefined,
 					1,
 				);
-				if (attempt.ok) return attempt.result;
+				if (attempt.ok) {
+					return attempt.result;
+				}
 				lastReason = attempt.reason;
 			}
-			if (attempts === roundStartedAt) break;
+			if (attempts === roundStartedAt) {
+				break;
+			}
 			retryRound += 1;
 		}
 
@@ -1425,7 +1486,8 @@ export async function route<T>(
 			: "internal_error";
 		throw error;
 	} finally {
-		if (routingTelemetry)
+		if (routingTelemetry) {
 			finishOperationChildTelemetry(routingTelemetry, routingErrorCode);
+		}
 	}
 }

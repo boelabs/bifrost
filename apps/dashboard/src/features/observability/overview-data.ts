@@ -65,8 +65,12 @@ function record(value: unknown): Record<string, unknown> {
 }
 
 function nonNegativeNumber(value: unknown): number | null {
-	if (typeof value !== "number" && typeof value !== "string") return null;
-	if (typeof value === "string" && value.trim() === "") return null;
+	if (typeof value !== "number" && typeof value !== "string") {
+		return null;
+	}
+	if (typeof value === "string" && value.trim() === "") {
+		return null;
+	}
 	const parsed = Number(value);
 	return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
@@ -100,7 +104,9 @@ export function getOverviewMetrics(
 	byModel: readonly UsageRow[],
 ): OverviewMetrics {
 	const usage = emptyUsage();
-	for (const row of byModel) addUsage(usage, row);
+	for (const row of byModel) {
+		addUsage(usage, row);
+	}
 	const source = record(summary);
 	const totals = record(source.totals);
 	const outcomes: OutcomeCounts = {
@@ -117,8 +123,9 @@ export function getOverviewMetrics(
 		for (const value of source.outcomes) {
 			const row = record(value);
 			const requests = nonNegativeNumber(row.requests) ?? 0;
-			if (row.outcome === null) outcomes.inProgress += requests;
-			else if (terminalOutcomes.includes(row.outcome as Outcome)) {
+			if (row.outcome === null) {
+				outcomes.inProgress += requests;
+			} else if (terminalOutcomes.includes(row.outcome as Outcome)) {
 				outcomes[row.outcome as Outcome] += requests;
 			}
 		}
@@ -180,8 +187,7 @@ export function buildUsageSeries(
 	const startMs = timestamp(start);
 	const endMs = timestamp(end);
 	if (
-		!Number.isFinite(startMs) ||
-		!Number.isFinite(endMs) ||
+		!(Number.isFinite(startMs) && Number.isFinite(endMs)) ||
 		endMs <= startMs
 	) {
 		return [];
@@ -201,10 +207,14 @@ export function buildUsageSeries(
 		});
 	}
 	for (const row of rows) {
-		if (typeof row.key !== "string") continue;
+		if (typeof row.key !== "string") {
+			continue;
+		}
 		const interval = Math.floor(timestamp(row.key) / size) * size;
 		const point = buckets.get(interval);
-		if (point) addUsage(point, row);
+		if (point) {
+			addUsage(point, row);
+		}
 	}
 	return [...buckets.values()];
 }

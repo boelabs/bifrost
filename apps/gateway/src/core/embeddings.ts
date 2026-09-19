@@ -58,7 +58,9 @@ export interface EmbeddingProfile {
 export function embeddingsUsageToCore(
 	u: EmbeddingsUsage | undefined,
 ): Usage | null {
-	if (!u) return null;
+	if (!u) {
+		return null;
+	}
 	return {
 		promptTokens: u.promptTokens,
 		completionTokens: 0,

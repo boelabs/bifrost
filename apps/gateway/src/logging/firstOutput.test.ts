@@ -1,7 +1,6 @@
+import { firstOutputMsOf } from "./operations.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
-
-import { firstOutputMsOf } from "./operations.ts";
 
 const startTime = new Date(1_000_000);
 const input = (firstOutputMs: number | null) => ({ startTime, firstOutputMs });
@@ -17,7 +16,7 @@ test("first output: a reported instant is used when no lifecycle observed one", 
 test("first output: a non-progressive response has none", () => {
 	// The duration an endpoint might report here answers a different question, and `durationMs`
 	// already answers that one. Mixed into the same column they describe neither.
-	assert.equal(firstOutputMsOf(false, null, input(2_827)), null);
+	assert.equal(firstOutputMsOf(false, null, input(2827)), null);
 	// Not even a lifecycle observation overrides it: if the response was not streamed, the column
 	// is not about this response.
 	assert.equal(firstOutputMsOf(false, 1_000_450, input(null)), null);

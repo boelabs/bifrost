@@ -19,9 +19,13 @@ const MUTATING = ["POST", "PUT", "PATCH", "DELETE"];
 export function auditMiddleware(): MiddlewareHandler<AppEnv> {
 	return async (c, next) => {
 		await next();
-		if (!MUTATING.includes(c.req.method)) return;
+		if (!MUTATING.includes(c.req.method)) {
+			return;
+		}
 		// Never audit a call that was rejected before it identified anyone.
-		if (c.res.status === 401 || c.res.status === 403) return;
+		if (c.res.status === 401 || c.res.status === 403) {
+			return;
+		}
 		void record(c);
 	};
 }

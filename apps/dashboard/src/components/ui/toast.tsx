@@ -13,8 +13,8 @@ import {
 } from "./appearance";
 
 export const ToastProvider = BaseToast.Provider;
-export const useToastManager = BaseToast.useToastManager;
-export const createToastManager = BaseToast.createToastManager;
+export const { useToastManager } = BaseToast;
+export const { createToastManager } = BaseToast;
 
 export type ToastPortalProps = ComponentProps<typeof BaseToast.Portal> &
 	AppearanceProps;
@@ -28,7 +28,7 @@ export function ToastPortal({
 	return (
 		<BaseToast.Portal
 			{...props}
-			className={mergeClassName("relative z-[100]", className)}
+			className={mergeClassName("relative z-100", className)}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -47,7 +47,7 @@ export function ToastViewport({
 		<BaseToast.Viewport
 			{...props}
 			className={mergeClassName(
-				"fixed right-4 bottom-4 z-[100] flex w-88 max-w-[calc(100vw-2rem)] flex-col gap-3 outline-none",
+				"fixed right-4 bottom-4 z-100 flex w-88 max-w-[calc(100vw-2rem)] flex-col gap-3 outline-none",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -68,7 +68,7 @@ export function ToastRoot({
 		<BaseToast.Root
 			{...props}
 			className={mergeClassName(
-				`${overlayFadeStyles} relative flex w-full shrink-0 flex-col gap-3 rounded-[var(--ui-radius-dialog)] border border-border/60 bg-surface p-4 pr-10 text-fg shadow-xl outline-none transition-[opacity,transform] data-[limited]:hidden data-[swiping]:select-none data-[swiping]:transition-none data-[type=error]:border-danger/50 data-[type=success]:border-success/50`,
+				`${overlayFadeStyles} relative flex w-full shrink-0 flex-col gap-3 rounded-(--ui-radius-dialog) border border-border/60 bg-surface p-4 pr-10 text-fg shadow-xl outline-none transition-[opacity,transform] data-limited:hidden data-swiping:select-none data-[type=error]:border-danger/50 data-[type=success]:border-success/50 data-swiping:transition-none`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, (state) => ({
@@ -110,7 +110,7 @@ export function ToastTitle({
 	return (
 		<BaseToast.Title
 			{...props}
-			className={mergeClassName("text-sm font-semibold text-fg", className)}
+			className={mergeClassName("font-semibold text-fg text-sm", className)}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -130,7 +130,7 @@ export function ToastDescription({
 	return (
 		<BaseToast.Description
 			{...props}
-			className={mergeClassName("text-sm text-fg-muted", className)}
+			className={mergeClassName("text-fg-muted text-sm", className)}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -151,7 +151,7 @@ export function ToastClose({
 			aria-label="Dismiss notification"
 			{...props}
 			className={mergeClassName(
-				`absolute top-2 right-2 inline-flex size-7 items-center justify-center rounded-[var(--ui-radius-control)] text-fg-muted hover:bg-secondary hover:text-fg ${focusRing}`,
+				`absolute top-2 right-2 inline-flex size-7 items-center justify-center rounded-(--ui-radius-control) text-fg-muted hover:bg-secondary hover:text-fg ${focusRing}`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -195,11 +195,11 @@ export function ToastPositioner({
 	return (
 		<BaseToast.Positioner
 			{...props}
-			sideOffset={sideOffset}
 			className={mergeClassName(
-				"z-[100] w-80 max-w-[calc(100vw-2rem)] outline-none",
+				"z-100 w-80 max-w-[calc(100vw-2rem)] outline-none",
 				className,
 			)}
+			sideOffset={sideOffset}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -237,11 +237,13 @@ export function Toaster({ portalProps, toastProps, ...props }: ToasterProps) {
 						<ToastRoot key={toast.id} {...toastProps} toast={toast}>
 							<ToastContent>
 								<ToastTitle>{toast.title}</ToastTitle>
-								{toast.description && (
+								{toast.description ? (
 									<ToastDescription>{toast.description}</ToastDescription>
-								)}
+								) : null}
 							</ToastContent>
-							{toast.actionProps && <ToastAction {...toast.actionProps} />}
+							{toast.actionProps ? (
+								<ToastAction {...toast.actionProps} />
+							) : null}
 							<ToastClose />
 						</ToastRoot>
 					);

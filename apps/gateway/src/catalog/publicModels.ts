@@ -32,12 +32,14 @@ async function loadGroups(): Promise<Map<string, PublicModelGroup>> {
 		}
 		existing.rows.push(row);
 		existing.metas.push(meta);
-		if (row.createdAt < existing.createdAt) existing.createdAt = row.createdAt;
+		if (row.createdAt < existing.createdAt) {
+			existing.createdAt = row.createdAt;
+		}
 	}
 	return groups;
 }
 
-const publicModelCache = createAsyncTtlCache(loadGroups, 5_000);
+const publicModelCache = createAsyncTtlCache(loadGroups, 5000);
 
 export function loadPublicModelGroups(): Promise<
 	Map<string, PublicModelGroup>

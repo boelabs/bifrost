@@ -24,8 +24,8 @@ export default function UsersPage(props: PageProps<"/users">) {
 	return (
 		<>
 			<PageHeader
-				title="Users"
 				description="Operators of this dashboard. Accounts exist only because an owner created them — there is no self-registration and no OAuth."
+				title="Users"
 			>
 				<Suspense fallback={<ToolbarSkeleton widths={["17rem", "6.5rem"]} />}>
 					<Filters searchParams={props.searchParams} />
@@ -54,5 +54,5 @@ async function Operators({ searchParams }: { searchParams: Params }) {
 		offset: filters.offset ?? 0,
 		...(filters.q ? { q: filters.q } : {}),
 	});
-	return <UsersTable users={data} total={pagination.total} filters={filters} />;
+	return <UsersTable filters={filters} total={pagination.total} users={data} />;
 }

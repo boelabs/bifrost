@@ -7,9 +7,9 @@ import { RerankWorkspace } from "./RerankWorkspace";
 import { ImageWorkspace } from "./ImageWorkspace";
 import { VideoWorkspace } from "./VideoWorkspace";
 import type { Capability } from "./capabilities";
+import { type ReactNode, useState } from "react";
 import { TextWorkspace } from "./TextWorkspace";
 import type { PublicEndpoint } from "./api";
-import { useState } from "react";
 
 import {
 	type PlaygroundModel,
@@ -28,6 +28,26 @@ export interface PlaygroundSelection {
 	capability: Capability;
 	modelId: string;
 }
+
+interface WorkspaceProps {
+	model: PlaygroundModel;
+	models: PlaygroundModel[];
+	onSelect: (choice: ModelChoice) => void;
+}
+
+/**
+ * The capabilities that have a workspace of their own. Anything not listed here is text, which is
+ * the only workspace that also has to be told which endpoint to speak.
+ */
+const SPECIALISED_WORKSPACES: Partial<
+	Record<Capability, (props: WorkspaceProps) => ReactNode>
+> = {
+	image: ImageWorkspace,
+	video: VideoWorkspace,
+	transcription: TranscriptionWorkspace,
+	rerank: RerankWorkspace,
+	embedding: EmbeddingWorkspace,
+};
 
 export function initialSelection(
 	models: PlaygroundModel[],
@@ -57,74 +77,76 @@ export function Playground({ models }: { models: PlaygroundModel[] }) {
 			!choice.model.endpoints.includes(endpoint)
 		) {
 			const [first] = choice.model.endpoints;
-			if (first) setEndpoint(first);
+			if (first) {
+				setEndpoint(first);
+			}
 		}
 	}
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">
 			<PageHeader
-				title="Playground"
 				description="Try your models. Conversations stay in this session."
+				title="Playground"
 			/>
 			{selected && selection ? (
-				// The workspace belongs to the capability: moving to another one starts its own, which
-				// is what keeps a transcript of pictures from outliving the model that made it.
-				selection.capability === "image" ? (
-					<ImageWorkspace
-						key="image"
-						model={selected}
-						models={models}
-						onSelect={select}
-					/>
-				) : selection.capability === "video" ? (
-					<VideoWorkspace
-						key="video"
-						model={selected}
-						models={models}
-						onSelect={select}
-					/>
-				) : selection.capability === "transcription" ? (
-					<TranscriptionWorkspace
-						key="transcription"
-						model={selected}
-						models={models}
-						onSelect={select}
-					/>
-				) : selection.capability === "rerank" ? (
-					<RerankWorkspace
-						key="rerank"
-						model={selected}
-						models={models}
-						onSelect={select}
-					/>
-				) : selection.capability === "embedding" ? (
-					<EmbeddingWorkspace
-						key="embedding"
-						model={selected}
-						models={models}
-						onSelect={select}
-					/>
-				) : (
-					<TextWorkspace
-						key="text"
-						model={selected}
-						models={models}
-						endpoint={
-							selected.endpoints.includes(endpoint)
-								? endpoint
-								: (selected.endpoints[0] ?? endpoint)
-						}
-						onSelect={select}
-						onEndpoint={setEndpoint}
-					/>
-				)
+				<Workspace
+					capability={selection.capability}
+					endpoint={endpoint}
+					model={selected}
+					models={models}
+					onEndpoint={setEndpoint}
+					onSelect={select}
+				/>
 			) : (
 				<EmptyState
-					title="No models available"
 					description="A model appears here when an enabled deployment exposes an operation this playground can run, through a compatible contract."
+					title="No models available"
 				/>
 			)}
 		</div>
+	);
+}
+
+/**
+ * The workspace belongs to the capability: moving to another one starts its own, which is what
+ * keeps a transcript of pictures from outliving the model that made it.
+ */
+function Workspace({
+	capability,
+	model,
+	models,
+	endpoint,
+	onEndpoint,
+	onSelect,
+}: WorkspaceProps & {
+	capability: Capability;
+	endpoint: PublicEndpoint;
+	onEndpoint: (endpoint: PublicEndpoint) => void;
+}) {
+	const Specialised = SPECIALISED_WORKSPACES[capability];
+	if (Specialised) {
+		return (
+			<Specialised
+				key={capability}
+				model={model}
+				models={models}
+				onSelect={onSelect}
+			/>
+		);
+	}
+	return (
+		<TextWorkspace
+			endpoint={
+				model.endpoints.includes(endpoint)
+					? endpoint
+					: (model.endpoints[0] ?? endpoint)
+			}
+			key="text"
+			model={model}
+			models={models}
+			onEndpoint={onEndpoint}
+			onSelect={onSelect}
+		/>
 	);
 }

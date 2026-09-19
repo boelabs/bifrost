@@ -70,10 +70,10 @@ function Documents({
 			className="mb-2 overflow-hidden rounded-[28px] border border-border bg-surface-2 max-sm:rounded-2xl"
 		>
 			<button
-				type="button"
-				onClick={() => setOpen((current) => !current)}
 				aria-expanded={open}
 				className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm"
+				onClick={() => setOpen((current) => !current)}
+				type="button"
 			>
 				<span className="font-medium">Documents</span>
 				<span className="text-fg-muted text-xs">
@@ -82,19 +82,19 @@ function Documents({
 						: `${count} ${count === 1 ? "document" : "documents"}`}
 				</span>
 				<IconChevronDown
-					className={`ml-auto size-4 text-fg-muted transition-transform ${open ? "rotate-180" : ""}`}
 					aria-hidden
+					className={`ml-auto size-4 text-fg-muted transition-transform ${open ? "rotate-180" : ""}`}
 				/>
 			</button>
 			{open ? (
 				<textarea
 					aria-label="Documents, one per line"
-					value={value}
+					className="max-h-64 w-full resize-y bg-transparent px-4 pb-3 text-sm leading-6 outline-none placeholder:text-fg-muted"
 					disabled={disabled}
 					onChange={(event) => onChange(event.target.value)}
-					rows={4}
 					placeholder={"Paris is the capital of France.\nBerlin is in Germany."}
-					className="max-h-64 w-full resize-y bg-transparent px-4 pb-3 text-sm leading-6 outline-none placeholder:text-fg-muted"
+					rows={4}
+					value={value}
 				/>
 			) : null}
 		</section>
@@ -118,7 +118,7 @@ function RerankRunView({
 				aria-label="You message"
 				className="ml-auto flex w-full max-w-[90%] flex-col items-end gap-1"
 			>
-				<p className="w-fit max-w-full overflow-hidden break-words rounded-3xl border border-border/60 bg-surface-2 px-3.5 py-2.5 text-base leading-6 [overflow-wrap:anywhere]">
+				<p className="wrap-break-word wrap-anywhere w-fit max-w-full overflow-hidden rounded-3xl border border-border/60 bg-surface-2 px-3.5 py-2.5 text-base leading-6">
 					{run.query}
 				</p>
 				<span className="text-fg-muted text-xs">
@@ -141,8 +141,8 @@ function RerankRunView({
 						{run.results.map((result, position) => (
 							// A ranking names each document once, so its original position is its identity.
 							<li
-								key={result.index}
 								className="relative overflow-hidden rounded-xl border border-border/50 bg-card"
+								key={result.index}
 							>
 								<div
 									aria-hidden
@@ -155,7 +155,7 @@ function RerankRunView({
 									<span className="w-4 shrink-0 text-fg-muted text-xs tabular-nums">
 										{position + 1}
 									</span>
-									<p className="min-w-0 flex-1 text-sm [overflow-wrap:anywhere]">
+									<p className="wrap-anywhere min-w-0 flex-1 text-sm">
 										{result.text}
 									</p>
 									<span className="shrink-0 font-mono text-xs">
@@ -174,33 +174,33 @@ function RerankRunView({
 				) : null}
 				<div className="-ml-2 flex h-10 shrink-0 items-center gap-0.5 lg:h-8">
 					<Button
+						aria-label="Rank again"
+						className={MESSAGE_ACTION}
+						disabled={run.state === "running"}
+						mode="icon"
+						onClick={onRetry}
+						size="sm"
+						title="Rank again"
 						type="button"
 						variant="ghost"
-						size="sm"
-						mode="icon"
-						className={MESSAGE_ACTION}
-						aria-label="Rank again"
-						title="Rank again"
-						disabled={run.state === "running"}
-						onClick={onRetry}
 					>
-						<IconRotate2 className={MESSAGE_ACTION_ICON} aria-hidden />
+						<IconRotate2 aria-hidden className={MESSAGE_ACTION_ICON} />
 					</Button>
 					<p className="px-2 text-fg-muted text-xs">
 						{[
 							run.model,
-							run.settings.topN !== undefined
-								? `top ${run.settings.topN}`
-								: undefined,
-							run.durationMs !== undefined
-								? duration(run.durationMs)
-								: undefined,
-							run.totalTokens !== undefined
-								? `${run.totalTokens.toLocaleString()} tokens`
-								: undefined,
-							run.searchUnits !== undefined
-								? `${run.searchUnits.toLocaleString()} search units`
-								: undefined,
+							run.settings.topN === undefined
+								? undefined
+								: `top ${run.settings.topN}`,
+							run.durationMs === undefined
+								? undefined
+								: duration(run.durationMs),
+							run.totalTokens === undefined
+								? undefined
+								: `${run.totalTokens.toLocaleString()} tokens`,
+							run.searchUnits === undefined
+								? undefined
+								: `${run.searchUnits.toLocaleString()} search units`,
 						]
 							.filter(Boolean)
 							.join(" · ")}
@@ -247,8 +247,9 @@ export function RerankWorkspace({
 	}, []);
 
 	useEffect(() => {
-		if (runs.length && scroll.current)
+		if (runs.length && scroll.current) {
 			scroll.current.scrollTop = scroll.current.scrollHeight;
+		}
 	}, [runs]);
 
 	function update(id: string, patch: Partial<RerankRun>) {
@@ -313,20 +314,24 @@ export function RerankWorkspace({
 				},
 				{ signal: controller.signal },
 			);
-			if (!alive.current) return;
+			if (!alive.current) {
+				return;
+			}
 			update(id, {
 				state: "completed",
 				results: rankingFrom(response, run.documents),
 				durationMs: performance.now() - started,
-				...(response.usage?.total_tokens !== undefined
-					? { totalTokens: response.usage.total_tokens }
-					: {}),
-				...(response.usage?.search_units !== undefined
-					? { searchUnits: response.usage.search_units }
-					: {}),
+				...(response.usage?.total_tokens === undefined
+					? {}
+					: { totalTokens: response.usage.total_tokens }),
+				...(response.usage?.search_units === undefined
+					? {}
+					: { searchUnits: response.usage.search_units }),
 			});
 		} catch (cause) {
-			if (!alive.current) return;
+			if (!alive.current) {
+				return;
+			}
 			const stopped = cause instanceof Error && cause.name === "AbortError";
 			update(id, {
 				state: stopped ? "stopped" : "failed",
@@ -347,40 +352,36 @@ export function RerankWorkspace({
 
 	return (
 		<Workspace
-			scroll={scroll}
 			empty={runs.length === 0}
+			scroll={scroll}
 			{...(localError ? { error: localError } : {})}
-			transcript={runs.map((run) => (
-				<RerankRunView
-					key={run.id}
-					run={run}
-					onRetry={() => {
-						if (!busy) void execute(run);
-					}}
-				/>
-			))}
 			composer={
 				<>
 					<Documents
-						value={draft}
-						onChange={setDraft}
 						count={documents.length}
 						disabled={busy}
+						onChange={setDraft}
+						value={draft}
 					/>
 					<Composer
-						prompt={query}
-						onPrompt={setQuery}
-						files={[]}
-						onRemove={() => {}}
-						onFiles={() => {}}
-						placeholder="Ask something to rank them against..."
-						showAttach={false}
 						accepted={[]}
-						reading={false}
 						busy={busy}
-						onSend={send}
-						onStop={() => request.current?.abort()}
-						onSettings={() => setSettingsOpen(true)}
+						files={[]}
+						modelPicker={
+							<ModelSelect
+								capability="rerank"
+								modelId={model.id}
+								models={models}
+								onSelect={onSelect}
+							/>
+						}
+						onFiles={() => {
+							/* intentionally empty */
+						}}
+						onPrompt={setQuery}
+						onRemove={() => {
+							/* intentionally empty */
+						}}
 						onReset={() => {
 							request.current?.abort();
 							setRuns([]);
@@ -388,20 +389,30 @@ export function RerankWorkspace({
 							setDraft("");
 							setLocalError(undefined);
 						}}
-						modelPicker={
-							<ModelSelect
-								models={models}
-								capability="rerank"
-								modelId={model.id}
-								onSelect={onSelect}
-							/>
-						}
+						onSend={send}
+						onSettings={() => setSettingsOpen(true)}
+						onStop={() => request.current?.abort()}
+						placeholder="Ask something to rank them against..."
+						prompt={query}
+						reading={false}
+						showAttach={false}
 					/>
 				</>
 			}
+			transcript={runs.map((run) => (
+				<RerankRunView
+					key={run.id}
+					onRetry={() => {
+						if (!busy) {
+							void execute(run);
+						}
+					}}
+					run={run}
+				/>
+			))}
 		>
-			<DialogRoot open={settingsOpen} onOpenChange={setSettingsOpen}>
-				<DialogContent layout="sectioned" className="md:w-lg">
+			<DialogRoot onOpenChange={setSettingsOpen} open={settingsOpen}>
+				<DialogContent className="md:w-lg" layout="sectioned">
 					<DialogHeader>
 						<DialogTitle>Rerank settings</DialogTitle>
 						<DialogDescription>
@@ -410,23 +421,26 @@ export function RerankWorkspace({
 					</DialogHeader>
 					<DialogBody>
 						<NumberField.Root
-							value={settings.topN ?? null}
+							max={1000}
+							min={1}
 							onValueChange={(value) =>
 								setSettings((current) => {
 									const next = { ...current };
-									if (value === null) delete next.topN;
-									else next.topN = value;
+									if (value === null) {
+										delete next.topN;
+									} else {
+										next.topN = value;
+									}
 									return next;
 								})
 							}
-							min={1}
-							max={1000}
 							step={1}
+							value={settings.topN ?? null}
 						>
 							<NumberField.ScrubArea>
 								<label
-									htmlFor="playground-rerank-top-n"
 									className="font-medium text-sm"
+									htmlFor="playground-rerank-top-n"
 								>
 									Documents returned
 								</label>

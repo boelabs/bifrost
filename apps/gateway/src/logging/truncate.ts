@@ -19,7 +19,9 @@ export function truncateJson(
 	stats?: TruncateStats,
 ): unknown {
 	if (typeof value === "string") {
-		if (value.length <= maxLen) return value;
+		if (value.length <= maxLen) {
+			return value;
+		}
 		const omitted = value.length - maxLen;
 		if (stats) {
 			stats.fields += 1;
@@ -32,8 +34,9 @@ export function truncateJson(
 	}
 	if (value && typeof value === "object") {
 		const out: Record<string, unknown> = {};
-		for (const [k, v] of Object.entries(value))
+		for (const [k, v] of Object.entries(value)) {
 			out[k] = truncateJson(v, maxLen, stats);
+		}
 		return out;
 	}
 	return value;

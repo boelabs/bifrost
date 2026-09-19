@@ -32,16 +32,12 @@ export function summary(run: VideoRun): string {
 	const settings: VideoSettings = run.settings;
 	return [
 		settings.task,
-		settings.seconds !== undefined ? `${settings.seconds}s` : undefined,
+		settings.seconds === undefined ? undefined : `${settings.seconds}s`,
 		settings.size ?? settings.aspectRatio,
 		settings.resolution,
 		settings.quality,
-		settings.seed !== undefined ? `seed ${settings.seed}` : undefined,
-		settings.generateAudio === true
-			? "with audio"
-			: settings.generateAudio === false
-				? "silent"
-				: undefined,
+		settings.seed === undefined ? undefined : `seed ${settings.seed}`,
+		AUDIO_SUMMARY[String(settings.generateAudio)],
 		run.references.length
 			? `${run.references.length} attachment${run.references.length > 1 ? "s" : ""}`
 			: undefined,
@@ -56,12 +52,20 @@ function duration(ms: number): string {
 
 /** When the gateway will stop serving these bytes — a fact of this endpoint, worth saying once. */
 function expiry(job: VideoJob | undefined): string | undefined {
-	if (!job?.expires_at) return undefined;
+	if (!job?.expires_at) {
+		return undefined;
+	}
 	return `available until ${new Date(job.expires_at * 1000).toLocaleTimeString(
 		undefined,
 		{ hour: "2-digit", minute: "2-digit" },
 	)}`;
 }
+
+/** Keyed by `String(generateAudio)`, so "undefined" means the model was not told either way. */
+const AUDIO_SUMMARY: Record<string, string | undefined> = {
+	true: "with audio",
+	false: "silent",
+};
 
 const ROLE_LABEL: Record<VideoReference["role"], string> = {
 	reference: "Reference",
@@ -76,16 +80,16 @@ function Reference({ reference }: { reference: VideoReference }) {
 			{image ? (
 				// biome-ignore lint/performance/noImgElement: a data: URL, which next/image cannot optimise
 				<img
-					src={reference.url}
 					alt={reference.filename}
 					className="size-20 rounded-xl border border-border/60 object-cover"
+					src={reference.url}
 				/>
 			) : (
 				<span className="flex size-20 items-center justify-center rounded-xl border border-border/60 bg-surface-2">
-					<IconPlayerPlay className="size-6 text-fg-muted" aria-hidden />
+					<IconPlayerPlay aria-hidden className="size-6 text-fg-muted" />
 				</span>
 			)}
-			<figcaption className="max-w-20 truncate text-fg-muted text-[11px]">
+			<figcaption className="max-w-20 truncate text-[11px] text-fg-muted">
 				{ROLE_LABEL[reference.role]}
 			</figcaption>
 		</figure>
@@ -102,15 +106,16 @@ function Reference({ reference }: { reference: VideoReference }) {
 function Working({ job }: { job: VideoJob | undefined }) {
 	const progress = job?.progress ?? 0;
 	const label = job?.status === "in_progress" ? "Generating" : "Queued";
-	if (!job || progress <= 0)
+	if (!job || progress <= 0) {
 		return (
 			<div className="flex items-center gap-3">
 				<ResponseLoader />
 				<span className="text-fg-muted text-xs">{label}</span>
 			</div>
 		);
+	}
 	return (
-		<Progress.Root value={Math.min(100, progress)} className="max-w-sm">
+		<Progress.Root className="max-w-sm" value={Math.min(100, progress)}>
 			<Progress.Label>{label}</Progress.Label>
 			<Progress.Value />
 			<Progress.Track>
@@ -157,8 +162,8 @@ export function VideoRunView({
 					</div>
 				) : null}
 				<UserBubble
-					text={run.prompt}
 					hasAttachments={run.references.length > 0}
+					text={run.prompt}
 				/>
 			</article>
 			<article
@@ -178,61 +183,61 @@ export function VideoRunView({
 					<figure className="group/video relative overflow-hidden rounded-2xl border border-border/60 bg-surface-2">
 						{/* biome-ignore lint/a11y/useMediaCaption: a generated video has no track to offer */}
 						<video
-							src={videoContentUrl(run.job.id)}
+							className="block w-full"
 							controls
 							playsInline
 							preload="metadata"
-							className="block w-full"
+							src={videoContentUrl(run.job.id)}
 						/>
 						<a
-							href={videoContentUrl(run.job.id)}
-							download={`${run.job.id}.mp4`}
 							aria-label="Download video"
-							title="Download"
 							className="absolute top-2 right-2 inline-flex size-9 items-center justify-center rounded-xl bg-surface/80 text-fg opacity-0 backdrop-blur transition-opacity focus-visible:opacity-100 group-hover/video:opacity-100"
+							download={`${run.job.id}.mp4`}
+							href={videoContentUrl(run.job.id)}
+							title="Download"
 						>
-							<IconDownload className="size-4.5" aria-hidden />
+							<IconDownload aria-hidden className="size-4.5" />
 						</a>
 					</figure>
 				) : null}
 				{run.error ? (
 					<ErrorNote width="fit-content">{run.error}</ErrorNote>
 				) : null}
-				<div className="-ml-2 mt-1 flex h-10 shrink-0 items-center gap-0.5 lg:h-8">
+				<div className="mt-1 -ml-2 flex h-10 shrink-0 items-center gap-0.5 lg:h-8">
 					<Button
+						aria-label="Generate again"
+						className={MESSAGE_ACTION}
+						disabled={run.state === "running"}
+						mode="icon"
+						onClick={onRetry}
+						size="sm"
+						title="Generate again"
 						type="button"
 						variant="ghost"
-						size="sm"
-						mode="icon"
-						className={MESSAGE_ACTION}
-						aria-label="Generate again"
-						title="Generate again"
-						disabled={run.state === "running"}
-						onClick={onRetry}
 					>
-						<IconRotate2 className={MESSAGE_ACTION_ICON} aria-hidden />
+						<IconRotate2 aria-hidden className={MESSAGE_ACTION_ICON} />
 					</Button>
 					{resumable ? (
 						<Button
+							aria-label="Check this job again"
+							className={MESSAGE_ACTION}
+							mode="icon"
+							onClick={onCheck}
+							size="sm"
+							title="Check again"
 							type="button"
 							variant="ghost"
-							size="sm"
-							mode="icon"
-							className={MESSAGE_ACTION}
-							aria-label="Check this job again"
-							title="Check again"
-							onClick={onCheck}
 						>
-							<IconRefresh className={MESSAGE_ACTION_ICON} aria-hidden />
+							<IconRefresh aria-hidden className={MESSAGE_ACTION_ICON} />
 						</Button>
 					) : null}
 					<p className="px-2 text-fg-muted text-xs">
 						{[
 							run.model,
 							detail,
-							run.durationMs !== undefined
-								? duration(run.durationMs)
-								: undefined,
+							run.durationMs === undefined
+								? undefined
+								: duration(run.durationMs),
 							ready ? expiry(run.job) : undefined,
 						]
 							.filter(Boolean)

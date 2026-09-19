@@ -27,17 +27,17 @@ export function ResponseDetails({
 		<DialogRoot>
 			{/* Styled as the buttons it sits with, not as a dialog trigger: same box, same hover. */}
 			<DialogTrigger
-				disabled={disabled}
+				aria-label="Response details"
 				className={cn(
 					buttonStyles({ variant: "ghost", size: "sm", mode: "icon" }),
 					MESSAGE_ACTION,
 				)}
-				aria-label="Response details"
+				disabled={disabled}
 				title="Response details"
 			>
-				<IconInfoCircle className={MESSAGE_ACTION_ICON} aria-hidden />
+				<IconInfoCircle aria-hidden className={MESSAGE_ACTION_ICON} />
 			</DialogTrigger>
-			<DialogContent layout="sectioned" className="md:w-xl">
+			<DialogContent className="md:w-xl" layout="sectioned">
 				<DialogHeader>
 					<DialogTitle>Response details</DialogTitle>
 					<DialogDescription>
@@ -84,23 +84,23 @@ export function Metrics({ metrics }: { metrics: ResponseMetrics }) {
 	return (
 		<div className="space-y-4">
 			<dl className="grid grid-cols-2 gap-x-5 gap-y-2 text-sm sm:grid-cols-3">
-				<Metric label="TTFT" value={metrics.ttftMs} unit=" ms" />
-				<Metric label="First text" value={metrics.firstTextMs} unit=" ms" />
-				<Metric label="Total duration" value={metrics.durationMs} unit=" ms" />
+				<Metric label="TTFT" unit=" ms" value={metrics.ttftMs} />
+				<Metric label="First text" unit=" ms" value={metrics.firstTextMs} />
+				<Metric label="Total duration" unit=" ms" value={metrics.durationMs} />
 				<Metric
 					label="Text streaming"
-					value={metrics.textDurationMs}
 					unit=" ms"
+					value={metrics.textDurationMs}
 				/>
 				<Metric
 					label="Text speed (est.)"
-					value={metrics.outputTokensPerSecond}
 					unit=" tok/s"
+					value={metrics.outputTokensPerSecond}
 				/>
 				<Metric
 					label="Request average"
-					value={metrics.requestTokensPerSecond}
 					unit=" tok/s"
+					value={metrics.requestTokensPerSecond}
 				/>
 				<Metric label="Input tokens" value={metrics.inputTokens} />
 				<Metric label="Output tokens" value={metrics.outputTokens} />
@@ -126,7 +126,7 @@ export function Metrics({ metrics }: { metrics: ResponseMetrics }) {
 				</p>
 			) : null}
 			{metrics.warnings?.map((warning) => (
-				<p key={warning} className="break-words text-warning text-xs">
+				<p className="wrap-break-word text-warning text-xs" key={warning}>
 					{warning}
 				</p>
 			))}{" "}

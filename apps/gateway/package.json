@@ -1,20 +1,8 @@
 {
 	"name": "@boelabs/bifrost",
 	"version": "0.0.0",
-	"description": "Provider-agnostic AI gateway with an exact OpenAI-compatible contract. Backend only.",
-	"license": "MIT",
-	"author": "Boelabs",
-	"type": "module",
 	"private": true,
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/boelabs/bifrost.git",
-		"directory": "apps/gateway"
-	},
-	"bugs": {
-		"url": "https://github.com/boelabs/bifrost/issues"
-	},
-	"homepage": "https://github.com/boelabs/bifrost#readme",
+	"description": "Provider-agnostic AI gateway with an exact OpenAI-compatible contract. Backend only.",
 	"keywords": [
 		"ai",
 		"gateway",
@@ -24,35 +12,44 @@
 		"llm",
 		"router"
 	],
-	"engines": {
-		"bun": ">=1.4"
+	"homepage": "https://github.com/boelabs/bifrost#readme",
+	"bugs": {
+		"url": "https://github.com/boelabs/bifrost/issues"
 	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/boelabs/bifrost.git",
+		"directory": "apps/gateway"
+	},
+	"license": "MIT",
+	"author": "Boelabs",
+	"type": "module",
 	"imports": {
 		"#test-support/*": "./tests/support/*",
 		"#*": "./src/*"
 	},
 	"scripts": {
-		"dev": "bun --watch src/index.ts",
-		"start": "bun src/index.ts",
-		"typecheck": "tsc --noEmit",
-		"test": "bun run test:unit",
-		"test:unit": "bun test --preload ./tests/support/unitSetup.ts src tests/support",
-		"test:integration": "bun scripts/run-integration.ts",
-		"test:all": "bun run test:unit && bun run test:integration",
-		"catalog:validate": "bun scripts/validate-catalog.ts",
 		"catalog:sync": "bun scripts/catalog-sync.ts",
-		"catalog:sync:verify": "bun scripts/catalog-sync.ts --mode verify",
-		"catalog:sync:vercel": "bun scripts/vercel-catalog-sync.ts --mode report",
-		"catalog:sync:vercel:write": "bun scripts/vercel-catalog-sync.ts --mode write",
-		"catalog:sync:vercel:verify": "bun scripts/vercel-catalog-sync.ts --mode verify",
 		"catalog:sync:openrouter": "bun scripts/openrouter-catalog-sync.ts --mode report",
-		"catalog:sync:openrouter:write": "bun scripts/openrouter-catalog-sync.ts --mode write",
 		"catalog:sync:openrouter:verify": "bun scripts/openrouter-catalog-sync.ts --mode verify",
-		"openapi:generate": "bun scripts/openapi-generate.ts",
+		"catalog:sync:openrouter:write": "bun scripts/openrouter-catalog-sync.ts --mode write",
+		"catalog:sync:vercel": "bun scripts/vercel-catalog-sync.ts --mode report",
+		"catalog:sync:vercel:verify": "bun scripts/vercel-catalog-sync.ts --mode verify",
+		"catalog:sync:vercel:write": "bun scripts/vercel-catalog-sync.ts --mode write",
+		"catalog:sync:verify": "bun scripts/catalog-sync.ts --mode verify",
+		"catalog:validate": "bun scripts/validate-catalog.ts",
 		"db:generate": "drizzle-kit generate",
+		"db:migrate": "bun src/db/migrate.ts",
 		"db:studio": "drizzle-kit studio",
+		"dev": "bun --watch src/index.ts",
 		"encryption:rotate": "bun run scripts/rotate-encryption.ts",
-		"db:migrate": "bun src/db/migrate.ts"
+		"openapi:generate": "bun scripts/openapi-generate.ts",
+		"start": "bun src/index.ts",
+		"test": "bun run test:unit",
+		"test:all": "bun run test:unit && bun run test:integration",
+		"test:integration": "bun scripts/run-integration.ts",
+		"test:unit": "bun test --preload ./tests/support/unitSetup.ts src tests/support",
+		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@aws-sdk/client-s3": "3.1131.0",
@@ -85,5 +82,8 @@
 		"typescript": "7.0.2",
 		"yaml": "2.9.1",
 		"zod-openapi": "6.0.2"
+	},
+	"engines": {
+		"bun": ">=1.4"
 	}
 }

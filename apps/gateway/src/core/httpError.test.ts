@@ -10,8 +10,9 @@ import {
 } from "./httpError.ts";
 
 test("classifyStatus: every upstream 4xx is non-transient unless explicitly classified", () => {
-	for (const status of [402, 409, 413, 415, 425, 451])
+	for (const status of [402, 409, 413, 415, 425, 451]) {
 		assert.equal(classifyStatus(status), "bad_request");
+	}
 	assert.equal(classifyStatus(429), "rate_limit");
 	assert.equal(classifyStatus(503), "server");
 });

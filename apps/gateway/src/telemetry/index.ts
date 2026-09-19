@@ -155,7 +155,9 @@ function createInstruments(): Instruments {
 }
 
 export function startTelemetry(): void {
-	if (!env.OTEL_ENABLED || sdk) return;
+	if (!env.OTEL_ENABLED || sdk) {
+		return;
+	}
 
 	const metricReader = new PeriodicExportingMetricReader({
 		exporter: new OTLPMetricExporter(),
@@ -178,7 +180,9 @@ export function startTelemetry(): void {
 }
 
 export async function shutdownTelemetry(): Promise<void> {
-	if (!sdk) return;
+	if (!sdk) {
+		return;
+	}
 	await sdk.shutdown();
 	sdk = null;
 }
@@ -214,7 +218,9 @@ export function finishOperationChildTelemetry(
 	handle: OperationChildTelemetrySpan,
 	errorCode?: string | null,
 ): void {
-	if (handle.ended) return;
+	if (handle.ended) {
+		return;
+	}
 	handle.ended = true;
 	if (errorCode) {
 		handle.span.setAttribute("error.code", errorCode);
@@ -273,14 +279,17 @@ export function finishRequestTelemetry(
 	handle: RequestTelemetrySpan,
 	input: OperationLogInput,
 ): void {
-	if (handle.ended) return;
+	if (handle.ended) {
+		return;
+	}
 	handle.ended = true;
 	handle.span.setAttributes(baseAttributes(input));
-	if (input.status === "error")
+	if (input.status === "error") {
 		handle.span.setStatus({
 			code: SpanStatusCode.ERROR,
 			message: String(input.error?.code ?? "gateway_error"),
 		});
+	}
 	handle.span.addEvent("bifrost.operation.finished", {
 		"error.code": String(input.error?.code ?? ""),
 		"terminal.verified": Boolean(
@@ -349,18 +358,21 @@ export function finishUpstreamAttemptTelemetry(
 		errorCode?: string | null;
 	},
 ): void {
-	if (handle.ended) return;
+	if (handle.ended) {
+		return;
+	}
 	handle.ended = true;
 	handle.span.setAttributes({
 		"attempt.outcome": input.outcome,
 		"terminal.verified": input.terminalVerified,
 		...(input.errorCode ? { "error.code": input.errorCode } : {}),
 	});
-	if (input.errorCode)
+	if (input.errorCode) {
 		handle.span.setStatus({
 			code: SpanStatusCode.ERROR,
 			message: input.errorCode,
 		});
+	}
 	handle.span.end(input.endedAt);
 	inst?.activeAttempts.add(-1, {
 		"adapter.key": handle.adapterKey,
@@ -369,20 +381,28 @@ export function finishUpstreamAttemptTelemetry(
 }
 
 export function recordRequestTelemetry(input: OperationLogInput): void {
-	if (!env.OTEL_ENABLED || !inst) return;
+	if (!(env.OTEL_ENABLED && inst)) {
+		return;
+	}
 
 	const attrs = baseAttributes(input);
 	inst.requestCounter.add(1, attrs);
 	inst.requestDuration.record(input.durationMs, attrs);
-	if (input.upstreamTtftMs != null)
+	if (input.upstreamTtftMs != null) {
 		inst.upstreamDuration.record(input.upstreamTtftMs, attrs);
-	if (input.status === "error") inst.errorCounter.add(1, attrs);
-	if (input.usage?.totalTokens)
+	}
+	if (input.status === "error") {
+		inst.errorCounter.add(1, attrs);
+	}
+	if (input.usage?.totalTokens) {
 		inst.tokenCounter.add(input.usage.totalTokens, attrs);
-	if (input.usage?.searchUnits)
+	}
+	if (input.usage?.searchUnits) {
 		inst.searchUnitCounter.add(input.usage.searchUnits, attrs);
-	if (input.cost?.totalCents)
+	}
+	if (input.cost?.totalCents) {
 		inst.costCounter.add(input.cost.totalCents, attrs);
+	}
 	const lifecycle = input.metadata.streamLifecycle as
 		| {
 				firstEventAt?: number | null;
@@ -406,28 +426,36 @@ export function recordRequestTelemetry(input: OperationLogInput): void {
 			outcome === "incomplete" ||
 			outcome === "blocked",
 	});
-	if (input.retries > 0) inst.retryCounter.add(input.retries, attrs);
-	if (input.fallbackUsed) inst.fallbackCounter.add(1, attrs);
-	if (lifecycle?.firstEventAt != null)
+	if (input.retries > 0) {
+		inst.retryCounter.add(input.retries, attrs);
+	}
+	if (input.fallbackUsed) {
+		inst.fallbackCounter.add(1, attrs);
+	}
+	if (lifecycle?.firstEventAt != null) {
 		inst.firstEvent.record(
 			lifecycle.firstEventAt - input.startTime.getTime(),
 			attrs,
 		);
-	if (lifecycle?.firstReasoningAt != null)
+	}
+	if (lifecycle?.firstReasoningAt != null) {
 		inst.firstReasoning.record(
 			lifecycle.firstReasoningAt - input.startTime.getTime(),
 			attrs,
 		);
+	}
 	// Recorded only from an observed first output. The previous fallback accepted whatever the
 	// endpoint supplied, which for a non-streamed call was its total duration - so the histogram
 	// mixed time-to-first-token with time-to-whole-answer under one name.
-	if (lifecycle?.firstOutputAt != null)
+	if (lifecycle?.firstOutputAt != null) {
 		inst.firstOutput.record(
 			lifecycle.firstOutputAt - input.startTime.getTime(),
 			attrs,
 		);
-	else if (input.firstOutputMs != null)
+	} else if (input.firstOutputMs != null) {
 		inst.firstOutput.record(input.firstOutputMs, attrs);
-	if (lifecycle?.maxInterEventGapMs != null)
+	}
+	if (lifecycle?.maxInterEventGapMs != null) {
 		inst.maxEventGap.record(lifecycle.maxInterEventGapMs, attrs);
+	}
 }

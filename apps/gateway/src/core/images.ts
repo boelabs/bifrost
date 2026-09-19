@@ -53,7 +53,9 @@ export interface ImageUsage {
 }
 
 export function imageUsageToCore(u: ImageUsage | undefined): Usage | null {
-	if (!u) return null;
+	if (!u) {
+		return null;
+	}
 	return {
 		promptTokens: u.inputTokens,
 		completionTokens: u.outputTokens,
@@ -214,8 +216,10 @@ export function resolveImageSize(
 				: {}),
 		};
 	}
-	const first = Object.entries(profile?.sizes ?? {})[0];
-	if (!first) return undefined;
+	const [first] = Object.entries(profile?.sizes ?? {});
+	if (!first) {
+		return undefined;
+	}
 	const [size, mapping] = first;
 	return {
 		size,

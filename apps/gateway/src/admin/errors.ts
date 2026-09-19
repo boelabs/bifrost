@@ -31,9 +31,13 @@ export function isManagementPath(path: string): boolean {
  * public message.
  */
 export function publicizeManagementError(error: GatewayError): GatewayError {
-	if (!TRANSPARENT.has(error.class)) return error;
+	if (!TRANSPARENT.has(error.class)) {
+		return error;
+	}
 	// Already explicit: keep whatever the thrower chose to publish.
-	if (error.publicMessage === error.message) return error;
+	if (error.publicMessage === error.message) {
+		return error;
+	}
 	return new GatewayError({
 		class: error.class,
 		message: error.message,

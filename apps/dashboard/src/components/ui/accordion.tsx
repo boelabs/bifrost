@@ -28,7 +28,7 @@ export function AccordionRoot<Value = unknown>({
 		<BaseAccordion.Root
 			{...props}
 			className={mergeClassName(
-				"group/accordion flex w-full flex-col rounded-[var(--ui-radius-surface)] border border-border bg-surface data-[orientation=horizontal]:flex-row",
+				"group/accordion flex w-full flex-col rounded-(--ui-radius-surface) border border-border bg-surface data-[orientation=horizontal]:flex-row",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -47,7 +47,7 @@ export function AccordionItem({
 		<BaseAccordion.Item
 			{...props}
 			className={mergeClassName(
-				"min-w-0 flex-1 border-border border-b last:border-b-0 data-[disabled]:opacity-50 group-data-[orientation=horizontal]/accordion:border-r group-data-[orientation=horizontal]/accordion:border-b-0 group-data-[orientation=horizontal]/accordion:last:border-r-0",
+				"min-w-0 flex-1 border-border border-b last:border-b-0 data-disabled:opacity-50 group-data-[orientation=horizontal]/accordion:border-r group-data-[orientation=horizontal]/accordion:border-b-0 group-data-[orientation=horizontal]/accordion:last:border-r-0",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -65,7 +65,7 @@ export function AccordionHeader({
 	return (
 		<BaseAccordion.Header
 			{...props}
-			className={mergeClassName("m-0 text-sm font-semibold", className)}
+			className={mergeClassName("m-0 font-semibold text-sm", className)}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -88,7 +88,7 @@ export function AccordionTrigger({
 					size,
 					variant,
 					className:
-						"w-full cursor-pointer justify-between text-start font-semibold data-[panel-open]:text-primary [&>svg]:shrink-0 [&>svg]:transition-transform data-[panel-open]:[&>svg]:rotate-180",
+						"w-full cursor-pointer justify-between text-start font-semibold data-panel-open:text-primary [&>svg]:shrink-0 [&>svg]:transition-transform data-panel-open:[&>svg]:rotate-180",
 				}),
 				className,
 			)}
@@ -108,7 +108,7 @@ export function AccordionPanel({
 		<BaseAccordion.Panel
 			{...props}
 			className={mergeClassName(
-				"h-[var(--accordion-panel-height)] overflow-hidden text-sm text-fg-muted transition-[height,opacity] duration-200 data-[starting-style]:h-0 data-[starting-style]:opacity-0 data-[ending-style]:h-0 data-[ending-style]:opacity-0",
+				"h-(--accordion-panel-height) overflow-hidden text-fg-muted text-sm transition-[height,opacity] duration-200 data-ending-style:h-0 data-starting-style:h-0 data-ending-style:opacity-0 data-starting-style:opacity-0",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

@@ -34,15 +34,18 @@ function parseJson(
 	field: string,
 ): Record<string, unknown> | undefined {
 	const text = raw.trim();
-	if (text === "") return undefined;
+	if (text === "") {
+		return undefined;
+	}
 	let parsed: unknown;
 	try {
 		parsed = JSON.parse(text);
-	} catch {
-		throw new Error(`${field} is not valid JSON.`);
+	} catch (cause) {
+		throw new Error(`${field} is not valid JSON.`, { cause });
 	}
-	if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed))
+	if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
 		throw new Error(`${field} must be a JSON object.`);
+	}
 	return parsed as Record<string, unknown>;
 }
 
@@ -75,7 +78,9 @@ export function InstanceDialog({
 
 	async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
-		if (!draft) return;
+		if (!draft) {
+			return;
+		}
 		setError(null);
 		setPending(true);
 		const form = new FormData(event.currentTarget);
@@ -112,7 +117,7 @@ export function InstanceDialog({
 
 	return (
 		<Modal isOpen={draft !== null} onOpenChange={(open) => !open && onClose()}>
-			<Dialog layout="sectioned" aria-label="Extension instance">
+			<Dialog aria-label="Extension instance" layout="sectioned">
 				<DialogHeader>
 					<h2 className="font-semibold text-fg text-lg">
 						{editing ? "Edit instance" : "New instance"}
@@ -123,24 +128,24 @@ export function InstanceDialog({
 					</p>
 				</DialogHeader>
 
-				<Form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
+				<Form className="flex min-h-0 flex-1 flex-col" onSubmit={onSubmit}>
 					<DialogBody>
 						{editing ? null : (
 							<Input
-								name="id"
-								label="Instance id"
-								description="Stable name you will see in logs and in the reset action."
-								placeholder="example-default"
-								defaultValue={draft?.id ?? ""}
-								required
 								autoFocus
+								defaultValue={draft?.id ?? ""}
+								description="Stable name you will see in logs and in the reset action."
+								label="Instance id"
+								name="id"
+								placeholder="example-default"
+								required
 							/>
 						)}
 						<Select
-							label="Definition"
 							description="An uploaded artifact. Upload the code first if the list is empty."
-							value={definition}
+							label="Definition"
 							onValueChange={(key) => setDefinition(String(key))}
+							value={definition}
 						>
 							{definitions.map((key) => (
 								<SelectItem key={key} value={key}>
@@ -149,26 +154,26 @@ export function InstanceDialog({
 							))}
 						</Select>
 						<Input
+							defaultValue={String(draft?.priority ?? 0)}
+							description="Lower runs first when several instances handle the same hook."
+							label="Priority"
 							name="priority"
 							type="number"
-							label="Priority"
-							description="Lower runs first when several instances handle the same hook."
-							defaultValue={String(draft?.priority ?? 0)}
 						/>
 						<Textarea
-							name="match"
-							label="Match (JSON)"
+							defaultValue={draft?.match ?? ""}
 							description="Narrows which requests reach this instance. Empty means every request."
+							label="Match (JSON)"
+							name="match"
 							placeholder='{ "publicModel": "gpt-5.6-luna" }'
 							rows={3}
-							defaultValue={draft?.match ?? ""}
 						/>
 						<Textarea
-							name="config"
-							label="Config (JSON)"
-							description="Validated against the schema the definition declares."
-							rows={5}
 							defaultValue={draft?.config ?? ""}
+							description="Validated against the schema the definition declares."
+							label="Config (JSON)"
+							name="config"
+							rows={5}
 						/>
 
 						<div className="flex flex-col gap-3 pt-1">
@@ -190,10 +195,10 @@ export function InstanceDialog({
 						{error ? <ErrorNote>{error}</ErrorNote> : null}
 					</DialogBody>
 					<DialogFooter>
-						<Button variant="secondary" onClick={onClose}>
+						<Button onClick={onClose} variant="secondary">
 							Cancel
 						</Button>
-						<Button type="submit" disabled={pending || definition === ""}>
+						<Button disabled={pending || definition === ""} type="submit">
 							{pending ? "Saving…" : "Save instance"}
 						</Button>
 					</DialogFooter>

@@ -1,5 +1,5 @@
 import { OPERATION_IDS } from "#operations/registry.ts";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 export const metricsQuery = z
 	.object({

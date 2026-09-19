@@ -6,7 +6,7 @@ export const badge = tv({
 	base: "inline-flex items-center justify-center gap-1 rounded-full font-semibold",
 	variants: {
 		variant: {
-			attention: "bg-gradient-to-r from-pink-500 to-purple-500 text-white",
+			attention: "bg-linear-to-r from-pink-500 to-purple-500 text-white",
 			neutral: "bg-secondary text-secondary-fg",
 			danger: "bg-danger text-danger-fg",
 			success: "bg-success/15 text-success",

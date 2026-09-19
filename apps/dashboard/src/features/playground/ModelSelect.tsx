@@ -46,53 +46,57 @@ export function ModelSelect({
 
 	return (
 		<Combobox.Root<ModelChoice>
-			items={groups}
-			value={selected ?? null}
-			onValueChange={(choice) => {
-				if (choice) onSelect(choice);
-			}}
 			inputValue={query}
+			isItemEqualToValue={(choice, value) => choice.key === value.key}
+			items={groups}
+			itemToStringLabel={(choice) => choice.model.id}
 			onInputValueChange={setQuery}
 			onOpenChange={(open) => {
 				// The query is about finding a model, not about naming one: a closed popup starts over.
-				if (!open) setQuery("");
+				if (!open) {
+					setQuery("");
+				}
 			}}
-			itemToStringLabel={(choice) => choice.model.id}
-			isItemEqualToValue={(choice, value) => choice.key === value.key}
+			onValueChange={(choice) => {
+				if (choice) {
+					onSelect(choice);
+				}
+			}}
+			value={selected ?? null}
 		>
 			<Combobox.Trigger
-				size="sm"
-				variant="ghost"
 				aria-label="Model"
 				className="max-w-52 justify-between gap-1 font-medium text-sm"
+				size="sm"
+				variant="ghost"
 			>
 				<span className="truncate">
 					{selected?.model.id ?? "Select a model"}
 				</span>
-				<IconSelector className="size-4 shrink-0 text-fg-muted" aria-hidden />
+				<IconSelector aria-hidden className="size-4 shrink-0 text-fg-muted" />
 			</Combobox.Trigger>
 			<Combobox.Portal>
-				<Combobox.Positioner sideOffset={6} className="z-50" align="start">
+				<Combobox.Positioner align="start" className="z-50" sideOffset={6}>
 					<Combobox.Popup className="w-80 max-w-[calc(100vw-2rem)] p-0">
 						<div className="flex items-center gap-2 border-border/60 border-b px-3">
 							<IconSearch
-								className="size-4 shrink-0 text-fg-muted"
 								aria-hidden
+								className="size-4 shrink-0 text-fg-muted"
 							/>
 							{/* The bare input: the row around it is the field, so a second border would nest. */}
 							<Combobox.ChipsInput
-								placeholder="Search models"
 								aria-label="Search models"
 								className="min-h-10 w-full text-sm"
+								placeholder="Search models"
 							/>
 						</div>
 						<Combobox.Empty>No model matches that name.</Combobox.Empty>
 						<Combobox.List className="max-h-80 p-1">
 							{(group: CapabilityGroup) => (
 								<Combobox.Group
-									key={group.capability}
-									items={group.items}
 									className="pb-1 last:pb-0"
+									items={group.items}
+									key={group.capability}
 								>
 									{/* One group is no grouping: the label would only repeat the page. */}
 									{multipleGroups ? (
@@ -103,9 +107,9 @@ export function ModelSelect({
 									<Combobox.Collection>
 										{(choice: ModelChoice) => (
 											<Combobox.Item
+												className="gap-2"
 												key={choice.key}
 												value={choice}
-												className="gap-2"
 											>
 												<span className="min-w-0 flex-1 truncate">
 													{choice.model.id}

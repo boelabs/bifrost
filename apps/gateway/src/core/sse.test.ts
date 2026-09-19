@@ -1,5 +1,5 @@
+import { parseSSE, type SSEEvent } from "./sse.ts";
 import assert from "node:assert/strict";
-import { parseSSE } from "./sse.ts";
 import { test } from "node:test";
 
 const streamOf = (text: string): ReadableStream<Uint8Array> =>
@@ -10,8 +10,10 @@ test("parseSSE: events with event/data, multiline data, and comments", async () 
 		": keep-alive\n\n" +
 		"event: foo\ndata: hello\n\n" +
 		"data: line1\ndata: line2\n\n";
-	const out = [];
-	for await (const ev of parseSSE(streamOf(sse))) out.push(ev);
+	const out: SSEEvent[] = [];
+	for await (const ev of parseSSE(streamOf(sse))) {
+		out.push(ev);
+	}
 	assert.deepEqual(out, [
 		{ event: "foo", data: "hello" },
 		{ data: "line1\nline2" },
@@ -19,16 +21,18 @@ test("parseSSE: events with event/data, multiline data, and comments", async () 
 });
 
 test("parseSSE: tolerates CRLF and flushes the last event without a final blank line", async () => {
-	const out = [];
-	for await (const ev of parseSSE(streamOf("data: a\r\n\r\ndata: b\r\n")))
+	const out: string[] = [];
+	for await (const ev of parseSSE(streamOf("data: a\r\n\r\ndata: b\r\n"))) {
 		out.push(ev.data);
+	}
 	assert.deepEqual(out, ["a", "b"]);
 });
 
 test("parseSSE: flushes a final data line without any line terminator", async () => {
-	const out = [];
-	for await (const ev of parseSSE(streamOf('data: {"a":1}\n\ndata: [DONE]')))
+	const out: string[] = [];
+	for await (const ev of parseSSE(streamOf('data: {"a":1}\n\ndata: [DONE]'))) {
 		out.push(ev.data);
+	}
 	assert.deepEqual(out, ['{"a":1}', "[DONE]"]);
 });
 
@@ -42,8 +46,10 @@ test("parseSSE: UTF-8 split across chunks is not corrupted", async () => {
 			controller.close();
 		},
 	});
-	const out = [];
-	for await (const ev of parseSSE(stream)) out.push(ev.data);
+	const out: string[] = [];
+	for await (const ev of parseSSE(stream)) {
+		out.push(ev.data);
+	}
 	assert.deepEqual(out, ["☺"]);
 });
 
@@ -59,7 +65,9 @@ test("parseSSE: cancels upstream stream if the consumer cuts early", async () =>
 		},
 	});
 	for await (const ev of parseSSE(stream)) {
-		if (ev.data === "a") break; // cuts early, before consuming "b"
+		if (ev.data === "a") {
+			break; // cuts early, before consuming "b"
+		}
 	}
 	assert.equal(cancelled, true, "must propagate cancel() upstream");
 });

@@ -75,7 +75,9 @@ async function deleteRedisPatterns(patterns: string[]): Promise<number> {
 				500,
 			);
 			cursor = next;
-			if (keys.length > 0) deleted += await redis.del(...keys);
+			if (keys.length > 0) {
+				deleted += await redis.del(...keys);
+			}
 		} while (cursor !== "0");
 	}
 	return deleted;
@@ -106,7 +108,9 @@ async function cleanupRedis(
 			`rt:circuit:deployment:${deployment.id}:*`,
 			`rt:circuit:capacity:${capacitySubject(deployment.id, deployment.failureDomain).id}:*`,
 		]);
-		if (patterns.length > 0) deleted += await deleteRedisPatterns(patterns);
+		if (patterns.length > 0) {
+			deleted += await deleteRedisPatterns(patterns);
+		}
 		return deleted;
 	} catch {
 		return 0;

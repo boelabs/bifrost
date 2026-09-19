@@ -24,8 +24,9 @@
 export const LITELLM_THOUGHT_SEPARATOR = "__thought__";
 
 function recordValue(value: unknown): Record<string, unknown> | undefined {
-	if (value === null || typeof value !== "object" || Array.isArray(value))
+	if (value === null || typeof value !== "object" || Array.isArray(value)) {
 		return undefined;
+	}
 	return value as Record<string, unknown>;
 }
 
@@ -55,7 +56,9 @@ export function mergeProviderExtraContent(
 ): Record<string, unknown> | undefined {
 	let merged: Record<string, unknown> | undefined;
 	for (const value of values) {
-		if (value === undefined) continue;
+		if (value === undefined) {
+			continue;
+		}
 		merged =
 			merged === undefined ? cloneRecord(value) : mergeRecords(merged, value);
 	}
@@ -151,10 +154,11 @@ function isAnthropicThinkingBlock(
 	value: unknown,
 ): value is AnthropicThinkingBlock {
 	const block = recordValue(value);
-	if (block?.type === "thinking")
+	if (block?.type === "thinking") {
 		return (
 			typeof block.thinking === "string" && typeof block.signature === "string"
 		);
+	}
 	return block?.type === "redacted_thinking" && typeof block.data === "string";
 }
 
@@ -216,7 +220,9 @@ export function providerSpecificFieldsFromExtraContent(
 	extraContent: Record<string, unknown> | undefined,
 ): Record<string, unknown> | undefined {
 	const signature = thoughtSignatureFromExtraContent(extraContent);
-	if (signature === undefined) return undefined;
+	if (signature === undefined) {
+		return undefined;
+	}
 	return { thought_signature: signature };
 }
 
@@ -225,7 +231,9 @@ export function extraContentFromProviderSpecificFields(
 ): Record<string, unknown> | undefined {
 	const fields = recordValue(value);
 	const signature = fields?.thought_signature ?? fields?.thoughtSignature;
-	if (typeof signature !== "string" || signature.length === 0) return undefined;
+	if (typeof signature !== "string" || signature.length === 0) {
+		return undefined;
+	}
 	return { google: { thought_signature: signature } };
 }
 
@@ -237,9 +245,13 @@ export function encodeThoughtSignatureId(
 	id: string,
 	extraContent: Record<string, unknown> | undefined,
 ): string {
-	if (id.length === 0 || id.includes(LITELLM_THOUGHT_SEPARATOR)) return id;
+	if (id.length === 0 || id.includes(LITELLM_THOUGHT_SEPARATOR)) {
+		return id;
+	}
 	const signature = thoughtSignatureFromExtraContent(extraContent);
-	if (signature === undefined) return id;
+	if (signature === undefined) {
+		return id;
+	}
 	// Keep this carrier lossless. OpenAI does not document a length limit for tool-call/call ids,
 	// while Gemini signatures routinely make the combined value longer than 64 characters. Rich
 	// clients can use the extension fields, but standard-only clients need the id to replay state.
@@ -255,9 +267,13 @@ export function decodeThoughtSignatureId(id: unknown): {
 	id: string;
 	extraContent?: Record<string, unknown>;
 } {
-	if (typeof id !== "string") return { id: "" };
+	if (typeof id !== "string") {
+		return { id: "" };
+	}
 	const index = id.indexOf(LITELLM_THOUGHT_SEPARATOR);
-	if (index < 0) return { id };
+	if (index < 0) {
+		return { id };
+	}
 	const signature = id.slice(index + LITELLM_THOUGHT_SEPARATOR.length);
 	const clean = id.slice(0, index);
 	return signature.length > 0
@@ -277,7 +293,9 @@ export function thoughtSignaturesFromToolCalls(
 	const signatures: string[] = [];
 	for (const tc of toolCalls ?? []) {
 		const signature = thoughtSignatureFromExtraContent(tc.extraContent);
-		if (signature !== undefined) signatures.push(signature);
+		if (signature !== undefined) {
+			signatures.push(signature);
+		}
 	}
 	return signatures;
 }
@@ -333,10 +351,12 @@ function pruneOpenAIResponsesNamespaces(
 		responses !== undefined &&
 		Object.keys(responses).length === 0 &&
 		openai !== undefined
-	)
+	) {
 		delete openai.responses;
-	if (openai !== undefined && Object.keys(openai).length === 0)
+	}
+	if (openai !== undefined && Object.keys(openai).length === 0) {
 		delete copy.openai;
+	}
 	return Object.keys(copy).length > 0 ? copy : undefined;
 }
 
@@ -344,7 +364,9 @@ function pruneOpenAIResponsesNamespaces(
 export function withoutOpenAIResponsesStreamMetadata(
 	fields: Record<string, unknown> | undefined,
 ): Record<string, unknown> | undefined {
-	if (fields === undefined) return undefined;
+	if (fields === undefined) {
+		return undefined;
+	}
 	const copy = structuredClone(fields);
 	const openai = recordValue(copy.openai);
 	const responses = recordValue(openai?.responses);
@@ -362,10 +384,14 @@ export function withoutOpenAIResponsesStreamMetadata(
 export function withoutOpenAIResponsesReasoningState(
 	fields: Record<string, unknown> | undefined,
 ): Record<string, unknown> | undefined {
-	if (fields === undefined) return undefined;
+	if (fields === undefined) {
+		return undefined;
+	}
 	const copy = structuredClone(fields);
 	const openai = recordValue(copy.openai);
-	if (openai !== undefined) delete openai.reasoning;
+	if (openai !== undefined) {
+		delete openai.reasoning;
+	}
 	const responses = recordValue(openai?.responses);
 	if (responses !== undefined) {
 		delete responses.reasoning_item_id;
@@ -388,16 +414,21 @@ export function openaiReasoningFromProviderFields(
 ): OpenAIReasoningStateItem[] | undefined {
 	const openai = recordValue(fields?.openai);
 	const reasoning = openai?.reasoning;
-	if (!Array.isArray(reasoning)) return undefined;
+	if (!Array.isArray(reasoning)) {
+		return undefined;
+	}
 	const items: OpenAIReasoningStateItem[] = [];
 	for (const raw of reasoning) {
 		const item = recordValue(raw);
-		if (item === undefined) continue;
+		if (item === undefined) {
+			continue;
+		}
 		if (
 			typeof item.encrypted_content !== "string" ||
 			item.encrypted_content.length === 0
-		)
+		) {
 			continue;
+		}
 		items.push({
 			encrypted_content: item.encrypted_content,
 			...(typeof item.id === "string" && item.id.length > 0

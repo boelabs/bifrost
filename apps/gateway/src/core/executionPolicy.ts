@@ -107,15 +107,20 @@ export function adaptiveFirstOutputMs(
 	adaptive: AdaptiveDeadlineSettings,
 	scope: AdaptiveDeadlineScope,
 ): number {
-	if (!adaptive.enabled) return configuredMs;
-	if (!scope.incremental || scope.alternatives < 1) return configuredMs;
+	if (!adaptive.enabled) {
+		return configuredMs;
+	}
+	if (!scope.incremental || scope.alternatives < 1) {
+		return configuredMs;
+	}
 	if (
 		ttftEwmaMs === null ||
 		ttftEwmaMs === undefined ||
 		!Number.isFinite(ttftEwmaMs) ||
 		ttftEwmaMs <= 0
-	)
+	) {
 		return configuredMs;
+	}
 	const budget = Math.ceil(
 		ttftEwmaMs * adaptive.multiplier * 2 ** Math.max(0, scope.priorAttempts),
 	);
@@ -126,8 +131,9 @@ function tighten(
 	base: number | null,
 	override: number | undefined,
 ): number | null {
-	if (override === undefined || !Number.isFinite(override) || override <= 0)
+	if (override === undefined || !Number.isFinite(override) || override <= 0) {
 		return base;
+	}
 	return base === null ? override : Math.min(base, override);
 }
 
@@ -143,7 +149,9 @@ export function resolveExecutionPolicy(
 	callType: CallType,
 ): ExecutionPolicy {
 	const override = overrides?.[callType] ?? overrides?.all;
-	if (!override) return base;
+	if (!override) {
+		return base;
+	}
 	return {
 		maxAttempts: base.maxAttempts,
 		firstOutputMs:

@@ -78,7 +78,7 @@ function toTransportPart(p: CanonicalContentPart): Record<string, unknown> {
 				...writeCacheBreakpoint(p),
 				image_url: {
 					url: p.url,
-					...(p.detail !== undefined ? { detail: p.detail } : {}),
+					...(p.detail === undefined ? {} : { detail: p.detail }),
 				},
 			};
 		case "audio":
@@ -112,13 +112,40 @@ function toTransportPart(p: CanonicalContentPart): Record<string, unknown> {
 				type: "file",
 				...writeCacheBreakpoint(p),
 				file: {
-					...(p.fileId !== undefined ? { file_id: p.fileId } : {}),
-					...(p.fileData !== undefined ? { file_data: p.fileData } : {}),
-					...(p.filename !== undefined ? { filename: p.filename } : {}),
+					...(p.fileId === undefined ? {} : { file_id: p.fileId }),
+					...(p.fileData === undefined ? {} : { file_data: p.fileData }),
+					...(p.filename === undefined ? {} : { filename: p.filename }),
 				},
 			};
 		}
+		default:
+			throw new Error(
+				`Unsupported canonical content part: ${(p as { type: string }).type}`,
+			);
 	}
+}
+
+/** Marks a failed tool result, in whichever of the two shapes its content took. */
+function markContentFailure(
+	content: CanonicalMessage["content"],
+): CanonicalMessage["content"] {
+	if (typeof content === "string") {
+		return `[Tool execution failed] ${content}`;
+	}
+	return [
+		{ type: "text", text: "[Tool execution failed]" },
+		...(content ?? []),
+	] satisfies CanonicalContentPart[];
+}
+
+/** A message's content in the shape the wire takes it. */
+function transportContent(
+	content: CanonicalMessage["content"],
+): string | Record<string, unknown>[] | null {
+	if (content === null || content === undefined) {
+		return null;
+	}
+	return typeof content === "string" ? content : content.map(toTransportPart);
 }
 
 function toTransportMessage(
@@ -126,24 +153,14 @@ function toTransportMessage(
 	developerRole: "developer" | "system",
 ): Record<string, unknown> {
 	const content =
-		m.toolResultError === true
-			? typeof m.content === "string"
-				? `[Tool execution failed] ${m.content}`
-				: ([
-						{ type: "text", text: "[Tool execution failed]" },
-						...(m.content ?? []),
-					] satisfies CanonicalContentPart[])
-			: m.content;
+		m.toolResultError === true ? markContentFailure(m.content) : m.content;
 	const out: Record<string, unknown> = {
 		role: m.role === "developer" ? developerRole : m.role,
-		content:
-			content === null
-				? null
-				: typeof content === "string"
-					? content
-					: content.map(toTransportPart),
+		content: transportContent(content),
 	};
-	if (m.name !== undefined) out.name = m.name;
+	if (m.name !== undefined) {
+		out.name = m.name;
+	}
 	if (m.toolCalls) {
 		out.tool_calls = m.toolCalls.map((tc) => ({
 			id: tc.id,
@@ -151,7 +168,9 @@ function toTransportMessage(
 			function: { name: tc.name, arguments: tc.arguments },
 		}));
 	}
-	if (m.toolCallId !== undefined) out.tool_call_id = m.toolCallId;
+	if (m.toolCallId !== undefined) {
+		out.tool_call_id = m.toolCallId;
+	}
 	return out;
 }
 
@@ -164,10 +183,10 @@ function toTransportResponseFormat(
 			json_schema: {
 				name: rf.name ?? "structured_output",
 				schema: rf.schema,
-				...(rf.description !== undefined
-					? { description: rf.description }
-					: {}),
-				...(rf.strict !== undefined ? { strict: rf.strict } : {}),
+				...(rf.description === undefined
+					? {}
+					: { description: rf.description }),
+				...(rf.strict === undefined ? {} : { strict: rf.strict }),
 			},
 		};
 	}
@@ -193,7 +212,9 @@ function openAIReasoningEffort(
 ): string | undefined {
 	const effort = req.reasoning?.effort;
 	if (!spec) {
-		if (effort === undefined || effort === "none") return undefined;
+		if (effort === undefined || effort === "none") {
+			return undefined;
+		}
 		throw new GatewayError({
 			class: "bad_request",
 			message:
@@ -204,7 +225,9 @@ function openAIReasoningEffort(
 	}
 	// A fixed reasoner has no knob to send. Capability validation guarantees the client can only
 	// declare its single normalized state (`high`).
-	if (spec.kind === "fixed") return undefined;
+	if (spec.kind === "fixed") {
+		return undefined;
+	}
 	if (spec.kind !== "openai_effort") {
 		throw new GatewayError({
 			class: "bad_request",
@@ -236,64 +259,99 @@ export function buildOpenAIChatBody(
 	};
 	// We ALWAYS request usage in streaming so we can account for it (TPM/budget/cost). If the client
 	// did not request include_usage, the endpoint strips usage from the chunks it forwards (fidelity).
-	if (req.stream)
+	if (req.stream) {
 		body.stream_options = {
 			...(req.chatTransport?.streamOptions ?? {}),
 			include_usage: true,
 		};
-	if (req.maxTokens !== undefined) body[maxTokensField] = req.maxTokens;
-	if (req.temperature !== undefined) body.temperature = req.temperature;
-	if (req.topP !== undefined) body.top_p = req.topP;
-	if (req.n !== undefined) body.n = req.n;
-	if (req.stop !== undefined) body.stop = req.stop;
-	if (req.presencePenalty !== undefined)
+	}
+	if (req.maxTokens !== undefined) {
+		body[maxTokensField] = req.maxTokens;
+	}
+	if (req.temperature !== undefined) {
+		body.temperature = req.temperature;
+	}
+	if (req.topP !== undefined) {
+		body.top_p = req.topP;
+	}
+	if (req.n !== undefined) {
+		body.n = req.n;
+	}
+	if (req.stop !== undefined) {
+		body.stop = req.stop;
+	}
+	if (req.presencePenalty !== undefined) {
 		body.presence_penalty = req.presencePenalty;
-	if (req.frequencyPenalty !== undefined)
+	}
+	if (req.frequencyPenalty !== undefined) {
 		body.frequency_penalty = req.frequencyPenalty;
-	if (req.seed !== undefined) body.seed = req.seed;
-	if (req.user !== undefined) body.user = req.user;
+	}
+	if (req.seed !== undefined) {
+		body.seed = req.seed;
+	}
+	if (req.user !== undefined) {
+		body.user = req.user;
+	}
 	const chatOptions = req.chatTransport;
-	if (chatOptions?.audio !== undefined) body.audio = chatOptions.audio;
-	if (chatOptions?.logprobs !== undefined) body.logprobs = chatOptions.logprobs;
-	if (chatOptions?.topLogprobs !== undefined)
+	if (chatOptions?.audio !== undefined) {
+		body.audio = chatOptions.audio;
+	}
+	if (chatOptions?.logprobs !== undefined) {
+		body.logprobs = chatOptions.logprobs;
+	}
+	if (chatOptions?.topLogprobs !== undefined) {
 		body.top_logprobs = chatOptions.topLogprobs;
-	if (chatOptions?.logitBias !== undefined)
+	}
+	if (chatOptions?.logitBias !== undefined) {
 		body.logit_bias = chatOptions.logitBias;
-	if (chatOptions?.metadata !== undefined) body.metadata = chatOptions.metadata;
-	if (chatOptions?.modalities !== undefined)
+	}
+	if (chatOptions?.metadata !== undefined) {
+		body.metadata = chatOptions.metadata;
+	}
+	if (chatOptions?.modalities !== undefined) {
 		body.modalities = chatOptions.modalities;
-	if (chatOptions?.prediction !== undefined)
+	}
+	if (chatOptions?.prediction !== undefined) {
 		body.prediction = chatOptions.prediction;
-	if (chatOptions?.serviceTier !== undefined)
+	}
+	if (chatOptions?.serviceTier !== undefined) {
 		body.service_tier = chatOptions.serviceTier;
-	if (chatOptions?.safetyIdentifier !== undefined)
+	}
+	if (chatOptions?.safetyIdentifier !== undefined) {
 		body.safety_identifier = chatOptions.safetyIdentifier;
-	if (chatOptions?.store !== undefined) body.store = chatOptions.store;
-	if (chatOptions?.verbosity !== undefined)
+	}
+	if (chatOptions?.store !== undefined) {
+		body.store = chatOptions.store;
+	}
+	if (chatOptions?.verbosity !== undefined) {
 		body.verbosity = chatOptions.verbosity;
-	if (chatOptions?.webSearchOptions !== undefined)
+	}
+	if (chatOptions?.webSearchOptions !== undefined) {
 		body.web_search_options = chatOptions.webSearchOptions;
-	if (req.parallelToolCalls !== undefined)
+	}
+	if (req.parallelToolCalls !== undefined) {
 		body.parallel_tool_calls = req.parallelToolCalls;
+	}
 	if (req.tools) {
 		body.tools = req.tools.map((t) => ({
 			type: "function",
 			function: {
 				name: t.name,
-				...(t.description !== undefined ? { description: t.description } : {}),
-				...(t.parameters !== undefined ? { parameters: t.parameters } : {}),
-				...(t.strict !== undefined ? { strict: t.strict } : {}),
+				...(t.description === undefined ? {} : { description: t.description }),
+				...(t.parameters === undefined ? {} : { parameters: t.parameters }),
+				...(t.strict === undefined ? {} : { strict: t.strict }),
 			},
 		}));
 	}
 	if (req.toolChoice !== undefined) {
-		if (typeof req.toolChoice === "string") body.tool_choice = req.toolChoice;
-		else if ("name" in req.toolChoice)
+		if (typeof req.toolChoice === "string") {
+			body.tool_choice = req.toolChoice;
+		} else if ("name" in req.toolChoice) {
 			body.tool_choice = {
 				type: "function",
 				function: { name: req.toolChoice.name },
 			};
-		else
+		} else {
 			body.tool_choice = {
 				type: "allowed_tools",
 				allowed_tools: {
@@ -304,32 +362,42 @@ export function buildOpenAIChatBody(
 					})),
 				},
 			};
+		}
 	}
-	if (req.responseFormat)
+	if (req.responseFormat) {
 		body.response_format = toTransportResponseFormat(req.responseFormat);
+	}
 	Object.assign(body, writePromptCachePolicy(req));
-	if (req.promptCacheKey !== undefined)
+	if (req.promptCacheKey !== undefined) {
 		body.prompt_cache_key = req.promptCacheKey;
+	}
 	const spec = opts.reasoningSpec;
 	// Non-scalar controls are injected AFTER merging extra_body, to preserve the client's other keys
 	// but win over the catalog-managed toggle.
 	if (spec?.kind !== "chat_template_flag" && spec?.kind !== "openai_body") {
 		const effort = openAIReasoningEffort(req, spec);
-		if (effort !== undefined) body.reasoning_effort = effort;
+		if (effort !== undefined) {
+			body.reasoning_effort = effort;
+		}
 	}
 	const merged = mergeExtraBody(
 		body,
 		req.extraBody,
 		OPENAI_CHAT_TRANSPORT_MANAGED_KEYS,
 	);
-	if (opts.supportsTopK && req.topK !== undefined) merged.top_k = req.topK;
+	if (opts.supportsTopK && req.topK !== undefined) {
+		merged.top_k = req.topK;
+	}
 	if (spec?.kind === "openai_body") {
 		const field = resolveBodyFieldReasoning(req.reasoning, spec);
-		if (field) merged[field.param] = field.value;
+		if (field) {
+			merged[field.param] = field.value;
+		}
 		if (spec.effortField) {
-			const effort = resolveReasoning(req.reasoning, spec).effort;
-			if (effort !== "none")
+			const { effort } = resolveReasoning(req.reasoning, spec);
+			if (effort !== "none") {
 				merged[spec.effortField] = toUpstreamReasoningEffort(effort, spec);
+			}
 		}
 	}
 	if (spec?.kind === "chat_template_flag") {
@@ -351,24 +419,34 @@ export function buildOpenAIChatBody(
 /* ----------------------------------------------------- OpenAI transport -> canonical */
 
 function mapFinishReason(f: unknown): CanonicalFinishReason | null {
-	if (f == null) return null;
-	if (f === "function_call") return "tool_calls";
+	if (f == null) {
+		return null;
+	}
+	if (f === "function_call") {
+		return "tool_calls";
+	}
 	if (
 		f === "stop" ||
 		f === "length" ||
 		f === "tool_calls" ||
 		f === "content_filter"
-	)
+	) {
 		return f;
+	}
 	const reason = String(f).toLowerCase();
-	if (/max.?tokens?|context.?window|length/.test(reason)) return "length";
-	if (/tool.?use|function.?call/.test(reason)) return "tool_calls";
+	if (/max.?tokens?|context.?window|length/.test(reason)) {
+		return "length";
+	}
+	if (/tool.?use|function.?call/.test(reason)) {
+		return "tool_calls";
+	}
 	if (
 		/content.?filter|safety|guardrail|block|prohibit|refus|recitation|language|spii/.test(
 			reason,
 		)
-	)
+	) {
 		return "content_filter";
+	}
 	return "stop";
 }
 
@@ -407,10 +485,13 @@ function mapUsage(u: TransportUsage | undefined | null): Usage {
 		u?.prompt_tokens_details?.cached_tokens ??
 		u?.prompt_cache_hit_tokens ??
 		u?.cached_tokens;
-	if (cacheReadTokens != null) usage.cacheReadTokens = cacheReadTokens;
-	if (u?.prompt_tokens_details?.cache_write_tokens_by_ttl !== undefined)
+	if (cacheReadTokens != null) {
+		usage.cacheReadTokens = cacheReadTokens;
+	}
+	if (u?.prompt_tokens_details?.cache_write_tokens_by_ttl !== undefined) {
 		usage.cacheWriteTokensByTtl =
 			u.prompt_tokens_details.cache_write_tokens_by_ttl;
+	}
 	const cacheWriteTokens =
 		u?.prompt_tokens_details?.cache_write_tokens ??
 		u?.prompt_tokens_details?.cache_creation_input_tokens ??
@@ -481,25 +562,32 @@ export function parseOpenAIChatResponse(raw: unknown): CanonicalChatResponse {
 				content: c.message?.content ?? null,
 			};
 			const reasoning = c.message?.reasoning ?? c.message?.reasoning_content;
-			if (reasoning !== undefined) message.reasoning = reasoning;
-			if (c.message?.refusal != null) message.refusal = c.message.refusal;
-			if (c.message?.audio !== undefined) message.audio = c.message.audio;
-			if (c.message?.annotations !== undefined)
+			if (reasoning !== undefined) {
+				message.reasoning = reasoning;
+			}
+			if (c.message?.refusal != null) {
+				message.refusal = c.message.refusal;
+			}
+			if (c.message?.audio !== undefined) {
+				message.audio = c.message.audio;
+			}
+			if (c.message?.annotations !== undefined) {
 				message.annotations = c.message.annotations;
+			}
 			if (c.message?.tool_calls) {
 				message.toolCalls = c.message.tool_calls.map((tc) => ({
 					id: tc.id ?? "",
 					name: tc.function?.name ?? "",
 					arguments: tc.function?.arguments ?? "",
-					...(tc.extra_content !== undefined
-						? { extraContent: tc.extra_content }
-						: {}),
+					...(tc.extra_content === undefined
+						? {}
+						: { extraContent: tc.extra_content }),
 				}));
 			}
 			return {
 				index: c.index ?? i,
 				finishReason: mapFinishReason(c.finish_reason),
-				...(c.logprobs !== undefined ? { logprobs: c.logprobs } : {}),
+				...(c.logprobs === undefined ? {} : { logprobs: c.logprobs }),
 				message,
 			};
 		}),
@@ -537,38 +625,51 @@ export function parseOpenAIChatChunk(raw: unknown): CanonicalChatStreamChunk {
 		model: r.model ?? "",
 		choices: (r.choices ?? []).map((c, i) => {
 			const delta: CanonicalChatStreamChunk["choices"][number]["delta"] = {};
-			if (c.delta?.role === "assistant") delta.role = "assistant";
-			if (c.delta?.content !== undefined) delta.content = c.delta.content;
-			if (c.delta?.reasoning !== undefined) delta.reasoning = c.delta.reasoning;
-			else if (c.delta?.reasoning_content !== undefined)
+			if (c.delta?.role === "assistant") {
+				delta.role = "assistant";
+			}
+			if (c.delta?.content !== undefined) {
+				delta.content = c.delta.content;
+			}
+			if (c.delta?.reasoning !== undefined) {
+				delta.reasoning = c.delta.reasoning;
+			} else if (c.delta?.reasoning_content !== undefined) {
 				delta.reasoning = c.delta.reasoning_content;
-			if (c.delta?.refusal !== undefined) delta.refusal = c.delta.refusal;
-			if (c.delta?.audio !== undefined) delta.audio = c.delta.audio;
-			if (c.delta?.annotations !== undefined)
+			}
+			if (c.delta?.refusal !== undefined) {
+				delta.refusal = c.delta.refusal;
+			}
+			if (c.delta?.audio !== undefined) {
+				delta.audio = c.delta.audio;
+			}
+			if (c.delta?.annotations !== undefined) {
 				delta.annotations = c.delta.annotations;
+			}
 			if (c.delta?.tool_calls) {
 				delta.toolCalls = c.delta.tool_calls.map((tc, j) => ({
 					index: tc.index ?? j,
-					...(tc.id !== undefined ? { id: tc.id } : {}),
-					...(tc.function?.name !== undefined
-						? { name: tc.function.name }
-						: {}),
-					...(tc.function?.arguments !== undefined
-						? { arguments: tc.function.arguments }
-						: {}),
-					...(tc.extra_content !== undefined
-						? { extraContent: tc.extra_content }
-						: {}),
+					...(tc.id === undefined ? {} : { id: tc.id }),
+					...(tc.function?.name === undefined
+						? {}
+						: { name: tc.function.name }),
+					...(tc.function?.arguments === undefined
+						? {}
+						: { arguments: tc.function.arguments }),
+					...(tc.extra_content === undefined
+						? {}
+						: { extraContent: tc.extra_content }),
 				}));
 			}
 			return {
 				index: c.index ?? i,
 				delta,
 				finishReason: mapFinishReason(c.finish_reason),
-				...(c.logprobs !== undefined ? { logprobs: c.logprobs } : {}),
+				...(c.logprobs === undefined ? {} : { logprobs: c.logprobs }),
 			};
 		}),
 	};
-	if (r.usage !== undefined) chunk.usage = r.usage ? mapUsage(r.usage) : null;
+	if (r.usage !== undefined) {
+		chunk.usage = r.usage ? mapUsage(r.usage) : null;
+	}
 	return chunk;
 }

@@ -30,7 +30,9 @@ function existenceNumeric(
 ): number | undefined {
 	for (const source of ["vercel-ai-gateway", "openrouter"] as const) {
 		const bySource = candidate.bySource[source];
-		if (!bySource) continue;
+		if (!bySource) {
+			continue;
+		}
 		const value = pick({
 			contextLength:
 				bySource.endpoint?.contextLength ?? bySource.model.contextWindow,
@@ -38,7 +40,9 @@ function existenceNumeric(
 				bySource.endpoint?.pricing?.inputCentsPerMTokens ??
 				bySource.model.pricing?.inputCentsPerMTokens,
 		});
-		if (value !== undefined) return value;
+		if (value !== undefined) {
+			return value;
+		}
 	}
 	return undefined;
 }
@@ -58,7 +62,9 @@ export function findModelsDevMatch(
 	const aliasProviderIds = Object.entries(MODELS_DEV_PROVIDER_ALIASES)
 		.filter(([, adapterKey]) => adapterKey === candidate.adapterKey)
 		.map(([providerIdRaw]) => providerIdRaw);
-	if (aliasProviderIds.length === 0) return undefined;
+	if (aliasProviderIds.length === 0) {
+		return undefined;
+	}
 
 	const normalizedUpstream = normalizeTag(candidate.upstreamModel);
 	const nameMatches = modelsDevModels.filter(
@@ -66,7 +72,9 @@ export function findModelsDevMatch(
 			aliasProviderIds.includes(model.providerIdRaw) &&
 			normalizeTag(model.modelIdRaw) === normalizedUpstream,
 	);
-	if (nameMatches.length === 0) return undefined;
+	if (nameMatches.length === 0) {
+		return undefined;
+	}
 
 	const existenceContext = existenceNumeric(candidate, (v) => v.contextLength);
 	const existenceInputPrice = existenceNumeric(candidate, (v) => v.input);
@@ -84,7 +92,9 @@ export function findModelsDevMatch(
 				match.pricing.inputCentsPerMTokens,
 				CORROBORATION_TOLERANCE,
 			);
-		if (contextAgrees || priceAgrees) return { match, corroborated: true };
+		if (contextAgrees || priceAgrees) {
+			return { match, corroborated: true };
+		}
 	}
 	// Nothing corroborated: return the first name match anyway so the caller can report it as ambiguous,
 	// but callers must check `corroborated` before applying anything from it.
@@ -125,7 +135,9 @@ export function draftReasoningLevels(
 		// Toggle with no effort ladder at all: the documented binary pattern (on = highest rung).
 		levels.add("high");
 	}
-	if (hasToggle) levels.add("none");
+	if (hasToggle) {
+		levels.add("none");
+	}
 	return { levels: [...levels], unrecognized };
 }
 
@@ -154,8 +166,12 @@ function likelySafeReasoningKind(
 	const safe = inUse.find(
 		(kind) => !KINDS_REQUIRING_UNDRAFTABLE_CONFIG.has(kind),
 	);
-	if (safe) return safe;
-	if (inUse.length === 0) return "openai_effort"; // no prior art for this adapter; needs no extra config
+	if (safe) {
+		return safe;
+	}
+	if (inUse.length === 0) {
+		return "openai_effort"; // no prior art for this adapter; needs no extra config
+	}
 	return undefined; // every kind in use here requires config we can't infer
 }
 
@@ -183,7 +199,9 @@ export function enrichCatalogEntry(
 	const entry: CatalogEntry = structuredClone(existing);
 	const changes: string[] = [];
 
-	if (!modelsDevMatch) return { entry, changes };
+	if (!modelsDevMatch) {
+		return { entry, changes };
+	}
 	const match = modelsDevMatch;
 
 	const text = entry.operations["text.generate"];
@@ -207,7 +225,7 @@ export function enrichCatalogEntry(
 			);
 			const unrecognizedNote =
 				unrecognized.length > 0
-					? ` Native levels from models.dev not in our canonical vocabulary, dropped from the ` +
+					? " Native levels from models.dev not in our canonical vocabulary, dropped from the " +
 						`draft: ${unrecognized.join(", ")}. For each, decide whether it's a synonymous label for an ` +
 						"existing level (add an upstreamEffortMap entry), a distinct tier that requires extending " +
 						"the canonical vocabulary, a separate mode/endpoint with its own pricing, or safe to ignore - check the " +

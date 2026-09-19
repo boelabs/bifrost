@@ -73,8 +73,8 @@ test("latest Gemini Flash models expose documented thinking without deprecated s
 			kind: "gemini_level",
 			levels: ["minimal", "low", "medium", "high"],
 		});
-		assert.equal(operation?.maxInputTokens, 1048576);
-		assert.equal(operation?.maxOutputTokens, 65536);
+		assert.equal(operation?.maxInputTokens, 1_048_576);
+		assert.equal(operation?.maxOutputTokens, 65_536);
 		assert.equal(operation?.parameters?.temperature, undefined);
 		assert.equal(operation?.parameters?.top_p, undefined);
 	}
@@ -209,8 +209,8 @@ test("Anthropic catalog exposes Opus 5 reasoning, fast mode, and model-specific 
 		opus5Fast?.operations["text.generate"]?.reasoning,
 		opus5?.reasoning,
 	);
-	assert.equal(opus5Fast?.pricing?.inputCentsPerMTokens, 1_000);
-	assert.equal(opus5Fast?.pricing?.outputCentsPerMTokens, 5_000);
+	assert.equal(opus5Fast?.pricing?.inputCentsPerMTokens, 1000);
+	assert.equal(opus5Fast?.pricing?.outputCentsPerMTokens, 5000);
 	assert.equal(
 		getCatalogEntry("anthropic", "claude-opus-4-7-fast")?.deprecated,
 		true,
@@ -255,7 +255,7 @@ test("resolved model metadata exposes limits and reasoning defaults from catalog
 	]);
 	assert.equal(gpt56.reasoning?.upstreamEffortMap, undefined);
 	assert.equal(gpt56.pricing?.cacheWriteCentsPerMTokens, 500);
-	assert.equal(gpt56.pricing?.tiers?.[0]?.cacheWriteCentsPerMTokens, 1_000);
+	assert.equal(gpt56.pricing?.tiers?.[0]?.cacheWriteCentsPerMTokens, 1000);
 
 	const openai = resolveModelMetadata("openai", "gpt-5.4");
 	assert.equal(openai.maxInputTokens, 1_050_000);

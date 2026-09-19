@@ -85,7 +85,9 @@ async function handleImageRequest(
 		error?: GatewayError | null,
 		downstream?: DownstreamWriteObservation,
 	): Promise<void> => {
-		if (!routing || finished) return;
+		if (!routing || finished) {
+			return;
+		}
 		finished = true;
 		await routing.finish(
 			usage ?? fallbackUsage,
@@ -135,18 +137,19 @@ async function handleImageRequest(
 			(candidate, ctx) => {
 				const { request, resolved } = forCandidate(candidate);
 				qualityAdjustment =
-					resolved.adjustedFrom !== undefined
-						? { from: resolved.adjustedFrom, to: resolved.quality ?? null }
-						: undefined;
+					resolved.adjustedFrom === undefined
+						? undefined
+						: { from: resolved.adjustedFrom, to: resolved.quality ?? null };
 				return executeImage(candidate.adapter, request, ctx);
 			},
 		);
 		log.applyRouting(routing);
-		if (routing.value.kind === "json")
+		if (routing.value.kind === "json") {
 			fallbackUsage = imageUsageToCore(routing.value.response.usage);
+		}
 		const metadata: Record<string, unknown> = {
 			...candidateMetadata(routing.candidate),
-			...(qualityAdjustment !== undefined ? { qualityAdjustment } : {}),
+			...(qualityAdjustment === undefined ? {} : { qualityAdjustment }),
 			...(routing.value.kind === "stream"
 				? { streamLifecycle: routing.value.observation }
 				: { terminal: routing.value.terminal }),
@@ -197,7 +200,7 @@ async function handleImageRequest(
 					message: `Non-streaming image upstream returned ${response.data.length} outputs for a streaming request; expected exactly one`,
 				});
 			}
-			const completedImage = response.data[0];
+			const [completedImage] = response.data;
 			if (!completedImage) {
 				throw new GatewayError({
 					class: "server",
@@ -246,7 +249,7 @@ async function handleImageRequest(
 								cause: error,
 							});
 					await notifyExtensionError(c, callType, req.model, streamError);
-					if (streamError.code !== "downstream_backpressure")
+					if (streamError.code !== "downstream_backpressure") {
 						await writeSSE(
 							stream,
 							{
@@ -254,6 +257,7 @@ async function handleImageRequest(
 							},
 							downstream,
 						);
+					}
 				} finally {
 					await finish(usage, streamError, downstream);
 					await cleanup?.();
@@ -309,8 +313,9 @@ async function handleImageRequest(
 						firstAt = Date.now();
 						log.upstreamTtftMs = firstAt - streamRouting.upstreamStartedAt;
 					}
-					if (event.kind === "completed" && event.usage)
+					if (event.kind === "completed" && event.usage) {
 						usage = imageUsageToCore(event.usage);
+					}
 					count += 1;
 					await writeSSE(
 						stream,
@@ -329,7 +334,7 @@ async function handleImageRequest(
 							cause: error,
 						});
 				await notifyExtensionError(c, callType, req.model, streamError);
-				if (streamError.code !== "downstream_backpressure")
+				if (streamError.code !== "downstream_backpressure") {
 					await writeSSE(
 						stream,
 						{
@@ -337,6 +342,7 @@ async function handleImageRequest(
 						},
 						downstream,
 					);
+				}
 			} finally {
 				await finish(usage, streamError, downstream);
 				const cost = computeUsageCost(streamRouting.candidate.meta, usage);
@@ -358,7 +364,9 @@ async function handleImageRequest(
 		log.applyFailedAttempts(ge.attempts);
 		await finish(null, ge);
 		await notifyExtensionError(c, callType, log.publicModel, ge);
-		if (!cleanupDeferred) await cleanup?.();
+		if (!cleanupDeferred) {
+			await cleanup?.();
+		}
 		log.writeError(ge);
 		throw ge;
 	}

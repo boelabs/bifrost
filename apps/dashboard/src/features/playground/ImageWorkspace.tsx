@@ -72,8 +72,9 @@ export function ImageWorkspace({
 	}, []);
 
 	useEffect(() => {
-		if (runs.length && scroll.current)
+		if (runs.length && scroll.current) {
 			scroll.current.scrollTop = scroll.current.scrollHeight;
+		}
 	}, [runs]);
 
 	function update(id: string, patch: Partial<ImageRun>) {
@@ -87,7 +88,9 @@ export function ImageWorkspace({
 		setReading(true);
 		try {
 			const parts = await readAttachments(selected, ACCEPTED);
-			if (!alive.current) return;
+			if (!alive.current) {
+				return;
+			}
 			setSources((current) => [
 				...current,
 				...parts.flatMap((part, index) => {
@@ -98,12 +101,15 @@ export function ImageWorkspace({
 				}),
 			]);
 		} catch (cause) {
-			if (alive.current)
+			if (alive.current) {
 				setLocalError(
 					cause instanceof Error ? cause.message : "Could not read the image.",
 				);
+			}
 		} finally {
-			if (alive.current) setReading(false);
+			if (alive.current) {
+				setReading(false);
+			}
 		}
 	}
 
@@ -158,7 +164,9 @@ export function ImageWorkspace({
 				{ model: model.id, prompt: run.prompt, files: run.files, settings },
 				{ signal: controller.signal },
 			);
-			if (!alive.current) return;
+			if (!alive.current) {
+				return;
+			}
 			const revised = response.data[0]?.revised_prompt;
 			update(id, {
 				state: "completed",
@@ -168,21 +176,23 @@ export function ImageWorkspace({
 				...(response.usage
 					? {
 							usage: {
-								...(response.usage.input_tokens !== undefined
-									? { inputTokens: response.usage.input_tokens }
-									: {}),
-								...(response.usage.output_tokens !== undefined
-									? { outputTokens: response.usage.output_tokens }
-									: {}),
-								...(response.usage.total_tokens !== undefined
-									? { totalTokens: response.usage.total_tokens }
-									: {}),
+								...(response.usage.input_tokens === undefined
+									? {}
+									: { inputTokens: response.usage.input_tokens }),
+								...(response.usage.output_tokens === undefined
+									? {}
+									: { outputTokens: response.usage.output_tokens }),
+								...(response.usage.total_tokens === undefined
+									? {}
+									: { totalTokens: response.usage.total_tokens }),
 							},
 						}
 					: {}),
 			});
 		} catch (cause) {
-			if (!alive.current) return;
+			if (!alive.current) {
+				return;
+			}
 			const stopped = cause instanceof Error && cause.name === "AbortError";
 			update(id, {
 				state: stopped ? "stopped" : "failed",
@@ -203,42 +213,31 @@ export function ImageWorkspace({
 
 	return (
 		<Workspace
-			scroll={scroll}
 			empty={runs.length === 0}
+			scroll={scroll}
 			{...(localError ? { error: localError } : {})}
-			transcript={runs.map((run) => (
-				<ImageRunView
-					key={run.id}
-					run={run}
-					onRetry={() => {
-						if (!busy) void execute(run);
-					}}
-				/>
-			))}
 			composer={
 				<Composer
-					prompt={prompt}
-					onPrompt={setPrompt}
+					accepted={canEdit ? ACCEPTED : []}
+					busy={busy}
 					files={sources}
+					modelPicker={
+						<ModelSelect
+							capability="image"
+							modelId={model.id}
+							models={models}
+							onSelect={onSelect}
+						/>
+					}
+					onFiles={(selected) => {
+						void addFiles(selected);
+					}}
+					onPrompt={setPrompt}
 					onRemove={(id) =>
 						setSources((current) =>
 							current.filter((source) => source.id !== id),
 						)
 					}
-					onFiles={(selected) => {
-						void addFiles(selected);
-					}}
-					placeholder={
-						canEdit
-							? "Describe an image, or attach one to edit..."
-							: "Describe an image..."
-					}
-					accepted={canEdit ? ACCEPTED : []}
-					reading={reading}
-					busy={busy}
-					onSend={send}
-					onStop={() => request.current?.abort()}
-					onSettings={() => setSettingsOpen(true)}
 					onReset={() => {
 						request.current?.abort();
 						setRuns([]);
@@ -246,23 +245,36 @@ export function ImageWorkspace({
 						setPrompt("");
 						setLocalError(undefined);
 					}}
-					modelPicker={
-						<ModelSelect
-							models={models}
-							capability="image"
-							modelId={model.id}
-							onSelect={onSelect}
-						/>
+					onSend={send}
+					onSettings={() => setSettingsOpen(true)}
+					onStop={() => request.current?.abort()}
+					placeholder={
+						canEdit
+							? "Describe an image, or attach one to edit..."
+							: "Describe an image..."
 					}
+					prompt={prompt}
+					reading={reading}
 				/>
 			}
+			transcript={runs.map((run) => (
+				<ImageRunView
+					key={run.id}
+					onRetry={() => {
+						if (!busy) {
+							void execute(run);
+						}
+					}}
+					run={run}
+				/>
+			))}
 		>
 			<ImageSettingsDialog
-				open={settingsOpen}
-				onOpenChange={setSettingsOpen}
-				settings={settings}
-				onSettings={setSettings}
 				canEdit={canEdit}
+				onOpenChange={setSettingsOpen}
+				onSettings={setSettings}
+				open={settingsOpen}
+				settings={settings}
 			/>
 		</Workspace>
 	);

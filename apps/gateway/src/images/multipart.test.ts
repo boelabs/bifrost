@@ -38,7 +38,7 @@ test("multipart edits: accepts image/image[], extra_body, and cleans temporaries
 	assert.deepEqual(parsed.fields.extra_body, {
 		image_config: { strength: 0.5 },
 	});
-	const path = parsed.images[0]!.path;
+	const { path } = parsed.images[0]!;
 	await access(path);
 	await parsed.cleanup();
 	await assert.rejects(access(path));

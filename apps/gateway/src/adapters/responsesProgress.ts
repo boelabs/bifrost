@@ -2,6 +2,17 @@ import { openaiResponsesStreamEventFromProviderFields } from "#core/providerSpec
 import { adapterDiagnostics, attachAdapterDiagnostics } from "./diagnostics.ts";
 import type { CanonicalChatStreamChunk } from "#core/canonical.ts";
 
+/** Which kind of work an output item represents, when it is one this observer reports at all. */
+function progressFor(
+	type: string,
+	toolTypes: ReadonlySet<string>,
+): "reasoning" | "tool" | undefined {
+	if (type === "reasoning") {
+		return "reasoning";
+	}
+	return toolTypes.has(type) ? "tool" : undefined;
+}
+
 const toolItems = new Set([
 	"function_call",
 	"web_search_call",
@@ -30,20 +41,22 @@ export async function* observeResponsesProgress(
 				!event ||
 				(event.type !== "response.output_item.added" &&
 					event.type !== "response.output_item.done")
-			)
+			) {
 				continue;
-			const item = event.data.item;
-			if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+			}
+			const { item } = event.data;
+			if (!item || typeof item !== "object" || Array.isArray(item)) {
+				continue;
+			}
 			const { id, type } = item as Record<string, unknown>;
-			if (typeof id !== "string" || !id || typeof type !== "string") continue;
-			const progress =
-				type === "reasoning"
-					? "reasoning"
-					: toolItems.has(type)
-						? "tool"
-						: undefined;
+			if (typeof id !== "string" || !id || typeof type !== "string") {
+				continue;
+			}
+			const progress = progressFor(type, toolItems);
 			const key = `${event.type}:${id}`;
-			if (!progress || seen.has(key)) continue;
+			if (!progress || seen.has(key)) {
+				continue;
+			}
 			seen.add(key);
 			attachAdapterDiagnostics(chunk, {
 				...adapterDiagnostics(chunk),

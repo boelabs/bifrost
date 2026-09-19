@@ -33,7 +33,9 @@ export async function relay(request: Request, path: string): Promise<Response> {
 	const headers = new Headers();
 	for (const name of FORWARDED) {
 		const value = request.headers.get(name);
-		if (value) headers.set(name, value);
+		if (value) {
+			headers.set(name, value);
+		}
 	}
 
 	let upstream: Response;
@@ -70,13 +72,16 @@ export async function relay(request: Request, path: string): Promise<Response> {
 	});
 	for (const name of RETURNED) {
 		const value = upstream.headers.get(name);
-		if (value) response.headers.set(name, value);
+		if (value) {
+			response.headers.set(name, value);
+		}
 	}
 	/**
 	 * The gateway sets its cookies without a `Domain`, so re-emitting them verbatim scopes them to
 	 * this dashboard's host — which is exactly where they are wanted now.
 	 */
-	for (const cookie of upstream.headers.getSetCookie())
+	for (const cookie of upstream.headers.getSetCookie()) {
 		response.headers.append("set-cookie", cookie);
+	}
 	return response;
 }

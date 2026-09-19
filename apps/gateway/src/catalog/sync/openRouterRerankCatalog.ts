@@ -34,9 +34,11 @@ function positiveInteger(value: number | null | undefined): number | undefined {
 }
 
 function hasAmbiguousZeroPricing(model: OpenRouterModel): boolean {
-	if (!model.pricing) return false;
-	const prompt = model.pricing.prompt;
-	const completion = model.pricing.completion;
+	if (!model.pricing) {
+		return false;
+	}
+	const { prompt } = model.pricing;
+	const { completion } = model.pricing;
 	return prompt === "0" && completion === "0" && !model.id.endsWith(":free");
 }
 
@@ -49,24 +51,27 @@ function entryFor(
 	);
 	const searchUnitCents =
 		SEARCH_UNIT_CENTS[model.id] ?? (model.id.endsWith(":free") ? 0 : undefined);
-	if (hasAmbiguousZeroPricing(model))
+	if (hasAmbiguousZeroPricing(model)) {
 		report.ambiguousZeroPricing.push(model.id);
-	if (model.architecture?.input_modalities?.includes("image"))
+	}
+	if (model.architecture?.input_modalities?.includes("image")) {
 		report.multimodalRerankWithheld.push(model.id);
-	if (searchUnitCents === undefined && !model.id.endsWith(":free"))
+	}
+	if (searchUnitCents === undefined && !model.id.endsWith(":free")) {
 		report.paidModelsWithoutCost.push(model.id);
+	}
 	return {
 		operations: {
 			rerank: {
 				documentModalities: ["text"],
-				maxDocuments: 1_000,
-				...(maxTokensPerDocument !== undefined ? { maxTokensPerDocument } : {}),
+				maxDocuments: 1000,
+				...(maxTokensPerDocument === undefined ? {} : { maxTokensPerDocument }),
 				...(model.id.startsWith("cohere/")
 					? { documentsPerSearchUnit: 100 }
 					: {}),
 			},
 		},
-		...(searchUnitCents !== undefined ? { pricing: { searchUnitCents } } : {}),
+		...(searchUnitCents === undefined ? {} : { pricing: { searchUnitCents } }),
 	};
 }
 
@@ -87,12 +92,14 @@ export function buildOpenRouterRerankCatalog(
 	for (const model of [...sourceModels].sort((a, b) =>
 		a.id.localeCompare(b.id),
 	)) {
-		if (!model.id?.includes("/"))
+		if (!model.id?.includes("/")) {
 			throw new Error(
 				`Invalid OpenRouter model id: ${JSON.stringify(model.id)}`,
 			);
-		if (seen.has(model.id))
+		}
+		if (seen.has(model.id)) {
 			throw new Error(`Duplicate OpenRouter model id: ${model.id}`);
+		}
 		seen.add(model.id);
 		if (!model.architecture?.output_modalities?.includes("rerank")) {
 			report.skippedModels.push({
@@ -105,7 +112,9 @@ export function buildOpenRouterRerankCatalog(
 		report.includedModels += 1;
 	}
 	for (const id of Object.keys(SEARCH_UNIT_CENTS)) {
-		if (!seen.has(id)) report.orphanedPricingOverrides.push(id);
+		if (!seen.has(id)) {
+			report.orphanedPricingOverrides.push(id);
+		}
 	}
 	return {
 		document: {

@@ -30,7 +30,9 @@ async function rotateDeployments(): Promise<number> {
 				sql`${modelDeployments.credentials}->>'kid' IS DISTINCT FROM ${activeEncryptionKeyId()}`,
 			)
 			.limit(BATCH_SIZE);
-		if (rows.length === 0) return rotated;
+		if (rows.length === 0) {
+			return rotated;
+		}
 		const batchRotated = await db.transaction(async (tx) => {
 			let updatedCount = 0;
 			for (const row of rows) {
@@ -63,7 +65,9 @@ async function rotateExtensions(): Promise<number> {
 				sql`${extensionArtifacts.code}->>'kid' IS DISTINCT FROM ${activeEncryptionKeyId()}`,
 			)
 			.limit(BATCH_SIZE);
-		if (rows.length === 0) return rotated;
+		if (rows.length === 0) {
+			return rotated;
+		}
 		const batchRotated = await db.transaction(async (tx) => {
 			let updatedCount = 0;
 			for (const row of rows) {
@@ -96,7 +100,9 @@ async function rotatePayloadSamples(): Promise<number> {
 				sql`${payloadSamples.envelope}->>'kid' IS DISTINCT FROM ${activeEncryptionKeyId()}`,
 			)
 			.limit(BATCH_SIZE);
-		if (rows.length === 0) return rotated;
+		if (rows.length === 0) {
+			return rotated;
+		}
 		const batchRotated = await db.transaction(async (tx) => {
 			let updatedCount = 0;
 			for (const row of rows) {
@@ -137,6 +143,10 @@ run()
 	.then(() => closeDb())
 	.catch(async (error: unknown) => {
 		console.error(error instanceof Error ? error.message : error);
-		await closeDb().catch(() => {});
+		try {
+			await closeDb();
+		} catch {
+			// Already failing; a close error would only mask the rotation error above.
+		}
 		process.exit(1);
 	});

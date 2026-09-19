@@ -84,7 +84,9 @@ const BY_CALL_TYPE = new Map(
 
 function getOperation(id: OperationId): OperationDefinition {
 	const operation = BY_ID.get(id);
-	if (!operation) throw new Error(`Unknown operation: ${id}`);
+	if (!operation) {
+		throw new Error(`Unknown operation: ${id}`);
+	}
 	return operation;
 }
 

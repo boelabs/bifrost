@@ -27,7 +27,9 @@ function extractKey(c: Context): string | undefined {
 	const auth = c.req.header("authorization");
 	if (auth) {
 		const m = /^Bearer\s+(.+)$/i.exec(auth.trim());
-		if (m) return m[1]!.trim();
+		if (m) {
+			return m[1]!.trim();
+		}
 		return auth.trim();
 	}
 	const x = c.req.header("x-api-key");
@@ -65,13 +67,17 @@ export async function authenticateRequest(c: Context): Promise<Auth> {
 		});
 	}
 
-	if (isMasterKey(key)) return { type: "master" };
+	if (isMasterKey(key)) {
+		return { type: "master" };
+	}
 
 	const vk = await getCachedVirtualKey(key);
-	if (!vk)
+	if (!vk) {
 		throw new GatewayError({ class: "auth", message: "Invalid API key" });
-	if (!vk.enabled)
+	}
+	if (!vk.enabled) {
 		throw new GatewayError({ class: "auth", message: "API key is disabled" });
+	}
 	if (vk.expiresAt && new Date(vk.expiresAt).getTime() < Date.now()) {
 		throw new GatewayError({ class: "auth", message: "API key has expired" });
 	}
@@ -95,9 +101,12 @@ export function requirePermission(
 ): MiddlewareHandler<AppEnv> {
 	return async (c, next) => {
 		const auth = c.get("auth") as Auth | undefined;
-		if (auth?.type === "master") return next();
-		if (auth?.type === "session" && roleHas(auth.session.role, permission))
+		if (auth?.type === "master") {
 			return next();
+		}
+		if (auth?.type === "session" && roleHas(auth.session.role, permission)) {
+			return next();
+		}
 		throw new GatewayError({
 			class: "permission",
 			code: "insufficient_permission",
@@ -110,7 +119,9 @@ export function requirePermission(
 export function requireOperator(): MiddlewareHandler<AppEnv> {
 	return async (c, next) => {
 		const auth = c.get("auth") as Auth | undefined;
-		if (auth?.type === "master" || auth?.type === "session") return next();
+		if (auth?.type === "master" || auth?.type === "session") {
+			return next();
+		}
 		throw new GatewayError({
 			class: "permission",
 			message: "This operation requires the master key or an operator session",

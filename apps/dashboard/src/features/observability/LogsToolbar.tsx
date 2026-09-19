@@ -45,18 +45,18 @@ export function LogsToolbar({
 	return (
 		<div className="flex flex-wrap items-center gap-2">
 			<RangeFilter
-				periods={LOG_PERIODS}
-				value={filters}
 				fallback={DEFAULT_PERIOD}
 				onChange={(patch) => filter(patch)}
+				periods={LOG_PERIODS}
+				value={filters}
 			/>
 			<Select
 				aria-label="Filter by outcome"
-				size="sm"
-				value={outcome ?? ALL}
 				onValueChange={(key) =>
 					filter({ outcome: !key || key === ALL ? undefined : key })
 				}
+				size="sm"
+				value={outcome ?? ALL}
 			>
 				<SelectItem value={ALL}>All outcomes</SelectItem>
 				{OUTCOMES.map((value) => (
@@ -68,11 +68,11 @@ export function LogsToolbar({
 			{models.length > 0 ? (
 				<Select
 					aria-label="Filter by public model"
-					size="sm"
-					value={publicModel ?? ALL}
 					onValueChange={(key) =>
 						filter({ publicModel: !key || key === ALL ? undefined : key })
 					}
+					size="sm"
+					value={publicModel ?? ALL}
 				>
 					<SelectItem value={ALL}>All models</SelectItem>
 					{models.map((model) => (
@@ -84,17 +84,17 @@ export function LogsToolbar({
 			) : null}
 			<SearchField
 				label="Filter by actor"
+				onSearch={(value) => filter({ actor: value })}
 				placeholder="Actor"
 				value={actor}
-				onSearch={(value) => filter({ actor: value })}
 			/>
 			{filtered ? (
 				<Button
+					onClick={() => clear(["period", "from", "to"])}
 					size="sm"
 					variant="ghost"
-					onClick={() => clear(["period", "from", "to"])}
 				>
-					<IconFilterOff size={15} aria-hidden className="mr-1" />
+					<IconFilterOff aria-hidden className="mr-1" size={15} />
 					Clear filters
 				</Button>
 			) : null}

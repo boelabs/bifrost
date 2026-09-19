@@ -42,7 +42,9 @@ export async function embeddingsHandler(c: Context<AppEnv>): Promise<Response> {
 		usage: ReturnType<typeof embeddingsUsageToCore>,
 		error?: ReturnType<typeof toGatewayError> | null,
 	): Promise<void> => {
-		if (!routing || finished) return;
+		if (!routing || finished) {
+			return;
+		}
 		finished = true;
 		await routing.finish(usage ?? fallbackUsage, undefined, error);
 	};
@@ -70,7 +72,9 @@ export async function embeddingsHandler(c: Context<AppEnv>): Promise<Response> {
 			eligible: true,
 			logBody: embeddingsResponseLog,
 		});
-		if (cache.hit) return c.json(cache.body as object);
+		if (cache.hit) {
+			return c.json(cache.body as object);
+		}
 
 		routing = await route(
 			canonical.model,
@@ -103,7 +107,9 @@ export async function embeddingsHandler(c: Context<AppEnv>): Promise<Response> {
 		await finish(usage);
 		const cost = computeUsageCost(routing.candidate.meta, usage);
 		const rendered = toOpenAIEmbeddingsResponse(response);
-		if (usage) cache.store(rendered, usage);
+		if (usage) {
+			cache.store(rendered, usage);
+		}
 		log.write({
 			status: "success",
 			httpStatus: 200,

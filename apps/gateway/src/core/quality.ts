@@ -76,13 +76,18 @@ export function snapQuality(
 	requested: QualityLevel,
 	levels: readonly QualityLevel[] | undefined,
 ): QualityLevel | undefined {
-	if (!levels || levels.length === 0) return undefined;
+	if (!levels || levels.length === 0) {
+		return undefined;
+	}
 	const sorted = [...levels].sort((a, b) => levelIndex(a) - levelIndex(b));
 	const requestedIndex = levelIndex(requested);
 	let chosen = sorted[0]!; // the floor, if the request is below every rung
 	for (const level of sorted) {
-		if (levelIndex(level) <= requestedIndex) chosen = level;
-		else break;
+		if (levelIndex(level) <= requestedIndex) {
+			chosen = level;
+		} else {
+			break;
+		}
 	}
 	return chosen;
 }

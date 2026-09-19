@@ -24,10 +24,11 @@ export function assertRerankResponseValid(
 		request.topN ?? request.documents.length,
 		request.documents.length,
 	);
-	if (response.results.length !== expected)
+	if (response.results.length !== expected) {
 		protocol(
 			`Upstream rerank response contained ${response.results.length} results; expected ${expected}`,
 		);
+	}
 	const indexes = new Set<number>();
 	let previousScore = Number.POSITIVE_INFINITY;
 	for (const result of response.results) {
@@ -35,23 +36,29 @@ export function assertRerankResponseValid(
 			!Number.isSafeInteger(result.index) ||
 			result.index < 0 ||
 			result.index >= request.documents.length
-		)
+		) {
 			protocol("Upstream rerank response contained an out-of-range index");
-		if (indexes.has(result.index))
+		}
+		if (indexes.has(result.index)) {
 			protocol("Upstream rerank response contained duplicate indexes");
+		}
 		indexes.add(result.index);
-		if (!Number.isFinite(result.relevanceScore))
+		if (!Number.isFinite(result.relevanceScore)) {
 			protocol(
 				"Upstream rerank response contained a non-finite relevance score",
 			);
-		if (result.relevanceScore > previousScore)
+		}
+		if (result.relevanceScore > previousScore) {
 			protocol(
 				"Upstream rerank response was not sorted by descending relevance",
 			);
+		}
 		previousScore = result.relevanceScore;
 	}
-	const usage = response.usage;
-	if (!usage) return;
+	const { usage } = response;
+	if (!usage) {
+		return;
+	}
 	for (const value of [
 		usage.promptTokens,
 		usage.completionTokens,
@@ -59,16 +66,20 @@ export function assertRerankResponseValid(
 		usage.searchUnits,
 		usage.providerCostCents,
 	]) {
-		if (value !== undefined && (!Number.isFinite(value) || value < 0))
+		if (value !== undefined && (!Number.isFinite(value) || value < 0)) {
 			protocol("Upstream rerank response contained invalid usage");
+		}
 	}
 	if (
-		!Number.isSafeInteger(usage.promptTokens) ||
-		!Number.isSafeInteger(usage.completionTokens) ||
-		!Number.isSafeInteger(usage.totalTokens) ||
+		!(
+			Number.isSafeInteger(usage.promptTokens) &&
+			Number.isSafeInteger(usage.completionTokens) &&
+			Number.isSafeInteger(usage.totalTokens)
+		) ||
 		(usage.searchUnits !== undefined &&
 			!Number.isSafeInteger(usage.searchUnits)) ||
 		!isUsageConsistent(usage)
-	)
+	) {
 		protocol("Upstream rerank response contained inconsistent usage");
+	}
 }

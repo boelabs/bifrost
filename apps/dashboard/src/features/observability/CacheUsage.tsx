@@ -43,15 +43,15 @@ export function CacheUsage({
 	];
 	const total = rows.reduce((sum, row) => sum + (row.value ?? 0), 0);
 	return (
-		<Card className="min-w-0 p-7" aria-labelledby={id}>
+		<Card aria-labelledby={id} className="min-w-0 p-7">
 			<div className="flex flex-wrap items-start justify-between gap-4">
 				<div>
-					<h2 id={id} className="font-semibold">
+					<h2 className="font-semibold" id={id}>
 						{upstream
 							? "Provider cache · deployment attempts"
 							: "Input token usage"}
 					</h2>
-					<p className="mt-1 text-xs text-fg-muted">
+					<p className="mt-1 text-fg-muted text-xs">
 						{upstream
 							? "Includes retries and fallbacks. "
 							: "Recorded request usage. "}
@@ -59,7 +59,7 @@ export function CacheUsage({
 					</p>
 				</div>
 				<div className="text-right">
-					<p className="text-2xl font-semibold tabular-nums">
+					<p className="font-semibold text-2xl tabular-nums">
 						{reuse === null
 							? "—"
 							: new Intl.NumberFormat("en-US", {
@@ -67,17 +67,17 @@ export function CacheUsage({
 									maximumFractionDigits: 1,
 								}).format(reuse)}
 					</p>
-					<p className="text-xs text-fg-muted">Reuse of classified input</p>
+					<p className="text-fg-muted text-xs">Reuse of classified input</p>
 				</div>
 			</div>
 			<div
-				className="mt-6 flex h-2 overflow-hidden rounded-full bg-secondary"
 				aria-hidden
+				className="mt-6 flex h-2 overflow-hidden rounded-full bg-secondary"
 			>
 				{rows.map((row) => (
 					<div
-						key={row.label}
 						className={row.color}
+						key={row.label}
 						style={{
 							width: `${total ? ((row.value ?? 0) / total) * 100 : 0}%`,
 						}}
@@ -89,19 +89,19 @@ export function CacheUsage({
 					<div key={row.label}>
 						<dt className="flex items-center gap-2 text-sm">
 							<span
-								className={`size-2 rounded-full ${row.color}`}
 								aria-hidden
+								className={`size-2 rounded-full ${row.color}`}
 							/>
 							{row.label}
 						</dt>
-						<dd className="mt-2 text-xl font-semibold tabular-nums">
+						<dd className="mt-2 font-semibold text-xl tabular-nums">
 							{tokenCount(row.value)}
 						</dd>
-						<dd className="mt-1 text-xs text-fg-muted">{row.detail}</dd>
+						<dd className="mt-1 text-fg-muted text-xs">{row.detail}</dd>
 					</div>
 				))}
 			</dl>
-			<div className="mt-6 flex flex-wrap justify-between gap-3 border-t border-border/50 pt-4 text-xs text-fg-muted">
+			<div className="mt-6 flex flex-wrap justify-between gap-3 border-border/50 border-t pt-4 text-fg-muted text-xs">
 				<p>
 					Cache writes:{" "}
 					<span className="font-medium text-fg tabular-nums">
@@ -115,7 +115,7 @@ export function CacheUsage({
 					{tokenCount(records)} {unit}
 				</p>
 			</div>
-			<p className="mt-3 text-xs text-fg-muted">
+			<p className="mt-3 text-fg-muted text-xs">
 				— means not reported; 0 means a reported zero. Totals and percentages
 				use available measurements, not estimated usage.
 			</p>

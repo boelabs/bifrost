@@ -34,12 +34,12 @@ export function UsersToolbar({ filters }: { filters: UsersFilters }) {
 		<div className="flex flex-wrap items-center gap-3">
 			<SearchField
 				label="Search users"
+				onSearch={(value) => filter({ q: value })}
 				placeholder="Username"
 				value={filters.q ?? ""}
-				onSearch={(value) => filter({ q: value })}
 			/>
-			<Button size="sm" onClick={() => setCreating(true)}>
-				<IconPlus size={15} aria-hidden className="mr-2" />
+			<Button onClick={() => setCreating(true)} size="sm">
+				<IconPlus aria-hidden className="mr-2" size={15} />
 				New user
 			</Button>
 			<CreateUserDialog isOpen={creating} onClose={() => setCreating(false)} />
@@ -90,31 +90,31 @@ function CreateUserDialog({
 
 	return (
 		<Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
-			<Dialog layout="sectioned" aria-label="New operator">
+			<Dialog aria-label="New operator" layout="sectioned">
 				<DialogHeader>
 					<h2 className="font-semibold text-fg text-lg">New operator</h2>
 				</DialogHeader>
-				<Form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
+				<Form className="flex min-h-0 flex-1 flex-col" onSubmit={onSubmit}>
 					<DialogBody>
 						<Input
-							name="username"
-							label="Username"
-							description="Letters, digits, dot, dash or underscore. 3–64 characters."
-							required
 							autoFocus
+							description="Letters, digits, dot, dash or underscore. 3–64 characters."
+							label="Username"
+							name="username"
+							required
 						/>
 						<Input
-							name="password"
-							label="Temporary password"
-							type="password"
 							description="At least 12 characters. They must change it on first sign in."
+							label="Temporary password"
+							name="password"
 							required
+							type="password"
 						/>
 						<Select
-							label="Role"
-							value={role}
-							onValueChange={(key) => setRole(key as Role)}
 							description={ROLE_SUMMARY[role]}
+							label="Role"
+							onValueChange={(key) => setRole(key as Role)}
+							value={role}
 						>
 							{ROLES.map((value) => (
 								<SelectItem key={value} value={value}>
@@ -125,10 +125,10 @@ function CreateUserDialog({
 						{error ? <ErrorNote>{error}</ErrorNote> : null}
 					</DialogBody>
 					<DialogFooter>
-						<Button type="button" variant="secondary" onClick={onClose}>
+						<Button onClick={onClose} type="button" variant="secondary">
 							Cancel
 						</Button>
-						<Button type="submit" disabled={pending}>
+						<Button disabled={pending} type="submit">
 							{pending ? "Creating…" : "Create user"}
 						</Button>
 					</DialogFooter>

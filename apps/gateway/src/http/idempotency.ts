@@ -36,8 +36,9 @@ async function fingerprint(
 
 function replay(status: number, response: unknown): Response {
 	const headers = new Headers({ [IDEMPOTENCY_REPLAY_HEADER]: "true" });
-	if (response === null || response === undefined)
+	if (response === null || response === undefined) {
 		return new Response(null, { status, headers });
+	}
 	headers.set("content-type", "application/json");
 	return new Response(JSON.stringify(response), { status, headers });
 }
@@ -55,23 +56,27 @@ function replay(status: number, response: unknown): Response {
 export function idempotencyMiddleware(): MiddlewareHandler<AppEnv> {
 	return async (c, next) => {
 		const key = c.req.header(IDEMPOTENCY_HEADER)?.trim();
-		if (!key || c.req.method !== "POST") return next();
-		if (key.length > MAX_KEY_LENGTH)
+		if (!key || c.req.method !== "POST") {
+			return next();
+		}
+		if (key.length > MAX_KEY_LENGTH) {
 			throw new GatewayError({
 				class: "bad_request",
 				code: "invalid_idempotency_key",
 				message: `Idempotency-Key must be at most ${MAX_KEY_LENGTH} characters`,
 				publicMessage: `Idempotency-Key must be at most ${MAX_KEY_LENGTH} characters.`,
 			});
+		}
 
 		// An over-sized body is rejected by the handler's own reader; fingerprinting it here would
 		// buffer exactly what that limit exists to avoid.
 		const declared = Number(c.req.header("content-length") ?? 0);
-		if (Number.isFinite(declared) && declared > ADMIN_JSON_BODY_MAX_BYTES)
+		if (Number.isFinite(declared) && declared > ADMIN_JSON_BODY_MAX_BYTES) {
 			return next();
+		}
 
 		const actor = actorOf(getAuth(c));
-		const path = c.req.path;
+		const { path } = c.req;
 		const print = await fingerprint(c.req.raw, c.req.method, path);
 		const claim = await claimIdempotencyKey({
 			actor,
@@ -84,7 +89,7 @@ export function idempotencyMiddleware(): MiddlewareHandler<AppEnv> {
 
 		if (!claim.claimed) {
 			const { existing } = claim;
-			if (existing.fingerprint !== print)
+			if (existing.fingerprint !== print) {
 				throw new GatewayError({
 					class: "bad_request",
 					status: 409,
@@ -93,7 +98,8 @@ export function idempotencyMiddleware(): MiddlewareHandler<AppEnv> {
 					publicMessage:
 						"This Idempotency-Key was already used for a different request. Use a new key.",
 				});
-			if (existing.status === null)
+			}
+			if (existing.status === null) {
 				throw new GatewayError({
 					class: "bad_request",
 					status: 409,
@@ -102,6 +108,7 @@ export function idempotencyMiddleware(): MiddlewareHandler<AppEnv> {
 					publicMessage:
 						"The first request with this Idempotency-Key is still running. Retry in a moment.",
 				});
+			}
 			return replay(existing.status, existing.response);
 		}
 
@@ -112,7 +119,7 @@ export function idempotencyMiddleware(): MiddlewareHandler<AppEnv> {
 			throw error;
 		}
 
-		const status = c.res.status;
+		const { status } = c.res;
 		// Only a success is worth replaying: a rejected body should be retried with the same key once
 		// it is fixed, and a 500 may well succeed on the next attempt.
 		if (status < 200 || status >= 300) {

@@ -35,54 +35,75 @@ export interface OperationFilter {
 
 function conditions(filter: OperationFilter): SQL[] {
 	const result: SQL[] = [];
-	if (filter.virtualKeyId)
+	if (filter.virtualKeyId) {
 		result.push(eq(gatewayOperations.virtualKeyId, filter.virtualKeyId));
-	if (filter.actor) result.push(eq(gatewayOperations.actor, filter.actor));
-	if (filter.publicModel)
+	}
+	if (filter.actor) {
+		result.push(eq(gatewayOperations.actor, filter.actor));
+	}
+	if (filter.publicModel) {
 		result.push(eq(gatewayOperations.publicModel, filter.publicModel));
-	if (filter.deploymentId)
+	}
+	if (filter.deploymentId) {
 		result.push(
 			sql`exists (select 1 from ${upstreamAttempts} a where a.operation_id = ${gatewayOperations.id} and a.deployment_id = ${filter.deploymentId})`,
 		);
-	if (filter.adapterKey)
+	}
+	if (filter.adapterKey) {
 		result.push(
 			sql`exists (select 1 from ${upstreamAttempts} a where a.operation_id = ${gatewayOperations.id} and a.adapter_key = ${filter.adapterKey})`,
 		);
-	if (filter.callType)
+	}
+	if (filter.callType) {
 		result.push(eq(gatewayOperations.callType, filter.callType));
-	if (filter.requestId)
+	}
+	if (filter.requestId) {
 		result.push(eq(gatewayOperations.requestId, filter.requestId));
-	if (filter.outcome)
+	}
+	if (filter.outcome) {
 		result.push(eq(gatewayOperations.outcome, filter.outcome));
-	if (filter.degraded !== undefined)
+	}
+	if (filter.degraded !== undefined) {
 		result.push(eq(gatewayOperations.degraded, filter.degraded));
-	if (filter.active !== undefined)
+	}
+	if (filter.active !== undefined) {
 		result.push(
 			eq(
 				gatewayOperations.lifecycleState,
 				filter.active ? "in_progress" : "finished",
 			),
 		);
-	if (filter.terminalVerified !== undefined)
+	}
+	if (filter.terminalVerified !== undefined) {
 		result.push(
 			eq(gatewayOperations.terminalVerified, filter.terminalVerified),
 		);
-	if (filter.cacheHit !== undefined)
+	}
+	if (filter.cacheHit !== undefined) {
 		result.push(eq(gatewayOperations.cacheHit, filter.cacheHit));
-	if (filter.minDurationMs !== undefined)
+	}
+	if (filter.minDurationMs !== undefined) {
 		result.push(gte(gatewayOperations.durationMs, filter.minDurationMs));
-	if (filter.maxDurationMs !== undefined)
+	}
+	if (filter.maxDurationMs !== undefined) {
 		result.push(lte(gatewayOperations.durationMs, filter.maxDurationMs));
-	if (filter.failureKind)
+	}
+	if (filter.failureKind) {
 		result.push(
 			sql`exists (select 1 from ${upstreamAttempts} a where a.operation_id = ${gatewayOperations.id} and a.failure_kind = ${filter.failureKind})`,
 		);
-	if (filter.failurePhase)
+	}
+	if (filter.failurePhase) {
 		result.push(
 			sql`exists (select 1 from ${upstreamAttempts} a where a.operation_id = ${gatewayOperations.id} and a.failure_phase = ${filter.failurePhase})`,
 		);
-	if (filter.start) result.push(gte(gatewayOperations.startedAt, filter.start));
-	if (filter.end) result.push(lte(gatewayOperations.startedAt, filter.end));
+	}
+	if (filter.start) {
+		result.push(gte(gatewayOperations.startedAt, filter.start));
+	}
+	if (filter.end) {
+		result.push(lte(gatewayOperations.startedAt, filter.end));
+	}
 	return result;
 }
 
@@ -119,7 +140,9 @@ export async function getOperationDetail(id: string) {
 				.from(gatewayOperations)
 				.where(eq(gatewayOperations.id, id))
 				.limit(1);
-			if (!operation) return null;
+			if (!operation) {
+				return null;
+			}
 			// Sequential, not Promise.all: both statements share the transaction's single connection.
 			const attempts = await tx
 				.select()
@@ -265,6 +288,24 @@ export async function operationSummary(since: Date, until?: Date) {
 	};
 }
 
+/** The column, or the expression, that one usage row is grouped under. */
+function groupKeyColumn(
+	groupBy: "public_model" | "virtual_key" | "actor" | "hour" | "day",
+) {
+	if (groupBy === "day") {
+		return sql<string>`to_char(date_trunc('day', ${gatewayOperations.startedAt} at time zone 'UTC'), 'YYYY-MM-DD')`;
+	}
+	if (groupBy === "hour") {
+		return sql<string>`to_char(date_trunc('hour', ${gatewayOperations.startedAt} at time zone 'UTC'), 'YYYY-MM-DD"T"HH24:00:00"Z"')`;
+	}
+	if (groupBy === "virtual_key") {
+		return gatewayOperations.virtualKeyId;
+	}
+	return groupBy === "actor"
+		? gatewayOperations.actor
+		: gatewayOperations.publicModel;
+}
+
 export async function aggregateOperationUsage(
 	filter: OperationFilter & {
 		groupBy: "public_model" | "virtual_key" | "actor" | "hour" | "day" | "none";
@@ -290,16 +331,7 @@ export async function aggregateOperationUsage(
 	}
 	// `hour` exists for 24h dashboards: `day` collapses a whole day into one point, which is useless
 	// at that window. Both bucket in UTC so the series is stable regardless of the server's zone.
-	const key =
-		filter.groupBy === "day"
-			? sql<string>`to_char(date_trunc('day', ${gatewayOperations.startedAt} at time zone 'UTC'), 'YYYY-MM-DD')`
-			: filter.groupBy === "hour"
-				? sql<string>`to_char(date_trunc('hour', ${gatewayOperations.startedAt} at time zone 'UTC'), 'YYYY-MM-DD"T"HH24:00:00"Z"')`
-				: filter.groupBy === "virtual_key"
-					? gatewayOperations.virtualKeyId
-					: filter.groupBy === "actor"
-						? gatewayOperations.actor
-						: gatewayOperations.publicModel;
+	const key = groupKeyColumn(filter.groupBy);
 	return db
 		.select({ key, ...metrics })
 		.from(gatewayOperations)

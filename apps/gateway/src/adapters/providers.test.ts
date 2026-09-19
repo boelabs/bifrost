@@ -33,7 +33,7 @@ function ctx(
 }
 
 test("new providers: default base URL, max_tokens, and auth", () => {
-	const cases: Array<[Adapter, string, string]> = [
+	const cases: [Adapter, string, string][] = [
 		[
 			deepseekAdapter,
 			"deepseek-chat",
@@ -147,7 +147,7 @@ test("catalog: DeepSeek-V4 includes official pricing and native thinking/effort"
 	assert.equal(flash.pricing?.outputCentsPerMTokens, 120);
 	assert.equal(pro.pricing?.inputCentsPerMTokens, 132);
 	assert.equal(pro.pricing?.outputCentsPerMTokens, 396);
-	assert.equal(flash.maxOutputTokens, 384000);
+	assert.equal(flash.maxOutputTokens, 384_000);
 	assert.equal(flash.capabilities.structuredOutputs, true);
 	assert.equal(flash.capabilities.strictTools, true);
 	assert.equal(flash.reasoning?.kind, "openai_body");
@@ -364,7 +364,7 @@ test("catalog: Kimi K3 and K2.x model-native thinking", () => {
 		levels: ["max"],
 	});
 	assert.equal(k26.capabilities.structuredOutputs, true);
-	assert.equal(k26.maxOutputTokens, 262144);
+	assert.equal(k26.maxOutputTokens, 262_144);
 	assert.equal(k26.reasoning?.kind, "openai_body");
 	assert.equal(k27.reasoning?.kind, "fixed");
 	assert.equal(k27.reasoning?.levels.includes("none"), false);

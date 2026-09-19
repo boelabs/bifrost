@@ -50,7 +50,7 @@ test("Chat keeps summary parts separate across streaming, new turns and regenera
 					["rs_1", 1, "Second"],
 					["rs_2", 0, "Third"],
 				] as const) {
-					for (const status of ["streaming", "done"] as const)
+					for (const status of ["streaming", "done"] as const) {
 						events.push({
 							choices: [
 								{
@@ -68,6 +68,7 @@ test("Chat keeps summary parts separate across streaming, new turns and regenera
 								},
 							],
 						});
+					}
 				}
 				events.push(
 					{
@@ -107,7 +108,7 @@ test("Chat keeps summary parts separate across streaming, new turns and regenera
 	);
 	assert.equal(assistants.length, 2);
 	for (const request of requests.slice(1)) {
-		const assistant = (request.messages as Array<Record<string, unknown>>).find(
+		const assistant = (request.messages as Record<string, unknown>[]).find(
 			(message) => message.role === "assistant",
 		);
 		assert.deepEqual(assistant?.provider_specific_fields, {
@@ -118,13 +119,13 @@ test("Chat keeps summary parts separate across streaming, new turns and regenera
 			},
 		});
 	}
-	for (const [index, turn] of [1, 3].entries()) {
+	for (const [index, turnNumber] of [1, 3].entries()) {
 		assert.deepEqual(
 			assistants[index]?.parts
 				.filter((part) => part.type === "reasoning")
 				.map((part) => ({ text: part.text, state: part.state })),
 			["First", "Second", "Third"].map((text) => ({
-				text: `${text} ${turn}`,
+				text: `${text} ${turnNumber}`,
 				state: "done",
 			})),
 		);
@@ -137,15 +138,19 @@ async function streamParts(
 	const messages: PlaygroundMessage[] = [];
 	for await (const message of readUIMessageStream<PlaygroundMessage>({
 		stream,
-	}))
+	})) {
 		messages.push(message);
+	}
 	return messages;
 }
 
 test("streams Responses reasoning, text, usage metrics and no reconnect", async () => {
 	let nowValue = 100;
 	const transport = createPlaygroundTransport("responses", "model", settings, {
-		now: () => (nowValue += 10),
+		now: () => {
+			nowValue += 10;
+			return nowValue;
+		},
 		baseURL: "https://gateway.test/v1",
 		fetch: async () =>
 			sse([
@@ -228,7 +233,7 @@ test("streams Responses reasoning, text, usage metrics and no reconnect", async 
 		assistant.parts.find((part) => part.type === "text")?.text,
 		"answer",
 	);
-	const metadata = assistant.metadata;
+	const { metadata } = assistant;
 	assert.equal(metadata?.inputTokens, 4);
 	assert.equal(metadata?.outputTokens, 3);
 	assert.equal(metadata?.reasoningTokens, 1);
@@ -393,7 +398,9 @@ test("chat completions streaming errors become UI errors without retries", async
 	const reader = stream.getReader();
 	while (true) {
 		const next = await reader.read();
-		if (next.done) break;
+		if (next.done) {
+			break;
+		}
 		chunks.push(next.value);
 	}
 	assert.match(
@@ -475,10 +482,13 @@ test("invalid token counts remain unavailable instead of displaying fractional t
 			totalTokens: -0.5,
 			inputTokenDetails: {
 				noCacheTokens: undefined,
-				cacheReadTokens: NaN,
+				cacheReadTokens: Number.NaN,
 				cacheWriteTokens: undefined,
 			},
-			outputTokenDetails: { reasoningTokens: Infinity, textTokens: undefined },
+			outputTokenDetails: {
+				reasoningTokens: Number.POSITIVE_INFINITY,
+				textTokens: undefined,
+			},
 		},
 		2000,
 	);
@@ -499,8 +509,9 @@ test("Chat lifecycle sends, regenerates, stops, and propagates transport errors"
 			abortSignal: AbortSignal | undefined;
 		}) {
 			calls.push(options.trigger);
-			if (options.trigger === "regenerate-message")
+			if (options.trigger === "regenerate-message") {
 				throw new Error("regenerate failed");
+			}
 			return new ReadableStream({
 				start(controller) {
 					controller.enqueue({ type: "start", messageId: "assistant-1" });
@@ -558,7 +569,7 @@ test("browser-runtime cancellation handles SDK telemetry promises", () => {
 	const result = spawnSync(process.execPath, ["--eval", script], {
 		encoding: "utf8",
 		cwd: new URL("../../..", import.meta.url),
-		timeout: 10000,
+		timeout: 10_000,
 	});
 	assert.equal(result.status, 0, result.stderr);
 });
@@ -593,8 +604,8 @@ test("streaming speed excludes initial wait, final closure and reported reasonin
 	// tokens arrived over one second after waiting 20 s for the first text.
 	const metrics = textStreamingMetrics(
 		{ outputTokens: 104, reasoningTokens: 4 },
-		20000,
-		21000,
+		20_000,
+		21_000,
 		10,
 		true,
 	);
@@ -641,8 +652,9 @@ test("unmeasurable, incomplete and inconsistent streams do not invent a speed", 
 			true,
 		),
 		textStreamingMetrics({ outputTokens: 1 }, 0, 1000, 2, false),
-	])
+	]) {
 		assert.equal(metrics.outputTokensPerSecond, undefined);
+	}
 });
 
 test("Chat SSE usage and timestamps feed separate request and streaming rates", async () => {
@@ -652,7 +664,10 @@ test("Chat SSE usage and timestamps feed separate request and streaming rates", 
 		"model",
 		settings,
 		{
-			now: () => (clock += 100),
+			now: () => {
+				clock += 100;
+				return clock;
+			},
 			baseURL: "https://gateway.test/v1",
 			fetch: async () =>
 				sse([

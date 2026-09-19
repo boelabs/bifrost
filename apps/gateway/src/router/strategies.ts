@@ -20,14 +20,17 @@ function weightedRandom(
 	candidates: DeploymentCandidate[],
 ): DeploymentCandidate {
 	const total = candidates.reduce((s, c) => s + Math.max(0, c.row.weight), 0);
-	if (total <= 0)
+	if (total <= 0) {
 		return candidates[Math.floor(Math.random() * candidates.length)]!;
+	}
 	let r = Math.random() * total;
 	for (const c of candidates) {
 		r -= Math.max(0, c.row.weight);
-		if (r < 0) return c;
+		if (r < 0) {
+			return c;
+		}
 	}
-	return candidates[candidates.length - 1]!;
+	return candidates.at(-1)!;
 }
 
 /** Picks the candidate with the lowest metric; ties -> random among the minimums. */
@@ -36,7 +39,7 @@ function pickMin(
 	metrics: Map<string, DeploymentMetrics>,
 	key: "inflight" | "rpm" | "tpm",
 ): DeploymentCandidate {
-	let min = Infinity;
+	let min = Number.POSITIVE_INFINITY;
 	let winners: DeploymentCandidate[] = [];
 	for (const c of candidates) {
 		const v = (metrics.get(c.row.id) ?? ZERO)[key];
@@ -54,11 +57,13 @@ function pickMinScore(
 	candidates: DeploymentCandidate[],
 	score: (candidate: DeploymentCandidate) => number | null,
 ): DeploymentCandidate {
-	let min = Infinity;
+	let min = Number.POSITIVE_INFINITY;
 	let winners: DeploymentCandidate[] = [];
 	for (const c of candidates) {
 		const v = score(c);
-		if (v === null || !Number.isFinite(v)) continue;
+		if (v === null || !Number.isFinite(v)) {
+			continue;
+		}
 		if (v < min) {
 			min = v;
 			winners = [c];
@@ -75,11 +80,13 @@ function pickMaxScore(
 	candidates: DeploymentCandidate[],
 	score: (candidate: DeploymentCandidate) => number | null,
 ): DeploymentCandidate {
-	let max = -Infinity;
+	let max = Number.NEGATIVE_INFINITY;
 	let winners: DeploymentCandidate[] = [];
 	for (const c of candidates) {
 		const v = score(c);
-		if (v === null || !Number.isFinite(v)) continue;
+		if (v === null || !Number.isFinite(v)) {
+			continue;
+		}
 		if (v > max) {
 			max = v;
 			winners = [c];
@@ -95,15 +102,19 @@ function pickMaxScore(
 function priceScore(
 	candidate: DeploymentCandidate,
 ): { basis: "tokens" | "search_units"; value: number } | null {
-	const pricing = candidate.meta.pricing;
-	if (!pricing) return null;
+	const { pricing } = candidate.meta;
+	if (!pricing) {
+		return null;
+	}
 	const input = pricing.inputCentsPerMTokens ?? 0;
 	const output = pricing.outputCentsPerMTokens ?? 0;
 	const hasTokenPricing =
 		pricing.inputCentsPerMTokens !== undefined ||
 		pricing.outputCentsPerMTokens !== undefined;
 	const hasSearchUnitPricing = pricing.searchUnitCents !== undefined;
-	if (hasTokenPricing === hasSearchUnitPricing) return null;
+	if (hasTokenPricing === hasSearchUnitPricing) {
+		return null;
+	}
 	return hasSearchUnitPricing
 		? { basis: "search_units", value: pricing.searchUnitCents! }
 		: { basis: "tokens", value: input + output };
@@ -114,8 +125,9 @@ function pickByComparablePrice(
 ): DeploymentCandidate {
 	const scores = candidates.map((candidate) => priceScore(candidate));
 	const basis = scores[0]?.basis;
-	if (!basis || scores.some((score) => !score || score.basis !== basis))
+	if (!basis || scores.some((score) => !score || score.basis !== basis)) {
 		return weightedRandom(candidates);
+	}
 	return pickMinScore(
 		candidates,
 		(candidate) => priceScore(candidate)?.value ?? null,
@@ -131,7 +143,9 @@ export function pickDeployment(
 	candidates: DeploymentCandidate[],
 	metrics: Map<string, DeploymentMetrics>,
 ): DeploymentCandidate {
-	if (candidates.length === 1) return candidates[0]!;
+	if (candidates.length === 1) {
+		return candidates[0]!;
+	}
 	switch (strategy) {
 		case "least-busy":
 			return pickMin(candidates, metrics, "inflight");
@@ -160,5 +174,7 @@ export function pickDeployment(
 			);
 		case "simple-shuffle":
 			return weightedRandom(candidates);
+		default:
+			throw new Error(`Unsupported routing strategy: ${strategy as string}`);
 	}
 }

@@ -102,9 +102,7 @@ test("the request is multipart to the relay, and failures keep the gateway's mes
 	const ok: FetchLike = async (input, init) => {
 		url = String(input);
 		multipart = init?.body instanceof FormData;
-		return new Response(JSON.stringify({ text: "hola" }), {
-			headers: { "content-type": "application/json" },
-		});
+		return Response.json({ text: "hola" });
 	};
 	const result = await runTranscription(
 		{ model: "whisper", file, settings: {} },

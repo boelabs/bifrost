@@ -71,9 +71,7 @@ test("the request goes to the relay and failures keep the gateway's message", as
 	let url: string | undefined;
 	const ok: FetchLike = async (input) => {
 		url = String(input);
-		return new Response(JSON.stringify({ results: [] }), {
-			headers: { "content-type": "application/json" },
-		});
+		return Response.json({ results: [] });
 	};
 	await runRerank(
 		{ model: "m", query: "q", documents, settings: {} },

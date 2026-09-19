@@ -20,13 +20,13 @@ export function KeysToolbar({ filters }: { filters: KeysFilters }) {
 		<div className="flex flex-wrap items-center gap-3">
 			<SearchField
 				label="Search keys"
+				onSearch={(value) => filter({ q: value })}
 				placeholder="Name or prefix"
 				value={filters.q ?? ""}
-				onSearch={(value) => filter({ q: value })}
 			/>
 			<Can permissions={["keys:write"]}>
-				<Button size="sm" onClick={openNew}>
-					<IconPlus size={15} aria-hidden className="mr-2" />
+				<Button onClick={openNew} size="sm">
+					<IconPlus aria-hidden className="mr-2" size={15} />
 					New key
 				</Button>
 			</Can>

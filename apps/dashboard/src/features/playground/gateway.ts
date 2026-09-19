@@ -30,7 +30,9 @@ function headersFor(
 ): Headers {
 	const headers = new Headers({ accept: "application/json", ...extra });
 	const token = (options.csrf ?? csrfTokenFromDocument)();
-	if (token) headers.set("x-csrf-token", token);
+	if (token) {
+		headers.set("x-csrf-token", token);
+	}
 	return headers;
 }
 
@@ -63,9 +65,12 @@ async function answer<T>(
 				: `The gateway answered ${response.status}.`;
 		throw new Error(message);
 	}
-	if (options.parse)
+	if (options.parse) {
 		return options.parse(text, response.headers.get("content-type")) as T;
-	if (body === undefined) throw new Error("The gateway returned no answer.");
+	}
+	if (body === undefined) {
+		throw new Error("The gateway returned no answer.");
+	}
 	return body as T;
 }
 

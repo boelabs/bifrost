@@ -21,7 +21,9 @@ const SESSION = "/api/auth/session";
 async function post(path: string, body?: unknown): Promise<Response> {
 	const headers = new Headers({ "content-type": "application/json" });
 	const token = csrfTokenFromDocument();
-	if (token) headers.set(CSRF_HEADER, token);
+	if (token) {
+		headers.set(CSRF_HEADER, token);
+	}
 	return fetch(path, {
 		method: "POST",
 		headers,
@@ -45,21 +47,27 @@ export async function login(
 	password: string,
 ): Promise<OperatorIdentity> {
 	const response = await post(SESSION, { username, password });
-	if (!response.ok) throw await failure(response);
+	if (!response.ok) {
+		throw await failure(response);
+	}
 	return ((await response.json()) as { data: OperatorIdentity }).data;
 }
 
 export async function logout(): Promise<void> {
 	const headers = new Headers();
 	const token = csrfTokenFromDocument();
-	if (token) headers.set(CSRF_HEADER, token);
+	if (token) {
+		headers.set(CSRF_HEADER, token);
+	}
 	const response = await fetch(SESSION, {
 		method: "DELETE",
 		headers,
 		credentials: "include",
 	});
 	// A session that is already gone is the state the caller wanted; only a real failure is news.
-	if (!response.ok && response.status !== 401) throw await failure(response);
+	if (!response.ok && response.status !== 401) {
+		throw await failure(response);
+	}
 }
 
 /**
@@ -77,5 +85,7 @@ export async function logout(): Promise<void> {
  */
 export function leaveFor(path: string): Promise<never> {
 	window.location.replace(path);
-	return new Promise<never>(() => {});
+	return new Promise<never>(() => {
+		/* intentionally empty */
+	});
 }

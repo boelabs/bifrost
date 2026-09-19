@@ -7,12 +7,12 @@ import type {
 	CodeLine,
 } from "./codeHighlight";
 
-type BlockState = {
+interface BlockState {
 	language: string;
 	prefix: string;
 	lineCount: number;
 	grammar: GrammarState | undefined;
-};
+}
 
 export async function createCodeHighlighter() {
 	const highlighter = await createHighlighter({
@@ -30,8 +30,9 @@ export async function createCodeHighlighter() {
 			if (
 				language !== "text" &&
 				!highlighter.getLoadedLanguages().includes(language)
-			)
+			) {
 				await highlighter.loadLanguage(language);
+			}
 			let state = blocks.get(request.id);
 			if (
 				!state ||

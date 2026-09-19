@@ -24,11 +24,14 @@ export function attachmentTypes(
 
 export function validateAttachments(files: File[], accepted: string[]): void {
 	for (const file of files) {
-		if (!accepted.includes(file.type))
+		if (!accepted.includes(file.type)) {
 			throw new Error(
 				`${file.name}: this file type is not supported by the selected model and endpoint.`,
 			);
-		if (!file.size) throw new Error(`${file.name}: the file is empty.`);
+		}
+		if (!file.size) {
+			throw new Error(`${file.name}: the file is empty.`);
+		}
 	}
 }
 

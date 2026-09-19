@@ -126,7 +126,7 @@ test("Vercel sync reports future effort labels instead of silently treating them
 test("Vercel budget-only reasoning is reported and never turned into invented effort budgets", () => {
 	const generated = buildVercelCatalog([
 		language("example/budget-reasoner", {
-			reasoning_options: [{ type: "budget_tokens", min: 1_024, max: 64_000 }],
+			reasoning_options: [{ type: "budget_tokens", min: 1024, max: 64_000 }],
 		}),
 	]);
 	assert.deepEqual(
@@ -145,7 +145,7 @@ test("Vercel catalog generates conservative embedding and image profiles", () =>
 		{
 			id: "openai/text-embedding-3-small",
 			type: "embedding",
-			context_window: 8_191,
+			context_window: 8191,
 			supported_parameters: ["dimensions"],
 			pricing: { input: "0.00000002" },
 		},
@@ -161,7 +161,7 @@ test("Vercel catalog generates conservative embedding and image profiles", () =>
 		],
 		{
 			encodingFormats: ["float", "base64"],
-			maxInputTokens: 8_191,
+			maxInputTokens: 8191,
 			supportsDimensions: true,
 			supportsTokenInput: false,
 		},
@@ -203,7 +203,7 @@ test("Vercel reranking models generate text-only profiles and safe pricing", () 
 		operations: {
 			rerank: {
 				documentModalities: ["text"],
-				maxDocuments: 1_000,
+				maxDocuments: 1000,
 				maxTokensPerDocument: 32_768,
 				documentsPerSearchUnit: 100,
 			},

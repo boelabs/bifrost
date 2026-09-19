@@ -13,8 +13,9 @@ test("metrics validates dates, interval, deployment IDs and operation vocabulary
 		{ deploymentId: "invalid" },
 		{ operation: "chat" },
 		{ bucket: "minute" },
-	])
+	]) {
 		assert.equal(metricsQuery.safeParse({ ...range, ...patch }).success, false);
+	}
 	assert.equal(
 		metricsQuery.safeParse({
 			...range,

@@ -26,11 +26,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 		}
 		function onSystemChange() {
 			const current = document.documentElement.dataset.theme;
-			if (isThemePreference(current)) applyTheme(current, media.matches);
+			if (isThemePreference(current)) {
+				applyTheme(current, media.matches);
+			}
 		}
 		function onStorage(event: StorageEvent) {
-			if (event.key !== THEME_STORAGE_KEY && event.key !== null) return;
-			if (event.storageArea !== localStorage) return;
+			if (event.key !== THEME_STORAGE_KEY && event.key !== null) {
+				return;
+			}
+			if (event.storageArea !== localStorage) {
+				return;
+			}
 			if (event.newValue !== null && !isThemePreference(event.newValue)) {
 				console.warn("Invalid saved theme preference; using system theme.");
 			}
@@ -75,6 +81,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function useTheme() {
 	const theme = useContext(ThemeContext);
-	if (!theme) throw new Error("useTheme must be used within ThemeProvider");
+	if (!theme) {
+		throw new Error("useTheme must be used within ThemeProvider");
+	}
 	return theme;
 }

@@ -19,7 +19,7 @@ import {
 	CodeBlockHeader,
 } from "streamdown";
 
-const CodeRow = memo(function CodeRow({
+const CodeRow = memo(function CodeRowBody({
 	text,
 	highlighted,
 }: {
@@ -36,8 +36,8 @@ const CodeRow = memo(function CodeRow({
 				<>
 					{highlighted.tokens.map((token) => (
 						<span
-							key={token.offset}
 							className="playground-code-token"
+							key={token.offset}
 							style={
 								{
 									"--code-light": token.light,
@@ -85,8 +85,9 @@ export function HighlightedCode({
 	useEffect(() => {
 		subscription.current?.update(code, language);
 		const element = body.current;
-		if (element && isAnimating && following.current)
+		if (element && isAnimating && following.current) {
 			element.scrollTop = element.scrollHeight;
+		}
 	}, [code, language, isAnimating]);
 	const lines =
 		result?.language === language && code.startsWith(result.code)
@@ -98,28 +99,29 @@ export function HighlightedCode({
 		highlighted: lines?.[index],
 	}));
 	return (
-		<CodeBlockContainer language={language} isIncomplete={incomplete} dir="ltr">
+		<CodeBlockContainer dir="ltr" isIncomplete={incomplete} language={language}>
 			<CodeBlockHeader language={language} />
 			<div
-				ref={body}
-				data-streamdown="code-block-body"
-				data-language={language}
 				className="max-h-100 overflow-auto rounded-md border border-border bg-surface p-4 text-sm"
+				data-language={language}
+				data-streamdown="code-block-body"
 				onScroll={() => {
 					const element = body.current;
-					if (element)
+					if (element) {
 						following.current =
 							element.scrollHeight - element.scrollTop - element.clientHeight <
 							8;
+					}
 				}}
+				ref={body}
 			>
 				<pre>
 					<code className="playground-code-lines">
 						{rows.map((row) => (
 							<CodeRow
+								highlighted={row.highlighted}
 								key={row.number}
 								text={row.text}
-								highlighted={row.highlighted}
 							/>
 						))}
 					</code>
@@ -130,8 +132,9 @@ export function HighlightedCode({
 }
 
 export function MarkdownCodeBlock({ children }: ComponentProps<"pre">) {
-	if (!isValidElement<{ children?: string; className?: string }>(children))
+	if (!isValidElement<{ children?: string; className?: string }>(children)) {
 		return <pre>{children}</pre>;
+	}
 	const language =
 		/language-([^\s]+)/.exec(children.props.className ?? "")?.[1] ?? "text";
 	const code = String(children.props.children ?? "")

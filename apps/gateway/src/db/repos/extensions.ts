@@ -155,7 +155,9 @@ export async function activateArtifactVersion(
 				),
 			)
 			.limit(1);
-		if (!target) return false;
+		if (!target) {
+			return false;
+		}
 		await tx
 			.update(extensionArtifacts)
 			.set({ status: "archived" })
@@ -220,11 +222,11 @@ export async function insertInstance(
 		.values({
 			id: input.id,
 			definitionKey: input.definitionKey,
-			...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
-			...(input.critical !== undefined ? { critical: input.critical } : {}),
-			...(input.priority !== undefined ? { priority: input.priority } : {}),
-			...(input.match !== undefined ? { match: input.match } : {}),
-			...(input.config !== undefined ? { config: input.config } : {}),
+			...(input.enabled === undefined ? {} : { enabled: input.enabled }),
+			...(input.critical === undefined ? {} : { critical: input.critical }),
+			...(input.priority === undefined ? {} : { priority: input.priority }),
+			...(input.match === undefined ? {} : { match: input.match }),
+			...(input.config === undefined ? {} : { config: input.config }),
 		})
 		.returning();
 	return row!;
@@ -246,14 +248,14 @@ export async function updateInstance(
 	const [row] = await db
 		.update(extensionInstances)
 		.set({
-			...(patch.definitionKey !== undefined
-				? { definitionKey: patch.definitionKey }
-				: {}),
-			...(patch.enabled !== undefined ? { enabled: patch.enabled } : {}),
-			...(patch.critical !== undefined ? { critical: patch.critical } : {}),
-			...(patch.priority !== undefined ? { priority: patch.priority } : {}),
-			...(patch.match !== undefined ? { match: patch.match } : {}),
-			...(patch.config !== undefined ? { config: patch.config } : {}),
+			...(patch.definitionKey === undefined
+				? {}
+				: { definitionKey: patch.definitionKey }),
+			...(patch.enabled === undefined ? {} : { enabled: patch.enabled }),
+			...(patch.critical === undefined ? {} : { critical: patch.critical }),
+			...(patch.priority === undefined ? {} : { priority: patch.priority }),
+			...(patch.match === undefined ? {} : { match: patch.match }),
+			...(patch.config === undefined ? {} : { config: patch.config }),
 			updatedAt: new Date(),
 		})
 		.where(eq(extensionInstances.id, id))

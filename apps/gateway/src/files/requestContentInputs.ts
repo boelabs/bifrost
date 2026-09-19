@@ -185,6 +185,7 @@ function requestError(
 	code: string,
 	publicMessage: string,
 	param = "messages",
+	cause?: unknown,
 ): GatewayError {
 	return new GatewayError({
 		class: "bad_request",
@@ -193,6 +194,7 @@ function requestError(
 		message,
 		publicMessage,
 		routingScope: "request",
+		cause,
 	});
 }
 
@@ -213,11 +215,16 @@ function candidateInputError(
 }
 
 function fileSource(part: CanonicalFilePart): ContentSource {
-	const present: Array<[ContentSource["kind"], string]> = [];
-	if (part.fileId !== undefined)
+	const present: [ContentSource["kind"], string][] = [];
+	if (part.fileId !== undefined) {
 		present.push(["provider_file_id", part.fileId]);
-	if (part.fileUrl !== undefined) present.push(["url", part.fileUrl]);
-	if (part.fileData !== undefined) present.push(["data_url", part.fileData]);
+	}
+	if (part.fileUrl !== undefined) {
+		present.push(["url", part.fileUrl]);
+	}
+	if (part.fileData !== undefined) {
+		present.push(["data_url", part.fileData]);
+	}
 	if (present.length !== 1) {
 		throw requestError(
 			`File input must contain exactly one source; received ${present.length}`,
@@ -255,9 +262,13 @@ function imageSource(part: CanonicalImagePart): ContentSource {
 function inputParts(req: CanonicalChatRequest): MaterializablePart[] {
 	const parts: MaterializablePart[] = [];
 	for (const message of req.messages) {
-		if (!Array.isArray(message.content)) continue;
+		if (!Array.isArray(message.content)) {
+			continue;
+		}
 		for (const part of message.content) {
-			if (part.type === "file" || part.type === "image") parts.push(part);
+			if (part.type === "file" || part.type === "image") {
+				parts.push(part);
+			}
 		}
 	}
 	return parts;
@@ -281,15 +292,19 @@ function normalizedMimeType(
 }
 
 function extensionMime(value: string | undefined): string | undefined {
-	if (!value) return undefined;
+	if (!value) {
+		return undefined;
+	}
 	let pathname = value;
 	try {
-		pathname = new URL(value).pathname;
+		({ pathname } = new URL(value));
 	} catch {
 		// A filename is already a valid lookup input.
 	}
 	const dot = pathname.lastIndexOf(".");
-	if (dot < 0) return undefined;
+	if (dot < 0) {
+		return undefined;
+	}
 	return MIME_BY_EXTENSION[pathname.slice(dot).toLowerCase()];
 }
 
@@ -338,12 +353,13 @@ function parseSafeHttpsUrl(
 	let url: URL;
 	try {
 		url = new URL(value);
-	} catch {
+	} catch (cause) {
 		throw requestError(
 			`Invalid ${kind} URL: ${value}`,
 			`invalid_${kind}_url`,
 			`${param} must be a valid public HTTPS URL.`,
 			errorParam,
+			cause,
 		);
 	}
 	const literalHost =
@@ -370,8 +386,9 @@ function parseSafeHttpsUrl(
 
 function isBlockedIpv4(address: string): boolean {
 	const octets = address.split(".").map(Number);
-	if (octets.length !== 4 || octets.some((value) => !Number.isInteger(value)))
+	if (octets.length !== 4 || octets.some((value) => !Number.isInteger(value))) {
 		return true;
+	}
 	const [a, b, c] = octets as [number, number, number, number];
 	return (
 		a === 0 ||
@@ -392,15 +409,22 @@ function isBlockedIpv4(address: string): boolean {
 
 function ipv6Words(address: string): number[] | null {
 	let normalized = address.toLowerCase().split("%", 1)[0]!;
-	if (normalized.startsWith("[") && normalized.endsWith("]"))
+	if (normalized.startsWith("[") && normalized.endsWith("]")) {
 		normalized = normalized.slice(1, -1);
-	if (normalized.includes(".")) return null;
+	}
+	if (normalized.includes(".")) {
+		return null;
+	}
 	const halves = normalized.split("::");
-	if (halves.length > 2) return null;
+	if (halves.length > 2) {
+		return null;
+	}
 	const left = halves[0] ? halves[0].split(":") : [];
 	const right = halves[1] ? halves[1].split(":") : [];
 	const missing = 8 - left.length - right.length;
-	if ((halves.length === 1 && missing !== 0) || missing < 0) return null;
+	if ((halves.length === 1 && missing !== 0) || missing < 0) {
+		return null;
+	}
 	const words = [
 		...left,
 		...Array.from({ length: missing }, () => "0"),
@@ -408,35 +432,40 @@ function ipv6Words(address: string): number[] | null {
 	].map((word) => Number.parseInt(word, 16));
 	if (
 		words.length !== 8 ||
-		words.some((word) => !Number.isInteger(word) || word < 0 || word > 0xffff)
-	)
+		words.some((word) => !Number.isInteger(word) || word < 0 || word > 0xff_ff)
+	) {
 		return null;
+	}
 	return words;
 }
 
+// biome-ignore-start lint/suspicious/noBitwiseOperators: IPv6 prefixes are defined as bit masks; anything else would obscure the RFCs these checks come from.
 function isBlockedIpv6(address: string): boolean {
 	const words = ipv6Words(address);
-	if (!words) return true;
+	if (!words) {
+		return true;
+	}
 	const first = words[0]!;
 	const allZeroPrefix = words.slice(0, 7).every((word) => word === 0);
 	return (
 		(allZeroPrefix && (words[7] === 0 || words[7] === 1)) ||
-		(words.slice(0, 5).every((word) => word === 0) && words[5] === 0xffff) ||
+		(words.slice(0, 5).every((word) => word === 0) && words[5] === 0xff_ff) ||
 		// Only conventional global unicast is accepted. This deliberately excludes translation
 		// prefixes such as NAT64, which could otherwise reach a blocked IPv4 destination.
-		(first & 0xe000) !== 0x2000 ||
-		(first & 0xfe00) === 0xfc00 ||
-		(first & 0xffc0) === 0xfe80 ||
-		(first & 0xffc0) === 0xfec0 ||
-		(first & 0xff00) === 0xff00 ||
-		(first === 0x2001 && words[1] === 0) ||
-		(first === 0x2001 && words[1] === 0x0db8) ||
-		(first === 0x2001 && (words[1]! & 0xfff0) === 0x0010) ||
-		(first === 0x2001 && (words[1]! & 0xfff0) === 0x0020) ||
-		first === 0x2002 ||
-		(first === 0x3fff && (words[1]! & 0xfff0) === 0)
+		(first & 0xe0_00) !== 0x20_00 ||
+		(first & 0xfe_00) === 0xfc_00 ||
+		(first & 0xff_c0) === 0xfe_80 ||
+		(first & 0xff_c0) === 0xfe_c0 ||
+		(first & 0xff_00) === 0xff_00 ||
+		(first === 0x20_01 && words[1] === 0) ||
+		(first === 0x20_01 && words[1] === 0x0d_b8) ||
+		(first === 0x20_01 && (words[1]! & 0xff_f0) === 0x00_10) ||
+		(first === 0x20_01 && (words[1]! & 0xff_f0) === 0x00_20) ||
+		first === 0x20_02 ||
+		(first === 0x3f_ff && (words[1]! & 0xff_f0) === 0)
 	);
 }
+// biome-ignore-end lint/suspicious/noBitwiseOperators: end of the IPv6 prefix masks.
 
 function isBlockedAddress(address: string): boolean {
 	const normalized =
@@ -444,7 +473,9 @@ function isBlockedAddress(address: string): boolean {
 			? address.slice(1, -1)
 			: address;
 	const family = isIP(normalized);
-	if (family === 0) return true;
+	if (family === 0) {
+		return true;
+	}
 	return family === 4 ? isBlockedIpv4(normalized) : isBlockedIpv6(normalized);
 }
 
@@ -488,7 +519,9 @@ async function assertPublicUrl(
 
 function filenameFromUrl(url: URL): string | undefined {
 	const segment = url.pathname.split("/").filter(Boolean).at(-1);
-	if (!segment) return undefined;
+	if (!segment) {
+		return undefined;
+	}
 	try {
 		return decodeURIComponent(segment);
 	} catch {
@@ -502,9 +535,12 @@ function effectiveMimeType(
 	bytes: Uint8Array,
 ): string {
 	const sniffed = sniffMimeType(bytes);
-	if (sniffed !== undefined) return sniffed;
-	if (declared === undefined || declared === "application/octet-stream")
+	if (sniffed !== undefined) {
+		return sniffed;
+	}
+	if (declared === undefined || declared === "application/octet-stream") {
 		return extensionMime(filename) ?? declared ?? "application/octet-stream";
+	}
 	return declared;
 }
 
@@ -517,35 +553,62 @@ function ascii(bytes: Uint8Array, start: number, length: number): string {
 }
 
 function sniffMimeType(bytes: Uint8Array): string | undefined {
-	if (Buffer.from(bytes.subarray(0, 1_024)).indexOf("%PDF-", 0, "ascii") >= 0)
+	if (Buffer.from(bytes.subarray(0, 1024)).indexOf("%PDF-", 0, "ascii") >= 0) {
 		return "application/pdf";
-	if (startsWith(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+	}
+	if (startsWith(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) {
 		return "image/png";
-	if (startsWith(bytes, [0xff, 0xd8, 0xff])) return "image/jpeg";
-	if (ascii(bytes, 0, 6) === "GIF87a" || ascii(bytes, 0, 6) === "GIF89a")
+	}
+	if (startsWith(bytes, [0xff, 0xd8, 0xff])) {
+		return "image/jpeg";
+	}
+	if (ascii(bytes, 0, 6) === "GIF87a" || ascii(bytes, 0, 6) === "GIF89a") {
 		return "image/gif";
-	if (ascii(bytes, 0, 4) === "RIFF" && ascii(bytes, 8, 4) === "WEBP")
+	}
+	if (ascii(bytes, 0, 4) === "RIFF" && ascii(bytes, 8, 4) === "WEBP") {
 		return "image/webp";
-	if (ascii(bytes, 0, 4) === "RIFF" && ascii(bytes, 8, 4) === "WAVE")
+	}
+	if (ascii(bytes, 0, 4) === "RIFF" && ascii(bytes, 8, 4) === "WAVE") {
 		return "audio/wav";
-	if (ascii(bytes, 0, 4) === "RIFF" && ascii(bytes, 8, 4) === "AVI ")
+	}
+	if (ascii(bytes, 0, 4) === "RIFF" && ascii(bytes, 8, 4) === "AVI ") {
 		return "video/x-msvideo";
-	if (ascii(bytes, 0, 4) === "fLaC") return "audio/flac";
-	if (ascii(bytes, 0, 3) === "ID3") return "audio/mpeg";
-	if (ascii(bytes, 0, 4) === "OggS") return "audio/ogg";
-	if (startsWith(bytes, [0x42, 0x4d])) return "image/bmp";
+	}
+	if (ascii(bytes, 0, 4) === "fLaC") {
+		return "audio/flac";
+	}
+	if (ascii(bytes, 0, 3) === "ID3") {
+		return "audio/mpeg";
+	}
+	if (ascii(bytes, 0, 4) === "OggS") {
+		return "audio/ogg";
+	}
+	if (startsWith(bytes, [0x42, 0x4d])) {
+		return "image/bmp";
+	}
 	if (
 		startsWith(bytes, [0x49, 0x49, 0x2a, 0x00]) ||
 		startsWith(bytes, [0x4d, 0x4d, 0x00, 0x2a])
-	)
+	) {
 		return "image/tiff";
+	}
 	if (ascii(bytes, 4, 4) === "ftyp") {
 		const brand = ascii(bytes, 8, 4).toLowerCase();
-		if (brand === "avif" || brand === "avis") return "image/avif";
-		if (["heic", "heix", "hevc", "hevx"].includes(brand)) return "image/heic";
-		if (["mif1", "msf1", "heif"].includes(brand)) return "image/heif";
-		if (brand === "qt  ") return "video/quicktime";
-		if (brand === "m4a ") return "audio/mp4";
+		if (brand === "avif" || brand === "avis") {
+			return "image/avif";
+		}
+		if (["heic", "heix", "hevc", "hevx"].includes(brand)) {
+			return "image/heic";
+		}
+		if (["mif1", "msf1", "heif"].includes(brand)) {
+			return "image/heif";
+		}
+		if (brand === "qt  ") {
+			return "video/quicktime";
+		}
+		if (brand === "m4a ") {
+			return "audio/mp4";
+		}
 		return "video/mp4";
 	}
 	return undefined;
@@ -566,7 +629,9 @@ async function readLimitedBody(
 			errorParam,
 		);
 	}
-	if (!response.body) return new Uint8Array();
+	if (!response.body) {
+		return new Uint8Array();
+	}
 
 	const chunks: Uint8Array[] = [];
 	let total = 0;
@@ -574,7 +639,9 @@ async function readLimitedBody(
 	try {
 		while (true) {
 			const { done, value } = await reader.read();
-			if (done) break;
+			if (done) {
+				break;
+			}
 			total += value.byteLength;
 			if (total > maxBytes) {
 				await reader.cancel();
@@ -688,7 +755,7 @@ async function fetchInput(
 		return {
 			bytes,
 			dataUrl: `data:${mimeType};base64,${Buffer.from(bytes).toString("base64")}`,
-			...(filename !== undefined ? { filename } : {}),
+			...(filename === undefined ? {} : { filename }),
 			mimeType,
 		};
 	}
@@ -742,8 +809,8 @@ function decodeDataUrl(
 		);
 	}
 	if (
-		Buffer.from(bytes).toString("base64").replace(/=+$/, "") !==
-		encoded.replace(/=+$/, "")
+		Buffer.from(bytes).toString("base64").replace(/[=]+$/, "") !==
+		encoded.replace(/[=]+$/, "")
 	) {
 		throw requestError(
 			`${kind} data base64 is not canonical`,
@@ -764,7 +831,7 @@ function decodeDataUrl(
 	return {
 		bytes,
 		dataUrl: `data:${effective};base64,${encoded}`,
-		...(filename !== undefined ? { filename } : {}),
+		...(filename === undefined ? {} : { filename }),
 		mimeType: effective,
 	};
 }
@@ -773,10 +840,13 @@ function mimeMatches(
 	mimeType: string | undefined,
 	patterns: readonly string[] | undefined,
 ): boolean {
-	if (mimeType === undefined || patterns === undefined) return true;
+	if (mimeType === undefined || patterns === undefined) {
+		return true;
+	}
 	return patterns.some((pattern) => {
-		if (pattern.endsWith("/*"))
+		if (pattern.endsWith("/*")) {
 			return mimeType.startsWith(pattern.slice(0, -1));
+		}
 		return mimeType === pattern;
 	});
 }
@@ -787,8 +857,9 @@ function modelAllowsNativeFile(
 ): boolean {
 	const inputs =
 		candidate.meta.operations?.["text.generate"]?.modalities?.input;
-	if (inputs === undefined)
+	if (inputs === undefined) {
 		return mimeType !== "application/pdf" || candidate.meta.capabilities.vision;
+	}
 	return mimeType === "application/pdf"
 		? inputs.includes("pdf") || inputs.includes("file")
 		: inputs.includes("file");
@@ -804,15 +875,20 @@ function canDeliverFile(
 		support === undefined ||
 		!mimeMatches(mimeType, support.mimeTypes) ||
 		!modelAllowsNativeFile(candidate, mimeType)
-	)
+	) {
 		return false;
+	}
 	const source = fileSource(part);
-	if (support.sources.includes(source.kind)) return true;
+	if (support.sources.includes(source.kind)) {
+		return true;
+	}
 	return source.kind === "url" && support.sources.includes("data_url");
 }
 
 function modelAllowsImage(candidate: DeploymentCandidate): boolean {
-	if (!candidate.meta.capabilities.vision) return false;
+	if (!candidate.meta.capabilities.vision) {
+		return false;
+	}
 	const inputs =
 		candidate.meta.operations?.["text.generate"]?.modalities?.input;
 	return inputs === undefined || inputs.includes("image");
@@ -828,10 +904,13 @@ function canDeliverImage(
 		support === undefined ||
 		!modelAllowsImage(candidate) ||
 		!mimeMatches(mimeType, support.mimeTypes)
-	)
+	) {
 		return false;
+	}
 	const source = imageSource(part);
-	if (support.sources.includes(source.kind)) return true;
+	if (support.sources.includes(source.kind)) {
+		return true;
+	}
 	return source.kind === "url" && support.sources.includes("data_url");
 }
 
@@ -850,7 +929,7 @@ function isPortableTextMime(mimeType: string): boolean {
 function assertPdfSignature(file: MaterializedInput): void {
 	if (
 		file.mimeType === "application/pdf" &&
-		Buffer.from(file.bytes.subarray(0, 1_024)).indexOf("%PDF-", 0, "ascii") < 0
+		Buffer.from(file.bytes.subarray(0, 1024)).indexOf("%PDF-", 0, "ascii") < 0
 	) {
 		throw requestError(
 			"A file declared as application/pdf does not have a PDF signature",
@@ -922,7 +1001,7 @@ async function extractPortableText(
 				"The PDF could not be parsed as text. Use a native document-capable model for this file.",
 			);
 		}
-		text = result.text;
+		({ text } = result);
 		if (text.trim().length === 0) {
 			throw candidateInputError(
 				"PDF text extraction returned no text",
@@ -981,13 +1060,17 @@ async function extractPdfText(
 			void worker.terminate();
 		};
 		const finish = (result: PdfTextResult) => {
-			if (settled) return;
+			if (settled) {
+				return;
+			}
 			settled = true;
 			cleanup();
 			resolve(result);
 		};
 		const onAbort = () => {
-			if (settled) return;
+			if (settled) {
+				return;
+			}
 			settled = true;
 			cleanup();
 			reject(signal.reason);
@@ -1028,12 +1111,12 @@ function portableTextPart(
 	return {
 		type: "text",
 		text: `[Attached file: ${JSON.stringify(filename)}; type=${file.mimeType}]\n${text}\n[End attached file]`,
-		...(part.cacheBreakpoint !== undefined
-			? { cacheBreakpoint: part.cacheBreakpoint }
-			: {}),
-		...(part.cacheControl !== undefined
-			? { cacheControl: part.cacheControl }
-			: {}),
+		...(part.cacheBreakpoint === undefined
+			? {}
+			: { cacheBreakpoint: part.cacheBreakpoint }),
+		...(part.cacheControl === undefined
+			? {}
+			: { cacheControl: part.cacheControl }),
 	};
 }
 
@@ -1055,8 +1138,11 @@ class AsyncSemaphore {
 			return await operation();
 		} finally {
 			const next = this.#waiters.shift();
-			if (next) next();
-			else this.#available += 1;
+			if (next) {
+				next();
+			} else {
+				this.#available += 1;
+			}
 		}
 	}
 }
@@ -1093,7 +1179,9 @@ export class ContentInputResolver {
 		for (const part of this.#parts) {
 			const source =
 				part.type === "file" ? fileSource(part) : imageSource(part);
-			if (source.kind === "url") parseSafeHttpsUrl(source.value, part.type);
+			if (source.kind === "url") {
+				parseSafeHttpsUrl(source.value, part.type);
+			}
 		}
 	}
 
@@ -1159,27 +1247,28 @@ export class ContentInputResolver {
 					: `${part.type}:${source.kind}:${source.value}:${filename ?? ""}`;
 			pending = this.#materializedBySource.get(sourceKey);
 			if (pending === undefined) {
-				pending =
-					source.kind === "url"
-						? this.#fetches.run(() =>
-								fetchInput(
-									source.value,
-									this.#signal,
-									this.#dependencies,
-									part.type,
-								),
-							)
-						: source.kind === "data_url"
-							? Promise.resolve(
-									decodeDataUrl(source.value, filename, part.type),
-								)
-							: Promise.reject(
-									candidateInputError(
-										"Provider file IDs cannot be materialized by the gateway",
-										"unsupported_file_reference",
-										"file_id references require a compatible native upstream.",
-									),
-								);
+				if (source.kind === "url") {
+					pending = this.#fetches.run(() =>
+						fetchInput(
+							source.value,
+							this.#signal,
+							this.#dependencies,
+							part.type,
+						),
+					);
+				} else if (source.kind === "data_url") {
+					pending = Promise.resolve(
+						decodeDataUrl(source.value, filename, part.type),
+					);
+				} else {
+					pending = Promise.reject(
+						candidateInputError(
+							"Provider file IDs cannot be materialized by the gateway",
+							"unsupported_file_reference",
+							"file_id references require a compatible native upstream.",
+						),
+					);
+				}
 				this.#materializedBySource.set(sourceKey, pending);
 			}
 			this.#materialized.set(part, pending);
@@ -1220,8 +1309,10 @@ export class ContentInputResolver {
 				const file = await this.#materialize(part);
 				assertPdfSignature(file);
 				if (
-					!mimeMatches(file.mimeType, support.mimeTypes) ||
-					!modelAllowsNativeFile(candidate, file.mimeType) ||
+					!(
+						mimeMatches(file.mimeType, support.mimeTypes) &&
+						modelAllowsNativeFile(candidate, file.mimeType)
+					) ||
 					(support.maxBytes !== undefined &&
 						file.bytes.byteLength > support.maxBytes)
 				) {
@@ -1242,9 +1333,11 @@ export class ContentInputResolver {
 		}
 		const file = await this.#materialize(part);
 		if (
-			!support.sources.includes("data_url") ||
-			!mimeMatches(file.mimeType, support.mimeTypes) ||
-			!modelAllowsNativeFile(candidate, file.mimeType) ||
+			!(
+				support.sources.includes("data_url") &&
+				mimeMatches(file.mimeType, support.mimeTypes) &&
+				modelAllowsNativeFile(candidate, file.mimeType)
+			) ||
 			(support.maxBytes !== undefined &&
 				file.bytes.byteLength > support.maxBytes)
 		) {
@@ -1262,13 +1355,13 @@ export class ContentInputResolver {
 			...((part.filename ?? file.filename)
 				? { filename: part.filename ?? file.filename }
 				: {}),
-			...(part.detail !== undefined ? { detail: part.detail } : {}),
-			...(part.cacheBreakpoint !== undefined
-				? { cacheBreakpoint: part.cacheBreakpoint }
-				: {}),
-			...(part.cacheControl !== undefined
-				? { cacheControl: part.cacheControl }
-				: {}),
+			...(part.detail === undefined ? {} : { detail: part.detail }),
+			...(part.cacheBreakpoint === undefined
+				? {}
+				: { cacheBreakpoint: part.cacheBreakpoint }),
+			...(part.cacheControl === undefined
+				? {}
+				: { cacheControl: part.cacheControl }),
 		};
 	}
 
@@ -1381,7 +1474,9 @@ export class ContentInputResolver {
 		candidate: DeploymentCandidate,
 		transport: UpstreamTransport,
 	): Promise<ResolvedContentInputRequest> {
-		if (!this.hasInputs) return { request: this.#request };
+		if (!this.hasInputs) {
+			return { request: this.#request };
+		}
 		const metadata: ContentInputResolutionMetadata = {
 			pdfEngine: this.#engine,
 			materializedFiles: 0,
@@ -1392,15 +1487,24 @@ export class ContentInputResolver {
 		};
 		const messages = await Promise.all(
 			this.#request.messages.map(async (message) => {
-				if (!Array.isArray(message.content)) return message;
+				if (!Array.isArray(message.content)) {
+					return message;
+				}
 				const content = await Promise.all(
-					message.content.map((part) =>
-						part.type === "file"
-							? this.#resolvePart(part, candidate, transport, metadata)
-							: part.type === "image"
-								? this.#resolveImagePart(part, candidate, transport, metadata)
-								: Promise.resolve(part),
-					),
+					message.content.map((part) => {
+						if (part.type === "file") {
+							return this.#resolvePart(part, candidate, transport, metadata);
+						}
+						if (part.type === "image") {
+							return this.#resolveImagePart(
+								part,
+								candidate,
+								transport,
+								metadata,
+							);
+						}
+						return Promise.resolve(part);
+					}),
 				);
 				return { ...message, content };
 			}),
@@ -1428,12 +1532,14 @@ interface VideoMediaPart {
 	url: string;
 }
 
+const VIDEO_MEDIA_KINDS: Record<VideoUrlReference["type"], VideoMediaKind> = {
+	image_url: "image",
+	audio_url: "audio",
+	video_url: "video",
+};
+
 function videoMediaKind(ref: VideoUrlReference): VideoMediaKind {
-	return ref.type === "image_url"
-		? "image"
-		: ref.type === "audio_url"
-			? "audio"
-			: "video";
+	return VIDEO_MEDIA_KINDS[ref.type];
 }
 
 function videoMediaParts(request: CanonicalVideoRequest): VideoMediaPart[] {
@@ -1466,7 +1572,9 @@ function videoSource(
 			param,
 		);
 	}
-	if (/^data:/i.test(url)) return { kind: "data_url", value: url };
+	if (/^data:/i.test(url)) {
+		return { kind: "data_url", value: url };
+	}
 	parseSafeHttpsUrl(url, kind, param);
 	return { kind: "url", value: url };
 }
@@ -1506,8 +1614,9 @@ export class VideoInputResolver {
 		this.#signal = signal;
 		this.#dependencies = dependencies;
 		this.#parts = videoMediaParts(request);
-		for (const part of this.#parts)
+		for (const part of this.#parts) {
 			videoSource(part.url, part.kind, part.param);
+		}
 	}
 
 	get hasInputs(): boolean {
@@ -1519,8 +1628,9 @@ export class VideoInputResolver {
 		transport: UpstreamTransport,
 	): void {
 		const support = candidate.adapter.contentInputs?.[transport];
-		for (const part of this.#parts)
+		for (const part of this.#parts) {
 			assertVideoMediaSupported(part, support?.[part.kind]);
+		}
 	}
 
 	async #materialize(part: VideoMediaPart): Promise<MaterializedInput> {
@@ -1558,17 +1668,23 @@ export class VideoInputResolver {
 		candidate: DeploymentCandidate,
 		transport: UpstreamTransport,
 	): Promise<ResolvedVideoInputRequest> {
-		if (!this.hasInputs) return { request: this.#request };
+		if (!this.hasInputs) {
+			return { request: this.#request };
+		}
 		this.assertCandidate(candidate, transport);
 		const support = candidate.adapter.contentInputs?.[transport];
 		const resolved = await Promise.all(
 			this.#parts.map(async (part) => {
 				const media = await this.#materialize(part);
-				if (part.kind === "image") assertImageContent(media, part.param);
+				if (part.kind === "image") {
+					assertImageContent(media, part.param);
+				}
 				const kindSupport = support?.[part.kind];
 				if (
-					!media.mimeType.startsWith(`${part.kind}/`) ||
-					!mimeMatches(media.mimeType, kindSupport?.mimeTypes) ||
+					!(
+						media.mimeType.startsWith(`${part.kind}/`) &&
+						mimeMatches(media.mimeType, kindSupport?.mimeTypes)
+					) ||
 					(kindSupport?.maxBytes !== undefined &&
 						media.bytes.byteLength > kindSupport.maxBytes)
 				) {
@@ -1597,19 +1713,21 @@ export class VideoInputResolver {
 
 		let index = 0;
 		const inputReferences = this.#request.inputReferences?.map((ref) => {
-			if (ref.type === "file_id") return ref;
-			const media = resolved[index++]!.media;
+			if (ref.type === "file_id") {
+				return ref;
+			}
+			const { media } = resolved[index++]!;
 			return { ...ref, url: media.dataUrl };
 		});
 		const frameImages = this.#request.frameImages?.map((frame) => {
-			const media = resolved[index++]!.media;
+			const { media } = resolved[index++]!;
 			return { ...frame, url: media.dataUrl };
 		});
 		return {
 			request: {
 				...this.#request,
-				...(inputReferences !== undefined ? { inputReferences } : {}),
-				...(frameImages !== undefined ? { frameImages } : {}),
+				...(inputReferences === undefined ? {} : { inputReferences }),
+				...(frameImages === undefined ? {} : { frameImages }),
 			},
 			metadata: {
 				materializedAudio: resolved.filter((item) => item.part.kind === "audio")

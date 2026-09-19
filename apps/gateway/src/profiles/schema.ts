@@ -3,7 +3,7 @@ import { OPERATION_IDS } from "#operations/registry.ts";
 import { CALL_TYPE_VALUES } from "#core/callType.ts";
 import { EFFORT_ORDER } from "#core/reasoning.ts";
 import { QUALITY_ORDER } from "#core/quality.ts";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 export const pricingSchema = z
 	.object({
@@ -482,7 +482,9 @@ function validateImageOperationRequirements(
 ): void {
 	for (const op of ["image.generate", "image.edit"] as const) {
 		const entry = value[op];
-		if (!entry) continue;
+		if (!entry) {
+			continue;
+		}
 		if (!entry.outputFormats || entry.outputFormats.length === 0) {
 			ctx.addIssue({
 				code: "custom",
@@ -497,7 +499,7 @@ function validateImageOperationRequirements(
 				message: "required for image operations",
 			});
 		}
-		if (!entry.sizes && !entry.arbitrarySize && !entry.autoSize) {
+		if (!(entry.sizes || entry.arbitrarySize || entry.autoSize)) {
 			ctx.addIssue({
 				code: "custom",
 				path: [...pathPrefix, op, "sizes"],
@@ -513,7 +515,9 @@ function validateVideoOperationRequirements(
 	pathPrefix: Array<string | number> = [],
 ): void {
 	const entry = value["video.generate"];
-	if (!entry) return;
+	if (!entry) {
+		return;
+	}
 	if (!entry.durations || entry.durations.length === 0) {
 		ctx.addIssue({
 			code: "custom",

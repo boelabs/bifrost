@@ -19,11 +19,11 @@ import {
 
 interface OpenAIResponsesWebSocketOptions {
 	label: string;
-	resolveConnection(ctx: AdapterContext): {
+	resolveConnection: (ctx: AdapterContext) => {
 		url: string;
 		headers: Record<string, string>;
 	};
-	mapError(err: unknown, ctx: AdapterContext): GatewayError;
+	mapError: (err: unknown, ctx: AdapterContext) => GatewayError;
 }
 
 interface QueuedEvent {
@@ -43,26 +43,37 @@ class AsyncEventQueue {
 
 	push(value: QueuedEvent): void {
 		const waiter = this.waiters.shift();
-		if (waiter) waiter.resolve({ done: false, value });
-		else this.values.push(value);
+		if (waiter) {
+			waiter.resolve({ done: false, value });
+		} else {
+			this.values.push(value);
+		}
 	}
 
 	end(): void {
 		this.ended = true;
-		for (const waiter of this.waiters.splice(0))
+		for (const waiter of this.waiters.splice(0)) {
 			waiter.resolve({ done: true, value: undefined });
+		}
 	}
 
 	fail(error: unknown): void {
 		this.failure = error;
-		for (const waiter of this.waiters.splice(0)) waiter.reject(error);
+		for (const waiter of this.waiters.splice(0)) {
+			waiter.reject(error);
+		}
 	}
 
 	next(): Promise<IteratorResult<QueuedEvent>> {
-		if (this.values.length > 0)
+		if (this.values.length > 0) {
 			return Promise.resolve({ done: false, value: this.values.shift()! });
-		if (this.failure !== undefined) return Promise.reject(this.failure);
-		if (this.ended) return Promise.resolve({ done: true, value: undefined });
+		}
+		if (this.failure !== undefined) {
+			return Promise.reject(this.failure);
+		}
+		if (this.ended) {
+			return Promise.resolve({ done: true, value: undefined });
+		}
 		return new Promise((resolve, reject) =>
 			this.waiters.push({ resolve, reject }),
 		);
@@ -79,9 +90,15 @@ function websocketUrl(httpUrl: string): string {
 }
 
 function rawDataText(data: RawData): string {
-	if (typeof data === "string") return data;
-	if (data instanceof ArrayBuffer) return Buffer.from(data).toString("utf8");
-	if (Array.isArray(data)) return Buffer.concat(data).toString("utf8");
+	if (typeof data === "string") {
+		return data;
+	}
+	if (data instanceof ArrayBuffer) {
+		return Buffer.from(data).toString("utf8");
+	}
+	if (Array.isArray(data)) {
+		return Buffer.concat(data).toString("utf8");
+	}
 	return data.toString("utf8");
 }
 
@@ -147,12 +164,17 @@ export function makeOpenAIResponsesWebSocketHandler(
 				};
 				socket.once("open", onOpen);
 				socket.once("error", onError);
-				if (ctx.signal?.aborted) onAbort();
-				else ctx.signal?.addEventListener("abort", onAbort, { once: true });
+				if (ctx.signal?.aborted) {
+					onAbort();
+				} else {
+					ctx.signal?.addEventListener("abort", onAbort, { once: true });
+				}
 			});
 
 			socket.on("message", (data, isBinary) => {
-				if (!activeQueue) return;
+				if (!activeQueue) {
+					return;
+				}
 				if (isBinary) {
 					activeQueue.fail(
 						new GatewayError({
@@ -183,7 +205,9 @@ export function makeOpenAIResponsesWebSocketHandler(
 					raw,
 					event: { event: type, data: JSON.stringify(raw) },
 				});
-				if (TERMINAL_EVENTS.has(type)) activeQueue.end();
+				if (TERMINAL_EVENTS.has(type)) {
+					activeQueue.end();
+				}
 			});
 			socket.on("close", (code, reason) => {
 				closed = true;
@@ -204,18 +228,20 @@ export function makeOpenAIResponsesWebSocketHandler(
 					return closed || socket.readyState !== WebSocket.OPEN;
 				},
 				async create(req, turnOptions): Promise<ResponsesWebSocketTurn> {
-					if (this.closed)
+					if (this.closed) {
 						throw new GatewayError({
 							class: "server",
 							code: "upstream_websocket_closed",
 							message: `${options.label}: Responses WebSocket is closed`,
 						});
-					if (activeQueue)
+					}
+					if (activeQueue) {
 						throw new GatewayError({
 							class: "server",
 							code: "upstream_websocket_busy",
 							message: `${options.label}: Responses WebSocket already has an active response`,
 						});
+					}
 
 					const queue = new AsyncEventQueue();
 					activeQueue = queue;
@@ -225,7 +251,9 @@ export function makeOpenAIResponsesWebSocketHandler(
 					});
 					let responseIdResolved = false;
 					const resolveId = (id: string | null) => {
-						if (responseIdResolved) return;
+						if (responseIdResolved) {
+							return;
+						}
 						responseIdResolved = true;
 						resolveResponseId(id);
 					};
@@ -238,14 +266,18 @@ export function makeOpenAIResponsesWebSocketHandler(
 					};
 					turnOptions.signal.addEventListener("abort", onAbort, { once: true });
 					socket.send(JSON.stringify(message), (error) => {
-						if (error) queue.fail(options.mapError(error, ctx));
+						if (error) {
+							queue.fail(options.mapError(error, ctx));
+						}
 					});
 
 					async function* events(): AsyncGenerator<SSEEvent> {
 						try {
 							while (true) {
 								const next = await queue.next();
-								if (next.done) return;
+								if (next.done) {
+									return;
+								}
 								const queued = next.value;
 								if (
 									queued.type === "response.created" ||
@@ -254,7 +286,9 @@ export function makeOpenAIResponsesWebSocketHandler(
 									const response = queued.raw.response as
 										| { id?: unknown }
 										| undefined;
-									if (typeof response?.id === "string") resolveId(response.id);
+									if (typeof response?.id === "string") {
+										resolveId(response.id);
+									}
 								}
 								yield queued.event;
 							}
@@ -273,9 +307,11 @@ export function makeOpenAIResponsesWebSocketHandler(
 					};
 				},
 				close(code = 1000, reason = "gateway session closed") {
-					if (socket.readyState === WebSocket.OPEN) socket.close(code, reason);
-					else if (socket.readyState === WebSocket.CONNECTING)
+					if (socket.readyState === WebSocket.OPEN) {
+						socket.close(code, reason);
+					} else if (socket.readyState === WebSocket.CONNECTING) {
 						socket.terminate();
+					}
 					closed = true;
 				},
 			};

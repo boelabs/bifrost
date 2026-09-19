@@ -29,18 +29,20 @@ const DEFAULT_LEGACY_API_VERSION = "2024-06-01";
 
 /** Resource endpoint (origin) from the baseUrl (accepts the resource or .../openai/v1). */
 function resourceEndpoint(baseUrl: string | undefined, label: string): string {
-	if (!baseUrl)
+	if (!baseUrl) {
 		throw new GatewayError({
 			class: "bad_request",
 			message: `${label}: missing 'baseUrl' in credentials`,
 		});
+	}
 	let url: URL;
 	try {
 		url = new URL(baseUrl);
-	} catch {
+	} catch (cause) {
 		throw new GatewayError({
 			class: "bad_request",
 			message: `${label}: credentials.baseUrl must be a valid URL`,
+			cause,
 		});
 	}
 	if (url.protocol !== "https:") {

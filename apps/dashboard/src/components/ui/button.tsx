@@ -14,7 +14,7 @@ import {
 } from "./appearance.ts";
 
 export const buttonStyles = tv({
-	base: `inline-flex shrink-0 appearance-none items-center justify-center gap-2 rounded-full border border-transparent font-semibold transition-none disabled:pointer-events-none disabled:opacity-50 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 ${focusRing}`,
+	base: `inline-flex shrink-0 appearance-none items-center justify-center gap-2 rounded-full border border-transparent font-semibold transition-none disabled:pointer-events-none disabled:opacity-50 data-disabled:pointer-events-none data-disabled:opacity-50 ${focusRing}`,
 	variants: {
 		variant: {
 			primary: "bg-primary text-primary-fg hover:bg-primary-hover",
@@ -37,7 +37,7 @@ export const buttonStyles = tv({
 			xs: "min-h-8 px-2.5 py-1 text-xs",
 			sm: "min-h-10 px-4 py-2 text-sm",
 			md: "min-h-12 px-5 py-3 text-base",
-			lg: "min-h-14 px-7 py-3.5 text-lg font-bold",
+			lg: "min-h-14 px-7 py-3.5 font-bold text-lg",
 		},
 		/**
 		 * Geometry, kept apart from scale: a button holding one icon has no text to give it width, so
@@ -50,7 +50,7 @@ export const buttonStyles = tv({
 			// `min-h-0` because the size variant's `min-h-*` would otherwise outlive an overridden
 			// `size-*`: a caller asking for `lg:size-8` got a 32px-wide box held 36px tall, which is
 			// how the playground's message actions stopped lining up with each other.
-			icon: "aspect-square shrink-0 p-0 min-h-0",
+			icon: "aspect-square min-h-0 shrink-0 p-0",
 		},
 	},
 	compoundVariants: [
@@ -90,15 +90,17 @@ export function Button({
 	return (
 		<BaseButton
 			{...props}
-			disabled={disabled || loading}
 			aria-busy={loading || undefined}
 			className={mergeClassName(
 				`${buttonStyles({ size, variant, mode })} ${effectClassName(effect)}`,
 				className,
 			)}
+			disabled={disabled || loading}
 			style={mergeStyle({ borderRadius, width }, style)}
 		>
-			{loading && <IconLoader2 aria-hidden className="size-4 animate-spin" />}
+			{loading ? (
+				<IconLoader2 aria-hidden className="size-4 animate-spin" />
+			) : null}
 			{children}
 		</BaseButton>
 	);

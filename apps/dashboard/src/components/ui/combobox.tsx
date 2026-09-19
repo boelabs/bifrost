@@ -77,7 +77,7 @@ function Popup({
 		<BaseCombobox.Popup
 			{...props}
 			className={mergeClassName(
-				`${popupStyles} min-w-[var(--anchor-width)]`,
+				`${popupStyles} min-w-(--anchor-width)`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -136,7 +136,7 @@ function Empty({ className, ...props }: BaseCombobox.Empty.Props) {
 		<BaseCombobox.Empty
 			{...props}
 			className={mergeClassName(
-				"px-3 py-4 text-sm text-fg-muted empty:hidden",
+				"px-3 py-4 text-fg-muted text-sm empty:hidden",
 				className,
 			)}
 		/>
@@ -162,7 +162,7 @@ function Clear({
 		<BaseCombobox.Clear
 			{...props}
 			className={mergeClassName(
-				`${focusRing} inline-flex size-7 items-center justify-center rounded-[var(--ui-radius-item)] text-fg-muted hover:bg-secondary`,
+				`${focusRing} inline-flex size-7 items-center justify-center rounded-(--ui-radius-item) text-fg-muted hover:bg-secondary`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -202,7 +202,7 @@ function Chip({
 		<BaseCombobox.Chip
 			{...props}
 			className={mergeClassName(
-				"inline-flex items-center gap-1 rounded-[var(--ui-radius-item)] bg-secondary px-2 py-1 text-sm text-secondary-fg",
+				"inline-flex items-center gap-1 rounded-(--ui-radius-item) bg-secondary px-2 py-1 text-secondary-fg text-sm",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -221,7 +221,7 @@ function ChipRemove({
 		<BaseCombobox.ChipRemove
 			{...props}
 			className={mergeClassName(
-				`${focusRing} rounded-[var(--ui-radius-item)] hover:bg-surface`,
+				`${focusRing} rounded-(--ui-radius-item) hover:bg-surface`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -283,7 +283,7 @@ function BareInput({
 }
 
 const inlineButton =
-	"inline-flex size-7 shrink-0 items-center justify-center rounded-[var(--ui-radius-item)] text-fg-muted hover:bg-secondary hover:text-fg";
+	"inline-flex size-7 shrink-0 items-center justify-center rounded-(--ui-radius-item) text-fg-muted hover:bg-secondary hover:text-fg";
 
 function InlineTrigger({
 	className,
@@ -337,11 +337,11 @@ function InputField({
 }: InputFieldProps) {
 	return (
 		<InputGroup
+			borderRadius={borderRadius}
+			className={groupClassName}
 			size={size}
 			variant={variant}
-			borderRadius={borderRadius}
 			width={width}
-			className={groupClassName}
 		>
 			<BareInput {...props} />
 			{showClear ? <InlineClear /> : null}

@@ -35,7 +35,9 @@ const KeysContext = createContext<KeysValue | null>(null);
 
 export function useKeys(): KeysValue {
 	const value = use(KeysContext);
-	if (!value) throw new Error("useKeys must be used inside KeysProvider");
+	if (!value) {
+		throw new Error("useKeys must be used inside KeysProvider");
+	}
 	return value;
 }
 
@@ -77,7 +79,9 @@ export function KeysProvider({
 		const target = editing?.key;
 		if (target) {
 			const body = toUpdateBody(draft, target);
-			if (Object.keys(body).length === 0) return true;
+			if (Object.keys(body).length === 0) {
+				return true;
+			}
 			const result = await run(() => updateKeyAction(target.id, body), {
 				success: `${draft.name.trim()} updated`,
 				failure: "The key could not be updated.",
@@ -106,7 +110,9 @@ export function KeysProvider({
 			confirmLabel: "Reset spend",
 			tone: "primary",
 		});
-		if (!confirmed) return;
+		if (!confirmed) {
+			return;
+		}
 		setEditing(null);
 		await run(() => updateKeyAction(key.id, { resetSpend: true }), {
 			success: `Spend reset on ${key.name}`,
@@ -122,14 +128,14 @@ export function KeysProvider({
 				// here means an early click delays the dialog rather than blanking the page behind it.
 				<Suspense fallback={null}>
 					<KeyEditor
+						existing={editing.key}
 						/* Remount per target: the form is seeded from the key it opened on. */
 						key={editing.key?.id ?? "new"}
 						models={models}
-						existing={editing.key}
-						pending={pending}
 						onClose={() => setEditing(null)}
-						onSubmit={save}
 						onResetSpend={resetSpend}
+						onSubmit={save}
+						pending={pending}
 					/>
 				</Suspense>
 			) : null}
@@ -157,8 +163,8 @@ function KeyEditor({
 	return (
 		<KeyDialog
 			isOpen
-			pending={pending}
 			models={use(models)}
+			pending={pending}
 			{...(existing ? { existing } : {})}
 			{...(existing ? { onResetSpend: () => void onResetSpend(existing) } : {})}
 			onClose={onClose}
@@ -182,7 +188,7 @@ function IssuedKeyDialog({
 
 	return (
 		<Modal isOpen={issued !== null} onOpenChange={(open) => !open && onClose()}>
-			<Dialog layout="sectioned" aria-label="New key created">
+			<Dialog aria-label="New key created" layout="sectioned">
 				<DialogHeader>
 					<h2 className="font-semibold text-fg text-lg">Copy this key now</h2>
 					<p className="pt-2 text-fg-muted text-sm">
@@ -197,13 +203,15 @@ function IssuedKeyDialog({
 				</DialogBody>
 				<DialogFooter>
 					<Button
-						variant="secondary"
 						onClick={async () => {
-							if (issued) await navigator.clipboard.writeText(issued.key);
+							if (issued) {
+								await navigator.clipboard.writeText(issued.key);
+							}
 							setCopied(true);
 						}}
+						variant="secondary"
 					>
-						<IconCopy size={15} aria-hidden className="mr-2" />
+						<IconCopy aria-hidden className="mr-2" size={15} />
 						{copied ? "Copied" : "Copy"}
 					</Button>
 					<Button

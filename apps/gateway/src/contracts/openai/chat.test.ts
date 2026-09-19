@@ -34,7 +34,7 @@ test("Responses reasoning parts keep identity, boundaries and plain-text separat
 			for (const [suffix, value] of [
 				["delta", { delta: text }],
 				["done", { text }],
-			] as const)
+			] as const) {
 				yield {
 					data: JSON.stringify({
 						type: `response.reasoning_summary_text.${suffix}`,
@@ -43,12 +43,14 @@ test("Responses reasoning parts keep identity, boundaries and plain-text separat
 						...value,
 					}),
 				};
+			}
 		}
 	}
-	const rendered = [];
+	const rendered: ReturnType<typeof toOpenAIChatChunk>[] = [];
 	const parts = new Map<number, string>();
-	for await (const chunk of responsesEventsToCanonicalChunks(events()))
+	for await (const chunk of responsesEventsToCanonicalChunks(events())) {
 		rendered.push(toOpenAIChatChunk(chunk, publicModel, parts));
+	}
 	assert.equal(
 		rendered.map((chunk) => chunk.choices[0]?.delta.reasoning ?? "").join(""),
 		"First\n\nSecond\n\nThird",
@@ -125,8 +127,8 @@ test("OpenAI transport strips provider-specific tool-call extra_content", () => 
 		},
 		"gpt-x",
 	);
-	const messages = body.messages as Array<Record<string, unknown>>;
-	const toolCalls = messages[0]!.tool_calls as Array<Record<string, unknown>>;
+	const messages = body.messages as Record<string, unknown>[];
+	const toolCalls = messages[0]!.tool_calls as Record<string, unknown>[];
 	assert.equal(toolCalls[0]!.extra_content, undefined);
 });
 
@@ -147,7 +149,7 @@ test("OpenAI transport marks tool execution errors in portable content", () => {
 		},
 		"gpt-x",
 	);
-	const messages = body.messages as Array<Record<string, unknown>>;
+	const messages = body.messages as Record<string, unknown>[];
 	assert.equal(
 		messages[0]?.content,
 		"[Tool execution failed] permission denied",
@@ -162,10 +164,10 @@ test("OpenAI transport preserves or downgrades developer roles by capability", (
 		messages: [{ role: "developer" as const, content: "instructions" }],
 	};
 	const nativeMessages = buildOpenAIChatBody(request, "gpt-x")
-		.messages as Array<Record<string, unknown>>;
+		.messages as Record<string, unknown>[];
 	const compatibleMessages = buildOpenAIChatBody(request, "gpt-x", {
 		developerRole: "system",
-	}).messages as Array<Record<string, unknown>>;
+	}).messages as Record<string, unknown>[];
 	assert.equal(nativeMessages[0]?.role, "developer");
 	assert.equal(compatibleMessages[0]?.role, "system");
 });
@@ -451,7 +453,7 @@ test("toCanonical: maps content part file (file_id and file_data)", () => {
 test("toOpenAIResponse: produces a schema-valid chat.completion", () => {
 	const canonical: CanonicalChatResponse = {
 		id: "resp_1",
-		created: 1700000000,
+		created: 1_700_000_000,
 		model: "gpt",
 		choices: [
 			{
@@ -541,7 +543,7 @@ test('toOpenAIChunk: first delta (role) carries content:"" and refusal:null like
 test("toOpenAIChunk: produces a valid chat.completion.chunk with final usage", () => {
 	const chunk: CanonicalChatStreamChunk = {
 		id: "resp_1",
-		created: 1700000000,
+		created: 1_700_000_000,
 		model: "gpt",
 		choices: [
 			{
@@ -900,7 +902,7 @@ test("chat native routing retains semantic requirements", () => {
 		{ verbosity: "low" },
 		{ web_search_options: { search_context_size: "low" } },
 		{ stream: true, stream_options: { include_obfuscation: true } },
-	] satisfies Array<Record<string, unknown>>) {
+	] satisfies Record<string, unknown>[]) {
 		const canonical = toCanonicalChatRequest(
 			chatRequestSchema.parse({
 				model: "chat-model",

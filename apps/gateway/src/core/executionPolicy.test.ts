@@ -17,10 +17,10 @@ test("execution policy: no override leaves the global policy untouched", () => {
 test("execution policy: an override may only tighten each bound", () => {
 	const tightened = resolveExecutionPolicy(
 		base,
-		{ chat: { firstOutputMs: 8_000, totalMs: 60_000 } },
+		{ chat: { firstOutputMs: 8000, totalMs: 60_000 } },
 		"chat",
 	);
-	assert.equal(tightened.firstOutputMs, 8_000);
+	assert.equal(tightened.firstOutputMs, 8000);
 	assert.equal(tightened.totalMs, 60_000);
 
 	// Widening is ignored: a deployment must not hold a request past the operator's own ceiling.
@@ -33,7 +33,7 @@ test("execution policy: an override may only tighten each bound", () => {
 });
 
 test("execution policy: a bound the global policy leaves open can be closed", () => {
-	const json = DEFAULT_EXECUTION_POLICIES.chat.json;
+	const { json } = DEFAULT_EXECUTION_POLICIES.chat;
 	assert.equal(json.idleMs, null);
 	const resolved = resolveExecutionPolicy(
 		json,
@@ -46,44 +46,44 @@ test("execution policy: a bound the global policy leaves open can be closed", ()
 test("execution policy: the specific call type wins over the blanket entry", () => {
 	const resolved = resolveExecutionPolicy(
 		base,
-		{ all: { firstOutputMs: 5_000 }, chat: { firstOutputMs: 9_000 } },
+		{ all: { firstOutputMs: 5000 }, chat: { firstOutputMs: 9000 } },
 		"chat",
 	);
-	assert.equal(resolved.firstOutputMs, 9_000);
+	assert.equal(resolved.firstOutputMs, 9000);
 	// A different call type still falls back to the blanket entry.
 	const other = resolveExecutionPolicy(
 		DEFAULT_EXECUTION_POLICIES.embeddings.json,
-		{ all: { firstOutputMs: 5_000 }, chat: { firstOutputMs: 9_000 } },
+		{ all: { firstOutputMs: 5000 }, chat: { firstOutputMs: 9000 } },
 		"embeddings",
 	);
-	assert.equal(other.firstOutputMs, 5_000);
+	assert.equal(other.firstOutputMs, 5000);
 });
 
 test("execution policy: the retry budget is never delegated to a deployment", () => {
 	const resolved = resolveExecutionPolicy(
 		base,
-		{ chat: { firstOutputMs: 1_000 } },
+		{ chat: { firstOutputMs: 1000 } },
 		"chat",
 	);
 	assert.equal(resolved.maxAttempts, base.maxAttempts);
 });
 
-const adaptive = { enabled: true, multiplier: 4, floorMs: 5_000 };
+const adaptive = { enabled: true, multiplier: 4, floorMs: 5000 };
 /** Streaming, with a sibling to fall back to: the case narrowing was designed for. */
 const scope = { incremental: true, alternatives: 1, priorAttempts: 0 };
 
 test("adaptive deadline: a fast deployment gets a fraction of the pool's budget", () => {
 	// 1.2s typical first output under a 180s pool budget: fail over in ~5s, not three minutes.
-	assert.equal(adaptiveFirstOutputMs(180_000, 1_200, adaptive, scope), 5_000);
-	assert.equal(adaptiveFirstOutputMs(180_000, 9_000, adaptive, scope), 36_000);
+	assert.equal(adaptiveFirstOutputMs(180_000, 1200, adaptive, scope), 5000);
+	assert.equal(adaptiveFirstOutputMs(180_000, 9000, adaptive, scope), 36_000);
 });
 
 test("adaptive deadline: never widens the configured deadline", () => {
-	assert.equal(adaptiveFirstOutputMs(8_000, 60_000, adaptive, scope), 8_000);
+	assert.equal(adaptiveFirstOutputMs(8000, 60_000, adaptive, scope), 8000);
 });
 
 test("adaptive deadline: never drops below the floor", () => {
-	assert.equal(adaptiveFirstOutputMs(180_000, 10, adaptive, scope), 5_000);
+	assert.equal(adaptiveFirstOutputMs(180_000, 10, adaptive, scope), 5000);
 });
 
 test("adaptive deadline: no measurement keeps the configured deadline", () => {
@@ -99,7 +99,7 @@ test("adaptive deadline: disabled is a passthrough", () => {
 	assert.equal(
 		adaptiveFirstOutputMs(
 			180_000,
-			1_200,
+			1200,
 			{ ...adaptive, enabled: false },
 			scope,
 		),
@@ -112,7 +112,7 @@ test("adaptive deadline: a whole-response budget is never narrowed by a first-to
 	// took, not how fast this deployment starts answering. Narrowing 300s to 12s on that basis ends
 	// every long generation the deployment is asked for.
 	assert.equal(
-		adaptiveFirstOutputMs(300_000, 3_000, adaptive, {
+		adaptiveFirstOutputMs(300_000, 3000, adaptive, {
 			incremental: false,
 			alternatives: 3,
 			priorAttempts: 0,
@@ -125,7 +125,7 @@ test("adaptive deadline: nothing to fail over to means nothing to gain", () => {
 	// Abandoning the only deployment that could serve the request does not produce an answer sooner;
 	// it produces a 504 sooner.
 	assert.equal(
-		adaptiveFirstOutputMs(180_000, 1_200, adaptive, {
+		adaptiveFirstOutputMs(180_000, 1200, adaptive, {
 			incremental: true,
 			alternatives: 0,
 			priorAttempts: 0,
@@ -138,14 +138,14 @@ test("adaptive deadline: a retry does not repeat a budget that already expired",
 	// 1.2s typical, 4x multiplier: 4.8s raised to the 5s floor, then 9.6s, then 19.2s. A deployment
 	// that missed its estimate is being told the estimate was wrong, not asked the same question.
 	assert.equal(
-		adaptiveFirstOutputMs(180_000, 1_200, adaptive, {
+		adaptiveFirstOutputMs(180_000, 1200, adaptive, {
 			...scope,
 			priorAttempts: 1,
 		}),
-		9_600,
+		9600,
 	);
 	assert.equal(
-		adaptiveFirstOutputMs(180_000, 1_200, adaptive, {
+		adaptiveFirstOutputMs(180_000, 1200, adaptive, {
 			...scope,
 			priorAttempts: 2,
 		}),
@@ -155,7 +155,7 @@ test("adaptive deadline: a retry does not repeat a budget that already expired",
 
 test("adaptive deadline: escalation still stops at the configured deadline", () => {
 	assert.equal(
-		adaptiveFirstOutputMs(20_000, 1_200, adaptive, {
+		adaptiveFirstOutputMs(20_000, 1200, adaptive, {
 			...scope,
 			priorAttempts: 8,
 		}),

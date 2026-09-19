@@ -48,7 +48,9 @@ const DOCUMENT_URL = "https://models.dev/api.json";
 function normalizeReasoningOptions(
 	raw: ModelsDevReasoningOptionRaw[] | undefined,
 ): ModelsDevReasoningOption[] | undefined {
-	if (!raw || raw.length === 0) return undefined;
+	if (!raw || raw.length === 0) {
+		return undefined;
+	}
 	const options: ModelsDevReasoningOption[] = [];
 	for (const option of raw) {
 		if (option.type === "toggle") {
@@ -58,8 +60,8 @@ function normalizeReasoningOptions(
 		} else if (option.type === "budget_tokens") {
 			options.push({
 				type: "budget_tokens",
-				...(option.min !== undefined ? { min: option.min } : {}),
-				...(option.max !== undefined ? { max: option.max } : {}),
+				...(option.min === undefined ? {} : { min: option.min }),
+				...(option.max === undefined ? {} : { max: option.max }),
 			});
 		}
 	}
@@ -69,16 +71,26 @@ function normalizeReasoningOptions(
 function normalizePricing(
 	cost: ModelsDevCost | undefined,
 ): EnrichmentModel["pricing"] {
-	if (!cost) return undefined;
+	if (!cost) {
+		return undefined;
+	}
 	const result: NonNullable<EnrichmentModel["pricing"]> = {};
 	const input = dollarsPerMillionToCentsPerMillion(cost.input);
 	const output = dollarsPerMillionToCentsPerMillion(cost.output);
 	const cacheRead = dollarsPerMillionToCentsPerMillion(cost.cache_read);
 	const cacheWrite = dollarsPerMillionToCentsPerMillion(cost.cache_write);
-	if (input !== undefined) result.inputCentsPerMTokens = input;
-	if (output !== undefined) result.outputCentsPerMTokens = output;
-	if (cacheRead !== undefined) result.cacheReadCentsPerMTokens = cacheRead;
-	if (cacheWrite !== undefined) result.cacheWriteCentsPerMTokens = cacheWrite;
+	if (input !== undefined) {
+		result.inputCentsPerMTokens = input;
+	}
+	if (output !== undefined) {
+		result.outputCentsPerMTokens = output;
+	}
+	if (cacheRead !== undefined) {
+		result.cacheReadCentsPerMTokens = cacheRead;
+	}
+	if (cacheWrite !== undefined) {
+		result.cacheWriteCentsPerMTokens = cacheWrite;
+	}
 	return Object.keys(result).length > 0 ? result : undefined;
 }
 
@@ -93,10 +105,10 @@ function normalizeModel(
 	return {
 		providerIdRaw,
 		modelIdRaw: model.id,
-		...(contextWindow !== undefined ? { contextWindow } : {}),
-		...(maxOutputTokens !== undefined ? { maxOutputTokens } : {}),
+		...(contextWindow === undefined ? {} : { contextWindow }),
+		...(maxOutputTokens === undefined ? {} : { maxOutputTokens }),
 		...(pricing ? { pricing } : {}),
-		...(model.reasoning !== undefined ? { reasoning: model.reasoning } : {}),
+		...(model.reasoning === undefined ? {} : { reasoning: model.reasoning }),
 		...(reasoningOptions ? { reasoningOptions } : {}),
 	};
 }

@@ -39,15 +39,16 @@ export function makeOpenRouterRerankHandler(
 					model: ctx.upstreamModel,
 					query: req.query,
 					documents: req.documents.map(textFromRerankDocument),
-					...(req.topN !== undefined ? { top_n: req.topN } : {}),
-					...(req.provider !== undefined ? { provider: req.provider } : {}),
+					...(req.topN === undefined ? {} : { top_n: req.topN }),
+					...(req.provider === undefined ? {} : { provider: req.provider }),
 				}),
 			};
 		},
 		parseResponse(raw, ctx) {
 			const value = record(raw);
-			if (typeof value?.id === "string")
+			if (typeof value?.id === "string") {
 				adapterContextDiagnostics(ctx).providerRequestId = value.id;
+			}
 			const rawResults = Array.isArray(value?.results) ? value.results : [];
 			const usage = record(value?.usage);
 			const totalTokens = number(usage?.total_tokens);
@@ -75,10 +76,10 @@ export function makeOpenRouterRerankHandler(
 								promptTokens: totalTokens ?? 0,
 								completionTokens: 0,
 								totalTokens: totalTokens ?? 0,
-								...(searchUnits !== undefined ? { searchUnits } : {}),
-								...(providerCost !== undefined
-									? { providerCostCents: providerCost * 100 }
-									: {}),
+								...(searchUnits === undefined ? {} : { searchUnits }),
+								...(providerCost === undefined
+									? {}
+									: { providerCostCents: providerCost * 100 }),
 							},
 						}
 					: {}),

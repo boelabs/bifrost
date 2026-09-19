@@ -23,7 +23,9 @@ function bodyTooLarge(maxBytes: number): GatewayError {
 
 function declaredContentLength(c: Context<AppEnv>): number | null {
 	const raw = c.req.header("content-length");
-	if (raw === undefined) return null;
+	if (raw === undefined) {
+		return null;
+	}
 	const parsed = Number(raw);
 	return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : null;
 }
@@ -36,18 +38,22 @@ export async function readJsonBody(
 	c: Context<AppEnv>,
 	maxBytes: number,
 ): Promise<unknown> {
-	if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0)
+	if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0) {
 		throw new Error("maxBytes must be a positive safe integer");
+	}
 
 	const declared = declaredContentLength(c);
-	if (declared !== null && declared > maxBytes) throw bodyTooLarge(maxBytes);
+	if (declared !== null && declared > maxBytes) {
+		throw bodyTooLarge(maxBytes);
+	}
 
 	const stream = c.req.raw.body;
-	if (stream === null)
+	if (stream === null) {
 		throw new GatewayError({
 			class: "bad_request",
 			message: "Invalid or missing JSON body",
 		});
+	}
 
 	const reader = stream.getReader();
 	const chunks: Uint8Array[] = [];
@@ -55,7 +61,9 @@ export async function readJsonBody(
 	try {
 		while (true) {
 			const { done, value } = await reader.read();
-			if (done) break;
+			if (done) {
+				break;
+			}
 			total += value.byteLength;
 			if (total > maxBytes) {
 				await reader
@@ -79,10 +87,11 @@ export async function readJsonBody(
 	try {
 		const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
 		return JSON.parse(text) as unknown;
-	} catch {
+	} catch (cause) {
 		throw new GatewayError({
 			class: "bad_request",
 			message: "Invalid or missing JSON body",
+			cause,
 		});
 	}
 }
@@ -104,7 +113,9 @@ export async function parseJsonBody<T>(
 ): Promise<T> {
 	const json = await readJsonBody(c, maxBytes);
 	const parsed = schema.safeParse(json);
-	if (parsed.success) return parsed.data;
+	if (parsed.success) {
+		return parsed.data;
+	}
 
 	// An issue at the root of the body (an unrecognized key, say) carries no path, and prefixing it
 	// with ": " reads like a missing field name rather than a whole-body problem.
@@ -114,7 +125,7 @@ export async function parseJsonBody<T>(
 			return field ? `${field}: ${issue.message}` : issue.message;
 		})
 		.join("; ");
-	const first = parsed.error.issues[0];
+	const [first] = parsed.error.issues;
 	throw new GatewayError({
 		class: "bad_request",
 		message: detail,

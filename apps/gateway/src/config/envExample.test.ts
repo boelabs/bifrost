@@ -32,7 +32,7 @@ test(".env.example lists exactly the variables the schema declares", () => {
 	);
 
 	const stale = [...example]
-		.filter((name) => !schema.has(name) && !EXTERNAL.has(name))
+		.filter((name) => !(schema.has(name) || EXTERNAL.has(name)))
 		.sort();
 	assert.deepEqual(
 		stale,

@@ -4,9 +4,7 @@ import { GatewayError } from "#core/errors.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-function causes(
-	...entries: Array<[string, string]>
-): Map<string, CooldownCause> {
+function causes(...entries: [string, string][]): Map<string, CooldownCause> {
 	return new Map(
 		entries.map(([id, cls]) => [
 			`deployment:${id}`,

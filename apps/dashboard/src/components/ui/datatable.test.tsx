@@ -14,10 +14,10 @@ const columns: Column<(typeof rows)[number]>[] = [
 test("existing tables render the full collection without client pagination", () => {
 	const html = renderToStaticMarkup(
 		<DataTable
-			rows={rows}
+			caption="Models"
 			columns={columns}
 			rowKey={(row) => row.id}
-			caption="Models"
+			rows={rows}
 		/>,
 	);
 	assert.match(html, /<caption[^>]*>Models<\/caption>/);
@@ -28,10 +28,10 @@ test("existing tables render the full collection without client pagination", () 
 test("client pagination limits rows and keeps inaccessible pages disabled", () => {
 	const html = renderToStaticMarkup(
 		<DataTable
-			rows={rows}
 			columns={columns}
-			rowKey={(row) => row.id}
 			pagination={{ pageSize: 5 }}
+			rowKey={(row) => row.id}
+			rows={rows}
 		/>,
 	);
 	assert.match(html, />Row 4</);
@@ -44,11 +44,11 @@ test("empty and loading tables retain semantic status feedback", () => {
 	for (const loading of [false, true]) {
 		const html = renderToStaticMarkup(
 			<DataTable
-				rows={[]}
 				columns={columns}
-				rowKey={(row) => row.id}
 				loading={loading}
 				pagination={{}}
+				rowKey={(row) => row.id}
+				rows={[]}
 			/>,
 		);
 		assert.match(html, loading ? /Loading\.\.\./ : /No results found\./);
@@ -60,11 +60,11 @@ test("empty and loading tables retain semantic status feedback", () => {
 test("invalid page sizes fall back and numeric custom radii retain CSS units", () => {
 	const html = renderToStaticMarkup(
 		<DataTable
-			rows={rows}
-			columns={columns}
-			rowKey={(row) => row.id}
 			borderRadius={8}
+			columns={columns}
 			pagination={{ pageSize: 0 }}
+			rowKey={(row) => row.id}
+			rows={rows}
 		/>,
 	);
 	assert.match(html, /1–10 of 12 results/);

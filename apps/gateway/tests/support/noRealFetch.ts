@@ -10,8 +10,12 @@
  */
 
 function describeFetchTarget(input: Parameters<typeof fetch>[0]): string {
-	if (typeof input === "string") return input;
-	if (input instanceof URL) return input.href;
+	if (typeof input === "string") {
+		return input;
+	}
+	if (input instanceof URL) {
+		return input.href;
+	}
 	if (typeof input === "object" && input !== null && "url" in input) {
 		return String(input.url);
 	}

@@ -70,8 +70,8 @@ export function MenuPositioner({
 		<BaseMenu.Positioner
 			positionMethod={positionMethod}
 			{...props}
-			sideOffset={sideOffset}
 			className={mergeClassName("z-50 outline-none", className)}
+			sideOffset={sideOffset}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -203,7 +203,7 @@ export function MenuCheckboxItemIndicator({
 		<BaseMenu.CheckboxItemIndicator
 			{...props}
 			className={mergeClassName(
-				"ml-auto flex size-4 shrink-0 items-center justify-center text-primary data-[unchecked]:invisible",
+				"ml-auto flex size-4 shrink-0 items-center justify-center text-primary data-unchecked:invisible",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -265,7 +265,7 @@ export function MenuRadioItemIndicator({
 		<BaseMenu.RadioItemIndicator
 			{...props}
 			className={mergeClassName(
-				"ml-auto flex size-4 shrink-0 items-center justify-center text-xs text-primary data-[unchecked]:invisible",
+				"ml-auto flex size-4 shrink-0 items-center justify-center text-primary text-xs data-unchecked:invisible",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -306,7 +306,7 @@ export function MenuGroupLabel({
 		<BaseMenu.GroupLabel
 			{...props}
 			className={mergeClassName(
-				"px-3 py-2 text-xs font-semibold text-fg-muted",
+				"px-3 py-2 font-semibold text-fg-muted text-xs",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -347,7 +347,7 @@ export function MenuSubmenuTrigger({
 		<BaseMenu.SubmenuTrigger
 			{...props}
 			className={mergeClassName(
-				`${itemStyles} justify-between data-[popup-open]:bg-secondary`,
+				`${itemStyles} justify-between data-popup-open:bg-secondary`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

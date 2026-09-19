@@ -37,7 +37,7 @@ async function deployment(
 	outputFormat: "png" | "webp",
 ): Promise<DeploymentRow> {
 	return createDeployment({
-		publicModel: publicModel,
+		publicModel,
 		adapterKey: "openaicompatible",
 		upstreamModel: `provider-${randomUUID()}`,
 		credentials: { apiKey: "test", baseUrl: "https://example.test/v1" },

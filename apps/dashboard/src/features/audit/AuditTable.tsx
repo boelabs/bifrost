@@ -13,9 +13,15 @@ import type { AuditEntry } from "./api.ts";
 import { splitAction } from "./common.ts";
 
 function statusTone(status: number | null) {
-	if (status === null) return "muted" as const;
-	if (status >= 500) return "danger" as const;
-	if (status >= 400) return "warning" as const;
+	if (status === null) {
+		return "muted" as const;
+	}
+	if (status >= 500) {
+		return "danger" as const;
+	}
+	if (status >= 400) {
+		return "warning" as const;
+	}
 	return "success" as const;
 }
 
@@ -26,8 +32,8 @@ const columns: Column<AuditEntry>[] = [
 		render: (row) => (
 			// The operator's own timezone, which the server does not have.
 			<span
-				suppressHydrationWarning
 				className="whitespace-nowrap text-fg-muted text-xs"
+				suppressHydrationWarning
 			>
 				{new Date(row.at).toLocaleString()}
 			</span>
@@ -115,31 +121,30 @@ export function AuditTable({
 	const filtered = isFiltered(filters);
 	const offset = filters.offset ?? 0;
 
-	if (rows.length === 0)
+	if (rows.length === 0) {
 		return (
 			<EmptyState
-				title={
-					filtered ? "Nothing matches those filters" : "Nothing recorded yet"
-				}
 				description={
 					filtered
 						? "Reads are not audited — only changes and payload access — so a quiet trail can also mean nobody has changed anything."
 						: "Every mutating admin call and every payload read lands here as it happens."
 				}
+				title={
+					filtered ? "Nothing matches those filters" : "Nothing recorded yet"
+				}
 			/>
 		);
+	}
 
 	return (
 		<>
 			<DataTable
-				rows={rows}
+				caption="Audit trail"
 				columns={columns}
 				rowKey={(row) => row.id}
-				caption="Audit trail"
+				rows={rows}
 				toolbar={
 					<Button
-						size="sm"
-						variant="secondary"
 						onClick={() =>
 							downloadCsv(
 								`audit-${new Date().toISOString().slice(0, 10)}.csv`,
@@ -157,8 +162,10 @@ export function AuditTable({
 								],
 							)
 						}
+						size="sm"
+						variant="secondary"
 					>
-						<IconDownload size={15} aria-hidden className="mr-1" />
+						<IconDownload aria-hidden className="mr-1" size={15} />
 						CSV
 					</Button>
 				}
@@ -167,10 +174,10 @@ export function AuditTable({
 				label="entries"
 				limit={PAGE_SIZE}
 				offset={offset}
-				total={total}
 				onOffsetChange={(next) =>
 					set({ offset: next === 0 ? undefined : next })
 				}
+				total={total}
 			/>
 		</>
 	);

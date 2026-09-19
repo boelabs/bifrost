@@ -26,8 +26,9 @@ export function encodeCompactionSummary(summary: string): string {
 }
 
 export function decodeCompactionSummary(value: unknown): string | undefined {
-	if (typeof value !== "string" || !value.startsWith(COMPACTION_PREFIX))
+	if (typeof value !== "string" || !value.startsWith(COMPACTION_PREFIX)) {
 		return undefined;
+	}
 	try {
 		const encoded = value.slice(COMPACTION_PREFIX.length);
 		const envelope = parseEncryptedEnvelope(
@@ -52,9 +53,13 @@ export function expandLocalCompactionItems(
 	items: Record<string, unknown>[],
 ): Record<string, unknown>[] {
 	return items.flatMap((item) => {
-		if (item.type !== "compaction") return [item];
+		if (item.type !== "compaction") {
+			return [item];
+		}
 		const summary = decodeCompactionSummary(item.encrypted_content);
-		if (summary === undefined) return [item];
+		if (summary === undefined) {
+			return [item];
+		}
 		return [
 			{
 				type: "message",

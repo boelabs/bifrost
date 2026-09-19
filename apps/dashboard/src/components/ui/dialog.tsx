@@ -16,10 +16,10 @@ import {
 } from "./appearance";
 
 export const overlayBackdropStyles = `fixed inset-0 z-50 bg-zinc-950/50 ${overlayFadeStyles}`;
-export const overlayButtonStyles = `inline-flex items-center justify-center gap-2 rounded-[var(--ui-radius-control)] px-3 py-2 text-sm font-medium text-fg hover:bg-secondary disabled:pointer-events-none disabled:opacity-50 ${focusRing}`;
+export const overlayButtonStyles = `inline-flex items-center justify-center gap-2 rounded-(--ui-radius-control) px-3 py-2 text-sm font-medium text-fg hover:bg-secondary disabled:pointer-events-none disabled:opacity-50 ${focusRing}`;
 export const overlayArrowStyles =
-	"size-3 rotate-45 rounded-[var(--ui-radius-sm)] border border-border/60 bg-popover data-[side=top]:-bottom-1.5 data-[side=bottom]:-top-1.5 data-[side=left]:-right-1.5 data-[side=right]:-left-1.5";
-export const dialogPopupStyles = `relative flex w-full max-w-[calc(100vw-2rem)] max-h-[calc(100dvh-2rem)] flex-col gap-6 overflow-auto rounded-[var(--ui-radius-dialog)] border border-border/60 bg-popover p-6 text-fg shadow-xl outline-none ${overlayFadeStyles} md:w-md`;
+	"size-3 rotate-45 rounded-(--ui-radius-sm) border border-border/60 bg-popover data-[side=top]:-bottom-1.5 data-[side=bottom]:-top-1.5 data-[side=left]:-right-1.5 data-[side=right]:-left-1.5";
+export const dialogPopupStyles = `relative flex w-full max-w-[calc(100vw-2rem)] max-h-[calc(100dvh-2rem)] flex-col gap-6 overflow-auto rounded-(--ui-radius-dialog) border border-border/60 bg-popover p-6 text-fg shadow-xl outline-none ${overlayFadeStyles} md:w-md`;
 
 export const DialogRoot = BaseDialog.Root;
 export const DialogHandle = BaseDialog.Handle;
@@ -92,7 +92,7 @@ export function DialogViewport({
 		<BaseDialog.Viewport
 			{...props}
 			className={mergeClassName(
-				"fixed inset-0 z-50 flex items-center justify-center overflow-auto p-4 [scrollbar-gutter:stable]",
+				"scrollbar-gutter-stable fixed inset-0 z-50 flex items-center justify-center overflow-auto p-4",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -138,11 +138,11 @@ export function DialogHeader({
 	return (
 		<div
 			{...props}
-			data-slot="dialog-header"
 			className={cn(
-				"shrink-0 space-y-2 border-b border-border/50 p-6",
+				"shrink-0 space-y-2 border-border/50 border-b p-6",
 				className,
 			)}
+			data-slot="dialog-header"
 			style={appearanceStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -159,11 +159,11 @@ export function DialogBody({
 	return (
 		<div
 			{...props}
-			data-slot="dialog-body"
 			className={cn(
-				"min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain scroll-p-6 p-6 [scrollbar-gutter:stable]",
+				"scrollbar-gutter-stable min-h-0 min-w-0 flex-1 scroll-p-6 overflow-y-auto overscroll-contain p-6",
 				className,
 			)}
+			data-slot="dialog-body"
 			style={appearanceStyle({ borderRadius, width }, style)}
 		>
 			<div className="flex min-w-0 flex-col gap-5">{children}</div>
@@ -181,11 +181,11 @@ export function DialogFooter({
 	return (
 		<div
 			{...props}
-			data-slot="dialog-footer"
 			className={cn(
-				"flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-border/50 bg-popover px-6 py-4",
+				"flex shrink-0 flex-wrap items-center justify-end gap-2 border-border/50 border-t bg-popover px-6 py-4",
 				className,
 			)}
+			data-slot="dialog-footer"
 			style={appearanceStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -203,7 +203,7 @@ export function DialogTitle({
 	return (
 		<BaseDialog.Title
 			{...props}
-			className={mergeClassName("text-lg font-semibold text-fg", className)}
+			className={mergeClassName("font-semibold text-fg text-lg", className)}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -223,7 +223,7 @@ export function DialogDescription({
 	return (
 		<BaseDialog.Description
 			{...props}
-			className={mergeClassName("text-sm text-fg-muted", className)}
+			className={mergeClassName("text-fg-muted text-sm", className)}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);

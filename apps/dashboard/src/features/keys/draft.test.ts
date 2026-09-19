@@ -18,7 +18,7 @@ const key: VirtualKey = {
 	keyPrefix: "bk_live_abc",
 	createdBy: "user:root",
 	allowedModels: ["general"],
-	maxBudgetCents: 5_000,
+	maxBudgetCents: 5000,
 	budgetReset: "monthly",
 	budgetResetAt: null,
 	spendCents: "1200.0000000000",
@@ -48,8 +48,8 @@ describe("money", () => {
 	});
 
 	test("cents render without trailing zeros", () => {
-		expect(centsToDollars(5_000)).toBe("50");
-		expect(centsToDollars(1_234)).toBe("12.34");
+		expect(centsToDollars(5000)).toBe("50");
+		expect(centsToDollars(1234)).toBe("12.34");
 	});
 });
 
@@ -85,7 +85,7 @@ describe("toCreateBody", () => {
 		expect(body).toEqual({
 			name: "ci",
 			allowedModels: ["general"],
-			maxBudgetCents: 5_000,
+			maxBudgetCents: 5000,
 			budgetReset: "monthly",
 			rpm: 60,
 		});

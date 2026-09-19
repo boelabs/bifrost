@@ -75,8 +75,9 @@ export function EmbeddingWorkspace({
 	}, []);
 
 	useEffect(() => {
-		if (runs.length && scroll.current)
+		if (runs.length && scroll.current) {
 			scroll.current.scrollTop = scroll.current.scrollHeight;
+		}
 	}, [runs]);
 
 	function update(id: string, patch: Partial<EmbeddingRun>) {
@@ -145,20 +146,24 @@ export function EmbeddingWorkspace({
 				{ model: model.id, inputs: run.inputs, settings },
 				{ signal: controller.signal },
 			);
-			if (!alive.current) return;
+			if (!alive.current) {
+				return;
+			}
 			update(id, {
 				state: "completed",
 				vectors: vectorsFrom(response),
 				durationMs: performance.now() - started,
-				...(response.usage?.prompt_tokens !== undefined
-					? { promptTokens: response.usage.prompt_tokens }
-					: {}),
-				...(response.usage?.total_tokens !== undefined
-					? { totalTokens: response.usage.total_tokens }
-					: {}),
+				...(response.usage?.prompt_tokens === undefined
+					? {}
+					: { promptTokens: response.usage.prompt_tokens }),
+				...(response.usage?.total_tokens === undefined
+					? {}
+					: { totalTokens: response.usage.total_tokens }),
 			});
 		} catch (cause) {
-			if (!alive.current) return;
+			if (!alive.current) {
+				return;
+			}
 			const stopped = cause instanceof Error && cause.name === "AbortError";
 			update(id, {
 				state: stopped ? "stopped" : "failed",
@@ -179,60 +184,66 @@ export function EmbeddingWorkspace({
 
 	return (
 		<Workspace
-			scroll={scroll}
 			empty={runs.length === 0}
+			scroll={scroll}
 			{...(localError ? { error: localError } : {})}
-			transcript={runs.map((run) => (
-				<EmbeddingRunView
-					key={run.id}
-					run={run}
-					onCopy={copy}
-					onRetry={() => {
-						if (!busy) void execute(run);
-					}}
-				/>
-			))}
 			composer={
 				<>
 					<Composer
-						prompt={draft}
-						onPrompt={setDraft}
-						files={[]}
-						onRemove={() => {}}
-						onFiles={() => {}}
-						placeholder="One text per line..."
-						showAttach={false}
 						accepted={[]}
-						reading={false}
 						busy={busy}
-						onSend={send}
-						onStop={() => request.current?.abort()}
-						onSettings={() => setSettingsOpen(true)}
+						files={[]}
+						modelPicker={
+							<ModelSelect
+								capability="embedding"
+								modelId={model.id}
+								models={models}
+								onSelect={onSelect}
+							/>
+						}
+						onFiles={() => {
+							/* intentionally empty */
+						}}
+						onPrompt={setDraft}
+						onRemove={() => {
+							/* intentionally empty */
+						}}
 						onReset={() => {
 							request.current?.abort();
 							setRuns([]);
 							setDraft("");
 							setLocalError(undefined);
 						}}
-						modelPicker={
-							<ModelSelect
-								models={models}
-								capability="embedding"
-								modelId={model.id}
-								onSelect={onSelect}
-							/>
-						}
+						onSend={send}
+						onSettings={() => setSettingsOpen(true)}
+						onStop={() => request.current?.abort()}
+						placeholder="One text per line..."
+						prompt={draft}
+						reading={false}
+						showAttach={false}
 					/>
 					{notice ? (
-						<p role="status" className="sr-only">
+						<p className="sr-only" role="status">
 							{notice}
 						</p>
 					) : null}
 				</>
 			}
+			transcript={runs.map((run) => (
+				<EmbeddingRunView
+					key={run.id}
+					onCopy={copy}
+					onRetry={() => {
+						if (!busy) {
+							void execute(run);
+						}
+					}}
+					run={run}
+				/>
+			))}
 		>
-			<DialogRoot open={settingsOpen} onOpenChange={setSettingsOpen}>
-				<DialogContent layout="sectioned" className="md:w-lg">
+			<DialogRoot onOpenChange={setSettingsOpen} open={settingsOpen}>
+				<DialogContent className="md:w-lg" layout="sectioned">
 					<DialogHeader>
 						<DialogTitle>Embedding settings</DialogTitle>
 						<DialogDescription>
@@ -242,23 +253,26 @@ export function EmbeddingWorkspace({
 					</DialogHeader>
 					<DialogBody>
 						<NumberField.Root
-							value={settings.dimensions ?? null}
+							max={8192}
+							min={1}
 							onValueChange={(value) =>
 								setSettings((current) => {
 									const next = { ...current };
-									if (value === null) delete next.dimensions;
-									else next.dimensions = value;
+									if (value === null) {
+										delete next.dimensions;
+									} else {
+										next.dimensions = value;
+									}
 									return next;
 								})
 							}
-							min={1}
-							max={8192}
 							step={1}
+							value={settings.dimensions ?? null}
 						>
 							<NumberField.ScrubArea>
 								<label
-									htmlFor="playground-embedding-dimensions"
 									className="font-medium text-sm"
+									htmlFor="playground-embedding-dimensions"
 								>
 									Dimensions
 								</label>
@@ -276,18 +290,20 @@ export function EmbeddingWorkspace({
 							</p>
 						</NumberField.Root>
 						<Select
-							label="Encoding format"
 							description="base64 is the same vector, a quarter of the bytes; it is decoded here either way."
-							value={settings.encodingFormat ?? "default"}
+							label="Encoding format"
 							onValueChange={(value) =>
 								setSettings((current) => {
 									const next = { ...current };
-									if (value === "default" || value === null)
+									if (value === "default" || value === null) {
 										delete next.encodingFormat;
-									else next.encodingFormat = value;
+									} else {
+										next.encodingFormat = value;
+									}
 									return next;
 								})
 							}
+							value={settings.encodingFormat ?? "default"}
 						>
 							<SelectItem value="default">Default</SelectItem>
 							{ENCODING_FORMATS.map((format) => (

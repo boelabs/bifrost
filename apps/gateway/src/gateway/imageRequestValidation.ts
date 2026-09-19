@@ -26,11 +26,12 @@ export function assertImageRequestSupported(
 	strategy: UnsupportedParameterStrategy = "error",
 ): void {
 	const profile = imageProfileFor(meta, req.operation);
-	if (!profile)
+	if (!profile) {
 		unsupported(
 			"model",
 			"The selected model has no profile for this image operation.",
 		);
+	}
 
 	if (
 		profile.maxPromptChars !== undefined &&
@@ -42,14 +43,18 @@ export function assertImageRequestSupported(
 		);
 	}
 	const n = req.n ?? 1;
-	if (profile.maxN !== undefined && n > profile.maxN)
+	if (profile.maxN !== undefined && n > profile.maxN) {
 		unsupported("n", `The selected model supports at most n=${profile.maxN}.`);
-	if (req.stream && n !== 1) unsupported("n", "Image streaming requires n=1.");
+	}
+	if (req.stream && n !== 1) {
+		unsupported("n", "Image streaming requires n=1.");
+	}
 
 	if (req.operation === "edit") {
 		const images = req.images ?? [];
-		if (images.length === 0)
+		if (images.length === 0) {
 			unsupported("image", "At least one input image is required.");
+		}
 		if (
 			profile.maxInputImages !== undefined &&
 			images.length > profile.maxInputImages
@@ -59,7 +64,7 @@ export function assertImageRequestSupported(
 				`The selected model accepts at most ${profile.maxInputImages} input images.`,
 			);
 		}
-		const maxImageBytes = profile.maxImageBytes;
+		const { maxImageBytes } = profile;
 		if (
 			maxImageBytes !== undefined &&
 			images.some((image) => image.sizeBytes > maxImageBytes)
@@ -81,8 +86,9 @@ export function assertImageRequestSupported(
 				`Input images exceed the ${profile.maxTotalInputBytes} byte aggregate model limit.`,
 			);
 		}
-		if (req.mask && !profile.supportsMask)
+		if (req.mask && !profile.supportsMask) {
 			unsupported("mask", "The selected model does not support masks.");
+		}
 		if (req.inputFidelity && !profile.supportsInputFidelity) {
 			unsupported(
 				"input_fidelity",
@@ -91,13 +97,15 @@ export function assertImageRequestSupported(
 		}
 	}
 
-	if (req.moderation && !profile.supportsModeration)
+	if (req.moderation && !profile.supportsModeration) {
 		unsupported(
 			"moderation",
 			"The selected model does not support moderation.",
 		);
-	if (req.style && !profile.supportsStyle)
+	}
+	if (req.style && !profile.supportsStyle) {
 		unsupported("style", "The selected model does not support style.");
+	}
 	if (
 		req.background === "transparent" &&
 		!profile.supportsTransparentBackground
@@ -155,11 +163,12 @@ export function assertImageRequestSupported(
 		if (!direct) {
 			const match = /^(\d+)x(\d+)$/.exec(req.size);
 			const arbitrary = profile.arbitrarySize;
-			if (!match || !arbitrary)
+			if (!(match && arbitrary)) {
 				unsupported(
 					"size",
 					`The selected model does not support size=${req.size}.`,
 				);
+			}
 			const width = Number(match[1]);
 			const height = Number(match[2]);
 			const ratio = width / height;
@@ -172,11 +181,12 @@ export function assertImageRequestSupported(
 					width * height > arbitrary.maxPixels) ||
 				ratio < arbitrary.minAspectRatio ||
 				ratio > arbitrary.maxAspectRatio
-			)
+			) {
 				unsupported(
 					"size",
 					`The selected model does not support size=${req.size}.`,
 				);
+			}
 		}
 	}
 }

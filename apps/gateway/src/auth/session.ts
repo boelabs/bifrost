@@ -82,7 +82,9 @@ export async function resolveSession(
 
 	const cached = await redis.get(ck);
 	if (cached !== null) {
-		if (cached === "null") return null;
+		if (cached === "null") {
+			return null;
+		}
 		const entry = JSON.parse(cached) as CachedSession;
 		if (entry.expiresAt <= Date.now() || (await isIdle(entry.lastSeenAt))) {
 			await redis.del(ck);
@@ -137,7 +139,9 @@ function hydrate(entry: CachedSession): SessionAuth {
 export async function endSession(token: string): Promise<void> {
 	const hash = hashSessionToken(token);
 	const row = await getLiveSessionByHash(hash);
-	if (row) await revokeDashboardSession(row.id);
+	if (row) {
+		await revokeDashboardSession(row.id);
+	}
 	await redis.del(cacheKey(hash));
 }
 
@@ -145,6 +149,8 @@ export async function endSession(token: string): Promise<void> {
 export async function invalidateSessionCaches(
 	tokenHashes: readonly string[],
 ): Promise<void> {
-	if (tokenHashes.length === 0) return;
+	if (tokenHashes.length === 0) {
+		return;
+	}
 	await redis.del(...tokenHashes.map(cacheKey));
 }

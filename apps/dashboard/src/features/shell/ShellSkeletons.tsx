@@ -14,23 +14,23 @@ const NAV_ITEMS = 8;
 
 export function NavSkeleton({ collapsed }: { collapsed: boolean }) {
 	return (
-		<div role="status" aria-label="Loading navigation" aria-busy="true">
+		<div aria-busy="true" aria-label="Loading navigation" role="status">
 			{Array.from({ length: NAV_ITEMS }, (_, index) => (
 				<div
-					// biome-ignore lint/suspicious/noArrayIndexKey: placeholder rows have no identity
-					key={index}
 					className={cn(
 						"flex min-h-10 items-center gap-3 px-3 py-2",
 						collapsed && "justify-center px-0",
 					)}
+					// biome-ignore lint/suspicious/noArrayIndexKey: placeholder rows have no identity
+					key={index}
 				>
 					<Skeleton className="size-4.5 shrink-0 rounded-md" />
-					{!collapsed ? (
+					{collapsed ? null : (
 						<Skeleton
 							className="h-3.5"
 							width={`${[64, 56, 60, 72, 80, 48, 84, 64][index] ?? 64}px`}
 						/>
-					) : null}
+					)}
 				</div>
 			))}
 		</div>
@@ -40,18 +40,18 @@ export function NavSkeleton({ collapsed }: { collapsed: boolean }) {
 export function UserMenuSkeleton({ collapsed }: { collapsed: boolean }) {
 	return (
 		<div
-			role="status"
-			aria-label="Loading account"
 			aria-busy="true"
+			aria-label="Loading account"
 			className="flex w-full items-center gap-3 p-2"
+			role="status"
 		>
-			<Skeleton className="size-8 shrink-0 rounded-[var(--ui-radius-control)]" />
-			{!collapsed ? (
+			<Skeleton className="size-8 shrink-0 rounded-(--ui-radius-control)" />
+			{collapsed ? null : (
 				<span className="min-w-0 flex-1">
 					<Skeleton className="h-3.5" width="60%" />
 					<Skeleton className="mt-1.5 h-3" width="40%" />
 				</span>
-			) : null}
+			)}
 		</div>
 	);
 }

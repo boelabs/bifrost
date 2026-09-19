@@ -6,7 +6,9 @@ const MAX_REQUEST_ID_LENGTH = 128;
 
 function incomingRequestId(c: Context): string | null {
 	const raw = c.req.header("x-request-id")?.trim();
-	if (!raw || raw.length > MAX_REQUEST_ID_LENGTH) return null;
+	if (!raw || raw.length > MAX_REQUEST_ID_LENGTH) {
+		return null;
+	}
 	return raw;
 }
 
@@ -15,8 +17,9 @@ export function requestContextMiddleware(): MiddlewareHandler<AppEnv> {
 		const requestId = incomingRequestId(c) ?? randomUUID();
 		c.set("requestId", requestId);
 		// WebSocket upgrade headers are owned by the adapter and become immutable during upgrade.
-		if (c.req.header("upgrade")?.toLowerCase() !== "websocket")
+		if (c.req.header("upgrade")?.toLowerCase() !== "websocket") {
 			c.header("x-request-id", requestId);
+		}
 		await next();
 	};
 }

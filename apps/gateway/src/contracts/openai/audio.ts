@@ -1,4 +1,4 @@
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 import type {
 	CanonicalTranscriptionStreamEvent,
@@ -39,18 +39,18 @@ export function transcriptionToCanonical(
 		file,
 		responseFormat: fields.response_format,
 		stream: fields.stream ?? false,
-		...(fields.language !== undefined ? { language: fields.language } : {}),
-		...(fields.prompt !== undefined ? { prompt: fields.prompt } : {}),
-		...(fields.temperature !== undefined
-			? { temperature: fields.temperature }
-			: {}),
-		...(fields.timestamp_granularities !== undefined
-			? { timestampGranularities: fields.timestamp_granularities }
-			: {}),
-		...(fields.include !== undefined ? { include: fields.include } : {}),
-		...(fields.extra_body !== undefined
-			? { extraBody: fields.extra_body }
-			: {}),
+		...(fields.language === undefined ? {} : { language: fields.language }),
+		...(fields.prompt === undefined ? {} : { prompt: fields.prompt }),
+		...(fields.temperature === undefined
+			? {}
+			: { temperature: fields.temperature }),
+		...(fields.timestamp_granularities === undefined
+			? {}
+			: { timestampGranularities: fields.timestamp_granularities }),
+		...(fields.include === undefined ? {} : { include: fields.include }),
+		...(fields.extra_body === undefined
+			? {}
+			: { extraBody: fields.extra_body }),
 	};
 }
 
@@ -58,27 +58,27 @@ function renderUsage(usage: TranscriptionUsage): Record<string, unknown> {
 	const details = usage.inputTokenDetails;
 	return {
 		type: "tokens",
-		...(usage.inputTokens !== undefined
-			? { input_tokens: usage.inputTokens }
-			: {}),
+		...(usage.inputTokens === undefined
+			? {}
+			: { input_tokens: usage.inputTokens }),
 		...(details
 			? {
 					input_token_details: {
-						...(details.textTokens !== undefined
-							? { text_tokens: details.textTokens }
-							: {}),
-						...(details.audioTokens !== undefined
-							? { audio_tokens: details.audioTokens }
-							: {}),
+						...(details.textTokens === undefined
+							? {}
+							: { text_tokens: details.textTokens }),
+						...(details.audioTokens === undefined
+							? {}
+							: { audio_tokens: details.audioTokens }),
 					},
 				}
 			: {}),
-		...(usage.outputTokens !== undefined
-			? { output_tokens: usage.outputTokens }
-			: {}),
-		...(usage.totalTokens !== undefined
-			? { total_tokens: usage.totalTokens }
-			: {}),
+		...(usage.outputTokens === undefined
+			? {}
+			: { output_tokens: usage.outputTokens }),
+		...(usage.totalTokens === undefined
+			? {}
+			: { total_tokens: usage.totalTokens }),
 	};
 }
 
@@ -90,22 +90,23 @@ export function toOpenAITranscriptionResponse(
 	resp: CanonicalTranscriptionResponse,
 	format: CanonicalTranscriptionRequest["responseFormat"],
 ): Record<string, unknown> | string {
-	if (format === "text" || format === "srt" || format === "vtt")
+	if (format === "text" || format === "srt" || format === "vtt") {
 		return resp.text;
+	}
 	if (format === "verbose_json") {
 		return {
 			task: "transcribe",
-			...(resp.language !== undefined ? { language: resp.language } : {}),
-			...(resp.duration !== undefined ? { duration: resp.duration } : {}),
+			...(resp.language === undefined ? {} : { language: resp.language }),
+			...(resp.duration === undefined ? {} : { duration: resp.duration }),
 			text: resp.text,
-			...(resp.segments !== undefined ? { segments: resp.segments } : {}),
-			...(resp.words !== undefined ? { words: resp.words } : {}),
+			...(resp.segments === undefined ? {} : { segments: resp.segments }),
+			...(resp.words === undefined ? {} : { words: resp.words }),
 			...(resp.usage ? { usage: renderUsage(resp.usage) } : {}),
 		};
 	}
 	return {
 		text: resp.text,
-		...(resp.logprobs !== undefined ? { logprobs: resp.logprobs } : {}),
+		...(resp.logprobs === undefined ? {} : { logprobs: resp.logprobs }),
 		...(resp.usage ? { usage: renderUsage(resp.usage) } : {}),
 	};
 }
@@ -117,13 +118,13 @@ export function toOpenAITranscriptionEvent(
 		return {
 			type: "transcript.text.delta",
 			delta: event.delta,
-			...(event.logprobs !== undefined ? { logprobs: event.logprobs } : {}),
+			...(event.logprobs === undefined ? {} : { logprobs: event.logprobs }),
 		};
 	}
 	return {
 		type: "transcript.text.done",
 		text: event.text,
-		...(event.logprobs !== undefined ? { logprobs: event.logprobs } : {}),
+		...(event.logprobs === undefined ? {} : { logprobs: event.logprobs }),
 		...(event.usage ? { usage: renderUsage(event.usage) } : {}),
 	};
 }

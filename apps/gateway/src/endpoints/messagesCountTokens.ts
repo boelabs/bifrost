@@ -34,7 +34,9 @@ export async function messagesCountTokensHandler(
 	let finished = false;
 
 	const finish = async (error?: GatewayError | null): Promise<void> => {
-		if (!routing || finished) return;
+		if (!routing || finished) {
+			return;
+		}
 		finished = true;
 		await routing.finish(
 			null,
@@ -77,13 +79,14 @@ export async function messagesCountTokensHandler(
 					requestId: log.requestId,
 					operationId: log.operationId,
 					candidateEligibility: (candidate) => {
-						if (!candidate.adapter.messageTokenCount)
+						if (!candidate.adapter.messageTokenCount) {
 							throw new GatewayError({
 								class: "bad_request",
 								code: "native_token_count_unsupported",
 								message: `Adapter "${candidate.adapter.key}" has no native Messages token counter`,
 								deploymentHealth: "neutral",
 							});
+						}
 					},
 				},
 				(candidate, ctx) =>

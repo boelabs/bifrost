@@ -10,7 +10,7 @@ test("image logs: never include b64_json or image bytes", () => {
 		],
 	});
 	assert.equal(JSON.stringify(log).includes("secret-base64"), false);
-	assert.deepEqual((log.images as Array<Record<string, unknown>>)[0], {
+	assert.deepEqual((log.images as Record<string, unknown>[])[0], {
 		kind: "b64_json",
 		mime_type: "image/png",
 		width: 4,

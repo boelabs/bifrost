@@ -92,13 +92,14 @@ function streamChatCompletion(
 			);
 			const { routing, parameterPolicy, contentInputResolution } = routed;
 			log.applyRouting(routing);
-			if (routing.value.kind !== "stream")
+			if (routing.value.kind !== "stream") {
 				throw new GatewayError({
 					class: "server",
 					message: "Streaming chat unexpectedly returned JSON",
 				});
-			const upstreamStartedAt = routing.upstreamStartedAt;
-			const meta = routing.candidate.meta;
+			}
+			const { upstreamStartedAt } = routing;
+			const { meta } = routing.candidate;
 			metadata = {
 				...candidateMetadata(routing.candidate),
 				streamLifecycle: routing.value.observation,
@@ -108,16 +109,22 @@ function streamChatCompletion(
 				canonical.reasoning,
 				meta.capabilities.reasoning ? meta.reasoning : undefined,
 			);
-			if (reasoning) metadata.reasoning = reasoning;
+			if (reasoning) {
+				metadata.reasoning = reasoning;
+			}
 			const parameterMetadata = parameterPolicyLogMetadata(
 				parameterPolicy,
 				settings.unsupportedParameterStrategy,
 			);
-			if (parameterMetadata) metadata.parameterPolicy = parameterMetadata;
+			if (parameterMetadata) {
+				metadata.parameterPolicy = parameterMetadata;
+			}
 			const contentInputMetadata = contentInputResolutionLogMetadata(
 				contentInputResolution,
 			);
-			if (contentInputMetadata) metadata.contentInputs = contentInputMetadata;
+			if (contentInputMetadata) {
+				metadata.contentInputs = contentInputMetadata;
+			}
 			const routingMetadata = routingMetadataRequested(c)
 				? publicRoutingMetadata(routing, settings)
 				: null;
@@ -142,12 +149,18 @@ function streamChatCompletion(
 					chunk,
 				);
 				const delta = transformed.choices[0]?.delta;
-				if (delta?.content) content += delta.content;
-				if (transformed.usage) finalUsage = transformed.usage;
+				if (delta?.content) {
+					content += delta.content;
+				}
+				if (transformed.usage) {
+					finalUsage = transformed.usage;
+				}
 
 				let out = transformed;
 				if (!canonical.includeUsage && transformed.usage !== undefined) {
-					if (transformed.choices.length === 0) continue;
+					if (transformed.choices.length === 0) {
+						continue;
+					}
 					out = { ...transformed };
 					delete out.usage;
 				}
@@ -169,12 +182,16 @@ function streamChatCompletion(
 					semantic === "reasoning" ||
 					semantic === "content" ||
 					semantic === "tool"
-				)
+				) {
 					markDownstreamSemanticWritten(downstream);
-				if (transformed.choices.some((choice) => choice.finishReason !== null))
+				}
+				if (
+					transformed.choices.some((choice) => choice.finishReason !== null)
+				) {
 					markDownstreamTerminalWritten(downstream);
+				}
 			}
-			if (routingMetadata)
+			if (routingMetadata) {
 				await writeSSE(
 					stream,
 					{
@@ -189,19 +206,23 @@ function streamChatCompletion(
 					},
 					downstream,
 				);
+			}
 			await writeSSE(stream, { data: "[DONE]" }, downstream);
 			markDownstreamTerminalWritten(downstream);
-			if (firstTokenAt !== null)
+			if (firstTokenAt !== null) {
 				log.upstreamTtftMs = firstTokenAt - upstreamStartedAt;
+			}
 		} catch (error) {
 			streamError = toGatewayError(error);
 			log.applyFailedAttempts(streamError.attempts);
-			if (streamError.code === "downstream_backpressure") log.abortUpstream();
+			if (streamError.code === "downstream_backpressure") {
+				log.abortUpstream();
+			}
 			await notifyExtensionError(c, "chat", canonical.model, streamError);
 			if (
 				streamError.code !== "downstream_backpressure" &&
 				!log.clientSignal.aborted
-			)
+			) {
 				try {
 					await writeSSE(
 						stream,
@@ -213,6 +234,7 @@ function streamChatCompletion(
 				} catch {
 					// The original stream failure remains authoritative.
 				}
+			}
 		} finally {
 			if (routed) {
 				await routed.routing.finish(
@@ -238,7 +260,7 @@ function streamChatCompletion(
 				usage: finalUsage,
 				cost,
 				firstOutputMs:
-					firstTokenAt !== null ? firstTokenAt - log.startedAt : null,
+					firstTokenAt === null ? null : firstTokenAt - log.startedAt,
 				responseBody: { streamed: true, content },
 				metadata,
 				error: streamError ? streamError.toLog() : null,
@@ -273,16 +295,20 @@ export async function chatCompletionsHandler(
 			draft: log,
 			namespace: "chat",
 			payload: canonical as unknown as Record<string, unknown>,
-			eligible:
-				!canonical.stream &&
-				!canonical.tools?.length &&
-				!hasContentInputs(canonical),
+			eligible: !(
+				canonical.stream ||
+				canonical.tools?.length ||
+				hasContentInputs(canonical)
+			),
 		});
-		if (cache.hit) return c.json(cache.body as object);
+		if (cache.hit) {
+			return c.json(cache.body as object);
+		}
 
 		const settings = await getEffectiveSettings();
-		if (canonical.stream)
+		if (canonical.stream) {
 			return streamChatCompletion(c, canonical, settings, log);
+		}
 		const { routing, parameterPolicy, contentInputResolution } =
 			await routeChat(c, canonical, log.requestId, settings, {
 				signal: log.clientSignal,
@@ -290,10 +316,11 @@ export async function chatCompletionsHandler(
 			});
 		log.applyRouting(routing);
 		lifecycle.attach(routing);
-		if (routing.value.kind === "json")
+		if (routing.value.kind === "json") {
 			lifecycle.rememberUsage(routing.value.response.usage);
-		const upstreamStartedAt = routing.upstreamStartedAt;
-		const meta = routing.candidate.meta;
+		}
+		const { upstreamStartedAt } = routing;
+		const { meta } = routing.candidate;
 		const metadata: Record<string, unknown> = {
 			...candidateMetadata(routing.candidate),
 			...(routing.value.kind === "stream"
@@ -304,16 +331,22 @@ export async function chatCompletionsHandler(
 			canonical.reasoning,
 			meta.capabilities.reasoning ? meta.reasoning : undefined,
 		);
-		if (reasoning) metadata.reasoning = reasoning;
+		if (reasoning) {
+			metadata.reasoning = reasoning;
+		}
 		const parameterMetadata = parameterPolicyLogMetadata(
 			parameterPolicy,
 			settings.unsupportedParameterStrategy,
 		);
-		if (parameterMetadata) metadata.parameterPolicy = parameterMetadata;
+		if (parameterMetadata) {
+			metadata.parameterPolicy = parameterMetadata;
+		}
 		const contentInputMetadata = contentInputResolutionLogMetadata(
 			contentInputResolution,
 		);
-		if (contentInputMetadata) metadata.contentInputs = contentInputMetadata;
+		if (contentInputMetadata) {
+			metadata.contentInputs = contentInputMetadata;
+		}
 		const routingMetadata = routingMetadataRequested(c)
 			? publicRoutingMetadata(routing, settings)
 			: null;

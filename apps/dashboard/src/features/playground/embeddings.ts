@@ -58,12 +58,12 @@ export function embeddingsBody(
 		model,
 		// A single text is sent as a string, as the contract's own example does; a batch as an array.
 		input: inputs.length === 1 ? inputs[0] : inputs,
-		...(settings.dimensions !== undefined
-			? { dimensions: settings.dimensions }
-			: {}),
-		...(settings.encodingFormat !== undefined
-			? { encoding_format: settings.encodingFormat }
-			: {}),
+		...(settings.dimensions === undefined
+			? {}
+			: { dimensions: settings.dimensions }),
+		...(settings.encodingFormat === undefined
+			? {}
+			: { encoding_format: settings.encodingFormat }),
 	};
 }
 
@@ -73,11 +73,14 @@ export function embeddingsBody(
  * on screen.
  */
 export function decodeEmbedding(embedding: number[] | string): number[] {
-	if (Array.isArray(embedding)) return embedding;
+	if (Array.isArray(embedding)) {
+		return embedding;
+	}
 	const binary = atob(embedding);
 	const bytes = new Uint8Array(binary.length);
-	for (let index = 0; index < binary.length; index++)
+	for (let index = 0; index < binary.length; index++) {
 		bytes[index] = binary.charCodeAt(index);
+	}
 	return Array.from(new Float32Array(bytes.buffer));
 }
 
@@ -93,7 +96,9 @@ export function vectorsFrom(response: EmbeddingsResponse): number[][] {
 }
 
 export function cosineSimilarity(a: number[], b: number[]): number | undefined {
-	if (a.length !== b.length || a.length === 0) return undefined;
+	if (a.length !== b.length || a.length === 0) {
+		return undefined;
+	}
 	let dot = 0;
 	let left = 0;
 	let right = 0;

@@ -51,7 +51,7 @@ export function ChatSession({
 		transport: createPlaygroundTransport(endpoint, modelId, settings),
 		throttle: 40,
 		onFinish: ({ isAbort, isError }) => {
-			if (alive.current && (isAbort || isError))
+			if (alive.current && (isAbort || isError)) {
 				setMessages((current) =>
 					current.map((message, index) =>
 						index === current.length - 1 && message.role === "assistant"
@@ -66,6 +66,7 @@ export function ChatSession({
 							: message,
 					),
 				);
+			}
 		},
 	});
 	const busy = status === "submitted" || status === "streaming";
@@ -79,13 +80,16 @@ export function ChatSession({
 	}, [stop]);
 
 	useEffect(() => {
-		if (messages.length && follow.current && scroll.current)
+		if (messages.length && follow.current && scroll.current) {
 			scroll.current.scrollTop = scroll.current.scrollHeight;
+		}
 	}, [messages]);
 
 	useEffect(() => {
 		const area = scroll.current;
-		if (!area) return;
+		if (!area) {
+			return;
+		}
 		const resize = new ResizeObserver(() => {
 			area.style.setProperty("--transcript-height", `${area.clientHeight}px`);
 		});
@@ -98,20 +102,24 @@ export function ChatSession({
 		setReading(true);
 		try {
 			const attachments = await readAttachments(selected, accepted);
-			if (alive.current)
+			if (alive.current) {
 				setFiles((current) => [
 					...current,
 					...attachments.map((file) => ({ ...file, id: crypto.randomUUID() })),
 				]);
+			}
 		} catch (cause) {
-			if (alive.current)
+			if (alive.current) {
 				setLocalError(
 					cause instanceof Error
 						? cause.message
 						: "Could not read attachments.",
 				);
+			}
 		} finally {
-			if (alive.current) setReading(false);
+			if (alive.current) {
+				setReading(false);
+			}
 		}
 	}
 
@@ -121,7 +129,7 @@ export function ChatSession({
 			setLocalError("Wait for the current operation to finish before sending.");
 			return;
 		}
-		if (!prompt.trim() && !files.length) {
+		if (!(prompt.trim() || files.length)) {
 			setLocalError("Enter a message or attach a supported file.");
 			return;
 		}
@@ -151,23 +159,24 @@ export function ChatSession({
 	return (
 		<div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
 			<div
-				ref={scroll}
-				onScroll={() => {
-					const area = scroll.current;
-					if (area)
-						follow.current =
-							area.scrollHeight - area.scrollTop - area.clientHeight < 80;
-					setShowScrollDown(!follow.current);
-				}}
 				// Bleeding into the shell's padding puts the scrollbar against the window edge, where a
 				// scrollbar belongs; the padding is given back inside so the text stays where it was.
-				className="-mr-4 md:-mr-8 min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-6 pr-4 md:pr-8 [scrollbar-gutter:stable]"
+				className="scrollbar-gutter-stable -mr-4 min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-6 pr-4 md:-mr-8 md:pr-8"
+				onScroll={() => {
+					const area = scroll.current;
+					if (area) {
+						follow.current =
+							area.scrollHeight - area.scrollTop - area.clientHeight < 80;
+					}
+					setShowScrollDown(!follow.current);
+				}}
+				ref={scroll}
 			>
 				{messages.length ? (
 					<Conversation
-						messages={messages}
 						busy={busy}
 						error={error?.message}
+						messages={messages}
 						onCopy={copy}
 						onRegenerate={(messageId) => {
 							clearError();
@@ -178,41 +187,41 @@ export function ChatSession({
 					/>
 				) : (
 					<div className="flex h-full items-center justify-center px-4 pb-8 sm:hidden">
-						<h2 className="text-center text-2xl font-medium tracking-tight sm:text-3xl">
+						<h2 className="text-center font-medium text-2xl tracking-tight sm:text-3xl">
 							Playground
 						</h2>
 					</div>
 				)}
 			</div>
 			{notice ? (
-				<p role="status" className="sr-only">
+				<p className="sr-only" role="status">
 					{notice}
 				</p>
 			) : null}{" "}
 			<div
-				className={`relative mx-auto w-full shrink-0 px-2 pb-2 pt-3 sm:max-w-2xl sm:px-0 sm:pb-4 xl:max-w-3xl ${!messages.length ? "sm:absolute sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2" : ""}`}
+				className={`relative mx-auto w-full shrink-0 px-2 pt-3 pb-2 sm:max-w-2xl sm:px-0 sm:pb-4 xl:max-w-3xl ${messages.length ? "" : "sm:absolute sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2"}`}
 			>
 				{showScrollDown ? (
 					<Button
-						variant="secondary"
-						size="sm"
-						mode="icon"
 						aria-label="Scroll to latest message"
 						className="absolute -top-11 left-1/2 -translate-x-1/2 bg-surface shadow-sm"
+						mode="icon"
 						onClick={() => {
 							follow.current = true;
 							scroll.current?.scrollTo({ top: scroll.current.scrollHeight });
 							setShowScrollDown(false);
 						}}
+						size="sm"
+						variant="secondary"
 					>
-						<IconArrowDown size={18} aria-hidden />
+						<IconArrowDown aria-hidden size={18} />
 					</Button>
 				) : null}
-				{!messages.length ? (
-					<h2 className="mb-6 hidden text-center text-3xl font-medium tracking-tight sm:block">
+				{messages.length ? null : (
+					<h2 className="mb-6 hidden text-center font-medium text-3xl tracking-tight sm:block">
 						Playground
 					</h2>
-				) : null}
+				)}
 				{/**
 				 * Only the composer's own complaints belong here — a rejected attachment, an empty
 				 * send. A failed response is shown inside its turn, next to the regenerate button
@@ -226,25 +235,25 @@ export function ChatSession({
 					</div>
 				) : null}
 				<Composer
-					prompt={prompt}
-					onPrompt={setPrompt}
+					accepted={accepted}
+					busy={busy}
 					files={files}
-					onRemove={(id) =>
-						setFiles((current) => current.filter((file) => file.id !== id))
-					}
+					modelPicker={modelPicker}
 					onFiles={(selected) => {
 						void addFiles(selected);
 					}}
-					accepted={accepted}
-					reading={reading}
-					busy={busy}
+					onPrompt={setPrompt}
+					onRemove={(id) =>
+						setFiles((current) => current.filter((file) => file.id !== id))
+					}
+					onReset={onReset}
 					onSend={send}
+					onSettings={onSettings}
 					onStop={() => {
 						void stop();
 					}}
-					onSettings={onSettings}
-					onReset={onReset}
-					modelPicker={modelPicker}
+					prompt={prompt}
+					reading={reading}
 				/>
 			</div>
 		</div>

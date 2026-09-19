@@ -44,7 +44,7 @@ const DEFAULTS: EffectiveSettings = {
 	failureRatePercent: 0.5,
 	minWindowRequests: 5,
 	protectLastDeployment: true,
-	adaptiveTimeouts: { enabled: true, multiplier: 4, floorMs: 5_000 },
+	adaptiveTimeouts: { enabled: true, multiplier: 4, floorMs: 5000 },
 	cooldownSeconds: 5,
 	failureWindowSeconds: 60,
 	maxCooldownSeconds: 300,
@@ -60,8 +60,9 @@ const GLOBAL_TTL_MS = 5000;
 let globalCache: { at: number; value: EffectiveSettings } | undefined;
 
 async function loadGlobal(): Promise<EffectiveSettings> {
-	if (globalCache && Date.now() - globalCache.at < GLOBAL_TTL_MS)
+	if (globalCache && Date.now() - globalCache.at < GLOBAL_TTL_MS) {
 		return globalCache.value;
+	}
 	const row = await getRouterSettings();
 	const value: EffectiveSettings = row
 		? {

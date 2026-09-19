@@ -13,7 +13,7 @@ function rerankModel(
 			input_modalities: ["text"],
 			output_modalities: ["rerank"],
 		},
-		context_length: 4_096,
+		context_length: 4096,
 		pricing: { prompt: "0", completion: "0" },
 		...overrides,
 	};
@@ -33,8 +33,8 @@ test("OpenRouter rerank sync retains every rerank id and reviewed search pricing
 		operations: {
 			rerank: {
 				documentModalities: ["text"],
-				maxDocuments: 1_000,
-				maxTokensPerDocument: 4_096,
+				maxDocuments: 1000,
+				maxTokensPerDocument: 4096,
 				documentsPerSearchUnit: 100,
 			},
 		},

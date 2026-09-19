@@ -12,7 +12,7 @@ import {
 
 const card = tv({
 	slots: {
-		root: "rounded-[var(--ui-radius-surface)] border bg-card text-card-foreground",
+		root: "rounded-(--ui-radius-surface) border bg-card text-card-foreground",
 		header: "flex flex-col space-y-1.5 p-7",
 		title: "font-semibold text-2xl leading-none tracking-tight",
 		description: "text-fg-muted text-sm",
@@ -82,12 +82,14 @@ const Card = ({
 		style={appearanceStyle({ borderRadius, width }, style)}
 		{...props}
 	>
-		{(title || description) && (
+		{title || description ? (
 			<div className={styles.header()}>
-				{title && <h3 className={styles.title()}>{title}</h3>}
-				{description && <p className={styles.description()}>{description}</p>}
+				{title ? <h3 className={styles.title()}>{title}</h3> : null}
+				{description ? (
+					<p className={styles.description()}>{description}</p>
+				) : null}
 			</div>
-		)}
+		) : null}
 		{children}
 	</div>
 );

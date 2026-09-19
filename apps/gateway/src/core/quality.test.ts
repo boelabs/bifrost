@@ -14,13 +14,16 @@ test("quality: legacy vocabularies normalize onto the ladder", () => {
 		"high",
 		"xhigh",
 		"max",
-	] as const)
+	] as const) {
 		assert.equal(normalizeQuality(value), value);
+	}
 });
 
 test("quality: a rung snaps to the highest one the model does not exceed", () => {
 	const full = ["low", "medium", "high", "xhigh", "max"] as const;
-	for (const level of full) assert.equal(snapQuality(level, full), level);
+	for (const level of full) {
+		assert.equal(snapQuality(level, full), level);
+	}
 
 	// A model that stops at high: everything above it lands on high.
 	const upToHigh = ["low", "medium", "high"] as const;

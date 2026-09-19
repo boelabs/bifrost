@@ -74,22 +74,22 @@ function References({
 				const image = reference.mediaType.startsWith("image/");
 				return (
 					<li
-						key={reference.id}
 						className="flex shrink-0 items-center gap-2 rounded-2xl bg-surface p-2"
+						key={reference.id}
 					>
 						{image ? (
 							// biome-ignore lint/performance/noImgElement: a data: URL, which next/image cannot optimise
 							<img
-								src={reference.url}
 								alt={reference.filename}
 								className="size-11 rounded-lg object-cover"
+								src={reference.url}
 							/>
 						) : (
 							<video
-								src={reference.url}
+								className="size-11 rounded-lg bg-surface-2 object-cover"
 								muted
 								preload="metadata"
-								className="size-11 rounded-lg bg-surface-2 object-cover"
+								src={reference.url}
 							/>
 						)}
 						<div className="flex min-w-0 flex-col gap-1">
@@ -102,35 +102,37 @@ function References({
 							{image ? (
 								<Select
 									aria-label={`What ${reference.filename} is for`}
-									size="xs"
-									variant="ghost"
 									disabled={disabled}
-									value={reference.role}
 									onValueChange={(value) => {
-										if (value) onRole(reference.id, value as ReferenceRole);
+										if (value) {
+											onRole(reference.id, value as ReferenceRole);
+										}
 									}}
+									size="xs"
+									value={reference.role}
+									variant="ghost"
 								>
 									<SelectItem value="reference">Reference</SelectItem>
 									<SelectItem value="first_frame">First frame</SelectItem>
 									<SelectItem value="last_frame">Last frame</SelectItem>
 								</Select>
 							) : (
-								<span className="px-1 text-fg-muted text-[11px]">
+								<span className="px-1 text-[11px] text-fg-muted">
 									Reference
 								</span>
 							)}
 						</div>
 						<Button
+							aria-label={`Remove ${reference.filename}`}
+							disabled={disabled}
+							mode="icon"
+							onClick={() => onRemove(reference.id)}
+							size="sm"
+							title="Remove"
 							type="button"
 							variant="ghost"
-							size="sm"
-							mode="icon"
-							aria-label={`Remove ${reference.filename}`}
-							title="Remove"
-							disabled={disabled}
-							onClick={() => onRemove(reference.id)}
 						>
-							<IconX className="size-4" aria-hidden />
+							<IconX aria-hidden className="size-4" />
 						</Button>
 					</li>
 				);
@@ -176,14 +178,17 @@ export function VideoWorkspace({
 		return () => {
 			alive.current = false;
 			// Leaving the capability stops every watch; the jobs themselves carry on upstream.
-			for (const controller of controllers.values()) controller.abort();
+			for (const controller of controllers.values()) {
+				controller.abort();
+			}
 			controllers.clear();
 		};
 	}, []);
 
 	useEffect(() => {
-		if (runs.length && scroll.current)
+		if (runs.length && scroll.current) {
 			scroll.current.scrollTop = scroll.current.scrollHeight;
+		}
 	}, [runs]);
 
 	function update(id: string, patch: Partial<VideoRun>) {
@@ -193,7 +198,9 @@ export function VideoWorkspace({
 	}
 
 	function stopAll() {
-		for (const controller of watching.current.values()) controller.abort();
+		for (const controller of watching.current.values()) {
+			controller.abort();
+		}
 	}
 
 	async function addFiles(selected: File[]) {
@@ -206,15 +213,20 @@ export function VideoWorkspace({
 		setReading(true);
 		try {
 			const added = await Promise.all(selected.map(readReference));
-			if (!alive.current) return;
+			if (!alive.current) {
+				return;
+			}
 			setReferences((current) => [...current, ...added]);
 		} catch (cause) {
-			if (alive.current)
+			if (alive.current) {
 				setLocalError(
 					cause instanceof Error ? cause.message : "Could not read the file.",
 				);
+			}
 		} finally {
-			if (alive.current) setReading(false);
+			if (alive.current) {
+				setReading(false);
+			}
 		}
 	}
 
@@ -288,15 +300,23 @@ export function VideoWorkspace({
 					},
 					{ signal: controller.signal },
 				));
-			if (!alive.current) return;
-			if (!existing) update(id, { job });
+			if (!alive.current) {
+				return;
+			}
+			if (!existing) {
+				update(id, { job });
+			}
 			const final = await pollVideo(job, {
 				signal: controller.signal,
 				onUpdate: (next) => {
-					if (alive.current) update(id, { job: next });
+					if (alive.current) {
+						update(id, { job: next });
+					}
 				},
 			});
-			if (!alive.current) return;
+			if (!alive.current) {
+				return;
+			}
 			update(id, {
 				state: final.status === "failed" ? "failed" : "completed",
 				job: final,
@@ -306,7 +326,9 @@ export function VideoWorkspace({
 					: {}),
 			});
 		} catch (cause) {
-			if (!alive.current) return;
+			if (!alive.current) {
+				return;
+			}
 			const stopped = cause instanceof Error && cause.name === "AbortError";
 			update(id, {
 				state: stopped ? "stopped" : "failed",
@@ -321,33 +343,27 @@ export function VideoWorkspace({
 						}),
 			});
 		} finally {
-			if (watching.current.get(id) === controller) watching.current.delete(id);
+			if (watching.current.get(id) === controller) {
+				watching.current.delete(id);
+			}
 		}
 	}
 
 	return (
 		<Workspace
-			scroll={scroll}
 			empty={runs.length === 0}
+			scroll={scroll}
 			{...(localError ? { error: localError } : {})}
-			transcript={runs.map((run) => (
-				<VideoRunView
-					key={run.id}
-					run={run}
-					onRetry={() => {
-						if (!busy) void execute(run);
-					}}
-					onCheck={() => {
-						if (!busy && run.job) void execute(run, run.job);
-					}}
-				/>
-			))}
 			composer={
 				<>
 					{references.length ? (
 						<References
-							references={references}
 							disabled={busy}
+							onRemove={(id) =>
+								setReferences((current) =>
+									current.filter((reference) => reference.id !== id),
+								)
+							}
 							onRole={(id, role) =>
 								setReferences((current) =>
 									current.map((reference) =>
@@ -355,28 +371,28 @@ export function VideoWorkspace({
 									),
 								)
 							}
-							onRemove={(id) =>
-								setReferences((current) =>
-									current.filter((reference) => reference.id !== id),
-								)
-							}
+							references={references}
 						/>
 					) : null}
 					<Composer
-						prompt={prompt}
-						onPrompt={setPrompt}
+						accepted={REFERENCE_TYPES}
+						busy={busy}
 						files={[]}
-						onRemove={() => {}}
+						modelPicker={
+							<ModelSelect
+								capability="video"
+								modelId={model.id}
+								models={models}
+								onSelect={onSelect}
+							/>
+						}
 						onFiles={(selected) => {
 							void addFiles(selected);
 						}}
-						placeholder="Describe a video, or attach an image to start from..."
-						accepted={REFERENCE_TYPES}
-						reading={reading}
-						busy={busy}
-						onSend={send}
-						onStop={stopAll}
-						onSettings={() => setSettingsOpen(true)}
+						onPrompt={setPrompt}
+						onRemove={() => {
+							/* intentionally empty */
+						}}
 						onReset={() => {
 							stopAll();
 							setRuns([]);
@@ -384,23 +400,37 @@ export function VideoWorkspace({
 							setPrompt("");
 							setLocalError(undefined);
 						}}
-						modelPicker={
-							<ModelSelect
-								models={models}
-								capability="video"
-								modelId={model.id}
-								onSelect={onSelect}
-							/>
-						}
+						onSend={send}
+						onSettings={() => setSettingsOpen(true)}
+						onStop={stopAll}
+						placeholder="Describe a video, or attach an image to start from..."
+						prompt={prompt}
+						reading={reading}
 					/>
 				</>
 			}
+			transcript={runs.map((run) => (
+				<VideoRunView
+					key={run.id}
+					onCheck={() => {
+						if (!busy && run.job) {
+							void execute(run, run.job);
+						}
+					}}
+					onRetry={() => {
+						if (!busy) {
+							void execute(run);
+						}
+					}}
+					run={run}
+				/>
+			))}
 		>
 			<VideoSettingsDialog
-				open={settingsOpen}
 				onOpenChange={setSettingsOpen}
-				settings={settings}
 				onSettings={setSettings}
+				open={settingsOpen}
+				settings={settings}
 			/>
 		</Workspace>
 	);

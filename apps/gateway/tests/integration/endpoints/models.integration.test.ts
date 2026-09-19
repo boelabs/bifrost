@@ -107,7 +107,9 @@ test("GET /v1/models and /v1/models/{id} are public, but /v1/models/{id}/deploym
 			await invalidateVirtualKey(virtualKey.row.keyHash);
 			await deleteVirtualKey(virtualKey.row.id);
 		}
-		if (deploymentId) await deleteDeployment(deploymentId);
+		if (deploymentId) {
+			await deleteDeployment(deploymentId);
+		}
 	}
 });
 
@@ -150,7 +152,7 @@ test("rerank model discovery exposes operation, modality, search pricing, and re
 		});
 		assert.equal(detail.status, 200);
 		const detailBody = (await detail.json()) as {
-			data: Array<Record<string, unknown>>;
+			data: Record<string, unknown>[];
 		};
 		assert.equal(detailBody.data[0]?.upstreamModel, undefined);
 		assert.equal(detailBody.data[0]?.upstream_model, undefined);
@@ -162,7 +164,9 @@ test("rerank model discovery exposes operation, modality, search pricing, and re
 			await invalidateVirtualKey(virtualKey.row.keyHash);
 			await deleteVirtualKey(virtualKey.row.id);
 		}
-		if (deploymentId) await deleteDeployment(deploymentId);
+		if (deploymentId) {
+			await deleteDeployment(deploymentId);
+		}
 	}
 });
 
@@ -192,6 +196,8 @@ test("public model cache invalidates after deployment mutations", {
 		deploymentId = undefined;
 		assert.equal((await app.request(`/v1/models/${renamedModel}`)).status, 404);
 	} finally {
-		if (deploymentId) await deleteDeployment(deploymentId);
+		if (deploymentId) {
+			await deleteDeployment(deploymentId);
+		}
 	}
 });

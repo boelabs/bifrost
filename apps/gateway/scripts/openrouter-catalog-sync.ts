@@ -18,14 +18,18 @@ const REPORT_DIR = new URL(
 function argValue(name: string): string | undefined {
 	const prefix = `${name}=`;
 	const directIndex = process.argv.indexOf(name);
-	if (directIndex >= 0) return process.argv[directIndex + 1];
+	if (directIndex >= 0) {
+		return process.argv[directIndex + 1];
+	}
 	const item = process.argv.find((arg) => arg.startsWith(prefix));
 	return item?.slice(prefix.length);
 }
 
 function mode(): Mode {
 	const raw = argValue("--mode") ?? "report";
-	if (raw === "report" || raw === "write" || raw === "verify") return raw;
+	if (raw === "report" || raw === "write" || raw === "verify") {
+		return raw;
+	}
 	throw new Error("--mode must be report, write, or verify");
 }
 
@@ -42,11 +46,13 @@ function atomicWrite(url: URL, value: string): void {
 async function run(): Promise<void> {
 	const runMode = mode();
 	const sourceModels = await fetchOpenRouterRerankModels();
-	if (sourceModels.length === 0)
+	if (sourceModels.length === 0) {
 		throw new Error("OpenRouter returned no rerank models");
+	}
 	const generated = buildOpenRouterRerankCatalog(sourceModels);
-	if (generated.report.includedModels === 0)
+	if (generated.report.includedModels === 0) {
 		throw new Error("OpenRouter returned no usable rerank models");
+	}
 
 	mkdirSync(REPORT_DIR, { recursive: true });
 	writeFileSync(

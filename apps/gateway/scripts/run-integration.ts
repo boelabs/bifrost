@@ -31,8 +31,11 @@ process.env.DASH_ROOT_PASSWORD ??= "integration-root-password";
 function findIntegrationFiles(dir: string, out: string[] = []): string[] {
 	for (const entry of readdirSync(dir, { withFileTypes: true })) {
 		const full = join(dir, entry.name);
-		if (entry.isDirectory()) findIntegrationFiles(full, out);
-		else if (entry.name.endsWith(".integration.test.ts")) out.push(full);
+		if (entry.isDirectory()) {
+			findIntegrationFiles(full, out);
+		} else if (entry.name.endsWith(".integration.test.ts")) {
+			out.push(full);
+		}
 	}
 	return out;
 }
@@ -70,7 +73,9 @@ for (const file of files) {
 		],
 		{ env: process.env, stdio: "inherit" },
 	);
-	if (result.status !== 0) failed += 1;
+	if (result.status !== 0) {
+		failed += 1;
+	}
 	cleanup(`after ${file}`);
 }
 

@@ -1,11 +1,17 @@
 import { createEnv } from "@t3-oss/env-core";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 const boolString = z.preprocess((value) => {
-	if (typeof value !== "string") return value;
+	if (typeof value !== "string") {
+		return value;
+	}
 	const normalized = value.trim().toLowerCase();
-	if (["1", "true", "yes", "on"].includes(normalized)) return true;
-	if (["0", "false", "no", "off"].includes(normalized)) return false;
+	if (["1", "true", "yes", "on"].includes(normalized)) {
+		return true;
+	}
+	if (["0", "false", "no", "off"].includes(normalized)) {
+		return false;
+	}
 	return value;
 }, z.boolean());
 
@@ -152,7 +158,7 @@ export const env = createEnv({
 			.positive()
 			.default(1_000_000),
 		/** Per-hook wall-clock budget in ms. A hook exceeding it is aborted and counts as a failure. 0 disables the timeout. */
-		EXTENSIONS_HOOK_TIMEOUT_MS: z.coerce.number().int().min(0).default(5_000),
+		EXTENSIONS_HOOK_TIMEOUT_MS: z.coerce.number().int().min(0).default(5000),
 
 		RESPONSES_STATE_RETENTION_DAYS: z.coerce.number().int().min(1).default(14),
 		/** Interval for the in-app response_states GC job that deletes expired rows. */

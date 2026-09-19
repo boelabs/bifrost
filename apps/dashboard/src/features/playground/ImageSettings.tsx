@@ -51,10 +51,10 @@ function Optional({
 		<Select
 			label={label}
 			{...(description ? { description } : {})}
-			value={value ?? DEFAULT}
 			onValueChange={(next) =>
 				onChange(next === DEFAULT || next === null ? undefined : next)
 			}
+			value={value ?? DEFAULT}
 		>
 			<SelectItem value={DEFAULT}>Default</SelectItem>
 			{values.map((entry) => (
@@ -85,13 +85,16 @@ export function ImageSettingsDialog({
 		value: ImageSettings[Key],
 	) {
 		const next = { ...settings };
-		if (value === undefined) delete next[key];
-		else next[key] = value;
+		if (value === undefined) {
+			delete next[key];
+		} else {
+			next[key] = value;
+		}
 		onSettings(next);
 	}
 	return (
-		<DialogRoot open={open} onOpenChange={onOpenChange}>
-			<DialogContent layout="sectioned" className="md:w-xl">
+		<DialogRoot onOpenChange={onOpenChange} open={open}>
+			<DialogContent className="md:w-xl" layout="sectioned">
 				<DialogHeader>
 					<DialogTitle>Image settings</DialogTitle>
 					<DialogDescription>
@@ -108,45 +111,45 @@ export function ImageSettingsDialog({
 											"Generation only; an edit keeps the source size.",
 									}
 								: {})}
+							onChange={(value) => set("size", value)}
 							value={settings.size}
 							values={IMAGE_SIZES}
-							onChange={(value) => set("size", value)}
 						/>
 						<Optional
 							label="Quality"
+							onChange={(value) => set("quality", value)}
 							value={settings.quality}
 							values={IMAGE_QUALITIES}
-							onChange={(value) => set("quality", value)}
 						/>
 						<Optional
 							label="Background"
+							onChange={(value) => set("background", value)}
 							value={settings.background}
 							values={IMAGE_BACKGROUNDS}
-							onChange={(value) => set("background", value)}
 						/>
 						<Optional
 							label="Output format"
+							onChange={(value) => set("outputFormat", value)}
 							value={settings.outputFormat}
 							values={IMAGE_FORMATS}
-							onChange={(value) => set("outputFormat", value)}
 						/>
 						<Optional
 							label="Style"
+							onChange={(value) => set("style", value)}
 							value={settings.style}
 							values={IMAGE_STYLES}
-							onChange={(value) => set("style", value)}
 						/>
 						<NumberField.Root
-							value={settings.n ?? null}
-							onValueChange={(value) => set("n", value ?? undefined)}
-							min={1}
 							max={10}
+							min={1}
+							onValueChange={(value) => set("n", value ?? undefined)}
 							step={1}
+							value={settings.n ?? null}
 						>
 							<NumberField.ScrubArea>
 								<label
-									htmlFor="playground-image-n"
 									className="font-medium text-sm"
+									htmlFor="playground-image-n"
 								>
 									Images per run
 								</label>
@@ -161,18 +164,18 @@ export function ImageSettingsDialog({
 							</NumberField.Group>
 						</NumberField.Root>
 						<NumberField.Root
-							value={settings.outputCompression ?? null}
+							max={100}
+							min={0}
 							onValueChange={(value) =>
 								set("outputCompression", value ?? undefined)
 							}
-							min={0}
-							max={100}
 							step={1}
+							value={settings.outputCompression ?? null}
 						>
 							<NumberField.ScrubArea>
 								<label
-									htmlFor="playground-image-compression"
 									className="font-medium text-sm"
+									htmlFor="playground-image-compression"
 								>
 									Compression
 								</label>

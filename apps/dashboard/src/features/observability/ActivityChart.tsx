@@ -47,7 +47,9 @@ function formatValue(value: number, metric: Metric, short = false) {
 
 function intervalLabel(row: UsagePoint, bucket: UsageBucket) {
 	const startDay = date.format(row.intervalStart);
-	if (bucket === "day") return `${startDay} UTC`;
+	if (bucket === "day") {
+		return `${startDay} UTC`;
+	}
 	const endDay = date.format(row.intervalEnd);
 	return `${startDay}, ${hour.format(row.intervalStart)}–${startDay === endDay ? "" : `${endDay}, `}${hour.format(row.intervalEnd)} UTC`;
 }
@@ -78,10 +80,10 @@ export function ActivityChart({
 	const metricInfo = metrics[metric];
 
 	return (
-		<Card className="flex min-w-0 flex-col p-7" aria-labelledby={titleId}>
+		<Card aria-labelledby={titleId} className="flex min-w-0 flex-col p-7">
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div>
-					<h2 id={titleId} className="font-semibold">
+					<h2 className="font-semibold" id={titleId}>
 						Activity
 					</h2>
 					<p className="mt-1 text-fg-muted text-xs">
@@ -90,14 +92,16 @@ export function ActivityChart({
 				</div>
 				<ToggleGroup
 					aria-label="Activity metric"
-					value={[metric]}
-					onValueChange={(value) => {
-						if (value[0]) setMetric(value[0]);
-					}}
 					className="max-w-full border-border/50"
+					onValueChange={(value) => {
+						if (value[0]) {
+							setMetric(value[0]);
+						}
+					}}
+					value={[metric]}
 				>
 					{(Object.keys(metrics) as Metric[]).map((key) => (
-						<Toggle key={key} value={key} size="xs" variant="ghost">
+						<Toggle key={key} size="xs" value={key} variant="ghost">
 							{metrics[key].label}
 						</Toggle>
 					))}
@@ -105,21 +109,21 @@ export function ActivityChart({
 			</div>
 			{maximum > 0 ? (
 				<figure
-					className="mt-7 flex flex-1 flex-col"
 					aria-label={`${bucket === "day" ? "Daily" : "Hourly"} ${metricInfo.label.toLowerCase()}`}
+					className="mt-7 flex flex-1 flex-col"
 					onPointerLeave={() => setSelectedHour(null)}
 				>
 					{/* The plot takes the height the card is given, so the chart fills whatever the
 					    column beside it sets rather than leaving a void under the bars. */}
 					<div className="grid flex-1 grid-cols-[2.75rem_minmax(0,1fr)] grid-rows-[minmax(11rem,1fr)_auto] gap-x-3 gap-y-3">
 						<div
-							className="relative h-full text-right text-[11px] text-fg-muted tabular-nums"
 							aria-hidden="true"
+							className="relative h-full text-right text-[11px] text-fg-muted tabular-nums"
 						>
 							{[1, 0.5, 0].map((fraction) => (
 								<span
-									key={fraction}
 									className="absolute right-0 -translate-y-1/2"
+									key={fraction}
 									style={{ top: `${(1 - fraction) * 100}%` }}
 								>
 									{formatValue(maximum * fraction, metric, true)}
@@ -128,13 +132,13 @@ export function ActivityChart({
 						</div>
 						<div className="relative h-full min-w-0">
 							<div
-								className="pointer-events-none absolute inset-0 flex flex-col justify-between"
 								aria-hidden="true"
+								className="pointer-events-none absolute inset-0 flex flex-col justify-between"
 							>
 								{[0, 1, 2].map((line) => (
 									<div
-										key={line}
 										className="border-border/50 border-t border-dashed"
+										key={line}
 									/>
 								))}
 							</div>
@@ -143,14 +147,14 @@ export function ActivityChart({
 									const active = row.timestamp === selectedHour;
 									return (
 										<button
-											key={row.timestamp}
-											type="button"
 											aria-label={`${intervalLabel(row, bucket)}: ${formatValue(row[metric], metric)} ${metricInfo.label.toLowerCase()}`}
 											className={`flex h-full min-w-0 flex-1 cursor-pointer items-end rounded-sm focus-visible:outline-2 focus-visible:outline-focus ${active ? "bg-chart-1/10" : ""}`}
-											onPointerEnter={() => setSelectedHour(row.timestamp)}
-											onFocus={() => setSelectedHour(row.timestamp)}
+											key={row.timestamp}
 											onBlur={() => setSelectedHour(null)}
 											onClick={() => setSelectedHour(row.timestamp)}
+											onFocus={() => setSelectedHour(row.timestamp)}
+											onPointerEnter={() => setSelectedHour(row.timestamp)}
+											type="button"
 										>
 											<span
 												className={`w-full rounded-t-[0.3rem] ${metricInfo.color} ${active ? "opacity-100" : "opacity-65"}`}
@@ -163,8 +167,8 @@ export function ActivityChart({
 						</div>
 						<div />
 						<div
-							className="flex justify-between text-[11px] text-fg-muted tabular-nums"
 							aria-hidden="true"
+							className="flex justify-between text-[11px] text-fg-muted tabular-nums"
 						>
 							{ticks.map((row) => (
 								<span key={row.timestamp}>

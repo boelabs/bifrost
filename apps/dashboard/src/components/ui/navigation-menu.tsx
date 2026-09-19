@@ -28,7 +28,7 @@ export function NavigationMenuRoot({
 		<BaseNavigationMenu.Root
 			{...props}
 			className={mergeClassName(
-				"relative rounded-[var(--ui-radius-control)] text-fg",
+				"relative rounded-(--ui-radius-control) text-fg",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -117,7 +117,7 @@ export function NavigationMenuTrigger({
 		<BaseNavigationMenu.Trigger
 			{...props}
 			className={mergeClassName(
-				`${overlayButtonStyles} data-[popup-open]:bg-secondary`,
+				`${overlayButtonStyles} data-popup-open:bg-secondary`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -163,8 +163,8 @@ export function NavigationMenuPositioner({
 		<BaseNavigationMenu.Positioner
 			positionMethod={positionMethod}
 			{...props}
-			sideOffset={sideOffset}
 			className={mergeClassName("z-50 outline-none", className)}
+			sideOffset={sideOffset}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -228,7 +228,7 @@ export function NavigationMenuPopup({
 		<BaseNavigationMenu.Popup
 			{...props}
 			className={mergeClassName(
-				`${popupStyles} h-[var(--popup-height)] w-[var(--popup-width)] p-0`,
+				`${popupStyles} h-(--popup-height) w-(--popup-width) p-0`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -271,7 +271,7 @@ export function NavigationMenuLink({
 		<BaseNavigationMenu.Link
 			{...props}
 			className={mergeClassName(
-				`block rounded-[var(--ui-radius-item)] px-3 py-2 text-sm hover:bg-secondary data-[active]:bg-secondary data-[active]:text-primary ${focusRing}`,
+				`block rounded-(--ui-radius-item) px-3 py-2 text-sm hover:bg-secondary data-active:bg-secondary data-active:text-primary ${focusRing}`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -295,7 +295,7 @@ export function NavigationMenuIcon({
 		<BaseNavigationMenu.Icon
 			{...props}
 			className={mergeClassName(
-				"inline-flex size-4 items-center justify-center transition-transform data-[popup-open]:rotate-180",
+				"inline-flex size-4 items-center justify-center transition-transform data-popup-open:rotate-180",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

@@ -52,23 +52,27 @@ export function Input({
 	);
 	const content = (
 		<>
-			{label && <Field.Label>{label}</Field.Label>}
+			{label ? <Field.Label>{label}</Field.Label> : null}
 			{control}
-			{description && <Field.Description>{description}</Field.Description>}
+			{description ? (
+				<Field.Description>{description}</Field.Description>
+			) : null}
 			{hasSupportingContent && <Field.Error>{errorMessage}</Field.Error>}
 		</>
 	);
-	if (hasFieldScope) return content;
+	if (hasFieldScope) {
+		return content;
+	}
 	return (
 		<Field.Root
+			className={ownsLayout ? undefined : "contents"}
 			disabled={props.disabled}
 			name={props.name}
 			width={ownsLayout ? width : undefined}
-			className={ownsLayout ? undefined : "contents"}
 		>
 			{content}
 		</Field.Root>
 	);
 }
 
-export { BaseInput as InputPrimitive };
+export { Input as InputPrimitive } from "@base-ui/react/input";

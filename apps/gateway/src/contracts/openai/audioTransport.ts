@@ -25,9 +25,12 @@ const FORM_MANAGED = new Set([
 ]);
 
 function formValue(value: unknown): string {
-	if (typeof value === "string") return value;
-	if (typeof value === "number" || typeof value === "boolean")
+	if (typeof value === "string") {
+		return value;
+	}
+	if (typeof value === "number" || typeof value === "boolean") {
 		return String(value);
+	}
 	return JSON.stringify(value);
 }
 
@@ -46,17 +49,28 @@ export async function buildTranscriptionForm(
 	// from the blob's backing path); wrap in a File so the upstream multipart name is deterministic.
 	const file = new File([blob], req.file.filename, { type: req.file.mimeType });
 	form.append("file", file);
-	if (options?.includeModel !== false) form.append("model", upstreamModel);
+	if (options?.includeModel !== false) {
+		form.append("model", upstreamModel);
+	}
 	form.append("response_format", req.responseFormat);
-	if (req.language !== undefined) form.append("language", req.language);
-	if (req.prompt !== undefined) form.append("prompt", req.prompt);
-	if (req.temperature !== undefined)
+	if (req.language !== undefined) {
+		form.append("language", req.language);
+	}
+	if (req.prompt !== undefined) {
+		form.append("prompt", req.prompt);
+	}
+	if (req.temperature !== undefined) {
 		form.append("temperature", String(req.temperature));
+	}
 	for (const granularity of req.timestampGranularities ?? []) {
 		form.append("timestamp_granularities[]", granularity);
 	}
-	for (const item of req.include ?? []) form.append("include[]", item);
-	if (req.stream) form.append("stream", "true");
+	for (const item of req.include ?? []) {
+		form.append("include[]", item);
+	}
+	if (req.stream) {
+		form.append("stream", "true");
+	}
 	// Arbitrary fields (e.g. chunking_strategy) via extra_body; they cannot overwrite managed ones.
 	for (const [key, value] of Object.entries(req.extraBody ?? {})) {
 		if (FORM_MANAGED.has(key)) {
@@ -72,14 +86,18 @@ export async function buildTranscriptionForm(
 }
 
 function parseUsage(raw: unknown): TranscriptionUsage | undefined {
-	if (raw === null || typeof raw !== "object") return undefined;
+	if (raw === null || typeof raw !== "object") {
+		return undefined;
+	}
 	const u = raw as {
 		input_tokens?: number;
 		output_tokens?: number;
 		total_tokens?: number;
 		input_token_details?: { text_tokens?: number; audio_tokens?: number };
 	};
-	if (typeof u.total_tokens !== "number") return undefined;
+	if (typeof u.total_tokens !== "number") {
+		return undefined;
+	}
 	const details = u.input_token_details;
 	return {
 		type: "tokens",
@@ -109,20 +127,32 @@ function parseUsage(raw: unknown): TranscriptionUsage | undefined {
 export function parseTranscriptionResponse(
 	raw: unknown,
 ): CanonicalTranscriptionResponse {
-	if (typeof raw === "string") return { text: raw };
+	if (typeof raw === "string") {
+		return { text: raw };
+	}
 	const body = (raw ?? {}) as Record<string, unknown>;
 	const resp: CanonicalTranscriptionResponse = {
 		text: typeof body.text === "string" ? body.text : "",
 	};
-	if (typeof body.language === "string") resp.language = body.language;
-	if (typeof body.duration === "number") resp.duration = body.duration;
-	if (Array.isArray(body.segments))
+	if (typeof body.language === "string") {
+		resp.language = body.language;
+	}
+	if (typeof body.duration === "number") {
+		resp.duration = body.duration;
+	}
+	if (Array.isArray(body.segments)) {
 		resp.segments = body.segments as Record<string, unknown>[];
-	if (Array.isArray(body.words))
+	}
+	if (Array.isArray(body.words)) {
 		resp.words = body.words as Record<string, unknown>[];
-	if (body.logprobs !== undefined) resp.logprobs = body.logprobs;
+	}
+	if (body.logprobs !== undefined) {
+		resp.logprobs = body.logprobs;
+	}
 	const usage = parseUsage(body.usage);
-	if (usage) resp.usage = usage;
+	if (usage) {
+		resp.usage = usage;
+	}
 	return resp;
 }
 
@@ -163,7 +193,7 @@ export async function* parseTranscriptionStream(
 			yield {
 				kind: "delta",
 				delta: typeof raw.delta === "string" ? raw.delta : "",
-				...(raw.logprobs !== undefined ? { logprobs: raw.logprobs } : {}),
+				...(raw.logprobs === undefined ? {} : { logprobs: raw.logprobs }),
 			};
 		} else if (type === "transcript.text.done") {
 			const usage = parseUsage(raw.usage);
@@ -171,8 +201,10 @@ export async function* parseTranscriptionStream(
 				kind: "done",
 				text: typeof raw.text === "string" ? raw.text : "",
 				...(usage ? { usage } : {}),
-				...(raw.logprobs !== undefined ? { logprobs: raw.logprobs } : {}),
+				...(raw.logprobs === undefined ? {} : { logprobs: raw.logprobs }),
 			};
-		} else options?.onUnknownEvent?.(type || "missing_type");
+		} else {
+			options?.onUnknownEvent?.(type || "missing_type");
+		}
 	}
 }

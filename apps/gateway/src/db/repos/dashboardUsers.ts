@@ -16,13 +16,17 @@ export async function listDashboardUsersPage(
 	opts: Page & DashboardUserListFilter,
 ): Promise<PageResult<DashboardUserRow>> {
 	const conds: SQL[] = [];
-	if (opts.role !== undefined) conds.push(eq(dashboardUsers.role, opts.role));
-	if (opts.enabled !== undefined)
+	if (opts.role !== undefined) {
+		conds.push(eq(dashboardUsers.role, opts.role));
+	}
+	if (opts.enabled !== undefined) {
 		conds.push(eq(dashboardUsers.enabled, opts.enabled));
-	if (opts.q)
+	}
+	if (opts.q) {
 		conds.push(
 			drizzleSql`lower(${dashboardUsers.username}) LIKE lower(${`%${opts.q}%`})`,
 		);
+	}
 	const where = conds.length > 0 ? and(...conds) : undefined;
 	const [rows, totalRow] = await Promise.all([
 		db
@@ -78,9 +82,9 @@ export async function createDashboardUser(
 			passwordHash: input.passwordHash,
 			role: input.role,
 			createdBy: input.createdBy,
-			...(input.mustChangePassword !== undefined
-				? { mustChangePassword: input.mustChangePassword }
-				: {}),
+			...(input.mustChangePassword === undefined
+				? {}
+				: { mustChangePassword: input.mustChangePassword }),
 		})
 		.returning();
 	return row!;

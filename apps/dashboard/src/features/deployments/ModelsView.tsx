@@ -41,7 +41,9 @@ const ModelsContext = createContext<ModelsValue | null>(null);
 
 function useModels(): ModelsValue {
 	const value = use(ModelsContext);
-	if (!value) throw new Error("useModels must be used inside ModelsProvider");
+	if (!value) {
+		throw new Error("useModels must be used inside ModelsProvider");
+	}
 	return value;
 }
 
@@ -99,8 +101,8 @@ function DeploymentEditor({
 }) {
 	return (
 		<DeploymentDialog
-			isOpen
 			adapters={use(adapters)}
+			isOpen
 			{...(existing ? { existing } : {})}
 			onClose={onClose}
 			onSaved={onSaved}
@@ -113,8 +115,8 @@ function NewDeployment() {
 	const { openNew } = useModels();
 	return (
 		<Can permissions={["deployments:write"]}>
-			<Button size="sm" onClick={openNew}>
-				<IconPlus size={15} aria-hidden className="mr-2" />
+			<Button onClick={openNew} size="sm">
+				<IconPlus aria-hidden className="mr-2" size={15} />
 				New deployment
 			</Button>
 		</Can>
@@ -130,7 +132,7 @@ export function NewDeploymentButton() {
 		<Suspense
 			fallback={
 				<Skeleton
-					className="h-10 rounded-[var(--ui-radius-control)]"
+					className="h-10 rounded-(--ui-radius-control)"
 					width="9.5rem"
 				/>
 			}
@@ -164,7 +166,9 @@ export function ModelsView({ deployments }: { deployments: Deployment[] }) {
 				: `Requests for ${deployment.publicModel} will be spread across its remaining deployments. Credentials stored here are removed with it.`,
 			confirmLabel: "Delete deployment",
 		});
-		if (!confirmed) return;
+		if (!confirmed) {
+			return;
+		}
 		await act(deployment.id, {
 			optimistic: "removed",
 			action: () => deleteDeploymentAction(deployment.id),
@@ -186,8 +190,8 @@ export function ModelsView({ deployments }: { deployments: Deployment[] }) {
 		<>
 			{groups.length === 0 ? (
 				<EmptyState
-					title="No deployments yet"
 					description="Create the first one and its public model appears here."
+					title="No deployments yet"
 				>
 					<Can permissions={["deployments:write"]}>
 						<Button onClick={openNew}>New deployment</Button>
@@ -197,14 +201,14 @@ export function ModelsView({ deployments }: { deployments: Deployment[] }) {
 				<div className="flex flex-col gap-6">
 					{groups.map((group) => (
 						<PublicModelCard
-							key={group.publicModel}
-							name={group.publicModel}
-							enabledCount={group.enabledCount}
 							adapters={group.adapters}
 							deployments={group.deployments}
+							enabledCount={group.enabledCount}
+							key={group.publicModel}
+							name={group.publicModel}
+							onDelete={(deployment) => void remove(deployment)}
 							onEdit={edit}
 							onToggle={(deployment) => void toggle(deployment)}
-							onDelete={(deployment) => void remove(deployment)}
 						/>
 					))}
 				</div>
@@ -290,36 +294,36 @@ function PublicModelCard({
 			render: (row) =>
 				writable ? (
 					<RowActions
-						label={`Actions for deployment ${row.upstreamModel}`}
 						actions={[
 							{
 								label: row.enabled ? "Disable" : "Enable",
 								icon: row.enabled ? (
-									<IconBan size={15} aria-hidden />
+									<IconBan aria-hidden size={15} />
 								) : (
-									<IconCheck size={15} aria-hidden />
+									<IconCheck aria-hidden size={15} />
 								),
 								onSelect: () => onToggle(row),
 							},
 							{
 								label: "Edit",
-								icon: <IconPencil size={15} aria-hidden />,
+								icon: <IconPencil aria-hidden size={15} />,
 								onSelect: () => onEdit(row),
 							},
 							{
 								label: "Delete",
-								icon: <IconTrash size={15} aria-hidden />,
+								icon: <IconTrash aria-hidden size={15} />,
 								danger: true,
 								onSelect: () => onDelete(row),
 							},
 						]}
+						label={`Actions for deployment ${row.upstreamModel}`}
 					/>
 				) : null,
 		},
 	];
 
 	return (
-		<Card className="p-0 effect-3d">
+		<Card className="effect-3d p-0">
 			<div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
 				<div>
 					<h2 className="font-semibold text-fg text-lg">{name}</h2>
@@ -334,11 +338,11 @@ function PublicModelCard({
 			</div>
 			<CardContent className="p-0">
 				<DataTable
-					rows={deployments}
-					columns={columns}
-					rowKey={(row) => row.id}
 					caption={`Deployments for ${name}`}
+					columns={columns}
 					pagination={{ pageSize: 10 }}
+					rowKey={(row) => row.id}
+					rows={deployments}
 				/>
 			</CardContent>
 		</Card>

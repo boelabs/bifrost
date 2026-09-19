@@ -48,7 +48,7 @@ function request(
 		model: "public-model",
 		messages: [{ role: "user", content: [file] }],
 		stream: false,
-		...(fileParser !== undefined ? { fileParser } : {}),
+		...(fileParser === undefined ? {} : { fileParser }),
 	};
 }
 
@@ -173,7 +173,7 @@ test("content resolver materializes Responses image URLs for Gemini and memoizes
 		transport: "generate_content",
 		requestId: "test-request",
 	});
-	const parts = JSON.parse(built.body!).contents[0].parts;
+	const { parts } = JSON.parse(built.body!).contents[0];
 	assert.equal(parts.length, 7);
 	assert.equal(parts[0].inlineData.mimeType, "text/plain");
 	for (const part of parts.slice(1)) {

@@ -1,10 +1,10 @@
 type Severity = "low" | "moderate" | "high" | "critical";
 
-type Advisory = {
+interface Advisory {
 	severity: Severity;
 	title?: string;
 	url?: string;
-};
+}
 
 const MINIMUM_SEVERITY: Severity = "high";
 const SEVERITY_RANK: Record<Severity, number> = {
@@ -67,9 +67,17 @@ function parseAuditReport(bytes: Uint8Array): unknown {
 
 	try {
 		return JSON.parse(text);
-	} catch {
-		throw new Error("Bun returned an invalid audit response.");
+	} catch (cause) {
+		throw new Error("Bun returned an invalid audit response.", { cause });
 	}
+}
+
+/** How many bytes of trailing newline the payload ends with: none, LF, or CRLF. */
+function trailingNewlineLength(bytes: Uint8Array): number {
+	if (bytes.at(-1) !== 0x0a) {
+		return 0;
+	}
+	return bytes.at(-2) === 0x0d ? 2 : 1;
 }
 
 function gunzipAuditResponse(bytes: Uint8Array): Uint8Array {
@@ -78,12 +86,7 @@ function gunzipAuditResponse(bytes: Uint8Array): Uint8Array {
 	} catch (error) {
 		// Bun appends a newline after the complete gzip member. Node's gunzip treats it as
 		// the beginning of another member, so retry without only that known trailing delimiter.
-		const end =
-			bytes.at(-1) === 0x0a
-				? bytes.at(-2) === 0x0d
-					? bytes.length - 2
-					: bytes.length - 1
-				: bytes.length;
+		const end = bytes.length - trailingNewlineLength(bytes);
 		if (end === bytes.length) {
 			throw error;
 		}
@@ -107,7 +110,7 @@ function collectFindings(
 		}
 
 		for (const advisory of advisories) {
-			if (!isRecord(advisory) || !isSeverity(advisory.severity)) {
+			if (!(isRecord(advisory) && isSeverity(advisory.severity))) {
 				throw new Error(
 					`Bun returned an invalid advisory for package "${packageName}".`,
 				);

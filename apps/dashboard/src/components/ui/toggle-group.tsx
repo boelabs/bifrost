@@ -29,7 +29,7 @@ export function ToggleGroup<Value extends string = string>({
 		<BaseToggleGroup
 			{...props}
 			className={mergeClassName(
-				"inline-flex w-fit gap-1 rounded-[var(--ui-radius-control)] border border-border bg-surface p-1 data-[orientation=vertical]:flex-col",
+				"inline-flex w-fit gap-1 rounded-(--ui-radius-control) border border-border bg-surface p-1 data-[orientation=vertical]:flex-col",
 				className,
 			)}
 			style={

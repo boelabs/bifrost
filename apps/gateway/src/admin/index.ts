@@ -18,7 +18,7 @@ import { dashboardUsersApp } from "./users.ts";
 import { parseJsonBody } from "#http/body.ts";
 import { auditMiddleware } from "./audit.ts";
 import { env } from "#config/env.ts";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 import {
 	listArtifactVersionsForKey,
@@ -98,10 +98,16 @@ const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
 
 function parseBoolQuery(value: string | undefined): boolean | undefined {
-	if (value === undefined) return undefined;
+	if (value === undefined) {
+		return undefined;
+	}
 	const normalized = value.trim().toLowerCase();
-	if (["true", "1", "yes"].includes(normalized)) return true;
-	if (["false", "0", "no"].includes(normalized)) return false;
+	if (["true", "1", "yes"].includes(normalized)) {
+		return true;
+	}
+	if (["false", "0", "no"].includes(normalized)) {
+		return false;
+	}
 	throw new GatewayError({
 		class: "bad_request",
 		message: `Invalid boolean query value "${value}"`,
@@ -109,13 +115,16 @@ function parseBoolQuery(value: string | undefined): boolean | undefined {
 }
 
 function parseNonNegativeNumber(value: string | undefined): number | undefined {
-	if (value === undefined) return undefined;
+	if (value === undefined) {
+		return undefined;
+	}
 	const parsed = Number(value);
-	if (!Number.isFinite(parsed) || parsed < 0)
+	if (!Number.isFinite(parsed) || parsed < 0) {
 		throw new GatewayError({
 			class: "bad_request",
 			message: `Invalid non-negative number query value "${value}"`,
 		});
+	}
 	return parsed;
 }
 
@@ -124,7 +133,9 @@ function parseDateQuery(
 	name: string,
 ): Date | undefined {
 	const raw = c.req.query(name);
-	if (raw === undefined) return undefined;
+	if (raw === undefined) {
+		return undefined;
+	}
 	const d = new Date(raw);
 	if (Number.isNaN(d.getTime())) {
 		throw new GatewayError({
@@ -159,12 +170,13 @@ function parseLogFilter(c: import("hono").Context): OperationFilter {
 	if (
 		outcome !== undefined &&
 		!validOutcomes.includes(outcome as (typeof validOutcomes)[number])
-	)
+	) {
 		throw new GatewayError({
 			class: "bad_request",
 			message: `Invalid outcome "${outcome}"`,
 			code: "invalid_log_outcome",
 		});
+	}
 	return {
 		...(c.req.query("virtualKeyId")
 			? { virtualKeyId: c.req.query("virtualKeyId")! }
@@ -188,18 +200,18 @@ function parseLogFilter(c: import("hono").Context): OperationFilter {
 		...(c.req.query("requestId")
 			? { requestId: c.req.query("requestId")! }
 			: {}),
-		...(cacheHit !== undefined ? { cacheHit } : {}),
-		...(degraded !== undefined ? { degraded } : {}),
-		...(active !== undefined ? { active } : {}),
-		...(terminalVerified !== undefined ? { terminalVerified } : {}),
+		...(cacheHit === undefined ? {} : { cacheHit }),
+		...(degraded === undefined ? {} : { degraded }),
+		...(active === undefined ? {} : { active }),
+		...(terminalVerified === undefined ? {} : { terminalVerified }),
 		...(c.req.query("failureKind")
 			? { failureKind: c.req.query("failureKind")! }
 			: {}),
 		...(c.req.query("failurePhase")
 			? { failurePhase: c.req.query("failurePhase")! }
 			: {}),
-		...(minDurationMs !== undefined ? { minDurationMs } : {}),
-		...(maxDurationMs !== undefined ? { maxDurationMs } : {}),
+		...(minDurationMs === undefined ? {} : { minDurationMs }),
+		...(maxDurationMs === undefined ? {} : { maxDurationMs }),
 		...(start ? { start } : {}),
 		...(end ? { end } : {}),
 	};
@@ -299,16 +311,18 @@ adminApp.use("*", async (c, next) => {
 		c.req.method,
 	);
 	const managesCacheDirectly = c.req.path === "/admin/cache";
-	if (mutatesConfiguration && !managesCacheDirectly)
+	if (mutatesConfiguration && !managesCacheDirectly) {
 		await advanceResponseCacheEpoch();
+	}
 	await next();
 	if (
 		mutatesConfiguration &&
 		!managesCacheDirectly &&
 		c.res.status >= 200 &&
 		c.res.status < 400
-	)
+	) {
 		await advanceResponseCacheEpoch();
+	}
 });
 // Model CRUD (with inline CatalogEntry for custom models) and adapter introspection.
 adminApp.route("/", platformAdminApp);
@@ -323,7 +337,7 @@ adminApp.get("/keys", async (c) => {
 	const { rows, total } = await listVirtualKeysPage({
 		limit,
 		offset,
-		...(enabled !== undefined ? { enabled } : {}),
+		...(enabled === undefined ? {} : { enabled }),
 		...(publicModel ? { publicModel } : {}),
 		...(q ? { q } : {}),
 	});
@@ -340,17 +354,17 @@ adminApp.post("/keys", async (c) => {
 	const { row, rawKey } = await createVirtualKey({
 		name: input.name,
 		createdBy: actorOf(getAuth(c)),
-		...(input.allowedModels !== undefined
-			? { allowedModels: input.allowedModels }
-			: {}),
-		...(input.maxBudgetCents !== undefined
-			? { maxBudgetCents: input.maxBudgetCents }
-			: {}),
-		...(input.budgetReset !== undefined
-			? { budgetReset: input.budgetReset }
-			: {}),
-		...(input.tpm !== undefined ? { tpm: input.tpm } : {}),
-		...(input.rpm !== undefined ? { rpm: input.rpm } : {}),
+		...(input.allowedModels === undefined
+			? {}
+			: { allowedModels: input.allowedModels }),
+		...(input.maxBudgetCents === undefined
+			? {}
+			: { maxBudgetCents: input.maxBudgetCents }),
+		...(input.budgetReset === undefined
+			? {}
+			: { budgetReset: input.budgetReset }),
+		...(input.tpm === undefined ? {} : { tpm: input.tpm }),
+		...(input.rpm === undefined ? {} : { rpm: input.rpm }),
 		...(input.expiresAt !== undefined && input.expiresAt !== null
 			? { expiresAt: new Date(input.expiresAt) }
 			: {}),
@@ -369,25 +383,25 @@ adminApp.patch("/keys/:id", async (c) => {
 	}
 	const input = await parseJsonBody(c, updateKeySchema);
 	let row = await updateVirtualKey(existing.id, {
-		...(input.name !== undefined ? { name: input.name } : {}),
-		...(input.allowedModels !== undefined
-			? { allowedModels: input.allowedModels }
-			: {}),
-		...(input.maxBudgetCents !== undefined
-			? { maxBudgetCents: input.maxBudgetCents }
-			: {}),
-		...(input.budgetReset !== undefined
-			? { budgetReset: input.budgetReset }
-			: {}),
-		...(input.tpm !== undefined ? { tpm: input.tpm } : {}),
-		...(input.rpm !== undefined ? { rpm: input.rpm } : {}),
-		...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
-		...(input.expiresAt !== undefined
-			? {
+		...(input.name === undefined ? {} : { name: input.name }),
+		...(input.allowedModels === undefined
+			? {}
+			: { allowedModels: input.allowedModels }),
+		...(input.maxBudgetCents === undefined
+			? {}
+			: { maxBudgetCents: input.maxBudgetCents }),
+		...(input.budgetReset === undefined
+			? {}
+			: { budgetReset: input.budgetReset }),
+		...(input.tpm === undefined ? {} : { tpm: input.tpm }),
+		...(input.rpm === undefined ? {} : { rpm: input.rpm }),
+		...(input.enabled === undefined ? {} : { enabled: input.enabled }),
+		...(input.expiresAt === undefined
+			? {}
+			: {
 					expiresAt:
 						input.expiresAt === null ? null : new Date(input.expiresAt),
-				}
-			: {}),
+				}),
 	});
 	await invalidateVirtualKey(existing.keyHash);
 	if (input.resetSpend) {
@@ -416,8 +430,8 @@ adminApp.delete("/cache", async (c) => {
 	const callType = c.req.query("callType");
 	const namespace = c.req.query("namespace");
 	const deleted = await invalidateResponseCache({
-		...(callType !== undefined ? { callType } : {}),
-		...(namespace !== undefined ? { namespace } : {}),
+		...(callType === undefined ? {} : { callType }),
+		...(namespace === undefined ? {} : { namespace }),
 	});
 	return ok(c, { deleted });
 });
@@ -518,7 +532,9 @@ adminApp.post("/extensions/artifacts/:key/activate", async (c) => {
 
 adminApp.delete("/extensions/artifacts/:key", async (c) => {
 	const removed = await deleteArtifactKey(c.req.param("key"));
-	if (removed > 0) await refreshExtensions();
+	if (removed > 0) {
+		await refreshExtensions();
+	}
 	return c.body(null, 204);
 });
 
@@ -539,11 +555,11 @@ adminApp.post("/extensions/instances", async (c) => {
 	const row = await insertInstance({
 		id: input.id,
 		definitionKey: input.definition,
-		...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
-		...(input.critical !== undefined ? { critical: input.critical } : {}),
-		...(input.priority !== undefined ? { priority: input.priority } : {}),
-		...(input.match !== undefined ? { match: input.match } : {}),
-		...(input.config !== undefined ? { config: input.config } : {}),
+		...(input.enabled === undefined ? {} : { enabled: input.enabled }),
+		...(input.critical === undefined ? {} : { critical: input.critical }),
+		...(input.priority === undefined ? {} : { priority: input.priority }),
+		...(input.match === undefined ? {} : { match: input.match }),
+		...(input.config === undefined ? {} : { config: input.config }),
 	});
 	await refreshExtensions();
 	return ok(c, row, 201);
@@ -559,14 +575,14 @@ adminApp.patch("/extensions/instances/:id", async (c) => {
 	}
 	const input = await parseJsonBody(c, updateInstanceSchema);
 	const row = await updateInstance(id, {
-		...(input.definition !== undefined
-			? { definitionKey: input.definition }
-			: {}),
-		...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
-		...(input.critical !== undefined ? { critical: input.critical } : {}),
-		...(input.priority !== undefined ? { priority: input.priority } : {}),
-		...(input.match !== undefined ? { match: input.match } : {}),
-		...(input.config !== undefined ? { config: input.config } : {}),
+		...(input.definition === undefined
+			? {}
+			: { definitionKey: input.definition }),
+		...(input.enabled === undefined ? {} : { enabled: input.enabled }),
+		...(input.critical === undefined ? {} : { critical: input.critical }),
+		...(input.priority === undefined ? {} : { priority: input.priority }),
+		...(input.match === undefined ? {} : { match: input.match }),
+		...(input.config === undefined ? {} : { config: input.config }),
 	});
 	await refreshExtensions();
 	return ok(c, row!);
@@ -574,7 +590,9 @@ adminApp.patch("/extensions/instances/:id", async (c) => {
 
 adminApp.delete("/extensions/instances/:id", async (c) => {
 	const deleted = await deleteInstance(c.req.param("id"));
-	if (deleted) await refreshExtensions();
+	if (deleted) {
+		await refreshExtensions();
+	}
 	return c.body(null, 204);
 });
 
@@ -607,12 +625,13 @@ adminApp.post("/extensions/:id/reset", (c) => {
 adminApp.get("/audit", async (c) => {
 	const { limit, offset } = parsePage(c);
 	const kind = c.req.query("kind");
-	if (kind !== undefined && kind !== "admin" && kind !== "payload_access")
+	if (kind !== undefined && kind !== "admin" && kind !== "payload_access") {
 		throw new GatewayError({
 			class: "bad_request",
 			message: `Invalid audit kind "${kind}". Allowed: admin, payload_access`,
 			param: "kind",
 		});
+	}
 	const start = parseDateQuery(c, "start");
 	const end = parseDateQuery(c, "end");
 	const { rows, total } = await listAuditPage({
@@ -705,12 +724,13 @@ adminApp.get("/logs/:id/payload", async (c) => {
 
 adminApp.get("/logs/:id", async (c) => {
 	const detail = await getOperationDetail(c.req.param("id"));
-	if (detail === null)
+	if (detail === null) {
 		throw new GatewayError({
 			class: "not_found",
 			message: "Gateway operation not found",
 			code: "operation_not_found",
 		});
+	}
 	// `readable` is the question the caller actually has - is there a payload I can open right now -
 	// and it is answered here rather than left to the client to infer from a gateway-wide setting.
 	const access = payloadAccessIsOpen() ? "open" : "sealed";
@@ -745,29 +765,32 @@ function summaryWindow(c: Context<AppEnv>): { since: Date; until?: Date } {
 	if (start === undefined && end === undefined) {
 		const raw = c.req.query("window") ?? "1h";
 		const duration = SUMMARY_WINDOWS[raw];
-		if (duration === undefined)
+		if (duration === undefined) {
 			throw new GatewayError({
 				class: "bad_request",
 				message:
 					'window must be one of "5m", "1h", or "24h" — or pass an explicit start and end',
 				code: "invalid_observability_window",
 			});
+		}
 		return { since: new Date(Date.now() - duration) };
 	}
 	const since = start === undefined ? Number.NaN : Date.parse(start);
 	const until = end === undefined ? Date.now() : Date.parse(end);
-	if (!Number.isFinite(since) || !Number.isFinite(until))
+	if (!(Number.isFinite(since) && Number.isFinite(until))) {
 		throw new GatewayError({
 			class: "bad_request",
 			message: "start and end must be ISO-8601 timestamps",
 			code: "invalid_observability_window",
 		});
-	if (until <= since || until - since > SUMMARY_MAX_RANGE_MS)
+	}
+	if (until <= since || until - since > SUMMARY_MAX_RANGE_MS) {
 		throw new GatewayError({
 			class: "bad_request",
 			message: "Choose an increasing time range of at most 31 days",
 			code: "invalid_observability_window",
 		});
+	}
 	return { since: new Date(since), until: new Date(until) };
 }
 
@@ -799,12 +822,13 @@ adminApp.get("/observability/summary", async (c) => {
 
 adminApp.get("/observability/metrics", async (c) => {
 	const parsed = metricsQuery.safeParse(c.req.query());
-	if (!parsed.success)
+	if (!parsed.success) {
 		throw new GatewayError({
 			class: "bad_request",
 			message: parsed.error.issues[0]?.message ?? "Invalid metrics query",
 			code: "invalid_metrics_query",
 		});
+	}
 	return ok(c, await aggregateMetrics(parsed.data));
 });
 
@@ -938,14 +962,14 @@ const dashboardSettingsSchema = z
 		sessionTtlMinutes: z.coerce.number().int().min(5).max(43_200),
 		sessionIdleMinutes: z.coerce.number().int().min(1).max(43_200),
 		loginMaxAttempts: z.coerce.number().int().min(1).max(100),
-		loginLockoutMinutes: z.coerce.number().int().min(1).max(1_440),
+		loginLockoutMinutes: z.coerce.number().int().min(1).max(1440),
 	})
 	.partial()
 	.refine((patch) => Object.keys(patch).length > 0, "No settings to update");
 
-adminApp.get("/dashboard-settings", async (c) => {
-	return ok(c, await getDashboardSettings());
-});
+adminApp.get("/dashboard-settings", async (c) =>
+	ok(c, await getDashboardSettings()),
+);
 
 adminApp.put("/dashboard-settings", async (c) => {
 	const patch = await parseJsonBody(c, dashboardSettingsSchema);
@@ -960,9 +984,7 @@ const fallbackSchema = z.object({
 	reason: z.enum(["general", "context_window", "content_policy"]).optional(),
 });
 
-adminApp.get("/fallbacks", async (c) => {
-	return ok(c, await listFallbackPolicies());
-});
+adminApp.get("/fallbacks", async (c) => ok(c, await listFallbackPolicies()));
 
 adminApp.put("/fallbacks", async (c) => {
 	const input = await parseJsonBody(c, fallbackSchema);
@@ -971,7 +993,7 @@ adminApp.put("/fallbacks", async (c) => {
 		await configureFallback({
 			primaryModel: input.primaryModel,
 			fallbackModels: input.fallbackModels,
-			...(input.reason !== undefined ? { reason: input.reason } : {}),
+			...(input.reason === undefined ? {} : { reason: input.reason }),
 		}),
 		201,
 	);

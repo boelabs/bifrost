@@ -71,7 +71,9 @@ function prepareDeepSeekRequest(
 	req: CanonicalChatRequest,
 	ctx: { transport: string },
 ): CanonicalChatRequest {
-	if (ctx.transport !== "responses") return req;
+	if (ctx.transport !== "responses") {
+		return req;
+	}
 	// DeepSeek's Responses schema is inherently strict and its format/tool objects do not
 	// expose OpenAI's optional `strict` members. Strip those markers after validation so the
 	// upstream receives its native shape while the gateway still enforces the requested guarantee.
@@ -87,12 +89,25 @@ function prepareDeepSeekRequest(
 		const { strict: _strict, ...rest } = tool;
 		return rest;
 	});
-	if (responseFormat === req.responseFormat && tools === undefined) return req;
+	if (responseFormat === req.responseFormat && tools === undefined) {
+		return req;
+	}
 	return {
 		...req,
-		...(responseFormat !== undefined ? { responseFormat } : {}),
-		...(tools !== undefined ? { tools } : {}),
+		...(responseFormat === undefined ? {} : { responseFormat }),
+		...(tools === undefined ? {} : { tools }),
 	};
+}
+
+/** Strict tools live behind /beta, Responses at the root; anything else keeps the URL as given. */
+function pathPrefixFor(
+	req: CanonicalChatRequest,
+	transport: string,
+): string | undefined {
+	if (usesStrictTools(req)) {
+		return "/beta";
+	}
+	return transport === "responses" ? "" : undefined;
 }
 
 /**
@@ -106,18 +121,17 @@ function deepSeekChatBaseUrl(
 	req: CanonicalChatRequest,
 	ctx: { transport: string },
 ): string {
-	const prefix = usesStrictTools(req)
-		? "/beta"
-		: ctx.transport === "responses"
-			? ""
-			: undefined;
-	if (prefix === undefined) return baseUrl;
+	const prefix = pathPrefixFor(req, ctx.transport);
+	if (prefix === undefined) {
+		return baseUrl;
+	}
 	const url = new URL(baseUrl);
 	if (
 		url.hostname.toLowerCase() !== "api.deepseek.com" ||
 		(url.pathname !== "/v1" && url.pathname !== "/" && url.pathname !== "/beta")
-	)
+	) {
 		return baseUrl;
+	}
 	url.pathname = prefix;
 	return url.toString().replace(/\/+$/, "");
 }

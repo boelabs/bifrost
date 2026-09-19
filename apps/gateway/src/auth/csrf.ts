@@ -7,7 +7,9 @@ const SAFE_METHODS = ["GET", "HEAD", "OPTIONS"];
 function safeEqual(a: string, b: string): boolean {
 	const left = Buffer.from(a, "utf8");
 	const right = Buffer.from(b, "utf8");
-	if (left.length !== right.length) return false;
+	if (left.length !== right.length) {
+		return false;
+	}
 	return timingSafeEqual(left, right);
 }
 
@@ -25,8 +27,12 @@ export function assertCsrfToken(
 	cookieToken: string | undefined,
 	headerToken: string | undefined,
 ): void {
-	if (SAFE_METHODS.includes(method.toUpperCase())) return;
-	if (cookieToken && headerToken && safeEqual(cookieToken, headerToken)) return;
+	if (SAFE_METHODS.includes(method.toUpperCase())) {
+		return;
+	}
+	if (cookieToken && headerToken && safeEqual(cookieToken, headerToken)) {
+		return;
+	}
 	throw new GatewayError({
 		class: "permission",
 		code: "csrf_token_invalid",

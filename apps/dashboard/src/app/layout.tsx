@@ -43,12 +43,12 @@ export default function RootLayout({
 			<head>
 				{PRELOADED_FONTS.map((href) => (
 					<link
+						as="font"
+						crossOrigin="anonymous"
+						href={href}
 						key={href}
 						rel="preload"
-						href={href}
-						as="font"
 						type="font/woff2"
-						crossOrigin="anonymous"
 					/>
 				))}
 				{/*
