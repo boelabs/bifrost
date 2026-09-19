@@ -57,6 +57,7 @@ function encode(tag) {
 	let bits = MARK;
 	for (const byte of bytes) {
 		for (let i = 7; i >= 0; i -= 1) {
+			// biome-ignore lint/suspicious/noBitwiseOperators: the watermark is a bit stream; masking is the encoding.
 			bits += (byte >> i) & 1 ? ONE : ZERO;
 		}
 	}

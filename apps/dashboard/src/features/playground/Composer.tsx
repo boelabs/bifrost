@@ -75,6 +75,7 @@ export function Composer({
 		mobile,
 	);
 	return (
+		// biome-ignore lint/a11y/noNoninteractiveElementInteractions: onSubmit is the form element's own event.
 		<form
 			aria-label="Message composer"
 			className="relative isolate w-full"

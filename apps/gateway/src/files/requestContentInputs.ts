@@ -439,6 +439,7 @@ function ipv6Words(address: string): number[] | null {
 	return words;
 }
 
+// biome-ignore-start lint/suspicious/noBitwiseOperators: IPv6 prefixes are defined as bit masks; anything else would obscure the RFCs these checks come from.
 function isBlockedIpv6(address: string): boolean {
 	const words = ipv6Words(address);
 	if (!words) {
@@ -464,6 +465,7 @@ function isBlockedIpv6(address: string): boolean {
 		(first === 0x3f_ff && (words[1]! & 0xff_f0) === 0)
 	);
 }
+// biome-ignore-end lint/suspicious/noBitwiseOperators: end of the IPv6 prefix masks.
 
 function isBlockedAddress(address: string): boolean {
 	const normalized =

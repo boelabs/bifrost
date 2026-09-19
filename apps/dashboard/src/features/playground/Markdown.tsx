@@ -30,6 +30,7 @@ const icons: ComponentProps<typeof Streamdown>["icons"] = {
 	ZoomOutIcon: IconZoomOut,
 };
 
+// biome-ignore lint/style/useReactFunctionComponents: an error boundary needs componentDidCatch, which only a class has.
 export class MarkdownBoundary extends Component<
 	{ children: ReactNode; text: string },
 	{ failed: boolean }

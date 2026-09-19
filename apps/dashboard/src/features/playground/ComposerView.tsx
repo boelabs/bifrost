@@ -121,6 +121,7 @@ export function ComposerView({
 					transition={layoutTransition}
 				/>
 
+				{/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: click-to-focus surface for the textarea; the Enter handler below is its keyboard equivalent. */}
 				<fieldset
 					aria-label="Compose a message"
 					className={cn(

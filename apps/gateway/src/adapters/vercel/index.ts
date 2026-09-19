@@ -106,7 +106,7 @@ function addReasoningDetailsToRequest(
 	}
 }
 
-function useVercelChatReasoning(
+function applyVercelChatReasoning(
 	body: Record<string, unknown>,
 	req: CanonicalChatRequest,
 ): void {
@@ -227,7 +227,7 @@ export const vercelAdapter = {
 			}
 			const body = JSON.parse(request.body) as Record<string, unknown>;
 			if (ctx.transport === "chat_completions") {
-				useVercelChatReasoning(body, req);
+				applyVercelChatReasoning(body, req);
 				addReasoningDetailsToRequest(body, req);
 			}
 			applyVercelNativeReasoning(body, req, ctx);
