@@ -55,7 +55,7 @@ const configSchema = {
 		// Validate every extra pattern compiles, so a typo fails at startup, not at request time.
 		for (const p of extra) {
 			try {
-				new RegExp(p, "i");
+				RegExp(p, "i");
 			} catch (err) {
 				return {
 					success: false,

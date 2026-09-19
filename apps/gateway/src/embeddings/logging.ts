@@ -10,6 +10,8 @@ export function embeddingsResponseLog(body: unknown): Record<string, unknown> {
 		if (typeof embedding === "string") {
 			return null;
 		}
+		// Unknown shape: dropped by the `!== undefined` filter below.
+		return undefined;
 	});
 	const encodings = new Set(
 		data.map((item) => {

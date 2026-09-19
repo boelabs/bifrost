@@ -76,9 +76,7 @@ test("the request goes to the relay, and a failure keeps the gateway's message",
 	let url: string | undefined;
 	const ok: FetchLike = async (input) => {
 		url = String(input);
-		return new Response(JSON.stringify({ data: [{ embedding: [1, 2] }] }), {
-			headers: { "content-type": "application/json" },
-		});
+		return Response.json({ data: [{ embedding: [1, 2] }] });
 	};
 	const response = await runEmbeddings(
 		{ model: "m", inputs: ["x"], settings: {} },

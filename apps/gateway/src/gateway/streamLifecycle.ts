@@ -199,6 +199,8 @@ function recordFrame(
 		case "usage":
 			observation.usageFrames += 1;
 			break;
+		default:
+			break;
 	}
 }
 

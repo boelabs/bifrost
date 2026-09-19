@@ -155,6 +155,10 @@ function partToGemini(p: CanonicalContentPart): Record<string, unknown> {
 				param: "messages",
 			});
 		}
+		default:
+			throw new Error(
+				`Unsupported canonical content part: ${(p as { type: string }).type}`,
+			);
 	}
 }
 

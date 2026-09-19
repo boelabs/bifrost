@@ -19,6 +19,10 @@ runMigrations()
 			"[migrate] FAILED:",
 			err instanceof Error ? err.message : err,
 		);
-		await closeDb().catch(() => {});
+		try {
+			await closeDb();
+		} catch {
+			// Already failing; a close error would only mask the migration error above.
+		}
 		process.exit(1);
 	});

@@ -626,6 +626,8 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			case "completed":
 			case "failed":
 				return 100;
+			default:
+				return 0;
 		}
 	}
 

@@ -202,5 +202,7 @@ export function applyVercelNativeReasoning(
 			});
 			return;
 		}
+		default:
+			return;
 	}
 }

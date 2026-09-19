@@ -1058,6 +1058,8 @@ export async function route<T>(
 											),
 										]);
 										break;
+									default:
+										break;
 								}
 								finishUpstreamAttemptTelemetry(attemptTelemetry, {
 									endedAt,
@@ -1238,6 +1240,8 @@ export async function route<T>(
 						case "gateway":
 							await onAttemptCancel(chosen.row.id, permit, activeAttemptLease);
 							neutralCandidateError ??= ge;
+							break;
+						default:
 							break;
 					}
 					lastError = ge;

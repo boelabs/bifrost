@@ -183,6 +183,10 @@ function partToInput(
 				...writeCacheBreakpoint(p),
 				input_audio: { data: p.data, format: p.format },
 			};
+		default:
+			throw new Error(
+				`Unsupported canonical content part: ${(p as { type: string }).type}`,
+			);
 	}
 }
 

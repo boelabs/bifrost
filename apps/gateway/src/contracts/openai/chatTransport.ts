@@ -118,6 +118,10 @@ function toTransportPart(p: CanonicalContentPart): Record<string, unknown> {
 				},
 			};
 		}
+		default:
+			throw new Error(
+				`Unsupported canonical content part: ${(p as { type: string }).type}`,
+			);
 	}
 }
 

@@ -109,6 +109,8 @@ function addModalitiesForOperation(
 			input.add("text");
 			output.add("rerank");
 			break;
+		default:
+			break;
 	}
 }
 

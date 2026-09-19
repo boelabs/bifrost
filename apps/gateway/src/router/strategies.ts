@@ -174,5 +174,7 @@ export function pickDeployment(
 			);
 		case "simple-shuffle":
 			return weightedRandom(candidates);
+		default:
+			throw new Error(`Unsupported routing strategy: ${strategy as string}`);
 	}
 }
