@@ -1247,27 +1247,28 @@ export class ContentInputResolver {
 					: `${part.type}:${source.kind}:${source.value}:${filename ?? ""}`;
 			pending = this.#materializedBySource.get(sourceKey);
 			if (pending === undefined) {
-				pending =
-					source.kind === "url"
-						? this.#fetches.run(() =>
-								fetchInput(
-									source.value,
-									this.#signal,
-									this.#dependencies,
-									part.type,
-								),
-							)
-						: source.kind === "data_url"
-							? Promise.resolve(
-									decodeDataUrl(source.value, filename, part.type),
-								)
-							: Promise.reject(
-									candidateInputError(
-										"Provider file IDs cannot be materialized by the gateway",
-										"unsupported_file_reference",
-										"file_id references require a compatible native upstream.",
-									),
-								);
+				if (source.kind === "url") {
+					pending = this.#fetches.run(() =>
+						fetchInput(
+							source.value,
+							this.#signal,
+							this.#dependencies,
+							part.type,
+						),
+					);
+				} else if (source.kind === "data_url") {
+					pending = Promise.resolve(
+						decodeDataUrl(source.value, filename, part.type),
+					);
+				} else {
+					pending = Promise.reject(
+						candidateInputError(
+							"Provider file IDs cannot be materialized by the gateway",
+							"unsupported_file_reference",
+							"file_id references require a compatible native upstream.",
+						),
+					);
+				}
 				this.#materializedBySource.set(sourceKey, pending);
 			}
 			this.#materialized.set(part, pending);
@@ -1524,12 +1525,14 @@ interface VideoMediaPart {
 	url: string;
 }
 
+const VIDEO_MEDIA_KINDS: Record<VideoUrlReference["type"], VideoMediaKind> = {
+	image_url: "image",
+	audio_url: "audio",
+	video_url: "video",
+};
+
 function videoMediaKind(ref: VideoUrlReference): VideoMediaKind {
-	return ref.type === "image_url"
-		? "image"
-		: ref.type === "audio_url"
-			? "audio"
-			: "video";
+	return VIDEO_MEDIA_KINDS[ref.type];
 }
 
 function videoMediaParts(request: CanonicalVideoRequest): VideoMediaPart[] {

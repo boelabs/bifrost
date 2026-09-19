@@ -127,6 +127,23 @@ async function nextBefore<T>(
 	}
 }
 
+/**
+ * What a set of disagreeing finish reasons adds up to.
+ *
+ * One choice cut short makes the whole response incomplete; only a unanimous content filter makes
+ * it blocked. Anything else completed, whatever the individual choices said.
+ */
+function mixedOutcome(
+	reasons: readonly CanonicalFinishReason[],
+): "incomplete" | "blocked" | "completed" {
+	if (reasons.includes("length")) {
+		return "incomplete";
+	}
+	return reasons.every((reason) => reason === "content_filter")
+		? "blocked"
+		: "completed";
+}
+
 function terminalForFinish(
 	reason: CanonicalFinishReason,
 	usage: Usage | null,
@@ -274,11 +291,7 @@ export function terminalForChatResponse(
 		return terminalForFinish(normalizedReasons[0]!, response.usage);
 	}
 	return {
-		outcome: normalizedReasons.includes("length")
-			? "incomplete"
-			: normalizedReasons.every((reason) => reason === "content_filter")
-				? "blocked"
-				: "completed",
+		outcome: mixedOutcome(normalizedReasons),
 		reason: "other",
 		usage: response.usage,
 	};
@@ -474,19 +487,17 @@ export function observeChatStream(
 				});
 			const reasons = terminalChoices.map((choice) => choice.finishReason);
 			const uniqueReasons = new Set(reasons);
-			observation.terminal = adapterTerminal
-				? { ...adapterTerminal, usage }
-				: uniqueReasons.size === 1
-					? terminalForFinish(reasons[0]!, usage)
-					: {
-							outcome: reasons.includes("length")
-								? "incomplete"
-								: reasons.every((reason) => reason === "content_filter")
-									? "blocked"
-									: "completed",
-							reason: "other",
-							usage,
-						};
+			if (adapterTerminal) {
+				observation.terminal = { ...adapterTerminal, usage };
+			} else if (uniqueReasons.size === 1) {
+				observation.terminal = terminalForFinish(reasons[0]!, usage);
+			} else {
+				observation.terminal = {
+					outcome: mixedOutcome(reasons),
+					reason: "other",
+					usage,
+				};
+			}
 			const terminalChunk: CanonicalChatStreamChunk = {
 				id: lastChunk.id,
 				created: lastChunk.created,

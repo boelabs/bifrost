@@ -869,6 +869,19 @@ export function toOpenAIChatResponse(
 }
 
 /** Canonical chunk -> OpenAI chunk (SSE). */
+/**
+ * OpenAI's opening delta — the one that carries the role — also states `content: ""` and
+ * `refusal: null`. Later deltas leave out whichever of the two they are not changing, so the
+ * absence of a value only means "empty" on that first chunk.
+ */
+function openingContent(role: string | undefined): { content?: string } {
+	return role === undefined ? {} : { content: "" };
+}
+
+function openingRefusal(role: string | undefined): { refusal?: null } {
+	return role === undefined ? {} : { refusal: null };
+}
+
 export function toOpenAIChatChunk(
 	chunk: CanonicalChatStreamChunk,
 	publicModel: string,
@@ -916,17 +929,12 @@ export function toOpenAIChatChunk(
 				...(c.logprobs === undefined ? {} : { logprobs: c.logprobs }),
 				delta: {
 					...(c.delta.role === undefined ? {} : { role: c.delta.role }),
-					// OpenAI: the first delta (with role) carries content:"" and refusal:null.
 					...(c.delta.content === undefined
-						? c.delta.role === undefined
-							? {}
-							: { content: "" }
+						? openingContent(c.delta.role)
 						: { content: c.delta.content }),
 					...(reasoning === undefined ? {} : { reasoning }),
 					...(c.delta.refusal === undefined
-						? c.delta.role === undefined
-							? {}
-							: { refusal: null }
+						? openingRefusal(c.delta.role)
 						: { refusal: c.delta.refusal }),
 					...(c.delta.audio === undefined ? {} : { audio: c.delta.audio }),
 					...(c.delta.annotations === undefined

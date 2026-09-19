@@ -125,27 +125,38 @@ function toTransportPart(p: CanonicalContentPart): Record<string, unknown> {
 	}
 }
 
+/** Marks a failed tool result, in whichever of the two shapes its content took. */
+function markContentFailure(
+	content: CanonicalMessage["content"],
+): CanonicalMessage["content"] {
+	if (typeof content === "string") {
+		return `[Tool execution failed] ${content}`;
+	}
+	return [
+		{ type: "text", text: "[Tool execution failed]" },
+		...(content ?? []),
+	] satisfies CanonicalContentPart[];
+}
+
+/** A message's content in the shape the wire takes it. */
+function transportContent(
+	content: CanonicalMessage["content"],
+): string | Record<string, unknown>[] | null {
+	if (content === null || content === undefined) {
+		return null;
+	}
+	return typeof content === "string" ? content : content.map(toTransportPart);
+}
+
 function toTransportMessage(
 	m: CanonicalMessage,
 	developerRole: "developer" | "system",
 ): Record<string, unknown> {
 	const content =
-		m.toolResultError === true
-			? typeof m.content === "string"
-				? `[Tool execution failed] ${m.content}`
-				: ([
-						{ type: "text", text: "[Tool execution failed]" },
-						...(m.content ?? []),
-					] satisfies CanonicalContentPart[])
-			: m.content;
+		m.toolResultError === true ? markContentFailure(m.content) : m.content;
 	const out: Record<string, unknown> = {
 		role: m.role === "developer" ? developerRole : m.role,
-		content:
-			content === null
-				? null
-				: typeof content === "string"
-					? content
-					: content.map(toTransportPart),
+		content: transportContent(content),
 	};
 	if (m.name !== undefined) {
 		out.name = m.name;
