@@ -26,6 +26,7 @@ import {
 	type CanonicalVideoProviderJob,
 	type CanonicalVideoRequest,
 	type VideoUrlReference,
+	type ResolvedVideoSize,
 	type VideoAssetVariant,
 	type VideoStatus,
 	resolveVideoSize,
@@ -160,6 +161,83 @@ export interface OpenAIStyleConfig {
  */
 export function contextWindowRefine(message: string): ErrorClass | null {
 	return looksLikeContextWindowError(message) ? "context_window" : null;
+}
+
+interface VideoErrorDetail {
+	code?: string | null;
+	message?: string;
+}
+
+/** An upstream video error, whether it arrived as a bare string or as an object. */
+function videoErrorDetail(raw: unknown): VideoErrorDetail | undefined {
+	if (typeof raw === "string") {
+		return { message: raw };
+	}
+	if (raw && typeof raw === "object") {
+		return raw as VideoErrorDetail;
+	}
+	return undefined;
+}
+
+/**
+ * The `error` field of a canonical video job, or nothing.
+ *
+ * A job can fail without saying so in an `error`: the status alone is the report, and the upstream
+ * status string is then the most specific code available.
+ */
+function videoErrorField(
+	detail: VideoErrorDetail | undefined,
+	status: VideoStatus,
+	upstreamStatus: unknown,
+): { error?: { code: string | null; message: string } } {
+	if (detail) {
+		return {
+			error: {
+				code:
+					detail.code ?? (status === "failed" ? String(upstreamStatus) : null),
+				message: detail.message ?? "Video generation failed",
+			},
+		};
+	}
+	if (status !== "failed") {
+		return {};
+	}
+	return {
+		error: {
+			code:
+				typeof upstreamStatus === "string" ? upstreamStatus : "video_failed",
+			message: "Video generation failed",
+		},
+	};
+}
+
+/**
+ * How a video request states its output size.
+ *
+ * The native aspect_ratio/resolution form is preferred when the profile maps to it; otherwise the
+ * exact pixel dimensions go out. The protocol treats the two as interchangeable.
+ */
+function videoSizeFields(
+	resolved: ResolvedVideoSize | undefined,
+): Record<string, unknown> {
+	if (resolved?.aspectRatio || resolved?.resolution) {
+		return {
+			...(resolved.aspectRatio ? { aspect_ratio: resolved.aspectRatio } : {}),
+			...(resolved.resolution ? { resolution: resolved.resolution } : {}),
+		};
+	}
+	return resolved?.size === undefined ? {} : { size: resolved.size };
+}
+
+/** One input reference, under the key its media type gives it. */
+function videoInputReference(ref: VideoUrlReference): Record<string, unknown> {
+	if (ref.type === "image_url") {
+		return { type: "image_url", image_url: { url: ref.url } };
+	}
+	if (ref.type === "audio_url") {
+		return { type: "audio_url", audio_url: { url: ref.url } };
+	}
+	return { type: "video_url", video_url: { url: ref.url } };
 }
 
 interface Creds extends BaseCreds {
@@ -480,15 +558,11 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 							?.finish_reason;
 			const terminal =
 				ctx.transport === "responses"
-					? record.status === "incomplete"
-						? ({
-								outcome: "incomplete",
-								reason: response.choices[0]?.finishReason ?? "other",
-							} as const)
-						: ({
-								outcome: "completed",
-								reason: response.choices[0]?.finishReason ?? "other",
-							} as const)
+					? ({
+							outcome:
+								record.status === "incomplete" ? "incomplete" : "completed",
+							reason: response.choices[0]?.finishReason ?? "other",
+						} as const)
 					: undefined;
 			return originalTerminalReason == null && terminal === undefined
 				? response
@@ -646,12 +720,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			});
 		}
 		const status = mapVideoStatus(value.status, dialect);
-		const error =
-			typeof value.error === "string"
-				? { message: value.error }
-				: value.error && typeof value.error === "object"
-					? (value.error as { code?: string | null; message?: string })
-					: undefined;
+		const error = videoErrorDetail(value.error);
 		return {
 			upstreamJobId,
 			...(typeof value.generation_id === "string"
@@ -662,26 +731,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 				: {}),
 			status,
 			progress: normalizeProgress(status, value.progress),
-			...(error
-				? {
-						error: {
-							code:
-								error.code ??
-								(status === "failed" ? String(value.status) : null),
-							message: error.message ?? "Video generation failed",
-						},
-					}
-				: status === "failed"
-					? {
-							error: {
-								code:
-									typeof value.status === "string"
-										? value.status
-										: "video_failed",
-								message: "Video generation failed",
-							},
-						}
-					: {}),
+			...videoErrorField(error, status, value.status),
 			...(value.usage && typeof value.usage === "object"
 				? { usage: value.usage as Record<string, unknown> }
 				: {}),
@@ -757,18 +807,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			model: ctx.upstreamModel,
 			prompt: req.prompt,
 			...(req.seconds === undefined ? {} : { duration: Number(req.seconds) }),
-			// Prefer the native aspect_ratio/resolution form when the profile maps to it;
-			// otherwise send exact pixel dimensions. The protocol treats the two forms as interchangeable.
-			...(resolved?.aspectRatio || resolved?.resolution
-				? {
-						...(resolved.aspectRatio
-							? { aspect_ratio: resolved.aspectRatio }
-							: {}),
-						...(resolved.resolution ? { resolution: resolved.resolution } : {}),
-					}
-				: resolved?.size === undefined
-					? {}
-					: { size: resolved.size }),
+			...videoSizeFields(resolved),
 			...(req.seed === undefined ? {} : { seed: req.seed }),
 			...(req.generateAudio === undefined
 				? {}
@@ -788,13 +827,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			(ref): ref is VideoUrlReference => ref.type !== "file_id",
 		);
 		if (urlRefs.length > 0) {
-			body.input_references = urlRefs.map((ref) =>
-				ref.type === "image_url"
-					? { type: "image_url", image_url: { url: ref.url } }
-					: ref.type === "audio_url"
-						? { type: "audio_url", audio_url: { url: ref.url } }
-						: { type: "video_url", video_url: { url: ref.url } },
-			);
+			body.input_references = urlRefs.map(videoInputReference);
 		}
 		if (req.frameImages && req.frameImages.length > 0) {
 			body.frame_images = req.frameImages.map((frame) => ({

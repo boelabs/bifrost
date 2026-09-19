@@ -7,9 +7,9 @@ import { RerankWorkspace } from "./RerankWorkspace";
 import { ImageWorkspace } from "./ImageWorkspace";
 import { VideoWorkspace } from "./VideoWorkspace";
 import type { Capability } from "./capabilities";
+import { type ReactNode, useState } from "react";
 import { TextWorkspace } from "./TextWorkspace";
 import type { PublicEndpoint } from "./api";
-import { useState } from "react";
 
 import {
 	type PlaygroundModel,
@@ -28,6 +28,26 @@ export interface PlaygroundSelection {
 	capability: Capability;
 	modelId: string;
 }
+
+interface WorkspaceProps {
+	model: PlaygroundModel;
+	models: PlaygroundModel[];
+	onSelect: (choice: ModelChoice) => void;
+}
+
+/**
+ * The capabilities that have a workspace of their own. Anything not listed here is text, which is
+ * the only workspace that also has to be told which endpoint to speak.
+ */
+const SPECIALISED_WORKSPACES: Partial<
+	Record<Capability, (props: WorkspaceProps) => ReactNode>
+> = {
+	image: ImageWorkspace,
+	video: VideoWorkspace,
+	transcription: TranscriptionWorkspace,
+	rerank: RerankWorkspace,
+	embedding: EmbeddingWorkspace,
+};
 
 export function initialSelection(
 	models: PlaygroundModel[],
@@ -63,70 +83,48 @@ export function Playground({ models }: { models: PlaygroundModel[] }) {
 		}
 	}
 
+	// The workspace belongs to the capability: moving to another one starts its own, which is what
+	// keeps a transcript of pictures from outliving the model that made it.
+	let workspace: ReactNode;
+	if (selected && selection) {
+		const Specialised = SPECIALISED_WORKSPACES[selection.capability];
+		workspace = Specialised ? (
+			<Specialised
+				key={selection.capability}
+				model={selected}
+				models={models}
+				onSelect={select}
+			/>
+		) : (
+			<TextWorkspace
+				endpoint={
+					selected.endpoints.includes(endpoint)
+						? endpoint
+						: (selected.endpoints[0] ?? endpoint)
+				}
+				key="text"
+				model={selected}
+				models={models}
+				onEndpoint={setEndpoint}
+				onSelect={select}
+			/>
+		);
+	} else {
+		workspace = (
+			<EmptyState
+				description="A model appears here when an enabled deployment exposes an operation this playground can run, through a compatible contract."
+				title="No models available"
+			/>
+		);
+	}
+
 	return (
 		<div className="flex h-full min-h-0 flex-col">
 			<PageHeader
 				description="Try your models. Conversations stay in this session."
 				title="Playground"
 			/>
-			{selected && selection ? (
-				// The workspace belongs to the capability: moving to another one starts its own, which
-				// is what keeps a transcript of pictures from outliving the model that made it.
-				selection.capability === "image" ? (
-					<ImageWorkspace
-						key="image"
-						model={selected}
-						models={models}
-						onSelect={select}
-					/>
-				) : selection.capability === "video" ? (
-					<VideoWorkspace
-						key="video"
-						model={selected}
-						models={models}
-						onSelect={select}
-					/>
-				) : selection.capability === "transcription" ? (
-					<TranscriptionWorkspace
-						key="transcription"
-						model={selected}
-						models={models}
-						onSelect={select}
-					/>
-				) : selection.capability === "rerank" ? (
-					<RerankWorkspace
-						key="rerank"
-						model={selected}
-						models={models}
-						onSelect={select}
-					/>
-				) : selection.capability === "embedding" ? (
-					<EmbeddingWorkspace
-						key="embedding"
-						model={selected}
-						models={models}
-						onSelect={select}
-					/>
-				) : (
-					<TextWorkspace
-						endpoint={
-							selected.endpoints.includes(endpoint)
-								? endpoint
-								: (selected.endpoints[0] ?? endpoint)
-						}
-						key="text"
-						model={selected}
-						models={models}
-						onEndpoint={setEndpoint}
-						onSelect={select}
-					/>
-				)
-			) : (
-				<EmptyState
-					description="A model appears here when an enabled deployment exposes an operation this playground can run, through a compatible contract."
-					title="No models available"
-				/>
-			)}
+			{workspace}
 		</div>
 	);
 }
