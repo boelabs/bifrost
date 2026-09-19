@@ -53,9 +53,10 @@ const configSchema = {
 			};
 		}
 		// Validate every extra pattern compiles, so a typo fails at startup, not at request time.
+		const validated = [];
 		for (const p of extra) {
 			try {
-				RegExp(p, "i");
+				validated.push(new RegExp(p, "i").source);
 			} catch (err) {
 				return {
 					success: false,
@@ -84,7 +85,7 @@ const configSchema = {
 			success: true,
 			data: {
 				action,
-				extraPatterns: extra,
+				extraPatterns: validated,
 				scanRoles: new Set(scanRoles),
 				replacement,
 			},

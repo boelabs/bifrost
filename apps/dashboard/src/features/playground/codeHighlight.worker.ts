@@ -23,7 +23,11 @@ self.onmessage = (
 					startLine: 0,
 					lines: request.code.split("\n").map((text) => ({ text, tokens: [] })),
 				} satisfies HighlightReply);
-				(await highlighter.catch(() => undefined))?.release(request.id);
+				try {
+					(await highlighter).release(request.id);
+				} catch {
+					// The engine never came up; there is nothing to release.
+				}
 			}
 		}
 	});

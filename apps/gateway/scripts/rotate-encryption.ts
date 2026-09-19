@@ -143,6 +143,10 @@ run()
 	.then(() => closeDb())
 	.catch(async (error: unknown) => {
 		console.error(error instanceof Error ? error.message : error);
-		await closeDb().catch(() => {});
+		try {
+			await closeDb();
+		} catch {
+			// Already failing; a close error would only mask the rotation error above.
+		}
 		process.exit(1);
 	});
