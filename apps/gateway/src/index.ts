@@ -147,6 +147,19 @@ app.use("*", async (c, next) => {
 
 // Global error handler: translates GatewayError to the shape of each public contract.
 // /v1/messages/* -> Anthropic shape; everything else -> OpenAI shape.
+/**
+ * The error as the gateway understands it, or null when it is none of its business.
+ *
+ * A reachable-dependency failure (Postgres/Redis down) becomes a 503 + Retry-After so clients back
+ * off and retry, instead of the opaque 500 a raw driver error would otherwise produce.
+ */
+function asGatewayError(err: unknown): GatewayError | null {
+	if (GatewayError.is(err)) {
+		return err;
+	}
+	return isDependencyError(err) ? dependencyUnavailable(err) : null;
+}
+
 /** The same error, in whichever dialect the endpoint that failed speaks. */
 function errorBody(
 	error: GatewayError,
@@ -164,12 +177,7 @@ app.onError((err, c) => {
 	const isOpenRouterRerank = c.req.path === "/v1/rerank";
 	// A reachable-dependency failure (Postgres/Redis down) becomes a 503 + Retry-After so clients back
 	// off and retry, instead of the opaque 500 a raw driver error would otherwise produce.
-	let raw: GatewayError | null = null;
-	if (GatewayError.is(err)) {
-		raw = err;
-	} else if (isDependencyError(err)) {
-		raw = dependencyUnavailable(err);
-	}
+	const raw = asGatewayError(err);
 	// On /admin and /auth the caller is an operator and the detail describes their own request, so it
 	// is published instead of the class's generic sentence. See admin/errors.ts.
 	const gatewayError =

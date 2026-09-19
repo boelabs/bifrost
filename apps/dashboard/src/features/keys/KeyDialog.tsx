@@ -19,6 +19,13 @@ import {
 	Modal,
 } from "#/components/ui/modal";
 
+function submitLabelFor(pending: boolean, editing: boolean): string {
+	if (pending) {
+		return "Saving…";
+	}
+	return editing ? "Save changes" : "Create key";
+}
+
 const RESET_PERIODS = ["hourly", "daily", "weekly", "monthly"] as const;
 const NO_RESET = "never";
 
@@ -51,12 +58,7 @@ export function KeyDialog({
 	);
 	const [error, setError] = useState<string | null>(null);
 	const editing = existing !== undefined;
-	let submitLabel = "Create key";
-	if (pending) {
-		submitLabel = "Saving…";
-	} else if (editing) {
-		submitLabel = "Save changes";
-	}
+	const submitLabel = submitLabelFor(pending, editing);
 
 	function set<K extends keyof KeyDraft>(field: K, value: KeyDraft[K]) {
 		setDraft((current) => ({ ...current, [field]: value }));

@@ -41,6 +41,13 @@ import {
 	Modal,
 } from "#/components/ui/modal";
 
+function submitLabelFor(pending: boolean, editing: boolean): string {
+	if (pending) {
+		return "Saving…";
+	}
+	return editing ? "Save changes" : "Create deployment";
+}
+
 function optionalText(raw: FormDataEntryValue | null): string | undefined {
 	const text = String(raw ?? "").trim();
 	return text ? text : undefined;
@@ -92,12 +99,7 @@ export function DeploymentDialog({
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
 	const [advancedOpen, setAdvancedOpen] = useState(false);
-	let submitLabel = "Create deployment";
-	if (pending) {
-		submitLabel = "Saving…";
-	} else if (editing) {
-		submitLabel = "Save changes";
-	}
+	const submitLabel = submitLabelFor(pending, editing);
 	const submitting = useRef(false);
 	const creation = useIdempotencyKey();
 
@@ -380,7 +382,7 @@ export function DeploymentDialog({
 								<IconChevronDown aria-hidden className="size-4" />
 							</Collapsible.Trigger>
 							<Collapsible.Panel
-								className="h-auto overflow-visible transition-none data-[closed]:hidden"
+								className="h-auto overflow-visible transition-none data-closed:hidden"
 								keepMounted
 								onInvalidCapture={() => setAdvancedOpen(true)}
 							>

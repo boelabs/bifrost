@@ -23,6 +23,14 @@ const attemptOptions = [
 	{ key: "errors", label: "Errors" },
 ];
 
+/** Errors are always the danger colour; the rest are told apart by which series they belong to. */
+function barColorFor(metric: string, upstream: boolean): string {
+	if (metric === "errors") {
+		return "bg-danger";
+	}
+	return upstream ? "bg-chart-2" : "bg-chart-1";
+}
+
 export function MetricsChart({
 	data,
 	upstream = false,
@@ -60,12 +68,7 @@ export function MetricsChart({
 		timeZone: "UTC",
 	});
 	const label = options.find((option) => option.key === metric)?.label;
-	let barColor = "bg-chart-1";
-	if (metric === "errors") {
-		barColor = "bg-danger";
-	} else if (upstream) {
-		barColor = "bg-chart-2";
-	}
+	const barColor = barColorFor(metric, upstream);
 	/** The bar's value once one is picked, and the metric's name until then. */
 	const readout = selected ? format(selected.value) : label;
 	return (

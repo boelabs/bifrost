@@ -35,6 +35,16 @@ import {
  * boundaries and stream into skeletons of exactly their own size, so nothing below them moves when
  * the answer lands.
  */
+/** The sidebar button's icon and label, which have to agree on what pressing it does. */
+function sidebarToggle(mobile: boolean, collapsed: boolean) {
+	if (mobile) {
+		return { Icon: IconX, label: "Close sidebar" };
+	}
+	return collapsed
+		? { Icon: IconLayoutSidebarLeftExpand, label: "Expand sidebar" }
+		: { Icon: IconLayoutSidebarLeftCollapse, label: "Collapse sidebar" };
+}
+
 export function AppShell({
 	identity,
 	children,
@@ -120,18 +130,7 @@ function SidebarContent({
 	onNavigate?: () => void;
 }) {
 	// One value for the icon and the label, so the button cannot describe an action it does not do.
-	let toggle = {
-		Icon: IconLayoutSidebarLeftCollapse,
-		label: "Collapse sidebar",
-	};
-	if (mobile) {
-		toggle = { Icon: IconX, label: "Close sidebar" };
-	} else if (collapsed) {
-		toggle = {
-			Icon: IconLayoutSidebarLeftExpand,
-			label: "Expand sidebar",
-		};
-	}
+	const toggle = sidebarToggle(mobile === true, collapsed);
 	const ToggleIcon = toggle.Icon;
 	return (
 		<>

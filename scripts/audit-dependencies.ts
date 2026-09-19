@@ -72,16 +72,21 @@ function parseAuditReport(bytes: Uint8Array): unknown {
 	}
 }
 
+/** How many bytes of trailing newline the payload ends with: none, LF, or CRLF. */
+function trailingNewlineLength(bytes: Uint8Array): number {
+	if (bytes.at(-1) !== 0x0a) {
+		return 0;
+	}
+	return bytes.at(-2) === 0x0d ? 2 : 1;
+}
+
 function gunzipAuditResponse(bytes: Uint8Array): Uint8Array {
 	try {
 		return gunzipSync(bytes);
 	} catch (error) {
 		// Bun appends a newline after the complete gzip member. Node's gunzip treats it as
 		// the beginning of another member, so retry without only that known trailing delimiter.
-		let end = bytes.length;
-		if (bytes.at(-1) === 0x0a) {
-			end -= bytes.at(-2) === 0x0d ? 2 : 1;
-		}
+		const end = bytes.length - trailingNewlineLength(bytes);
 		if (end === bytes.length) {
 			throw error;
 		}

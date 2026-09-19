@@ -83,48 +83,70 @@ export function Playground({ models }: { models: PlaygroundModel[] }) {
 		}
 	}
 
-	// The workspace belongs to the capability: moving to another one starts its own, which is what
-	// keeps a transcript of pictures from outliving the model that made it.
-	let workspace: ReactNode;
-	if (selected && selection) {
-		const Specialised = SPECIALISED_WORKSPACES[selection.capability];
-		workspace = Specialised ? (
-			<Specialised
-				key={selection.capability}
-				model={selected}
-				models={models}
-				onSelect={select}
-			/>
-		) : (
-			<TextWorkspace
-				endpoint={
-					selected.endpoints.includes(endpoint)
-						? endpoint
-						: (selected.endpoints[0] ?? endpoint)
-				}
-				key="text"
-				model={selected}
-				models={models}
-				onEndpoint={setEndpoint}
-				onSelect={select}
-			/>
-		);
-	} else {
-		workspace = (
-			<EmptyState
-				description="A model appears here when an enabled deployment exposes an operation this playground can run, through a compatible contract."
-				title="No models available"
-			/>
-		);
-	}
-
 	return (
 		<div className="flex h-full min-h-0 flex-col">
 			<PageHeader
 				description="Try your models. Conversations stay in this session."
 				title="Playground"
 			/>
-			{workspace}
+			{selected && selection ? (
+				<Workspace
+					capability={selection.capability}
+					endpoint={endpoint}
+					model={selected}
+					models={models}
+					onEndpoint={setEndpoint}
+					onSelect={select}
+				/>
+			) : (
+				<EmptyState
+					description="A model appears here when an enabled deployment exposes an operation this playground can run, through a compatible contract."
+					title="No models available"
+				/>
+			)}
 		</div>
+	);
+}
+
+/**
+ * The workspace belongs to the capability: moving to another one starts its own, which is what
+ * keeps a transcript of pictures from outliving the model that made it.
+ */
+function Workspace({
+	capability,
+	model,
+	models,
+	endpoint,
+	onEndpoint,
+	onSelect,
+}: WorkspaceProps & {
+	capability: Capability;
+	endpoint: PublicEndpoint;
+	onEndpoint: (endpoint: PublicEndpoint) => void;
+}) {
+	const Specialised = SPECIALISED_WORKSPACES[capability];
+	if (Specialised) {
+		return (
+			<Specialised
+				key={capability}
+				model={model}
+				models={models}
+				onSelect={onSelect}
+			/>
+		);
+	}
+	return (
+		<TextWorkspace
+			endpoint={
+				model.endpoints.includes(endpoint)
+					? endpoint
+					: (model.endpoints[0] ?? endpoint)
+			}
+			key="text"
+			model={model}
+			models={models}
+			onEndpoint={onEndpoint}
+			onSelect={onSelect}
+		/>
 	);
 }

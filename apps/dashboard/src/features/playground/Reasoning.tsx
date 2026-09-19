@@ -40,6 +40,14 @@ export function reasoningGroupAt(
 	return group;
 }
 
+/** What the collapsed panel calls itself, which is also how it says the run ended. */
+function reasoningHeading(completed: boolean, interrupted: boolean): string {
+	if (completed) {
+		return "Reasoning";
+	}
+	return interrupted ? "Reasoning interrupted" : "Thinking";
+}
+
 /** What a reasoning step says when it produced no text of its own. */
 function emptyStepText(
 	stepStreaming: boolean,
@@ -76,12 +84,7 @@ export function Reasoning({
 	if (!steps.length) {
 		return null;
 	}
-	let heading = "Thinking";
-	if (completed) {
-		heading = "Reasoning";
-	} else if (interrupted) {
-		heading = "Reasoning interrupted";
-	}
+	const heading = reasoningHeading(completed, interrupted);
 	return (
 		<ChainOfThought onOpenChange={setOpen} open={open}>
 			<ChainOfThoughtHeader aria-label="Toggle reasoning">

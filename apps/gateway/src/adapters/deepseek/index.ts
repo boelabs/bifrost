@@ -99,6 +99,17 @@ function prepareDeepSeekRequest(
 	};
 }
 
+/** Strict tools live behind /beta, Responses at the root; anything else keeps the URL as given. */
+function pathPrefixFor(
+	req: CanonicalChatRequest,
+	transport: string,
+): string | undefined {
+	if (usesStrictTools(req)) {
+		return "/beta";
+	}
+	return transport === "responses" ? "" : undefined;
+}
+
 /**
  * DeepSeek documents one base host with per-feature prefixes: `/beta` gates strict tools, while the
  * Responses API is only documented at the bare host — `/v1` is an OpenAI-SDK alias demonstrated for
@@ -110,14 +121,7 @@ function deepSeekChatBaseUrl(
 	req: CanonicalChatRequest,
 	ctx: { transport: string },
 ): string {
-	// Strict tools live behind /beta; the Responses surface is at the root. Anything else keeps
-	// the base URL exactly as configured.
-	let prefix: string | undefined;
-	if (usesStrictTools(req)) {
-		prefix = "/beta";
-	} else if (ctx.transport === "responses") {
-		prefix = "";
-	}
+	const prefix = pathPrefixFor(req, ctx.transport);
 	if (prefix === undefined) {
 		return baseUrl;
 	}

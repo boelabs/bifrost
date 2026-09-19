@@ -7,6 +7,18 @@ export interface SSEEvent {
 	data: string;
 }
 
+/** The event a blank line just closed, or nothing when there was no data to close. */
+function completedEvent(
+	dataLines: string[],
+	eventName: string | undefined,
+): SSEEvent | undefined {
+	if (dataLines.length === 0) {
+		return undefined;
+	}
+	const data = dataLines.join("\n");
+	return eventName === undefined ? { data } : { event: eventName, data };
+}
+
 export async function* parseSSE(
 	stream: ReadableStream<Uint8Array>,
 ): AsyncGenerator<SSEEvent> {
@@ -24,11 +36,7 @@ export async function* parseSSE(
 		const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
 		if (line === "") {
 			// A blank line ends the event, but only if there was data to end.
-			let event: SSEEvent | undefined;
-			if (dataLines.length > 0) {
-				const data = dataLines.join("\n");
-				event = eventName === undefined ? { data } : { event: eventName, data };
-			}
+			const event = completedEvent(dataLines, eventName);
 			reset();
 			return event;
 		}
