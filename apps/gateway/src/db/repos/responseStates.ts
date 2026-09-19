@@ -1,5 +1,6 @@
 import { and, eq, gt, isNull, lte, sql } from "drizzle-orm";
 import { responseStates } from "#db/schema.ts";
+import { writtenRow } from "#db/returning.ts";
 import { log } from "#logging/log.ts";
 import { env } from "#config/env.ts";
 import { db } from "#db/client.ts";
@@ -95,7 +96,7 @@ export async function storeResponseState(
 			expiresAt: responseStateExpiresAt(),
 		})
 		.returning();
-	return row!;
+	return writtenRow(row, "storeResponseState");
 }
 
 export async function getResponseStateForScope(

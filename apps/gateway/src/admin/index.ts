@@ -15,6 +15,7 @@ import { ok, paginated } from "#http/respond.ts";
 import { platformAdminApp } from "./platform.ts";
 import { GatewayError } from "#core/errors.ts";
 import { dashboardUsersApp } from "./users.ts";
+import { writtenRow } from "#db/returning.ts";
 import { parseJsonBody } from "#http/body.ts";
 import { auditMiddleware } from "./audit.ts";
 import { env } from "#config/env.ts";
@@ -178,38 +179,24 @@ function parseLogFilter(c: import("hono").Context): OperationFilter {
 		});
 	}
 	return {
-		...(c.req.query("virtualKeyId")
-			? { virtualKeyId: c.req.query("virtualKeyId")! }
-			: {}),
-		...(c.req.query("actor") ? { actor: c.req.query("actor")! } : {}),
-		...(c.req.query("publicModel")
-			? { publicModel: c.req.query("publicModel")! }
-			: {}),
-		...(c.req.query("deploymentId")
-			? { deploymentId: c.req.query("deploymentId")! }
-			: {}),
-		...(c.req.query("adapterKey")
-			? { adapterKey: c.req.query("adapterKey")! }
-			: {}),
-		...(c.req.query("callType") ? { callType: c.req.query("callType")! } : {}),
+		...queryPatch(c, "virtualKeyId"),
+		...queryPatch(c, "actor"),
+		...queryPatch(c, "publicModel"),
+		...queryPatch(c, "deploymentId"),
+		...queryPatch(c, "adapterKey"),
+		...queryPatch(c, "callType"),
 		...(outcome
 			? {
 					outcome: outcome as NonNullable<OperationFilter["outcome"]>,
 				}
 			: {}),
-		...(c.req.query("requestId")
-			? { requestId: c.req.query("requestId")! }
-			: {}),
+		...queryPatch(c, "requestId"),
 		...(cacheHit === undefined ? {} : { cacheHit }),
 		...(degraded === undefined ? {} : { degraded }),
 		...(active === undefined ? {} : { active }),
 		...(terminalVerified === undefined ? {} : { terminalVerified }),
-		...(c.req.query("failureKind")
-			? { failureKind: c.req.query("failureKind")! }
-			: {}),
-		...(c.req.query("failurePhase")
-			? { failurePhase: c.req.query("failurePhase")! }
-			: {}),
+		...queryPatch(c, "failureKind"),
+		...queryPatch(c, "failurePhase"),
 		...(minDurationMs === undefined ? {} : { minDurationMs }),
 		...(maxDurationMs === undefined ? {} : { maxDurationMs }),
 		...(start ? { start } : {}),
@@ -268,6 +255,20 @@ function methodPermission(
 	const write = requirePermission(`${resource}:write`);
 	return (c, next) =>
 		(c.req.method === "GET" || c.req.method === "HEAD" ? read : write)(c, next);
+}
+
+/**
+ * A query parameter as a one-key patch, or nothing at all.
+ *
+ * Spreading the result is what keeps an absent parameter out of the filter entirely, rather than
+ * present and undefined — which `exactOptionalPropertyTypes` treats as a different thing.
+ */
+function queryPatch<K extends string>(
+	c: Context<AppEnv>,
+	name: K,
+): Partial<Record<K, string>> {
+	const value = c.req.query(name);
+	return value ? ({ [name]: value } as Record<K, string>) : {};
 }
 
 export const adminApp = new Hono<AppEnv>();
@@ -412,7 +413,7 @@ adminApp.patch("/keys/:id", async (c) => {
 		await clearVirtualKeyBudget(existing.id);
 		row = await getVirtualKeyById(existing.id);
 	}
-	return ok(c, publicKey(row!));
+	return ok(c, publicKey(writtenRow(row, "virtual key update")));
 });
 
 adminApp.delete("/keys/:id", async (c) => {
@@ -585,7 +586,7 @@ adminApp.patch("/extensions/instances/:id", async (c) => {
 		...(input.config === undefined ? {} : { config: input.config }),
 	});
 	await refreshExtensions();
-	return ok(c, row!);
+	return ok(c, writtenRow(row, "extension instance update"));
 });
 
 adminApp.delete("/extensions/instances/:id", async (c) => {
@@ -638,11 +639,9 @@ adminApp.get("/audit", async (c) => {
 		limit,
 		offset,
 		...(kind ? { kind } : {}),
-		...(c.req.query("actor") ? { actor: c.req.query("actor")! } : {}),
-		...(c.req.query("action") ? { action: c.req.query("action")! } : {}),
-		...(c.req.query("targetType")
-			? { targetType: c.req.query("targetType")! }
-			: {}),
+		...queryPatch(c, "actor"),
+		...queryPatch(c, "action"),
+		...queryPatch(c, "targetType"),
 		...(start ? { start } : {}),
 		...(end ? { end } : {}),
 	});

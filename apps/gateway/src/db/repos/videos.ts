@@ -1,5 +1,6 @@
 import type { VideoAssetVariant, VideoStatus } from "#core/videos.ts";
 import { videoAssets, videoJobs } from "#db/schema.ts";
+import { writtenRow } from "#db/returning.ts";
 import { env } from "#config/env.ts";
 import { db } from "#db/client.ts";
 
@@ -100,7 +101,7 @@ export async function createVideoJob(
 			nextPollAt: input.nextPollAt ?? null,
 		})
 		.returning();
-	return row!;
+	return writtenRow(row, "createVideoJob");
 }
 
 export async function getVideoJobForScope(
@@ -255,7 +256,7 @@ export async function storeVideoAsset(
 			},
 		})
 		.returning();
-	return row!;
+	return writtenRow(row, "storeVideoAsset");
 }
 
 export async function getVideoAsset(

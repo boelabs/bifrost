@@ -130,9 +130,9 @@ function priceScore(
 	if (hasTokenPricing === hasSearchUnitPricing) {
 		return null;
 	}
-	return searchUnitCents !== undefined
-		? { basis: "search_units", value: searchUnitCents }
-		: { basis: "tokens", value: input + output };
+	return searchUnitCents === undefined
+		? { basis: "tokens", value: input + output }
+		: { basis: "search_units", value: searchUnitCents };
 }
 
 function pickByComparablePrice(

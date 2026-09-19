@@ -2,6 +2,7 @@ import { sql as drizzleSql, type SQL, count, desc, and, eq } from "drizzle-orm";
 import type { Page, PageResult } from "./deployments.ts";
 import type { DashboardRole } from "#auth/roles.ts";
 import { dashboardUsers } from "#db/schema.ts";
+import { writtenRow } from "#db/returning.ts";
 import { db } from "#db/client.ts";
 
 export type DashboardUserRow = typeof dashboardUsers.$inferSelect;
@@ -87,7 +88,7 @@ export async function createDashboardUser(
 				: { mustChangePassword: input.mustChangePassword }),
 		})
 		.returning();
-	return row!;
+	return writtenRow(row, "createDashboardUser");
 }
 
 export interface UpdateDashboardUserInput {

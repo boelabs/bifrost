@@ -5,6 +5,7 @@ import type { TransportOverrides } from "#profiles/types.ts";
 import { decryptRecord, encryptJson } from "#db/crypto.ts";
 import type { RuntimeModelMetadata } from "#db/schema.ts";
 import type { CatalogEntry } from "#catalog/types.ts";
+import { writtenRow } from "#db/returning.ts";
 import { db } from "#db/client.ts";
 
 export interface DeploymentListFilter {
@@ -121,7 +122,7 @@ export async function createDeployment(
 				rpmLimit: input.rpmLimit ?? null,
 			})
 			.returning();
-		return row!;
+		return writtenRow(row, "createDeployment");
 	});
 }
 
