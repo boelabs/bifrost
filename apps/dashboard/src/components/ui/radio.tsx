@@ -6,12 +6,19 @@ import { Radio as BaseRadio } from "@base-ui/react/radio";
 import {
 	type AppearanceProps,
 	type ControlProps,
+	type UIVariant,
 	mergeClassName,
 	mergeStyle,
 	focusRing,
 } from "./appearance";
 
 const sizes = { xs: "size-3.5", sm: "size-4", md: "size-5", lg: "size-6" };
+/** The unchecked surface; the checked state overrides the border below. */
+const surfaces: Record<UIVariant, string> = {
+	filled: "border-transparent bg-surface-2",
+	ghost: "border-transparent bg-transparent",
+	outlined: "border-border bg-surface",
+};
 function Root({
 	className,
 	style,
@@ -25,7 +32,7 @@ function Root({
 		<BaseRadio.Root
 			{...props}
 			className={mergeClassName(
-				`${focusRing} ${sizes[size]} inline-flex shrink-0 items-center justify-center rounded-full border ${variant === "filled" ? "border-transparent bg-surface-2" : variant === "ghost" ? "border-transparent bg-transparent" : "border-border bg-surface"} data-[disabled]:cursor-not-allowed data-[checked]:border-primary data-[disabled]:opacity-50`,
+				`${focusRing} ${sizes[size]} inline-flex shrink-0 items-center justify-center rounded-full border ${surfaces[variant]} data-[disabled]:cursor-not-allowed data-[checked]:border-primary data-[disabled]:opacity-50`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

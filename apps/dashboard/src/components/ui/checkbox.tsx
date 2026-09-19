@@ -8,12 +8,19 @@ import { useId } from "react";
 import {
 	type AppearanceProps,
 	type ControlProps,
+	type UIVariant,
 	mergeClassName,
 	mergeStyle,
 	focusRing,
 } from "./appearance";
 
 const sizes = { xs: "size-3.5", sm: "size-4", md: "size-5", lg: "size-6" };
+/** The unchecked surface. Checked and indeterminate states override it below. */
+const surfaces: Record<UIVariant, string> = {
+	filled: "border-transparent bg-surface-2",
+	ghost: "border-transparent bg-transparent",
+	outlined: "border-border bg-surface",
+};
 function Root({
 	className,
 	style,
@@ -27,7 +34,7 @@ function Root({
 		<BaseCheckbox.Root
 			{...props}
 			className={mergeClassName(
-				`${focusRing} ${sizes[size]} inline-flex shrink-0 items-center justify-center rounded-[var(--ui-radius-item)] border ${variant === "filled" ? "border-transparent bg-surface-2" : variant === "ghost" ? "border-transparent bg-transparent" : "border-border bg-surface"} transition-colors data-[disabled]:cursor-not-allowed data-[checked]:border-primary data-[indeterminate]:border-primary data-[invalid]:border-danger data-[checked]:bg-primary data-[indeterminate]:bg-primary data-[checked]:text-primary-fg data-[indeterminate]:text-primary-fg data-[disabled]:opacity-50`,
+				`${focusRing} ${sizes[size]} inline-flex shrink-0 items-center justify-center rounded-[var(--ui-radius-item)] border ${surfaces[variant]} transition-colors data-[disabled]:cursor-not-allowed data-[checked]:border-primary data-[indeterminate]:border-primary data-[invalid]:border-danger data-[checked]:bg-primary data-[indeterminate]:bg-primary data-[checked]:text-primary-fg data-[indeterminate]:text-primary-fg data-[disabled]:opacity-50`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

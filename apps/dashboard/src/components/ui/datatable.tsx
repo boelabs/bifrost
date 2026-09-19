@@ -28,6 +28,15 @@ import {
 	useId,
 } from "react";
 
+/** The three values `aria-sort` takes on a sortable column header. */
+type SortDirection = "ascending" | "descending" | "none";
+
+const SORT_ICONS: Record<SortDirection, typeof IconSelector> = {
+	ascending: IconChevronUp,
+	descending: IconChevronDown,
+	none: IconSelector,
+};
+
 export interface Column<T> {
 	key: string;
 	header: ReactNode;
@@ -234,22 +243,16 @@ export function DataTable<T>({
 						<tr>
 							{columns.map((column) => {
 								const active = sorting?.key === column.key;
-								const SortIcon = active
-									? sorting.descending
-										? IconChevronDown
-										: IconChevronUp
-									: IconSelector;
+								// One direction drives both the icon and aria-sort, so a header can
+								// never say one thing to the eye and another to a screen reader.
+								let direction: SortDirection = "none";
+								if (active) {
+									direction = sorting.descending ? "descending" : "ascending";
+								}
+								const SortIcon = SORT_ICONS[direction];
 								return (
 									<th
-										aria-sort={
-											column.compare
-												? active
-													? sorting.descending
-														? "descending"
-														: "ascending"
-													: "none"
-												: undefined
-										}
+										aria-sort={column.compare ? direction : undefined}
 										className={cn(
 											"whitespace-nowrap px-5 py-4 text-left font-medium text-fg-muted text-xs",
 											column.align === "end" && "text-right",
