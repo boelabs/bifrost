@@ -1,4 +1,5 @@
 import type { CostBreakdown } from "#logging/cost.ts";
+import { GatewayError } from "#core/errors.ts";
 import { z } from "zod/v4";
 
 import type {
@@ -125,7 +126,14 @@ export function toOpenRouterRerankResponse(
 		model: request.model,
 		...(response.provider === undefined ? {} : { provider: response.provider }),
 		results: response.results.map((result) => {
-			const document = request.documents[result.index]!;
+			const document = request.documents[result.index];
+			if (document === undefined) {
+				throw new GatewayError({
+					class: "server",
+					code: "upstream_protocol_error",
+					message: `Rerank result references document ${result.index}, which was not sent`,
+				});
+			}
 			return {
 				index: result.index,
 				relevance_score: result.relevanceScore,

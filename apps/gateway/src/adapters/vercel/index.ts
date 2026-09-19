@@ -204,7 +204,10 @@ const openAIStyle = makeOpenAIStyleAdapter({
 	embeddings: true,
 });
 
-const openAIStyleChat = openAIStyle.chat!;
+const openAIStyleChat = openAIStyle.chat;
+if (!openAIStyleChat) {
+	throw new Error("The OpenAI-style factory returned no chat handler");
+}
 
 export const vercelAdapter = {
 	...openAIStyle,

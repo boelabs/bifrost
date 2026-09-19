@@ -153,22 +153,25 @@ export function makeOpenAIResponsesWebSocketHandler(
 					cleanup();
 					reject(options.mapError(error, ctx));
 				};
-				const onAbort = () => {
+				const onAbort = (aborted: AbortSignal) => {
 					cleanup();
 					socket.terminate();
-					reject(abortGatewayError(ctx.signal!, "connect"));
+					reject(abortGatewayError(aborted, "connect"));
 				};
 				const cleanup = () => {
 					socket.off("open", onOpen);
 					socket.off("error", onError);
-					ctx.signal?.removeEventListener("abort", onAbort);
+					ctx.signal?.removeEventListener("abort", onAbort as () => void);
 				};
 				socket.once("open", onOpen);
 				socket.once("error", onError);
-				if (ctx.signal?.aborted) {
-					onAbort();
+				const { signal } = ctx;
+				if (signal?.aborted) {
+					onAbort(signal);
 				} else {
-					ctx.signal?.addEventListener("abort", onAbort, { once: true });
+					signal?.addEventListener("abort", () => onAbort(signal), {
+						once: true,
+					});
 				}
 			});
 

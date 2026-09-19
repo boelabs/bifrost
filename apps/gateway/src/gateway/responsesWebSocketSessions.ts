@@ -104,11 +104,12 @@ export class ResponsesWebSocketUpstreams {
 		}
 		const activeBinding = binding;
 
-		const canContinue =
+		const continueFrom =
 			options.previousPublicResponseId !== null &&
-			activeBinding.latestPublicResponseId ===
-				options.previousPublicResponseId &&
-			activeBinding.latestUpstreamResponseId !== null;
+			activeBinding.latestPublicResponseId === options.previousPublicResponseId
+				? activeBinding.latestUpstreamResponseId
+				: null;
+		const canContinue = continueFrom !== null;
 		const upstreamRequest = canContinue
 			? {
 					...request,
@@ -120,9 +121,7 @@ export class ResponsesWebSocketUpstreams {
 			: request;
 		let turn = await beforeFirstOutput(
 			activeBinding.session.create(upstreamRequest, {
-				...(canContinue
-					? { previousResponseId: activeBinding.latestUpstreamResponseId! }
-					: {}),
+				...(canContinue ? { previousResponseId: continueFrom } : {}),
 				generate: options.generate,
 				signal: ctx.signal ?? AbortSignal.timeout(10 * 60 * 1000),
 			}),

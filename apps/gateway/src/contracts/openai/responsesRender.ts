@@ -1236,7 +1236,8 @@ export async function* canonicalChunksToResponsesEvents(
 		const item =
 			matchingState === undefined
 				? reasoningItem(reasoning, rsId)
-				: reasoningStateItems([matchingState], reasoning)[0]!;
+				: (reasoningStateItems([matchingState], reasoning)[0] ??
+					reasoningItem(reasoning, rsId));
 		if (matchingState !== undefined) {
 			renderedReasoningState.add(matchingState);
 		}

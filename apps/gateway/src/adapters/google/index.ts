@@ -797,10 +797,11 @@ function googleEmbeddingRequestBody(
 		...(embedContentConfig ? { embedContentConfig } : {}),
 	});
 
-	if (texts.length === 1) {
+	const [onlyText] = texts;
+	if (texts.length === 1 && onlyText !== undefined) {
 		return {
 			method: "embedContent",
-			body: mergeExtraBodyDeep(requestFor(texts[0]!), extraBody, [
+			body: mergeExtraBodyDeep(requestFor(onlyText), extraBody, [
 				"model",
 				"content",
 				"outputDimensionality",
@@ -1221,17 +1222,20 @@ const chat: ChatHandler = {
 						delta.reasoning = reasoning;
 					}
 					if (hasToolCall) {
+						// Pair each part with its call first: filtering alone leaves the type
+						// optional, and the index has to stay the one after filtering.
 						delta.toolCalls = parts
-							.filter((part) => part.functionCall)
-							.map((part, toolIndex) => {
+							.flatMap((part) =>
+								part.functionCall ? [{ part, call: part.functionCall }] : [],
+							)
+							.map(({ part, call }, toolIndex) => {
 								const extraContent = geminiToolCallExtra(part);
 								const canonicalIndex = firstToolCallIndex + toolIndex;
 								return {
 									index: canonicalIndex,
-									id:
-										part.functionCall!.id ?? `call_${index}_${canonicalIndex}`,
-									name: part.functionCall!.name ?? "",
-									arguments: JSON.stringify(part.functionCall!.args ?? {}),
+									id: call.id ?? `call_${index}_${canonicalIndex}`,
+									name: call.name ?? "",
+									arguments: JSON.stringify(call.args ?? {}),
 									...(extraContent === undefined ? {} : { extraContent }),
 								};
 							});

@@ -460,12 +460,12 @@ export function buildResponsesRequestBody(
 	) {
 		body.reasoning = {
 			...(req.responsesTransport?.reasoning ?? {}),
-			...(resolvedReasoning === undefined
+			...(resolvedReasoning === undefined || reasoningSpec === undefined
 				? {}
 				: {
 						effort: toUpstreamReasoningEffort(
 							resolvedReasoning.effort,
-							reasoningSpec!,
+							reasoningSpec,
 						),
 					}),
 			...(resolvedReasoning && summaryVisible(resolvedReasoning.summary)
@@ -938,10 +938,11 @@ export async function* responsesEventsToCanonicalChunks(
 				if (state.id !== undefined) {
 					reasoningStateSeen.add(state.id);
 				}
-				providerFields = mergeProviderFields(
-					providerFields,
-					providerFieldsWithOpenAIReasoning([state]),
-				)!;
+				providerFields =
+					mergeProviderFields(
+						providerFields,
+						providerFieldsWithOpenAIReasoning([state]),
+					) ?? {};
 			}
 			if (
 				item !== undefined &&
@@ -949,12 +950,13 @@ export async function* responsesEventsToCanonicalChunks(
 				item.type !== "reasoning" &&
 				item.type !== "function_call"
 			) {
-				providerFields = mergeProviderFields(
-					providerFields,
-					providerFieldsWithResponsesOutput([
-						item as unknown as Record<string, unknown>,
-					]),
-				)!;
+				providerFields =
+					mergeProviderFields(
+						providerFields,
+						providerFieldsWithResponsesOutput([
+							item as unknown as Record<string, unknown>,
+						]),
+					) ?? {};
 			}
 			yield {
 				...base(),

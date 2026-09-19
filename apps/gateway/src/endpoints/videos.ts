@@ -246,7 +246,15 @@ async function handleVideoCreate(
 					unsupportedParameterStrategy,
 				);
 				effectiveQuality = request.quality;
-				return candidate.adapter.videoGeneration!.submit(request, ctx);
+				const { videoGeneration } = candidate.adapter;
+				if (!videoGeneration) {
+					throw new GatewayError({
+						class: "server",
+						code: "video_adapter_missing",
+						message: `Adapter "${candidate.adapter.key}" does not implement video generation`,
+					});
+				}
+				return videoGeneration.submit(request, ctx);
 			},
 		);
 		log.applyRouting(routing);
