@@ -1,3 +1,4 @@
+import { revokeSessionsForUser } from "#db/repos/dashboardSessions.ts";
 import { setCookie, getCookie, deleteCookie } from "hono/cookie";
 import { authMiddleware, getAuth } from "./middleware.ts";
 import { env, rootCredentials } from "#config/env.ts";
@@ -8,7 +9,7 @@ import { permissionsFor } from "./roles.ts";
 import type { AppEnv } from "./types.ts";
 import { ok } from "#http/respond.ts";
 import { Hono } from "hono";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 import {
 	getDashboardUserByUsername,
@@ -37,11 +38,6 @@ import {
 	recordLoginFailure,
 	clearLoginFailures,
 } from "./loginThrottle.ts";
-
-import {
-	revokeSessionsForUser,
-	hashSessionToken,
-} from "#db/repos/dashboardSessions.ts";
 
 const loginSchema = z.object({
 	username: z.string().min(1),
@@ -253,4 +249,4 @@ export function dashboardConfigHandler(c: import("hono").Context<AppEnv>) {
 	});
 }
 
-export { hashSessionToken };
+export { hashSessionToken } from "#db/repos/dashboardSessions.ts";

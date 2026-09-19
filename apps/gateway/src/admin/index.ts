@@ -18,7 +18,7 @@ import { dashboardUsersApp } from "./users.ts";
 import { parseJsonBody } from "#http/body.ts";
 import { auditMiddleware } from "./audit.ts";
 import { env } from "#config/env.ts";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 import {
 	listArtifactVersionsForKey,

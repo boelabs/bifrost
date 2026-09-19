@@ -7,7 +7,7 @@ import { ok, paginated } from "#http/respond.ts";
 import { GatewayError } from "#core/errors.ts";
 import { parseJsonBody } from "#http/body.ts";
 import { Hono } from "hono";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 import {
 	getDashboardUserByUsername,

@@ -1134,10 +1134,11 @@ async function executeResponsesWebSocketTurn(
 				let data: Record<string, unknown>;
 				try {
 					data = JSON.parse(clientEvent.data) as Record<string, unknown>;
-				} catch {
+				} catch (cause) {
 					throw new GatewayError({
 						class: "server",
 						message: "Rendered Responses event is not valid JSON",
+						cause,
 					});
 				}
 				if (

@@ -38,9 +38,16 @@
 	},
 	"linter": {
 		"rules": {
+			"performance": {
+				"noDelete": "off"
+			},
 			"style": {
+				"useErrorCause": "off",
 				"useFilenamingConvention": "off",
 				"noNonNullAssertion": "info"
+			},
+			"suspicious": {
+				"noEqualsToNull": "off"
 			}
 		}
 	}

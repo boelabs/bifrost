@@ -6,8 +6,9 @@
 
 import { createDocument, type ZodOpenApiRequestBodyObject } from "zod-openapi";
 import { detailedMetrics, metricsQuery } from "#admin/metricsSchema.ts";
+// biome-ignore lint/performance/noNamespaceImport: 59 component schemas; the `c.` prefix is what keeps the paths below readable, and nothing bundles this file.
 import * as c from "./components.ts";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 const errorResponse = { $ref: "#/components/responses/Error" } as const;
 const rerankErrorResponse = {

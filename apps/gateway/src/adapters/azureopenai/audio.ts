@@ -38,10 +38,11 @@ function resourceEndpoint(baseUrl: string | undefined, label: string): string {
 	let url: URL;
 	try {
 		url = new URL(baseUrl);
-	} catch {
+	} catch (cause) {
 		throw new GatewayError({
 			class: "bad_request",
 			message: `${label}: credentials.baseUrl must be a valid URL`,
+			cause,
 		});
 	}
 	if (url.protocol !== "https:") {

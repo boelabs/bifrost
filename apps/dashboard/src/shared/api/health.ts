@@ -1,5 +1,5 @@
 import { gatewayUrl } from "#/shared/config/server.ts";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 /**
  * Readiness is the one thing the dashboard could never tell an operator: the gateway answers

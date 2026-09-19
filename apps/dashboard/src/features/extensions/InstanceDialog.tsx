@@ -40,8 +40,8 @@ function parseJson(
 	let parsed: unknown;
 	try {
 		parsed = JSON.parse(text);
-	} catch {
-		throw new Error(`${field} is not valid JSON.`);
+	} catch (cause) {
+		throw new Error(`${field} is not valid JSON.`, { cause });
 	}
 	if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
 		throw new Error(`${field} must be a JSON object.`);

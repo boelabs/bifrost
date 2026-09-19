@@ -1,6 +1,6 @@
 import type { components } from "#/shared/api/schema";
 import { api, unwrap } from "#/shared/api/client.ts";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 import type {
 	CreateDeploymentInput,

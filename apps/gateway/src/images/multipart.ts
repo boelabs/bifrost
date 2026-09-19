@@ -38,12 +38,14 @@ export interface ParsedImageEditMultipart {
 function badMultipart(
 	message: string,
 	param: string | null = null,
+	cause?: unknown,
 ): GatewayError {
 	return new GatewayError({
 		class: "bad_request",
 		message,
 		param,
 		code: "invalid_multipart",
+		cause,
 	});
 }
 
@@ -74,8 +76,8 @@ function parseScalarFields(fields: Record<string, string>): unknown {
 		let parsed: unknown;
 		try {
 			parsed = JSON.parse(fields.extra_body);
-		} catch {
-			throw badMultipart("extra_body must be valid JSON", "extra_body");
+		} catch (cause) {
+			throw badMultipart("extra_body must be valid JSON", "extra_body", cause);
 		}
 		if (
 			parsed === null ||
@@ -98,8 +100,12 @@ async function inspectUpload(
 			limitInputPixels: 100_000_000,
 			animated: true,
 		}).metadata();
-	} catch {
-		throw badMultipart(`Invalid image file "${file.filename}"`, file.field);
+	} catch (cause) {
+		throw badMultipart(
+			`Invalid image file "${file.filename}"`,
+			file.field,
+			cause,
+		);
 	}
 	const format = metadata.format;
 	if (

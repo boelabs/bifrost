@@ -161,6 +161,7 @@ export async function probeArtifact(
 	} catch (err) {
 		throw new Error(
 			`Module failed to import: ${err instanceof Error ? err.message : String(err)}`,
+			{ cause: err },
 		);
 	}
 	const definition = namespace.default ?? namespace.extension;

@@ -3,7 +3,7 @@ import { EFFORT_ORDER, summaryForEffort } from "#core/reasoning.ts";
 import { assertNoManagedExtraBodyKeys } from "#core/extraBody.ts";
 import { GatewayError } from "#core/errors.ts";
 import type { Usage } from "#core/usage.ts";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 import {
 	openaiResponsesStreamEventFromProviderFields,

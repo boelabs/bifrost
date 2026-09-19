@@ -1,5 +1,5 @@
 import type { CostBreakdown } from "#logging/cost.ts";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 import type {
 	RerankProviderPreferences,

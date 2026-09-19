@@ -1,5 +1,5 @@
 import type { CreateDeploymentInput } from "./common";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 export type CustomEntry = NonNullable<CreateDeploymentInput["catalogEntry"]>;
 
@@ -25,8 +25,8 @@ export function parseObject(
 	let value: unknown;
 	try {
 		value = JSON.parse(text);
-	} catch {
-		throw new Error(`${label} is not valid JSON.`);
+	} catch (cause) {
+		throw new Error(`${label} is not valid JSON.`, { cause });
 	}
 	const result = objectSchema.safeParse(value);
 	if (!result.success) {

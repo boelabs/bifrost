@@ -44,12 +44,14 @@ export interface ParsedTranscriptionMultipart {
 function badMultipart(
 	message: string,
 	param: string | null = null,
+	cause?: unknown,
 ): GatewayError {
 	return new GatewayError({
 		class: "bad_request",
 		message,
 		param,
 		code: "invalid_multipart",
+		cause,
 	});
 }
 
@@ -91,8 +93,8 @@ function buildFields(
 		let parsed: unknown;
 		try {
 			parsed = JSON.parse(scalars.extra_body);
-		} catch {
-			throw badMultipart("extra_body must be valid JSON", "extra_body");
+		} catch (cause) {
+			throw badMultipart("extra_body must be valid JSON", "extra_body", cause);
 		}
 		if (
 			parsed === null ||

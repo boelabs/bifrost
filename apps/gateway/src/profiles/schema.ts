@@ -3,7 +3,7 @@ import { OPERATION_IDS } from "#operations/registry.ts";
 import { CALL_TYPE_VALUES } from "#core/callType.ts";
 import { EFFORT_ORDER } from "#core/reasoning.ts";
 import { QUALITY_ORDER } from "#core/quality.ts";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 export const pricingSchema = z
 	.object({

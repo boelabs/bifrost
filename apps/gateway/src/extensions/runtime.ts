@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 import { log } from "#logging/log.ts";
 import { env } from "#config/env.ts";
 import { resolve } from "node:path";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 import type {
 	ExtensionCanonicalResponse,

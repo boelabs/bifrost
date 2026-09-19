@@ -73,4 +73,4 @@ export function Input({
 	);
 }
 
-export { BaseInput as InputPrimitive };
+export { Input as InputPrimitive } from "@base-ui/react/input";

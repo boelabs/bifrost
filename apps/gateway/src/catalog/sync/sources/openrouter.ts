@@ -1,10 +1,5 @@
+import { pricingFromDollarStrings, type RawDollarPricing } from "../pricing.ts";
 import { fetchJsonWithRetry, isFetchComplete, boundedMap } from "../fetch.ts";
-
-import {
-	dollarsPerTokenToCentsPerMillion,
-	pricingFromDollarStrings,
-	type RawDollarPricing,
-} from "../pricing.ts";
 
 import type {
 	SourceFetchResult,
@@ -161,4 +156,5 @@ export const openRouterSource: CatalogSource = {
 };
 
 // Re-exported for sources/openrouter.test.ts fixtures and for merge.ts's pricing conversion needs.
-export { dollarsPerTokenToCentsPerMillion, normalizeModel, normalizeEndpoint };
+export { dollarsPerTokenToCentsPerMillion } from "../pricing.ts";
+export { normalizeModel, normalizeEndpoint };

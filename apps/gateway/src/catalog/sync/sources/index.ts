@@ -20,4 +20,6 @@ export const ACTIVE_ENRICHMENT_SOURCES: readonly EnrichmentSource[] = [
 	modelsDevSource,
 ];
 
-export { vercelSource, openRouterSource, modelsDevSource };
+export { vercelSource } from "./vercel.ts";
+export { openRouterSource } from "./openrouter.ts";
+export { modelsDevSource } from "./modelsDev.ts";

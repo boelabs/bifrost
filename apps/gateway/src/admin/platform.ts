@@ -8,7 +8,7 @@ import { parseJsonBody } from "#http/body.ts";
 import type { AppEnv } from "#auth/types.ts";
 import { ok } from "#http/respond.ts";
 import { Hono } from "hono";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 import {
 	type PreviewDeploymentInput,

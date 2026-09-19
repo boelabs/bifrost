@@ -25,7 +25,7 @@ import { OPERATION_IDS } from "#operations/registry.ts";
 import { CALL_TYPE_VALUES } from "#core/callType.ts";
 import { pricingSchema } from "#profiles/schema.ts";
 import { EFFORT_ORDER } from "#core/reasoning.ts";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 /** An object that accepts arbitrary extra keys (`additionalProperties: true`). */
 function loose(shape: z.ZodRawShape, meta: Record<string, unknown>): z.ZodType {

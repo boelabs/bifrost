@@ -1,4 +1,4 @@
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 /**
  * One time range vocabulary for every table in the dashboard.

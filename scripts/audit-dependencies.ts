@@ -67,8 +67,8 @@ function parseAuditReport(bytes: Uint8Array): unknown {
 
 	try {
 		return JSON.parse(text);
-	} catch {
-		throw new Error("Bun returned an invalid audit response.");
+	} catch (cause) {
+		throw new Error("Bun returned an invalid audit response.", { cause });
 	}
 }
 

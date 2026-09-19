@@ -1,5 +1,5 @@
 import type { components } from "#/shared/api/schema";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 export type Pricing = NonNullable<
 	components["schemas"]["CreateDeployment"]["pricing"]

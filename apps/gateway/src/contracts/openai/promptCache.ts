@@ -1,5 +1,5 @@
 import { GatewayError } from "#core/errors.ts";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 import type {
 	CanonicalChatRequest,

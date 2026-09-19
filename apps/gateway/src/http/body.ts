@@ -87,10 +87,11 @@ export async function readJsonBody(
 	try {
 		const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
 		return JSON.parse(text) as unknown;
-	} catch {
+	} catch (cause) {
 		throw new GatewayError({
 			class: "bad_request",
 			message: "Invalid or missing JSON body",
+			cause,
 		});
 	}
 }

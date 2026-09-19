@@ -1,6 +1,6 @@
 import { resolveRange, DAY } from "#/shared/lib/range.ts";
 import type { DetailedMetrics } from "./api";
-import * as z from "zod/v4";
+import { z } from "zod/v4";
 
 export const metricsSearch = z.object({
 	period: z.enum(["today", "yesterday", "7d", "30d", "custom"]).catch("today"),

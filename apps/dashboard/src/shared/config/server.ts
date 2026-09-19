@@ -24,8 +24,10 @@ export function gatewayUrl(path = ""): string {
 	let parsed: URL;
 	try {
 		parsed = new URL(raw);
-	} catch {
-		throw new Error(`GATEWAY_URL must be an absolute URL, got: ${raw}`);
+	} catch (cause) {
+		throw new Error(`GATEWAY_URL must be an absolute URL, got: ${raw}`, {
+			cause,
+		});
 	}
 	if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
 		throw new Error(

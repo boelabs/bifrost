@@ -94,11 +94,12 @@ function notConfigured(): GatewayError {
 	});
 }
 
-function missingObject(key: string): GatewayError {
+function missingObject(key: string, cause?: unknown): GatewayError {
 	return new GatewayError({
 		class: "not_found",
 		code: "object_not_found",
 		message: `Object not found: ${key}`,
+		cause,
 	});
 }
 
@@ -204,8 +205,8 @@ class LocalObjectStore implements ObjectStore {
 		let info: Awaited<ReturnType<typeof stat>>;
 		try {
 			info = await stat(path);
-		} catch {
-			throw missingObject(key);
+		} catch (cause) {
+			throw missingObject(key, cause);
 		}
 		if (info.size === 0) {
 			if (range) {
@@ -238,8 +239,8 @@ class LocalObjectStore implements ObjectStore {
 				contentType: contentTypeForKey(key),
 				contentLength: info.size,
 			};
-		} catch {
-			throw missingObject(key);
+		} catch (cause) {
+			throw missingObject(key, cause);
 		}
 	}
 

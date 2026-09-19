@@ -185,6 +185,7 @@ function requestError(
 	code: string,
 	publicMessage: string,
 	param = "messages",
+	cause?: unknown,
 ): GatewayError {
 	return new GatewayError({
 		class: "bad_request",
@@ -193,6 +194,7 @@ function requestError(
 		message,
 		publicMessage,
 		routingScope: "request",
+		cause,
 	});
 }
 
@@ -351,12 +353,13 @@ function parseSafeHttpsUrl(
 	let url: URL;
 	try {
 		url = new URL(value);
-	} catch {
+	} catch (cause) {
 		throw requestError(
 			`Invalid ${kind} URL: ${value}`,
 			`invalid_${kind}_url`,
 			`${param} must be a valid public HTTPS URL.`,
 			errorParam,
+			cause,
 		);
 	}
 	const literalHost =

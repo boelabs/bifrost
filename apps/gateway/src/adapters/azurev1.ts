@@ -15,10 +15,11 @@ export function normalizeAzurev1BaseUrl(value: string): string {
 	let url: URL;
 	try {
 		url = new URL(value);
-	} catch {
+	} catch (cause) {
 		throw new GatewayError({
 			class: "bad_request",
 			message: "Azure v1: credentials.baseUrl must be a valid URL",
+			cause,
 		});
 	}
 	if (url.protocol !== "https:") {
