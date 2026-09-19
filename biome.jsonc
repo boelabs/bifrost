@@ -61,6 +61,14 @@
 			 * Rules that are wrong for this repository, not rules we have not got to.
 			 * Each one was measured against the tree before being turned off.
 			 */
+			"a11y": {
+				// Fires on the two composer surfaces — a file drop target and the
+				// click-to-focus wrapper around the textarea — and neither has an
+				// interactive role to give it. (A plain `<form onSubmit>` is not affected;
+				// the rule reads the drag handlers, not the submit.) The trade is real:
+				// a `<div onClick>` with no keyboard path elsewhere now goes uncaught.
+				"noNoninteractiveElementInteractions": "off"
+			},
 			"complexity": {
 				// `void promise` is the deliberate marker for a floating promise; the rule
 				// would have us drop the marker and keep the float.
@@ -101,6 +109,10 @@
 				// Components are PascalCase, modules camelCase. Renaming 231 files would
 				// break every import and every blame.
 				"useFilenamingConvention": "off",
+				// The one class component is MarkdownBoundary, and an error boundary needs
+				// componentDidCatch, which has no hook equivalent. Off rather than
+				// suppressed at the site, so a stray class component will not be caught.
+				"useReactFunctionComponents": "off",
 				/* --------------------------------------------------------------- info
 				 * Real findings that need judgement per site, not a codemod. Visible in the
 				 * editor, not a gate — the same treatment noNonNullAssertion already had.
