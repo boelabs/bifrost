@@ -92,6 +92,12 @@ export function DeploymentDialog({
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
 	const [advancedOpen, setAdvancedOpen] = useState(false);
+	let submitLabel = "Create deployment";
+	if (pending) {
+		submitLabel = "Saving…";
+	} else if (editing) {
+		submitLabel = "Save changes";
+	}
 	const submitting = useRef(false);
 	const creation = useIdempotencyKey();
 
@@ -483,11 +489,7 @@ export function DeploymentDialog({
 							Cancel
 						</Button>
 						<Button disabled={pending} type="submit">
-							{pending
-								? "Saving…"
-								: editing
-									? "Save changes"
-									: "Create deployment"}
+							{submitLabel}
 						</Button>
 					</DialogFooter>
 				</Form>

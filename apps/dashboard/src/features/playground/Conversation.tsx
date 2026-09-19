@@ -16,6 +16,14 @@ import {
 	UserBubble,
 } from "./MessageParts";
 
+/** Whether a streamed part has anything to show yet; until one does, the loader stands in. */
+function hasVisibleOutput(part: PlaygroundMessage["parts"][number]): boolean {
+	if (part.type === "reasoning") {
+		return true;
+	}
+	return part.type === "text" ? Boolean(part.text) : part.type === "file";
+}
+
 export function Conversation({
 	messages,
 	busy,
@@ -87,13 +95,7 @@ export function Conversation({
 							) : null}
 							{message.role === "assistant" &&
 							isStreaming(message) &&
-							!message.parts.some((part) =>
-								part.type === "reasoning"
-									? true
-									: part.type === "text"
-										? Boolean(part.text)
-										: part.type === "file",
-							) ? (
+							!message.parts.some(hasVisibleOutput) ? (
 								<ResponseLoader />
 							) : null}
 							{message.parts.map((part, partIndex) => {

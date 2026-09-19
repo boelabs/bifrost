@@ -59,6 +59,14 @@ export function ChainOfThoughtContent(
 		/>
 	);
 }
+type StepStatus = "complete" | "active" | "pending";
+
+const STEP_TONES: Record<StepStatus, string> = {
+	active: "text-fg",
+	pending: "text-fg-muted/50",
+	complete: "text-fg-muted",
+};
+
 export function ChainOfThoughtStep({
 	icon: Icon = IconPoint,
 	label,
@@ -67,19 +75,12 @@ export function ChainOfThoughtStep({
 }: {
 	icon?: TablerIcon;
 	label?: ReactNode;
-	status?: "complete" | "active" | "pending";
+	status?: StepStatus;
 	children?: ReactNode;
 }) {
 	return (
 		<div
-			className={
-				"group/step relative flex gap-2 text-base" +
-				(status === "active"
-					? "text-fg"
-					: status === "pending"
-						? "text-fg-muted/50"
-						: "text-fg-muted")
-			}
+			className={`group/step relative flex gap-2 text-base${STEP_TONES[status]}`}
 			data-chain-step={status}
 		>
 			<div className="relative mt-0.5 shrink-0">

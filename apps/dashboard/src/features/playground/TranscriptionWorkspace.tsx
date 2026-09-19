@@ -105,6 +105,28 @@ function Chosen({
 	);
 }
 
+/** Subtitle formats keep their line breaks and timings, so they are shown as source. */
+function TranscriptText({
+	text,
+	subtitles,
+}: {
+	text: string;
+	subtitles: boolean;
+}) {
+	if (subtitles) {
+		return (
+			<pre className="overflow-x-auto rounded-xl border border-border/50 bg-card p-3 font-mono text-xs leading-5">
+				{text}
+			</pre>
+		);
+	}
+	return (
+		<p className="whitespace-pre-wrap text-base leading-7 [overflow-wrap:anywhere]">
+			{text}
+		</p>
+	);
+}
+
 function TranscriptionRunView({
 	run,
 	onCopy,
@@ -146,14 +168,8 @@ function TranscriptionRunView({
 						<Status tone="muted">Stopped</Status>
 					</div>
 				) : null}
-				{run.text && subtitles ? (
-					<pre className="overflow-x-auto rounded-xl border border-border/50 bg-card p-3 font-mono text-xs leading-5">
-						{run.text}
-					</pre>
-				) : run.text ? (
-					<p className="whitespace-pre-wrap text-base leading-7 [overflow-wrap:anywhere]">
-						{run.text}
-					</p>
+				{run.text ? (
+					<TranscriptText subtitles={subtitles} text={run.text} />
 				) : null}
 				{run.segments.length ? (
 					<ol className="flex flex-col gap-1">

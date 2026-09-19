@@ -93,11 +93,8 @@ export function CustomModelEditor({
 								>
 									{operation.label}
 								</Switch>
-								{profile === undefined ? null : operation.id ===
-									"text.generate" ? (
-									<TextProfile onChange={setProfile} profile={profile} />
-								) : (
-									<OperationFields
+								{profile === undefined ? null : (
+									<ProfileFields
 										id={operation.id}
 										onChange={setProfile}
 										profile={profile}
@@ -193,6 +190,22 @@ export function CustomModelEditor({
 			</details>
 		</fieldset>
 	);
+}
+
+/** Text generation has a form of its own; every other operation shares the generic one. */
+function ProfileFields({
+	id,
+	profile,
+	onChange,
+}: {
+	id: string;
+	profile: Record<string, unknown>;
+	onChange: (patch: Record<string, unknown>) => void;
+}) {
+	if (id === "text.generate") {
+		return <TextProfile onChange={onChange} profile={profile} />;
+	}
+	return <OperationFields id={id} onChange={onChange} profile={profile} />;
 }
 
 function TextProfile({

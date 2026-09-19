@@ -30,6 +30,15 @@ export interface ResponseMetrics {
 
 export type PlaygroundMessage = UIMessage<ResponseMetrics>;
 
+/** One numeric field of an untyped usage-details object, if it is really there and numeric. */
+function numberField(source: unknown, field: string): number | undefined {
+	if (!source || typeof source !== "object" || Array.isArray(source)) {
+		return undefined;
+	}
+	const value = (source as Record<string, unknown>)[field];
+	return typeof value === "number" ? value : undefined;
+}
+
 function tokenCount(value: unknown): number | undefined {
 	return typeof value === "number" && Number.isSafeInteger(value) && value >= 0
 		? value
@@ -57,22 +66,12 @@ export function usageMetrics(
 				: undefined,
 		reasoningTokens: tokenCount(
 			raw
-				? outputDetails &&
-					typeof outputDetails === "object" &&
-					!Array.isArray(outputDetails) &&
-					typeof outputDetails.reasoning_tokens === "number"
-					? outputDetails.reasoning_tokens
-					: undefined
+				? numberField(outputDetails, "reasoning_tokens")
 				: usage.outputTokenDetails.reasoningTokens,
 		),
 		cachedInputTokens: tokenCount(
 			raw
-				? inputDetails &&
-					typeof inputDetails === "object" &&
-					!Array.isArray(inputDetails) &&
-					typeof inputDetails.cached_tokens === "number"
-					? inputDetails.cached_tokens
-					: undefined
+				? numberField(inputDetails, "cached_tokens")
 				: usage.inputTokenDetails.cacheReadTokens,
 		),
 		requestTokensPerSecond:

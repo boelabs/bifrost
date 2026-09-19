@@ -119,9 +119,7 @@
 				 * Drive each count to zero and promote the rule back to "error".
 				 */
 				// 748 sites; most are justified by noUncheckedIndexedAccess.
-				"noNonNullAssertion": "info",
-				// 97 sites, mostly Tailwind variant chains that want a lookup table.
-				"noNestedTernary": "info"
+				"noNonNullAssertion": "info"
 			},
 			"suspicious": {
 				// `x == null` is the correct null-or-undefined test; the rule's fix drops

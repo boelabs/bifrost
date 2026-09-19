@@ -37,11 +37,7 @@ export function summary(run: VideoRun): string {
 		settings.resolution,
 		settings.quality,
 		settings.seed === undefined ? undefined : `seed ${settings.seed}`,
-		settings.generateAudio === true
-			? "with audio"
-			: settings.generateAudio === false
-				? "silent"
-				: undefined,
+		AUDIO_SUMMARY[String(settings.generateAudio)],
 		run.references.length
 			? `${run.references.length} attachment${run.references.length > 1 ? "s" : ""}`
 			: undefined,
@@ -64,6 +60,12 @@ function expiry(job: VideoJob | undefined): string | undefined {
 		{ hour: "2-digit", minute: "2-digit" },
 	)}`;
 }
+
+/** Keyed by `String(generateAudio)`, so "undefined" means the model was not told either way. */
+const AUDIO_SUMMARY: Record<string, string | undefined> = {
+	true: "with audio",
+	false: "silent",
+};
 
 const ROLE_LABEL: Record<VideoReference["role"], string> = {
 	reference: "Reference",

@@ -30,6 +30,14 @@ import {
 
 const DEFAULT = "default";
 
+/** The select's value for a tri-state toggle whose third state is "leave it to the model". */
+function audioChoice(generateAudio: boolean | undefined): string {
+	if (generateAudio === undefined) {
+		return DEFAULT;
+	}
+	return generateAudio ? "on" : "off";
+}
+
 /**
  * How the dimensions are being said. The gateway takes `size` or `aspect_ratio`/`resolution` and
  * refuses both at once, so the choice is made here, once — the invalid combination cannot be
@@ -216,13 +224,7 @@ export function VideoSettingsDialog({
 										: value === "on",
 								)
 							}
-							value={
-								settings.generateAudio === undefined
-									? DEFAULT
-									: settings.generateAudio
-										? "on"
-										: "off"
-							}
+							value={audioChoice(settings.generateAudio)}
 						>
 							<SelectItem value={DEFAULT}>Default</SelectItem>
 							<SelectItem value="on">Generate audio</SelectItem>

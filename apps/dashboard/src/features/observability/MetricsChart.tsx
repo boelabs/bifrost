@@ -42,12 +42,15 @@ export function MetricsChart({
 	const max = Math.max(0, ...rows.map((row) => row.value ?? 0));
 	const selected = rows.find((row) => row.timestamp === active);
 	const isDuration = metric === "p95DurationMs";
-	const format = (value: number | null, short = false) =>
-		value === null
-			? "—"
-			: isDuration
-				? duration(value)
-				: (short ? compact : count).format(value);
+	const format = (value: number | null, short = false) => {
+		if (value === null) {
+			return "—";
+		}
+		if (isDuration) {
+			return duration(value);
+		}
+		return (short ? compact : count).format(value);
+	};
 	const date = new Intl.DateTimeFormat("en-US", {
 		month: "short",
 		day: "numeric",
@@ -57,6 +60,12 @@ export function MetricsChart({
 		timeZone: "UTC",
 	});
 	const label = options.find((option) => option.key === metric)?.label;
+	let barColor = "bg-chart-1";
+	if (metric === "errors") {
+		barColor = "bg-danger";
+	} else if (upstream) {
+		barColor = "bg-chart-2";
+	}
 	/** The bar's value once one is picked, and the metric's name until then. */
 	const readout = selected ? format(selected.value) : label;
 	return (
@@ -130,7 +139,7 @@ export function MetricsChart({
 									type="button"
 								>
 									<span
-										className={`w-full rounded-t-sm ${metric === "errors" ? "bg-danger" : upstream ? "bg-chart-2" : "bg-chart-1"} ${active === row.timestamp ? "opacity-100" : "opacity-70"}`}
+										className={`w-full rounded-t-sm ${barColor} ${active === row.timestamp ? "opacity-100" : "opacity-70"}`}
 										style={{
 											height: `${max && row.value !== null ? (row.value / max) * 100 : 0}%`,
 										}}

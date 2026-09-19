@@ -150,13 +150,12 @@ export function editForm(
 
 export function imagesFrom(response: ImagesResponse): GeneratedImage[] {
 	const mediaType = `image/${response.output_format ?? "png"}`;
-	return response.data.flatMap((entry) =>
-		entry.b64_json
-			? [{ url: `data:${mediaType};base64,${entry.b64_json}`, mediaType }]
-			: entry.url
-				? [{ url: entry.url, mediaType }]
-				: [],
-	);
+	return response.data.flatMap((entry) => {
+		if (entry.b64_json) {
+			return [{ url: `data:${mediaType};base64,${entry.b64_json}`, mediaType }];
+		}
+		return entry.url ? [{ url: entry.url, mediaType }] : [];
+	});
 }
 
 export async function runImages(

@@ -37,6 +37,13 @@ export const emptySettings = (): PlaygroundSettings => ({
 
 const requestBody = z.record(z.string(), z.unknown());
 
+/** What each contract calls the gateway parameters the SDKs filter out on their way through. */
+const PARAMETER_FIELDS: Record<string, Record<string, string>> = {
+	messages: { stop: "stop_sequences", max_tokens: "max_tokens" },
+	responses: { max_tokens: "max_output_tokens" },
+	default: { max_tokens: "max_tokens" },
+};
+
 /**
  * The call signature this module actually uses, deliberately not `typeof fetch`.
  *
@@ -68,12 +75,7 @@ export function createSessionFetch(
 		}
 		const body = requestBody.parse(JSON.parse(init.body));
 		// Restore explicitly selected gateway parameters after SDK vendor-specific filtering.
-		const fields: Record<string, string> =
-			endpoint === "messages"
-				? { stop: "stop_sequences", max_tokens: "max_tokens" }
-				: endpoint === "responses"
-					? { max_tokens: "max_output_tokens" }
-					: { max_tokens: "max_tokens" };
+		const fields = PARAMETER_FIELDS[endpoint] ?? PARAMETER_FIELDS.default;
 		for (const [key, value] of Object.entries(settings.parameters)) {
 			body[fields[key] ?? key] = value;
 		}

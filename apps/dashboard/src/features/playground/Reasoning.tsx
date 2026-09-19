@@ -40,6 +40,21 @@ export function reasoningGroupAt(
 	return group;
 }
 
+/** What a reasoning step says when it produced no text of its own. */
+function emptyStepText(
+	stepStreaming: boolean,
+	streaming: boolean,
+	interrupted: boolean,
+): string {
+	if (streaming && stepStreaming) {
+		return "Thinking...";
+	}
+	if (interrupted && stepStreaming) {
+		return "Reasoning was interrupted before text was returned.";
+	}
+	return "The model did not return reasoning text.";
+}
+
 export function Reasoning({
 	steps,
 	streaming,
@@ -61,14 +76,16 @@ export function Reasoning({
 	if (!steps.length) {
 		return null;
 	}
+	let heading = "Thinking";
+	if (completed) {
+		heading = "Reasoning";
+	} else if (interrupted) {
+		heading = "Reasoning interrupted";
+	}
 	return (
 		<ChainOfThought onOpenChange={setOpen} open={open}>
 			<ChainOfThoughtHeader aria-label="Toggle reasoning">
-				{completed
-					? "Reasoning"
-					: interrupted
-						? "Reasoning interrupted"
-						: "Thinking"}
+				{heading}
 			</ChainOfThoughtHeader>
 			<ChainOfThoughtContent>
 				<div className="space-y-4">
@@ -86,11 +103,11 @@ export function Reasoning({
 								/>
 							) : (
 								<p className="text-fg-muted leading-7">
-									{streaming && step.state === "streaming"
-										? "Thinking..."
-										: interrupted && step.state === "streaming"
-											? "Reasoning was interrupted before text was returned."
-											: "The model did not return reasoning text."}
+									{emptyStepText(
+										step.state === "streaming",
+										streaming,
+										interrupted,
+									)}
 								</p>
 							)}
 						</ChainOfThoughtStep>
