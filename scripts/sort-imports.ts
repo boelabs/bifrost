@@ -67,15 +67,15 @@ const REPO_ROOTS = ["apps", "packages", "scripts"];
 const args = process.argv.slice(2);
 const explicitTargets = args.filter((arg) => !arg.startsWith("--"));
 
-const files = explicitTargets.length
+const targetFiles = explicitTargets.length
 	? await collectTargetFiles(explicitTargets)
 	: await collectWorkspaceFiles(REPO_ROOTS);
-const changed = await sortFiles(files);
+const changedCount = await sortFiles(targetFiles);
 
 console.log(
-	changed === 1
+	changedCount === 1
 		? "Sorted imports in 1 file."
-		: `Sorted imports in ${changed} files.`,
+		: `Sorted imports in ${changedCount} files.`,
 );
 
 async function sortFiles(files: string[]): Promise<number> {

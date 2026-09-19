@@ -143,10 +143,10 @@ export function resolveVideoSize(
 	}
 	const requestedResolution = req.resolution?.toLowerCase();
 	const match = Object.entries(profile?.sizes ?? {}).find(
-		([, mapping]) =>
-			(!req.aspectRatio || mapping.aspectRatio === req.aspectRatio) &&
+		([, candidate]) =>
+			(!req.aspectRatio || candidate.aspectRatio === req.aspectRatio) &&
 			(!requestedResolution ||
-				mapping.resolution?.toLowerCase() === requestedResolution),
+				candidate.resolution?.toLowerCase() === requestedResolution),
 	);
 	if (!match) {
 		return {

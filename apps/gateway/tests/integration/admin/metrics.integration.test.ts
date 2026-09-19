@@ -179,12 +179,12 @@ test("metrics: requires authentication and rejects invalid queries", async () =>
 	assert.equal(invalid.status, 400);
 });
 
-async function summary(query: Record<string, string>) {
-	const response = await app.request(
-		`/admin/observability/summary?${new URLSearchParams(query)}`,
+async function summary(params: Record<string, string>) {
+	const result = await app.request(
+		`/admin/observability/summary?${new URLSearchParams(params)}`,
 		{ headers: auth },
 	);
-	return response;
+	return result;
 }
 
 test("summary: an explicit range replaces the trailing window, end excluded", {

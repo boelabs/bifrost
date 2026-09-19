@@ -882,14 +882,14 @@ function googleRetryAfterMs(
 		if (detail === null || typeof detail !== "object") {
 			continue;
 		}
-		const record = detail as Record<string, unknown>;
+		const entry = detail as Record<string, unknown>;
 		if (
-			record["@type"] !== "type.googleapis.com/google.rpc.RetryInfo" ||
-			typeof record.retryDelay !== "string"
+			entry["@type"] !== "type.googleapis.com/google.rpc.RetryInfo" ||
+			typeof entry.retryDelay !== "string"
 		) {
 			continue;
 		}
-		const match = /^(\d+(?:\.\d+)?)s$/.exec(record.retryDelay);
+		const match = /^(\d+(?:\.\d+)?)s$/.exec(entry.retryDelay);
 		if (!match) {
 			continue;
 		}

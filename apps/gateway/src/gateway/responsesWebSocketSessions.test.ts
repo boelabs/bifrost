@@ -41,7 +41,7 @@ test("responses websocket sessions: private upstream ids continue only on the bo
 				return {
 					closed: false,
 					async create(
-						request: CanonicalChatRequest,
+						canonical: CanonicalChatRequest,
 						options: {
 							previousResponseId?: string;
 							generate: boolean;
@@ -49,7 +49,7 @@ test("responses websocket sessions: private upstream ids continue only on the bo
 						},
 					) {
 						seen.push({
-							request,
+							request: canonical,
 							...(options.previousResponseId
 								? { previousResponseId: options.previousResponseId }
 								: {}),
@@ -146,11 +146,11 @@ test("responses websocket sessions: rehydrates full canonical input when upstrea
 				return {
 					closed: false,
 					async create(
-						request: CanonicalChatRequest,
+						canonical: CanonicalChatRequest,
 						options: { previousResponseId?: string },
 					) {
 						seen.push({
-							request,
+							request: canonical,
 							...(options.previousResponseId
 								? { previousResponseId: options.previousResponseId }
 								: {}),

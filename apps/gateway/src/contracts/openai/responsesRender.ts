@@ -1229,7 +1229,7 @@ export async function* canonicalChunksToResponsesEvents(
 
 	const reasoningSummaryDone = (): SSEEvent[] => {
 		reasoningOpen = false;
-		const matchingState = reasoningState.find((item) => item.id === rsId);
+		const matchingState = reasoningState.find((state) => state.id === rsId);
 		const item =
 			matchingState === undefined
 				? reasoningItem(reasoning, rsId)
@@ -1264,11 +1264,11 @@ export async function* canonicalChunksToResponsesEvents(
 		];
 	};
 
-	const baseResponse = (status: string) =>
+	const baseResponse = (responseStatus: string) =>
 		buildResponse(opts, {
 			id: responseId,
 			createdAt,
-			status,
+			status: responseStatus,
 			incomplete: null,
 			output: [],
 			usage: null,

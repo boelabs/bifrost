@@ -119,13 +119,13 @@ test("Chat keeps summary parts separate across streaming, new turns and regenera
 			},
 		});
 	}
-	for (const [index, turn] of [1, 3].entries()) {
+	for (const [index, turnNumber] of [1, 3].entries()) {
 		assert.deepEqual(
 			assistants[index]?.parts
 				.filter((part) => part.type === "reasoning")
 				.map((part) => ({ text: part.text, state: part.state })),
 			["First", "Second", "Third"].map((text) => ({
-				text: `${text} ${turn}`,
+				text: `${text} ${turnNumber}`,
 				state: "done",
 			})),
 		);

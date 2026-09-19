@@ -188,7 +188,10 @@ export async function parseImageEditMultipart(
 				stream.resume();
 				return;
 			}
-			if (field === "mask" && pending.some((file) => file.field === "mask")) {
+			if (
+				field === "mask" &&
+				pending.some((upload) => upload.field === "mask")
+			) {
 				failure ??= badMultipart("Only one mask is allowed", "mask");
 				stream.resume();
 				return;

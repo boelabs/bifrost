@@ -92,7 +92,7 @@ export function buildRoutingError(p: {
 		const causes = [...p.cooldownCauses.values()];
 		const configuration =
 			causes.length > 0 &&
-			causes.every((cause) => CONFIGURATION_CLASSES.has(cause.class));
+			causes.every((item) => CONFIGURATION_CLASSES.has(item.class));
 		if (configuration) {
 			const [first] = causes;
 			const cls = (first?.class ?? "not_found") as ErrorClass;

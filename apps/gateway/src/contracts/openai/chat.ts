@@ -736,9 +736,9 @@ function toOpenAIUsage(u: Usage): z.infer<typeof usageSchema> {
 }
 
 function toolCallProviderSpecificFields(
-	extraContent: Record<string, unknown> | undefined,
+	content: Record<string, unknown> | undefined,
 ): Record<string, unknown> | undefined {
-	return providerSpecificFieldsFromExtraContent(extraContent);
+	return providerSpecificFieldsFromExtraContent(content);
 }
 
 function renderResponseToolCall(tc: {

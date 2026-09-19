@@ -19,7 +19,7 @@ import {
 	CodeBlockHeader,
 } from "streamdown";
 
-const CodeRow = memo(function CodeRow({
+const CodeRow = memo(function CodeRowBody({
 	text,
 	highlighted,
 }: {

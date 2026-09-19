@@ -112,9 +112,9 @@ data: [DONE]
 test("session fetch includes the browser session and removes provider credentials", async () => {
 	let input: Parameters<typeof fetch>[0] | undefined;
 	let init: RequestInit | undefined;
-	const fetchImpl: FetchLike = async (request, requestInit) => {
-		input = request;
-		init = requestInit;
+	const fetchImpl: FetchLike = async (target, options) => {
+		input = target;
+		init = options;
 		return new Response("{}", { status: 200 });
 	};
 

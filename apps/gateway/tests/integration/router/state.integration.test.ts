@@ -66,7 +66,7 @@ async function cleanup(
 		`rt:tpm:${id}:${bucket}`,
 		`rt:tpm-reserved:${id}:${bucket}`,
 	]);
-	for (const prefix of circuitPrefixes) {
+	for (const circuitPrefix of circuitPrefixes) {
 		for (const suffix of [
 			"cooldown",
 			"cause",
@@ -75,7 +75,7 @@ async function cleanup(
 			"probe",
 			"attempts",
 		]) {
-			keys.push(`${prefix}:${suffix}`);
+			keys.push(`${circuitPrefix}:${suffix}`);
 		}
 	}
 	if (keys.length > 0) {
@@ -369,7 +369,7 @@ test("circuit: allowed failures are honored before cooldown, half-open admits on
 			acquireCircuitPermit(deployment, capacity, config),
 			acquireCircuitPermit(deployment, capacity, config),
 		]);
-		assert.equal(probes.filter((probe) => probe.allowed).length, 1);
+		assert.equal(probes.filter((entry) => entry.allowed).length, 1);
 		const probe = probes.find((candidate) => candidate.allowed);
 		assert.ok(probe?.allowed);
 		if (!probe?.allowed) {

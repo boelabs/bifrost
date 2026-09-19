@@ -34,8 +34,8 @@ test("route lifecycle retains usage across gateway post-processing failures", as
 	const calls: Array<Usage | null> = [];
 	const lifecycle = new RouteLifecycle<unknown>();
 	lifecycle.attach(
-		route(async (usage) => {
-			calls.push(usage);
+		route(async (reported) => {
+			calls.push(reported);
 		}),
 	);
 	const usage = { promptTokens: 2, completionTokens: 3, totalTokens: 5 };

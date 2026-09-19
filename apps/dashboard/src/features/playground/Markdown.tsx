@@ -81,7 +81,7 @@ const components: ComponentProps<typeof Streamdown>["components"] = {
 	),
 };
 
-export const Markdown = memo(function Markdown({
+export const Markdown = memo(function MarkdownBody({
 	text,
 	streaming = false,
 }: {
