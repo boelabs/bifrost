@@ -118,7 +118,7 @@ function RerankRunView({
 				aria-label="You message"
 				className="ml-auto flex w-full max-w-[90%] flex-col items-end gap-1"
 			>
-				<p className="w-fit max-w-full overflow-hidden break-words rounded-3xl border border-border/60 bg-surface-2 px-3.5 py-2.5 text-base leading-6 [overflow-wrap:anywhere]">
+				<p className="wrap-break-word wrap-anywhere w-fit max-w-full overflow-hidden rounded-3xl border border-border/60 bg-surface-2 px-3.5 py-2.5 text-base leading-6">
 					{run.query}
 				</p>
 				<span className="text-fg-muted text-xs">
@@ -155,7 +155,7 @@ function RerankRunView({
 									<span className="w-4 shrink-0 text-fg-muted text-xs tabular-nums">
 										{position + 1}
 									</span>
-									<p className="min-w-0 flex-1 text-sm [overflow-wrap:anywhere]">
+									<p className="wrap-anywhere min-w-0 flex-1 text-sm">
 										{result.text}
 									</p>
 									<span className="shrink-0 font-mono text-xs">

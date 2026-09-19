@@ -110,7 +110,7 @@ export function EmbeddingRunView({
 						key={index}
 					>
 						<span className="mt-2 text-fg-muted text-xs">{index + 1}</span>
-						<p className="w-fit max-w-full overflow-hidden break-words rounded-3xl border border-border/60 bg-surface-2 px-3.5 py-2.5 text-base leading-6 [overflow-wrap:anywhere]">
+						<p className="wrap-break-word wrap-anywhere w-fit max-w-full overflow-hidden rounded-3xl border border-border/60 bg-surface-2 px-3.5 py-2.5 text-base leading-6">
 							{input}
 						</p>
 					</div>

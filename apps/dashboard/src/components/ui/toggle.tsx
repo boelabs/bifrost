@@ -28,7 +28,7 @@ export function Toggle({
 					size,
 					variant,
 					className:
-						"inline-flex cursor-pointer justify-center rounded-[var(--ui-toggle-radius,var(--ui-radius-control))] font-medium data-pressed:border-primary/40 data-pressed:bg-primary/10 data-pressed:text-primary",
+						"inline-flex cursor-pointer justify-center rounded-(--ui-toggle-radius,var(--ui-radius-control)) font-medium data-pressed:border-primary/40 data-pressed:bg-primary/10 data-pressed:text-primary",
 				}),
 				className,
 			)}

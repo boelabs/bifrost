@@ -121,7 +121,7 @@ function TranscriptText({
 		);
 	}
 	return (
-		<p className="whitespace-pre-wrap text-base leading-7 [overflow-wrap:anywhere]">
+		<p className="wrap-anywhere whitespace-pre-wrap text-base leading-7">
 			{text}
 		</p>
 	);
@@ -182,7 +182,7 @@ function TranscriptionRunView({
 								<span className="shrink-0 font-mono text-fg-muted text-xs leading-6">
 									{segment.start === undefined ? "—" : timestamp(segment.start)}
 								</span>
-								<span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+								<span className="wrap-anywhere min-w-0 flex-1">
 									{segment.text}
 								</span>
 							</li>

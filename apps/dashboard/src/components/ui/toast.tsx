@@ -28,7 +28,7 @@ export function ToastPortal({
 	return (
 		<BaseToast.Portal
 			{...props}
-			className={mergeClassName("relative z-[100]", className)}
+			className={mergeClassName("relative z-100", className)}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -47,7 +47,7 @@ export function ToastViewport({
 		<BaseToast.Viewport
 			{...props}
 			className={mergeClassName(
-				"fixed right-4 bottom-4 z-[100] flex w-88 max-w-[calc(100vw-2rem)] flex-col gap-3 outline-none",
+				"fixed right-4 bottom-4 z-100 flex w-88 max-w-[calc(100vw-2rem)] flex-col gap-3 outline-none",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -196,7 +196,7 @@ export function ToastPositioner({
 		<BaseToast.Positioner
 			{...props}
 			className={mergeClassName(
-				"z-[100] w-80 max-w-[calc(100vw-2rem)] outline-none",
+				"z-100 w-80 max-w-[calc(100vw-2rem)] outline-none",
 				className,
 			)}
 			sideOffset={sideOffset}

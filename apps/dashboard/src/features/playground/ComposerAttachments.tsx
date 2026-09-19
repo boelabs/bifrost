@@ -53,7 +53,7 @@ export function ComposerAttachments({
 		<div className="relative w-full">
 			<section
 				aria-label="Attachments"
-				className="flex w-full gap-2 overflow-x-auto overscroll-x-contain rounded-[20px] p-2 pb-1 [scrollbar-width:none] md:p-3 md:pb-1"
+				className="scrollbar-none flex w-full gap-2 overflow-x-auto overscroll-x-contain rounded-[20px] p-2 pb-1 md:p-3 md:pb-1"
 				data-composer-attachments="true"
 				ref={track}
 			>

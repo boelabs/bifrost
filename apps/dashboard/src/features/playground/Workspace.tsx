@@ -52,7 +52,7 @@ export function Workspace({
 			<div
 				// Bleeding into the shell's padding puts the scrollbar against the window edge, where a
 				// scrollbar belongs; the padding is given back inside so the text stays where it was.
-				className="-mr-4 min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-6 pr-4 [scrollbar-gutter:stable] md:-mr-8 md:pr-8"
+				className="scrollbar-gutter-stable -mr-4 min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-6 pr-4 md:-mr-8 md:pr-8"
 				ref={scroll}
 			>
 				{empty ? (

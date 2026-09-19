@@ -92,7 +92,7 @@ export function DialogViewport({
 		<BaseDialog.Viewport
 			{...props}
 			className={mergeClassName(
-				"fixed inset-0 z-50 flex items-center justify-center overflow-auto p-4 [scrollbar-gutter:stable]",
+				"scrollbar-gutter-stable fixed inset-0 z-50 flex items-center justify-center overflow-auto p-4",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -160,7 +160,7 @@ export function DialogBody({
 		<div
 			{...props}
 			className={cn(
-				"min-h-0 min-w-0 flex-1 scroll-p-6 overflow-y-auto overscroll-contain p-6 [scrollbar-gutter:stable]",
+				"scrollbar-gutter-stable min-h-0 min-w-0 flex-1 scroll-p-6 overflow-y-auto overscroll-contain p-6",
 				className,
 			)}
 			data-slot="dialog-body"

@@ -126,7 +126,7 @@ export function Metrics({ metrics }: { metrics: ResponseMetrics }) {
 				</p>
 			) : null}
 			{metrics.warnings?.map((warning) => (
-				<p className="break-words text-warning text-xs" key={warning}>
+				<p className="wrap-break-word text-warning text-xs" key={warning}>
 					{warning}
 				</p>
 			))}{" "}
