@@ -16,12 +16,26 @@ const ZERO: DeploymentMetrics = {
 	healthScore: 0.5,
 };
 
+/**
+ * A pick from a candidate list the caller has already guaranteed is non-empty.
+ *
+ * Every strategy here is documented as taking a non-empty list, but the type cannot say so. An
+ * empty one is a router bug, and this is where it says so rather than surfacing later as a
+ * TypeError on a property of undefined.
+ */
+function pick(candidate: DeploymentCandidate | undefined): DeploymentCandidate {
+	if (candidate === undefined) {
+		throw new Error("Routing strategy received an empty candidate list");
+	}
+	return candidate;
+}
+
 function weightedRandom(
 	candidates: DeploymentCandidate[],
 ): DeploymentCandidate {
 	const total = candidates.reduce((s, c) => s + Math.max(0, c.row.weight), 0);
 	if (total <= 0) {
-		return candidates[Math.floor(Math.random() * candidates.length)]!;
+		return pick(candidates[Math.floor(Math.random() * candidates.length)]);
 	}
 	let r = Math.random() * total;
 	for (const c of candidates) {
@@ -30,7 +44,7 @@ function weightedRandom(
 			return c;
 		}
 	}
-	return candidates.at(-1)!;
+	return pick(candidates.at(-1));
 }
 
 /** Picks the candidate with the lowest metric; ties -> random among the minimums. */
@@ -50,7 +64,7 @@ function pickMin(
 			winners.push(c);
 		}
 	}
-	return winners[Math.floor(Math.random() * winners.length)]!;
+	return pick(winners[Math.floor(Math.random() * winners.length)]);
 }
 
 function pickMinScore(
@@ -72,7 +86,7 @@ function pickMinScore(
 		}
 	}
 	return winners.length > 0
-		? winners[Math.floor(Math.random() * winners.length)]!
+		? pick(winners[Math.floor(Math.random() * winners.length)])
 		: weightedRandom(candidates);
 }
 
@@ -95,7 +109,7 @@ function pickMaxScore(
 		}
 	}
 	return winners.length > 0
-		? winners[Math.floor(Math.random() * winners.length)]!
+		? pick(winners[Math.floor(Math.random() * winners.length)])
 		: weightedRandom(candidates);
 }
 
@@ -111,12 +125,13 @@ function priceScore(
 	const hasTokenPricing =
 		pricing.inputCentsPerMTokens !== undefined ||
 		pricing.outputCentsPerMTokens !== undefined;
-	const hasSearchUnitPricing = pricing.searchUnitCents !== undefined;
+	const { searchUnitCents } = pricing;
+	const hasSearchUnitPricing = searchUnitCents !== undefined;
 	if (hasTokenPricing === hasSearchUnitPricing) {
 		return null;
 	}
-	return hasSearchUnitPricing
-		? { basis: "search_units", value: pricing.searchUnitCents! }
+	return searchUnitCents !== undefined
+		? { basis: "search_units", value: searchUnitCents }
 		: { basis: "tokens", value: input + output };
 }
 
@@ -144,7 +159,7 @@ export function pickDeployment(
 	metrics: Map<string, DeploymentMetrics>,
 ): DeploymentCandidate {
 	if (candidates.length === 1) {
-		return candidates[0]!;
+		return pick(candidates[0]);
 	}
 	switch (strategy) {
 		case "least-busy":
