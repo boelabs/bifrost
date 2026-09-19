@@ -225,14 +225,15 @@ function fileSource(part: CanonicalFilePart): ContentSource {
 	if (part.fileData !== undefined) {
 		present.push(["data_url", part.fileData]);
 	}
-	if (present.length !== 1) {
+	const [only] = present;
+	if (present.length !== 1 || only === undefined) {
 		throw requestError(
 			`File input must contain exactly one source; received ${present.length}`,
 			"invalid_file_source",
 			"Each file input must contain exactly one of file_id, file_url, or file_data.",
 		);
 	}
-	const [kind, value] = present[0]!;
+	const [kind, value] = only;
 	if (value.length === 0) {
 		throw requestError(
 			"File input source is empty",
@@ -407,8 +408,20 @@ function isBlockedIpv4(address: string): boolean {
 	);
 }
 
-function ipv6Words(address: string): number[] | null {
-	let normalized = address.toLowerCase().split("%", 1)[0]!;
+/** The eight 16-bit words of an IPv6 address; the length is what the checks below rely on. */
+type Ipv6Words = [
+	number,
+	number,
+	number,
+	number,
+	number,
+	number,
+	number,
+	number,
+];
+
+function ipv6Words(address: string): Ipv6Words | null {
+	let [normalized = ""] = address.toLowerCase().split("%", 1);
 	if (normalized.startsWith("[") && normalized.endsWith("]")) {
 		normalized = normalized.slice(1, -1);
 	}
@@ -436,7 +449,8 @@ function ipv6Words(address: string): number[] | null {
 	) {
 		return null;
 	}
-	return words;
+	// Proven by the length check above; asserting it here is what spares every caller a `!`.
+	return words as Ipv6Words;
 }
 
 // biome-ignore-start lint/suspicious/noBitwiseOperators: IPv6 prefixes are defined as bit masks; anything else would obscure the RFCs these checks come from.
@@ -445,7 +459,7 @@ function isBlockedIpv6(address: string): boolean {
 	if (!words) {
 		return true;
 	}
-	const first = words[0]!;
+	const [first, second] = words;
 	const allZeroPrefix = words.slice(0, 7).every((word) => word === 0);
 	return (
 		(allZeroPrefix && (words[7] === 0 || words[7] === 1)) ||
@@ -457,12 +471,12 @@ function isBlockedIpv6(address: string): boolean {
 		(first & 0xff_c0) === 0xfe_80 ||
 		(first & 0xff_c0) === 0xfe_c0 ||
 		(first & 0xff_00) === 0xff_00 ||
-		(first === 0x20_01 && words[1] === 0) ||
-		(first === 0x20_01 && words[1] === 0x0d_b8) ||
-		(first === 0x20_01 && (words[1]! & 0xff_f0) === 0x00_10) ||
-		(first === 0x20_01 && (words[1]! & 0xff_f0) === 0x00_20) ||
+		(first === 0x20_01 && second === 0) ||
+		(first === 0x20_01 && second === 0x0d_b8) ||
+		(first === 0x20_01 && (second & 0xff_f0) === 0x00_10) ||
+		(first === 0x20_01 && (second & 0xff_f0) === 0x00_20) ||
 		first === 0x20_02 ||
-		(first === 0x3f_ff && (words[1]! & 0xff_f0) === 0)
+		(first === 0x3f_ff && (second & 0xff_f0) === 0)
 	);
 }
 // biome-ignore-end lint/suspicious/noBitwiseOperators: end of the IPv6 prefix masks.
@@ -790,7 +804,7 @@ function decodeDataUrl(
 			errorParam,
 		);
 	}
-	const encoded = match[2]!;
+	const [, , encoded = ""] = match;
 	if (encoded.length % 4 !== 0) {
 		throw requestError(
 			`${kind} data base64 has invalid padding`,
@@ -1712,15 +1726,24 @@ export class VideoInputResolver {
 		}
 
 		let index = 0;
+		// The resolved media are in the order the references were collected, so they are consumed
+		// in that order too; running out means the two walks disagree, which is a bug here.
+		const nextResolved = () => {
+			const entry = resolved[index++];
+			if (entry === undefined) {
+				throw new Error("Resolved media ran out before its references did");
+			}
+			return entry;
+		};
 		const inputReferences = this.#request.inputReferences?.map((ref) => {
 			if (ref.type === "file_id") {
 				return ref;
 			}
-			const { media } = resolved[index++]!;
+			const { media } = nextResolved();
 			return { ...ref, url: media.dataUrl };
 		});
 		const frameImages = this.#request.frameImages?.map((frame) => {
-			const { media } = resolved[index++]!;
+			const { media } = nextResolved();
 			return { ...frame, url: media.dataUrl };
 		});
 		return {
