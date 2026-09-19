@@ -68,7 +68,7 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
 				>
 					<span
 						aria-hidden
-						className="flex size-8 shrink-0 items-center justify-center rounded-[var(--ui-radius-control)] border border-border/50 bg-card font-semibold text-sm"
+						className="flex size-8 shrink-0 items-center justify-center rounded-(--ui-radius-control) border border-border/50 bg-card font-semibold text-sm"
 					>
 						{name.slice(0, 1).toUpperCase()}
 					</span>

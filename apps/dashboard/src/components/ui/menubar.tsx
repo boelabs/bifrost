@@ -40,7 +40,7 @@ export function Menubar({
 		<BaseMenubar
 			{...props}
 			className={mergeClassName(
-				"flex items-center gap-1 rounded-[var(--ui-radius-control)] border border-border bg-surface p-1 text-fg data-[orientation=vertical]:flex-col data-[orientation=vertical]:items-stretch",
+				"flex items-center gap-1 rounded-(--ui-radius-control) border border-border bg-surface p-1 text-fg data-[orientation=vertical]:flex-col data-[orientation=vertical]:items-stretch",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

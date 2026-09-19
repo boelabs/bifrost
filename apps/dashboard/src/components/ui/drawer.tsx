@@ -106,7 +106,7 @@ export function DrawerPopup({
 		<BaseDrawer.Popup
 			{...props}
 			className={mergeClassName(
-				`${overlayFadeStyles} absolute flex max-h-[calc(100dvh-2rem)] max-w-full flex-col overflow-auto rounded-[var(--ui-radius-dialog)] border border-border/60 bg-surface text-fg shadow-xl outline-none transition-[transform,translate,opacity] data-[swipe-direction=left]:data-[ending-style]:-translate-x-full data-[swipe-direction=left]:data-[starting-style]:-translate-x-full data-[swipe-direction=right]:data-[ending-style]:translate-x-full data-[swipe-direction=right]:data-[starting-style]:translate-x-full data-[swipe-direction=down]:data-[ending-style]:translate-y-full data-[swipe-direction=down]:data-[starting-style]:translate-y-full data-[swipe-direction=up]:data-[ending-style]:-translate-y-full data-[swipe-direction=up]:data-[starting-style]:-translate-y-full data-[swipe-direction=down]:inset-x-0 data-[swipe-direction=up]:inset-x-0 data-[swipe-direction=left]:inset-y-0 data-[swipe-direction=right]:inset-y-0 data-[swipe-direction=up]:top-0 data-[swipe-direction=right]:right-0 data-[swipe-direction=down]:bottom-0 data-[swipe-direction=left]:left-0 data-[swipe-direction=left]:w-96 data-[swipe-direction=right]:w-96 data-[swiping]:select-none data-[swiping]:transition-none`,
+				`${overlayFadeStyles} absolute flex max-h-[calc(100dvh-2rem)] max-w-full flex-col overflow-auto rounded-(--ui-radius-dialog) border border-border/60 bg-surface text-fg shadow-xl outline-none transition-[transform,translate,opacity] data-[swipe-direction=left]:data-[ending-style]:-translate-x-full data-[swipe-direction=left]:data-[starting-style]:-translate-x-full data-[swipe-direction=right]:data-[ending-style]:translate-x-full data-[swipe-direction=right]:data-[starting-style]:translate-x-full data-[swipe-direction=down]:data-[ending-style]:translate-y-full data-[swipe-direction=down]:data-[starting-style]:translate-y-full data-[swipe-direction=up]:data-[ending-style]:-translate-y-full data-[swipe-direction=up]:data-[starting-style]:-translate-y-full data-[swipe-direction=down]:inset-x-0 data-[swipe-direction=up]:inset-x-0 data-[swipe-direction=left]:inset-y-0 data-[swipe-direction=right]:inset-y-0 data-[swipe-direction=up]:top-0 data-[swipe-direction=right]:right-0 data-[swipe-direction=down]:bottom-0 data-[swipe-direction=left]:left-0 data-[swipe-direction=left]:w-96 data-[swipe-direction=right]:w-96 data-[swiping]:select-none data-[swiping]:transition-none`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, (state) => ({
@@ -204,7 +204,7 @@ export function DrawerIndent({
 		<BaseDrawer.Indent
 			{...props}
 			className={mergeClassName(
-				"relative min-h-dvh rounded-[var(--ui-radius-surface)] bg-surface",
+				"relative min-h-dvh rounded-(--ui-radius-surface) bg-surface",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -245,7 +245,7 @@ export function DrawerSwipeArea({
 		<BaseDrawer.SwipeArea
 			{...props}
 			className={mergeClassName(
-				"relative rounded-[var(--ui-radius-control)] data-[disabled]:pointer-events-none",
+				"relative rounded-(--ui-radius-control) data-[disabled]:pointer-events-none",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

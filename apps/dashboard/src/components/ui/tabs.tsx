@@ -47,7 +47,7 @@ export function TabList({
 		<BaseTabs.List
 			{...props}
 			className={mergeClassName(
-				"relative isolate flex w-fit max-w-full shrink-0 gap-1 rounded-[var(--ui-radius-control)] bg-surface-2 p-1 data-[orientation=vertical]:flex-col",
+				"relative isolate flex w-fit max-w-full shrink-0 gap-1 rounded-(--ui-radius-control) bg-surface-2 p-1 data-[orientation=vertical]:flex-col",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -92,7 +92,7 @@ export function TabPanel({
 		<BaseTabs.Panel
 			{...props}
 			className={mergeClassName(
-				`min-w-0 flex-1 rounded-[var(--ui-radius-surface)] text-fg text-sm ${focusRing}`,
+				`min-w-0 flex-1 rounded-(--ui-radius-surface) text-fg text-sm ${focusRing}`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -111,7 +111,7 @@ export function TabIndicator({
 		<BaseTabs.Indicator
 			{...props}
 			className={mergeClassName(
-				"pointer-events-none absolute top-[var(--active-tab-top)] left-[var(--active-tab-left)] z-20 h-[var(--active-tab-height)] w-[var(--active-tab-width)] rounded-[var(--ui-radius-control)] ring-1 ring-primary/30 transition-[top,left,width,height] duration-200",
+				"pointer-events-none absolute top-(--active-tab-top) left-(--active-tab-left) z-20 h-(--active-tab-height) w-(--active-tab-width) rounded-(--ui-radius-control) ring-1 ring-primary/30 transition-[top,left,width,height] duration-200",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

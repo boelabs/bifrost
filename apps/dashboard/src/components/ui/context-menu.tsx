@@ -71,7 +71,7 @@ export function ContextMenuTrigger({
 		<BaseContextMenu.Trigger
 			{...props}
 			className={mergeClassName(
-				`rounded-[var(--ui-radius-control)] ${focusRing}`,
+				`rounded-(--ui-radius-control) ${focusRing}`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

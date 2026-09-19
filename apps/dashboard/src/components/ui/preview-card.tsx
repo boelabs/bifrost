@@ -30,7 +30,7 @@ export function PreviewCardTrigger<Payload = unknown>({
 		<BasePreviewCard.Trigger
 			{...props}
 			className={mergeClassName(
-				`rounded-[var(--ui-radius-control)] text-primary underline-offset-4 hover:underline ${focusRing}`,
+				`rounded-(--ui-radius-control) text-primary underline-offset-4 hover:underline ${focusRing}`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

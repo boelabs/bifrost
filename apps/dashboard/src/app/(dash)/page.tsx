@@ -43,7 +43,7 @@ export default function OverviewPage(props: PageProps<"/">) {
 					<Suspense
 						fallback={
 							<Skeleton
-								className="h-10 rounded-[var(--ui-radius-control)]"
+								className="h-10 rounded-(--ui-radius-control)"
 								width="8.5rem"
 							/>
 						}

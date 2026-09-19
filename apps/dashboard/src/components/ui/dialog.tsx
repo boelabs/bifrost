@@ -16,10 +16,10 @@ import {
 } from "./appearance";
 
 export const overlayBackdropStyles = `fixed inset-0 z-50 bg-zinc-950/50 ${overlayFadeStyles}`;
-export const overlayButtonStyles = `inline-flex items-center justify-center gap-2 rounded-[var(--ui-radius-control)] px-3 py-2 text-sm font-medium text-fg hover:bg-secondary disabled:pointer-events-none disabled:opacity-50 ${focusRing}`;
+export const overlayButtonStyles = `inline-flex items-center justify-center gap-2 rounded-(--ui-radius-control) px-3 py-2 text-sm font-medium text-fg hover:bg-secondary disabled:pointer-events-none disabled:opacity-50 ${focusRing}`;
 export const overlayArrowStyles =
-	"size-3 rotate-45 rounded-[var(--ui-radius-sm)] border border-border/60 bg-popover data-[side=top]:-bottom-1.5 data-[side=bottom]:-top-1.5 data-[side=left]:-right-1.5 data-[side=right]:-left-1.5";
-export const dialogPopupStyles = `relative flex w-full max-w-[calc(100vw-2rem)] max-h-[calc(100dvh-2rem)] flex-col gap-6 overflow-auto rounded-[var(--ui-radius-dialog)] border border-border/60 bg-popover p-6 text-fg shadow-xl outline-none ${overlayFadeStyles} md:w-md`;
+	"size-3 rotate-45 rounded-(--ui-radius-sm) border border-border/60 bg-popover data-[side=top]:-bottom-1.5 data-[side=bottom]:-top-1.5 data-[side=left]:-right-1.5 data-[side=right]:-left-1.5";
+export const dialogPopupStyles = `relative flex w-full max-w-[calc(100vw-2rem)] max-h-[calc(100dvh-2rem)] flex-col gap-6 overflow-auto rounded-(--ui-radius-dialog) border border-border/60 bg-popover p-6 text-fg shadow-xl outline-none ${overlayFadeStyles} md:w-md`;
 
 export const DialogRoot = BaseDialog.Root;
 export const DialogHandle = BaseDialog.Handle;

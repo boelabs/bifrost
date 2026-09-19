@@ -25,7 +25,7 @@ export function Skeleton({
 		<span
 			aria-hidden
 			className={cn(
-				"block h-4 animate-pulse rounded-[var(--ui-radius-control)] bg-fg/10 motion-reduce:animate-none",
+				"block h-4 animate-pulse rounded-(--ui-radius-control) bg-fg/10 motion-reduce:animate-none",
 				className,
 			)}
 			style={width ? { width, ...style } : style}
@@ -69,10 +69,7 @@ export function TableSkeleton({
 		<div
 			aria-busy="true"
 			aria-label="Loading rows"
-			className={cn(
-				"min-w-0 rounded-[var(--ui-radius-surface)]",
-				!plain && "p-1",
-			)}
+			className={cn("min-w-0 rounded-(--ui-radius-surface)", !plain && "p-1")}
 			role="status"
 		>
 			{toolbar ? (
@@ -83,7 +80,7 @@ export function TableSkeleton({
 					)}
 				>
 					<Skeleton
-						className="ml-auto h-10 rounded-[var(--ui-radius-control)]"
+						className="ml-auto h-10 rounded-(--ui-radius-control)"
 						width="4.5rem"
 					/>
 				</div>
@@ -142,11 +139,11 @@ export function TableSkeleton({
 					<Skeleton className="h-5" width="9rem" />
 					<div className="flex flex-wrap items-center gap-3">
 						<Skeleton
-							className="h-10 rounded-[var(--ui-radius-control)]"
+							className="h-10 rounded-(--ui-radius-control)"
 							width="8rem"
 						/>
 						<Skeleton
-							className="h-10 rounded-[var(--ui-radius-control)]"
+							className="h-10 rounded-(--ui-radius-control)"
 							width="10rem"
 						/>
 					</div>
@@ -157,8 +154,7 @@ export function TableSkeleton({
 }
 
 /** The frame a `Card` draws, so a placeholder can sit exactly where one will. */
-const CARD =
-	"rounded-[var(--ui-radius-surface)] border border-border/50 bg-card";
+const CARD = "rounded-(--ui-radius-surface) border border-border/50 bg-card";
 
 /**
  * A row of summary tiles, laid out and padded like `StatCard`: label and icon, the big number with
@@ -216,7 +212,7 @@ export function ChartSkeleton({
 				</>
 			) : null}
 			<Skeleton
-				className={cn("rounded-[var(--ui-radius-surface)]", title && "mt-7")}
+				className={cn("rounded-(--ui-radius-surface)", title && "mt-7")}
 				style={{ height }}
 				width="100%"
 			/>
@@ -239,7 +235,7 @@ export function ToolbarSkeleton({
 		>
 			{widths.map((width, index) => (
 				<Skeleton
-					className="h-10 rounded-[var(--ui-radius-control)]"
+					className="h-10 rounded-(--ui-radius-control)"
 					// Keyed by position, not by width: a toolbar can legitimately hold two controls of
 					// the same size, and the list never reorders.
 					// biome-ignore lint/suspicious/noArrayIndexKey: placeholder bars have no identity

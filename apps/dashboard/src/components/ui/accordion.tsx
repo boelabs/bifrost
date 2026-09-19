@@ -28,7 +28,7 @@ export function AccordionRoot<Value = unknown>({
 		<BaseAccordion.Root
 			{...props}
 			className={mergeClassName(
-				"group/accordion flex w-full flex-col rounded-[var(--ui-radius-surface)] border border-border bg-surface data-[orientation=horizontal]:flex-row",
+				"group/accordion flex w-full flex-col rounded-(--ui-radius-surface) border border-border bg-surface data-[orientation=horizontal]:flex-row",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -108,7 +108,7 @@ export function AccordionPanel({
 		<BaseAccordion.Panel
 			{...props}
 			className={mergeClassName(
-				"h-[var(--accordion-panel-height)] overflow-hidden text-fg-muted text-sm transition-[height,opacity] duration-200 data-[ending-style]:h-0 data-[starting-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0",
+				"h-(--accordion-panel-height) overflow-hidden text-fg-muted text-sm transition-[height,opacity] duration-200 data-[ending-style]:h-0 data-[starting-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

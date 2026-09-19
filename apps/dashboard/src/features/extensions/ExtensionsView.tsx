@@ -126,7 +126,7 @@ export function UploadCodeButton() {
 		<Suspense
 			fallback={
 				<Skeleton
-					className="h-10 rounded-[var(--ui-radius-control)]"
+					className="h-10 rounded-(--ui-radius-control)"
 					width="7.5rem"
 				/>
 			}

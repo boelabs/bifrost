@@ -31,7 +31,7 @@ export function ScrollAreaRoot({
 		<BaseScrollArea.Root
 			{...props}
 			className={mergeClassName(
-				"relative min-h-0 min-w-0 rounded-[var(--ui-radius-surface)]",
+				"relative min-h-0 min-w-0 rounded-(--ui-radius-surface)",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

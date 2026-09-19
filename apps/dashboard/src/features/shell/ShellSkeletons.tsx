@@ -45,7 +45,7 @@ export function UserMenuSkeleton({ collapsed }: { collapsed: boolean }) {
 			className="flex w-full items-center gap-3 p-2"
 			role="status"
 		>
-			<Skeleton className="size-8 shrink-0 rounded-[var(--ui-radius-control)]" />
+			<Skeleton className="size-8 shrink-0 rounded-(--ui-radius-control)" />
 			{collapsed ? null : (
 				<span className="min-w-0 flex-1">
 					<Skeleton className="h-3.5" width="60%" />

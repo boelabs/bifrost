@@ -20,7 +20,7 @@ function Root({
 		<BaseFieldset.Root
 			{...props}
 			className={mergeClassName(
-				"flex min-w-0 flex-col gap-4 rounded-[var(--ui-radius-surface)] border border-border/60 p-4",
+				"flex min-w-0 flex-col gap-4 rounded-(--ui-radius-surface) border border-border/60 p-4",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

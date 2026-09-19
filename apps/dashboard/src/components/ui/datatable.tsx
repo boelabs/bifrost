@@ -148,7 +148,7 @@ export function DataTable<T>({
 		<div
 			aria-busy={loading}
 			className={cn(
-				"min-w-0 rounded-[var(--ui-radius-surface)]",
+				"min-w-0 rounded-(--ui-radius-surface)",
 				framed && "p-1",
 				effectClassName(effect),
 				className,

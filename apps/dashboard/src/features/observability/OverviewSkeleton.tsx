@@ -45,7 +45,7 @@ export function OverviewSkeleton() {
 					{ headers: BY_ACTOR, title: "5rem", caption: "18rem" },
 				].map(({ headers, title, caption }) => (
 					<section
-						className="min-w-0 rounded-[var(--ui-radius-surface)] border border-border/50 bg-card p-7"
+						className="min-w-0 rounded-(--ui-radius-surface) border border-border/50 bg-card p-7"
 						key={headers[0]}
 					>
 						<div className="flex items-start justify-between gap-3">

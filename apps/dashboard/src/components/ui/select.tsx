@@ -51,7 +51,7 @@ function Popup({
 		<BaseSelect.Popup
 			{...props}
 			className={mergeClassName(
-				`${popupStyles} min-w-[var(--anchor-width)]`,
+				`${popupStyles} min-w-(--anchor-width)`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

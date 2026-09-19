@@ -77,7 +77,7 @@ function ExtensionsSkeleton() {
 		<div className="flex flex-col gap-6">
 			{["15.5rem", "13.5rem"].map((height, index) => (
 				<div
-					className="rounded-[var(--ui-radius-surface)] border border-border/50 bg-card p-6"
+					className="rounded-(--ui-radius-surface) border border-border/50 bg-card p-6"
 					// biome-ignore lint/suspicious/noArrayIndexKey: placeholder cards have no identity
 					key={index}
 				>
@@ -87,12 +87,12 @@ function ExtensionsSkeleton() {
 							<Skeleton className="mt-2 h-3.5" width="30rem" />
 						</div>
 						<Skeleton
-							className="h-10 rounded-[var(--ui-radius-control)]"
+							className="h-10 rounded-(--ui-radius-control)"
 							width="8rem"
 						/>
 					</div>
 					<Skeleton
-						className="rounded-[var(--ui-radius-surface)]"
+						className="rounded-(--ui-radius-surface)"
 						style={{ height }}
 						width="100%"
 					/>

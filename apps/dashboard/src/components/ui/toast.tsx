@@ -68,7 +68,7 @@ export function ToastRoot({
 		<BaseToast.Root
 			{...props}
 			className={mergeClassName(
-				`${overlayFadeStyles} relative flex w-full shrink-0 flex-col gap-3 rounded-[var(--ui-radius-dialog)] border border-border/60 bg-surface p-4 pr-10 text-fg shadow-xl outline-none transition-[opacity,transform] data-[limited]:hidden data-[swiping]:select-none data-[type=error]:border-danger/50 data-[type=success]:border-success/50 data-[swiping]:transition-none`,
+				`${overlayFadeStyles} relative flex w-full shrink-0 flex-col gap-3 rounded-(--ui-radius-dialog) border border-border/60 bg-surface p-4 pr-10 text-fg shadow-xl outline-none transition-[opacity,transform] data-[limited]:hidden data-[swiping]:select-none data-[type=error]:border-danger/50 data-[type=success]:border-success/50 data-[swiping]:transition-none`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, (state) => ({
@@ -151,7 +151,7 @@ export function ToastClose({
 			aria-label="Dismiss notification"
 			{...props}
 			className={mergeClassName(
-				`absolute top-2 right-2 inline-flex size-7 items-center justify-center rounded-[var(--ui-radius-control)] text-fg-muted hover:bg-secondary hover:text-fg ${focusRing}`,
+				`absolute top-2 right-2 inline-flex size-7 items-center justify-center rounded-(--ui-radius-control) text-fg-muted hover:bg-secondary hover:text-fg ${focusRing}`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

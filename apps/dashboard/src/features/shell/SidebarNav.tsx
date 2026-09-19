@@ -105,7 +105,7 @@ export function SidebarNav({
 							aria-current={active ? "page" : undefined}
 							aria-label={collapsed ? label : undefined}
 							className={cn(
-								"flex min-h-11 items-center gap-3 rounded-[var(--ui-radius-control)] px-3.5 py-2.5 text-fg-muted text-sm transition-colors hover:bg-secondary hover:text-fg focus-visible:outline-2 focus-visible:outline-focus",
+								"flex min-h-11 items-center gap-3 rounded-(--ui-radius-control) px-3.5 py-2.5 text-fg-muted text-sm transition-colors hover:bg-secondary hover:text-fg focus-visible:outline-2 focus-visible:outline-focus",
 								collapsed && "justify-center px-0",
 								active && "bg-secondary font-medium text-secondary-fg",
 							)}

@@ -66,7 +66,7 @@ function Popup({
 		<BaseAutocomplete.Popup
 			{...props}
 			className={mergeClassName(
-				`${popupStyles} min-w-[var(--anchor-width)]`,
+				`${popupStyles} min-w-(--anchor-width)`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -140,7 +140,7 @@ function Clear({
 		<BaseAutocomplete.Clear
 			{...props}
 			className={mergeClassName(
-				`${focusRing} inline-flex size-7 items-center justify-center rounded-[var(--ui-radius-item)] text-fg-muted hover:bg-secondary`,
+				`${focusRing} inline-flex size-7 items-center justify-center rounded-(--ui-radius-item) text-fg-muted hover:bg-secondary`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

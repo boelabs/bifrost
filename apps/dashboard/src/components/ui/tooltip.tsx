@@ -30,7 +30,7 @@ export function TooltipTrigger<Payload = unknown>({
 		<BaseTooltip.Trigger
 			{...props}
 			className={mergeClassName(
-				`inline-flex items-center rounded-[var(--ui-radius-control)] ${focusRing}`,
+				`inline-flex items-center rounded-(--ui-radius-control) ${focusRing}`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

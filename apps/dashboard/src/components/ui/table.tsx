@@ -18,7 +18,7 @@ export function Table({
 		<table
 			{...props}
 			className={cn(
-				"w-full border-separate border-spacing-0 rounded-[var(--ui-radius-surface)] border border-border text-sm",
+				"w-full border-separate border-spacing-0 rounded-(--ui-radius-surface) border border-border text-sm",
 				className,
 			)}
 			style={appearanceStyle({ borderRadius, width }, style)}

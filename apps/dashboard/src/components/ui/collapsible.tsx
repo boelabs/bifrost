@@ -27,7 +27,7 @@ export function CollapsibleRoot({
 		<BaseCollapsible.Root
 			{...props}
 			className={mergeClassName(
-				"w-full min-w-0 rounded-[var(--ui-radius-surface)] text-fg",
+				"w-full min-w-0 rounded-(--ui-radius-surface) text-fg",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -72,7 +72,7 @@ export function CollapsiblePanel({
 		<BaseCollapsible.Panel
 			{...props}
 			className={mergeClassName(
-				"h-[var(--collapsible-panel-height)] overflow-hidden text-fg-muted text-sm transition-[height,opacity] duration-200 data-[ending-style]:h-0 data-[starting-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0",
+				"h-(--collapsible-panel-height) overflow-hidden text-fg-muted text-sm transition-[height,opacity] duration-200 data-[ending-style]:h-0 data-[starting-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
