@@ -19,11 +19,11 @@ export function RefreshControls({
 }) {
 	const { refresh, pending } = useRefresh();
 	useAutoRefresh(refresh, auto);
+	const text = pending ? "Refreshing…" : label;
 	return (
 		<Button disabled={pending} onClick={refresh} size="sm" variant="secondary">
 			<IconRefresh aria-hidden className="size-4" />
-			{/* biome-ignore lint/suspicious/noLeakedRender: label is a required string prop with a default; nothing falsy can leak. */}
-			{pending ? "Refreshing…" : label}
+			{text}
 		</Button>
 	);
 }

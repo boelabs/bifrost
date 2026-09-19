@@ -16,7 +16,9 @@ test("incremental highlighting matches whole blocks across multiline grammars", 
 		for (const [language, code] of [
 			[
 				"typescript",
-				// biome-ignore lint/suspicious/noTemplateCurlyInString: fixture source that must contain a literal interpolation.
+				// A template literal instead would only trade this for noUnusedTemplateLiteral:
+				// the fixture is TypeScript source, so it has to carry a literal `${`.
+				// biome-ignore lint/suspicious/noTemplateCurlyInString: see above.
 				"/* comment\nstill comment */\nconst template = `first\n${1 + 2} last`;\nconst x = /a+/g;",
 			],
 			["python", 'value = """first\nsecond\nlast"""\nprint(value)'],

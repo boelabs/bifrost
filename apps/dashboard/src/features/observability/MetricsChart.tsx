@@ -57,6 +57,8 @@ export function MetricsChart({
 		timeZone: "UTC",
 	});
 	const label = options.find((option) => option.key === metric)?.label;
+	/** The bar's value once one is picked, and the metric's name until then. */
+	const readout = selected ? format(selected.value) : label;
 	return (
 		<Card aria-labelledby={id} className="min-w-0 p-7">
 			<div className="flex flex-wrap items-start justify-between gap-3">
@@ -159,10 +161,7 @@ export function MetricsChart({
 							? `${date.format(selected.timestamp)} UTC${selected.timestamp + (data.bucket === "day" ? 86_400_000 : 3_600_000) > Date.parse(data.end) ? " · partial interval" : ""}`
 							: "Select a bar to inspect its value"}
 					</span>
-					<span className="font-medium tabular-nums">
-						{/* biome-ignore lint/suspicious/noLeakedRender: label is a string; nothing falsy can leak. */}
-						{selected ? format(selected.value) : label}
-					</span>
+					<span className="font-medium tabular-nums">{readout}</span>
 				</figcaption>
 			</figure>
 		</Card>

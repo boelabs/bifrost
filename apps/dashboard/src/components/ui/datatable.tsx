@@ -133,6 +133,8 @@ export function DataTable<T>({
 	const frameStyle = appearanceStyle({ borderRadius, width }, style);
 	const radius = frameStyle.borderRadius ?? "var(--ui-radius-surface)";
 	const framed = variant === "framed";
+	/** What the body says when it has no rows to show. */
+	const placeholder = loading ? "Loading..." : emptyMessage;
 	return (
 		<div
 			aria-busy={loading}
@@ -308,10 +310,7 @@ export function DataTable<T>({
 									className="px-5 py-12 text-center text-fg-muted"
 									colSpan={Math.max(columns.length, 1)}
 								>
-									<span role="status">
-										{/* biome-ignore lint/suspicious/noLeakedRender: emptyMessage is a string prop with a default; nothing falsy can leak. */}
-										{loading ? "Loading..." : emptyMessage}
-									</span>
+									<span role="status">{placeholder}</span>
 								</td>
 							</tr>
 						)}

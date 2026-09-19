@@ -1,6 +1,7 @@
 "use client";
 
 import { PopoverRoot, PopoverTrigger, Popover } from "#/components/ui/popover";
+import type { Query } from "#/shared/lib/useSearchWriter.ts";
 import { Select, SelectItem } from "#/components/ui/select";
 import { IconCalendar } from "@tabler/icons-react";
 import { Button } from "#/components/ui/button";
@@ -51,7 +52,11 @@ export function RangeFilter({
 	value: RangeSearch;
 	/** The period in force when the URL carries none. */
 	fallback: RangeKey;
-	onChange: (patch: RangeSearch) => void;
+	/**
+	 * Typed as the writer's patch shape, not as `RangeSearch`: what comes back is on its way
+	 * into the query string, and `Query` is the only shape `useSearchWriter` accepts.
+	 */
+	onChange: (patch: Query) => void;
 	/** Set on pages that label their controls; toolbars label by `aria-label` instead. */
 	label?: string;
 }) {

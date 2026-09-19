@@ -26,16 +26,11 @@ export type RangeKey = keyof typeof RANGES;
 /** The widest range any of these endpoints accepts: both read raw operation rows. */
 export const MAX_RANGE_DAYS = 31;
 
-/**
- * Declared as a type rather than an interface on purpose: the search writer takes a plain record of
- * query values, and only a type alias carries the implicit index signature that makes it one.
- */
-// biome-ignore lint/style/useConsistentTypeDefinitions: see above — an interface has no implicit index signature.
-export type RangeSearch = {
+export interface RangeSearch {
 	period?: RangeKey | undefined;
 	from?: string | undefined;
 	to?: string | undefined;
-};
+}
 
 export interface ResolvedRange {
 	/** Absent only for "Everything", which asks the gateway for no bound at all. */
