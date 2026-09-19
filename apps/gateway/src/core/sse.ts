@@ -23,12 +23,12 @@ export async function* parseSSE(
 	const processLine = (rawLine: string): SSEEvent | undefined => {
 		const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
 		if (line === "") {
-			const event =
-				dataLines.length === 0
-					? undefined
-					: eventName === undefined
-						? { data: dataLines.join("\n") }
-						: { event: eventName, data: dataLines.join("\n") };
+			// A blank line ends the event, but only if there was data to end.
+			let event: SSEEvent | undefined;
+			if (dataLines.length > 0) {
+				const data = dataLines.join("\n");
+				event = eventName === undefined ? { data } : { event: eventName, data };
+			}
 			reset();
 			return event;
 		}

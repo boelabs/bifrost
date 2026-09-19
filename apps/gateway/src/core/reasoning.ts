@@ -310,8 +310,22 @@ export function reasoningLogInfo(
 		requested,
 		effective,
 		clamped,
-		source: requested === null ? "model_floor" : clamped ? "clamped" : "client",
+		source: reasoningSource(requested, clamped),
 	};
+}
+
+/**
+ * Where the effort in force came from: the client asked, the model's floor decided, or the
+ * client asked for something the model does not offer and the gateway moved it.
+ */
+function reasoningSource(
+	requested: string | null,
+	clamped: boolean,
+): "model_floor" | "clamped" | "client" {
+	if (requested === null) {
+		return "model_floor";
+	}
+	return clamped ? "clamped" : "client";
 }
 
 /**

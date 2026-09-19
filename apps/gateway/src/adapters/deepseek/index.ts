@@ -110,11 +110,14 @@ function deepSeekChatBaseUrl(
 	req: CanonicalChatRequest,
 	ctx: { transport: string },
 ): string {
-	const prefix = usesStrictTools(req)
-		? "/beta"
-		: ctx.transport === "responses"
-			? ""
-			: undefined;
+	// Strict tools live behind /beta; the Responses surface is at the root. Anything else keeps
+	// the base URL exactly as configured.
+	let prefix: string | undefined;
+	if (usesStrictTools(req)) {
+		prefix = "/beta";
+	} else if (ctx.transport === "responses") {
+		prefix = "";
+	}
 	if (prefix === undefined) {
 		return baseUrl;
 	}

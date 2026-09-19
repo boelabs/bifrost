@@ -26,6 +26,20 @@ import {
 	pruneExtensionCache,
 } from "./source.ts";
 
+/**
+ * A disabled critical extension is an outage: the request path it guards is gone. A disabled
+ * non-critical one is a degradation — the gateway still answers, just without that hook.
+ */
+function extensionsStatus(
+	hasCriticalDisabled: boolean,
+	hasDisabled: boolean,
+): "error" | "degraded" | "ok" {
+	if (hasCriticalDisabled) {
+		return "error";
+	}
+	return hasDisabled ? "degraded" : "ok";
+}
+
 const EXTENSION_KEY_PATTERN = /^[a-z0-9]+$/;
 const INSTANCE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/;
 
@@ -915,7 +929,7 @@ class ExtensionRuntime {
 		);
 		return {
 			loaded: this.loaded,
-			status: hasCriticalDisabled ? "error" : hasDisabled ? "degraded" : "ok",
+			status: extensionsStatus(hasCriticalDisabled, hasDisabled),
 			healthy: !hasCriticalDisabled,
 			definitions: [...this.definitions.values()].map((loaded) => ({
 				key: loaded.definition.key,

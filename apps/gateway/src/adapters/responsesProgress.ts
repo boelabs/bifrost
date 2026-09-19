@@ -41,12 +41,12 @@ export async function* observeResponsesProgress(
 			if (typeof id !== "string" || !id || typeof type !== "string") {
 				continue;
 			}
-			const progress =
-				type === "reasoning"
-					? "reasoning"
-					: toolItems.has(type)
-						? "tool"
-						: undefined;
+			let progress: "reasoning" | "tool" | undefined;
+			if (type === "reasoning") {
+				progress = "reasoning";
+			} else if (toolItems.has(type)) {
+				progress = "tool";
+			}
 			const key = `${event.type}:${id}`;
 			if (!progress || seen.has(key)) {
 				continue;

@@ -88,6 +88,18 @@ export interface DeploymentPreview {
 	transportOverrides: TransportOverrides;
 }
 
+/**
+ * Pricing on an update: absent in the patch keeps whatever the deployment had, an explicit null
+ * clears it, and a value replaces it.
+ */
+function pricingField<T>(
+	patched: T | null | undefined,
+	existing: T | null | undefined,
+): { pricing?: T } {
+	const next = patched === undefined ? existing : patched;
+	return next ? { pricing: next } : {};
+}
+
 function validateCustomCatalogEntry(
 	adapter: NonNullable<ReturnType<typeof getAdapter>>,
 	entry: CatalogEntry,
@@ -328,13 +340,7 @@ export async function updateDeployment(
 		upstreamModel: patch.upstreamModel ?? existing.upstreamModel,
 		transportOverrides: patch.transportOverrides ?? existing.transportOverrides,
 		...(catalogEntry ? { catalogEntry } : {}),
-		...(patch.pricing === undefined
-			? existing.pricing
-				? { pricing: existing.pricing }
-				: {}
-			: patch.pricing
-				? { pricing: patch.pricing }
-				: {}),
+		...pricingField(patch.pricing, existing.pricing),
 	};
 	const preview = await previewDeployment(input);
 	const adapter = getAdapter(input.adapterKey);

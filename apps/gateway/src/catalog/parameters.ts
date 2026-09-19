@@ -59,28 +59,24 @@ function textParameters(meta: ResolvedModelMetadata): ParameterSupportMap {
 	return meta.operations?.["text.generate"]?.parameters ?? {};
 }
 
+/** Whether one catalog entry says the parameter reaches the provider at all. */
+function entrySupport(
+	entry: boolean | { mode?: string },
+): "supported" | "unsupported" {
+	if (typeof entry === "boolean") {
+		return entry ? "supported" : "unsupported";
+	}
+	return entry.mode === "unsupported" || entry.mode === "ignored"
+		? "unsupported"
+		: "supported";
+}
+
 function parameterState(
 	meta: ResolvedModelMetadata,
 	name: string,
 ): ParameterState {
 	const entry = textParameters(meta)[name];
-	if (entry === undefined) {
-		return "unknown";
-	}
-	if (typeof entry === "boolean") {
-		return entry ? "supported" : "unsupported";
-	}
-	if (entry.mode === "unsupported" || entry.mode === "ignored") {
-		return "unsupported";
-	}
-	if (
-		entry.mode === "supported" ||
-		entry.mode === "range" ||
-		entry.mode === "mapped"
-	) {
-		return "supported";
-	}
-	return "supported";
+	return entry === undefined ? "unknown" : entrySupport(entry);
 }
 
 function explicitlyUnsupportedName(
@@ -123,14 +119,7 @@ export function supportedParameterNames(meta: ResolvedModelMetadata): string[] {
 	}
 
 	for (const [name, entry] of Object.entries(params)) {
-		const state =
-			typeof entry === "boolean"
-				? entry
-					? "supported"
-					: "unsupported"
-				: entry.mode === "unsupported" || entry.mode === "ignored"
-					? "unsupported"
-					: "supported";
+		const state = entrySupport(entry);
 		if (state === "unsupported") {
 			names.delete(name);
 		} else {
