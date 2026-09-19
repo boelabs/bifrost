@@ -10,7 +10,8 @@
  * Formatting compatibility (biome):
  * - Only MOVES already-formatted lines; it never rewrites quotes, commas, `;`, or indentation, so
  *   the result remains valid for `biome format` (idempotent). Keep `organizeImports` disabled in
- *   biome.json so it does not compete by sorting alphabetically.
+ *   biome.jsonc so it does not compete by sorting alphabetically — the Ultracite preset turns it
+ *   on, and the override that turns it back off is what keeps this script authoritative.
  * - Side-effect-only imports (`import "#adapters/index.ts"`) are NOT reordered with other imports:
  *   their execution order is semantic, so they act as a barrier that splits the zone.
  *

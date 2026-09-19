@@ -100,6 +100,14 @@ bun test --preload ./tests/support/unitSetup.ts src/router/strategies.test.ts
   Biome also formats **JSON**, including every `catalog.json`; if you edit those by hand or by
   script, run `bun run check` before finishing (CI runs it with `--error-on-warnings`, and
   serializer output like multi-line short arrays fails the gate even when the data is correct).
+- **The rule set comes from [Ultracite](https://www.ultracite.ai)**, a pinned preset for Biome —
+  configuration only, no second tool and no extra CLI. [`biome.jsonc`](biome.jsonc) extends
+  `ultracite/biome/{core,react,next}` and then states, with a reason on each line, the handful of
+  rules this repository turns off and the ones that are still `"info"`. Read those comments before
+  changing them: every `off` was measured against the tree, and an `"info"` rule is a backlog with a
+  count next to it, not a rule nobody wanted. Driving one to zero and promoting it to `"error"` is a
+  welcome pull request; adding a new `off` to make your own change pass is the gate-weakening §1
+  forbids. Upgrade the preset in a pull request of its own — a minor bump changes which rules apply.
 - **`apps/gateway/openapi.yaml` is generated, never hand-edited.** It comes from the Zod schemas in
   `src/openapi/` via `openapi:generate`, and a unit test fails when the committed file drifts. If
   you touch `src/openapi/components.ts`/`document.ts` — or any Zod schema they re-export —
