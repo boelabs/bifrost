@@ -35,6 +35,14 @@ export interface ParsedImageEditMultipart {
 	logBody: Record<string, unknown>;
 }
 
+/** Which of the two upload slots a multipart file part belongs to, if either. */
+function uploadField(name: string): "image" | "mask" | null {
+	if (name === "image" || name === "image[]") {
+		return "image";
+	}
+	return name === "mask" ? "mask" : null;
+}
+
 function badMultipart(
 	message: string,
 	param: string | null = null,
@@ -177,12 +185,7 @@ export async function parseImageEditMultipart(
 			fields[name] = value;
 		});
 		bb.on("file", (name, stream, info) => {
-			const field =
-				name === "image" || name === "image[]"
-					? "image"
-					: name === "mask"
-						? "mask"
-						: null;
+			const field = uploadField(name);
 			if (!field) {
 				failure ??= badMultipart(`Unexpected file field "${name}"`, name);
 				stream.resume();

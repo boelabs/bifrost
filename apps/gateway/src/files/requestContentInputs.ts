@@ -1491,13 +1491,20 @@ export class ContentInputResolver {
 					return message;
 				}
 				const content = await Promise.all(
-					message.content.map((part) =>
-						part.type === "file"
-							? this.#resolvePart(part, candidate, transport, metadata)
-							: part.type === "image"
-								? this.#resolveImagePart(part, candidate, transport, metadata)
-								: Promise.resolve(part),
-					),
+					message.content.map((part) => {
+						if (part.type === "file") {
+							return this.#resolvePart(part, candidate, transport, metadata);
+						}
+						if (part.type === "image") {
+							return this.#resolveImagePart(
+								part,
+								candidate,
+								transport,
+								metadata,
+							);
+						}
+						return Promise.resolve(part);
+					}),
 				);
 				return { ...message, content };
 			}),

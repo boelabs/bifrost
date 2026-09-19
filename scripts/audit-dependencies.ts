@@ -78,12 +78,10 @@ function gunzipAuditResponse(bytes: Uint8Array): Uint8Array {
 	} catch (error) {
 		// Bun appends a newline after the complete gzip member. Node's gunzip treats it as
 		// the beginning of another member, so retry without only that known trailing delimiter.
-		const end =
-			bytes.at(-1) === 0x0a
-				? bytes.at(-2) === 0x0d
-					? bytes.length - 2
-					: bytes.length - 1
-				: bytes.length;
+		let end = bytes.length;
+		if (bytes.at(-1) === 0x0a) {
+			end -= bytes.at(-2) === 0x0d ? 2 : 1;
+		}
 		if (end === bytes.length) {
 			throw error;
 		}

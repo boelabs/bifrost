@@ -45,12 +45,12 @@ export function resolveTransport(
 	const declared = operation
 		? declaredTransportFor(candidate.meta, operation.id)
 		: undefined;
-	const source =
-		configuredOverride === undefined
-			? declared === undefined
-				? `falls back to the default transport "${transports?.default}"`
-				: `runs model "${candidate.upstreamModel}", which declares transport "${declared}"`
-			: `is configured with transport "${configuredOverride}"`;
+	let source = `falls back to the default transport "${transports?.default}"`;
+	if (configuredOverride !== undefined) {
+		source = `is configured with transport "${configuredOverride}"`;
+	} else if (declared !== undefined) {
+		source = `runs model "${candidate.upstreamModel}", which declares transport "${declared}"`;
+	}
 	const supported = transports?.supported;
 	const transport =
 		configuredOverride ?? declared ?? transports?.default ?? "chat_completions";

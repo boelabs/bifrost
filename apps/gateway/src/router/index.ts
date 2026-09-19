@@ -193,6 +193,14 @@ export interface RouteResult<T> {
 
 type FallbackReason = "general" | "context_window" | "content_policy";
 
+/** The reason a fallback records for one failed attempt. */
+function fallbackReasonFor(errorClass: string): FallbackReason {
+	if (errorClass === "context_window") {
+		return "context_window";
+	}
+	return errorClass === "content_policy" ? "content_policy" : "general";
+}
+
 function fallbackReasonForFailures(
 	failures: Set<FallbackReason>,
 ): FallbackReason {
@@ -1276,12 +1284,7 @@ export async function route<T>(
 							: { providerBody: ge.provider.body }),
 					});
 
-					const failureReason: FallbackReason =
-						ge.class === "context_window"
-							? "context_window"
-							: ge.class === "content_policy"
-								? "content_policy"
-								: "general";
+					const failureReason = fallbackReasonFor(ge.class);
 					failureReasons.add(failureReason);
 
 					// Deterministic/non-retryable errors exhaust THIS deployment for the request, but do not

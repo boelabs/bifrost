@@ -295,8 +295,12 @@ export async function acquireCircuitPermit(
 			retryAfterMs: Math.max(1, result[2] ?? settings.probeTtlMs),
 		};
 	}
-	const mode = (code: number | undefined): PermitMode =>
-		code === 2 ? "forced" : code === 1 ? "half_open" : "closed";
+	const mode = (code: number | undefined): PermitMode => {
+		if (code === 2) {
+			return "forced";
+		}
+		return code === 1 ? "half_open" : "closed";
+	};
 	return {
 		allowed: true,
 		permit: {

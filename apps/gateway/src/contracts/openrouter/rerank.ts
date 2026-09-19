@@ -101,6 +101,19 @@ export function rerankRequestToCanonical(
 	};
 }
 
+/** One document echoed back, under the key its own kind gives the payload. */
+function renderedDocument(
+	document: CanonicalRerankRequest["documents"][number],
+): Record<string, unknown> {
+	if (document.type === "text") {
+		return { text: document.text };
+	}
+	const text = document.text ? { text: document.text } : {};
+	return document.type === "image_url"
+		? { ...text, image: document.url }
+		: { ...text, image: document.dataUrl };
+}
+
 export function toOpenRouterRerankResponse(
 	request: CanonicalRerankRequest,
 	response: CanonicalRerankResponse,
@@ -116,18 +129,7 @@ export function toOpenRouterRerankResponse(
 			return {
 				index: result.index,
 				relevance_score: result.relevanceScore,
-				document:
-					document.type === "text"
-						? { text: document.text }
-						: document.type === "image_url"
-							? {
-									...(document.text ? { text: document.text } : {}),
-									image: document.url,
-								}
-							: {
-									...(document.text ? { text: document.text } : {}),
-									image: document.dataUrl,
-								},
+				document: renderedDocument(document),
 			};
 		}),
 		...(usage || cost
