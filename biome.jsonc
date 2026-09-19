@@ -130,9 +130,29 @@
 				// 172 sites. Dropping `async` changes a rejected promise into a synchronous
 				// throw, so each one is a behavioural decision.
 				"useAwait": "info",
-				// 112 sites. Some are genuinely dead, others are defensive checks on
-				// upstream JSON that the types describe more confidently than reality does.
-				"noUnnecessaryConditions": "info"
+				/*
+				 * 112 findings, sampled across all six of its message kinds. Not one was
+				 * actionable, and acting on them breaks things:
+				 *
+				 * - It does not model `noUncheckedIndexedAccess`, which this repository turns
+				 *   on (AGENTS.md §4). Dropping a `?.` it calls unnecessary fails `tsc`.
+				 * - It reports `while (true)` as an unnecessary condition (core/sse.ts,
+				 *   http/body.ts, gateway/streamLifecycle.ts).
+				 * - It does not track mutation of a class field or a ref across methods, so
+				 *   re-entrancy guards read as dead (`this.closed` in operationLog.ts would
+				 *   let an operation log be written twice).
+				 * - It calls reachable `keyof` switch cases unreachable: 28 of the 112 are the
+				 *   arms of dropCanonicalField in catalog/parameters.ts, and deleting them
+				 *   would stop unsupported parameters being dropped at all.
+				 * - Where the type really does say non-nullish, it is usually an `as` cast over
+				 *   an `unknown` catch binding or parsed JSON. Removing the guard compiles and
+				 *   then throws on the first non-object body.
+				 *
+				 * Left at "info" it would be 112 permanent false diagnostics in every editor,
+				 * which is how people learn to ignore the other three hundred rules. Re-measure
+				 * when Biome's inference reads the tsconfig.
+				 */
+				"noUnnecessaryConditions": "off"
 			}
 		}
 	}
