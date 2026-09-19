@@ -1,5 +1,6 @@
 import { openaicompatibleAdapter } from "./openaicompatible/index.ts";
 import type { CanonicalTranscriptionRequest } from "#core/audio.ts";
+import { must, streamOf } from "#test-support/adapters.ts";
 import { openaiAdapter } from "./openai/index.ts";
 import type { AdapterContext } from "./types.ts";
 import { writeFileSync, rmSync } from "node:fs";
@@ -57,7 +58,10 @@ test("audio: both OpenAI adapters expose the handler", () => {
 test("audio.buildRequest: multipart to /audio/transcriptions with file/model/response_format", async () => {
 	const { req, cleanup } = withAudioFile();
 	try {
-		const r = await openaicompatibleAdapter.audioTranscription!.buildRequest(
+		const r = await must(
+			openaicompatibleAdapter,
+			"audioTranscription",
+		).buildRequest(
 			{
 				...req,
 				language: "es",
@@ -87,7 +91,7 @@ test("audio.buildRequest: extra_body cannot overwrite managed fields", async () 
 	const { req, cleanup } = withAudioFile();
 	try {
 		await assert.rejects(async () => {
-			await openaicompatibleAdapter.audioTranscription!.buildRequest(
+			await must(openaicompatibleAdapter, "audioTranscription").buildRequest(
 				{ ...req, extraBody: { model: "x" } },
 				ctx(),
 			);
@@ -98,7 +102,7 @@ test("audio.buildRequest: extra_body cannot overwrite managed fields", async () 
 });
 
 test("audio.parseResponse: plain text -> {text}; json -> text+usage; verbose_json -> segments", () => {
-	const cap = openaicompatibleAdapter.audioTranscription!;
+	const cap = must(openaicompatibleAdapter, "audioTranscription");
 	assert.deepEqual(cap.parseResponse("hello world", ctx()), {
 		text: "hello world",
 	});
@@ -141,8 +145,8 @@ test("audio.parseStream: transcript.text.delta/done -> canonical events with usa
 	const deltas: string[] = [];
 	let doneText: string | undefined;
 	let total: number | undefined;
-	for await (const event of openaicompatibleAdapter.audioTranscription!
-		.parseStream!(new Response(sse).body!, ctx())) {
+	for await (const event of must(openaicompatibleAdapter, "audioTranscription")
+		.parseStream!(streamOf(sse), ctx())) {
 		if (event.kind === "delta") {
 			deltas.push(event.delta);
 		} else {

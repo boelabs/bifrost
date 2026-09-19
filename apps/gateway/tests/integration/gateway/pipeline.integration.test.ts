@@ -8,6 +8,7 @@ import { googleAdapter } from "#adapters/google/index.ts";
 import { openaiAdapter } from "#adapters/openai/index.ts";
 import type { AdapterContext } from "#adapters/types.ts";
 import { executeChat } from "#gateway/executor.ts";
+import { must } from "#test-support/adapters.ts";
 import { GatewayError } from "#core/errors.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -121,8 +122,9 @@ test("integration: structured outputs cross the three public transports", () => 
 		}),
 	);
 	assert.deepEqual(
-		JSON.parse(openaiAdapter.chat!.buildRequest(fromChat, openaiCtx).body!).text
-			.format,
+		JSON.parse(
+			must(openaiAdapter, "chat").buildRequest(fromChat, openaiCtx).body!,
+		).text.format,
 		{
 			type: "json_schema",
 			name: "answer",
@@ -141,7 +143,7 @@ test("integration: structured outputs cross the three public transports", () => 
 		}),
 	);
 	const geminiBody = JSON.parse(
-		googleAdapter.chat!.buildRequest(fromResponses, googleCtx).body!,
+		must(googleAdapter, "chat").buildRequest(fromResponses, googleCtx).body!,
 	);
 	assert.equal(
 		geminiBody.generationConfig.responseMimeType,
@@ -160,8 +162,9 @@ test("integration: structured outputs cross the three public transports", () => 
 	// Anthropic's output_config.format is schema-adherent by definition, so the guarantee survives the
 	// hop to an OpenAI upstream as `strict: true` rather than degrading to best-effort JSON.
 	assert.deepEqual(
-		JSON.parse(openaiAdapter.chat!.buildRequest(fromMessages, openaiCtx).body!)
-			.text.format,
+		JSON.parse(
+			must(openaiAdapter, "chat").buildRequest(fromMessages, openaiCtx).body!,
+		).text.format,
 		{
 			type: "json_schema",
 			name: "structured_output",

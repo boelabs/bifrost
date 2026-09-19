@@ -1,4 +1,5 @@
 import type { CanonicalEmbeddingsRequest } from "#core/embeddings.ts";
+import { jsonBody, must, streamOf } from "#test-support/adapters.ts";
 import { observeChatStream } from "#gateway/streamLifecycle.ts";
 import { adapterDiagnostics } from "#adapters/diagnostics.ts";
 import type { AdapterContext } from "#adapters/types.ts";
@@ -112,14 +113,14 @@ const embeddingsReq: CanonicalEmbeddingsRequest = {
 };
 
 test("google.buildRequest: generateContent URL, api key header, and Gemini body", () => {
-	const r = googleAdapter.chat!.buildRequest(req, ctx);
+	const r = must(googleAdapter, "chat").buildRequest(req, ctx);
 	assert.equal(r.method, "POST");
 	assert.equal(
 		r.url,
 		"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
 	);
 	assert.equal(r.headers["x-goog-api-key"], "AIza-test");
-	const body = JSON.parse(r.body!);
+	const body = jsonBody(r);
 	assert.equal(body.systemInstruction.parts[0].text, "You are helpful.");
 	assert.equal(body.contents[0].role, "user");
 	assert.equal(body.contents[0].parts[0].text, "hello");
@@ -138,7 +139,7 @@ test("google embeddings: single input uses embedContent and dimensions config", 
 		"https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent",
 	);
 	assert.equal(r.headers["x-goog-api-key"], "AIza-test");
-	const body = JSON.parse(r.body!);
+	const body = jsonBody(r);
 	assert.equal(body.model, "models/gemini-embedding-001");
 	assert.equal(body.content.parts[0].text, "hello");
 	assert.equal(body.embedContentConfig.outputDimensionality, 768);
@@ -161,7 +162,7 @@ test("google embeddings: batch uses batchEmbedContents and parses usage", () => 
 		r.url,
 		"https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:batchEmbedContents",
 	);
-	const body = JSON.parse(r.body!);
+	const body = jsonBody(r);
 	assert.equal(body.requests.length, 2);
 	assert.equal(body.requests[0].model, "models/gemini-embedding-001");
 	assert.equal(body.requests[1].content.parts[0].text, "dos");
@@ -181,7 +182,10 @@ test("google embeddings: batch uses batchEmbedContents and parses usage", () => 
 });
 
 test("google.buildRequest: stream uses streamGenerateContent?alt=sse", () => {
-	const r = googleAdapter.chat!.buildRequest({ ...req, stream: true }, ctx);
+	const r = must(googleAdapter, "chat").buildRequest(
+		{ ...req, stream: true },
+		ctx,
+	);
 	assert.ok(r.url.endsWith(":streamGenerateContent?alt=sse"));
 });
 
@@ -196,7 +200,7 @@ test("google.buildRequest: json_schema uses responseMimeType + responseJsonSchem
 	// responseMimeType + responseJsonSchema (which accepts JSON Schema with lowercase types).
 	for (const c of [geminiLevelCtx, ctx]) {
 		const body = JSON.parse(
-			googleAdapter.chat!.buildRequest(
+			must(googleAdapter, "chat").buildRequest(
 				{ ...req, responseFormat: { type: "json_schema", schema } },
 				c,
 			).body!,
@@ -209,7 +213,7 @@ test("google.buildRequest: json_schema uses responseMimeType + responseJsonSchem
 
 test("google.buildRequest: json_object only sets responseMimeType (without schema)", () => {
 	const body = JSON.parse(
-		googleAdapter.chat!.buildRequest(
+		must(googleAdapter, "chat").buildRequest(
 			{ ...req, responseFormat: { type: "json_object" } },
 			ctx,
 		).body!,
@@ -220,7 +224,7 @@ test("google.buildRequest: json_object only sets responseMimeType (without schem
 
 test("google.buildRequest: tool parameters are translated to Gemini's schema subset", () => {
 	const body = JSON.parse(
-		googleAdapter.chat!.buildRequest(
+		must(googleAdapter, "chat").buildRequest(
 			{
 				...req,
 				tools: [
@@ -277,7 +281,7 @@ test("google.buildRequest: strict Gemini 3 tools use VALIDATED JSON Schema", () 
 	];
 	for (const toolChoice of choices) {
 		const body = JSON.parse(
-			googleAdapter.chat!.buildRequest(
+			must(googleAdapter, "chat").buildRequest(
 				{
 					...req,
 					tools: [
@@ -339,7 +343,7 @@ test("google.buildRequest: strict mode preserves required tool-choice semantics"
 	];
 	for (const toolChoice of choices) {
 		const body = JSON.parse(
-			googleAdapter.chat!.buildRequest(
+			must(googleAdapter, "chat").buildRequest(
 				{
 					...req,
 					tools: [
@@ -365,7 +369,7 @@ test("google.buildRequest: non-strict requests keep their legacy wire", () => {
 		{ ...ctx, upstreamModel: "gemma-4-26b-a4b-it" },
 	]) {
 		const body = JSON.parse(
-			googleAdapter.chat!.buildRequest(
+			must(googleAdapter, "chat").buildRequest(
 				{
 					...req,
 					tools: [
@@ -391,7 +395,7 @@ test("google.buildRequest: non-strict requests keep their legacy wire", () => {
 
 	for (const context of [geminiLevelCtx, ctx]) {
 		const body = JSON.parse(
-			googleAdapter.chat!.buildRequest(
+			must(googleAdapter, "chat").buildRequest(
 				{
 					...req,
 					tools: [
@@ -416,7 +420,7 @@ test("google.buildRequest: unsupported models reject strict tools instead of dow
 	]) {
 		assert.throws(
 			() =>
-				googleAdapter.chat!.buildRequest(
+				must(googleAdapter, "chat").buildRequest(
 					{
 						...req,
 						tools: [
@@ -439,7 +443,7 @@ test("google.buildRequest: unsupported models reject strict tools instead of dow
 
 test("google.buildRequest: replays functionCall id and thought signature", () => {
 	const body = JSON.parse(
-		googleAdapter.chat!.buildRequest(
+		must(googleAdapter, "chat").buildRequest(
 			{
 				...req,
 				messages: [
@@ -493,7 +497,7 @@ test("google.buildRequest: wraps non-object JSON tool outputs in a Struct", () =
 
 	for (const [content, output] of cases) {
 		const body = JSON.parse(
-			googleAdapter.chat!.buildRequest(
+			must(googleAdapter, "chat").buildRequest(
 				{
 					...req,
 					messages: [
@@ -528,7 +532,7 @@ test("google.buildRequest: wraps non-object JSON tool outputs in a Struct", () =
 
 test("google.buildRequest: canonical tool errors use Gemini's error field", () => {
 	const body = JSON.parse(
-		googleAdapter.chat!.buildRequest(
+		must(googleAdapter, "chat").buildRequest(
 			{
 				...req,
 				messages: [
@@ -596,7 +600,7 @@ test("google.buildRequest: Gemini 3 recovers unsigned Responses history", async 
 		}),
 	);
 	const body = JSON.parse(
-		googleAdapter.chat!.buildRequest(canonical, geminiLevelCtx).body!,
+		must(googleAdapter, "chat").buildRequest(canonical, geminiLevelCtx).body!,
 	);
 	assert.equal(
 		body.contents[1].parts[0].thoughtSignature,
@@ -606,7 +610,7 @@ test("google.buildRequest: Gemini 3 recovers unsigned Responses history", async 
 
 test("google.buildRequest: older Gemini models do not receive synthetic signatures", () => {
 	const body = JSON.parse(
-		googleAdapter.chat!.buildRequest(
+		must(googleAdapter, "chat").buildRequest(
 			{
 				...req,
 				messages: [
@@ -624,7 +628,7 @@ test("google.buildRequest: older Gemini models do not receive synthetic signatur
 });
 
 test("google.buildRequest: Gemini 3 uses thinkingLevel and merges extraBody", () => {
-	const r = googleAdapter.chat!.buildRequest(
+	const r = must(googleAdapter, "chat").buildRequest(
 		{
 			...req,
 			reasoning: { effort: "xhigh" },
@@ -632,7 +636,7 @@ test("google.buildRequest: Gemini 3 uses thinkingLevel and merges extraBody", ()
 		},
 		geminiLevelCtx,
 	);
-	const body = JSON.parse(r.body!);
+	const body = jsonBody(r);
 	assert.equal(body.generationConfig.thinkingConfig.thinkingLevel, "high");
 	assert.equal(body.generationConfig.thinkingConfig.includeThoughts, true);
 	// extra_body.safetySettings overrides the gateway default (shallow extra_body merge wins).
@@ -640,7 +644,9 @@ test("google.buildRequest: Gemini 3 uses thinkingLevel and merges extraBody", ()
 });
 
 test("google.buildRequest: safety filters default to OFF for every category", () => {
-	const body = JSON.parse(googleAdapter.chat!.buildRequest(req, ctx).body!);
+	const body = JSON.parse(
+		must(googleAdapter, "chat").buildRequest(req, ctx).body!,
+	);
 	assert.deepEqual(body.safetySettings, [
 		{ category: "HARM_CATEGORY_HATE_SPEECH", threshold: "OFF" },
 		{ category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "OFF" },
@@ -652,27 +658,27 @@ test("google.buildRequest: safety filters default to OFF for every category", ()
 
 test("google.buildRequest: omitted effort on reasoner uses lowest level + includeThoughts", () => {
 	// Without reasoning in the request: the model reasons at the minimum by default and we request thoughts.
-	const r = googleAdapter.chat!.buildRequest(req, geminiLevelCtx);
-	const body = JSON.parse(r.body!);
+	const r = must(googleAdapter, "chat").buildRequest(req, geminiLevelCtx);
+	const body = jsonBody(r);
 	assert.equal(body.generationConfig.thinkingConfig.thinkingLevel, "minimal"); // minimum of ["minimal",...]
 	assert.equal(body.generationConfig.thinkingConfig.includeThoughts, true);
 });
 
 test("google.buildRequest: Gemini 2.5 uses thinkingBudget and none disables when possible", () => {
-	const r = googleAdapter.chat!.buildRequest(
+	const r = must(googleAdapter, "chat").buildRequest(
 		{ ...req, reasoning: { effort: "none" } },
 		geminiBudgetCtx,
 	);
-	const body = JSON.parse(r.body!);
+	const body = jsonBody(r);
 	assert.equal(body.generationConfig.thinkingConfig.thinkingBudget, 0);
 });
 
 test("google.buildRequest: summary none does not request includeThoughts", () => {
-	const r = googleAdapter.chat!.buildRequest(
+	const r = must(googleAdapter, "chat").buildRequest(
 		{ ...req, reasoning: { effort: "high", summary: "none" } },
 		geminiLevelCtx,
 	);
-	const body = JSON.parse(r.body!);
+	const body = jsonBody(r);
 	assert.equal(body.generationConfig.thinkingConfig.thinkingLevel, "high");
 	assert.equal(body.generationConfig.thinkingConfig.includeThoughts, undefined);
 });
@@ -680,7 +686,7 @@ test("google.buildRequest: summary none does not request includeThoughts", () =>
 test("google.buildRequest: extraBody does not overwrite managed fields", () => {
 	assert.throws(
 		() =>
-			googleAdapter.chat!.buildRequest(
+			must(googleAdapter, "chat").buildRequest(
 				{ ...req, extraBody: { generationConfig: {} } },
 				geminiLevelCtx,
 			),
@@ -704,7 +710,7 @@ test("google.parseResponse: maps candidates/usageMetadata to canonical", () => {
 		},
 		modelVersion: "gemini-2.5-flash",
 	};
-	const u = googleAdapter.chat!.parseResponse(raw, ctx);
+	const u = must(googleAdapter, "chat").parseResponse(raw, ctx);
 	assert.equal(u.choices[0]!.message.content, "hello!");
 	assert.equal(u.choices[0]!.finishReason, "stop");
 	assert.equal(u.usage.totalTokens, 7);
@@ -713,7 +719,7 @@ test("google.parseResponse: maps candidates/usageMetadata to canonical", () => {
 
 test("google.parseResponse: documented and future finish reasons remain observable", () => {
 	const parse = (finishReason: string) =>
-		googleAdapter.chat!.parseResponse(
+		must(googleAdapter, "chat").parseResponse(
 			{
 				candidates: [
 					{ content: { parts: [{ text: "partial" }] }, finishReason },
@@ -756,7 +762,7 @@ test("google.parseResponse: functionCall -> tool_calls + finish tool_calls", () 
 			totalTokenCount: 7,
 		},
 	};
-	const u = googleAdapter.chat!.parseResponse(raw, ctx);
+	const u = must(googleAdapter, "chat").parseResponse(raw, ctx);
 	assert.equal(u.choices[0]!.finishReason, "tool_calls");
 	assert.equal(u.choices[0]!.message.toolCalls?.[0]?.id, "function-call-1");
 	assert.equal(u.choices[0]!.message.toolCalls?.[0]?.name, "get_weather");
@@ -770,7 +776,7 @@ test("google.parseResponse: functionCall -> tool_calls + finish tool_calls", () 
 });
 
 test("google.parseResponse: MAX_TOKENS outranks partial function calls", () => {
-	const parsed = googleAdapter.chat!.parseResponse(
+	const parsed = must(googleAdapter, "chat").parseResponse(
 		{
 			candidates: [
 				{
@@ -801,7 +807,7 @@ test("google.usage: reasoning (thoughts) is added to completion; total matches",
 			totalTokenCount: 75,
 		},
 	};
-	const u = googleAdapter.chat!.parseResponse(raw, ctx).usage;
+	const u = must(googleAdapter, "chat").parseResponse(raw, ctx).usage;
 	assert.equal(u.completionTokens, 69); // 1 visible + 68 thoughts
 	assert.equal(u.reasoningTokens, 68);
 	assert.equal(u.totalTokens, 75);
@@ -830,13 +836,13 @@ test("google.parseResponse: thought parts do NOT leak into content", () => {
 			totalTokenCount: 17,
 		},
 	};
-	const u = googleAdapter.chat!.parseResponse(raw, ctx);
+	const u = must(googleAdapter, "chat").parseResponse(raw, ctx);
 	assert.equal(u.choices[0]!.message.content, "final answer");
 	assert.equal(u.choices[0]!.message.reasoning, "thinking out loud...");
 });
 
 test("google.parseResponse: promptFeedback block is a content-filter terminal", () => {
-	const response = googleAdapter.chat!.parseResponse(
+	const response = must(googleAdapter, "chat").parseResponse(
 		{
 			promptFeedback: { blockReason: "SAFETY" },
 			usageMetadata: { promptTokenCount: 3, totalTokenCount: 3 },
@@ -850,7 +856,7 @@ test("google.parseResponse: promptFeedback block is a content-filter terminal", 
 
 test("google.parseResponse: empty 2xx without terminal evidence is invalid", () => {
 	assert.throws(
-		() => googleAdapter.chat!.parseResponse({ candidates: [] }, ctx),
+		() => must(googleAdapter, "chat").parseResponse({ candidates: [] }, ctx),
 		(error: unknown) =>
 			GatewayError.is(error) && error.code === "upstream_protocol_error",
 	);
@@ -862,8 +868,8 @@ test("google.parseStream: thought parts emit reasoning, not content", async () =
 		`data: {"candidates":[{"content":{"parts":[{"text":"hello"}]},"finishReason":"STOP","index":0}],"usageMetadata":{"promptTokenCount":1,"candidatesTokenCount":1,"totalTokenCount":2}}\n\n`;
 	const out: string[] = [];
 	const reasoning: string[] = [];
-	for await (const c of googleAdapter.chat!.parseStream(
-		new Response(sse).body!,
+	for await (const c of must(googleAdapter, "chat").parseStream(
+		streamOf(sse),
 		ctx,
 	)) {
 		if (c.choices[0]?.delta.content) {
@@ -888,7 +894,7 @@ test("google.mapError: context overflow 400 -> context_window (without dedicated
 			},
 		},
 	};
-	const ge = googleAdapter.chat!.mapError(err, ctx);
+	const ge = must(googleAdapter, "chat").mapError(err, ctx);
 	assert.equal(ge.class, "context_window");
 });
 
@@ -897,12 +903,12 @@ test("google.mapError: generic 400 stays bad_request", () => {
 		status: 400,
 		body: { error: { message: "Invalid value for 'temperature'." } },
 	};
-	const ge = googleAdapter.chat!.mapError(err, ctx);
+	const ge = must(googleAdapter, "chat").mapError(err, ctx);
 	assert.equal(ge.class, "bad_request");
 });
 
 test("google.mapError: google.rpc.RetryInfo controls capacity cooldown", () => {
-	const ge = googleAdapter.chat!.mapError(
+	const ge = must(googleAdapter, "chat").mapError(
 		{
 			status: 429,
 			body: {
@@ -928,12 +934,15 @@ test("google.parseStream: deltas + usage final", async () => {
 	const sse =
 		`data: {"candidates":[{"content":{"parts":[{"text":"Hel"}],"role":"model"},"index":0}]}\n\n` +
 		`data: {"candidates":[{"content":{"parts":[{"text":"lo"}]},"finishReason":"STOP","index":0}],"usageMetadata":{"promptTokenCount":3,"candidatesTokenCount":2,"totalTokenCount":5}}\n\n`;
-	const stream = new Response(sse).body!;
+	const stream = streamOf(sse);
 	const out: string[] = [];
 	let usageTotal: number | undefined;
 	let firstHadRole = false;
 	let i = 0;
-	for await (const chunk of googleAdapter.chat!.parseStream(stream, ctx)) {
+	for await (const chunk of must(googleAdapter, "chat").parseStream(
+		stream,
+		ctx,
+	)) {
 		if (i === 0 && chunk.choices[0]?.delta.role === "assistant") {
 			firstHadRole = true;
 		}
@@ -955,8 +964,8 @@ test("google.parseStream: tool call indexes remain contiguous across events", as
 		`data: {"candidates":[{"content":{"parts":[{"functionCall":{"id":"call-1","name":"first","args":{}}}],"role":"model"},"index":0}]}\n\n` +
 		`data: {"candidates":[{"content":{"parts":[{"functionCall":{"id":"call-2","name":"second","args":{}}}]},"finishReason":"STOP","index":0}]}\n\n`;
 	const indexes: number[] = [];
-	for await (const chunk of googleAdapter.chat!.parseStream(
-		new Response(sse).body!,
+	for await (const chunk of must(googleAdapter, "chat").parseStream(
+		streamOf(sse),
 		ctx,
 	)) {
 		for (const toolCall of chunk.choices[0]?.delta.toolCalls ?? []) {
@@ -974,7 +983,7 @@ test("google.parseStream: repeated STOP after a tool call remains one tool termi
 		`data: {"candidates":[{"content":{"parts":[]},"finishReason":"STOP","index":0}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":2,"totalTokenCount":12}}` +
 		"\n\n";
 	const observed = observeChatStream(
-		googleAdapter.chat!.parseStream(new Response(sse).body!, ctx),
+		must(googleAdapter, "chat").parseStream(streamOf(sse), ctx),
 	);
 	const chunks: CanonicalChatStreamChunk[] = [];
 	for await (const chunk of observed.items) {
@@ -999,7 +1008,7 @@ test("google.parseStream: finish evidence before a trailing tool call closes onc
 		`data: {"candidates":[{"content":{"parts":[{"functionCall":{"id":"call-1","name":"search_web","args":{"queries":["example"]}}}],"role":"model"},"index":0}],"usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":2,"totalTokenCount":12}}` +
 		"\n\n";
 	const observed = observeChatStream(
-		googleAdapter.chat!.parseStream(new Response(sse).body!, ctx),
+		must(googleAdapter, "chat").parseStream(streamOf(sse), ctx),
 	);
 	const chunks: CanonicalChatStreamChunk[] = [];
 	for await (const chunk of observed.items) {
@@ -1019,7 +1028,7 @@ test("google.parseStream: finish evidence before a trailing tool call closes onc
 
 test("google.parseResponse: documented safety reasons stay blocked even with tool parts", () => {
 	for (const finishReason of ["SPII", "IMAGE_SAFETY"] as const) {
-		const response = googleAdapter.chat!.parseResponse(
+		const response = must(googleAdapter, "chat").parseResponse(
 			{
 				candidates: [
 					{
@@ -1045,7 +1054,7 @@ test("google.parseResponse: malformed and unexpected tool calls are explicit ups
 	] as const) {
 		assert.throws(
 			() =>
-				googleAdapter.chat!.parseResponse(
+				must(googleAdapter, "chat").parseResponse(
 					{
 						candidates: [{ index: 0, finishReason, content: { parts: [] } }],
 					},
@@ -1085,8 +1094,8 @@ test("google.buildRequest: a client-echoed suffixed id arrives clean via the con
 			],
 		}),
 	);
-	const r = googleAdapter.chat!.buildRequest(canonical, ctx);
-	const body = JSON.parse(r.body!);
+	const r = must(googleAdapter, "chat").buildRequest(canonical, ctx);
+	const body = jsonBody(r);
 	const [fnCallPart] = body.contents[1].parts;
 	const fnCall = fnCallPart.functionCall;
 	assert.equal(fnCall.id, "call_1");
@@ -1097,7 +1106,7 @@ test("google.buildRequest: a client-echoed suffixed id arrives clean via the con
 });
 
 test("google.buildRequest: sampling controls match the catalog surface", () => {
-	const built = googleAdapter.chat!.buildRequest(
+	const built = must(googleAdapter, "chat").buildRequest(
 		{
 			...req,
 			seed: 42,
@@ -1108,7 +1117,7 @@ test("google.buildRequest: sampling controls match the catalog surface", () => {
 		},
 		ctx,
 	);
-	assert.deepEqual(JSON.parse(built.body!).generationConfig, {
+	assert.deepEqual(jsonBody(built).generationConfig, {
 		temperature: 0.4,
 		topK: 32,
 		maxOutputTokens: 50,
@@ -1122,8 +1131,8 @@ test("google.buildRequest: sampling controls match the catalog surface", () => {
 test("google.parseStream: every candidate is preserved", async () => {
 	const sse = `data: {"candidates":[{"content":{"parts":[{"text":"A"}]},"finishReason":"STOP","index":0},{"content":{"parts":[{"text":"B"}]},"finishReason":"STOP","index":1}]}\n\n`;
 	const chunks: CanonicalChatStreamChunk[] = [];
-	for await (const chunk of googleAdapter.chat!.parseStream(
-		new Response(sse).body!,
+	for await (const chunk of must(googleAdapter, "chat").parseStream(
+		streamOf(sse),
 		ctx,
 	)) {
 		chunks.push(chunk);
@@ -1141,7 +1150,7 @@ test("google.parseStream: every candidate is preserved", async () => {
 });
 
 test("google content signatures: complete native parts survive replay", () => {
-	const parsed = googleAdapter.chat!.parseResponse(
+	const parsed = must(googleAdapter, "chat").parseResponse(
 		{
 			modelVersion: "gemini",
 			candidates: [
@@ -1165,7 +1174,7 @@ test("google content signatures: complete native parts survive replay", () => {
 		ctx,
 	);
 	const { message } = parsed.choices[0]!;
-	const replay = googleAdapter.chat!.buildRequest(
+	const replay = must(googleAdapter, "chat").buildRequest(
 		{
 			...req,
 			messages: [
@@ -1178,7 +1187,7 @@ test("google content signatures: complete native parts survive replay", () => {
 		},
 		ctx,
 	);
-	assert.deepEqual(JSON.parse(replay.body!).contents[0].parts, [
+	assert.deepEqual(jsonBody(replay).contents[0].parts, [
 		{
 			text: "internal",
 			thought: true,

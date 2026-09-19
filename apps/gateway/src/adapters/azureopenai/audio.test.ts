@@ -2,6 +2,7 @@ import type { CanonicalTranscriptionRequest } from "#core/audio.ts";
 import type { UpstreamTransport } from "#core/transport.ts";
 import { resolveModelMetadata } from "#catalog/index.ts";
 import type { AdapterContext } from "#adapters/types.ts";
+import { must } from "#test-support/adapters.ts";
 import { writeFileSync, rmSync } from "node:fs";
 import { azureopenaiAdapter } from "./index.ts";
 import { randomUUID } from "node:crypto";
@@ -74,7 +75,7 @@ test("azureopenai exposes audio.transcriptions and its gpt-4o-transcribe catalog
 test("azure audio.buildRequest: classic deployment URL by default", async () => {
 	const { req, cleanup } = audioFile();
 	try {
-		const r = await azureopenaiAdapter.audioTranscription!.buildRequest(
+		const r = await must(azureopenaiAdapter, "audioTranscription").buildRequest(
 			req,
 			ctx({ apiKey: "k", baseUrl: "https://r.openai.azure.com" }),
 		);
@@ -97,7 +98,7 @@ test("azure audio.buildRequest: classic deployment URL by default", async () => 
 test("azure audio.buildRequest: classic derives the resource and respects apiVersion override", async () => {
 	const { req, cleanup } = audioFile();
 	try {
-		const r = await azureopenaiAdapter.audioTranscription!.buildRequest(
+		const r = await must(azureopenaiAdapter, "audioTranscription").buildRequest(
 			req,
 			ctx({
 				apiKey: "k",
@@ -118,7 +119,7 @@ test("azure audio.buildRequest: v1 preview remains an explicit opt-in", async ()
 	const { req, cleanup } = audioFile();
 	req.stream = true;
 	try {
-		const r = await azureopenaiAdapter.audioTranscription!.buildRequest(
+		const r = await must(azureopenaiAdapter, "audioTranscription").buildRequest(
 			req,
 			ctx(
 				{ apiKey: "k", baseUrl: "https://r.openai.azure.com" },
@@ -143,7 +144,7 @@ test("azure audio.buildRequest: classic transport rejects streaming", async () =
 	try {
 		await assert.rejects(
 			async () =>
-				await azureopenaiAdapter.audioTranscription!.buildRequest(
+				await must(azureopenaiAdapter, "audioTranscription").buildRequest(
 					req,
 					ctx({ apiKey: "k", baseUrl: "https://r.openai.azure.com" }),
 				),

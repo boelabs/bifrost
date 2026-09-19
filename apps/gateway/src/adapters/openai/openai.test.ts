@@ -1,4 +1,5 @@
 import type { CanonicalEmbeddingsRequest } from "#core/embeddings.ts";
+import { jsonBody, must, streamOf } from "#test-support/adapters.ts";
 import { adapterDiagnostics } from "#adapters/diagnostics.ts";
 import type { AdapterContext } from "#adapters/types.ts";
 import { GatewayError } from "#core/errors.ts";
@@ -83,19 +84,19 @@ const embeddingsReq: CanonicalEmbeddingsRequest = {
 };
 
 test("openai.buildRequest: native /responses transport, auth, and responses body", () => {
-	const r = openaiAdapter.chat!.buildRequest(baseReq, ctx);
+	const r = must(openaiAdapter, "chat").buildRequest(baseReq, ctx);
 	assert.equal(r.method, "POST");
 	assert.equal(r.url, "https://api.openai.com/v1/responses"); // transport upstream = /responses
 	assert.equal(r.headers.authorization, "Bearer sk-test");
 	assert.equal(r.headers["openai-organization"], "org_1");
-	const body = JSON.parse(r.body!);
+	const body = jsonBody(r);
 	assert.equal(body.model, "gpt-5.5");
 	assert.equal(body.max_output_tokens, 100);
 	assert.equal(body.input[0].content[0].text, "hello");
 });
 
 test("openai.buildRequest: /responses images default detail to auto", () => {
-	const r = openaiAdapter.chat!.buildRequest(
+	const r = must(openaiAdapter, "chat").buildRequest(
 		{
 			...baseReq,
 			messages: [
@@ -114,13 +115,13 @@ test("openai.buildRequest: /responses images default detail to auto", () => {
 		},
 		ctx,
 	);
-	const { content } = JSON.parse(r.body!).input[0];
+	const { content } = jsonBody(r).input[0];
 	assert.equal(content[0].detail, "auto");
 	assert.equal(content[1].detail, "high");
 });
 
 test("openai.buildRequest: does not forward provider-specific tool-call extra_content", () => {
-	const r = openaiAdapter.chat!.buildRequest(
+	const r = must(openaiAdapter, "chat").buildRequest(
 		{
 			...baseReq,
 			messages: [
@@ -142,12 +143,12 @@ test("openai.buildRequest: does not forward provider-specific tool-call extra_co
 		},
 		ctx,
 	);
-	const body = JSON.parse(r.body!);
+	const body = jsonBody(r);
 	assert.equal(body.input[0].extra_content, undefined);
 });
 
 test("openai.buildRequest: forwards /responses transport options", () => {
-	const r = openaiAdapter.chat!.buildRequest(
+	const r = must(openaiAdapter, "chat").buildRequest(
 		{
 			...baseReq,
 			responsesTransport: {
@@ -165,7 +166,7 @@ test("openai.buildRequest: forwards /responses transport options", () => {
 		},
 		ctx,
 	);
-	const body = JSON.parse(r.body!);
+	const body = jsonBody(r);
 	assert.deepEqual(body.include, ["message.output_text.logprobs"]);
 	assert.deepEqual(body.metadata, { trace: "abc" });
 	assert.deepEqual(body.text, { format: { type: "text" } });
@@ -184,7 +185,7 @@ test("openai.buildRequest: canonical format is emitted as /responses text.format
 		properties: { answer: { type: "string" } },
 		required: ["answer"],
 	};
-	const r = openaiAdapter.chat!.buildRequest(
+	const r = must(openaiAdapter, "chat").buildRequest(
 		{
 			...baseReq,
 			responseFormat: {
@@ -197,7 +198,7 @@ test("openai.buildRequest: canonical format is emitted as /responses text.format
 		},
 		ctx,
 	);
-	assert.deepEqual(JSON.parse(r.body!).text, {
+	assert.deepEqual(jsonBody(r).text, {
 		verbosity: "low",
 		format: {
 			type: "json_schema",
@@ -211,8 +212,8 @@ test("openai.buildRequest: canonical format is emitted as /responses text.format
 
 test("openai.buildRequest: omitted effort on model that can skip reasoning -> effort none (without summary)", () => {
 	// reasoningCtx has "none" ∈ levels: the gateway default is NOT to reason.
-	const r = openaiAdapter.chat!.buildRequest(baseReq, reasoningCtx);
-	assert.deepEqual(JSON.parse(r.body!).reasoning, { effort: "none" });
+	const r = must(openaiAdapter, "chat").buildRequest(baseReq, reasoningCtx);
+	assert.deepEqual(jsonBody(r).reasoning, { effort: "none" });
 });
 
 test("openai.buildRequest: omitted effort on MANDATORY reasoner -> lowest level + auto summary", () => {
@@ -231,15 +232,15 @@ test("openai.buildRequest: omitted effort on MANDATORY reasoner -> lowest level 
 			},
 		},
 	};
-	const r = openaiAdapter.chat!.buildRequest(baseReq, forcedCtx);
-	assert.deepEqual(JSON.parse(r.body!).reasoning, {
+	const r = must(openaiAdapter, "chat").buildRequest(baseReq, forcedCtx);
+	assert.deepEqual(jsonBody(r).reasoning, {
 		effort: "low",
 		summary: "auto",
 	});
 });
 
 test("openai.buildRequest: canonical reasoning is clamped and merged with summary", () => {
-	const r = openaiAdapter.chat!.buildRequest(
+	const r = must(openaiAdapter, "chat").buildRequest(
 		{
 			...baseReq,
 			reasoning: { effort: "xhigh" },
@@ -248,7 +249,7 @@ test("openai.buildRequest: canonical reasoning is clamped and merged with summar
 		},
 		reasoningCtx,
 	);
-	const body = JSON.parse(r.body!);
+	const body = jsonBody(r);
 	assert.deepEqual(body.reasoning, { summary: "auto", effort: "high" });
 	assert.equal(body.custom_param, true);
 });
@@ -264,20 +265,20 @@ test("openai.buildRequest: preserves distinct xhigh and max efforts", () => {
 			},
 		},
 	};
-	const extended = openaiAdapter.chat!.buildRequest(
+	const extended = must(openaiAdapter, "chat").buildRequest(
 		{ ...baseReq, reasoning: { effort: "xhigh" } },
 		fullCtx,
 	);
-	assert.deepEqual(JSON.parse(extended.body!).reasoning, {
+	assert.deepEqual(jsonBody(extended).reasoning, {
 		effort: "xhigh",
 		summary: "auto",
 	});
 
-	const maximum = openaiAdapter.chat!.buildRequest(
+	const maximum = must(openaiAdapter, "chat").buildRequest(
 		{ ...baseReq, reasoning: { effort: "max" } },
 		fullCtx,
 	);
-	assert.deepEqual(JSON.parse(maximum.body!).reasoning, {
+	assert.deepEqual(jsonBody(maximum).reasoning, {
 		effort: "max",
 		summary: "auto",
 	});
@@ -286,7 +287,7 @@ test("openai.buildRequest: preserves distinct xhigh and max efforts", () => {
 test("openai.buildRequest: extraBody does not overwrite managed fields", () => {
 	assert.throws(
 		() =>
-			openaiAdapter.chat!.buildRequest(
+			must(openaiAdapter, "chat").buildRequest(
 				{ ...baseReq, extraBody: { reasoning: { effort: "low" } } },
 				reasoningCtx,
 			),
@@ -318,7 +319,7 @@ test("openai.parseResponse: /responses output -> canonical", () => {
 			input_tokens_details: { cached_tokens: 2 },
 		},
 	};
-	const u = openaiAdapter.chat!.parseResponse(raw, ctx);
+	const u = must(openaiAdapter, "chat").parseResponse(raw, ctx);
 	assert.equal(u.choices[0]!.message.content, "hello!");
 	assert.equal(u.choices[0]!.message.reasoning, "Penbe brief.");
 	assert.equal(u.choices[0]!.finishReason, "stop");
@@ -335,7 +336,7 @@ test("openai.parseResponse: function_call -> tool_calls", () => {
 		],
 		usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
 	};
-	const u = openaiAdapter.chat!.parseResponse(raw, ctx);
+	const u = must(openaiAdapter, "chat").parseResponse(raw, ctx);
 	assert.equal(u.choices[0]!.finishReason, "tool_calls");
 	assert.equal(u.choices[0]!.message.toolCalls?.[0]?.name, "f");
 });
@@ -346,11 +347,14 @@ test("openai.parseStream: response.* events -> canonical deltas", async () => {
 		`event: response.output_text.delta\ndata: {"type":"response.output_text.delta","delta":"Hel"}\n\n` +
 		`event: response.output_text.delta\ndata: {"type":"response.output_text.delta","delta":"lo"}\n\n` +
 		`event: response.completed\ndata: {"type":"response.completed","response":{"status":"completed","usage":{"input_tokens":1,"output_tokens":2,"total_tokens":3}}}\n\n`;
-	const stream = new Response(sse).body!;
+	const stream = streamOf(sse);
 	const out: string[] = [];
 	let lastFinish: string | null = null;
 	let total: number | undefined;
-	for await (const chunk of openaiAdapter.chat!.parseStream(stream, ctx)) {
+	for await (const chunk of must(openaiAdapter, "chat").parseStream(
+		stream,
+		ctx,
+	)) {
 		if (chunk.choices[0]?.delta.content) {
 			out.push(chunk.choices[0].delta.content);
 		}
@@ -372,8 +376,8 @@ test("openai.parseStream: reasoning summary deltas preserve their native item id
 		`event: response.output_item.done\ndata: {"type":"response.output_item.done","item":{"type":"reasoning","id":"rs_native","summary":[{"type":"summary_text","text":"Think"}],"encrypted_content":"enc-native"}}\n\n` +
 		`event: response.completed\ndata: {"type":"response.completed","response":{"status":"completed","output":[],"usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}}\n\n`;
 	const chunks: CanonicalChatStreamChunk[] = [];
-	for await (const chunk of openaiAdapter.chat!.parseStream(
-		new Response(sse).body!,
+	for await (const chunk of must(openaiAdapter, "chat").parseStream(
+		streamOf(sse),
 		ctx,
 	)) {
 		chunks.push(chunk);
@@ -409,12 +413,12 @@ test("openai.parseStream: reasoning summary deltas preserve their native item id
 });
 
 test("openai.mapError: 429 -> rate_limit; 400 context_length_exceeded -> context_window", () => {
-	const rl = openaiAdapter.chat!.mapError(
+	const rl = must(openaiAdapter, "chat").mapError(
 		{ status: 429, body: { error: { message: "slow" } } },
 		ctx,
 	);
 	assert.equal(rl.class, "rate_limit");
-	const ctxErr = openaiAdapter.chat!.mapError(
+	const ctxErr = must(openaiAdapter, "chat").mapError(
 		{
 			status: 400,
 			body: { error: { code: "context_length_exceeded", message: "too long" } },
@@ -426,7 +430,7 @@ test("openai.mapError: 429 -> rate_limit; 400 context_length_exceeded -> context
 
 test("openai.mapError: 400 without code but with context message -> context_window", () => {
 	// The /responses transport does not always fill `code`; it must fall back to the message.
-	const ge = openaiAdapter.chat!.mapError(
+	const ge = must(openaiAdapter, "chat").mapError(
 		{
 			status: 400,
 			body: {
@@ -443,14 +447,14 @@ test("openai.mapError: 400 without code but with context message -> context_wind
 
 test("openai embeddings handler: POST /embeddings with OpenAI body", () => {
 	assert.equal(openaiAdapter.supportedCallTypes.has("embeddings"), true);
-	const r = openaiAdapter.embeddings!.buildRequest(
+	const r = must(openaiAdapter, "embeddings").buildRequest(
 		embeddingsReq,
 		embeddingsCtx,
 	);
 	assert.equal(r.method, "POST");
 	assert.equal(r.url, "https://api.openai.com/v1/embeddings");
 	assert.equal(r.headers.authorization, "Bearer sk-test");
-	const body = JSON.parse(r.body!);
+	const body = jsonBody(r);
 	assert.deepEqual(body, {
 		model: "text-embedding-3-small",
 		input: ["hello", "world"],
@@ -458,7 +462,7 @@ test("openai embeddings handler: POST /embeddings with OpenAI body", () => {
 		dimensions: 256,
 		user: "user-1",
 	});
-	const parsed = openaiAdapter.embeddings!.parseResponse(
+	const parsed = must(openaiAdapter, "embeddings").parseResponse(
 		{
 			object: "list",
 			model: "text-embedding-3-small",
@@ -471,11 +475,11 @@ test("openai embeddings handler: POST /embeddings with OpenAI body", () => {
 });
 
 test("openai.buildRequest: upstream call is store:false and extra_body cannot override it", () => {
-	const r = openaiAdapter.chat!.buildRequest(baseReq, ctx);
-	assert.equal(JSON.parse(r.body!).store, false);
+	const r = must(openaiAdapter, "chat").buildRequest(baseReq, ctx);
+	assert.equal(jsonBody(r).store, false);
 	assert.throws(
 		() =>
-			openaiAdapter.chat!.buildRequest(
+			must(openaiAdapter, "chat").buildRequest(
 				{ ...baseReq, extraBody: { store: true } },
 				ctx,
 			),
@@ -484,13 +488,11 @@ test("openai.buildRequest: upstream call is store:false and extra_body cannot ov
 });
 
 test("openai.buildRequest: reasoning-capable models request encrypted reasoning content", () => {
-	const r = openaiAdapter.chat!.buildRequest(baseReq, reasoningCtx);
-	assert.deepEqual(JSON.parse(r.body!).include, [
-		"reasoning.encrypted_content",
-	]);
+	const r = must(openaiAdapter, "chat").buildRequest(baseReq, reasoningCtx);
+	assert.deepEqual(jsonBody(r).include, ["reasoning.encrypted_content"]);
 
 	// Deduped against a client-forwarded include; non-reasoning models do not request it.
-	const merged = openaiAdapter.chat!.buildRequest(
+	const merged = must(openaiAdapter, "chat").buildRequest(
 		{
 			...baseReq,
 			responsesTransport: {
@@ -502,18 +504,19 @@ test("openai.buildRequest: reasoning-capable models request encrypted reasoning 
 		},
 		reasoningCtx,
 	);
-	assert.deepEqual(JSON.parse(merged.body!).include, [
+	assert.deepEqual(jsonBody(merged).include, [
 		"reasoning.encrypted_content",
 		"message.output_text.logprobs",
 	]);
 	assert.equal(
-		JSON.parse(openaiAdapter.chat!.buildRequest(baseReq, ctx).body!).include,
+		JSON.parse(must(openaiAdapter, "chat").buildRequest(baseReq, ctx).body!)
+			.include,
 		undefined,
 	);
 });
 
 test("openai.buildRequest: replays encrypted reasoning items before function calls", () => {
-	const r = openaiAdapter.chat!.buildRequest(
+	const r = must(openaiAdapter, "chat").buildRequest(
 		{
 			...baseReq,
 			messages: [
@@ -532,7 +535,7 @@ test("openai.buildRequest: replays encrypted reasoning items before function cal
 		},
 		reasoningCtx,
 	);
-	const { input } = JSON.parse(r.body!);
+	const { input } = jsonBody(r);
 	assert.deepEqual(input[0], {
 		type: "reasoning",
 		id: "rs_1",
@@ -544,7 +547,7 @@ test("openai.buildRequest: replays encrypted reasoning items before function cal
 });
 
 test("openai.parseResponse: reasoning encrypted_content -> message providerFields", () => {
-	const canonical = openaiAdapter.chat!.parseResponse(
+	const canonical = must(openaiAdapter, "chat").parseResponse(
 		{
 			id: "resp_1",
 			created_at: 1,
@@ -644,7 +647,7 @@ test("openai chat stream: in-band error objects throw", async () => {
 		`data: {"error":{"message":"boom","type":"server_error"}}\n\n`,
 	).body!;
 	await assert.rejects(async () => {
-		for await (const _chunk of openaiAdapter.chat!.parseStream(stream, {
+		for await (const _chunk of must(openaiAdapter, "chat").parseStream(stream, {
 			...ctx,
 			transport: "chat_completions",
 		})) {

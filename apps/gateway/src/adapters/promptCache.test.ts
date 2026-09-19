@@ -1,3 +1,5 @@
+import { must } from "#test-support/adapters.ts";
+
 import "./index.ts";
 
 import { buildResponsesWebSocketMessage } from "./openaiResponsesWebSocket.ts";
@@ -158,7 +160,7 @@ for (const key of [
 									"[DONE]",
 								];
 					const chunks: CanonicalChatStreamChunk[] = [];
-					for await (const chunk of adapter.chat!.parseStream(
+					for await (const chunk of must(adapter, "chat").parseStream(
 						sse(events),
 						context(transport),
 					)) {
@@ -190,17 +192,20 @@ for (const key of [
 					})) {
 						messages.push(JSON.parse(event.data));
 					}
-					for await (const chunk of getAdapter("anthropic")!.chat!.parseStream(
-						sse(messages),
-						context("messages"),
-					)) {
+					for await (const chunk of must(
+						getAdapter("anthropic")!,
+						"chat",
+					).parseStream(sse(messages), context("messages"))) {
 						if (chunk.usage) {
 							roundTrip = chunk.usage;
 						}
 					}
 					assert.deepEqual(roundTrip, readWriteUsage);
 				} else {
-					const parsed = adapter.chat!.parseResponse(raw, context(transport));
+					const parsed = must(adapter, "chat").parseResponse(
+						raw,
+						context(transport),
+					);
 					assert.deepEqual(parsed.usage, readWriteUsage);
 					assert.equal(
 						toOpenAIChatResponse(parsed, "public-model").usage
@@ -451,10 +456,10 @@ test("Anthropic terminal usage replaces cumulative values without losing omitted
 			{ type: "message_stop" },
 		];
 		let result: Usage | undefined;
-		for await (const chunk of getAdapter("anthropic")!.chat!.parseStream(
-			sse(events),
-			context("messages"),
-		)) {
+		for await (const chunk of must(
+			getAdapter("anthropic")!,
+			"chat",
+		).parseStream(sse(events), context("messages"))) {
 			if (chunk.usage) {
 				result = chunk.usage;
 			}
@@ -498,7 +503,7 @@ test("Google retains explicit resource references and cached token usage in JSON
 			cachedContentTokenCount: 1500,
 		},
 	};
-	const handler = getAdapter("googleaistudio")!.chat!;
+	const handler = must(getAdapter("googleaistudio")!, "chat");
 	assert.equal(
 		handler.parseResponse(raw, context("generate_content")).usage
 			.cacheReadTokens,
@@ -655,7 +660,7 @@ test("Anthropic lifetime usage survives JSON and all public renderers", () => {
 			},
 		},
 	};
-	const parsed = getAdapter("anthropic")!.chat!.parseResponse(
+	const parsed = must(getAdapter("anthropic")!, "chat").parseResponse(
 		raw,
 		context("messages"),
 	);

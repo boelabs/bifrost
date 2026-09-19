@@ -1,9 +1,7 @@
+import { streamOf } from "#test-support/adapters.ts";
 import { parseSSE, type SSEEvent } from "./sse.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
-
-const streamOf = (text: string): ReadableStream<Uint8Array> =>
-	new Response(text).body!;
 
 test("parseSSE: events with event/data, multiline data, and comments", async () => {
 	const sse =

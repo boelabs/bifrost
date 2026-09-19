@@ -2,6 +2,7 @@ import { openaicompatibleAdapter } from "./openaicompatible/index.ts";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { openaiAdapter } from "./openai/index.ts";
 import { googleAdapter } from "./google/index.ts";
+import { must } from "#test-support/adapters.ts";
 import type { AdapterContext } from "./types.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -84,7 +85,7 @@ async function fixture(): Promise<{ dir: string; input: CanonicalImageInput }> {
 }
 
 test("OpenAI images: direct generation builds /images/generations and parses usage", async () => {
-	const request = await openaiAdapter.imageGeneration!.buildRequest(
+	const request = await must(openaiAdapter, "imageGeneration").buildRequest(
 		generation,
 		ctx("images"),
 	);
@@ -94,7 +95,7 @@ test("OpenAI images: direct generation builds /images/generations and parses usa
 	assert.equal(body.output_format, "webp");
 	assert.equal(body.response_format, "b64_json");
 	assert.equal(body.seed, 7);
-	const response = await openaiAdapter.imageGeneration!.parseResponse(
+	const response = await must(openaiAdapter, "imageGeneration").parseResponse(
 		{
 			created: 1,
 			data: [{ b64_json: "YWJj" }],
@@ -111,7 +112,7 @@ test("OpenAI images: direct generation builds /images/generations and parses usa
 	assert.equal(response.usage?.totalTokens, 5);
 	assert.throws(
 		() =>
-			openaiAdapter.imageGeneration!.parseResponse(
+			must(openaiAdapter, "imageGeneration").parseResponse(
 				{
 					created: 1,
 					data: [{ url: "https://example.test/image.png" }],
@@ -129,7 +130,7 @@ test("OpenAI Images legacy: does not forward controls processed locally by the g
 		nativeOutputFormat: false,
 		nativeOutputCompression: false,
 	};
-	const request = await openaiAdapter.imageGeneration!.buildRequest(
+	const request = await must(openaiAdapter, "imageGeneration").buildRequest(
 		{
 			...generation,
 			outputFormat: "webp",
@@ -146,7 +147,7 @@ test("OpenAI Images legacy: does not forward controls processed locally by the g
 test("OpenAI Images without native stream lets the gateway synthesize the final event", async () => {
 	const syntheticCtx = ctx("images");
 	syntheticCtx.meta.image = { ...profile, supportsNativeStreaming: false };
-	const request = await openaiAdapter.imageGeneration!.buildRequest(
+	const request = await must(openaiAdapter, "imageGeneration").buildRequest(
 		{
 			...generation,
 			stream: true,
@@ -161,7 +162,7 @@ test("OpenAI Images without native stream lets the gateway synthesize the final 
 test("OpenAI images: direct edit uses multipart and preserves filename", async () => {
 	const { dir, input } = await fixture();
 	try {
-		const request = await openaiAdapter.imageEdit!.buildRequest(
+		const request = await must(openaiAdapter, "imageEdit").buildRequest(
 			{
 				operation: "edit",
 				model: "public",
@@ -194,7 +195,7 @@ test("OpenAI images: normalizes partial/completed SSE events", async () => {
 		},
 	});
 	const events: CanonicalImageStreamEvent[] = [];
-	for await (const event of openaiAdapter.imageGeneration!.parseStream!(
+	for await (const event of must(openaiAdapter, "imageGeneration").parseStream!(
 		stream,
 		ctx("images"),
 	)) {
@@ -211,7 +212,10 @@ test("OpenAI images: normalizes partial/completed SSE events", async () => {
 test("OpenAI-compatible omni: uses chat/completions, modalities, and extensible image_config", async () => {
 	const { dir, input } = await fixture();
 	try {
-		const request = await openaicompatibleAdapter.imageEdit!.buildRequest(
+		const request = await must(
+			openaicompatibleAdapter,
+			"imageEdit",
+		).buildRequest(
 			{
 				operation: "edit",
 				model: "public",
@@ -231,7 +235,10 @@ test("OpenAI-compatible omni: uses chat/completions, modalities, and extensible 
 			body.messages[0].content[1].image_url.url,
 			/^data:image\/png;base64,/,
 		);
-		const response = await openaicompatibleAdapter.imageEdit!.parseResponse(
+		const response = await must(
+			openaicompatibleAdapter,
+			"imageEdit",
+		).parseResponse(
 			{
 				created: 2,
 				choices: [
@@ -251,7 +258,7 @@ test("OpenAI-compatible omni: uses chat/completions, modalities, and extensible 
 });
 
 test("Gemini images: generateContent emits IMAGE config and parses inlineData", async () => {
-	const request = await googleAdapter.imageGeneration!.buildRequest(
+	const request = await must(googleAdapter, "imageGeneration").buildRequest(
 		generation,
 		ctx("generate_content", "google"),
 	);
@@ -259,7 +266,7 @@ test("Gemini images: generateContent emits IMAGE config and parses inlineData", 
 	assert.deepEqual(body.generationConfig.responseModalities, ["IMAGE"]);
 	assert.equal(body.generationConfig.imageConfig.aspectRatio, "1:1");
 	assert.equal(body.seed, 7);
-	const response = await googleAdapter.imageGeneration!.parseResponse(
+	const response = await must(googleAdapter, "imageGeneration").parseResponse(
 		{
 			candidates: [
 				{
@@ -321,34 +328,34 @@ test("OpenAI images: size auto forwards auto natively or the first profile size"
 	const nativeCtx = ctx("images");
 	nativeCtx.meta.image = { ...profile, autoSize: {} };
 	for (const req of [{ ...generation, size: "auto" }, withoutSize]) {
-		const request = await openaiAdapter.imageGeneration!.buildRequest(
+		const request = await must(openaiAdapter, "imageGeneration").buildRequest(
 			req,
 			nativeCtx,
 		);
 		assert.equal(JSON.parse(request.body as string).size, "auto");
 	}
-	const fallbackRequest = await openaiAdapter.imageGeneration!.buildRequest(
-		{ ...generation, size: "auto" },
-		ctx("images"),
-	);
+	const fallbackRequest = await must(
+		openaiAdapter,
+		"imageGeneration",
+	).buildRequest({ ...generation, size: "auto" }, ctx("images"));
 	assert.equal(JSON.parse(fallbackRequest.body as string).size, "1024x1024");
 });
 
 test("Gemini images: size auto omits imageConfig natively or maps the first profile size", async () => {
 	const nativeCtx = ctx("generate_content", "google");
 	nativeCtx.meta.image = { ...profile, autoSize: {} };
-	const nativeRequest = await googleAdapter.imageGeneration!.buildRequest(
-		{ ...generation, size: "auto" },
-		nativeCtx,
-	);
+	const nativeRequest = await must(
+		googleAdapter,
+		"imageGeneration",
+	).buildRequest({ ...generation, size: "auto" }, nativeCtx);
 	const nativeBody = JSON.parse(nativeRequest.body as string);
 	assert.equal(nativeBody.generationConfig.imageConfig, undefined);
 
 	const { size: _, ...withoutSize } = generation;
-	const fallbackRequest = await googleAdapter.imageGeneration!.buildRequest(
-		withoutSize,
-		ctx("generate_content", "google"),
-	);
+	const fallbackRequest = await must(
+		googleAdapter,
+		"imageGeneration",
+	).buildRequest(withoutSize, ctx("generate_content", "google"));
 	const fallbackBody = JSON.parse(fallbackRequest.body as string);
 	assert.equal(fallbackBody.generationConfig.imageConfig.aspectRatio, "1:1");
 	assert.equal(fallbackBody.generationConfig.imageConfig.imageSize, "1K");
@@ -372,7 +379,7 @@ test("Gemini 3.1 images: rungs map to thinkingLevel; auto/omitted send none", as
 		["low", "minimal"],
 		["high", "high"],
 	] as const) {
-		const request = await googleAdapter.imageGeneration!.buildRequest(
+		const request = await must(googleAdapter, "imageGeneration").buildRequest(
 			{
 				...generation,
 				...(quality ? { quality } : {}),
@@ -400,7 +407,7 @@ test("OpenAI images: response_format goes only to models that have the field", a
 	// DALL·E returns URLs unless asked for base64, so the field must be sent.
 	const dalle = ctx("images");
 	dalle.meta.image = { ...profile, supportsNativeStreaming: false };
-	const withField = await openaiAdapter.imageGeneration!.buildRequest(
+	const withField = await must(openaiAdapter, "imageGeneration").buildRequest(
 		request,
 		dalle,
 	);
@@ -418,13 +425,17 @@ test("OpenAI images: response_format goes only to models that have the field", a
 		nativeResponseFormat: false,
 	};
 	const body = JSON.parse(
-		(await openaiAdapter.imageGeneration!.buildRequest(request, gptImage))
-			.body as string,
+		(
+			await must(openaiAdapter, "imageGeneration").buildRequest(
+				request,
+				gptImage,
+			)
+		).body as string,
 	);
 	assert.equal("response_format" in body, false);
 
 	// Edits go through the same body builder, so the multipart form drops it too.
-	const form = (await openaiAdapter.imageEdit!.buildRequest(
+	const form = (await must(openaiAdapter, "imageEdit").buildRequest(
 		{ ...request, operation: "edit", images: [] },
 		gptImage,
 	)) as { body: FormData };

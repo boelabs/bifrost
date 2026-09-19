@@ -1,3 +1,4 @@
+import { jsonBody, must, streamOf } from "#test-support/adapters.ts";
 import { adapterDiagnostics } from "#adapters/diagnostics.ts";
 import type { AdapterContext } from "#adapters/types.ts";
 import { anthropicAdapter } from "./index.ts";
@@ -58,7 +59,10 @@ test("Anthropic preserves optional thinking usage from initial and terminal even
 			events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join(""),
 		).body!;
 		let usage: Usage | undefined;
-		for await (const chunk of anthropicAdapter.chat!.parseStream(body, ctx)) {
+		for await (const chunk of must(anthropicAdapter, "chat").parseStream(
+			body,
+			ctx,
+		)) {
 			if (chunk.usage) {
 				({ usage } = chunk);
 			}
@@ -117,12 +121,12 @@ const req: CanonicalChatRequest = {
 };
 
 test("anthropic.buildRequest: messages transport, auth headers and system split", () => {
-	const built = anthropicAdapter.chat!.buildRequest(req, ctx);
+	const built = must(anthropicAdapter, "chat").buildRequest(req, ctx);
 	assert.equal(built.method, "POST");
 	assert.equal(built.url, "https://api.anthropic.com/v1/messages");
 	assert.equal(built.headers["x-api-key"], "sk-ant-test");
 	assert.equal(built.headers["anthropic-version"], "2023-06-01");
-	const body = JSON.parse(built.body!);
+	const body = jsonBody(built);
 	assert.equal(body.model, "claude-sonnet-4-5");
 	assert.equal(body.max_tokens, 128);
 	assert.equal(body.system, "Be concise.");
@@ -130,7 +134,7 @@ test("anthropic.buildRequest: messages transport, auth headers and system split"
 });
 
 test("anthropic.buildRequest: emits native strict tool schemas", () => {
-	const built = anthropicAdapter.chat!.buildRequest(
+	const built = must(anthropicAdapter, "chat").buildRequest(
 		{
 			...req,
 			tools: [
@@ -148,7 +152,7 @@ test("anthropic.buildRequest: emits native strict tool schemas", () => {
 		},
 		ctx,
 	);
-	assert.equal(JSON.parse(built.body!).tools[0].strict, true);
+	assert.equal(jsonBody(built).tools[0].strict, true);
 });
 
 test("anthropic token count preserves input fields and removes generation controls", () => {
@@ -171,7 +175,7 @@ test("anthropic token count preserves input fields and removes generation contro
 	);
 	assert.equal(built.url, "https://api.anthropic.com/v1/messages/count_tokens");
 	assert.equal(built.headers["x-api-key"], "sk-ant-test");
-	assert.deepEqual(JSON.parse(built.body!), {
+	assert.deepEqual(jsonBody(built), {
 		model: "claude-sonnet-4-5",
 		messages: [{ role: "user", content: "Hello" }],
 		system: "Be concise.",
@@ -185,7 +189,7 @@ test("anthropic token count preserves input fields and removes generation contro
 });
 
 test("anthropic.buildRequest: omits empty assistant messages", () => {
-	const built = anthropicAdapter.chat!.buildRequest(
+	const built = must(anthropicAdapter, "chat").buildRequest(
 		{
 			...req,
 			messages: [
@@ -196,7 +200,7 @@ test("anthropic.buildRequest: omits empty assistant messages", () => {
 		},
 		ctx,
 	);
-	const body = JSON.parse(built.body!);
+	const body = jsonBody(built);
 
 	assert.deepEqual(body.messages, [
 		{ role: "user", content: "First" },
@@ -213,7 +217,7 @@ test("anthropic.buildRequest: omits empty assistant messages", () => {
 });
 
 test("anthropic.buildRequest: cache_control is emitted in system (array), content, and tools", () => {
-	const built = anthropicAdapter.chat!.buildRequest(
+	const built = must(anthropicAdapter, "chat").buildRequest(
 		{
 			callType: "chat",
 			model: "claude",
@@ -247,7 +251,7 @@ test("anthropic.buildRequest: cache_control is emitted in system (array), conten
 		},
 		ctx,
 	);
-	const body = JSON.parse(built.body!);
+	const body = jsonBody(built);
 	// system with cache_control -> array of blocks (not string).
 	assert.deepEqual(body.system, [
 		{
@@ -263,7 +267,7 @@ test("anthropic.buildRequest: cache_control is emitted in system (array), conten
 });
 
 test("anthropic.buildRequest: system without cache_control still flattens to string", () => {
-	const built = anthropicAdapter.chat!.buildRequest(
+	const built = must(anthropicAdapter, "chat").buildRequest(
 		{
 			callType: "chat",
 			model: "claude",
@@ -276,12 +280,12 @@ test("anthropic.buildRequest: system without cache_control still flattens to str
 		},
 		ctx,
 	);
-	const body = JSON.parse(built.body!);
+	const body = jsonBody(built);
 	assert.equal(body.system, "Be concise.");
 });
 
 test("anthropic.buildRequest: emits native PDF document sources", () => {
-	const built = anthropicAdapter.chat!.buildRequest(
+	const built = must(anthropicAdapter, "chat").buildRequest(
 		{
 			...req,
 			messages: [
@@ -303,7 +307,7 @@ test("anthropic.buildRequest: emits native PDF document sources", () => {
 		},
 		ctx,
 	);
-	assert.deepEqual(JSON.parse(built.body!).messages[0].content, [
+	assert.deepEqual(jsonBody(built).messages[0].content, [
 		{
 			type: "document",
 			source: {
@@ -324,7 +328,7 @@ test("anthropic.buildRequest: emits native PDF document sources", () => {
 });
 
 test("anthropic.buildRequest: provider file references enable the Files API beta", () => {
-	const built = anthropicAdapter.chat!.buildRequest(
+	const built = must(anthropicAdapter, "chat").buildRequest(
 		{
 			...req,
 			messages: [
@@ -337,14 +341,14 @@ test("anthropic.buildRequest: provider file references enable the Files API beta
 		ctx,
 	);
 	assert.equal(built.headers["anthropic-beta"], "files-api-2025-04-14");
-	assert.deepEqual(JSON.parse(built.body!).messages[0].content, [
+	assert.deepEqual(jsonBody(built).messages[0].content, [
 		{
 			type: "document",
 			source: { type: "file", file_id: "file-123" },
 		},
 	]);
 
-	const withExistingBeta = anthropicAdapter.chat!.buildRequest(
+	const withExistingBeta = must(anthropicAdapter, "chat").buildRequest(
 		{
 			...req,
 			messages: [
@@ -369,28 +373,28 @@ test("anthropic.buildRequest: provider file references enable the Files API beta
 });
 
 test("anthropic.buildRequest: adaptive reasoning keeps xhigh and max distinct", () => {
-	const built = anthropicAdapter.chat!.buildRequest(
+	const built = must(anthropicAdapter, "chat").buildRequest(
 		{ ...req, reasoning: { effort: "xhigh" }, extraBody: { top_k: 40 } },
 		adaptiveCtx,
 	);
-	const body = JSON.parse(built.body!);
+	const body = jsonBody(built);
 	assert.deepEqual(body.thinking, { type: "adaptive", display: "summarized" });
 	assert.deepEqual(body.output_config, { effort: "xhigh" });
 	assert.equal(body.top_k, 40);
 
-	const maximum = anthropicAdapter.chat!.buildRequest(
+	const maximum = must(anthropicAdapter, "chat").buildRequest(
 		{ ...req, reasoning: { effort: "max" } },
 		adaptiveCtx,
 	);
-	assert.deepEqual(JSON.parse(maximum.body!).output_config, { effort: "max" });
+	assert.deepEqual(jsonBody(maximum).output_config, { effort: "max" });
 });
 
 test("anthropic.buildRequest: fast aliases select the native model and required beta", () => {
-	const built = anthropicAdapter.chat!.buildRequest(
+	const built = must(anthropicAdapter, "chat").buildRequest(
 		{ ...req, reasoning: { effort: "max" } },
 		{ ...adaptiveCtx, upstreamModel: "claude-opus-5-fast" },
 	);
-	const body = JSON.parse(built.body!);
+	const body = jsonBody(built);
 	assert.equal(body.model, "claude-opus-5");
 	assert.equal(body.speed, "fast");
 	assert.deepEqual(body.thinking, { type: "adaptive", display: "summarized" });
@@ -404,7 +408,7 @@ test("anthropic.buildRequest: structured output merges with output_config.effort
 		properties: { answer: { type: "string" } },
 		required: ["answer"],
 	};
-	const built = anthropicAdapter.chat!.buildRequest(
+	const built = must(anthropicAdapter, "chat").buildRequest(
 		{
 			...req,
 			reasoning: { effort: "high" },
@@ -412,26 +416,26 @@ test("anthropic.buildRequest: structured output merges with output_config.effort
 		},
 		adaptiveCtx,
 	);
-	assert.deepEqual(JSON.parse(built.body!).output_config, {
+	assert.deepEqual(jsonBody(built).output_config, {
 		effort: "high",
 		format: { type: "json_schema", schema },
 	});
 });
 
 test("anthropic.buildRequest: json_object uses an open object schema", () => {
-	const built = anthropicAdapter.chat!.buildRequest(
+	const built = must(anthropicAdapter, "chat").buildRequest(
 		{ ...req, responseFormat: { type: "json_object" } },
 		ctx,
 	);
-	assert.deepEqual(JSON.parse(built.body!).output_config, {
+	assert.deepEqual(jsonBody(built).output_config, {
 		format: { type: "json_schema", schema: { type: "object" } },
 	});
 });
 
 test("anthropic.buildRequest: omitted effort explicitly disables optional adaptive reasoning", () => {
 	// Opus 5 reasons when `thinking` is omitted, so canonical `none` must use Anthropic's literal switch.
-	const built = anthropicAdapter.chat!.buildRequest(req, adaptiveCtx);
-	const body = JSON.parse(built.body!);
+	const built = must(anthropicAdapter, "chat").buildRequest(req, adaptiveCtx);
+	const body = jsonBody(built);
 	assert.deepEqual(body.thinking, { type: "disabled" });
 	assert.equal(body.output_config, undefined);
 });
@@ -448,36 +452,36 @@ test("anthropic.buildRequest: omitted effort on MANDATORY reasoner -> lowest lev
 		},
 	};
 	const body = JSON.parse(
-		anthropicAdapter.chat!.buildRequest(req, forcedCtx).body!,
+		must(anthropicAdapter, "chat").buildRequest(req, forcedCtx).body!,
 	);
 	assert.deepEqual(body.thinking, { type: "adaptive", display: "summarized" });
 	assert.deepEqual(body.output_config, { effort: "low" });
 });
 
 test("anthropic.buildRequest: legacy budget uses thinking.enabled and none uses disabled", () => {
-	const high = anthropicAdapter.chat!.buildRequest(
+	const high = must(anthropicAdapter, "chat").buildRequest(
 		{ ...req, reasoning: { effort: "high" } },
 		budgetCtx,
 	);
-	assert.deepEqual(JSON.parse(high.body!).thinking, {
+	assert.deepEqual(jsonBody(high).thinking, {
 		type: "enabled",
 		budget_tokens: 16_000,
 		display: "summarized",
 	});
 
-	const none = anthropicAdapter.chat!.buildRequest(
+	const none = must(anthropicAdapter, "chat").buildRequest(
 		{ ...req, reasoning: { effort: "none" } },
 		budgetCtx,
 	);
-	assert.deepEqual(JSON.parse(none.body!).thinking, { type: "disabled" });
+	assert.deepEqual(jsonBody(none).thinking, { type: "disabled" });
 });
 
 test("anthropic.buildRequest: summary none uses omitted display", () => {
-	const built = anthropicAdapter.chat!.buildRequest(
+	const built = must(anthropicAdapter, "chat").buildRequest(
 		{ ...req, reasoning: { effort: "high", summary: "none" } },
 		adaptiveCtx,
 	);
-	assert.deepEqual(JSON.parse(built.body!).thinking, {
+	assert.deepEqual(jsonBody(built).thinking, {
 		type: "adaptive",
 		display: "omitted",
 	});
@@ -486,7 +490,7 @@ test("anthropic.buildRequest: summary none uses omitted display", () => {
 test("anthropic.buildRequest: extraBody does not overwrite managed fields", () => {
 	assert.throws(
 		() =>
-			anthropicAdapter.chat!.buildRequest(
+			must(anthropicAdapter, "chat").buildRequest(
 				{ ...req, extraBody: { output_config: { effort: "low" } } },
 				adaptiveCtx,
 			),
@@ -517,7 +521,7 @@ test("anthropic.parseResponse: text and tool_use blocks become canonical output"
 			cache_creation_input_tokens: 3,
 		},
 	};
-	const parsed = anthropicAdapter.chat!.parseResponse(raw, ctx);
+	const parsed = must(anthropicAdapter, "chat").parseResponse(raw, ctx);
 	assert.equal(parsed.choices[0]!.message.content, "Let me check.");
 	assert.equal(
 		parsed.choices[0]!.message.reasoning,
@@ -537,7 +541,7 @@ test("anthropic.parseResponse: text and tool_use blocks become canonical output"
 });
 
 test("anthropic.mapError: oversized prompt -> context_window; generic 400 -> bad_request", () => {
-	const tooLong = anthropicAdapter.chat!.mapError(
+	const tooLong = must(anthropicAdapter, "chat").mapError(
 		{
 			status: 400,
 			body: {
@@ -551,7 +555,7 @@ test("anthropic.mapError: oversized prompt -> context_window; generic 400 -> bad
 	);
 	assert.equal(tooLong.class, "context_window");
 
-	const generic = anthropicAdapter.chat!.mapError(
+	const generic = must(anthropicAdapter, "chat").mapError(
 		{
 			status: 400,
 			body: {
@@ -576,8 +580,8 @@ test("anthropic.parseStream: text and tool JSON deltas stream as canonical chunk
 		`event: message_delta\ndata: {"type":"message_delta","delta":{"stop_reason":"tool_use"},"usage":{"output_tokens":8}}\n\n` +
 		`event: message_stop\ndata: {"type":"message_stop"}\n\n`;
 	const chunks: CanonicalChatStreamChunk[] = [];
-	for await (const chunk of anthropicAdapter.chat!.parseStream(
-		new Response(sse).body!,
+	for await (const chunk of must(anthropicAdapter, "chat").parseStream(
+		streamOf(sse),
 		ctx,
 	)) {
 		chunks.push(chunk);
@@ -594,7 +598,7 @@ test("anthropic.parseStream: text and tool JSON deltas stream as canonical chunk
 });
 
 test("anthropic thinking state: signed and redacted blocks survive parse and replay", () => {
-	const parsed = anthropicAdapter.chat!.parseResponse(
+	const parsed = must(anthropicAdapter, "chat").parseResponse(
 		{
 			id: "msg_1",
 			model: "claude",
@@ -617,7 +621,7 @@ test("anthropic thinking state: signed and redacted blocks survive parse and rep
 			],
 		},
 	});
-	const replay = anthropicAdapter.chat!.buildRequest(
+	const replay = must(anthropicAdapter, "chat").buildRequest(
 		{
 			...req,
 			messages: [
@@ -632,7 +636,7 @@ test("anthropic thinking state: signed and redacted blocks survive parse and rep
 		},
 		ctx,
 	);
-	const body = JSON.parse(replay.body!);
+	const body = jsonBody(replay);
 	assert.deepEqual(body.messages[0].content.slice(0, 2), [
 		{ type: "thinking", thinking: "plan", signature: "sig-1" },
 		{ type: "redacted_thinking", data: "opaque-1" },
@@ -640,7 +644,7 @@ test("anthropic thinking state: signed and redacted blocks survive parse and rep
 });
 
 test("anthropic.buildRequest: top_k and metadata use their native fields", () => {
-	const built = anthropicAdapter.chat!.buildRequest(
+	const built = must(anthropicAdapter, "chat").buildRequest(
 		{
 			...req,
 			topK: 40,
@@ -648,7 +652,7 @@ test("anthropic.buildRequest: top_k and metadata use their native fields", () =>
 		},
 		ctx,
 	);
-	const body = JSON.parse(built.body!);
+	const body = jsonBody(built);
 	assert.equal(body.top_k, 40);
 	assert.deepEqual(body.metadata, { user_id: "user-1" });
 });
@@ -657,7 +661,7 @@ test("anthropic.buildRequest: preserves native tools and structured error result
 	const rawTools = [
 		{ type: "web_search_20250305", name: "web_search", max_uses: 2 },
 	];
-	const built = anthropicAdapter.chat!.buildRequest(
+	const built = must(anthropicAdapter, "chat").buildRequest(
 		{
 			...req,
 			messages: [
@@ -676,7 +680,7 @@ test("anthropic.buildRequest: preserves native tools and structured error result
 		},
 		ctx,
 	);
-	const body = JSON.parse(built.body!);
+	const body = jsonBody(built);
 
 	assert.deepEqual(body.tools, rawTools);
 	assert.deepEqual(body.messages[0].content[0], {
@@ -702,8 +706,8 @@ test("anthropic.parseStream: signature deltas become replayable message state", 
 		`event: content_block_stop\ndata: {"type":"content_block_stop","index":0}\n\n` +
 		`event: message_delta\ndata: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":2}}\n\n`;
 	const fields: unknown[] = [];
-	for await (const chunk of anthropicAdapter.chat!.parseStream(
-		new Response(sse).body!,
+	for await (const chunk of must(anthropicAdapter, "chat").parseStream(
+		streamOf(sse),
 		ctx,
 	)) {
 		const value = chunk.choices[0]?.delta.providerFields;
@@ -721,7 +725,7 @@ test("anthropic.parseStream: signature deltas become replayable message state", 
 });
 
 test("anthropic.parseResponse: context-window stop maps to length", () => {
-	const parsed = anthropicAdapter.chat!.parseResponse(
+	const parsed = must(anthropicAdapter, "chat").parseResponse(
 		{
 			id: "msg_1",
 			model: "claude",
@@ -735,7 +739,7 @@ test("anthropic.parseResponse: context-window stop maps to length", () => {
 });
 
 test("anthropic.parseResponse: explicit max_tokens outranks partial tool calls", () => {
-	const parsed = anthropicAdapter.chat!.parseResponse(
+	const parsed = must(anthropicAdapter, "chat").parseResponse(
 		{
 			id: "msg_1",
 			model: "claude",
@@ -749,7 +753,7 @@ test("anthropic.parseResponse: explicit max_tokens outranks partial tool calls",
 });
 
 test("anthropic preserves matched stop sequences in responses and streams", async () => {
-	const parsed = anthropicAdapter.chat!.parseResponse(
+	const parsed = must(anthropicAdapter, "chat").parseResponse(
 		{
 			id: "msg_1",
 			model: "claude",
@@ -767,8 +771,8 @@ test("anthropic preserves matched stop sequences in responses and streams", asyn
 		`event: message_delta\ndata: {"type":"message_delta","delta":{"stop_reason":"stop_sequence","stop_sequence":"<END>"},"usage":{"output_tokens":1}}\n\n` +
 		`event: message_stop\ndata: {"type":"message_stop"}\n\n`;
 	const chunks: CanonicalChatStreamChunk[] = [];
-	for await (const chunk of anthropicAdapter.chat!.parseStream(
-		new Response(sse).body!,
+	for await (const chunk of must(anthropicAdapter, "chat").parseStream(
+		streamOf(sse),
 		ctx,
 	)) {
 		chunks.push(chunk);
@@ -777,7 +781,7 @@ test("anthropic preserves matched stop sequences in responses and streams", asyn
 });
 
 test("anthropic.parseResponse: new stop reasons preserve valid output and diagnostics", () => {
-	const parsed = anthropicAdapter.chat!.parseResponse(
+	const parsed = must(anthropicAdapter, "chat").parseResponse(
 		{
 			id: "msg_1",
 			model: "claude",

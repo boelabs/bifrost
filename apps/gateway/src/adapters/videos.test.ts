@@ -5,6 +5,7 @@ import { openaicompatibleAdapter } from "./openaicompatible/index.ts";
 import type { ResolvedModelMetadata } from "#catalog/types.ts";
 import { googleAdapter } from "./google/index.ts";
 import { openaiAdapter } from "./openai/index.ts";
+import { must } from "#test-support/adapters.ts";
 import type { AdapterContext } from "./types.ts";
 import { GatewayError } from "#core/errors.ts";
 import assert from "node:assert/strict";
@@ -94,7 +95,7 @@ test("async videos transport submits, polls, and downloads with upstream job id"
 			return jsonResponse({ error: "unexpected" }, 500);
 		},
 		async () => {
-			const handler = openaicompatibleAdapter.videoGeneration!;
+			const handler = must(openaicompatibleAdapter, "videoGeneration");
 			const create = await handler.submit(
 				{
 					model: "veo",
@@ -151,7 +152,7 @@ test("async videos transport forwards quality, seed, audio, references, and fram
 			return jsonResponse({ id: "job-1", status: "pending" }, 202);
 		},
 		async () => {
-			await openaicompatibleAdapter.videoGeneration!.submit(
+			await must(openaicompatibleAdapter, "videoGeneration").submit(
 				{
 					model: "veo",
 					prompt: "city",
@@ -200,7 +201,7 @@ test("async videos transport deletes the upstream job", async () => {
 			return jsonResponse({ id: "job-1", status: "cancelled" });
 		},
 		async () => {
-			await openaicompatibleAdapter.videoGeneration!.remove!(
+			await must(openaicompatibleAdapter, "videoGeneration").remove!(
 				{ upstreamJobId: "job-1" },
 				ctx("videos_async"),
 			);
@@ -215,7 +216,7 @@ test("async videos transport deletes the upstream job", async () => {
 });
 
 test("async videos transport maps cancelled/expired to failed and keeps polling unknown statuses", async () => {
-	const handler = openaicompatibleAdapter.videoGeneration!;
+	const handler = must(openaicompatibleAdapter, "videoGeneration");
 	const statuses: [string, string][] = [
 		["cancelled", "failed"],
 		["expired", "failed"],
@@ -251,7 +252,7 @@ test("openai video transport uses native variant query and deletes upstream", as
 			});
 		},
 		async () => {
-			const handler = openaiAdapter.videoGeneration!;
+			const handler = must(openaiAdapter, "videoGeneration");
 			const openaiCtx: AdapterContext = {
 				...ctx("videos"),
 				upstreamModel: "sora-2",
@@ -281,7 +282,7 @@ test("openai video transport uses native variant query and deletes upstream", as
 });
 
 test("openai video transport rejects multiple references and never sends user", async () => {
-	const handler = openaiAdapter.videoGeneration!;
+	const handler = must(openaiAdapter, "videoGeneration");
 	const openaiCtx: AdapterContext = {
 		...ctx("videos"),
 		upstreamModel: "sora-2",
@@ -334,7 +335,7 @@ test("google veo transport builds predictLongRunning bodies with frames and seed
 			return jsonResponse({ name: "models/veo-3.1/operations/op1" });
 		},
 		async () => {
-			const job = await googleAdapter.videoGeneration!.submit(
+			const job = await must(googleAdapter, "videoGeneration").submit(
 				{
 					model: "veo-3.1",
 					prompt: "sunrise",
@@ -386,7 +387,7 @@ test("google veo transport maps multiple image references to referenceImages", a
 			return jsonResponse({ name: "models/veo-3.1/operations/op1" });
 		},
 		async () => {
-			await googleAdapter.videoGeneration!.submit(
+			await must(googleAdapter, "videoGeneration").submit(
 				{
 					model: "veo-3.1",
 					prompt: "fashion lagoon",
@@ -435,7 +436,7 @@ test("google veo transport maps video references to extension input", async () =
 			return jsonResponse({ name: "models/veo-3.1/operations/op1" });
 		},
 		async () => {
-			await googleAdapter.videoGeneration!.submit(
+			await must(googleAdapter, "videoGeneration").submit(
 				{
 					model: "veo-3.1",
 					prompt: "extend the scene",
@@ -467,7 +468,7 @@ test("google veo transport rejects non-8s high-resolution constrained requests",
 		() => jsonResponse({ name: "models/veo-3.1/operations/op1" }),
 		async () => {
 			await assert.rejects(
-				googleAdapter.videoGeneration!.submit(
+				must(googleAdapter, "videoGeneration").submit(
 					{
 						model: "veo-3.1",
 						prompt: "cinematic",
@@ -505,7 +506,7 @@ test("google interactions submits an explicit text-to-video background job", asy
 			return jsonResponse({ id: "interaction-1", status: "queued" });
 		},
 		async () => {
-			const job = await googleAdapter.videoGeneration!.submit(
+			const job = await must(googleAdapter, "videoGeneration").submit(
 				{
 					model: "omni",
 					prompt: "a paper plane crossing a city",
@@ -550,7 +551,7 @@ test("google interactions binds frame and reference roles without Files API", as
 			return jsonResponse({ id: "interaction-2", status: "queued" });
 		},
 		async () => {
-			await googleAdapter.videoGeneration!.submit(
+			await must(googleAdapter, "videoGeneration").submit(
 				{
 					model: "omni",
 					prompt: "transition into the referenced character",
@@ -592,7 +593,7 @@ test("google interactions maps edit and extend source videos explicitly", async 
 		},
 		async () => {
 			for (const task of ["edit", "extend"] as const) {
-				await googleAdapter.videoGeneration!.submit(
+				await must(googleAdapter, "videoGeneration").submit(
 					{
 						model: "omni",
 						prompt: `${task} this scene`,
@@ -664,7 +665,7 @@ test("google interactions polls and downloads inline output without persisting i
 				...ctx("interactions"),
 				upstreamModel: "gemini-omni-1.1-flash",
 			};
-			const job = await googleAdapter.videoGeneration!.refresh(
+			const job = await must(googleAdapter, "videoGeneration").refresh(
 				{ upstreamJobId: "interaction-3" },
 				interactionContext,
 			);
@@ -675,7 +676,7 @@ test("google interactions polls and downloads inline output without persisting i
 			});
 			assert.deepEqual(job.providerState, { videoMimeType: "video/mp4" });
 
-			const content = await googleAdapter.videoGeneration!.download(
+			const content = await must(googleAdapter, "videoGeneration").download(
 				{ upstreamJobId: "interaction-3", providerState: job.providerState },
 				"video",
 				interactionContext,
@@ -697,7 +698,7 @@ test("google interactions cancels before deleting a job", async () => {
 				: jsonResponse({ id: "interaction-4", status: "cancelled" });
 		},
 		async () => {
-			await googleAdapter.videoGeneration!.remove!(
+			await must(googleAdapter, "videoGeneration").remove!(
 				{ upstreamJobId: "interaction-4" },
 				{
 					...ctx("interactions"),
@@ -720,7 +721,7 @@ test("google interactions cancels before deleting a job", async () => {
 
 test("google interactions rejects ambiguous video input and managed state", async () => {
 	await assert.rejects(
-		googleAdapter.videoGeneration!.submit(
+		must(googleAdapter, "videoGeneration").submit(
 			{
 				model: "omni",
 				prompt: "change this",
@@ -733,7 +734,7 @@ test("google interactions rejects ambiguous video input and managed state", asyn
 		/task=/,
 	);
 	await assert.rejects(
-		googleAdapter.videoGeneration!.submit(
+		must(googleAdapter, "videoGeneration").submit(
 			{
 				model: "omni",
 				prompt: "new scene",
