@@ -146,11 +146,11 @@ function creds(ctx: AdapterContext): GoogleCreds & { apiKey: string } {
 function dataUrlToInline(
 	url: string,
 ): { mimeType: string; data: string } | null {
-	const m = /^data:([^;]+);base64,(.*)$/s.exec(url);
-	if (!m) {
+	const [, mimeType, data] = /^data:([^;]+);base64,(.*)$/s.exec(url) ?? [];
+	if (mimeType === undefined || data === undefined) {
 		return null;
 	}
-	return { mimeType: m[1]!, data: m[2]! };
+	return { mimeType, data };
 }
 
 function partToGemini(p: CanonicalContentPart): Record<string, unknown> {

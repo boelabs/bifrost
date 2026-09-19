@@ -202,7 +202,7 @@ export function RouterForm({
 				</Select>
 			</div>
 
-			<Section {...ROUTER_GROUPS[0]!}>
+			<Section {...ROUTER_GROUPS[0]}>
 				<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
 					<Input
 						defaultValue={String(
@@ -227,13 +227,13 @@ export function RouterForm({
 				/>
 			</Section>
 
-			<Section {...ROUTER_GROUPS[1]!}>
+			<Section {...ROUTER_GROUPS[1]}>
 				<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
 					{fieldsIn("cooldown").map(numberBox)}
 				</div>
 			</Section>
 
-			<Section {...ROUTER_GROUPS[2]!}>
+			<Section {...ROUTER_GROUPS[2]}>
 				<Toggle
 					checked={adaptive}
 					description="Use each deployment's measured first-output time instead of the pool-wide budget."

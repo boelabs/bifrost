@@ -55,8 +55,7 @@ const JSON_SCHEMA_STRING_FORMATS = new Set([...STRING_FORMATS, "date", "time"]);
 const NUMERIC_FORMATS = new Set(["int32", "int64", "float", "double"]);
 
 function refName(ref: string): string | null {
-	const m = /^#\/(?:\$defs|definitions)\/(.+)$/.exec(ref);
-	return m ? m[1]! : null;
+	return /^#\/(?:\$defs|definitions)\/(.+)$/.exec(ref)?.[1] ?? null;
 }
 
 function translate(

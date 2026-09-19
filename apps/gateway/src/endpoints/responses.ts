@@ -532,11 +532,7 @@ function streamResponses(
 						statePersisted = true;
 					}
 				}
-				await writeSSE(
-					stream,
-					{ event: clientEvent.event!, data: eventData },
-					downstream,
-				);
+				await writeSSE(stream, { ...clientEvent, data: eventData }, downstream);
 				if (
 					ev.event === "response.output_text.delta" ||
 					ev.event === "response.reasoning_summary_text.delta" ||
