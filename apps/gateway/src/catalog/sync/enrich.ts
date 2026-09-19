@@ -72,7 +72,8 @@ export function findModelsDevMatch(
 			aliasProviderIds.includes(model.providerIdRaw) &&
 			normalizeTag(model.modelIdRaw) === normalizedUpstream,
 	);
-	if (nameMatches.length === 0) {
+	const [firstName] = nameMatches;
+	if (firstName === undefined) {
 		return undefined;
 	}
 
@@ -98,7 +99,7 @@ export function findModelsDevMatch(
 	}
 	// Nothing corroborated: return the first name match anyway so the caller can report it as ambiguous,
 	// but callers must check `corroborated` before applying anything from it.
-	return { match: nameMatches[0]!, corroborated: false };
+	return { match: firstName, corroborated: false };
 }
 
 /**

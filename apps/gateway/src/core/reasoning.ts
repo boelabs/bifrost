@@ -190,8 +190,12 @@ export function snapEffort(
 		return "none"; // degenerate: the model only declares "none"
 	}
 
+	const [floor] = positives;
+	if (floor === undefined) {
+		return "none";
+	}
 	const reqIdx = effortIndex(requested);
-	let chosen = positives[0]!; // floor if the request is below all of them
+	let chosen = floor; // floor if the request is below all of them
 	for (const lvl of positives) {
 		if (effortIndex(lvl) <= reqIdx) {
 			chosen = lvl;

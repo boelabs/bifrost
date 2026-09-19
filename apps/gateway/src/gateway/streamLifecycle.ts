@@ -287,8 +287,9 @@ export function terminalForChatResponse(
 		return { ...adapterTerminal, usage: response.usage };
 	}
 	const uniqueReasons = new Set(normalizedReasons);
-	if (uniqueReasons.size === 1) {
-		return terminalForFinish(normalizedReasons[0]!, response.usage);
+	const [onlyReason] = normalizedReasons;
+	if (uniqueReasons.size === 1 && onlyReason !== undefined) {
+		return terminalForFinish(onlyReason, response.usage);
 	}
 	return {
 		outcome: mixedOutcome(normalizedReasons),
@@ -487,10 +488,11 @@ export function observeChatStream(
 				});
 			const reasons = terminalChoices.map((choice) => choice.finishReason);
 			const uniqueReasons = new Set(reasons);
+			const [onlyReason] = reasons;
 			if (adapterTerminal) {
 				observation.terminal = { ...adapterTerminal, usage };
-			} else if (uniqueReasons.size === 1) {
-				observation.terminal = terminalForFinish(reasons[0]!, usage);
+			} else if (uniqueReasons.size === 1 && onlyReason !== undefined) {
+				observation.terminal = terminalForFinish(onlyReason, usage);
 			} else {
 				observation.terminal = {
 					outcome: mixedOutcome(reasons),

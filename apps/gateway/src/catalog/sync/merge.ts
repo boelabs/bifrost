@@ -40,8 +40,9 @@ function resolveNumeric(
 	if (entries.length === 0) {
 		return { value: undefined, conflict: undefined };
 	}
-	if (entries.length === 1) {
-		return { value: entries[0]![1], conflict: undefined };
+	const [only] = entries;
+	if (entries.length === 1 && only) {
+		return { value: only[1], conflict: undefined };
 	}
 
 	const vercel = values["vercel-ai-gateway"];
