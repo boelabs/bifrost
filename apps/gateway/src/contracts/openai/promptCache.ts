@@ -100,6 +100,17 @@ export function normalizePromptCacheRequest<
 	return result;
 }
 
+/** OpenAI names the two retention windows by duration; the canonical form names them by kind. */
+const RETENTION_TO_CANONICAL = {
+	"24h": "extended",
+	in_memory: "memory",
+} as const;
+
+const RETENTION_TO_WIRE = {
+	extended: "24h",
+	memory: "in_memory",
+} as const;
+
 export function readPromptCachePolicy(
 	request: {
 		prompt_cache_options?: z.infer<typeof promptCacheOptionsSchema> | undefined;
@@ -123,9 +134,7 @@ export function readPromptCachePolicy(
 		canonical.promptCacheRetention =
 			request.prompt_cache_retention === null
 				? null
-				: request.prompt_cache_retention === "24h"
-					? "extended"
-					: "memory";
+				: RETENTION_TO_CANONICAL[request.prompt_cache_retention];
 	}
 }
 
@@ -161,9 +170,7 @@ export function writePromptCachePolicy(
 					prompt_cache_retention:
 						request.promptCacheRetention === null
 							? null
-							: request.promptCacheRetention === "extended"
-								? "24h"
-								: "in_memory",
+							: RETENTION_TO_WIRE[request.promptCacheRetention],
 				}),
 	};
 }

@@ -147,16 +147,29 @@ app.use("*", async (c, next) => {
 
 // Global error handler: translates GatewayError to the shape of each public contract.
 // /v1/messages/* -> Anthropic shape; everything else -> OpenAI shape.
+/** The same error, in whichever dialect the endpoint that failed speaks. */
+function errorBody(
+	error: GatewayError,
+	isAnthropic: boolean,
+	isOpenRouterRerank: boolean,
+) {
+	if (isAnthropic) {
+		return error.toAnthropic();
+	}
+	return isOpenRouterRerank ? error.toOpenRouter() : error.toOpenAI();
+}
+
 app.onError((err, c) => {
 	const isAnthropic = usesAnthropicErrorDialect(c.req.path);
 	const isOpenRouterRerank = c.req.path === "/v1/rerank";
 	// A reachable-dependency failure (Postgres/Redis down) becomes a 503 + Retry-After so clients back
 	// off and retry, instead of the opaque 500 a raw driver error would otherwise produce.
-	const raw = GatewayError.is(err)
-		? err
-		: isDependencyError(err)
-			? dependencyUnavailable(err)
-			: null;
+	let raw: GatewayError | null = null;
+	if (GatewayError.is(err)) {
+		raw = err;
+	} else if (isDependencyError(err)) {
+		raw = dependencyUnavailable(err);
+	}
 	// On /admin and /auth the caller is an operator and the detail describes their own request, so it
 	// is published instead of the class's generic sentence. See admin/errors.ts.
 	const gatewayError =
@@ -168,11 +181,7 @@ app.onError((err, c) => {
 		for (const [name, value] of Object.entries(gatewayError.headers ?? {})) {
 			c.header(name, value);
 		}
-		const body = isAnthropic
-			? gatewayError.toAnthropic()
-			: isOpenRouterRerank
-				? gatewayError.toOpenRouter()
-				: gatewayError.toOpenAI();
+		const body = errorBody(gatewayError, isAnthropic, isOpenRouterRerank);
 		return c.json(body, gatewayError.httpStatus as ContentfulStatusCode);
 	}
 	log.error("http", "unhandled error", { err });

@@ -252,6 +252,24 @@ export function pricingForVercelModel(
 	return Object.keys(pricing).length > 0 ? pricing : undefined;
 }
 
+/** The catalog entry each Vercel model type produces. */
+function catalogEntryFor(
+	type: string,
+	model: VercelModel,
+	report: VercelCatalogReport,
+	references: ReferenceCatalogs | undefined,
+): CatalogEntry {
+	if (type === "language") {
+		return languageEntry(model, report, references);
+	}
+	if (type === "embedding") {
+		return embeddingEntry(model);
+	}
+	return type === "image"
+		? imageEntry(model, report, references)
+		: rerankEntry(model, report);
+}
+
 function languageEntry(
 	model: VercelModel,
 	report: VercelCatalogReport,
@@ -582,14 +600,7 @@ export function buildVercelCatalog(
 			});
 			continue;
 		}
-		const entry =
-			type === "language"
-				? languageEntry(model, report, references)
-				: type === "embedding"
-					? embeddingEntry(model)
-					: type === "image"
-						? imageEntry(model, report, references)
-						: rerankEntry(model, report);
+		const entry = catalogEntryFor(type, model, report, references);
 		models[model.id] = entry;
 		increment(report.includedByType, type);
 		report.includedModels += 1;
