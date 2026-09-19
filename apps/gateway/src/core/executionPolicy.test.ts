@@ -33,7 +33,7 @@ test("execution policy: an override may only tighten each bound", () => {
 });
 
 test("execution policy: a bound the global policy leaves open can be closed", () => {
-	const json = DEFAULT_EXECUTION_POLICIES.chat.json;
+	const { json } = DEFAULT_EXECUTION_POLICIES.chat;
 	assert.equal(json.idleMs, null);
 	const resolved = resolveExecutionPolicy(
 		json,

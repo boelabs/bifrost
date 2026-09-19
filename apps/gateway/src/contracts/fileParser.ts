@@ -54,7 +54,7 @@ export function fileParserOptionsFromPlugins(
 			});
 		}
 
-		const pdf = plugin.pdf;
+		const { pdf } = plugin;
 		if (
 			pdf !== undefined &&
 			(pdf === null || typeof pdf !== "object" || Array.isArray(pdf))

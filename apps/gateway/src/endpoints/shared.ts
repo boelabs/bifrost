@@ -8,7 +8,7 @@ function normalizeIp(value: string): string | null {
 	let candidate = value.trim();
 	const bracketed = /^\[([^\]]+)\](?::\d+)?$/.exec(candidate);
 	if (bracketed?.[1]) {
-		candidate = bracketed[1];
+		[, candidate] = bracketed;
 	} else if (/^\d+\.\d+\.\d+\.\d+:\d+$/.test(candidate)) {
 		candidate = candidate.slice(0, candidate.lastIndexOf(":"));
 	}

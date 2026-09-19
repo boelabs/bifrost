@@ -637,7 +637,7 @@ export async function route<T>(
 						permitResult.blockedBy === "capacity" ? "rate_limited" : "cooldown";
 					continue;
 				}
-				const permit = permitResult.permit;
+				const { permit } = permitResult;
 				let attemptLease: AttemptLease | null = null;
 				let usageQuotaLease: UsageQuotaLease | undefined;
 				const reservedTokens = opts.tokenReservation?.(chosen) ?? 0;

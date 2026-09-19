@@ -88,7 +88,7 @@ export default defineExtension({
 			return {
 				...response,
 				choices: response.choices.map((choice) => {
-					const content = choice.message.content;
+					const { content } = choice.message;
 					if (typeof content !== "string" || content.length === 0) {
 						return choice;
 					}
@@ -105,10 +105,10 @@ export default defineExtension({
 
 		onStreamEvent(ctx, event) {
 			// Watermark the FIRST non-empty content delta only, then leave the rest of the stream alone.
-			let choices = event.choices;
+			let { choices } = event;
 			if (!marked.has(ctx.requestId)) {
 				choices = event.choices.map((choice) => {
-					const content = choice.delta.content;
+					const { content } = choice.delta;
 					if (
 						marked.has(ctx.requestId) ||
 						typeof content !== "string" ||

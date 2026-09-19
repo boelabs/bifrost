@@ -771,10 +771,10 @@ export async function* responsesEventsToCanonicalChunks(
 		if (type === "response.created" || type === "response.in_progress") {
 			const resp = d.response as { id?: string; model?: string } | undefined;
 			if (resp?.id) {
-				id = resp.id;
+				({ id } = resp);
 			}
 			if (resp?.model) {
-				model = resp.model;
+				({ model } = resp);
 			}
 			continue;
 		}

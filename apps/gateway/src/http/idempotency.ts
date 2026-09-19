@@ -76,7 +76,7 @@ export function idempotencyMiddleware(): MiddlewareHandler<AppEnv> {
 		}
 
 		const actor = actorOf(getAuth(c));
-		const path = c.req.path;
+		const { path } = c.req;
 		const print = await fingerprint(c.req.raw, c.req.method, path);
 		const claim = await claimIdempotencyKey({
 			actor,
@@ -119,7 +119,7 @@ export function idempotencyMiddleware(): MiddlewareHandler<AppEnv> {
 			throw error;
 		}
 
-		const status = c.res.status;
+		const { status } = c.res;
 		// Only a success is worth replaying: a rejected body should be retried with the same key once
 		// it is fixed, and a 500 may well succeed on the next attempt.
 		if (status < 200 || status >= 300) {

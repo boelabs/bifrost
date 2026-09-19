@@ -13,8 +13,8 @@ import {
 } from "./appearance";
 
 export const ToastProvider = BaseToast.Provider;
-export const useToastManager = BaseToast.useToastManager;
-export const createToastManager = BaseToast.createToastManager;
+export const { useToastManager } = BaseToast;
+export const { createToastManager } = BaseToast;
 
 export type ToastPortalProps = ComponentProps<typeof BaseToast.Portal> &
 	AppearanceProps;

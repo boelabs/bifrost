@@ -252,7 +252,7 @@ function buildMessages(req: CanonicalChatRequest): {
 
 	for (const message of req.messages) {
 		if (message.role === "system" || message.role === "developer") {
-			const content = message.content;
+			const { content } = message;
 			if (typeof content === "string") {
 				if (content.length > 0) {
 					systemBlocks.push({ type: "text", text: content });

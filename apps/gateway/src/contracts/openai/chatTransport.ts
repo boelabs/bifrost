@@ -383,7 +383,7 @@ export function buildOpenAIChatBody(
 			merged[field.param] = field.value;
 		}
 		if (spec.effortField) {
-			const effort = resolveReasoning(req.reasoning, spec).effort;
+			const { effort } = resolveReasoning(req.reasoning, spec);
 			if (effort !== "none") {
 				merged[spec.effortField] = toUpstreamReasoningEffort(effort, spec);
 			}

@@ -132,7 +132,7 @@ export class ResponsesWebSocketUpstreams {
 		const finalUpstreamResponseId = new Promise<string | null>((resolve) => {
 			resolveFinalId = resolve;
 		});
-		const session = activeBinding.session;
+		const { session } = activeBinding;
 		const signal = ctx.signal ?? AbortSignal.timeout(10 * 60 * 1000);
 		async function* chunks() {
 			try {

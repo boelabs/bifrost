@@ -226,7 +226,7 @@ function mapToolChoice(
 	if (!tc) {
 		return undefined;
 	}
-	const type = (tc as { type?: string }).type;
+	const { type } = tc as { type?: string };
 	if (type === "auto") {
 		return "auto";
 	}
@@ -237,7 +237,7 @@ function mapToolChoice(
 		return "none";
 	}
 	if (type === "tool") {
-		const name = (tc as { name?: string }).name;
+		const { name } = tc as { name?: string };
 		return name ? { name } : "auto";
 	}
 	return "auto";
@@ -589,7 +589,7 @@ export function canonicalToMessagesResponse(
 	resp: CanonicalChatResponse,
 	opts: MessagesRenderOptions,
 ): Record<string, unknown> {
-	const choice = resp.choices[0];
+	const [choice] = resp.choices;
 	const content = choice?.message.content;
 	const blocks: Record<string, unknown>[] = [];
 	const nativeThinking =
@@ -681,7 +681,7 @@ export async function* canonicalChunksToMessagesEvents(
 		if (chunk.usage) {
 			finalUsage = chunk.usage;
 		}
-		const choice = chunk.choices[0];
+		const [choice] = chunk.choices;
 		if (!choice) {
 			continue;
 		}
@@ -689,9 +689,9 @@ export async function* canonicalChunksToMessagesEvents(
 			finish = choice.finishReason;
 		}
 		if (choice.stopSequence !== undefined) {
-			stopSequence = choice.stopSequence;
+			({ stopSequence } = choice);
 		}
-		const delta = choice.delta;
+		const { delta } = choice;
 		for (const block of anthropicThinkingFromProviderFields(
 			delta.providerFields,
 		) ?? []) {

@@ -119,8 +119,8 @@ authApp.post("/session", async (c) => {
 			throw invalidCredentials();
 		}
 		userId = user.id;
-		role = user.role;
-		mustChangePassword = user.mustChangePassword;
+		({ role } = user);
+		({ mustChangePassword } = user);
 		await touchDashboardUserLogin(user.id);
 	}
 

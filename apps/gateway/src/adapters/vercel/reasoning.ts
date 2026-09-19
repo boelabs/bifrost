@@ -112,7 +112,7 @@ export function applyVercelNativeReasoning(
 		return;
 	}
 	const resolved = resolveReasoning(req.reasoning, spec);
-	const effort = resolved.effort;
+	const { effort } = resolved;
 	const display = reasoningDisplay(req, resolved.summary);
 	const includeThoughts = display === "summarized";
 

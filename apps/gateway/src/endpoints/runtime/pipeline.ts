@@ -59,7 +59,7 @@ export function toGatewayError(
 
 /** Translates a zod validation error to the `bad_request` GatewayError, with the issue detail. */
 function zodToGatewayError(error: z.ZodError): GatewayError {
-	const first = error.issues[0];
+	const [first] = error.issues;
 	const describe = (issue: z.core.$ZodIssue): string =>
 		issue.path.length
 			? `${issue.path.join(".")}: ${issue.message}`

@@ -38,7 +38,7 @@ const operations = [
 ] as const;
 
 function Breakdown({ data }: { data: DetailedMetrics }) {
-	const requests = data.requests;
+	const { requests } = data;
 	const outcomes = [
 		{ label: "Success", value: requests.success, color: "bg-chart-2" },
 		{ label: "Error", value: requests.errors, color: "bg-danger" },
@@ -145,8 +145,8 @@ export function Metrics({
 		Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`) <
 			31 * 86_400_000 &&
 		to <= new Date().toISOString().slice(0, 10);
-	const requests = data.requests;
-	const attempts = data.attempts;
+	const { requests } = data;
+	const { attempts } = data;
 	const modelOptions = options.models.flatMap((row) =>
 		row.key ? [{ value: row.key, label: row.key }] : [],
 	);

@@ -261,7 +261,7 @@ function mapToolChoice(
 	if (typeof tc === "string") {
 		return tc === "auto" || tc === "none" || tc === "required" ? tc : "auto";
 	}
-	const name = (tc as { name?: string }).name;
+	const { name } = tc as { name?: string };
 	if (name) {
 		return { name };
 	}
@@ -600,8 +600,8 @@ export function responsesRequestToCanonical(
 		}
 	}
 	if (req.reasoning !== undefined) {
-		const effort = req.reasoning.effort;
-		const summary = req.reasoning.summary;
+		const { effort } = req.reasoning;
+		const { summary } = req.reasoning;
 		if (effort !== undefined && !isReasoningEffort(effort)) {
 			throw new GatewayError({
 				class: "bad_request",
@@ -996,7 +996,7 @@ export function canonicalToResponsesResponse(
 	resp: CanonicalChatResponse,
 	opts: RenderOptions,
 ): Record<string, unknown> {
-	const choice = resp.choices[0];
+	const [choice] = resp.choices;
 	const content = choice?.message.content ?? "";
 	const { status, incomplete } = statusFor(choice?.finishReason ?? null);
 
@@ -1284,9 +1284,9 @@ export async function* canonicalChunksToResponsesEvents(
 
 	for await (const chunk of chunks) {
 		if (chunk.usage) {
-			usage = chunk.usage;
+			({ usage } = chunk);
 		}
-		const choice = chunk.choices[0];
+		const [choice] = chunk.choices;
 		if (!choice) {
 			continue;
 		}
@@ -1294,7 +1294,7 @@ export async function* canonicalChunksToResponsesEvents(
 			finish = choice.finishReason;
 		}
 
-		const delta = choice.delta;
+		const { delta } = choice;
 		const streamOutput = openaiResponsesStreamOutputFromProviderFields(
 			delta.providerFields,
 		);
@@ -1364,7 +1364,7 @@ export async function* canonicalChunksToResponsesEvents(
 			}
 			if (streamEvent.type === "response.output_item.done") {
 				const outputIndex = streamData.output_index;
-				const item = streamData.item;
+				const { item } = streamData;
 				if (
 					typeof outputIndex === "number" &&
 					Number.isInteger(outputIndex) &&

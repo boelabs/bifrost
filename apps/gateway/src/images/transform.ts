@@ -108,8 +108,8 @@ async function transformImageData(
 	let format = after.format as ImageOutputFormat;
 	if (hooks?.applyImageOutput) {
 		const mimeType = MIME_BY_FORMAT[format];
-		const width = after.width;
-		const height = after.height;
+		const { width } = after;
+		const { height } = after;
 		if (!(width && height && mimeType)) {
 			throw new GatewayError({
 				class: "server",
@@ -173,7 +173,7 @@ export async function transformImageResponse(
 			transformImageData(image, req, profile, hooks),
 		),
 	);
-	const first = data[0];
+	const [first] = data;
 	const actualFormat =
 		req.outputFormat ??
 		response.outputFormat ??

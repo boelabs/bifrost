@@ -121,7 +121,7 @@ async function handleTranscription(
 		if (routing.value.kind === "json") {
 			fallbackUsage = transcriptionUsageToCore(routing.value.response.usage);
 		}
-		const meta = routing.candidate.meta;
+		const { meta } = routing.candidate;
 		const metadata: Record<string, unknown> = {
 			...candidateMetadata(routing.candidate),
 			...(routing.value.kind === "stream"
@@ -159,7 +159,7 @@ async function handleTranscription(
 		}
 
 		const streamRouting = routing;
-		const events = routing.value.events;
+		const { events } = routing.value;
 		cleanupDeferred = true;
 		return streamSSE(c, async (stream) => {
 			stream.onAbort(() => log.abortClient());
@@ -183,7 +183,7 @@ async function handleTranscription(
 						log.upstreamTtftMs = firstAt - streamRouting.upstreamStartedAt;
 					}
 					if (transformed.kind === "done" && transformed.usage) {
-						usage = transformed.usage;
+						({ usage } = transformed);
 					}
 					await writeSSE(
 						stream,

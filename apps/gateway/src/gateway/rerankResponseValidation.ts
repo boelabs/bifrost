@@ -55,7 +55,7 @@ export function assertRerankResponseValid(
 		}
 		previousScore = result.relevanceScore;
 	}
-	const usage = response.usage;
+	const { usage } = response;
 	if (!usage) {
 		return;
 	}

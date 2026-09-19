@@ -240,7 +240,7 @@ test("google.buildRequest: tool parameters are translated to Gemini's schema sub
 			ctx,
 		).body!,
 	);
-	const decl = body.tools[0].functionDeclarations[0];
+	const [decl] = body.tools[0].functionDeclarations;
 	assert.equal(decl.name, "get_weather");
 	// The fields Gemini rejects are gone; the valid shape is preserved.
 	assert.equal(decl.parameters.$schema, undefined);
@@ -300,7 +300,7 @@ test("google.buildRequest: strict Gemini 3 tools use VALIDATED JSON Schema", () 
 				geminiLevelCtx,
 			).body!,
 		);
-		const declaration = body.tools[0].functionDeclarations[0];
+		const [declaration] = body.tools[0].functionDeclarations;
 		assert.equal(declaration.parameters, undefined);
 		assert.deepEqual(declaration.parametersJsonSchema, {
 			type: "object",
@@ -319,7 +319,7 @@ test("google.buildRequest: strict Gemini 3 tools use VALIDATED JSON Schema", () 
 			required: ["queries"],
 		});
 		assert.equal(body.toolConfig.functionCallingConfig.mode, "VALIDATED");
-		const nonStrictDeclaration = body.tools[0].functionDeclarations[1];
+		const [, nonStrictDeclaration] = body.tools[0].functionDeclarations;
 		assert.deepEqual(nonStrictDeclaration.parameters, { type: "object" });
 		assert.equal(nonStrictDeclaration.parametersJsonSchema, undefined);
 		if (typeof toolChoice === "object") {
@@ -383,7 +383,7 @@ test("google.buildRequest: non-strict requests keep their legacy wire", () => {
 				context,
 			).body!,
 		);
-		const declaration = body.tools[0].functionDeclarations[0];
+		const [declaration] = body.tools[0].functionDeclarations;
 		assert.deepEqual(declaration.parameters, { type: "object" });
 		assert.equal(declaration.parametersJsonSchema, undefined);
 		assert.equal(body.toolConfig.functionCallingConfig.mode, "AUTO");
@@ -468,15 +468,15 @@ test("google.buildRequest: replays functionCall id and thought signature", () =>
 			ctx,
 		).body!,
 	);
-	const functionCallPart = body.contents[1].parts[0];
-	const functionCall = functionCallPart.functionCall;
+	const [functionCallPart] = body.contents[1].parts;
+	const { functionCall } = functionCallPart;
 	assert.equal(functionCall.id, "function-call-1");
 	assert.equal(functionCall.name, "load_skill");
 	assert.equal(functionCallPart.thoughtSignature, "thought-signature-a");
 	assert.equal(functionCall.thoughtSignature, undefined);
 	assert.deepEqual(functionCall.args, { name: "conversation-workspace" });
 
-	const functionResponse = body.contents[2].parts[0].functionResponse;
+	const { functionResponse } = body.contents[2].parts[0];
 	assert.equal(functionResponse.id, "function-call-1");
 	assert.equal(functionResponse.name, "load_skill");
 	assert.deepEqual(functionResponse.response, { loaded: true });
@@ -1087,7 +1087,7 @@ test("google.buildRequest: a client-echoed suffixed id arrives clean via the con
 	);
 	const r = googleAdapter.chat!.buildRequest(canonical, ctx);
 	const body = JSON.parse(r.body!);
-	const fnCallPart = body.contents[1].parts[0];
+	const [fnCallPart] = body.contents[1].parts;
 	const fnCall = fnCallPart.functionCall;
 	assert.equal(fnCall.id, "call_1");
 	assert.equal(fnCallPart.thoughtSignature, "sig-a");
@@ -1164,7 +1164,7 @@ test("google content signatures: complete native parts survive replay", () => {
 		},
 		ctx,
 	);
-	const message = parsed.choices[0]!.message;
+	const { message } = parsed.choices[0]!;
 	const replay = googleAdapter.chat!.buildRequest(
 		{
 			...req,

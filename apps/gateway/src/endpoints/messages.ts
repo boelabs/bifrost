@@ -96,8 +96,8 @@ function streamMessages(
 					message: "Streaming Messages unexpectedly returned JSON",
 				});
 			}
-			const upstreamStartedAt = routing.upstreamStartedAt;
-			const meta = routing.candidate.meta;
+			const { upstreamStartedAt } = routing;
+			const { meta } = routing.candidate;
 			const renderOpts: MessagesRenderOptions = {
 				publicModel: routing.candidate.row.publicModel,
 			};
@@ -148,7 +148,7 @@ function streamMessages(
 						chunk,
 					);
 					if (transformed.usage) {
-						usage = transformed.usage;
+						({ usage } = transformed);
 					}
 					yield transformed;
 				}
@@ -296,8 +296,8 @@ export async function messagesHandler(c: Context<AppEnv>): Promise<Response> {
 		if (routing.value.kind === "json") {
 			lifecycle.rememberUsage(routing.value.response.usage);
 		}
-		const upstreamStartedAt = routing.upstreamStartedAt;
-		const meta = routing.candidate.meta;
+		const { upstreamStartedAt } = routing;
+		const { meta } = routing.candidate;
 		const renderOpts: MessagesRenderOptions = {
 			publicModel: routing.candidate.row.publicModel,
 		};
@@ -340,7 +340,7 @@ export async function messagesHandler(c: Context<AppEnv>): Promise<Response> {
 				canonical.model,
 				routing.value.response,
 			);
-			const usage = response.usage;
+			const { usage } = response;
 			await lifecycle.finish(usage);
 			const cost = computeUsageCost(meta, usage);
 			const rendered = canonicalToMessagesResponse(response, renderOpts);

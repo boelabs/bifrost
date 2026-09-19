@@ -213,7 +213,7 @@ function errorView(
 
 function schemaErrorMessage(error: unknown): string {
 	if (error && typeof error === "object" && "issues" in error) {
-		const issues = (error as { issues?: unknown }).issues;
+		const { issues } = error as { issues?: unknown };
 		if (Array.isArray(issues)) {
 			return issues
 				.map((issue) => {
@@ -276,18 +276,18 @@ function matchApplies(
 	match: Record<string, unknown>,
 	scope: ExtensionScope,
 ): boolean {
-	const models = match.models;
+	const { models } = match;
 	if (
 		Array.isArray(models) &&
 		!(scope.publicModel && models.includes(scope.publicModel))
 	) {
 		return false;
 	}
-	const callTypes = match.callTypes;
+	const { callTypes } = match;
 	if (Array.isArray(callTypes) && !callTypes.includes(scope.callType)) {
 		return false;
 	}
-	const endpoints = match.endpoints;
+	const { endpoints } = match;
 	if (Array.isArray(endpoints) && !endpoints.includes(scope.endpoint)) {
 		return false;
 	}
@@ -345,11 +345,11 @@ function validateImageOutput(value: unknown): ExtensionImageOutput {
 	if (!isRecord(value)) {
 		throw new Error("onImageOutput must return an object");
 	}
-	const data = value.data;
+	const { data } = value;
 	if (!(data instanceof Uint8Array)) {
 		throw new Error("onImageOutput.data must be a Uint8Array");
 	}
-	const mimeType = value.mimeType;
+	const { mimeType } = value;
 	if (
 		mimeType !== "image/png" &&
 		mimeType !== "image/jpeg" &&
@@ -359,7 +359,7 @@ function validateImageOutput(value: unknown): ExtensionImageOutput {
 			"onImageOutput.mimeType must be image/png, image/jpeg, or image/webp",
 		);
 	}
-	const format = value.format;
+	const { format } = value;
 	if (format !== "png" && format !== "jpeg" && format !== "webp") {
 		throw new Error("onImageOutput.format must be png, jpeg, or webp");
 	}
@@ -616,7 +616,7 @@ class ExtensionRuntime {
 				instance.match,
 				`extension instance "${instance.id}" match`,
 			);
-			const definition = loadedDefinition.definition;
+			const { definition } = loadedDefinition;
 			if (definition.matchSchema) {
 				instance.match = parseWithSchema(
 					definition.matchSchema,

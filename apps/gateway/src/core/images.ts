@@ -216,7 +216,7 @@ export function resolveImageSize(
 				: {}),
 		};
 	}
-	const first = Object.entries(profile?.sizes ?? {})[0];
+	const [first] = Object.entries(profile?.sizes ?? {});
 	if (!first) {
 		return undefined;
 	}

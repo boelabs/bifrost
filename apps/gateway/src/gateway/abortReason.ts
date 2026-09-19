@@ -12,7 +12,7 @@ export interface GatewayAbortReason {
 }
 
 function typedReason(signal: AbortSignal): GatewayAbortReason | null {
-	const reason = signal.reason;
+	const { reason } = signal;
 	if (reason === null || typeof reason !== "object") {
 		return null;
 	}

@@ -28,7 +28,7 @@ export function useSidebar() {
 	}, [isMobile]);
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
-			const target = event.target;
+			const { target } = event;
 			if (
 				target instanceof HTMLElement &&
 				(target.isContentEditable || target.closest("input, textarea, select"))

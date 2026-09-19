@@ -107,7 +107,7 @@ async function inspectUpload(
 			cause,
 		);
 	}
-	const format = metadata.format;
+	const { format } = metadata;
 	if (
 		!(
 			metadata.width &&
@@ -260,7 +260,7 @@ export async function parseImageEditMultipart(
 
 		const parsed = imageEditFieldsSchema.safeParse(parseScalarFields(fields));
 		if (!parsed.success) {
-			const first = parsed.error.issues[0];
+			const [first] = parsed.error.issues;
 			throw new GatewayError({
 				class: "bad_request",
 				message: parsed.error.issues
@@ -280,7 +280,7 @@ export async function parseImageEditMultipart(
 			throw badMultipart("At most 16 input images are allowed", "image");
 		}
 		if (mask) {
-			const firstImage = images[0];
+			const [firstImage] = images;
 			if (!firstImage) {
 				throw badMultipart("At least one image file is required", "image");
 			}

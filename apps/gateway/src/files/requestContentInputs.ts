@@ -297,7 +297,7 @@ function extensionMime(value: string | undefined): string | undefined {
 	}
 	let pathname = value;
 	try {
-		pathname = new URL(value).pathname;
+		({ pathname } = new URL(value));
 	} catch {
 		// A filename is already a valid lookup input.
 	}
@@ -1001,7 +1001,7 @@ async function extractPortableText(
 				"The PDF could not be parsed as text. Use a native document-capable model for this file.",
 			);
 		}
-		text = result.text;
+		({ text } = result);
 		if (text.trim().length === 0) {
 			throw candidateInputError(
 				"PDF text extraction returned no text",
@@ -1706,11 +1706,11 @@ export class VideoInputResolver {
 			if (ref.type === "file_id") {
 				return ref;
 			}
-			const media = resolved[index++]!.media;
+			const { media } = resolved[index++]!;
 			return { ...ref, url: media.dataUrl };
 		});
 		const frameImages = this.#request.frameImages?.map((frame) => {
-			const media = resolved[index++]!.media;
+			const { media } = resolved[index++]!;
 			return { ...frame, url: media.dataUrl };
 		});
 		return {

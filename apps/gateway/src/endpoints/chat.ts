@@ -98,8 +98,8 @@ function streamChatCompletion(
 					message: "Streaming chat unexpectedly returned JSON",
 				});
 			}
-			const upstreamStartedAt = routing.upstreamStartedAt;
-			const meta = routing.candidate.meta;
+			const { upstreamStartedAt } = routing;
+			const { meta } = routing.candidate;
 			metadata = {
 				...candidateMetadata(routing.candidate),
 				streamLifecycle: routing.value.observation,
@@ -319,8 +319,8 @@ export async function chatCompletionsHandler(
 		if (routing.value.kind === "json") {
 			lifecycle.rememberUsage(routing.value.response.usage);
 		}
-		const upstreamStartedAt = routing.upstreamStartedAt;
-		const meta = routing.candidate.meta;
+		const { upstreamStartedAt } = routing;
+		const { meta } = routing.candidate;
 		const metadata: Record<string, unknown> = {
 			...candidateMetadata(routing.candidate),
 			...(routing.value.kind === "stream"

@@ -886,7 +886,7 @@ export function toOpenAIChatChunk(
 			const event = openaiResponsesStreamEventFromProviderFields(
 				c.delta.providerFields,
 			);
-			let reasoning = c.delta.reasoning;
+			let { reasoning } = c.delta;
 			if (
 				event?.type.startsWith("response.reasoning") &&
 				typeof event.data.item_id === "string"

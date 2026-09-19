@@ -41,7 +41,7 @@ async function waitForOperation(
 				offset: 0,
 				requestId,
 			});
-			const operation = page.rows[0];
+			const [operation] = page.rows;
 			const detail = operation ? await getOperationDetail(operation.id) : null;
 			return detail && (!ready || ready(detail)) ? detail : null;
 		},

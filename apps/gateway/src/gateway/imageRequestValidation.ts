@@ -64,7 +64,7 @@ export function assertImageRequestSupported(
 				`The selected model accepts at most ${profile.maxInputImages} input images.`,
 			);
 		}
-		const maxImageBytes = profile.maxImageBytes;
+		const { maxImageBytes } = profile;
 		if (
 			maxImageBytes !== undefined &&
 			images.some((image) => image.sizeBytes > maxImageBytes)

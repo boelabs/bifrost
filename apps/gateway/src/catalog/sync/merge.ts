@@ -45,7 +45,7 @@ function resolveNumeric(
 	}
 
 	const vercel = values["vercel-ai-gateway"];
-	const openrouter = values.openrouter;
+	const { openrouter } = values;
 	const modelsDev = values["models-dev"];
 
 	if (

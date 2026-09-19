@@ -510,7 +510,7 @@ test("Google retains explicit resource references and cached token usage in JSON
 		context("generate_content"),
 	)) {
 		if (chunk.usage) {
-			usage = chunk.usage;
+			({ usage } = chunk);
 		}
 	}
 	assert.equal(usage?.cacheReadTokens, 1500);

@@ -88,7 +88,7 @@ test("deployments: custom OpenAI-compatible aggregator with inline catalogEntry 
 			"images.generations",
 		);
 		assert.equal(candidates.length, 1);
-		const candidate = candidates[0];
+		const [candidate] = candidates;
 		assert.ok(candidate);
 		assert.equal(candidate.upstreamModel, upstreamModel);
 		assert.equal(

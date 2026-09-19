@@ -233,7 +233,7 @@ test("streams Responses reasoning, text, usage metrics and no reconnect", async 
 		assistant.parts.find((part) => part.type === "text")?.text,
 		"answer",
 	);
-	const metadata = assistant.metadata;
+	const { metadata } = assistant;
 	assert.equal(metadata?.inputTokens, 4);
 	assert.equal(metadata?.outputTokens, 3);
 	assert.equal(metadata?.reasoningTokens, 1);

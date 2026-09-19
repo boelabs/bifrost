@@ -736,7 +736,7 @@ test("responses transport->edge: content-only reasoning is mirrored into summary
 		canonical,
 		renderOpts(),
 	) as TestJsonObject;
-	const reasoning = rendered.output[0];
+	const [reasoning] = rendered.output;
 	assert.deepEqual(reasoning.content, [
 		{ type: "reasoning_text", text: "Checked the request." },
 	]);
@@ -990,11 +990,9 @@ test("stream->events: OpenResponses sequence for text", async () => {
 	)) {
 		types.push(ev.event!);
 		if (ev.event === "response.completed") {
-			const response = (
-				JSON.parse(ev.data) as {
-					response: { model: unknown; usage: TestJsonObject };
-				}
-			).response;
+			const { response } = JSON.parse(ev.data) as {
+				response: { model: unknown; usage: TestJsonObject };
+			};
 			completedModel = response.model;
 			completedUsage = response.usage;
 		}
@@ -1170,7 +1168,7 @@ test("stream->events: output_item.added/done share the same suffixed call_id", a
 			ev.event === "response.output_item.added" ||
 			ev.event === "response.output_item.done"
 		) {
-			const item = JSON.parse(ev.data).item;
+			const { item } = JSON.parse(ev.data);
 			if (item.type === "function_call") {
 				callIds.push(item.call_id);
 			}
@@ -1210,7 +1208,7 @@ test("canonical->response: encrypted reasoning state renders as native reasoning
 	) as TestJsonObject;
 	const rs = out.output.filter((item) => item.type === "reasoning");
 	assert.equal(rs.length, 1);
-	const reasoning = rs[0];
+	const [reasoning] = rs;
 	assert.ok(reasoning);
 	assert.equal(reasoning.id, "rs_1");
 	assert.equal(reasoning.encrypted_content, "enc-1");
@@ -1634,7 +1632,7 @@ test("responses transport->edge: native reasoning_text streams beside summary ev
 	assert.deepEqual(done.summary, [
 		{ type: "summary_text", text: "Checked the request." },
 	]);
-	const completed = observed.at(-1)!.response.output[0];
+	const [completed] = observed.at(-1)!.response.output;
 	assert.deepEqual(completed.content, content);
 	assert.deepEqual(completed.summary, done.summary);
 });
@@ -2003,7 +2001,7 @@ test("request fidelity: file URLs, phases, multimodal outputs, and allowed tools
 	assert.equal(canonical.messages[0]?.phase, "commentary");
 	const firstMessageContent = canonical.messages[0]?.content;
 	assert.ok(Array.isArray(firstMessageContent));
-	const firstPart = firstMessageContent[0];
+	const [firstPart] = firstMessageContent;
 	assert.equal(firstPart?.type, "file");
 	assert.equal(
 		firstPart?.type === "file" ? firstPart.fileUrl : undefined,

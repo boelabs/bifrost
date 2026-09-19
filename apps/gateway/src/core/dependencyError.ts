@@ -33,7 +33,7 @@ export function isDependencyError(err: unknown): boolean {
 	if (!err || typeof err !== "object") {
 		return false;
 	}
-	const code = (err as { code?: unknown }).code;
+	const { code } = err as { code?: unknown };
 	if (typeof code === "string" && DEPENDENCY_ERROR_CODES.has(code)) {
 		return true;
 	}
@@ -41,7 +41,7 @@ export function isDependencyError(err: unknown): boolean {
 	if ((err as { name?: unknown }).name === "MaxRetriesPerRequestError") {
 		return true;
 	}
-	const message = (err as { message?: unknown }).message;
+	const { message } = err as { message?: unknown };
 	return typeof message === "string" && DEPENDENCY_MESSAGE_RE.test(message);
 }
 

@@ -102,7 +102,7 @@ function pickMaxScore(
 function priceScore(
 	candidate: DeploymentCandidate,
 ): { basis: "tokens" | "search_units"; value: number } | null {
-	const pricing = candidate.meta.pricing;
+	const { pricing } = candidate.meta;
 	if (!pricing) {
 		return null;
 	}

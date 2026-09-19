@@ -43,7 +43,7 @@ export async function listDeploymentCandidates(
 	for (const row of rows) {
 		const adapter = getAdapter(row.adapterKey);
 		if (adapter?.supportedCallTypes.has(callType)) {
-			const upstreamModel = row.upstreamModel;
+			const { upstreamModel } = row;
 			const meta = resolveModelMetadata(
 				row.adapterKey,
 				upstreamModel,

@@ -300,7 +300,7 @@ class S3ObjectStore implements ObjectStore {
 				}),
 			)
 			.catch((err) => {
-				const name = (err as { name?: string }).name;
+				const { name } = err as { name?: string };
 				if (name === "NoSuchKey") {
 					throw missingObject(key);
 				}

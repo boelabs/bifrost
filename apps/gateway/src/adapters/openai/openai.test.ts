@@ -114,7 +114,7 @@ test("openai.buildRequest: /responses images default detail to auto", () => {
 		},
 		ctx,
 	);
-	const content = JSON.parse(r.body!).input[0].content;
+	const { content } = JSON.parse(r.body!).input[0];
 	assert.equal(content[0].detail, "auto");
 	assert.equal(content[1].detail, "high");
 });
@@ -532,7 +532,7 @@ test("openai.buildRequest: replays encrypted reasoning items before function cal
 		},
 		reasoningCtx,
 	);
-	const input = JSON.parse(r.body!).input;
+	const { input } = JSON.parse(r.body!);
 	assert.deepEqual(input[0], {
 		type: "reasoning",
 		id: "rs_1",
@@ -568,7 +568,7 @@ test("openai.parseResponse: reasoning encrypted_content -> message providerField
 		},
 		reasoningCtx,
 	);
-	const message = canonical.choices[0]!.message;
+	const { message } = canonical.choices[0]!;
 	assert.equal(message.reasoning, "thinking");
 	const fields = message.providerFields?.openai as Record<string, unknown>;
 	assert.deepEqual(fields.reasoning, [

@@ -77,7 +77,7 @@ export function profileToRuntimeMetadata(profile: {
 	const imageEdit = operations["image.edit"];
 	const videoGeneration = operations["video.generate"];
 	const embedding = operations["embedding.create"];
-	const rerank = operations.rerank;
+	const { rerank } = operations;
 	const capabilities: Partial<TextCapabilities> | undefined =
 		text?.capabilities ??
 		(imageGeneration || imageEdit

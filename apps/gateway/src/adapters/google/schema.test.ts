@@ -56,9 +56,8 @@ test("toGeminiSchema: cuts self-referential $ref cycles instead of looping forev
 			},
 		},
 	});
-	const child = (out.properties as Record<string, Record<string, unknown>>)
-		.child;
-	const next = (child!.properties as Record<string, unknown>).next;
+	const { child } = out.properties as Record<string, Record<string, unknown>>;
+	const { next } = child!.properties as Record<string, unknown>;
 	// The cycle is broken at the second self-reference with a bare object.
 	assert.deepEqual(next, { type: "object" });
 });

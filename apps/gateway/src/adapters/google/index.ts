@@ -794,7 +794,7 @@ function parseGeminiImageResponse(raw: unknown): CanonicalImageResponse {
 	const data = (response.candidates ?? [])
 		.flatMap((candidate) => candidate.content?.parts ?? [])
 		.flatMap((part) => {
-			const inlineData = part.inlineData;
+			const { inlineData } = part;
 			if (typeof inlineData?.data !== "string") {
 				return [];
 			}
@@ -1406,7 +1406,7 @@ function googleVideoBody(
 			param: "frame_images",
 		});
 	}
-	const videoRef = videoRefs[0];
+	const [videoRef] = videoRefs;
 	if (videoRef) {
 		instance.video = {
 			inlineData: googleVideoInline(videoRef.url, "input_references", "video"),

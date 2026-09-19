@@ -24,7 +24,7 @@ function inputCount(input: EmbeddingInput): number {
 	if (input.length === 0) {
 		return 0;
 	}
-	const first = input[0];
+	const [first] = input;
 	if (typeof first === "string" || Array.isArray(first)) {
 		return input.length;
 	}
@@ -35,7 +35,7 @@ function hasTokenInput(input: EmbeddingInput): boolean {
 	if (typeof input === "string") {
 		return false;
 	}
-	const first = input[0];
+	const [first] = input;
 	return typeof first === "number" || Array.isArray(first);
 }
 
@@ -54,7 +54,7 @@ function eachInput(input: EmbeddingInput): unknown[] {
 	if (input.length === 0) {
 		return [];
 	}
-	const first = input[0];
+	const [first] = input;
 	if (typeof first === "string" || Array.isArray(first)) {
 		return input;
 	}

@@ -179,13 +179,13 @@ function tierCost(
 	if (!Array.isArray(tiers)) {
 		return undefined;
 	}
-	const active = tiers
+	const [active] = tiers
 		.filter(
 			(tier) =>
 				tier.min <= threshold &&
 				(tier.max === undefined || threshold < tier.max),
 		)
-		.sort((a, b) => b.min - a.min)[0];
+		.sort((a, b) => b.min - a.min);
 	return dollarsPerTokenToCentsPerMillion(active?.cost);
 }
 

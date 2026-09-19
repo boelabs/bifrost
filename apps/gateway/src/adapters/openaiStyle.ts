@@ -722,7 +722,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 				? {}
 				: { generate_audio: req.generateAudio }),
 		};
-		const ref = refs[0];
+		const [ref] = refs;
 		if (ref) {
 			if (ref.type === "image_url") {
 				body.input_reference = { image_url: ref.url };
@@ -990,8 +990,8 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 		},
 	};
 
-	const imageTransports = config.imageTransports;
-	const videoTransports = config.videoTransports;
+	const { imageTransports } = config;
+	const { videoTransports } = config;
 	const chatTransports = config.supportedChatTransports ?? [
 		config.defaultTransport,
 	];

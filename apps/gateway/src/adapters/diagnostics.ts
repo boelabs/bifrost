@@ -23,7 +23,7 @@ export function recordUnknownAdapterEvent(
 	if (evidence.metadata === undefined) {
 		evidence.metadata = {};
 	}
-	const metadata = evidence.metadata;
+	const { metadata } = evidence;
 	const counts =
 		(metadata.unknownEventCounts as Record<string, number> | undefined) ?? {};
 	counts[type] = (counts[type] ?? 0) + 1;

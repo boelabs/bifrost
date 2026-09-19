@@ -33,7 +33,7 @@ export async function* observeResponsesProgress(
 			) {
 				continue;
 			}
-			const item = event.data.item;
+			const { item } = event.data;
 			if (!item || typeof item !== "object" || Array.isArray(item)) {
 				continue;
 			}

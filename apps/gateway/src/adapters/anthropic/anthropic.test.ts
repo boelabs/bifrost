@@ -60,7 +60,7 @@ test("Anthropic preserves optional thinking usage from initial and terminal even
 		let usage: Usage | undefined;
 		for await (const chunk of anthropicAdapter.chat!.parseStream(body, ctx)) {
 			if (chunk.usage) {
-				usage = chunk.usage;
+				({ usage } = chunk);
 			}
 		}
 		assert.ok(usage);
@@ -608,7 +608,7 @@ test("anthropic thinking state: signed and redacted blocks survive parse and rep
 		},
 		ctx,
 	);
-	const message = parsed.choices[0]!.message;
+	const { message } = parsed.choices[0]!;
 	assert.deepEqual(message.providerFields, {
 		anthropic: {
 			thinking_blocks: [

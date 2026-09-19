@@ -106,7 +106,7 @@ export function toOpenRouterRerankResponse(
 	response: CanonicalRerankResponse,
 	cost: CostBreakdown | null,
 ): Record<string, unknown> {
-	const usage = response.usage;
+	const { usage } = response;
 	return {
 		...(response.id === undefined ? {} : { id: response.id }),
 		model: request.model,

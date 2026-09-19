@@ -69,7 +69,7 @@ export function ComposerView({
 	const handleSurfaceClick: MouseEventHandler<HTMLFieldSetElement> = (
 		event,
 	) => {
-		const target = event.target;
+		const { target } = event;
 
 		if (!(target instanceof Element)) {
 			return;

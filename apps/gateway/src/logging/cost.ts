@@ -155,7 +155,7 @@ export function estimateMaximumCostCents(
 	totalTokens: number,
 	searchUnits = 0,
 ): number | null {
-	const pricing = meta.pricing;
+	const { pricing } = meta;
 	if (pricing === undefined) {
 		return null;
 	}

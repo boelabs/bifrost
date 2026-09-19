@@ -382,7 +382,7 @@ export function requestedUnsupportedParameters(
 			}
 		}
 	}
-	const chatTransport = req.chatTransport;
+	const { chatTransport } = req;
 	if (chatTransport) {
 		for (const spec of CHAT_TRANSPORT_SPECS) {
 			if (!hasOwn(chatTransport, spec.field)) {
@@ -394,7 +394,7 @@ export function requestedUnsupportedParameters(
 			}
 		}
 	}
-	const messagesTransport = req.messagesTransport;
+	const { messagesTransport } = req;
 	if (messagesTransport) {
 		for (const spec of MESSAGES_TRANSPORT_SPECS) {
 			if (!hasOwn(messagesTransport, spec.field)) {

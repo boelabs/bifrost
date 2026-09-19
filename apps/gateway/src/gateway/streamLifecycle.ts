@@ -379,7 +379,7 @@ export function observeChatStream(
 					reasoningDeadline = null;
 				}
 				if (chunk.usage) {
-					usage = chunk.usage;
+					({ usage } = chunk);
 					observation.usage = chunk.usage;
 				}
 				for (const choice of chunk.choices) {
@@ -388,7 +388,7 @@ export function observeChatStream(
 						hasOutput: false,
 						hasTool: false,
 					};
-					const delta = choice.delta;
+					const { delta } = choice;
 					const hasTool = (delta.toolCalls?.length ?? 0) > 0;
 					const hasOutput =
 						hasTool ||

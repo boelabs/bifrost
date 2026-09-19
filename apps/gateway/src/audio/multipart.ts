@@ -244,7 +244,7 @@ export async function parseTranscriptionMultipart(
 			buildFields(scalars, arrays),
 		);
 		if (!parsed.success) {
-			const first = parsed.error.issues[0];
+			const [first] = parsed.error.issues;
 			throw new GatewayError({
 				class: "bad_request",
 				message: parsed.error.issues

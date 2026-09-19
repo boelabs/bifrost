@@ -200,7 +200,7 @@ async function handleImageRequest(
 					message: `Non-streaming image upstream returned ${response.data.length} outputs for a streaming request; expected exactly one`,
 				});
 			}
-			const completedImage = response.data[0];
+			const [completedImage] = response.data;
 			if (!completedImage) {
 				throw new GatewayError({
 					class: "server",

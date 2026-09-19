@@ -736,7 +736,7 @@ test("stream->events: reports the matched stop sequence", async () => {
 	let delta: TestJsonObject | undefined;
 	for await (const event of canonicalChunksToMessagesEvents(chunks(), opts)) {
 		if (event.event === "message_delta") {
-			delta = (JSON.parse(event.data) as { delta: TestJsonObject }).delta;
+			({ delta } = JSON.parse(event.data) as { delta: TestJsonObject });
 		}
 	}
 	assert.deepEqual(delta, {

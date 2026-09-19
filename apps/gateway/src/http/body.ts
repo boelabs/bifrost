@@ -125,7 +125,7 @@ export async function parseJsonBody<T>(
 			return field ? `${field}: ${issue.message}` : issue.message;
 		})
 		.join("; ");
-	const first = parsed.error.issues[0];
+	const [first] = parsed.error.issues;
 	throw new GatewayError({
 		class: "bad_request",
 		message: detail,

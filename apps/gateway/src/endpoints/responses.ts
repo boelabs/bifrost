@@ -251,7 +251,7 @@ export async function compactResponseHandler(
 			});
 		}
 		await lifecycle.finish(response.usage);
-		const meta = routing.candidate.meta;
+		const { meta } = routing.candidate;
 		const cost = computeUsageCost(meta, response.usage);
 		const metadata: Record<string, unknown> = candidateMetadata(
 			routing.candidate,
@@ -386,8 +386,8 @@ function streamResponses(
 					message: "Streaming Responses unexpectedly returned JSON",
 				});
 			}
-			const upstreamStartedAt = routing.upstreamStartedAt;
-			const meta = routing.candidate.meta;
+			const { upstreamStartedAt } = routing;
+			const { meta } = routing.candidate;
 			const renderOpts: RenderOptions = {
 				req: pipelineReq,
 				publicModel: routing.candidate.row.publicModel,
@@ -432,7 +432,7 @@ function streamResponses(
 			async function* transformedChunks() {
 				for await (const chunk of tapped) {
 					if (chunk.usage !== undefined) {
-						usage = chunk.usage;
+						({ usage } = chunk);
 					}
 					log.progress();
 					yield await applyStreamEventExtensions(
@@ -696,8 +696,8 @@ export async function responsesHandler(c: Context<AppEnv>): Promise<Response> {
 		if (routing.value.kind === "json") {
 			lifecycle.rememberUsage(routing.value.response.usage);
 		}
-		const upstreamStartedAt = routing.upstreamStartedAt;
-		const meta = routing.candidate.meta;
+		const { upstreamStartedAt } = routing;
+		const { meta } = routing.candidate;
 		const renderOpts: RenderOptions = {
 			req: pipelineReq,
 			publicModel: routing.candidate.row.publicModel,
@@ -741,7 +741,7 @@ export async function responsesHandler(c: Context<AppEnv>): Promise<Response> {
 				canonical.model,
 				routing.value.response,
 			);
-			const usage = response.usage;
+			const { usage } = response;
 			await lifecycle.finish(usage);
 			const cost = computeUsageCost(meta, usage);
 			const internalRendered = canonicalToResponsesResponse(
@@ -1054,8 +1054,8 @@ async function executeResponsesWebSocketTurn(
 		if (routing.value.kind === "json") {
 			lifecycle.rememberUsage(routing.value.response.usage);
 		}
-		const upstreamStartedAt = routing.upstreamStartedAt;
-		const meta = routing.candidate.meta;
+		const { upstreamStartedAt } = routing;
+		const { meta } = routing.candidate;
 		const renderOpts: RenderOptions = {
 			req: pipelineReq,
 			publicModel: routing.candidate.row.publicModel,
@@ -1113,7 +1113,7 @@ async function executeResponsesWebSocketTurn(
 		async function* transformedChunks() {
 			for await (const chunk of tapped) {
 				if (chunk.usage !== undefined) {
-					usage = chunk.usage;
+					({ usage } = chunk);
 				}
 				log.progress();
 				yield await applyStreamEventExtensions(

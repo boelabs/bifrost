@@ -37,8 +37,8 @@ function hasAmbiguousZeroPricing(model: OpenRouterModel): boolean {
 	if (!model.pricing) {
 		return false;
 	}
-	const prompt = model.pricing.prompt;
-	const completion = model.pricing.completion;
+	const { prompt } = model.pricing;
+	const { completion } = model.pricing;
 	return prompt === "0" && completion === "0" && !model.id.endsWith(":free");
 }
 
