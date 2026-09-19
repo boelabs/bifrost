@@ -288,6 +288,24 @@ export async function operationSummary(since: Date, until?: Date) {
 	};
 }
 
+/** The column, or the expression, that one usage row is grouped under. */
+function groupKeyColumn(
+	groupBy: "public_model" | "virtual_key" | "actor" | "hour" | "day",
+) {
+	if (groupBy === "day") {
+		return sql<string>`to_char(date_trunc('day', ${gatewayOperations.startedAt} at time zone 'UTC'), 'YYYY-MM-DD')`;
+	}
+	if (groupBy === "hour") {
+		return sql<string>`to_char(date_trunc('hour', ${gatewayOperations.startedAt} at time zone 'UTC'), 'YYYY-MM-DD"T"HH24:00:00"Z"')`;
+	}
+	if (groupBy === "virtual_key") {
+		return gatewayOperations.virtualKeyId;
+	}
+	return groupBy === "actor"
+		? gatewayOperations.actor
+		: gatewayOperations.publicModel;
+}
+
 export async function aggregateOperationUsage(
 	filter: OperationFilter & {
 		groupBy: "public_model" | "virtual_key" | "actor" | "hour" | "day" | "none";
@@ -313,16 +331,7 @@ export async function aggregateOperationUsage(
 	}
 	// `hour` exists for 24h dashboards: `day` collapses a whole day into one point, which is useless
 	// at that window. Both bucket in UTC so the series is stable regardless of the server's zone.
-	const key =
-		filter.groupBy === "day"
-			? sql<string>`to_char(date_trunc('day', ${gatewayOperations.startedAt} at time zone 'UTC'), 'YYYY-MM-DD')`
-			: filter.groupBy === "hour"
-				? sql<string>`to_char(date_trunc('hour', ${gatewayOperations.startedAt} at time zone 'UTC'), 'YYYY-MM-DD"T"HH24:00:00"Z"')`
-				: filter.groupBy === "virtual_key"
-					? gatewayOperations.virtualKeyId
-					: filter.groupBy === "actor"
-						? gatewayOperations.actor
-						: gatewayOperations.publicModel;
+	const key = groupKeyColumn(filter.groupBy);
 	return db
 		.select({ key, ...metrics })
 		.from(gatewayOperations)

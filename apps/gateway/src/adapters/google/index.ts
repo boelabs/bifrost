@@ -100,6 +100,43 @@ const DEFAULT_SAFETY_SETTINGS = [
 	{ category: "HARM_CATEGORY_CIVIC_INTEGRITY", threshold: "OFF" },
 ] as const;
 
+/** Gemini reports a job failure under either a status string or a numeric code. */
+function googleErrorCode(error: {
+	status?: unknown;
+	code?: unknown;
+}): string | null {
+	if (typeof error.status === "string") {
+		return error.status;
+	}
+	return typeof error.code === "number" ? String(error.code) : null;
+}
+
+/** Gemini's progress is a step, not a measurement: a job is only ever at one of three points. */
+const VIDEO_STATUS_PROGRESS: Record<VideoStatus, number> = {
+	queued: 0,
+	in_progress: 50,
+	completed: 100,
+	failed: 100,
+};
+
+/**
+ * How a tool's parameters reach Gemini.
+ *
+ * `parametersJsonSchema` is the strict path: Gemini validates the call against the schema as
+ * written. `parameters` is the lenient one, through Gemini's own reduced schema dialect.
+ */
+function geminiToolParameters(
+	parameters: Record<string, unknown> | undefined,
+	strict: boolean,
+): Record<string, unknown> {
+	if (parameters === undefined) {
+		return {};
+	}
+	return strict
+		? { parametersJsonSchema: toGeminiJsonSchema(parameters) }
+		: { parameters: toGeminiSchema(parameters) };
+}
+
 function creds(ctx: AdapterContext): GoogleCreds & { apiKey: string } {
 	return requireApiKeyCreds<GoogleCreds>(ctx.credentials, "Google adapter");
 }
@@ -456,11 +493,10 @@ function buildGeminiBody(
 					...(t.description === undefined
 						? {}
 						: { description: t.description }),
-					...(t.parameters === undefined
-						? {}
-						: t.strict === true && strictToolDecoding
-							? { parametersJsonSchema: toGeminiJsonSchema(t.parameters) }
-							: { parameters: toGeminiSchema(t.parameters) }),
+					...geminiToolParameters(
+						t.parameters,
+						t.strict === true && strictToolDecoding,
+					),
 				})),
 			},
 		];
@@ -478,12 +514,11 @@ function buildGeminiBody(
 			fc.mode = "ANY";
 			fc.allowedFunctionNames = [toolChoice.name];
 		} else {
-			fc.mode =
-				toolChoice.mode === "required"
-					? "ANY"
-					: strictToolDecoding
-						? "VALIDATED"
-						: "AUTO";
+			if (toolChoice.mode === "required") {
+				fc.mode = "ANY";
+			} else {
+				fc.mode = strictToolDecoding ? "VALIDATED" : "AUTO";
+			}
 			fc.allowedFunctionNames = toolChoice.allowedTools;
 		}
 		body.toolConfig = { functionCallingConfig: fc };
@@ -1545,12 +1580,7 @@ function parseGoogleVideoJob(
 		...(error
 			? {
 					error: {
-						code:
-							typeof error.status === "string"
-								? error.status
-								: typeof error.code === "number"
-									? String(error.code)
-									: null,
+						code: googleErrorCode(error),
 						message:
 							typeof error.message === "string"
 								? error.message
@@ -1830,7 +1860,7 @@ function parseGoogleInteractionJob(
 	return {
 		upstreamJobId,
 		status,
-		progress: status === "queued" ? 0 : status === "in_progress" ? 50 : 100,
+		progress: VIDEO_STATUS_PROGRESS[status],
 		...(status === "failed"
 			? { error: { code: errorCode ?? null, message: errorMessage } }
 			: {}),

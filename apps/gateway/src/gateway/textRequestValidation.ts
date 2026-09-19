@@ -46,25 +46,36 @@ function explicitlyUnsupportedParameter(
 	return entry.mode === "unsupported" || entry.mode === "ignored";
 }
 
+/**
+ * The strict parameter this deployment would drop, if there is one.
+ *
+ * Strict tools and strict output are separate guarantees carried by different fields, so each is
+ * checked against the parameters that actually express it.
+ */
+function droppedStrictParameter(
+	req: CanonicalChatRequest,
+	meta: ResolvedModelMetadata,
+): string | undefined {
+	if (requestUsesStrictTools(req)) {
+		return [
+			"tools",
+			...(req.toolChoice === undefined ? [] : ["tool_choice"]),
+			...(req.parallelToolCalls === true ? ["parallel_tool_calls"] : []),
+		].find((name) => explicitlyUnsupportedParameter(meta, name));
+	}
+	if (!requestUsesStrictOutput(req)) {
+		return undefined;
+	}
+	return ["response_format", "structured_outputs"].find((name) =>
+		explicitlyUnsupportedParameter(meta, name),
+	);
+}
+
 function assertStrictParameterIsNotDropped(
 	req: CanonicalChatRequest,
 	meta: ResolvedModelMetadata,
 ): void {
-	const strictTools = requestUsesStrictTools(req);
-	const strictOutput = requestUsesStrictOutput(req);
-	const parameter = strictTools
-		? [
-				"tools",
-				...(req.toolChoice === undefined ? [] : ["tool_choice"]),
-				...(req.parallelToolCalls === true ? ["parallel_tool_calls"] : []),
-			].find((name) => explicitlyUnsupportedParameter(meta, name))
-		: strictOutput
-			? explicitlyUnsupportedParameter(meta, "response_format")
-				? "response_format"
-				: explicitlyUnsupportedParameter(meta, "structured_outputs")
-					? "structured_outputs"
-					: undefined
-			: undefined;
+	const parameter = droppedStrictParameter(req, meta);
 	if (parameter === undefined) {
 		return;
 	}
