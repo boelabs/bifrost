@@ -1,5 +1,4 @@
 import type { CanonicalEmbeddingsRequest } from "#core/embeddings.ts";
-import type { CanonicalChatRequest } from "#core/canonical.ts";
 import { adapterDiagnostics } from "#adapters/diagnostics.ts";
 import type { AdapterContext } from "#adapters/types.ts";
 import { GatewayError } from "#core/errors.ts";
@@ -13,6 +12,11 @@ import {
 	openaiReasoningItemIdFromProviderFields,
 	openaiReasoningFromProviderFields,
 } from "#core/providerSpecificFields.ts";
+
+import type {
+	CanonicalChatStreamChunk,
+	CanonicalChatRequest,
+} from "#core/canonical.ts";
 
 const ctx: AdapterContext = {
 	upstreamModel: "gpt-5.5",
@@ -367,7 +371,7 @@ test("openai.parseStream: reasoning summary deltas preserve their native item id
 		`event: response.reasoning_summary_text.delta\ndata: {"type":"response.reasoning_summary_text.delta","item_id":"rs_native","delta":"Think"}\n\n` +
 		`event: response.output_item.done\ndata: {"type":"response.output_item.done","item":{"type":"reasoning","id":"rs_native","summary":[{"type":"summary_text","text":"Think"}],"encrypted_content":"enc-native"}}\n\n` +
 		`event: response.completed\ndata: {"type":"response.completed","response":{"status":"completed","output":[],"usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}}\n\n`;
-	const chunks = [];
+	const chunks: CanonicalChatStreamChunk[] = [];
 	for await (const chunk of openaiAdapter.chat!.parseStream(
 		new Response(sse).body!,
 		ctx,

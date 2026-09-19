@@ -219,7 +219,10 @@ test("the interval stops growing at its ceiling", async () => {
 			// The clock runs out on the fourth look, which is what ends this loop.
 			now: (() => {
 				let value = 0;
-				return () => (value += 1000);
+				return () => {
+					value += 1000;
+					return value;
+				};
 			})(),
 			timeoutMs: 3000,
 			sleep: async (ms) => {

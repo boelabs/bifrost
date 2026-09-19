@@ -786,11 +786,9 @@ export async function route<T>(
 									return;
 								}
 								settled = true;
+								let error = streamError;
 								if (downstream) {
-									finishDownstreamWriteObservation(
-										downstream,
-										streamError?.code,
-									);
+									finishDownstreamWriteObservation(downstream, error?.code);
 								}
 								cleanupContext();
 								const endedAt = finishedAt ?? Date.now();
@@ -885,8 +883,8 @@ export async function route<T>(
 										attemptRecord.diagnostics = observation.diagnostics;
 									}
 								}
-								if (!(streamError || terminal)) {
-									streamError = new GatewayError({
+								if (!(error || terminal)) {
+									error = new GatewayError({
 										class: "server",
 										code: "upstream_protocol_error",
 										message:
@@ -895,7 +893,7 @@ export async function route<T>(
 										deploymentHealth: "penalize",
 									});
 								}
-								if (!streamError && terminal) {
+								if (!error && terminal) {
 									attemptRecord.ok = true;
 									attemptRecord.terminalVerified = true;
 									attemptRecord.terminalOutcome = terminal.outcome;
@@ -926,27 +924,27 @@ export async function route<T>(
 									});
 									return;
 								}
-								if (!streamError) {
+								if (!error) {
 									return;
 								}
 
-								attemptRecord.errorClass = streamError.class;
-								attemptRecord.errorCode = streamError.code;
-								attemptRecord.failureKind = streamError.failureKind;
-								attemptRecord.httpStatus = streamError.httpStatus;
-								if (streamError.deploymentHealth === "neutral") {
+								attemptRecord.errorClass = error.class;
+								attemptRecord.errorCode = error.code;
+								attemptRecord.failureKind = error.failureKind;
+								attemptRecord.httpStatus = error.httpStatus;
+								if (error.deploymentHealth === "neutral") {
 									attemptRecord.deploymentHealth = "neutral";
 								}
-								if (streamError.provider?.status !== undefined) {
-									attemptRecord.providerStatus = streamError.provider.status;
+								if (error.provider?.status !== undefined) {
+									attemptRecord.providerStatus = error.provider.status;
 								}
-								if (streamError.provider?.body !== undefined) {
-									attemptRecord.providerBody = streamError.provider.body;
+								if (error.provider?.body !== undefined) {
+									attemptRecord.providerBody = error.provider.body;
 								}
 
 								if (
 									isClientAbortSignal(opts.clientSignal) ||
-									streamError.code === "client_closed_request"
+									error.code === "client_closed_request"
 								) {
 									attemptRecord.errorClass = "client_closed_request";
 									attemptRecord.failureKind = "request";
@@ -964,20 +962,20 @@ export async function route<T>(
 								}
 
 								const cause: CooldownCause = {
-									class: streamError.class,
-									message: streamError.message,
-									...(streamError.provider?.status === undefined
+									class: error.class,
+									message: error.message,
+									...(error.provider?.status === undefined
 										? {}
-										: { status: streamError.provider.status }),
-									...(streamError.provider?.body === undefined
+										: { status: error.provider.status }),
+									...(error.provider?.body === undefined
 										? {}
-										: { body: streamError.provider.body }),
+										: { body: error.provider.body }),
 								};
-								switch (streamError.failureKind) {
+								switch (error.failureKind) {
 									case "transient":
 										await settleSideEffects(
 											opts.requestId,
-											streamError.deploymentHealth === "neutral"
+											error.deploymentHealth === "neutral"
 												? [
 														onAttemptFailure(
 															chosen.row.id,
@@ -998,10 +996,7 @@ export async function route<T>(
 																		permit,
 																		circuitSettings,
 																		cause,
-																		transientCharge(
-																			chosen.row.id,
-																			streamError.class,
-																		),
+																		transientCharge(chosen.row.id, error.class),
 																	),
 																]
 															: []),
@@ -1032,7 +1027,7 @@ export async function route<T>(
 												circuitSettings,
 												cause,
 												Math.max(
-													streamError.retryAfterMs ?? 0,
+													error.retryAfterMs ?? 0,
 													settings.throttleCooldownSeconds * 1000,
 												),
 											),
@@ -1065,7 +1060,7 @@ export async function route<T>(
 									endedAt,
 									outcome: "error",
 									terminalVerified: false,
-									errorCode: streamError.code,
+									errorCode: error.code,
 								});
 							},
 						},

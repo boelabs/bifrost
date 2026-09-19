@@ -112,10 +112,10 @@ export function encryptJson(
 }
 
 export function decryptJson(
-	envelope: EncEnvelope,
+	raw: EncEnvelope,
 	expectedPurpose: EncryptionPurpose,
 ): unknown {
-	envelope = parseEncryptedEnvelope(envelope);
+	const envelope = parseEncryptedEnvelope(raw);
 	if (
 		envelope.v !== 2 ||
 		envelope.alg !== "A256GCM" ||

@@ -1,6 +1,5 @@
 import type { CanonicalEmbeddingsRequest } from "#core/embeddings.ts";
 import { observeChatStream } from "#gateway/streamLifecycle.ts";
-import type { CanonicalChatRequest } from "#core/canonical.ts";
 import { adapterDiagnostics } from "#adapters/diagnostics.ts";
 import type { AdapterContext } from "#adapters/types.ts";
 import { isUsageConsistent } from "#core/usage.ts";
@@ -8,6 +7,11 @@ import { GatewayError } from "#core/errors.ts";
 import { googleAdapter } from "./index.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
+
+import type {
+	CanonicalChatStreamChunk,
+	CanonicalChatRequest,
+} from "#core/canonical.ts";
 
 const ctx: AdapterContext = {
 	upstreamModel: "gemini-2.5-flash",
@@ -972,7 +976,7 @@ test("google.parseStream: repeated STOP after a tool call remains one tool termi
 	const observed = observeChatStream(
 		googleAdapter.chat!.parseStream(new Response(sse).body!, ctx),
 	);
-	const chunks = [];
+	const chunks: CanonicalChatStreamChunk[] = [];
 	for await (const chunk of observed.items) {
 		chunks.push(chunk);
 	}
@@ -997,7 +1001,7 @@ test("google.parseStream: finish evidence before a trailing tool call closes onc
 	const observed = observeChatStream(
 		googleAdapter.chat!.parseStream(new Response(sse).body!, ctx),
 	);
-	const chunks = [];
+	const chunks: CanonicalChatStreamChunk[] = [];
 	for await (const chunk of observed.items) {
 		chunks.push(chunk);
 	}
@@ -1117,7 +1121,7 @@ test("google.buildRequest: sampling controls match the catalog surface", () => {
 
 test("google.parseStream: every candidate is preserved", async () => {
 	const sse = `data: {"candidates":[{"content":{"parts":[{"text":"A"}]},"finishReason":"STOP","index":0},{"content":{"parts":[{"text":"B"}]},"finishReason":"STOP","index":1}]}\n\n`;
-	const chunks = [];
+	const chunks: CanonicalChatStreamChunk[] = [];
 	for await (const chunk of googleAdapter.chat!.parseStream(
 		new Response(sse).body!,
 		ctx,

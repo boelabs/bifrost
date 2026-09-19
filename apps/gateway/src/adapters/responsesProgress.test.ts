@@ -44,7 +44,7 @@ test("Responses item progress survives parsing without inventing visible reasoni
 			yield { event: event.type, data: JSON.stringify(event) };
 		}
 	}
-	const seen = [];
+	const seen: unknown[] = [];
 	for await (const chunk of observeResponsesProgress(
 		responsesEventsToCanonicalChunks(source()),
 	)) {

@@ -1,5 +1,5 @@
+import { parseSSE, type SSEEvent } from "./sse.ts";
 import assert from "node:assert/strict";
-import { parseSSE } from "./sse.ts";
 import { test } from "node:test";
 
 const streamOf = (text: string): ReadableStream<Uint8Array> =>
@@ -10,7 +10,7 @@ test("parseSSE: events with event/data, multiline data, and comments", async () 
 		": keep-alive\n\n" +
 		"event: foo\ndata: hello\n\n" +
 		"data: line1\ndata: line2\n\n";
-	const out = [];
+	const out: SSEEvent[] = [];
 	for await (const ev of parseSSE(streamOf(sse))) {
 		out.push(ev);
 	}
@@ -21,7 +21,7 @@ test("parseSSE: events with event/data, multiline data, and comments", async () 
 });
 
 test("parseSSE: tolerates CRLF and flushes the last event without a final blank line", async () => {
-	const out = [];
+	const out: string[] = [];
 	for await (const ev of parseSSE(streamOf("data: a\r\n\r\ndata: b\r\n"))) {
 		out.push(ev.data);
 	}
@@ -29,7 +29,7 @@ test("parseSSE: tolerates CRLF and flushes the last event without a final blank 
 });
 
 test("parseSSE: flushes a final data line without any line terminator", async () => {
-	const out = [];
+	const out: string[] = [];
 	for await (const ev of parseSSE(streamOf('data: {"a":1}\n\ndata: [DONE]'))) {
 		out.push(ev.data);
 	}
@@ -46,7 +46,7 @@ test("parseSSE: UTF-8 split across chunks is not corrupted", async () => {
 			controller.close();
 		},
 	});
-	const out = [];
+	const out: string[] = [];
 	for await (const ev of parseSSE(stream)) {
 		out.push(ev.data);
 	}

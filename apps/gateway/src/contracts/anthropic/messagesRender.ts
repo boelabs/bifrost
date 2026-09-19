@@ -450,7 +450,7 @@ export function messagesRequestToCanonical(
 		u.extraBody = req.extra_body;
 	}
 	if (Array.isArray(req.tools)) {
-		const tools = [];
+		const tools: NonNullable<CanonicalChatRequest["tools"]> = [];
 		let hasNativeTool = false;
 		for (const t of req.tools) {
 			const tool = t as {

@@ -3,7 +3,6 @@ import type { DeploymentCandidate } from "#gateway/deploymentCandidates.ts";
 import { estimateTokenReservation } from "#router/tokenReservation.ts";
 import type { RouteOptions, RouteResult } from "#router/index.ts";
 import { chatChunkSemantic } from "#gateway/streamLifecycle.ts";
-import type { CanonicalChatRequest } from "#core/canonical.ts";
 import type { EffectiveSettings } from "#router/settings.ts";
 import type { ChatExecResult } from "#gateway/executor.ts";
 import type { AdapterContext } from "#adapters/types.ts";
@@ -27,6 +26,11 @@ import {
 	MAX_PORTABLE_CONTENT_INPUT_BYTES,
 	createContentInputResolver,
 } from "#files/requestContentInputs.ts";
+
+import type {
+	CanonicalChatStreamChunk,
+	CanonicalChatRequest,
+} from "#core/canonical.ts";
 
 export type ParameterPolicyRecorder = (result: ParameterPolicyResult) => void;
 export type ChatCandidateExecutor = (
@@ -181,7 +185,7 @@ export async function routeChat(
 	let routing = await runRoute();
 	while (routing.value.kind === "stream") {
 		const iterator = routing.value.chunks[Symbol.asyncIterator]();
-		const buffered = [];
+		const buffered: CanonicalChatStreamChunk[] = [];
 		try {
 			while (true) {
 				const next = await iterator.next();

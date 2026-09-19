@@ -1,10 +1,14 @@
 import { resolveModelMetadata, getCatalogEntry } from "#catalog/index.ts";
 import { type ReasoningSpec, reasoningLogInfo } from "#core/reasoning.ts";
-import type { CanonicalChatRequest } from "#core/canonical.ts";
 import type { AdapterContext } from "#adapters/types.ts";
 import { vercelAdapter } from "./index.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
+
+import type {
+	CanonicalChatStreamChunk,
+	CanonicalChatRequest,
+} from "#core/canonical.ts";
 
 function ctx(
 	upstreamModel: string,
@@ -394,7 +398,7 @@ test("vercel Chat preserves streamed reasoning details", async () => {
 	const stream = new Response(
 		`data: ${JSON.stringify(raw)}\n\ndata: [DONE]\n\n`,
 	).body!;
-	const chunks = [];
+	const chunks: CanonicalChatStreamChunk[] = [];
 	for await (const chunk of vercelAdapter.chat!.parseStream(
 		stream,
 		ctx("openai/gpt-5.6-sol", "chat_completions"),

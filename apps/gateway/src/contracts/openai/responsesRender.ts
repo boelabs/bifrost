@@ -401,9 +401,9 @@ export async function expandInputReferences(
 
 /** Translates an OpenResponses request to the canonical chat request. */
 export function responsesRequestToCanonical(
-	req: ResponsesRequest,
+	input: ResponsesRequest,
 ): CanonicalChatRequest {
-	req = normalizePromptCacheRequest(req);
+	const req = normalizePromptCacheRequest(input);
 	const messages: CanonicalMessage[] = [];
 	let requiresNativeInput = false;
 	if (req.instructions) {
@@ -724,7 +724,7 @@ export function responsesRequestToCanonical(
 	}
 
 	if (Array.isArray(req.tools)) {
-		const tools = [];
+		const tools: NonNullable<CanonicalChatRequest["tools"]> = [];
 		let requiresNativeTools = false;
 		for (const t of req.tools) {
 			const tool = t as Record<string, unknown>;

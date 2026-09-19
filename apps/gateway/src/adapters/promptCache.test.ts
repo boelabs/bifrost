@@ -171,7 +171,7 @@ for (const key of [
 					async function* replay() {
 						yield* chunks;
 					}
-					const rendered = [];
+					const rendered: any[] = [];
 					for await (const event of canonicalChunksToResponsesEvents(replay(), {
 						req: responseRequest(),
 						publicModel: "public-model",
@@ -184,7 +184,7 @@ for (const key of [
 						300,
 					);
 					let roundTrip: Usage | undefined;
-					const messages = [];
+					const messages: any[] = [];
 					for await (const event of canonicalChunksToMessagesEvents(replay(), {
 						publicModel: "public-model",
 					})) {

@@ -46,7 +46,7 @@ test("Responses reasoning parts keep identity, boundaries and plain-text separat
 			}
 		}
 	}
-	const rendered = [];
+	const rendered: ReturnType<typeof toOpenAIChatChunk>[] = [];
 	const parts = new Map<number, string>();
 	for await (const chunk of responsesEventsToCanonicalChunks(events())) {
 		rendered.push(toOpenAIChatChunk(chunk, publicModel, parts));

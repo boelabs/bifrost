@@ -72,7 +72,7 @@ test("response_states: store/get and expired-row GC (cron base)", {
 	skip,
 }, async () => {
 	const id = `resp_itest_${randomUUID()}`;
-	const vkId = null;
+	const vkId: string | null = null;
 	await storeResponseState({
 		id,
 		virtualKeyId: vkId,
@@ -107,7 +107,7 @@ test("response_states: store=false rows are invisible to item lookup", {
 }, async () => {
 	const id = `resp_internal_itest_${randomUUID()}`;
 	const itemId = `fc_itest_${randomUUID()}`;
-	const vkId = null;
+	const vkId: string | null = null;
 	await storeResponseState({
 		id,
 		virtualKeyId: vkId,

@@ -529,9 +529,9 @@ function mapResponseFormat(
 
 /** Validated OpenAI request -> normalized canonical request. */
 export function toCanonicalChatRequest(
-	req: OpenAIChatRequest,
+	input: OpenAIChatRequest,
 ): CanonicalChatRequest {
-	req = normalizePromptCacheRequest(req);
+	const req = normalizePromptCacheRequest(input);
 	const u: CanonicalChatRequest = {
 		callType: "chat",
 		publicWire: "chat_completions",

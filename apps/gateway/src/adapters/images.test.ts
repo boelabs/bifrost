@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import sharp from "sharp";
 
 import {
+	type CanonicalImageStreamEvent,
 	type CanonicalImageRequest,
 	type CanonicalImageInput,
 	type ImageModelProfile,
@@ -192,7 +193,7 @@ test("OpenAI images: normalizes partial/completed SSE events", async () => {
 			controller.close();
 		},
 	});
-	const events = [];
+	const events: CanonicalImageStreamEvent[] = [];
 	for await (const event of openaiAdapter.imageGeneration!.parseStream!(
 		stream,
 		ctx("images"),

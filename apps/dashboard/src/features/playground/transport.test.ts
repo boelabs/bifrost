@@ -147,7 +147,10 @@ async function streamParts(
 test("streams Responses reasoning, text, usage metrics and no reconnect", async () => {
 	let nowValue = 100;
 	const transport = createPlaygroundTransport("responses", "model", settings, {
-		now: () => (nowValue += 10),
+		now: () => {
+			nowValue += 10;
+			return nowValue;
+		},
 		baseURL: "https://gateway.test/v1",
 		fetch: async () =>
 			sse([
@@ -661,7 +664,10 @@ test("Chat SSE usage and timestamps feed separate request and streaming rates", 
 		"model",
 		settings,
 		{
-			now: () => (clock += 100),
+			now: () => {
+				clock += 100;
+				return clock;
+			},
 			baseURL: "https://gateway.test/v1",
 			fetch: async () =>
 				sse([
