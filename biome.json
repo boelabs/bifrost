@@ -1,55 +1,46 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.5.13/schema.json",
-	"vcs": {
-		"enabled": true,
-		"clientKind": "git",
-		"useIgnoreFile": true
-	},
+	"root": true,
+	"extends": [
+		"ultracite/biome/core",
+		"ultracite/biome/react",
+		"ultracite/biome/next"
+	],
 	"files": {
 		"ignoreUnknown": false,
-		"includes": ["**", "!**/src/db/migrations", "!**/.next", "!**/.source"]
+		"includes": ["**", "!**/src/db/migrations", "!**/.source", "!**/*.svg"]
 	},
 	"formatter": {
-		"enabled": true,
 		"indentStyle": "tab"
 	},
-	"linter": {
-		"enabled": true,
-
-		"rules": {
-			"preset": "recommended",
-			"style": {
-				"noNonNullAssertion": "info"
-			}
-		}
-	},
-	"overrides": [
-		{
-			"includes": ["**/*.test.ts", "**/*.integration.ts"],
-			"linter": {
-				"rules": {
-					"suspicious": {
-						"noExplicitAny": "off"
-					}
-				}
-			}
-		}
-	],
 	"javascript": {
 		"formatter": {
-			"quoteStyle": "double"
-		}
+			"quoteStyle": "double",
+			"trailingCommas": "all"
+		},
+		"globals": ["Bun"]
 	},
-	"css": {
-		"parser": {
-			"tailwindDirectives": true
+	"json": {
+		"formatter": {
+			"indentStyle": "tab"
 		}
 	},
 	"assist": {
-		"enabled": true,
 		"actions": {
 			"source": {
-				"organizeImports": "off"
+				"organizeImports": "off",
+				"useSortedKeys": "off",
+				"useSortedProperties": "off",
+				"useSortedInterfaceMembers": "off",
+				"useSortedTypeFields": "off"
+			}
+		}
+	},
+	"linter": {
+		"rules": {
+			"style": {
+				"useFilenamingConvention": "off",
+				"noNonNullAssertion": "info"
 			}
 		}
 	}
