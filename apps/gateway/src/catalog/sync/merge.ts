@@ -263,7 +263,8 @@ export function mergeCatalogEntry(
 	}
 
 	// Bound once so the loop below writes through a value the type already knows is there.
-	const pricing = (entry.pricing ??= {});
+	entry.pricing ??= {};
+	const { pricing } = entry;
 	for (const field of [
 		"inputCentsPerMTokens",
 		"outputCentsPerMTokens",

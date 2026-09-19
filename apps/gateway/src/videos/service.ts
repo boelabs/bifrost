@@ -313,7 +313,7 @@ export async function ensureVideoAsset(
 		});
 	}
 
-	const { candidate, videoGeneration, ctx, cleanup } = await candidateFromJob(
+	const { videoGeneration, ctx, cleanup } = await candidateFromJob(
 		row,
 		signal,
 		"stream",

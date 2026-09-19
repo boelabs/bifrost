@@ -55,6 +55,21 @@
 		}
 	},
 
+	"overrides": [
+		{
+			/*
+			 * A wrong `!` in the gateway is a 500 an operator has to diagnose from a
+			 * stack trace. A wrong `!` in a test is a failed test, which is the job of
+			 * a test — and a fixture that asserts its own shape reads better than one
+			 * that re-proves it on every line.
+			 */
+			"includes": ["**/*.test.ts", "**/*.test.tsx", "**/tests/**"],
+			"linter": {
+				"rules": { "style": { "noNonNullAssertion": "off" } }
+			}
+		}
+	],
+
 	"linter": {
 		"rules": {
 			/* ---------------------------------------------------------------- off
@@ -73,8 +88,8 @@
 				// `void promise` is the deliberate marker for a floating promise; the rule
 				// would have us drop the marker and keep the float.
 				"noVoid": "off",
-				// 97 functions. Splitting a router or a render function is a change to
-				// routing or rendering, not a codemod. See the "info" note below.
+				// Splitting a router or a render function is a change to routing or
+				// rendering, not a codemod. See the "info" note below.
 				"noExcessiveCognitiveComplexity": "info"
 			},
 			"correctness": {
@@ -95,8 +110,8 @@
 				// A deliberate key removal: code downstream reads Object.keys(...).length,
 				// and `= undefined` leaves the key in place.
 				"noDelete": "off",
-				// 407 sites. Hoisting a /g regex to module scope makes it stateful across
-				// calls, so each one has to be read before it is moved.
+				// Hoisting a /g regex to module scope makes it stateful across calls, so
+				// each one has to be read before it is moved.
 				"useTopLevelRegex": "info"
 			},
 			"style": {
@@ -106,7 +121,7 @@
 				// codebase goes through GatewayError or a factory, so it sees nothing but
 				// false positives. Causes are still threaded through by hand.
 				"useErrorCause": "off",
-				// Components are PascalCase, modules camelCase. Renaming 231 files would
+				// Components are PascalCase, modules camelCase. Renaming every file would
 				// break every import and every blame.
 				"useFilenamingConvention": "off",
 				// The one class component is MarkdownBoundary, and an error boundary needs
@@ -118,15 +133,18 @@
 				 * editor, not a gate — the same treatment noNonNullAssertion already had.
 				 * Drive each count to zero and promote the rule back to "error".
 				 */
-				// 748 sites; most are justified by noUncheckedIndexedAccess.
-				"noNonNullAssertion": "info"
+				/*
+				 * Production code carries none: where an invariant holds, it is now the
+				 * type that says so. Tests are exempt below.
+				 */
+				"noNonNullAssertion": "error"
 			},
 			"suspicious": {
 				// `x == null` is the correct null-or-undefined test; the rule's fix drops
 				// the undefined half of it.
 				"noEqualsToNull": "off",
-				// 172 sites. Dropping `async` changes a rejected promise into a synchronous
-				// throw, so each one is a behavioural decision.
+				// Dropping `async` changes a rejected promise into a synchronous throw, so
+				// each one is a behavioural decision.
 				"useAwait": "info",
 				/*
 				 * 112 findings, sampled across all six of its message kinds. Not one was

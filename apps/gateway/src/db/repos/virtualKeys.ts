@@ -13,7 +13,6 @@ import {
 	and,
 	lte,
 	eq,
-	or,
 } from "drizzle-orm";
 
 export type VirtualKeyRow = typeof virtualKeys.$inferSelect;
