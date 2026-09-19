@@ -139,7 +139,7 @@ authApp.post("/session", async (c) => {
 		{
 			user: {
 				id: userId,
-				username: isRootLogin ? root!.user : input.username,
+				username: root && isRootLogin ? root.user : input.username,
 				role,
 				isRoot: isRootLogin,
 				mustChangePassword,

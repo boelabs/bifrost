@@ -842,10 +842,11 @@ async function* parseStream(
 				event.content_block?.type === "redacted_thinking" &&
 				typeof event.content_block.data === "string"
 			) {
-				thinkingBlocks.set(index, {
+				const redacted = {
 					type: "redacted_thinking",
 					data: event.content_block.data,
-				});
+				} as const;
+				thinkingBlocks.set(index, redacted);
 				yield {
 					id,
 					created,
@@ -854,9 +855,7 @@ async function* parseStream(
 						{
 							index: 0,
 							delta: {
-								providerFields: providerFieldsWithAnthropicThinking([
-									thinkingBlocks.get(index)!,
-								]),
+								providerFields: providerFieldsWithAnthropicThinking([redacted]),
 							},
 							finishReason: null,
 						},
@@ -1071,9 +1070,10 @@ function addBetaHeader(headers: Record<string, string>, beta: string): void {
 		headers["anthropic-beta"] = beta;
 		return;
 	}
-	const betas = headers[betaName]!.split(",").map((value) => value.trim());
+	const existing = headers[betaName] ?? "";
+	const betas = existing.split(",").map((value) => value.trim());
 	if (!betas.includes(beta)) {
-		headers[betaName] = `${headers[betaName]},${beta}`;
+		headers[betaName] = `${existing},${beta}`;
 	}
 }
 

@@ -65,8 +65,9 @@ class AsyncEventQueue {
 	}
 
 	next(): Promise<IteratorResult<QueuedEvent>> {
-		if (this.values.length > 0) {
-			return Promise.resolve({ done: false, value: this.values.shift()! });
+		const queued = this.values.shift();
+		if (queued !== undefined) {
+			return Promise.resolve({ done: false, value: queued });
 		}
 		if (this.failure !== undefined) {
 			return Promise.reject(this.failure);

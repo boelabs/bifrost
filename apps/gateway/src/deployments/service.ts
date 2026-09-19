@@ -221,7 +221,8 @@ export async function previewDeployment(
 			param: "catalogEntry",
 		});
 	}
-	if (!(inCatalog || input.catalogEntry)) {
+	const { catalogEntry } = input;
+	if (!(inCatalog || catalogEntry)) {
 		const message = `"${input.upstreamModel}" is not in the "${input.adapterKey}" catalog; provide catalogEntry for this custom model`;
 		throw new GatewayError({
 			class: "bad_request",
@@ -230,8 +231,8 @@ export async function previewDeployment(
 			param: "catalogEntry",
 		});
 	}
-	if (!inCatalog) {
-		validateCustomCatalogEntry(adapter, input.catalogEntry!);
+	if (!inCatalog && catalogEntry) {
+		validateCustomCatalogEntry(adapter, catalogEntry);
 	}
 	const effective = resolveModelMetadata(
 		input.adapterKey,
