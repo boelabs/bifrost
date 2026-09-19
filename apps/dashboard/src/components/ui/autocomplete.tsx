@@ -111,7 +111,7 @@ function Empty({ className, ...props }: BaseAutocomplete.Empty.Props) {
 		<BaseAutocomplete.Empty
 			{...props}
 			className={mergeClassName(
-				"px-3 py-4 text-sm text-fg-muted empty:hidden",
+				"px-3 py-4 text-fg-muted text-sm empty:hidden",
 				className,
 			)}
 		/>

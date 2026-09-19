@@ -16,6 +16,8 @@ import { currentSession } from "./api.ts";
  */
 export async function requireIdentity(): Promise<OperatorIdentity> {
 	const identity = await currentSession();
-	if (!identity) redirect("/auth");
+	if (!identity) {
+		redirect("/auth");
+	}
 	return identity;
 }

@@ -30,7 +30,9 @@ async function rotateDeployments(): Promise<number> {
 				sql`${modelDeployments.credentials}->>'kid' IS DISTINCT FROM ${activeEncryptionKeyId()}`,
 			)
 			.limit(BATCH_SIZE);
-		if (rows.length === 0) return rotated;
+		if (rows.length === 0) {
+			return rotated;
+		}
 		const batchRotated = await db.transaction(async (tx) => {
 			let updatedCount = 0;
 			for (const row of rows) {
@@ -63,7 +65,9 @@ async function rotateExtensions(): Promise<number> {
 				sql`${extensionArtifacts.code}->>'kid' IS DISTINCT FROM ${activeEncryptionKeyId()}`,
 			)
 			.limit(BATCH_SIZE);
-		if (rows.length === 0) return rotated;
+		if (rows.length === 0) {
+			return rotated;
+		}
 		const batchRotated = await db.transaction(async (tx) => {
 			let updatedCount = 0;
 			for (const row of rows) {
@@ -96,7 +100,9 @@ async function rotatePayloadSamples(): Promise<number> {
 				sql`${payloadSamples.envelope}->>'kid' IS DISTINCT FROM ${activeEncryptionKeyId()}`,
 			)
 			.limit(BATCH_SIZE);
-		if (rows.length === 0) return rotated;
+		if (rows.length === 0) {
+			return rotated;
+		}
 		const batchRotated = await db.transaction(async (tx) => {
 			let updatedCount = 0;
 			for (const row of rows) {

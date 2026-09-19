@@ -80,7 +80,7 @@ function Chosen({
 }) {
 	return (
 		<div className="mb-2 flex items-center gap-3 rounded-[28px] border border-border bg-surface-2 px-4 py-3 max-sm:rounded-2xl">
-			<IconFileText className="size-5 shrink-0 text-fg-muted" aria-hidden />
+			<IconFileText aria-hidden className="size-5 shrink-0 text-fg-muted" />
 			<div className="min-w-0 flex-1">
 				<p className="truncate font-medium text-sm">{file.name}</p>
 				<p className="text-fg-muted text-xs">
@@ -88,18 +88,18 @@ function Chosen({
 				</p>
 			</div>
 			{/* biome-ignore lint/a11y/useMediaCaption: the captions are what this page is producing */}
-			<audio src={url} controls className="h-9 max-w-56 shrink-0" />
+			<audio className="h-9 max-w-56 shrink-0" controls src={url} />
 			<Button
+				aria-label="Remove the file"
+				disabled={disabled}
+				mode="icon"
+				onClick={onClear}
+				size="sm"
+				title="Remove the file"
 				type="button"
 				variant="ghost"
-				size="sm"
-				mode="icon"
-				aria-label="Remove the file"
-				title="Remove the file"
-				disabled={disabled}
-				onClick={onClear}
 			>
-				<IconX className="size-4.5" aria-hidden />
+				<IconX aria-hidden className="size-4.5" />
 			</Button>
 		</div>
 	);
@@ -128,13 +128,13 @@ function TranscriptionRunView({
 			>
 				<div className="flex items-center gap-3 rounded-3xl border border-border/60 bg-surface-2 px-3.5 py-2.5">
 					<IconPlayerPlay
-						className="size-4 shrink-0 text-fg-muted"
 						aria-hidden
+						className="size-4 shrink-0 text-fg-muted"
 					/>
 					<span className="truncate text-sm">{run.filename}</span>
 				</div>
 				{/* biome-ignore lint/a11y/useMediaCaption: the captions are what this page is producing */}
-				<audio src={run.audio} controls className="h-9 max-w-64" />
+				<audio className="h-9 max-w-64" controls src={run.audio} />
 			</article>
 			<article
 				aria-label="Assistant message"
@@ -159,12 +159,12 @@ function TranscriptionRunView({
 					<ol className="flex flex-col gap-1">
 						{run.segments.map((segment, index) => (
 							<li
+								className="flex gap-3 rounded-lg px-2 py-1 text-sm odd:bg-surface-2/60"
 								// biome-ignore lint/suspicious/noArrayIndexKey: segments are a sequence, and their order is their identity
 								key={index}
-								className="flex gap-3 rounded-lg px-2 py-1 text-sm odd:bg-surface-2/60"
 							>
 								<span className="shrink-0 font-mono text-fg-muted text-xs leading-6">
-									{segment.start !== undefined ? timestamp(segment.start) : "—"}
+									{segment.start === undefined ? "—" : timestamp(segment.start)}
 								</span>
 								<span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
 									{segment.text}
@@ -178,35 +178,35 @@ function TranscriptionRunView({
 				) : null}
 				<div className="-ml-2 flex h-10 shrink-0 items-center gap-0.5 lg:h-8">
 					<CopyAction
-						text={run.text}
-						label="Copy transcript"
 						disabled={!run.text}
+						label="Copy transcript"
 						onCopy={onCopy}
+						text={run.text}
 					/>
 					<Button
+						aria-label="Transcribe again"
+						className={MESSAGE_ACTION}
+						disabled={run.state === "running"}
+						mode="icon"
+						onClick={onRetry}
+						size="sm"
+						title="Transcribe again"
 						type="button"
 						variant="ghost"
-						size="sm"
-						mode="icon"
-						className={MESSAGE_ACTION}
-						aria-label="Transcribe again"
-						title="Transcribe again"
-						disabled={run.state === "running"}
-						onClick={onRetry}
 					>
-						<IconRotate2 className={MESSAGE_ACTION_ICON} aria-hidden />
+						<IconRotate2 aria-hidden className={MESSAGE_ACTION_ICON} />
 					</Button>
 					<p className="px-2 text-fg-muted text-xs">
 						{[
 							run.model,
 							run.settings.responseFormat,
 							run.language,
-							run.audioDuration !== undefined
-								? `${run.audioDuration.toFixed(1)}s of audio`
-								: undefined,
-							run.durationMs !== undefined
-								? duration(run.durationMs)
-								: undefined,
+							run.audioDuration === undefined
+								? undefined
+								: `${run.audioDuration.toFixed(1)}s of audio`,
+							run.durationMs === undefined
+								? undefined
+								: duration(run.durationMs),
 						]
 							.filter(Boolean)
 							.join(" · ")}
@@ -254,8 +254,9 @@ export function TranscriptionWorkspace({
 	}, []);
 
 	useEffect(() => {
-		if (runs.length && scroll.current)
+		if (runs.length && scroll.current) {
 			scroll.current.scrollTop = scroll.current.scrollHeight;
+		}
 	}, [runs]);
 
 	function update(id: string, patch: Partial<TranscriptionRun>) {
@@ -280,7 +281,9 @@ export function TranscriptionWorkspace({
 
 	function choose(selected: File[]) {
 		const [first] = selected;
-		if (!first) return;
+		if (!first) {
+			return;
+		}
 		if (first.size === 0) {
 			setLocalError(`${first.name}: the file is empty.`);
 			return;
@@ -288,7 +291,9 @@ export function TranscriptionWorkspace({
 		setLocalError(undefined);
 		// One request, one file: a second choice replaces the first rather than queueing.
 		setFile((current) => {
-			if (current) URL.revokeObjectURL(current.url);
+			if (current) {
+				URL.revokeObjectURL(current.url);
+			}
 			return { file: first, url: URL.createObjectURL(first) };
 		});
 	}
@@ -337,21 +342,25 @@ export function TranscriptionWorkspace({
 				{ model: model.id, file: run.file, settings },
 				{ signal: controller.signal },
 			);
-			if (!alive.current) return;
+			if (!alive.current) {
+				return;
+			}
 			update(id, {
 				state: "completed",
 				text: transcription.text,
 				segments: transcription.segments,
 				durationMs: performance.now() - started,
-				...(transcription.language !== undefined
-					? { language: transcription.language }
-					: {}),
-				...(transcription.duration !== undefined
-					? { audioDuration: transcription.duration }
-					: {}),
+				...(transcription.language === undefined
+					? {}
+					: { language: transcription.language }),
+				...(transcription.duration === undefined
+					? {}
+					: { audioDuration: transcription.duration }),
 			});
 		} catch (cause) {
-			if (!alive.current) return;
+			if (!alive.current) {
+				return;
+			}
 			const stopped = cause instanceof Error && cause.name === "AbortError";
 			update(id, {
 				state: stopped ? "stopped" : "failed",
@@ -389,82 +398,87 @@ export function TranscriptionWorkspace({
 	) {
 		setSettings((current) => {
 			const next = { ...current };
-			if (value === undefined || value === "") delete next[key];
-			else next[key] = value;
+			if (value === undefined || value === "") {
+				delete next[key];
+			} else {
+				next[key] = value;
+			}
 			return next;
 		});
 	}
 
 	return (
 		<Workspace
-			scroll={scroll}
 			empty={runs.length === 0}
+			scroll={scroll}
 			{...(localError ? { error: localError } : {})}
-			transcript={runs.map((run) => (
-				<TranscriptionRunView
-					key={run.id}
-					run={run}
-					onCopy={copy}
-					onRetry={() => {
-						if (!busy) void execute(run);
-					}}
-				/>
-			))}
 			composer={
 				<>
 					{file ? (
 						<Chosen
-							file={file.file}
-							url={file.url}
 							disabled={busy}
+							file={file.file}
 							onClear={() => {
 								URL.revokeObjectURL(file.url);
 								setFile(null);
 							}}
+							url={file.url}
 						/>
 					) : null}
 					<Composer
-						prompt=""
-						onPrompt={() => {}}
-						files={[]}
-						onRemove={() => {}}
-						onFiles={choose}
-						placeholder={
-							file ? "Send to transcribe" : "Attach an audio file to transcribe"
-						}
-						readOnly
 						accepted={AUDIO_TYPES}
-						reading={false}
 						busy={busy}
 						canSend={file !== null}
-						onSend={send}
-						onStop={() => request.current?.abort()}
-						onSettings={() => setSettingsOpen(true)}
+						files={[]}
+						modelPicker={
+							<ModelSelect
+								capability="transcription"
+								modelId={model.id}
+								models={models}
+								onSelect={onSelect}
+							/>
+						}
+						onFiles={choose}
+						onPrompt={() => {}}
+						onRemove={() => {}}
 						onReset={() => {
 							request.current?.abort();
 							setRuns([]);
 							setFile(null);
 							setLocalError(undefined);
 						}}
-						modelPicker={
-							<ModelSelect
-								models={models}
-								capability="transcription"
-								modelId={model.id}
-								onSelect={onSelect}
-							/>
+						onSend={send}
+						onSettings={() => setSettingsOpen(true)}
+						onStop={() => request.current?.abort()}
+						placeholder={
+							file ? "Send to transcribe" : "Attach an audio file to transcribe"
 						}
+						prompt=""
+						reading={false}
+						readOnly
 					/>
 					{notice ? (
-						<p role="status" className="sr-only">
+						<p className="sr-only" role="status">
 							{notice}
 						</p>
 					) : null}
 				</>
 			}
+			transcript={runs.map((run) => (
+				<TranscriptionRunView
+					key={run.id}
+					onCopy={copy}
+					onRetry={() => {
+						if (!busy) {
+							void execute(run);
+						}
+					}}
+					run={run}
+				/>
+			))}
 		>
-			<DialogRoot open={settingsOpen} onOpenChange={setSettingsOpen}>
-				<DialogContent layout="sectioned" className="md:w-xl">
+			<DialogRoot onOpenChange={setSettingsOpen} open={settingsOpen}>
+				<DialogContent className="md:w-xl" layout="sectioned">
 					<DialogHeader>
 						<DialogTitle>Transcription settings</DialogTitle>
 						<DialogDescription>
@@ -474,9 +488,8 @@ export function TranscriptionWorkspace({
 					</DialogHeader>
 					<DialogBody>
 						<Select
-							label="Response format"
 							description="json and verbose_json answer with JSON; text, srt and vtt answer with the file you would save."
-							value={settings.responseFormat ?? "default"}
+							label="Response format"
 							onValueChange={(value) =>
 								set(
 									"responseFormat",
@@ -485,6 +498,7 @@ export function TranscriptionWorkspace({
 										: (value as ResponseFormat),
 								)
 							}
+							value={settings.responseFormat ?? "default"}
 						>
 							<SelectItem value="default">Default</SelectItem>
 							{RESPONSE_FORMATS.map((format) => (
@@ -495,15 +509,15 @@ export function TranscriptionWorkspace({
 						</Select>
 						{settings.responseFormat === "verbose_json" ? (
 							<Select
-								label="Timestamps"
 								description="Only verbose_json carries them."
-								value={settings.timestampGranularities?.[0] ?? "default"}
+								label="Timestamps"
 								onValueChange={(value) =>
 									set(
 										"timestampGranularities",
 										value === "default" || value === null ? undefined : [value],
 									)
 								}
+								value={settings.timestampGranularities?.[0] ?? "default"}
 							>
 								<SelectItem value="default">Default</SelectItem>
 								{TIMESTAMP_GRANULARITIES.map((granularity) => (
@@ -514,23 +528,23 @@ export function TranscriptionWorkspace({
 							</Select>
 						) : null}
 						<Input
-							label="Language"
 							description="An ISO-639-1 code such as es or en. Guessed when left empty."
-							value={settings.language ?? ""}
+							label="Language"
 							onChange={(event) => set("language", event.target.value.trim())}
 							placeholder="Detect"
+							value={settings.language ?? ""}
 						/>
 						<NumberField.Root
-							value={settings.temperature ?? null}
-							onValueChange={(value) => set("temperature", value ?? undefined)}
-							min={0}
 							max={1}
+							min={0}
+							onValueChange={(value) => set("temperature", value ?? undefined)}
 							step={0.1}
+							value={settings.temperature ?? null}
 						>
 							<NumberField.ScrubArea>
 								<label
-									htmlFor="playground-transcription-temperature"
 									className="font-medium text-sm"
+									htmlFor="playground-transcription-temperature"
 								>
 									Temperature
 								</label>
@@ -545,12 +559,12 @@ export function TranscriptionWorkspace({
 							</NumberField.Group>
 						</NumberField.Root>
 						<Textarea
-							label="Prompt"
 							description="Names and jargon the audio contains, to steer the spelling."
-							value={settings.prompt ?? ""}
+							label="Prompt"
 							onChange={(event) => set("prompt", event.target.value)}
-							rows={3}
 							placeholder="Optional"
+							rows={3}
+							value={settings.prompt ?? ""}
 						/>
 					</DialogBody>
 					<DialogFooter>

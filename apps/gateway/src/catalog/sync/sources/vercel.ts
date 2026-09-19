@@ -108,12 +108,12 @@ function normalizeEndpoint(raw: VercelEndpoint): SourceEndpoint {
 	return {
 		providerTag: raw.provider_name ?? "",
 		active: raw.status === undefined || raw.status === 0,
-		...(raw.context_length != null
-			? { contextLength: raw.context_length }
-			: {}),
-		...(raw.max_completion_tokens != null
-			? { maxCompletionTokens: raw.max_completion_tokens }
-			: {}),
+		...(raw.context_length == null
+			? {}
+			: { contextLength: raw.context_length }),
+		...(raw.max_completion_tokens == null
+			? {}
+			: { maxCompletionTokens: raw.max_completion_tokens }),
 		...(pricing ? { pricing } : {}),
 		...(raw.supported_parameters
 			? { supportedParameters: raw.supported_parameters }
@@ -124,31 +124,38 @@ function normalizeEndpoint(raw: VercelEndpoint): SourceEndpoint {
 function normalizeModelPricing(
 	pricing: VercelModelPricing | undefined,
 ): ReturnType<typeof pricingFromDollarStrings> {
-	if (!pricing) return undefined;
+	if (!pricing) {
+		return undefined;
+	}
 	return pricingFromDollarStrings({
-		...(pricing.input !== undefined ? { prompt: pricing.input } : {}),
-		...(pricing.output !== undefined ? { completion: pricing.output } : {}),
-		...(pricing.input_cache_read !== undefined
-			? { input_cache_read: pricing.input_cache_read }
-			: {}),
-		...(pricing.input_cache_write !== undefined
-			? { input_cache_write: pricing.input_cache_write }
-			: {}),
+		...(pricing.input === undefined ? {} : { prompt: pricing.input }),
+		...(pricing.output === undefined ? {} : { completion: pricing.output }),
+		...(pricing.input_cache_read === undefined
+			? {}
+			: { input_cache_read: pricing.input_cache_read }),
+		...(pricing.input_cache_write === undefined
+			? {}
+			: { input_cache_write: pricing.input_cache_write }),
 	});
 }
 
 function normalizeReasoningOptions(
 	raw: VercelModel["reasoning_options"],
 ): SourceReasoningOption[] | undefined {
-	if (!raw || raw.length === 0) return undefined;
+	if (!raw || raw.length === 0) {
+		return undefined;
+	}
 	const options: SourceReasoningOption[] = raw.map((option) => {
-		if (option.type === "toggle") return { type: "toggle" };
-		if (option.type === "effort")
+		if (option.type === "toggle") {
+			return { type: "toggle" };
+		}
+		if (option.type === "effort") {
 			return { type: "effort", values: [...(option.values ?? [])] };
+		}
 		return {
 			type: "budget_tokens",
-			...(option.min !== undefined ? { min: option.min } : {}),
-			...(option.max !== undefined ? { max: option.max } : {}),
+			...(option.min === undefined ? {} : { min: option.min }),
+			...(option.max === undefined ? {} : { max: option.max }),
 		};
 	});
 	return options.length > 0 ? options : undefined;
@@ -163,15 +170,15 @@ function normalizeModel(
 	return {
 		source: "vercel-ai-gateway",
 		id: model.id,
-		...(model.name !== undefined ? { name: model.name } : {}),
+		...(model.name === undefined ? {} : { name: model.name }),
 		inputModalities:
 			model.modalities?.input ?? detail?.architecture?.input_modalities ?? [],
 		outputModalities:
 			model.modalities?.output ?? detail?.architecture?.output_modalities ?? [],
-		...(model.context_window != null
-			? { contextWindow: model.context_window }
-			: {}),
-		...(model.max_tokens != null ? { maxTokens: model.max_tokens } : {}),
+		...(model.context_window == null
+			? {}
+			: { contextWindow: model.context_window }),
+		...(model.max_tokens == null ? {} : { maxTokens: model.max_tokens }),
 		...(pricing ? { pricing } : {}),
 		...(model.supported_parameters
 			? { supportedParameters: model.supported_parameters }

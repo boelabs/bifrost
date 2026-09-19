@@ -67,7 +67,11 @@ export default defineExtension({
  * runtime value out of a `"use client"` module.
  */
 export function runtimeTone(status: string): "success" | "warning" | "danger" {
-	if (status === "ok") return "success";
-	if (status === "degraded") return "warning";
+	if (status === "ok") {
+		return "success";
+	}
+	if (status === "degraded") {
+		return "warning";
+	}
 	return "danger";
 }

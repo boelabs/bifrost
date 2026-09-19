@@ -84,9 +84,9 @@ const GEMINI_BODY_MANAGED_KEYS = [
 ] as const;
 const DEFAULT_GEMINI_BUDGETS = {
 	minimal: 512,
-	low: 1_024,
-	medium: 4_096,
-	high: 8_192,
+	low: 1024,
+	medium: 4096,
+	high: 8192,
 	xhigh: 24_576,
 } as const;
 // Safety filters default to fully OFF from the gateway side. A client can still override them
@@ -110,7 +110,9 @@ function dataUrlToInline(
 	url: string,
 ): { mimeType: string; data: string } | null {
 	const m = /^data:([^;]+);base64,(.*)$/s.exec(url);
-	if (!m) return null;
+	if (!m) {
+		return null;
+	}
 	return { mimeType: m[1]!, data: m[2]! };
 }
 
@@ -141,7 +143,9 @@ function partToGemini(p: CanonicalContentPart): Record<string, unknown> {
 		case "file": {
 			if (p.fileData) {
 				const inline = dataUrlToInline(p.fileData);
-				if (inline) return { inlineData: inline };
+				if (inline) {
+					return { inlineData: inline };
+				}
 			}
 			throw new GatewayError({
 				class: "bad_request",
@@ -157,8 +161,12 @@ function partToGemini(p: CanonicalContentPart): Record<string, unknown> {
 function contentToParts(
 	content: CanonicalMessage["content"],
 ): Record<string, unknown>[] {
-	if (content === null) return [];
-	if (typeof content === "string") return [{ text: content }];
+	if (content === null) {
+		return [];
+	}
+	if (typeof content === "string") {
+		return [{ text: content }];
+	}
 	return content.map(partToGemini);
 }
 
@@ -166,8 +174,9 @@ function googleToolCallExtra(toolCall: {
 	extraContent?: Record<string, unknown>;
 }): Record<string, unknown> | undefined {
 	const google = toolCall.extraContent?.google;
-	if (google === null || typeof google !== "object" || Array.isArray(google))
+	if (google === null || typeof google !== "object" || Array.isArray(google)) {
 		return undefined;
+	}
 	return google as Record<string, unknown>;
 }
 
@@ -205,12 +214,17 @@ function ensureFirstFunctionCallSignature(
 	parts: Record<string, unknown>[],
 	ctx: AdapterContext,
 ): void {
-	if (!requiresThoughtSignature(ctx)) return;
+	if (!requiresThoughtSignature(ctx)) {
+		return;
+	}
 	const first = parts.find((part) => part.functionCall !== undefined);
-	if (first === undefined) return;
+	if (first === undefined) {
+		return;
+	}
 	const signature = first.thoughtSignature ?? first.thought_signature;
-	if (typeof signature !== "string" || signature.length === 0)
+	if (typeof signature !== "string" || signature.length === 0) {
 		first.thoughtSignature = MISSING_THOUGHT_SIGNATURE;
+	}
 }
 
 interface GeminiBody extends Record<string, unknown> {
@@ -229,7 +243,9 @@ function geminiThinkingConfig(
 		"gemini_level",
 		"gemini_budget",
 	]);
-	if (resolved === undefined) return undefined;
+	if (resolved === undefined) {
+		return undefined;
+	}
 	const { effort } = resolved;
 	const spec = ctx.meta.reasoning!;
 	const includeThoughts = summaryVisible(resolved.summary);
@@ -241,7 +257,9 @@ function geminiThinkingConfig(
 			...(includeThoughts ? { includeThoughts: true } : {}),
 		};
 	}
-	if (effort === "none") return { thinkingBudget: 0 };
+	if (effort === "none") {
+		return { thinkingBudget: 0 };
+	}
 	const budget =
 		spec.budgets?.[effort] ??
 		(effort === "max" ? undefined : DEFAULT_GEMINI_BUDGETS[effort]);
@@ -261,14 +279,18 @@ function applyResponseFormat(
 	req: CanonicalChatRequest,
 ): void {
 	const format = req.responseFormat;
-	if (format === undefined || format.type === "text") return;
+	if (format === undefined || format.type === "text") {
+		return;
+	}
 
 	// JSON output in Gemini = generationConfig.responseMimeType (+ responseJsonSchema for the schema).
 	// There is no `responseFormat` in the generateContent API. `responseJsonSchema` accepts standard
 	// JSON Schema (lowercase types, additionalProperties, $ref), unlike `responseSchema` (an OpenAPI
 	// `responseSchema` (subset with UPPERCASE types). Works for Gemini 2.5 and 3.
 	gen.responseMimeType = "application/json";
-	if (format.type === "json_schema") gen.responseJsonSchema = format.schema;
+	if (format.type === "json_schema") {
+		gen.responseJsonSchema = format.schema;
+	}
 }
 
 function buildGeminiBody(
@@ -307,14 +329,18 @@ function buildGeminiBody(
 				const call = part.functionCall as
 					| { id?: unknown; name?: unknown }
 					| undefined;
-				if (typeof call?.id === "string" && typeof call.name === "string")
+				if (typeof call?.id === "string" && typeof call.name === "string") {
 					toolNameById.set(call.id, call.name);
+				}
 			}
-			if (nativeParts === undefined && m.content)
+			if (nativeParts === undefined && m.content) {
 				parts.push(...contentToParts(m.content));
+			}
 			for (const tc of m.toolCalls ?? []) {
 				toolNameById.set(tc.id, tc.name);
-				if (nativeParts !== undefined) continue;
+				if (nativeParts !== undefined) {
+					continue;
+				}
 				let args: unknown = {};
 				try {
 					args = tc.arguments ? JSON.parse(tc.arguments) : {};
@@ -328,8 +354,9 @@ function buildGeminiBody(
 				};
 				const part: Record<string, unknown> = { functionCall };
 				const thoughtSignature = googleThoughtSignature(tc);
-				if (thoughtSignature !== undefined)
+				if (thoughtSignature !== undefined) {
 					part.thoughtSignature = thoughtSignature;
+				}
 				parts.push(part);
 			}
 			ensureFirstFunctionCallSignature(parts, ctx);
@@ -352,8 +379,9 @@ function buildGeminiBody(
 			} catch {
 				response = { result: text };
 			}
-			if (m.toolResultError === true)
+			if (m.toolResultError === true) {
 				response = { error: response.error ?? response };
+			}
 			body.contents.push({
 				role: "user",
 				parts: [
@@ -372,35 +400,58 @@ function buildGeminiBody(
 		body.contents.push({ role: "user", parts: contentToParts(m.content) });
 	}
 
-	if (systemParts.length > 0) body.systemInstruction = { parts: systemParts };
+	if (systemParts.length > 0) {
+		body.systemInstruction = { parts: systemParts };
+	}
 
 	const gen: Record<string, unknown> = {};
-	if (req.temperature !== undefined) gen.temperature = req.temperature;
-	if (req.topP !== undefined) gen.topP = req.topP;
+	if (req.temperature !== undefined) {
+		gen.temperature = req.temperature;
+	}
+	if (req.topP !== undefined) {
+		gen.topP = req.topP;
+	}
 	const extraTopK = req.extraBody?.top_k;
-	if (req.topK !== undefined) gen.topK = req.topK;
-	else if (typeof extraTopK === "number") gen.topK = extraTopK;
-	if (req.maxTokens !== undefined) gen.maxOutputTokens = req.maxTokens;
-	if (req.stop !== undefined) gen.stopSequences = req.stop;
-	if (req.n !== undefined) gen.candidateCount = req.n;
-	if (req.presencePenalty !== undefined)
+	if (req.topK !== undefined) {
+		gen.topK = req.topK;
+	} else if (typeof extraTopK === "number") {
+		gen.topK = extraTopK;
+	}
+	if (req.maxTokens !== undefined) {
+		gen.maxOutputTokens = req.maxTokens;
+	}
+	if (req.stop !== undefined) {
+		gen.stopSequences = req.stop;
+	}
+	if (req.n !== undefined) {
+		gen.candidateCount = req.n;
+	}
+	if (req.presencePenalty !== undefined) {
 		gen.presencePenalty = req.presencePenalty;
-	if (req.frequencyPenalty !== undefined)
+	}
+	if (req.frequencyPenalty !== undefined) {
 		gen.frequencyPenalty = req.frequencyPenalty;
-	if (req.seed !== undefined) gen.seed = req.seed;
+	}
+	if (req.seed !== undefined) {
+		gen.seed = req.seed;
+	}
 	const thinkingConfig = geminiThinkingConfig(req, ctx);
-	if (thinkingConfig !== undefined) gen.thinkingConfig = thinkingConfig;
+	if (thinkingConfig !== undefined) {
+		gen.thinkingConfig = thinkingConfig;
+	}
 	applyResponseFormat(gen, req);
-	if (Object.keys(gen).length > 0) body.generationConfig = gen;
+	if (Object.keys(gen).length > 0) {
+		body.generationConfig = gen;
+	}
 
 	if (req.tools && req.tools.length > 0) {
 		body.tools = [
 			{
 				functionDeclarations: req.tools.map((t) => ({
 					name: t.name,
-					...(t.description !== undefined
-						? { description: t.description }
-						: {}),
+					...(t.description === undefined
+						? {}
+						: { description: t.description }),
 					...(t.parameters === undefined
 						? {}
 						: t.strict === true && strictToolDecoding
@@ -413,11 +464,13 @@ function buildGeminiBody(
 	if (req.toolChoice !== undefined || strictToolDecoding) {
 		const fc: Record<string, unknown> = {};
 		const toolChoice = req.toolChoice ?? "auto";
-		if (toolChoice === "auto")
+		if (toolChoice === "auto") {
 			fc.mode = strictToolDecoding ? "VALIDATED" : "AUTO";
-		else if (toolChoice === "none") fc.mode = "NONE";
-		else if (toolChoice === "required") fc.mode = "ANY";
-		else if ("name" in toolChoice) {
+		} else if (toolChoice === "none") {
+			fc.mode = "NONE";
+		} else if (toolChoice === "required") {
+			fc.mode = "ANY";
+		} else if ("name" in toolChoice) {
 			fc.mode = "ANY";
 			fc.allowedFunctionNames = [toolChoice.name];
 		} else {
@@ -434,7 +487,9 @@ function buildGeminiBody(
 
 	body.safetySettings = DEFAULT_SAFETY_SETTINGS.map((s) => ({ ...s }));
 	const extraBody = req.extraBody ? { ...req.extraBody } : undefined;
-	if (extraBody !== undefined) delete extraBody.top_k;
+	if (extraBody !== undefined) {
+		delete extraBody.top_k;
+	}
 	return mergeExtraBody(body, extraBody, GEMINI_BODY_MANAGED_KEYS);
 }
 
@@ -492,14 +547,16 @@ function mapGeminiFinish(
 			return null;
 		default: {
 			const normalized = String(reason).toLowerCase();
-			if (/max.?tokens?|context.?window|length/.test(normalized))
+			if (/max.?tokens?|context.?window|length/.test(normalized)) {
 				return "length";
+			}
 			if (
 				/filter|safety|guardrail|block|prohibit|refus|recitation/.test(
 					normalized,
 				)
-			)
+			) {
 				return "content_filter";
+			}
 			return "stop";
 		}
 	}
@@ -569,8 +626,12 @@ async function buildGeminiImageBody(
 		req.quality !== undefined && req.quality !== "auto"
 			? profile?.qualityMappings?.[req.quality]
 			: undefined;
-	if (resolved?.aspectRatio) imageConfig.aspectRatio = resolved.aspectRatio;
-	if (resolved?.imageSize) imageConfig.imageSize = resolved.imageSize;
+	if (resolved?.aspectRatio) {
+		imageConfig.aspectRatio = resolved.aspectRatio;
+	}
+	if (resolved?.imageSize) {
+		imageConfig.imageSize = resolved.imageSize;
+	}
 	const body: Record<string, unknown> = {
 		contents: [{ role: "user", parts }],
 		generationConfig: {
@@ -607,8 +668,12 @@ function googleModelPathId(upstreamModel: string): string {
 }
 
 function googleEmbeddingTexts(input: EmbeddingInput): string[] {
-	if (typeof input === "string") return [input];
-	if (input.every((item) => typeof item === "string")) return input as string[];
+	if (typeof input === "string") {
+		return [input];
+	}
+	if (input.every((item) => typeof item === "string")) {
+		return input as string[];
+	}
 	throw new GatewayError({
 		class: "bad_request",
 		message:
@@ -625,8 +690,9 @@ function textEmbeddingContent(text: string): Record<string, unknown> {
 }
 
 function plainRecord(value: unknown): Record<string, unknown> | null {
-	if (value === null || typeof value !== "object" || Array.isArray(value))
+	if (value === null || typeof value !== "object" || Array.isArray(value)) {
 		return null;
+	}
 	return value as Record<string, unknown>;
 }
 
@@ -667,8 +733,9 @@ function splitGoogleEmbeddingExtraBody(req: CanonicalEmbeddingsRequest): {
 			param: "extra_body.embedContentConfig.outputDimensionality",
 		});
 	}
-	if (req.dimensions !== undefined)
+	if (req.dimensions !== undefined) {
 		config.outputDimensionality = req.dimensions;
+	}
 
 	return {
 		...(Object.keys(config).length > 0 ? { embedContentConfig: config } : {}),
@@ -724,7 +791,9 @@ function parseGeminiImageResponse(raw: unknown): CanonicalImageResponse {
 		.flatMap((candidate) => candidate.content?.parts ?? [])
 		.flatMap((part) => {
 			const inlineData = part.inlineData;
-			if (typeof inlineData?.data !== "string") return [];
+			if (typeof inlineData?.data !== "string") {
+				return [];
+			}
 			return [
 				{
 					b64Json: inlineData.data,
@@ -734,21 +803,22 @@ function parseGeminiImageResponse(raw: unknown): CanonicalImageResponse {
 				},
 			];
 		});
-	if (data.length === 0)
+	if (data.length === 0) {
 		throw new GatewayError({
 			class: "server",
 			message: "Google returned no image parts",
 		});
+	}
 	const u = response.usageMetadata;
 	const usage =
-		u?.totalTokenCount !== undefined
-			? {
+		u?.totalTokenCount === undefined
+			? undefined
+			: {
 					inputTokens: u.promptTokenCount ?? 0,
 					outputTokens:
 						(u.candidatesTokenCount ?? 0) + (u.thoughtsTokenCount ?? 0),
 					totalTokens: u.totalTokenCount,
-				}
-			: undefined;
+				};
 	return {
 		created: Math.floor(Date.now() / 1000),
 		data,
@@ -776,7 +846,7 @@ function parseGeminiEmbeddingsResponse(
 	const response = (raw ?? {}) as GeminiEmbeddingResponse;
 	const embeddings =
 		response.embeddings ??
-		(response.embedding !== undefined ? [response.embedding] : []);
+		(response.embedding === undefined ? [] : [response.embedding]);
 	if (embeddings.length === 0) {
 		throw new GatewayError({
 			class: "server",
@@ -790,9 +860,9 @@ function parseGeminiEmbeddingsResponse(
 			index,
 			embedding: parseEmbeddingValues(embedding.values),
 		})),
-		...(promptTokens !== undefined
-			? { usage: { promptTokens, totalTokens: promptTokens } }
-			: {}),
+		...(promptTokens === undefined
+			? {}
+			: { usage: { promptTokens, totalTokens: promptTokens } }),
 	};
 }
 
@@ -801,19 +871,28 @@ function googleRetryAfterMs(
 	body: unknown,
 ): number | undefined {
 	const details = (body as { error?: { details?: unknown } })?.error?.details;
-	if (!Array.isArray(details)) return undefined;
+	if (!Array.isArray(details)) {
+		return undefined;
+	}
 	for (const detail of details) {
-		if (detail === null || typeof detail !== "object") continue;
+		if (detail === null || typeof detail !== "object") {
+			continue;
+		}
 		const record = detail as Record<string, unknown>;
 		if (
 			record["@type"] !== "type.googleapis.com/google.rpc.RetryInfo" ||
 			typeof record.retryDelay !== "string"
-		)
+		) {
 			continue;
+		}
 		const match = /^(\d+(?:\.\d+)?)s$/.exec(record.retryDelay);
-		if (!match) continue;
+		if (!match) {
+			continue;
+		}
 		const seconds = Number(match[1]);
-		if (Number.isFinite(seconds)) return Math.max(0, Math.ceil(seconds * 1000));
+		if (Number.isFinite(seconds)) {
+			return Math.max(0, Math.ceil(seconds * 1000));
+		}
 	}
 	return undefined;
 }
@@ -841,9 +920,12 @@ function mapGeminiUsage(u: GeminiUsage | undefined): Usage {
 		completionTokens: completion,
 		totalTokens: u?.totalTokenCount ?? (u?.promptTokenCount ?? 0) + completion,
 	};
-	if (u?.cachedContentTokenCount !== undefined)
+	if (u?.cachedContentTokenCount !== undefined) {
 		usage.cacheReadTokens = u.cachedContentTokenCount;
-	if (thoughts > 0) usage.reasoningTokens = thoughts;
+	}
+	if (thoughts > 0) {
+		usage.reasoningTokens = thoughts;
+	}
 	return usage;
 }
 
@@ -858,7 +940,9 @@ function geminiToolCallExtra(
 	part: GeminiPart,
 ): Record<string, unknown> | undefined {
 	const signature = geminiPartThoughtSignature(part);
-	if (signature === undefined) return undefined;
+	if (signature === undefined) {
+		return undefined;
+	}
 	return { google: { thought_signature: signature } };
 }
 
@@ -873,15 +957,19 @@ function candidateToChoice(
 		CanonicalChatResponse["choices"][number]["message"]["toolCalls"]
 	> = [];
 	for (const [i, p] of parts.entries()) {
-		if (p.text !== undefined && !p.thought) texts.push(p.text);
-		if (p.text !== undefined && p.thought) reasoning.push(p.text);
+		if (p.text !== undefined && !p.thought) {
+			texts.push(p.text);
+		}
+		if (p.text !== undefined && p.thought) {
+			reasoning.push(p.text);
+		}
 		if (p.functionCall) {
 			const extraContent = geminiToolCallExtra(p);
 			toolCalls.push({
 				id: p.functionCall.id ?? `call_${index}_${i}`,
 				name: p.functionCall.name ?? "",
 				arguments: JSON.stringify(p.functionCall.args ?? {}),
-				...(extraContent !== undefined ? { extraContent } : {}),
+				...(extraContent === undefined ? {} : { extraContent }),
 			});
 		}
 	}
@@ -889,12 +977,17 @@ function candidateToChoice(
 		role: "assistant",
 		content: texts.length > 0 ? texts.join("") : null,
 	};
-	if (reasoning.length > 0) message.reasoning = reasoning.join("");
-	if (toolCalls.length > 0) message.toolCalls = toolCalls;
-	if (parts.some((part) => geminiPartThoughtSignature(part) !== undefined))
+	if (reasoning.length > 0) {
+		message.reasoning = reasoning.join("");
+	}
+	if (toolCalls.length > 0) {
+		message.toolCalls = toolCalls;
+	}
+	if (parts.some((part) => geminiPartThoughtSignature(part) !== undefined)) {
 		message.providerFields = providerFieldsWithGoogleContentParts(
 			parts as unknown as Record<string, unknown>[],
 		);
+	}
 	return {
 		index: c.index ?? index,
 		finishReason: mapGeminiFinish(c.finishReason, toolCalls.length > 0),
@@ -1083,8 +1176,12 @@ const chat: ChatHandler = {
 						delta.role = "assistant";
 						roleSent.add(index);
 					}
-					if (text) delta.content = text;
-					if (reasoning) delta.reasoning = reasoning;
+					if (text) {
+						delta.content = text;
+					}
+					if (reasoning) {
+						delta.reasoning = reasoning;
+					}
 					if (hasToolCall) {
 						delta.toolCalls = parts
 							.filter((part) => part.functionCall)
@@ -1097,7 +1194,7 @@ const chat: ChatHandler = {
 										part.functionCall!.id ?? `call_${index}_${canonicalIndex}`,
 									name: part.functionCall!.name ?? "",
 									arguments: JSON.stringify(part.functionCall!.args ?? {}),
-									...(extraContent !== undefined ? { extraContent } : {}),
+									...(extraContent === undefined ? {} : { extraContent }),
 								};
 							});
 					}
@@ -1106,9 +1203,10 @@ const chat: ChatHandler = {
 						accumulated.some((part) =>
 							geminiPartThoughtSignature(part as GeminiPart),
 						)
-					)
+					) {
 						delta.providerFields =
 							providerFieldsWithGoogleContentParts(accumulated);
+					}
 					return {
 						index,
 						delta,
@@ -1125,7 +1223,9 @@ const chat: ChatHandler = {
 				model: json.modelVersion ?? ctx.upstreamModel,
 				choices,
 			};
-			if (json.usageMetadata) chunk.usage = mapGeminiUsage(json.usageMetadata);
+			if (json.usageMetadata) {
+				chunk.usage = mapGeminiUsage(json.usageMetadata);
+			}
 			const originalTerminalReason = json.candidates?.find(
 				(candidate) => candidate.finishReason != null,
 			)?.finishReason;
@@ -1170,17 +1270,17 @@ function googleVideoParameters(
 	ctx: AdapterContext,
 ): Record<string, unknown> {
 	const resolved = resolveVideoSize(req, videoProfileFor(ctx.meta));
-	const seconds = req.seconds !== undefined ? Number(req.seconds) : undefined;
+	const seconds = req.seconds === undefined ? undefined : Number(req.seconds);
 	const parameters: Record<string, unknown> = {
 		...(seconds !== undefined && Number.isFinite(seconds)
 			? { durationSeconds: seconds }
 			: {}),
 		...(resolved?.aspectRatio ? { aspectRatio: resolved.aspectRatio } : {}),
 		...(resolved?.resolution ? { resolution: resolved.resolution } : {}),
-		...(req.seed !== undefined ? { seed: req.seed } : {}),
-		...(req.generateAudio !== undefined
-			? { generateAudio: req.generateAudio }
-			: {}),
+		...(req.seed === undefined ? {} : { seed: req.seed }),
+		...(req.generateAudio === undefined
+			? {}
+			: { generateAudio: req.generateAudio }),
 	};
 	return mergeExtraBody(parameters, req.extraBody, [
 		"durationSeconds",
@@ -1228,15 +1328,19 @@ function assertGoogleVideoDuration(
 	hasReferenceImages: boolean,
 	hasVideoExtension: boolean,
 ): void {
-	const seconds = req.seconds !== undefined ? Number(req.seconds) : undefined;
-	if (seconds === undefined || seconds === 8) return;
+	const seconds = req.seconds === undefined ? undefined : Number(req.seconds);
+	if (seconds === undefined || seconds === 8) {
+		return;
+	}
 	const resolution = resolveVideoSize(
 		req,
 		videoProfileFor(ctx.meta),
 	)?.resolution;
 	const highResolution =
 		resolution === "1080p" || resolution?.toLowerCase() === "4k";
-	if (!highResolution && !hasReferenceImages && !hasVideoExtension) return;
+	if (!(highResolution || hasReferenceImages || hasVideoExtension)) {
+		return;
+	}
 	throw new GatewayError({
 		class: "bad_request",
 		code: "unsupported_parameter",
@@ -1386,7 +1490,9 @@ function googleVideoUri(raw: Record<string, unknown>): string | undefined {
 	const sampleVideo = samples?.[0]?.video as
 		| Record<string, unknown>
 		| undefined;
-	if (typeof sampleVideo?.uri === "string") return sampleVideo.uri;
+	if (typeof sampleVideo?.uri === "string") {
+		return sampleVideo.uri;
+	}
 
 	const generatedVideos = response?.generatedVideos as
 		| Array<Record<string, unknown>>
@@ -1394,7 +1500,9 @@ function googleVideoUri(raw: Record<string, unknown>): string | undefined {
 	const video = generatedVideos?.[0]?.video as
 		| Record<string, unknown>
 		| undefined;
-	if (typeof video?.uri === "string") return video.uri;
+	if (typeof video?.uri === "string") {
+		return video.uri;
+	}
 	return undefined;
 }
 
@@ -1472,10 +1580,14 @@ function googleInteractionVideo(
 	const steps = Array.isArray(value?.steps) ? value.steps : [];
 	for (const stepValue of steps.toReversed()) {
 		const step = record(stepValue);
-		if (step?.type !== "model_output" || !Array.isArray(step.content)) continue;
+		if (step?.type !== "model_output" || !Array.isArray(step.content)) {
+			continue;
+		}
 		for (const contentValue of step.content.toReversed()) {
 			const content = record(contentValue);
-			if (content?.type !== "video") continue;
+			if (content?.type !== "video") {
+				continue;
+			}
 			return {
 				...(typeof content.data === "string" ? { data: content.data } : {}),
 				...(typeof content.uri === "string" ? { uri: content.uri } : {}),
@@ -1486,7 +1598,9 @@ function googleInteractionVideo(
 		}
 	}
 	const outputVideo = record(value?.output_video);
-	if (!outputVideo) return undefined;
+	if (!outputVideo) {
+		return undefined;
+	}
 	return {
 		...(typeof outputVideo.data === "string" ? { data: outputVideo.data } : {}),
 		...(typeof outputVideo.uri === "string" ? { uri: outputVideo.uri } : {}),
@@ -1902,7 +2016,9 @@ const videoGeneration: VideoHandler = {
 		};
 	},
 	async remove(job, ctx) {
-		if (ctx.transport !== "interactions") return;
+		if (ctx.transport !== "interactions") {
+			return;
+		}
 		const c = creds(ctx);
 		const base = (c.baseUrl ?? DEFAULT_BASE).replace(/\/+$/, "");
 		const path = googleInteractionPath(base, job.upstreamJobId);

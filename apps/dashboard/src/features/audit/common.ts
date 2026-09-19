@@ -9,7 +9,9 @@ export function splitAction(action: string): {
 	path: string;
 } {
 	const [first, ...rest] = action.split(" ");
-	if (rest.length === 0) return { method: null, path: action };
+	if (rest.length === 0) {
+		return { method: null, path: action };
+	}
 	return { method: first ?? null, path: rest.join(" ") };
 }
 

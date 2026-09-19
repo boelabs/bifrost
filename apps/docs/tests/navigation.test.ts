@@ -31,8 +31,9 @@ async function folders(): Promise<string[]> {
 
 async function entries(dir: string, pattern: string): Promise<string[]> {
 	const found: string[] = [];
-	for await (const entry of new Bun.Glob(pattern).scan(resolve(root, dir)))
+	for await (const entry of new Bun.Glob(pattern).scan(resolve(root, dir))) {
 		found.push(entry.replaceAll("\\", "/"));
+	}
 	return found.sort();
 }
 
@@ -51,20 +52,25 @@ describe("sidebar", () => {
 
 	it("has exactly two switcher roots, and every page belongs to one", async () => {
 		const roots: string[] = [];
-		for (const dir of await folders())
-			if ((await meta(dir)).root) roots.push(dir);
+		for (const dir of await folders()) {
+			if ((await meta(dir)).root) {
+				roots.push(dir);
+			}
+		}
 		expect(roots).toEqual(["(api)", "(docs)"]);
 
-		for await (const entry of new Bun.Glob("**/*.mdx").scan(root))
+		for await (const entry of new Bun.Glob("**/*.mdx").scan(root)) {
 			expect(entry.replaceAll("\\", "/").startsWith("(")).toBe(true);
+		}
 	});
 
 	it("gives each root a page of its own, or the switcher drops it", async () => {
 		// Fumadocs takes a tab's link from the root folder's index page, falling back to its first
 		// direct *page* child. A root holding nothing but folders yields no link and is silently
 		// left out of the switcher entirely.
-		for (const dir of ["(docs)", "(api)"])
+		for (const dir of ["(docs)", "(api)"]) {
 			expect((await entries(dir, "*.mdx")).length).toBeGreaterThan(0);
+		}
 	});
 });
 
@@ -91,12 +97,14 @@ describe("urls", () => {
 			"/docs/dashboard",
 			"/docs/reference-environment",
 			"/docs/providers-openai",
-		])
+		]) {
 			expect(urls.has(url)).toBe(true);
+		}
 
 		// Nothing may sit more than one segment below /docs: a nested address would mean a group
 		// folder was named without parentheses.
-		for (const url of urls)
+		for (const url of urls) {
 			expect(url.slice("/docs/".length).includes("/")).toBe(false);
+		}
 	});
 });

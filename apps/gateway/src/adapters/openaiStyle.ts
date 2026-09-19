@@ -187,8 +187,12 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			? config.normalizeBaseUrl(base)
 			: base.replace(/\/+$/, "");
 		const resolved: ResolvedCreds = { apiKey: c.apiKey, base: normalizedBase };
-		if (c.organization !== undefined) resolved.organization = c.organization;
-		if (c.headers !== undefined) resolved.headers = c.headers;
+		if (c.organization !== undefined) {
+			resolved.organization = c.organization;
+		}
+		if (c.headers !== undefined) {
+			resolved.headers = c.headers;
+		}
 		return resolved;
 	}
 
@@ -246,7 +250,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			res = await upstreamFetch(ctx, req.url, {
 				method: req.method,
 				headers: req.headers,
-				...(req.body !== undefined ? { body: req.body } : {}),
+				...(req.body === undefined ? {} : { body: req.body }),
 				...(ctx.signal ? { signal: ctx.signal } : {}),
 			});
 		} catch (err) {
@@ -326,12 +330,13 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			if (
 				json === null ||
 				typeof json !== "object" ||
-				(!("choices" in json) && !("usage" in json))
-			)
+				!("choices" in json || "usage" in json)
+			) {
 				recordUnknownAdapterEvent(
 					adapterContextDiagnostics(ctx),
 					"chat_completions.unknown_json_shape",
 				);
+			}
 			const chunk = parseOpenAIChatChunk(json);
 			const originalTerminalReason = (
 				json as { choices?: Array<{ finish_reason?: unknown }> }
@@ -342,7 +347,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 						originalTerminalReason: String(originalTerminalReason),
 					});
 		}
-		if (!transportDone)
+		if (!transportDone) {
 			throw new GatewayError({
 				class: "server",
 				code: "upstream_protocol_error",
@@ -350,6 +355,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 				failureKind: "transient",
 				deploymentHealth: "penalize",
 			});
+		}
 	}
 
 	async function* responsesStream(
@@ -390,7 +396,9 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 				});
 				originalTerminalReason = undefined;
 				terminal = undefined;
-			} else yield chunk;
+			} else {
+				yield chunk;
+			}
 		}
 	}
 
@@ -448,9 +456,9 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 							? "developer"
 							: "system",
 						supportsTopK: config.supportsTopK === true,
-						...(ctx.meta.reasoning !== undefined
-							? { reasoningSpec: ctx.meta.reasoning }
-							: {}),
+						...(ctx.meta.reasoning === undefined
+							? {}
+							: { reasoningSpec: ctx.meta.reasoning }),
 					}),
 				),
 			};
@@ -578,10 +586,19 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 	): VideoStatus {
 		const status = String(raw ?? "");
 		if (dialect === "videos_async") {
-			if (status === "pending") return "queued";
-			if (status === "completed") return "completed";
-			if (status === "failed" || status === "cancelled" || status === "expired")
+			if (status === "pending") {
+				return "queued";
+			}
+			if (status === "completed") {
+				return "completed";
+			}
+			if (
+				status === "failed" ||
+				status === "cancelled" ||
+				status === "expired"
+			) {
 				return "failed";
+			}
 			// in_progress, plus any status this gateway does not know yet: keep polling; the
 			// job-runtime timeout is the safety net if it never terminates.
 			return "in_progress";
@@ -693,15 +710,15 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 		const body: Record<string, unknown> = {
 			model: ctx.upstreamModel,
 			prompt: req.prompt,
-			...(req.seconds !== undefined ? { seconds: req.seconds } : {}),
-			...(resolved?.size !== undefined ? { size: resolved.size } : {}),
+			...(req.seconds === undefined ? {} : { seconds: req.seconds }),
+			...(resolved?.size === undefined ? {} : { size: resolved.size }),
 			// Only reachable when the model profile declares support; the stock OpenAI
 			// Videos API accepts none of these three.
-			...(req.quality !== undefined ? { quality: req.quality } : {}),
-			...(req.seed !== undefined ? { seed: req.seed } : {}),
-			...(req.generateAudio !== undefined
-				? { generate_audio: req.generateAudio }
-				: {}),
+			...(req.quality === undefined ? {} : { quality: req.quality }),
+			...(req.seed === undefined ? {} : { seed: req.seed }),
+			...(req.generateAudio === undefined
+				? {}
+				: { generate_audio: req.generateAudio }),
 		};
 		const ref = refs[0];
 		if (ref) {
@@ -737,7 +754,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 		const body: Record<string, unknown> = {
 			model: ctx.upstreamModel,
 			prompt: req.prompt,
-			...(req.seconds !== undefined ? { duration: Number(req.seconds) } : {}),
+			...(req.seconds === undefined ? {} : { duration: Number(req.seconds) }),
 			// Prefer the native aspect_ratio/resolution form when the profile maps to it;
 			// otherwise send exact pixel dimensions. The protocol treats the two forms as interchangeable.
 			...(resolved?.aspectRatio || resolved?.resolution
@@ -747,14 +764,14 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 							: {}),
 						...(resolved.resolution ? { resolution: resolved.resolution } : {}),
 					}
-				: resolved?.size !== undefined
-					? { size: resolved.size }
-					: {}),
-			...(req.seed !== undefined ? { seed: req.seed } : {}),
-			...(req.generateAudio !== undefined
-				? { generate_audio: req.generateAudio }
-				: {}),
-			...(req.quality !== undefined ? { quality: req.quality } : {}),
+				: resolved?.size === undefined
+					? {}
+					: { size: resolved.size }),
+			...(req.seed === undefined ? {} : { seed: req.seed }),
+			...(req.generateAudio === undefined
+				? {}
+				: { generate_audio: req.generateAudio }),
+			...(req.quality === undefined ? {} : { quality: req.quality }),
 		};
 		const refs = req.inputReferences ?? [];
 		if (refs.some((ref) => ref.type === "file_id")) {
@@ -901,8 +918,9 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			});
 		},
 		async remove(job, ctx) {
-			if (ctx.transport !== "videos" && ctx.transport !== "videos_async")
+			if (ctx.transport !== "videos" && ctx.transport !== "videos_async") {
 				return;
+			}
 			const c = resolveCreds(ctx);
 			await fetchJson(
 				{
@@ -1019,11 +1037,15 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 		supportedCallTypes.add("images.generations");
 		supportedCallTypes.add("images.edits");
 	}
-	if (videoTransports && videoTransports.length > 0)
+	if (videoTransports && videoTransports.length > 0) {
 		supportedCallTypes.add("videos.generations");
-	if (config.audioTranscriptions)
+	}
+	if (config.audioTranscriptions) {
 		supportedCallTypes.add("audio.transcriptions");
-	if (config.embeddings) supportedCallTypes.add("embeddings");
+	}
+	if (config.embeddings) {
+		supportedCallTypes.add("embeddings");
+	}
 	const firstImageTransport = imageTransports?.[0];
 	const imageTransportConfig =
 		imageTransports && firstImageTransport
@@ -1050,7 +1072,9 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 		chat,
 		assertChatRequestSupported(req, ctx) {
 			config.assertChatRequestSupported?.(req, ctx);
-			if (ctx.transport === "responses") assertResponsesRequestSupported(req);
+			if (ctx.transport === "responses") {
+				assertResponsesRequestSupported(req);
+			}
 		},
 		...(config.responsesWebSocket
 			? {

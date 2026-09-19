@@ -79,13 +79,17 @@ function reasoningDisplay(
 	req: CanonicalChatRequest,
 	summary: ReturnType<typeof resolveReasoning>["summary"],
 ): "omitted" | "summarized" {
-	if (req.reasoning?.display !== undefined) return req.reasoning.display;
+	if (req.reasoning?.display !== undefined) {
+		return req.reasoning.display;
+	}
 	return summaryVisible(summary) ? "summarized" : "omitted";
 }
 
 function requiredBudget(spec: ReasoningSpec, effort: string): number {
 	const budget = spec.budgets?.[effort as keyof typeof spec.budgets];
-	if (budget !== undefined) return budget;
+	if (budget !== undefined) {
+		return budget;
+	}
 	throw new GatewayError({
 		class: "server",
 		message: `Vercel reasoning metadata has no token budget for effort "${effort}"`,
@@ -104,7 +108,9 @@ export function applyVercelNativeReasoning(
 	ctx: AdapterContext,
 ): void {
 	const spec = ctx.meta.reasoning;
-	if (spec === undefined) return;
+	if (spec === undefined) {
+		return;
+	}
 	const resolved = resolveReasoning(req.reasoning, spec);
 	const effort = resolved.effort;
 	const display = reasoningDisplay(req, resolved.summary);

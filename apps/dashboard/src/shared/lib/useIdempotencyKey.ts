@@ -3,8 +3,9 @@
 import { useCallback, useRef } from "react";
 
 function freshKey(): string {
-	if (typeof crypto !== "undefined" && "randomUUID" in crypto)
+	if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
 		return crypto.randomUUID();
+	}
 	return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 

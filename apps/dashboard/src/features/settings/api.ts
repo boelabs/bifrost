@@ -30,7 +30,9 @@ export async function deleteFallback(
 	const result = await api.DELETE("/admin/fallbacks/{primaryModel}/{reason}", {
 		params: { path: { primaryModel, reason } },
 	});
-	if (result.error !== undefined) unwrap(result);
+	if (result.error !== undefined) {
+		unwrap(result);
+	}
 }
 
 export async function clearCache(params?: {

@@ -25,7 +25,7 @@ function Root({
 		<BaseRadio.Root
 			{...props}
 			className={mergeClassName(
-				`${focusRing} ${sizes[size]} inline-flex shrink-0 items-center justify-center rounded-full border ${variant === "filled" ? "border-transparent bg-surface-2" : variant === "ghost" ? "border-transparent bg-transparent" : "border-border bg-surface"} data-[checked]:border-primary data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50`,
+				`${focusRing} ${sizes[size]} inline-flex shrink-0 items-center justify-center rounded-full border ${variant === "filled" ? "border-transparent bg-surface-2" : variant === "ghost" ? "border-transparent bg-transparent" : "border-border bg-surface"} data-[disabled]:cursor-not-allowed data-[checked]:border-primary data-[disabled]:opacity-50`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

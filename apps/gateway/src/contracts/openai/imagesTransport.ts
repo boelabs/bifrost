@@ -55,12 +55,12 @@ function directBody(
 	const body: Record<string, unknown> = {
 		model: upstreamModel,
 		prompt: req.prompt,
-		...(req.background !== undefined ? { background: req.background } : {}),
-		...(req.inputFidelity !== undefined
-			? { input_fidelity: req.inputFidelity }
-			: {}),
-		...(req.moderation !== undefined ? { moderation: req.moderation } : {}),
-		...(req.n !== undefined ? { n: req.n } : {}),
+		...(req.background === undefined ? {} : { background: req.background }),
+		...(req.inputFidelity === undefined
+			? {}
+			: { input_fidelity: req.inputFidelity }),
+		...(req.moderation === undefined ? {} : { moderation: req.moderation }),
+		...(req.n === undefined ? {} : { n: req.n }),
 		...(req.outputCompression !== undefined && !localOutputCompression
 			? { output_compression: req.outputCompression }
 			: {}),
@@ -70,14 +70,14 @@ function directBody(
 		...(req.partialImages !== undefined && profile?.supportsNativeStreaming
 			? { partial_images: req.partialImages }
 			: {}),
-		...(nativeQuality !== undefined ? { quality: nativeQuality } : {}),
+		...(nativeQuality === undefined ? {} : { quality: nativeQuality }),
 		...(profile?.nativeResponseFormat === false
 			? {}
 			: { response_format: "b64_json" }),
-		...(resolvedSize?.size !== undefined ? { size: resolvedSize.size } : {}),
+		...(resolvedSize?.size === undefined ? {} : { size: resolvedSize.size }),
 		...(req.stream && profile?.supportsNativeStreaming ? { stream: true } : {}),
-		...(req.style !== undefined ? { style: req.style } : {}),
-		...(req.user !== undefined ? { user: req.user } : {}),
+		...(req.style === undefined ? {} : { style: req.style }),
+		...(req.user === undefined ? {} : { user: req.user }),
 	};
 	return mergeExtraBodyDeep(body, req.extraBody, DIRECT_MANAGED);
 }
@@ -91,9 +91,12 @@ export function buildDirectImageGenerationBody(
 }
 
 function formValue(value: unknown): string {
-	if (typeof value === "string") return value;
-	if (typeof value === "number" || typeof value === "boolean")
+	if (typeof value === "string") {
+		return value;
+	}
+	if (typeof value === "number" || typeof value === "boolean") {
 		return String(value);
+	}
 	return JSON.stringify(value);
 }
 
@@ -104,8 +107,9 @@ export async function buildDirectImageEditForm(
 ): Promise<FormData> {
 	const body = directBody(req, upstreamModel, profile);
 	const form = new FormData();
-	for (const [key, value] of Object.entries(body))
+	for (const [key, value] of Object.entries(body)) {
 		form.append(key, formValue(value));
+	}
 	const images = req.images ?? [];
 	const field = images.length > 1 ? "image[]" : "image";
 	for (const image of images) {
@@ -129,23 +133,25 @@ function imageUsage(raw: unknown): ImageUsage | undefined {
 				output_tokens_details?: { image_tokens?: number; text_tokens?: number };
 		  }
 		| undefined;
-	if (!u || typeof u.total_tokens !== "number") return undefined;
+	if (!u || typeof u.total_tokens !== "number") {
+		return undefined;
+	}
 	return {
 		inputTokens: u.input_tokens ?? 0,
 		outputTokens: u.output_tokens ?? 0,
 		totalTokens: u.total_tokens,
-		...(u.input_tokens_details?.image_tokens !== undefined
-			? { inputImageTokens: u.input_tokens_details.image_tokens }
-			: {}),
-		...(u.input_tokens_details?.text_tokens !== undefined
-			? { inputTextTokens: u.input_tokens_details.text_tokens }
-			: {}),
-		...(u.output_tokens_details?.image_tokens !== undefined
-			? { outputImageTokens: u.output_tokens_details.image_tokens }
-			: {}),
-		...(u.output_tokens_details?.text_tokens !== undefined
-			? { outputTextTokens: u.output_tokens_details.text_tokens }
-			: {}),
+		...(u.input_tokens_details?.image_tokens === undefined
+			? {}
+			: { inputImageTokens: u.input_tokens_details.image_tokens }),
+		...(u.input_tokens_details?.text_tokens === undefined
+			? {}
+			: { inputTextTokens: u.input_tokens_details.text_tokens }),
+		...(u.output_tokens_details?.image_tokens === undefined
+			? {}
+			: { outputImageTokens: u.output_tokens_details.image_tokens }),
+		...(u.output_tokens_details?.text_tokens === undefined
+			? {}
+			: { outputTextTokens: u.output_tokens_details.text_tokens }),
 	};
 }
 
@@ -189,11 +195,12 @@ export function parseDirectImagesResponse(
 	raw: unknown,
 ): CanonicalImageResponse {
 	const body = (raw ?? {}) as Record<string, unknown>;
-	if (!Array.isArray(body.data))
+	if (!Array.isArray(body.data)) {
 		throw new GatewayError({
 			class: "server",
 			message: "Invalid Images API response",
 		});
+	}
 	const usage = imageUsage(body.usage);
 	const echoedQuality = canonicalQuality(body.quality);
 	return {
@@ -208,7 +215,7 @@ export function parseDirectImagesResponse(
 		...(typeof body.output_format === "string"
 			? { outputFormat: body.output_format as ImageOutputFormat }
 			: {}),
-		...(echoedQuality !== undefined ? { quality: echoedQuality } : {}),
+		...(echoedQuality === undefined ? {} : { quality: echoedQuality }),
 		...(typeof body.size === "string" ? { size: body.size } : {}),
 		...(usage ? { usage } : {}),
 	};
@@ -239,14 +246,15 @@ export async function* parseDirectImageStream(
 				cause,
 			});
 		}
-		if (raw.error)
+		if (raw.error) {
 			throw new GatewayError({
 				class: "server",
 				message: "Image upstream stream failed",
 				provider: { body: raw },
 			});
+		}
 		const type = typeof raw.type === "string" ? raw.type : "";
-		if (!type.endsWith(".partial_image") && !type.endsWith(".completed")) {
+		if (!(type.endsWith(".partial_image") || type.endsWith(".completed"))) {
 			options?.onUnknownEvent?.(type || "missing_type");
 			continue;
 		}
@@ -306,13 +314,17 @@ export async function buildOmniImageBody(
 	}
 	const imageConfig: Record<string, unknown> = {};
 	const mapping = resolveImageSize(req, profile);
-	if (mapping?.aspectRatio) imageConfig.aspect_ratio = mapping.aspectRatio;
-	if (mapping?.imageSize) imageConfig.image_size = mapping.imageSize;
+	if (mapping?.aspectRatio) {
+		imageConfig.aspect_ratio = mapping.aspectRatio;
+	}
+	if (mapping?.imageSize) {
+		imageConfig.image_size = mapping.imageSize;
+	}
 	const body: Record<string, unknown> = {
 		model: upstreamModel,
 		messages: [{ role: "user", content }],
 		modalities: ["image", "text"],
-		...(req.n !== undefined ? { n: req.n } : {}),
+		...(req.n === undefined ? {} : { n: req.n }),
 		...(Object.keys(imageConfig).length > 0
 			? { image_config: imageConfig }
 			: {}),
@@ -350,26 +362,28 @@ export function parseOmniImageResponse(raw: unknown): CanonicalImageResponse {
 	);
 	const data = images.map((image) => {
 		const value = image.image_url?.url ?? image.imageUrl?.url;
-		if (!value?.startsWith("data:"))
+		if (!value?.startsWith("data:")) {
 			throw new GatewayError({
 				class: "server",
 				message: "Omni image response is not a base64 data URL",
 			});
+		}
 		return { b64Json: value.replace(/^data:[^;]+;base64,/, "") };
 	});
-	if (data.length === 0)
+	if (data.length === 0) {
 		throw new GatewayError({
 			class: "server",
 			message: "Omni upstream returned no images",
 		});
+	}
 	const usage =
-		body.usage?.total_tokens !== undefined
-			? {
+		body.usage?.total_tokens === undefined
+			? undefined
+			: {
 					inputTokens: body.usage.prompt_tokens ?? 0,
 					outputTokens: body.usage.completion_tokens ?? 0,
 					totalTokens: body.usage.total_tokens,
-				}
-			: undefined;
+				};
 	return {
 		created: body.created ?? Math.floor(Date.now() / 1000),
 		data,

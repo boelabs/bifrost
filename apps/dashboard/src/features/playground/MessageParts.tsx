@@ -23,19 +23,18 @@ export function CopyAction({
 }) {
 	const [copied, setCopied] = useState(false);
 	useLayoutEffect(() => {
-		if (!copied) return;
+		if (!copied) {
+			return;
+		}
 		const timeout = setTimeout(() => setCopied(false), 2000);
 		return () => clearTimeout(timeout);
 	}, [copied]);
 	return (
 		<Button
-			disabled={disabled}
-			variant="ghost"
-			size="sm"
-			mode="icon"
-			className={MESSAGE_ACTION}
 			aria-label={copied ? "Copied" : label}
-			title={copied ? "Copied" : label}
+			className={MESSAGE_ACTION}
+			disabled={disabled}
+			mode="icon"
 			onClick={async () => {
 				try {
 					await onCopy(text);
@@ -44,11 +43,14 @@ export function CopyAction({
 					setCopied(false);
 				}
 			}}
+			size="sm"
+			title={copied ? "Copied" : label}
+			variant="ghost"
 		>
 			{copied ? (
-				<IconCheck className={MESSAGE_ACTION_ICON} aria-hidden />
+				<IconCheck aria-hidden className={MESSAGE_ACTION_ICON} />
 			) : (
-				<IconCopy className={MESSAGE_ACTION_ICON} aria-hidden />
+				<IconCopy aria-hidden className={MESSAGE_ACTION_ICON} />
 			)}
 		</Button>
 	);
@@ -67,7 +69,9 @@ export function UserBubble({
 	const [expanded, setExpanded] = useState(false);
 	useLayoutEffect(() => {
 		const element = paragraph.current;
-		if (!element) return;
+		if (!element) {
+			return;
+		}
 		const measure = () => setExpandable(element.scrollHeight > 241);
 		const observer = new ResizeObserver(measure);
 		observer.observe(element);
@@ -80,10 +84,10 @@ export function UserBubble({
 			style={{ maxHeight: expandable && !expanded ? 266 : undefined }}
 		>
 			<p
+				className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
+				dir="auto"
 				id={id}
 				ref={paragraph}
-				dir="auto"
-				className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
 			>
 				{text}
 			</p>
@@ -95,19 +99,19 @@ export function UserBubble({
 			) : null}
 			{expandable ? (
 				<Button
-					variant="secondary"
-					size="sm"
-					mode="icon"
-					className="absolute right-2 bottom-2 size-7 bg-surface-2"
-					aria-label={expanded ? "Collapse message" : "Expand message"}
-					aria-expanded={expanded}
 					aria-controls={id}
+					aria-expanded={expanded}
+					aria-label={expanded ? "Collapse message" : "Expand message"}
+					className="absolute right-2 bottom-2 size-7 bg-surface-2"
+					mode="icon"
 					onClick={() => setExpanded((value) => !value)}
+					size="sm"
+					variant="secondary"
 				>
 					<IconChevronDown
-						size={18}
-						className={expanded ? "rotate-180" : ""}
 						aria-hidden
+						className={expanded ? "rotate-180" : ""}
+						size={18}
 					/>
 				</Button>
 			) : null}

@@ -77,61 +77,135 @@ export function Composer({
 	return (
 		<form
 			aria-label="Message composer"
-			onSubmit={onSend}
 			className="relative isolate w-full"
 			onDragEnter={(event) => {
-				if (!event.dataTransfer.types.includes("Files")) return;
+				if (!event.dataTransfer.types.includes("Files")) {
+					return;
+				}
 				event.preventDefault();
 				dragDepth.current++;
 				setDragging(true);
 			}}
-			onDragOver={(event) => {
-				if (event.dataTransfer.types.includes("Files")) event.preventDefault();
-			}}
 			onDragLeave={(event) => {
 				event.preventDefault();
-				if (--dragDepth.current <= 0) setDragging(false);
+				if (--dragDepth.current <= 0) {
+					setDragging(false);
+				}
+			}}
+			onDragOver={(event) => {
+				if (event.dataTransfer.types.includes("Files")) {
+					event.preventDefault();
+				}
 			}}
 			onDrop={(event) => {
 				event.preventDefault();
 				dragDepth.current = 0;
 				setDragging(false);
-				if (!reading && !busy) onFiles(Array.from(event.dataTransfer.files));
+				if (!(reading || busy)) {
+					onFiles(Array.from(event.dataTransfer.files));
+				}
 			}}
+			onSubmit={onSend}
 		>
 			<input
-				ref={input}
-				type="file"
-				multiple
 				accept={accepted.join(",")}
-				className="hidden"
 				aria-label="Attach files"
+				className="hidden"
 				disabled={reading || busy || !accepted.length}
+				multiple
 				onChange={(event) => {
 					onFiles(Array.from(event.target.files ?? []));
 					event.target.value = "";
 				}}
+				ref={input}
+				type="file"
 			/>
 			<ComposerView
-				state={expanded ? "expanded" : "compact"}
-				topSection={
-					files.length ? (
-						<ComposerAttachments files={files} onRemove={onRemove} />
-					) : undefined
+				leftActions={
+					showAttach ? (
+						<Button
+							aria-label="Attach files"
+							className="hover:border-fg-muted max-sm:border-transparent max-sm:hover:border-transparent"
+							disabled={reading || busy || !accepted.length}
+							mode="icon"
+							onClick={() => input.current?.click()}
+							size="sm"
+							title={
+								accepted.length
+									? "Attach files"
+									: "This model does not support attachments"
+							}
+							type="button"
+							variant="secondary"
+						>
+							{reading ? (
+								<IconLoader2
+									aria-hidden
+									className="animate-spin motion-reduce:animate-none"
+									size={20}
+								/>
+							) : (
+								<IconPlus aria-hidden size={20} strokeWidth={2.5} />
+							)}
+						</Button>
+					) : null
 				}
-				topSectionLayoutKey={files.map((file) => file.id).join(":")}
 				onSurfaceClick={() => textarea.current?.focus()}
+				rightActions={
+					<>
+						{modelPicker}
+						<Button
+							aria-label="Open model settings"
+							className="max-sm:border-border"
+							mode="icon"
+							onClick={onSettings}
+							size="sm"
+							title="Model settings"
+							type="button"
+							variant="ghost"
+						>
+							<IconAdjustmentsHorizontal aria-hidden size={20} />
+						</Button>
+						<Button
+							aria-label="Reset conversation"
+							className="max-sm:border-border"
+							mode="icon"
+							onClick={onReset}
+							size="sm"
+							title="Reset conversation"
+							type="button"
+							variant="ghost"
+						>
+							<IconRotate2 aria-hidden size={20} />
+						</Button>
+						<Button
+							aria-label={busy ? "Stop response" : "Send message"}
+							className="hover:bg-primary active:bg-primary"
+							disabled={
+								!busy &&
+								(reading ||
+									!(canSend ?? (prompt.trim().length > 0 || files.length > 0)))
+							}
+							mode="icon"
+							onClick={busy ? onStop : undefined}
+							size="sm"
+							title={busy ? "Stop response" : "Send message"}
+							type={busy ? "button" : "submit"}
+						>
+							{busy ? (
+								<IconPlayerStop aria-hidden fill="currentColor" size={16} />
+							) : (
+								<IconArrowUp aria-hidden size={20} strokeWidth={2.5} />
+							)}
+						</Button>
+					</>
+				}
+				state={expanded ? "expanded" : "compact"}
 				textarea={
 					<textarea
-						ref={textarea}
 						aria-label="Message"
+						className="mt-4 w-full min-w-0 resize-none bg-transparent pt-0 pb-4 align-bottom font-normal text-base text-fg leading-6.5 outline-none placeholder:truncate placeholder:text-fg-muted"
 						dir="auto"
-						rows={1}
-						value={prompt}
-						readOnly={readOnly}
-						style={{ height, overflowY }}
-						placeholder={placeholder}
-						className="mt-4 w-full min-w-0 resize-none bg-transparent pt-0 pb-4 align-bottom text-base font-normal leading-6.5 text-fg outline-none placeholder:truncate placeholder:text-fg-muted"
 						onChange={(event) => onPrompt(event.target.value)}
 						onKeyDown={(event) => {
 							if (
@@ -142,106 +216,43 @@ export function Composer({
 								!mobile
 							) {
 								event.preventDefault();
-								if (!busy && !reading)
+								if (!(busy || reading)) {
 									event.currentTarget.form?.requestSubmit();
+								}
 							}
 						}}
 						onPaste={(event) => {
 							const pasted = Array.from(event.clipboardData.files);
 							if (pasted.length) {
 								event.preventDefault();
-								if (!busy && !reading) onFiles(pasted);
+								if (!(busy || reading)) {
+									onFiles(pasted);
+								}
 							}
 						}}
+						placeholder={placeholder}
+						readOnly={readOnly}
+						ref={textarea}
+						rows={1}
+						style={{ height, overflowY }}
+						value={prompt}
 					/>
 				}
-				leftActions={
-					showAttach ? (
-						<Button
-							type="button"
-							variant="secondary"
-							size="sm"
-							mode="icon"
-							aria-label="Attach files"
-							title={
-								accepted.length
-									? "Attach files"
-									: "This model does not support attachments"
-							}
-							disabled={reading || busy || !accepted.length}
-							onClick={() => input.current?.click()}
-							className="hover:border-fg-muted max-sm:border-transparent max-sm:hover:border-transparent"
-						>
-							{reading ? (
-								<IconLoader2
-									size={20}
-									className="animate-spin motion-reduce:animate-none"
-									aria-hidden
-								/>
-							) : (
-								<IconPlus size={20} strokeWidth={2.5} aria-hidden />
-							)}
-						</Button>
-					) : null
+				topSection={
+					files.length ? (
+						<ComposerAttachments files={files} onRemove={onRemove} />
+					) : undefined
 				}
-				rightActions={
-					<>
-						{modelPicker}
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							mode="icon"
-							aria-label="Open model settings"
-							title="Model settings"
-							className="max-sm:border-border"
-							onClick={onSettings}
-						>
-							<IconAdjustmentsHorizontal size={20} aria-hidden />
-						</Button>
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							mode="icon"
-							aria-label="Reset conversation"
-							title="Reset conversation"
-							className="max-sm:border-border"
-							onClick={onReset}
-						>
-							<IconRotate2 size={20} aria-hidden />
-						</Button>
-						<Button
-							type={busy ? "button" : "submit"}
-							size="sm"
-							mode="icon"
-							aria-label={busy ? "Stop response" : "Send message"}
-							title={busy ? "Stop response" : "Send message"}
-							className="hover:bg-primary active:bg-primary"
-							disabled={
-								!busy &&
-								(reading ||
-									!(canSend ?? (prompt.trim().length > 0 || files.length > 0)))
-							}
-							onClick={busy ? onStop : undefined}
-						>
-							{busy ? (
-								<IconPlayerStop size={16} fill="currentColor" aria-hidden />
-							) : (
-								<IconArrowUp size={20} strokeWidth={2.5} aria-hidden />
-							)}
-						</Button>
-					</>
-				}
+				topSectionLayoutKey={files.map((file) => file.id).join(":")}
 			/>
 			{dragging ? (
-				<div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-[28px] border-2 border-dashed border-primary bg-surface-2/95 text-sm text-fg">
+				<div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-[28px] border-2 border-primary border-dashed bg-surface-2/95 text-fg text-sm">
 					{accepted.length
 						? "Drop files here"
 						: "This model does not support attachments"}
 				</div>
 			) : null}
-			<span role="status" className="sr-only">
+			<span className="sr-only" role="status">
 				{reading ? "Reading attachments" : ""}
 			</span>
 		</form>

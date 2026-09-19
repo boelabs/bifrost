@@ -34,7 +34,9 @@ test("saving waits for resolution and sends only capability fields to validate",
 				transportOverrides: body.transportOverrides,
 			});
 			await validation;
-		} else assert.deepEqual(options.body, body);
+		} else {
+			assert.deepEqual(options.body, body);
+		}
 		return { data: { data: { id: "saved" } }, response: new Response() };
 	});
 	const saving = saveDeployment(body);

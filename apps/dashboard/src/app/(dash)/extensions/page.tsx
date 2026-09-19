@@ -27,8 +27,8 @@ export default function ExtensionsPage() {
 	return (
 		<ExtensionsProvider>
 			<PageHeader
-				title="Extensions"
 				description="Code that runs inside the request path — the gateway's equivalent of a logging or policy callback, except it can also change the request."
+				title="Extensions"
 			>
 				<div className="flex items-center gap-2">
 					<Suspense
@@ -64,9 +64,9 @@ async function Runtime() {
 	]);
 	return (
 		<ExtensionsView
-			status={status}
 			artifacts={artifacts}
 			instances={instances}
+			status={status}
 		/>
 	);
 }
@@ -77,9 +77,9 @@ function ExtensionsSkeleton() {
 		<div className="flex flex-col gap-6">
 			{["15.5rem", "13.5rem"].map((height, index) => (
 				<div
+					className="rounded-[var(--ui-radius-surface)] border border-border/50 bg-card p-6"
 					// biome-ignore lint/suspicious/noArrayIndexKey: placeholder cards have no identity
 					key={index}
-					className="rounded-[var(--ui-radius-surface)] border border-border/50 bg-card p-6"
 				>
 					<div className="flex flex-wrap items-start justify-between gap-3 pb-4">
 						<div>

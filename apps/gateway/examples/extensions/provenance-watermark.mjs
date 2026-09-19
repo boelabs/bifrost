@@ -21,9 +21,9 @@ import { defineExtension } from "#extensions/sdk.ts";
  * motivated adversary. This is provenance/leak-tracing, not DRM, and not cryptographically signed.
  */
 
-const ZERO = String.fromCharCode(0x200b); // ZERO WIDTH SPACE      -> bit 0
-const ONE = String.fromCharCode(0x200c); //  ZERO WIDTH NON-JOINER -> bit 1
-const MARK = String.fromCharCode(0x2060); // WORD JOINER           -> watermark sentinel
+const ZERO = String.fromCharCode(0x20_0b); // ZERO WIDTH SPACE      -> bit 0
+const ONE = String.fromCharCode(0x20_0c); //  ZERO WIDTH NON-JOINER -> bit 1
+const MARK = String.fromCharCode(0x20_60); // WORD JOINER           -> watermark sentinel
 
 // requestId -> true once we've watermarked this stream.
 const marked = new Set();
@@ -55,15 +55,20 @@ const configSchema = {
 function encode(tag) {
 	const bytes = Buffer.from(tag, "utf8");
 	let bits = MARK;
-	for (const byte of bytes)
-		for (let i = 7; i >= 0; i -= 1) bits += (byte >> i) & 1 ? ONE : ZERO;
+	for (const byte of bytes) {
+		for (let i = 7; i >= 0; i -= 1) {
+			bits += (byte >> i) & 1 ? ONE : ZERO;
+		}
+	}
 	return bits;
 }
 
 function insert(text, watermark, position) {
 	if (position === "afterFirstWord") {
 		const space = text.search(/\s/);
-		if (space > 0) return text.slice(0, space) + watermark + text.slice(space);
+		if (space > 0) {
+			return text.slice(0, space) + watermark + text.slice(space);
+		}
 	}
 	return watermark + text;
 }
@@ -83,8 +88,9 @@ export default defineExtension({
 				...response,
 				choices: response.choices.map((choice) => {
 					const content = choice.message.content;
-					if (typeof content !== "string" || content.length === 0)
+					if (typeof content !== "string" || content.length === 0) {
 						return choice;
+					}
 					return {
 						...choice,
 						message: {
@@ -106,8 +112,9 @@ export default defineExtension({
 						marked.has(ctx.requestId) ||
 						typeof content !== "string" ||
 						content.length === 0
-					)
+					) {
 						return choice;
+					}
 					marked.add(ctx.requestId);
 					return {
 						...choice,
@@ -123,8 +130,9 @@ export default defineExtension({
 				});
 			}
 			// Release the per-request flag when the stream ends.
-			if (event.choices.some((c) => c.finishReason !== null))
+			if (event.choices.some((c) => c.finishReason !== null)) {
 				marked.delete(ctx.requestId);
+			}
 			return choices === event.choices ? event : { ...event, choices };
 		},
 	},

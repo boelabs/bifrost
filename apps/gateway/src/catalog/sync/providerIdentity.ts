@@ -102,7 +102,9 @@ export function candidateAdapterMappings(
 	const mappings: AdapterCandidateMapping[] = [];
 	for (const rule of PROVIDER_IDENTITY) {
 		for (const prefix of rule.idPrefixes) {
-			if (!sourceModelId.startsWith(prefix)) continue;
+			if (!sourceModelId.startsWith(prefix)) {
+				continue;
+			}
 			mappings.push({
 				adapterKey: rule.adapterKey,
 				upstreamModel: sourceModelId.slice(prefix.length),
@@ -120,7 +122,9 @@ export function endpointBelongsToAdapter(
 	adapterKey: string,
 ): boolean {
 	const rule = PROVIDER_IDENTITY.find((item) => item.adapterKey === adapterKey);
-	if (!rule) return false;
+	if (!rule) {
+		return false;
+	}
 	const normalizedTag = normalizeTag(providerTag);
 	return rule.providerTags.some(
 		(candidate) => normalizeTag(candidate) === normalizedTag,

@@ -72,7 +72,7 @@ export function CollapsiblePanel({
 		<BaseCollapsible.Panel
 			{...props}
 			className={mergeClassName(
-				"h-[var(--collapsible-panel-height)] overflow-hidden text-sm text-fg-muted transition-[height,opacity] duration-200 data-[starting-style]:h-0 data-[starting-style]:opacity-0 data-[ending-style]:h-0 data-[ending-style]:opacity-0",
+				"h-[var(--collapsible-panel-height)] overflow-hidden text-fg-muted text-sm transition-[height,opacity] duration-200 data-[ending-style]:h-0 data-[starting-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

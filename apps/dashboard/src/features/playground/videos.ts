@@ -165,7 +165,7 @@ export function videoBody(
 	return {
 		model,
 		prompt,
-		...(settings.task !== undefined ? { task: settings.task } : {}),
+		...(settings.task === undefined ? {} : { task: settings.task }),
 		...(guiding.length
 			? {
 					input_references: guiding.map((reference) =>
@@ -184,19 +184,19 @@ export function videoBody(
 					})),
 				}
 			: {}),
-		...(settings.seconds !== undefined ? { seconds: settings.seconds } : {}),
-		...(settings.size !== undefined ? { size: settings.size } : {}),
-		...(settings.aspectRatio !== undefined
-			? { aspect_ratio: settings.aspectRatio }
-			: {}),
-		...(settings.resolution !== undefined
-			? { resolution: settings.resolution }
-			: {}),
-		...(settings.seed !== undefined ? { seed: settings.seed } : {}),
-		...(settings.quality !== undefined ? { quality: settings.quality } : {}),
-		...(settings.generateAudio !== undefined
-			? { generate_audio: settings.generateAudio }
-			: {}),
+		...(settings.seconds === undefined ? {} : { seconds: settings.seconds }),
+		...(settings.size === undefined ? {} : { size: settings.size }),
+		...(settings.aspectRatio === undefined
+			? {}
+			: { aspect_ratio: settings.aspectRatio }),
+		...(settings.resolution === undefined
+			? {}
+			: { resolution: settings.resolution }),
+		...(settings.seed === undefined ? {} : { seed: settings.seed }),
+		...(settings.quality === undefined ? {} : { quality: settings.quality }),
+		...(settings.generateAudio === undefined
+			? {}
+			: { generate_audio: settings.generateAudio }),
 	};
 }
 
@@ -217,36 +217,52 @@ export function taskConflict(
 	const last = references.filter(
 		(reference) => reference.role === "last_frame",
 	).length;
-	if (first > 1 || last > 1)
+	if (first > 1 || last > 1) {
 		return "Mark at most one first frame and one last frame.";
-	if (last === 1 && first === 0) return "A last frame requires a first frame.";
-	if (task === undefined) return undefined;
+	}
+	if (last === 1 && first === 0) {
+		return "A last frame requires a first frame.";
+	}
+	if (task === undefined) {
+		return undefined;
+	}
 
 	const guiding = references.filter(
 		(reference) => reference.role === "reference",
 	);
 	const videos = guiding.filter((reference) => !isImage(reference)).length;
 	const images = guiding.length - videos + first + last;
-	if (task === "text_to_video" && references.length)
+	if (task === "text_to_video" && references.length) {
 		return "text_to_video cannot be combined with attachments.";
-	if (task === "image_to_video" && (images === 0 || videos > 0))
+	}
+	if (task === "image_to_video" && (images === 0 || videos > 0)) {
 		return "image_to_video needs image attachments and no video.";
-	if (task === "reference_to_video" && (guiding.length === 0 || first + last))
+	}
+	if (task === "reference_to_video" && (guiding.length === 0 || first + last)) {
 		return "reference_to_video needs references and cannot use frames.";
-	if ((task === "edit" || task === "extend") && (videos !== 1 || first + last))
+	}
+	if (
+		(task === "edit" || task === "extend") &&
+		(videos !== 1 || first + last)
+	) {
 		return `${task} needs exactly one video attachment and no frames.`;
+	}
 	return undefined;
 }
 
 /** What this file cannot be attached as, said before it is read into memory. */
 export function referenceRejection(file: File): string | undefined {
-	if (!REFERENCE_TYPES.includes(file.type))
+	if (!REFERENCE_TYPES.includes(file.type)) {
 		return `${file.name}: this file type cannot be used as a reference.`;
-	if (!file.size) return `${file.name}: the file is empty.`;
-	if (file.size > MAX_REFERENCE_BYTES)
+	}
+	if (!file.size) {
+		return `${file.name}: the file is empty.`;
+	}
+	if (file.size > MAX_REFERENCE_BYTES) {
 		return `${file.name}: references are limited to ${Math.round(
 			MAX_REFERENCE_BYTES / (1024 * 1024),
 		)} MB here.`;
+	}
 	return undefined;
 }
 
@@ -349,10 +365,11 @@ export async function pollVideo(
 	let job = initial;
 	let interval = intervalMs;
 	while (!isTerminal(job)) {
-		if (now() >= deadline)
+		if (now() >= deadline) {
 			throw new Error(
 				"The video is still being generated. Check again in a moment.",
 			);
+		}
 		await sleep(interval, options.signal);
 		job = await retrieveVideo(job.id, options);
 		onUpdate?.(job);

@@ -11,9 +11,13 @@ import type { Auth } from "./types.ts";
  * Throws GatewayError(permission) otherwise.
  */
 export function assertModelAllowed(auth: Auth, publicModel: string): void {
-	if (auth.type === "master" || auth.type === "session") return;
+	if (auth.type === "master" || auth.type === "session") {
+		return;
+	}
 	const allowed = auth.key.allowedModels;
-	if (allowed.length === 0) return;
+	if (allowed.length === 0) {
+		return;
+	}
 	if (!allowed.includes(publicModel)) {
 		throw new GatewayError({
 			class: "permission",

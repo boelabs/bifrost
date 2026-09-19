@@ -114,7 +114,9 @@ function sortedModalities(
 
 function parametersFor(model: VercelModel): ParameterSupportMap | undefined {
 	const names = new Set(model.supported_parameters ?? []);
-	if (model.reasoning_options?.length) names.add("reasoning_effort");
+	if (model.reasoning_options?.length) {
+		names.add("reasoning_effort");
+	}
 	const entries = [...names]
 		.filter((name) => name.length > 0)
 		.sort()
@@ -136,14 +138,22 @@ function reasoningFor(model: VercelModel):
 	const canToggle = options.some((option) => option.type === "toggle");
 	const effortLevels = new Set<ReasoningEffort>();
 	for (const option of options) {
-		if (option.type !== "effort") continue;
+		if (option.type !== "effort") {
+			continue;
+		}
 		for (const value of option.values ?? []) {
-			if (isReasoningEffort(value)) effortLevels.add(value);
+			if (isReasoningEffort(value)) {
+				effortLevels.add(value);
+			}
 		}
 	}
-	if (canToggle) effortLevels.add("none");
+	if (canToggle) {
+		effortLevels.add("none");
+	}
 	if (effortLevels.size > 0) {
-		if (canToggle && effortLevels.size === 1) effortLevels.add("high");
+		if (canToggle && effortLevels.size === 1) {
+			effortLevels.add("high");
+		}
 		return {
 			kind: "openai_effort",
 			levels: EFFORT_ORDER.filter((effort) => effortLevels.has(effort)),
@@ -166,7 +176,9 @@ function tierCost(
 	threshold: number,
 ): number | undefined {
 	const tiers = pricing[source];
-	if (!Array.isArray(tiers)) return undefined;
+	if (!Array.isArray(tiers)) {
+		return undefined;
+	}
 	const active = tiers
 		.filter(
 			(tier) =>
@@ -180,7 +192,9 @@ function tierCost(
 export function pricingForVercelModel(
 	raw: VercelModelPricing | undefined,
 ): Pricing | undefined {
-	if (!raw) return undefined;
+	if (!raw) {
+		return undefined;
+	}
 	const pricing: Pricing = {};
 	const input =
 		dollarsPerTokenToCentsPerMillion(raw.input) ??
@@ -194,17 +208,29 @@ export function pricingForVercelModel(
 	const cacheWrite =
 		dollarsPerTokenToCentsPerMillion(raw.input_cache_write) ??
 		tierCost(raw, "input_cache_write_tiers", 0);
-	if (input !== undefined) pricing.inputCentsPerMTokens = input;
-	if (output !== undefined) pricing.outputCentsPerMTokens = output;
-	if (cacheRead !== undefined) pricing.cacheReadCentsPerMTokens = cacheRead;
-	if (cacheWrite !== undefined) pricing.cacheWriteCentsPerMTokens = cacheWrite;
+	if (input !== undefined) {
+		pricing.inputCentsPerMTokens = input;
+	}
+	if (output !== undefined) {
+		pricing.outputCentsPerMTokens = output;
+	}
+	if (cacheRead !== undefined) {
+		pricing.cacheReadCentsPerMTokens = cacheRead;
+	}
+	if (cacheWrite !== undefined) {
+		pricing.cacheWriteCentsPerMTokens = cacheWrite;
+	}
 
 	const thresholds = new Set<number>();
 	for (const { source } of TIER_DEFINITIONS) {
 		const tiers = raw[source];
-		if (!Array.isArray(tiers)) continue;
+		if (!Array.isArray(tiers)) {
+			continue;
+		}
 		for (const tier of tiers) {
-			if (Number.isInteger(tier.min) && tier.min > 0) thresholds.add(tier.min);
+			if (Number.isInteger(tier.min) && tier.min > 0) {
+				thresholds.add(tier.min);
+			}
 		}
 	}
 	const tiers: PricingTier[] = [];
@@ -212,11 +238,17 @@ export function pricingForVercelModel(
 		const tier: PricingTier = { aboveInputTokens: threshold };
 		for (const { source, target } of TIER_DEFINITIONS) {
 			const cost = tierCost(raw, source, threshold);
-			if (cost !== undefined) tier[target] = cost;
+			if (cost !== undefined) {
+				tier[target] = cost;
+			}
 		}
-		if (Object.keys(tier).length > 1) tiers.push(tier);
+		if (Object.keys(tier).length > 1) {
+			tiers.push(tier);
+		}
 	}
-	if (tiers.length > 0) pricing.tiers = tiers;
+	if (tiers.length > 0) {
+		pricing.tiers = tiers;
+	}
 	return Object.keys(pricing).length > 0 ? pricing : undefined;
 }
 
@@ -264,8 +296,8 @@ function languageEntry(
 					["response_format", "structured_outputs"].includes(parameter),
 				) === true,
 		},
-		...(maxInputTokens !== undefined ? { maxInputTokens } : {}),
-		...(maxOutputTokens !== undefined ? { maxOutputTokens } : {}),
+		...(maxInputTokens === undefined ? {} : { maxInputTokens }),
+		...(maxOutputTokens === undefined ? {} : { maxOutputTokens }),
 		...(input.length > 0 || output.length > 0
 			? {
 					modalities: {
@@ -318,7 +350,7 @@ function embeddingEntry(model: VercelModel): CatalogEntry {
 		operations: {
 			"embedding.create": {
 				encodingFormats: ["float", "base64"],
-				...(maxInputTokens !== undefined ? { maxInputTokens } : {}),
+				...(maxInputTokens === undefined ? {} : { maxInputTokens }),
 				...(supportsDimensions ? { supportsDimensions: true } : {}),
 				supportsTokenInput: false,
 			},
@@ -372,16 +404,22 @@ function referenceEntryFor(
 	modelId: string,
 	references: ReferenceCatalogs | undefined,
 ): { adapterKey: string; entry: CatalogEntry } | undefined {
-	if (!references) return undefined;
+	if (!references) {
+		return undefined;
+	}
 	const candidates = candidateAdapterMappings(modelId).sort(
 		(a, b) =>
 			Number(a.requiresEndpointMatch ?? false) -
 			Number(b.requiresEndpointMatch ?? false),
 	);
 	for (const candidate of candidates) {
-		if (candidate.adapterKey === "vercel") continue; // never inherit from ourselves
+		if (candidate.adapterKey === "vercel") {
+			continue; // never inherit from ourselves
+		}
 		const entry = references[candidate.adapterKey]?.[candidate.upstreamModel];
-		if (entry) return { adapterKey: candidate.adapterKey, entry };
+		if (entry) {
+			return { adapterKey: candidate.adapterKey, entry };
+		}
 	}
 	return undefined;
 }
@@ -402,14 +440,16 @@ function imageOperation(
 	};
 	const reference = referenceEntryFor(model.id, references);
 	const source = reference?.entry.operations[operation];
-	if (!reference || !source) {
+	if (!(reference && source)) {
 		report.imageProfilesWithoutReference.push({ id: model.id, operation });
 		return base;
 	}
 	const inherited: string[] = [];
 	for (const field of INHERITED_IMAGE_FIELDS) {
 		const value = source[field];
-		if (value === undefined) continue;
+		if (value === undefined) {
+			continue;
+		}
 		Object.assign(base, { [field]: structuredClone(value) });
 		inherited.push(field);
 	}
@@ -453,7 +493,9 @@ function imageEntry(
 }
 
 function hasOnlyZeroRates(pricing: Pricing | undefined): boolean {
-	if (!pricing) return false;
+	if (!pricing) {
+		return false;
+	}
 	const values = Object.entries(pricing)
 		.filter(([key]) => key !== "tiers")
 		.map(([, value]) => value);
@@ -467,21 +509,24 @@ function rerankEntry(
 	const maxTokensPerDocument = positiveInteger(model.context_window);
 	const sourcePricing = pricingForVercelModel(model.pricing);
 	const pricing = hasOnlyZeroRates(sourcePricing) ? undefined : sourcePricing;
-	if (hasOnlyZeroRates(sourcePricing))
+	if (hasOnlyZeroRates(sourcePricing)) {
 		report.ambiguousZeroPricing.push(model.id);
+	}
 	const searchUnitCents = RERANK_SEARCH_UNIT_CENTS[model.id];
 	const effectivePricing =
-		searchUnitCents !== undefined ? { ...pricing, searchUnitCents } : pricing;
-	if (model.modalities?.input?.includes("image"))
+		searchUnitCents === undefined ? pricing : { ...pricing, searchUnitCents };
+	if (model.modalities?.input?.includes("image")) {
 		report.multimodalRerankWithheld.push(model.id);
-	if (!effectivePricing && !model.id.endsWith(":free"))
+	}
+	if (!(effectivePricing || model.id.endsWith(":free"))) {
 		report.paidRerankModelsWithoutCost.push(model.id);
+	}
 	return {
 		operations: {
 			rerank: {
 				documentModalities: ["text"],
-				maxDocuments: 1_000,
-				...(maxTokensPerDocument !== undefined ? { maxTokensPerDocument } : {}),
+				maxDocuments: 1000,
+				...(maxTokensPerDocument === undefined ? {} : { maxTokensPerDocument }),
 				...(model.id.startsWith("cohere/")
 					? { documentsPerSearchUnit: 100 }
 					: {}),
@@ -520,10 +565,12 @@ export function buildVercelCatalog(
 	for (const model of [...sourceModels].sort((a, b) =>
 		a.id.localeCompare(b.id),
 	)) {
-		if (!model.id?.includes("/"))
+		if (!model.id?.includes("/")) {
 			throw new Error(`Invalid Vercel model id: ${JSON.stringify(model.id)}`);
-		if (seen.has(model.id))
+		}
+		if (seen.has(model.id)) {
 			throw new Error(`Duplicate Vercel model id: ${model.id}`);
+		}
 		seen.add(model.id);
 		const type = model.type ?? "unknown";
 		if (!SUPPORTED_TYPES.has(type)) {
@@ -548,7 +595,9 @@ export function buildVercelCatalog(
 		report.includedModels += 1;
 	}
 	for (const id of Object.keys(RERANK_SEARCH_UNIT_CENTS)) {
-		if (!seen.has(id)) report.orphanedRerankPricingOverrides.push(id);
+		if (!seen.has(id)) {
+			report.orphanedRerankPricingOverrides.push(id);
+		}
 	}
 	return {
 		document: {

@@ -102,7 +102,9 @@ export function TextWorkspace({
 	const target = `${model.id}:${endpoint}`;
 	const lastTarget = useRef(target);
 	useEffect(() => {
-		if (lastTarget.current === target) return;
+		if (lastTarget.current === target) {
+			return;
+		}
 		lastTarget.current = target;
 		setSettings(initialSettings(model, endpoint));
 	}, [target, model, endpoint]);
@@ -110,11 +112,14 @@ export function TextWorkspace({
 	function setParameter(key: string, value: number | null) {
 		setSettings((current) => {
 			const parameters = { ...current.parameters };
-			if (value === null && endpoint === "messages" && key === "max_tokens")
+			if (value === null && endpoint === "messages" && key === "max_tokens") {
 				parameters[key] =
 					initialSettings(model, endpoint).parameters.max_tokens ?? 1024;
-			else if (value === null) delete parameters[key];
-			else parameters[key] = value;
+			} else if (value === null) {
+				delete parameters[key];
+			} else {
+				parameters[key] = value;
+			}
 			return { ...current, parameters };
 		});
 	}
@@ -122,33 +127,33 @@ export function TextWorkspace({
 		<div className="mx-auto flex min-h-0 w-full flex-1 flex-col">
 			<div className="flex min-h-0 min-w-0 flex-1 flex-col">
 				<ChatSession
-					key={generation}
 					endpoint={endpoint}
-					modelId={model.id}
+					key={generation}
 					modalities={capabilities.inputModalities}
-					settings={settings}
-					onSettings={() => setSettingsOpen(true)}
-					onReset={() => setGeneration((current) => current + 1)}
+					modelId={model.id}
 					modelPicker={
 						<ModelSelect
-							models={models}
 							capability="text"
 							modelId={model.id}
+							models={models}
 							onSelect={onSelect}
 						/>
 					}
+					onReset={() => setGeneration((current) => current + 1)}
+					onSettings={() => setSettingsOpen(true)}
+					settings={settings}
 				/>
 			</div>
 			<SettingsDialog
-				open={settingsOpen}
-				onOpenChange={setSettingsOpen}
-				model={model}
-				endpoint={endpoint}
-				onEndpoint={onEndpoint}
-				settings={settings}
-				setSettings={setSettings}
-				setParameter={setParameter}
 				efforts={efforts}
+				endpoint={endpoint}
+				model={model}
+				onEndpoint={onEndpoint}
+				onOpenChange={setSettingsOpen}
+				open={settingsOpen}
+				setParameter={setParameter}
+				setSettings={setSettings}
+				settings={settings}
 				tunables={tunables}
 			/>
 		</div>
@@ -186,8 +191,8 @@ function SettingsDialog({
 	const hasStop = supports(model, "stop", endpoint);
 	const hasAdvanced = advancedControls.length > 0 || hasStop;
 	return (
-		<DialogRoot open={open} onOpenChange={onOpenChange}>
-			<DialogContent layout="sectioned" className="md:w-xl">
+		<DialogRoot onOpenChange={onOpenChange} open={open}>
+			<DialogContent className="md:w-xl" layout="sectioned">
 				<DialogHeader>
 					<DialogTitle>Model settings</DialogTitle>
 					<DialogDescription>
@@ -203,12 +208,14 @@ function SettingsDialog({
 					 * the composer.
 					 */}
 					<Select
-						label="Transport"
 						description="The public contract this conversation is sent under. Only the ones this model exposes are offered."
-						value={endpoint}
+						label="Transport"
 						onValueChange={(value) => {
-							if (isPublicEndpoint(value)) onEndpoint(value);
+							if (isPublicEndpoint(value)) {
+								onEndpoint(value);
+							}
 						}}
+						value={endpoint}
 					>
 						{model.endpoints.map((key) => (
 							<SelectItem key={key} value={key}>
@@ -218,32 +225,34 @@ function SettingsDialog({
 					</Select>
 					<Tabs.Root defaultValue="generation">
 						<Tabs.List className="w-full">
-							<Tabs.Tab value="generation" className="flex-1">
+							<Tabs.Tab className="flex-1" value="generation">
 								Generation
 							</Tabs.Tab>
-							<Tabs.Tab value="instructions" className="flex-1">
+							<Tabs.Tab className="flex-1" value="instructions">
 								Instructions
 							</Tabs.Tab>
 							{hasAdvanced ? (
-								<Tabs.Tab value="advanced" className="flex-1">
+								<Tabs.Tab className="flex-1" value="advanced">
 									Advanced
 								</Tabs.Tab>
 							) : null}
 						</Tabs.List>
-						<Tabs.Panel value="generation" className="mt-4 space-y-5">
+						<Tabs.Panel className="mt-4 space-y-5" value="generation">
 							{efforts.length ? (
 								<Select
 									label="Reasoning effort"
-									value={settings.reasoningEffort ?? "default"}
 									onValueChange={(value) =>
 										setSettings((current) => {
 											const next = { ...current };
-											if (value === "default" || value === null)
+											if (value === "default" || value === null) {
 												delete next.reasoningEffort;
-											else next.reasoningEffort = value;
+											} else {
+												next.reasoningEffort = value;
+											}
 											return next;
 										})
 									}
+									value={settings.reasoningEffort ?? "default"}
 								>
 									<SelectItem value="default">Default</SelectItem>
 									{efforts.map((effort) => (
@@ -256,19 +265,19 @@ function SettingsDialog({
 							{tunables.map((control) => (
 								<NumberField.Root
 									key={control.key}
-									value={settings.parameters[control.key] ?? null}
-									onValueChange={(value) => setParameter(control.key, value)}
-									min={control.min}
 									max={control.max}
-									step={control.step}
+									min={control.min}
+									onValueChange={(value) => setParameter(control.key, value)}
 									required={
 										endpoint === "messages" && control.key === "max_tokens"
 									}
+									step={control.step}
+									value={settings.parameters[control.key] ?? null}
 								>
 									<NumberField.ScrubArea>
 										<label
+											className="font-medium text-sm"
 											htmlFor={`playground-${control.key}`}
-											className="text-sm font-medium"
 										>
 											{control.label}
 										</label>
@@ -296,32 +305,28 @@ function SettingsDialog({
 								</NumberField.Root>
 							))}
 						</Tabs.Panel>
-						<Tabs.Panel value="instructions" className="mt-4 space-y-5">
+						<Tabs.Panel className="mt-4 space-y-5" value="instructions">
 							<Textarea
 								label="System prompt"
-								value={settings.systemPrompt}
 								onChange={(event) =>
 									setSettings((current) => ({
 										...current,
 										systemPrompt: event.target.value,
 									}))
 								}
-								rows={6}
 								placeholder="Optional instructions"
+								rows={6}
+								value={settings.systemPrompt}
 							/>
 						</Tabs.Panel>
 						{hasAdvanced ? (
-							<Tabs.Panel value="advanced" className="mt-4 space-y-5">
+							<Tabs.Panel className="mt-4 space-y-5" value="advanced">
 								{advancedControls.map((control) => {
 									const values = parameterValues(model, control.key);
 									return values.length ? (
 										<Select
 											key={control.key}
 											label={control.label}
-											value={
-												settings.parameters[control.key]?.toString() ??
-												"default"
-											}
 											onValueChange={(value) =>
 												setParameter(
 													control.key,
@@ -329,6 +334,10 @@ function SettingsDialog({
 														? null
 														: Number(value),
 												)
+											}
+											value={
+												settings.parameters[control.key]?.toString() ??
+												"default"
 											}
 										>
 											<SelectItem value="default">Default</SelectItem>
@@ -343,15 +352,15 @@ function SettingsDialog({
 								{hasStop ? (
 									<Textarea
 										label="Stop sequences"
-										value={settings.stopSequences.join("\n")}
 										onChange={(event) =>
 											setSettings((current) => ({
 												...current,
 												stopSequences: event.target.value.split("\n"),
 											}))
 										}
-										rows={3}
 										placeholder="One sequence per line"
+										rows={3}
+										value={settings.stopSequences.join("\n")}
 									/>
 								) : null}
 							</Tabs.Panel>

@@ -31,7 +31,9 @@ const skip = (await Promise.all([pgAvailable(), redisAvailable()])).every(
 let originalSettings: RouterSettingsRow | undefined;
 
 before(async () => {
-	if (skip) return;
+	if (skip) {
+		return;
+	}
 	originalSettings = await getRouterSettings();
 	await updateRouterSettings({
 		routingStrategy: "least-busy",
@@ -83,7 +85,7 @@ async function deployment(
 		adapterKey: "openaicompatible",
 		upstreamModel: `text-${randomUUID()}`,
 		credentials: { apiKey: "test", baseUrl: "https://example.test/v1" },
-		...(failureDomain !== undefined ? { failureDomain } : {}),
+		...(failureDomain === undefined ? {} : { failureDomain }),
 		catalogEntry: {
 			operations: {
 				"text.generate": {
@@ -118,7 +120,9 @@ async function cleanupState(deployments: DeploymentRow[]): Promise<void> {
 			],
 		),
 	]);
-	if (keys.length > 0) await redis.del(...keys);
+	if (keys.length > 0) {
+		await redis.del(...keys);
+	}
 }
 
 async function cleanupDeployments(deployments: DeploymentRow[]): Promise<void> {
@@ -157,8 +161,9 @@ test("router: pool and request budgets bound retries across fallbacks", {
 			{ clientSignal: new AbortController().signal, requestId: randomUUID() },
 			async (candidate) => {
 				counts.set(candidate.row.id, (counts.get(candidate.row.id) ?? 0) + 1);
-				if (candidate.row.publicModel === finalFallbackModel)
+				if (candidate.row.publicModel === finalFallbackModel) {
 					return candidate.row.id;
+				}
 				return fail("server");
 			},
 		);
@@ -384,8 +389,12 @@ test("router: context_window exhausts all primaries once and selects its reason"
 			{ clientSignal: new AbortController().signal, requestId: randomUUID() },
 			async (candidate) => {
 				counts.set(candidate.row.id, (counts.get(candidate.row.id) ?? 0) + 1);
-				if (candidate.row.publicModel === contextModel) return candidate.row.id;
-				if (candidate.row.publicModel === generalModel) return fail("server");
+				if (candidate.row.publicModel === contextModel) {
+					return candidate.row.id;
+				}
+				if (candidate.row.publicModel === generalModel) {
+					return fail("server");
+				}
 				return fail("context_window");
 			},
 		);
@@ -431,10 +440,15 @@ test("router: mixed primary causes use the general chain", {
 			{ clientSignal: new AbortController().signal, requestId: randomUUID() },
 			async (candidate) => {
 				counts.set(candidate.row.id, (counts.get(candidate.row.id) ?? 0) + 1);
-				if (candidate.row.publicModel === generalModel) return candidate.row.id;
-				if (candidate.row.id === contextDeployment!.id)
+				if (candidate.row.publicModel === generalModel) {
+					return candidate.row.id;
+				}
+				if (candidate.row.id === contextDeployment!.id) {
 					return fail("context_window");
-				if (candidate.row.id === serverDeployment!.id) return fail("server");
+				}
+				if (candidate.row.id === serverDeployment!.id) {
+					return fail("server");
+				}
 				return fail("server");
 			},
 		);

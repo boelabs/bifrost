@@ -83,7 +83,7 @@ function vercelContext(ctx: AdapterContext): AdapterContext {
 		...ctx,
 		meta: {
 			...ctx.meta,
-			...(reasoning !== undefined ? { reasoning } : {}),
+			...(reasoning === undefined ? {} : { reasoning }),
 		},
 	};
 }
@@ -92,14 +92,17 @@ function addReasoningDetailsToRequest(
 	body: Record<string, unknown>,
 	req: CanonicalChatRequest,
 ): void {
-	if (!Array.isArray(body.messages)) return;
+	if (!Array.isArray(body.messages)) {
+		return;
+	}
 	for (const [index, canonical] of req.messages.entries()) {
 		const details = vercelReasoningDetailsFromProviderFields(
 			canonical.providerFields,
 		);
 		const message = recordValue(body.messages[index]);
-		if (details !== undefined && message !== undefined)
+		if (details !== undefined && message !== undefined) {
 			message.reasoning_details = details;
+		}
 	}
 }
 
@@ -109,10 +112,12 @@ function useVercelChatReasoning(
 ): void {
 	const effort = body.reasoning_effort;
 	delete body.reasoning_effort;
-	if (typeof effort !== "string") return;
+	if (typeof effort !== "string") {
+		return;
+	}
 	body.reasoning = {
 		enabled: effort !== "none",
-		...(effort !== "none" ? { effort } : {}),
+		...(effort === "none" ? {} : { effort }),
 		...(req.reasoning?.display === "omitted" ||
 		req.reasoning?.summary === "none"
 			? { exclude: true }
@@ -125,7 +130,9 @@ function addResponseReasoningDetails(
 	raw: unknown,
 ): CanonicalChatResponse {
 	const rawChoices = recordValue(raw)?.choices;
-	if (!Array.isArray(rawChoices)) return response;
+	if (!Array.isArray(rawChoices)) {
+		return response;
+	}
 	for (const choice of response.choices) {
 		const rawChoice = rawChoices
 			.map(recordValue)
@@ -134,7 +141,9 @@ function addResponseReasoningDetails(
 			recordValue(rawChoice?.message)?.reasoning_details,
 		);
 		const merged = mergeProviderFields(choice.message.providerFields, fields);
-		if (merged !== undefined) choice.message.providerFields = merged;
+		if (merged !== undefined) {
+			choice.message.providerFields = merged;
+		}
 	}
 	return response;
 }
@@ -144,7 +153,9 @@ function addChunkReasoningDetails(
 	raw: unknown,
 ): CanonicalChatStreamChunk {
 	const rawChoices = recordValue(raw)?.choices;
-	if (!Array.isArray(rawChoices)) return chunk;
+	if (!Array.isArray(rawChoices)) {
+		return chunk;
+	}
 	for (const choice of chunk.choices) {
 		const rawChoice = rawChoices
 			.map(recordValue)
@@ -153,7 +164,9 @@ function addChunkReasoningDetails(
 			recordValue(rawChoice?.delta)?.reasoning_details,
 		);
 		const merged = mergeProviderFields(choice.delta.providerFields, fields);
-		if (merged !== undefined) choice.delta.providerFields = merged;
+		if (merged !== undefined) {
+			choice.delta.providerFields = merged;
+		}
 	}
 	return chunk;
 }
@@ -209,7 +222,9 @@ export const vercelAdapter = {
 		...openAIStyleChat,
 		buildRequest(req, ctx) {
 			const request = openAIStyleChat.buildRequest(req, vercelContext(ctx));
-			if (typeof request.body !== "string") return request;
+			if (typeof request.body !== "string") {
+				return request;
+			}
 			const body = JSON.parse(request.body) as Record<string, unknown>;
 			if (ctx.transport === "chat_completions") {
 				useVercelChatReasoning(body, req);
@@ -252,12 +267,13 @@ export const vercelAdapter = {
 				const record = recordValue(raw);
 				if (
 					record === undefined ||
-					(!("choices" in record) && !("usage" in record))
-				)
+					!("choices" in record || "usage" in record)
+				) {
 					recordUnknownAdapterEvent(
 						adapterContextDiagnostics(ctx),
 						"chat_completions.unknown_json_shape",
 					);
+				}
 				const parsed = addChunkReasoningDetails(parseOpenAIChatChunk(raw), raw);
 				const originalTerminalReason = (
 					record as { choices?: Array<{ finish_reason?: unknown }> } | undefined

@@ -20,7 +20,9 @@ export async function eventually<T>(
 	const deadline = Date.now() + timeoutMs;
 	while (Date.now() < deadline) {
 		const value = await probe();
-		if (value !== null && value !== undefined) return value;
+		if (value !== null && value !== undefined) {
+			return value;
+		}
 		await sleep(intervalMs);
 	}
 	throw new Error(`Timed out waiting for ${options.description}`);

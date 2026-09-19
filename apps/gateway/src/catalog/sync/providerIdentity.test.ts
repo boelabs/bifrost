@@ -55,7 +55,9 @@ test("every PROVIDER_IDENTITY rule with requiresEndpointMatch shares its id pref
 	// Sanity check on the table itself: an ambiguous prefix only makes sense if there's another rule to
 	// disambiguate against.
 	for (const rule of PROVIDER_IDENTITY) {
-		if (!rule.requiresEndpointMatch) continue;
+		if (!rule.requiresEndpointMatch) {
+			continue;
+		}
 		const sharesPrefix = PROVIDER_IDENTITY.some(
 			(other) =>
 				other !== rule &&

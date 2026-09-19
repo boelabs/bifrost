@@ -17,7 +17,9 @@ export default async function SignInPage(props: PageProps<"/auth">) {
 	// — it runs in front of every request — so the one place that sends an already-signed-in operator
 	// away from the login screen is here, after a real check. Doing it on cookie presence instead
 	// would lock out anyone whose session expired.
-	if (await currentSessionIfReachable()) redirect("/");
+	if (await currentSessionIfReachable()) {
+		redirect("/");
+	}
 
 	const { next } = await props.searchParams;
 	// Only same-origin paths. A `next` of `//evil.example` or `https://…` would otherwise turn the

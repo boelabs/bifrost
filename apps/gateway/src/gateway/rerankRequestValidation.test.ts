@@ -82,11 +82,12 @@ test("rerank request validation enforces document, query, and byte limits", () =
 			],
 		},
 	];
-	for (const value of cases)
+	for (const value of cases) {
 		assert.throws(
 			() => assertRerankRequestSupported(value, meta()),
 			unsupported,
 		);
+	}
 });
 
 test("rerank request validation keeps image documents disabled even for prepared profiles", () => {

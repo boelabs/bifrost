@@ -143,8 +143,9 @@ test("audio.parseStream: transcript.text.delta/done -> canonical events with usa
 	let total: number | undefined;
 	for await (const event of openaicompatibleAdapter.audioTranscription!
 		.parseStream!(new Response(sse).body!, ctx())) {
-		if (event.kind === "delta") deltas.push(event.delta);
-		else {
+		if (event.kind === "delta") {
+			deltas.push(event.delta);
+		} else {
 			doneText = event.text;
 			total = event.usage?.totalTokens;
 		}

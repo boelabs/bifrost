@@ -86,14 +86,19 @@ test("openapi: every management 2xx response carries a schema", () => {
 	>;
 	const bare: string[] = [];
 	for (const [path, operations] of Object.entries(paths)) {
-		if (!/^\/(admin|auth)\b/.test(path)) continue;
+		if (!/^\/(admin|auth)\b/.test(path)) {
+			continue;
+		}
 		for (const [method, operation] of Object.entries(operations)) {
 			for (const [code, response] of Object.entries(
 				operation?.responses ?? {},
 			)) {
-				if (!code.startsWith("2") || code === "204") continue;
-				if (!response?.content)
+				if (!code.startsWith("2") || code === "204") {
+					continue;
+				}
+				if (!response?.content) {
 					bare.push(`${method.toUpperCase()} ${path} -> ${code}`);
+				}
 			}
 		}
 	}

@@ -39,7 +39,9 @@ export function parameterEligibility(
 	req: CanonicalChatRequest,
 	strategy: UnsupportedParameterStrategy,
 ): RouteOptions["candidateEligibility"] | undefined {
-	if (strategy !== "error") return undefined;
+	if (strategy !== "error") {
+		return undefined;
+	}
 	return (candidate) => assertSupportedChatParameters(req, candidate.meta);
 }
 
@@ -183,7 +185,9 @@ export async function routeChat(
 		try {
 			while (true) {
 				const next = await iterator.next();
-				if (next.done) break;
+				if (next.done) {
+					break;
+				}
 				buffered.push(next.value);
 				const semantic = chatChunkSemantic(next.value);
 				const terminal = next.value.choices.some(
@@ -203,7 +207,9 @@ export async function routeChat(
 							yield* prefetched;
 							while (true) {
 								const item = await remaining.next();
-								if (item.done) return;
+								if (item.done) {
+									return;
+								}
 								yield item.value;
 							}
 						})(),
@@ -274,7 +280,9 @@ export function parameterPolicyLogMetadata(
 	result: ParameterPolicyResult | null,
 	strategy: UnsupportedParameterStrategy,
 ): Record<string, unknown> | undefined {
-	if (!result || result.droppedParameters.length === 0) return undefined;
+	if (!result || result.droppedParameters.length === 0) {
+		return undefined;
+	}
 	return {
 		strategy,
 		droppedParameters: result.droppedParameters,
@@ -284,7 +292,9 @@ export function parameterPolicyLogMetadata(
 export function contentInputResolutionLogMetadata(
 	result: ContentInputResolutionMetadata | null,
 ): Record<string, unknown> | undefined {
-	if (!result) return undefined;
+	if (!result) {
+		return undefined;
+	}
 	return {
 		pdfEngine: result.pdfEngine,
 		nativeFiles: result.nativeFiles,

@@ -16,10 +16,10 @@ export function OverviewToolbar({ filters }: { filters: OverviewFilters }) {
 	const { filter } = useSearchWriter(filters);
 	return (
 		<RangeFilter
-			periods={OVERVIEW_PERIODS}
-			value={filters}
 			fallback={DEFAULT_PERIOD}
 			onChange={(patch) => filter(patch)}
+			periods={OVERVIEW_PERIODS}
+			value={filters}
 		/>
 	);
 }

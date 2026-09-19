@@ -12,7 +12,9 @@ import { source } from "#/lib/source.ts";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	await connection();
 	const site = process.env.DOCS_SITE_URL?.trim().replace(/\/+$/, "");
-	if (!site) return [];
+	if (!site) {
+		return [];
+	}
 
 	return [
 		{ url: site, changeFrequency: "weekly", priority: 1 },

@@ -28,8 +28,8 @@ export default function KeysPage(props: PageProps<"/keys">) {
 	return (
 		<KeysProvider models={publicModelNames()}>
 			<PageHeader
-				title="API keys"
 				description="Virtual keys scope which public models a client may call, and carry their own rate limits and budget."
+				title="API keys"
 			>
 				<Suspense fallback={<ToolbarSkeleton widths={["17rem", "6.5rem"]} />}>
 					<Filters searchParams={props.searchParams} />
@@ -56,5 +56,5 @@ async function Keys({ searchParams }: { searchParams: Params }) {
 		offset: filters.offset ?? 0,
 		...(filters.q ? { q: filters.q } : {}),
 	});
-	return <KeysTable keys={data} total={pagination.total} filters={filters} />;
+	return <KeysTable filters={filters} keys={data} total={pagination.total} />;
 }

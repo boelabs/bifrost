@@ -30,12 +30,17 @@ export async function* observeResponsesProgress(
 				!event ||
 				(event.type !== "response.output_item.added" &&
 					event.type !== "response.output_item.done")
-			)
+			) {
 				continue;
+			}
 			const item = event.data.item;
-			if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+			if (!item || typeof item !== "object" || Array.isArray(item)) {
+				continue;
+			}
 			const { id, type } = item as Record<string, unknown>;
-			if (typeof id !== "string" || !id || typeof type !== "string") continue;
+			if (typeof id !== "string" || !id || typeof type !== "string") {
+				continue;
+			}
 			const progress =
 				type === "reasoning"
 					? "reasoning"
@@ -43,7 +48,9 @@ export async function* observeResponsesProgress(
 						? "tool"
 						: undefined;
 			const key = `${event.type}:${id}`;
-			if (!progress || seen.has(key)) continue;
+			if (!progress || seen.has(key)) {
+				continue;
+			}
 			seen.add(key);
 			attachAdapterDiagnostics(chunk, {
 				...adapterDiagnostics(chunk),

@@ -11,8 +11,12 @@ function hasPart(
 	predicate: (part: CanonicalContentPart) => boolean,
 ): boolean {
 	for (const message of req.messages) {
-		if (!Array.isArray(message.content)) continue;
-		if (message.content.some(predicate)) return true;
+		if (!Array.isArray(message.content)) {
+			continue;
+		}
+		if (message.content.some(predicate)) {
+			return true;
+		}
 	}
 	return false;
 }
@@ -33,8 +37,12 @@ function explicitlyUnsupportedParameter(
 	name: string,
 ): boolean {
 	const entry = meta.operations?.["text.generate"]?.parameters?.[name];
-	if (entry === undefined || entry === true) return false;
-	if (entry === false) return true;
+	if (entry === undefined || entry === true) {
+		return false;
+	}
+	if (entry === false) {
+		return true;
+	}
 	return entry.mode === "unsupported" || entry.mode === "ignored";
 }
 
@@ -47,7 +55,7 @@ function assertStrictParameterIsNotDropped(
 	const parameter = strictTools
 		? [
 				"tools",
-				...(req.toolChoice !== undefined ? ["tool_choice"] : []),
+				...(req.toolChoice === undefined ? [] : ["tool_choice"]),
 				...(req.parallelToolCalls === true ? ["parallel_tool_calls"] : []),
 			].find((name) => explicitlyUnsupportedParameter(meta, name))
 		: strictOutput
@@ -57,7 +65,9 @@ function assertStrictParameterIsNotDropped(
 					? "structured_outputs"
 					: undefined
 			: undefined;
-	if (parameter === undefined) return;
+	if (parameter === undefined) {
+		return;
+	}
 	throw new GatewayError({
 		class: "bad_request",
 		deploymentHealth: "neutral",

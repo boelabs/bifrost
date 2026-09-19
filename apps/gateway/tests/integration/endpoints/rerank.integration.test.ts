@@ -273,11 +273,14 @@ test("POST /v1/rerank routes OpenRouter preferences, falls back across adapters,
 		);
 	} finally {
 		for (const key of [virtualKey, deniedKey]) {
-			if (!key) continue;
+			if (!key) {
+				continue;
+			}
 			await invalidateVirtualKey(key.row.keyHash);
 			await deleteVirtualKey(key.row.id);
 		}
-		for (const deploymentId of deploymentIds)
+		for (const deploymentId of deploymentIds) {
 			await deleteDeployment(deploymentId);
+		}
 	}
 });

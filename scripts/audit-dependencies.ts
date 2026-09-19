@@ -107,7 +107,7 @@ function collectFindings(
 		}
 
 		for (const advisory of advisories) {
-			if (!isRecord(advisory) || !isSeverity(advisory.severity)) {
+			if (!(isRecord(advisory) && isSeverity(advisory.severity))) {
 				throw new Error(
 					`Bun returned an invalid advisory for package "${packageName}".`,
 				);

@@ -32,7 +32,9 @@ export async function uploadArtifactAction(body: {
 		() => uploadArtifact(body),
 		"The module could not be uploaded.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }
 
@@ -41,7 +43,9 @@ export async function activateArtifactAction(key: string, version: number) {
 		() => activateArtifact(key, version),
 		"The version could not be activated.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }
 
@@ -50,7 +54,9 @@ export async function deleteArtifactAction(key: string) {
 		() => deleteArtifact(key),
 		"The module could not be deleted.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }
 
@@ -63,7 +69,9 @@ export async function saveInstanceAction(
 			existingId ? updateInstance(existingId, body) : createInstance(body),
 		"The instance could not be saved.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }
 
@@ -72,7 +80,9 @@ export async function deleteInstanceAction(id: string) {
 		() => deleteInstance(id),
 		"The instance could not be deleted.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }
 
@@ -85,7 +95,9 @@ export async function resetInstanceAction(id: string) {
 		() => resetInstance(id),
 		"The instance could not be reset.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }
 

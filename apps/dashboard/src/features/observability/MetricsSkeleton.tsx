@@ -18,9 +18,9 @@ export function MetricsSkeleton() {
 			<div className="flex flex-wrap items-center gap-2">
 				{["9rem", "12rem", "14rem", "10rem"].map((width, index) => (
 					<Skeleton
+						className="h-10 rounded-[var(--ui-radius-control)]"
 						// biome-ignore lint/suspicious/noArrayIndexKey: placeholder bars have no identity
 						key={index}
-						className="h-10 rounded-[var(--ui-radius-control)]"
 						width={width}
 					/>
 				))}

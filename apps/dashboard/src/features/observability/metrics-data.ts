@@ -33,8 +33,9 @@ export type MetricsSearch = z.infer<typeof metricsSearch>;
 export function metricsWindow(search: MetricsSearch, now = new Date()) {
 	const { start, end, bucket } = resolveRange(search, "today", now);
 	// Unreachable: metrics never offers "Everything", the one period without bounds.
-	if (start === undefined || end === undefined)
+	if (start === undefined || end === undefined) {
 		throw new Error("Choose a bounded range.");
+	}
 	return { start, end, bucket };
 }
 

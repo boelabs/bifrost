@@ -54,7 +54,7 @@ const geminiBudgetCtx: AdapterContext = {
 		reasoning: {
 			kind: "gemini_budget",
 			levels: ["none", "minimal", "low", "medium", "high"],
-			budgets: { minimal: 512, low: 1_024, medium: 4_096, high: 8_192 },
+			budgets: { minimal: 512, low: 1024, medium: 4096, high: 8192 },
 		},
 	},
 };
@@ -291,7 +291,7 @@ test("google.buildRequest: strict Gemini 3 tools use VALIDATED JSON Schema", () 
 							},
 						},
 					],
-					...(toolChoice !== undefined ? { toolChoice } : {}),
+					...(toolChoice === undefined ? {} : { toolChoice }),
 				},
 				geminiLevelCtx,
 			).body!,
@@ -318,11 +318,12 @@ test("google.buildRequest: strict Gemini 3 tools use VALIDATED JSON Schema", () 
 		const nonStrictDeclaration = body.tools[0].functionDeclarations[1];
 		assert.deepEqual(nonStrictDeclaration.parameters, { type: "object" });
 		assert.equal(nonStrictDeclaration.parametersJsonSchema, undefined);
-		if (typeof toolChoice === "object")
+		if (typeof toolChoice === "object") {
 			assert.deepEqual(
 				body.toolConfig.functionCallingConfig.allowedFunctionNames,
 				["search_web"],
 			);
+		}
 	}
 });
 
@@ -861,9 +862,12 @@ test("google.parseStream: thought parts emit reasoning, not content", async () =
 		new Response(sse).body!,
 		ctx,
 	)) {
-		if (c.choices[0]?.delta.content) out.push(c.choices[0].delta.content);
-		if (c.choices[0]?.delta.reasoning)
+		if (c.choices[0]?.delta.content) {
+			out.push(c.choices[0].delta.content);
+		}
+		if (c.choices[0]?.delta.reasoning) {
 			reasoning.push(c.choices[0].delta.reasoning);
+		}
 	}
 	assert.equal(out.join(""), "hello"); // "hmm" (thought) excluded
 	assert.equal(reasoning.join(""), "hmm");
@@ -926,11 +930,15 @@ test("google.parseStream: deltas + usage final", async () => {
 	let firstHadRole = false;
 	let i = 0;
 	for await (const chunk of googleAdapter.chat!.parseStream(stream, ctx)) {
-		if (i === 0 && chunk.choices[0]?.delta.role === "assistant")
+		if (i === 0 && chunk.choices[0]?.delta.role === "assistant") {
 			firstHadRole = true;
-		if (chunk.choices[0]?.delta.content)
+		}
+		if (chunk.choices[0]?.delta.content) {
 			out.push(chunk.choices[0].delta.content);
-		if (chunk.usage) usageTotal = chunk.usage.totalTokens;
+		}
+		if (chunk.usage) {
+			usageTotal = chunk.usage.totalTokens;
+		}
 		i++;
 	}
 	assert.equal(out.join(""), "Hello");
@@ -947,8 +955,9 @@ test("google.parseStream: tool call indexes remain contiguous across events", as
 		new Response(sse).body!,
 		ctx,
 	)) {
-		for (const toolCall of chunk.choices[0]?.delta.toolCalls ?? [])
+		for (const toolCall of chunk.choices[0]?.delta.toolCalls ?? []) {
 			indexes.push(toolCall.index);
+		}
 	}
 
 	assert.deepEqual(indexes, [0, 1]);
@@ -964,7 +973,9 @@ test("google.parseStream: repeated STOP after a tool call remains one tool termi
 		googleAdapter.chat!.parseStream(new Response(sse).body!, ctx),
 	);
 	const chunks = [];
-	for await (const chunk of observed.items) chunks.push(chunk);
+	for await (const chunk of observed.items) {
+		chunks.push(chunk);
+	}
 
 	assert.deepEqual(
 		chunks.map((chunk) => chunk.choices[0]?.finishReason),
@@ -987,7 +998,9 @@ test("google.parseStream: finish evidence before a trailing tool call closes onc
 		googleAdapter.chat!.parseStream(new Response(sse).body!, ctx),
 	);
 	const chunks = [];
-	for await (const chunk of observed.items) chunks.push(chunk);
+	for await (const chunk of observed.items) {
+		chunks.push(chunk);
+	}
 
 	assert.deepEqual(
 		chunks.map((chunk) => chunk.choices[0]?.finishReason),
@@ -1108,8 +1121,9 @@ test("google.parseStream: every candidate is preserved", async () => {
 	for await (const chunk of googleAdapter.chat!.parseStream(
 		new Response(sse).body!,
 		ctx,
-	))
+	)) {
 		chunks.push(chunk);
+	}
 	assert.deepEqual(
 		chunks[0]?.choices.map((choice) => ({
 			index: choice.index,

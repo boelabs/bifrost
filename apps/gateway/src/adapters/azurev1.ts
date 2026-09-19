@@ -46,9 +46,11 @@ export function normalizeAzurev1BaseUrl(value: string): string {
 				"Azure v1: deployment-based URLs are legacy; provide the resource endpoint or /openai/v1",
 		});
 	}
-	if (path === "" || path === "/") url.pathname = "/openai/v1";
-	else if (path.toLowerCase() === "/openai/v1") url.pathname = "/openai/v1";
-	else {
+	if (path === "" || path === "/") {
+		url.pathname = "/openai/v1";
+	} else if (path.toLowerCase() === "/openai/v1") {
+		url.pathname = "/openai/v1";
+	} else {
 		throw new GatewayError({
 			class: "bad_request",
 			message:
@@ -67,7 +69,9 @@ export function azureApiVersion(
 	fallback: string,
 	label: string,
 ): string {
-	if (value === undefined) return fallback;
+	if (value === undefined) {
+		return fallback;
+	}
 	if (typeof value !== "string" || value.trim() === "") {
 		throw new GatewayError({
 			class: "bad_request",
@@ -163,9 +167,9 @@ export function makeAzurev1Adapter(
 				),
 			),
 		maxTokensField: "max_completion_tokens",
-		...(config.supportsDeveloperRole !== undefined
-			? { supportsDeveloperRole: config.supportsDeveloperRole }
-			: {}),
+		...(config.supportsDeveloperRole === undefined
+			? {}
+			: { supportsDeveloperRole: config.supportsDeveloperRole }),
 		authScheme: "api-key",
 		normalizeBaseUrl: normalizeAzurev1BaseUrl,
 		refineBadRequest: azureRefineBadRequest,

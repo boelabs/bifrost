@@ -25,8 +25,8 @@ export default function ModelsPage() {
 	return (
 		<ModelsProvider adapters={adapters()}>
 			<PageHeader
-				title="Models"
 				description="A public model is the name clients send, and every deployment sharing that name forms its routing pool. Models are not rows — one exists while at least one deployment carries its name."
+				title="Models"
 			>
 				<NewDeploymentButton />
 			</PageHeader>

@@ -117,7 +117,9 @@ function withHeader(
 	name: string,
 	value: number | string | null | undefined,
 ): void {
-	if (value === null || value === undefined) return;
+	if (value === null || value === undefined) {
+		return;
+	}
 	headers[name] = String(value);
 }
 
@@ -174,11 +176,18 @@ function makeHeaderArgs(
 	},
 ): Parameters<typeof makeHeaders>[0] {
 	const args: Parameters<typeof makeHeaders>[0] = { key };
-	if (values.rpmUsed !== undefined) args.rpmUsed = values.rpmUsed;
-	if (values.tpmUsed !== undefined) args.tpmUsed = values.tpmUsed;
-	if (values.budgetUsed !== undefined) args.budgetUsed = values.budgetUsed;
-	if (values.budgetResetSeconds !== undefined)
+	if (values.rpmUsed !== undefined) {
+		args.rpmUsed = values.rpmUsed;
+	}
+	if (values.tpmUsed !== undefined) {
+		args.tpmUsed = values.tpmUsed;
+	}
+	if (values.budgetUsed !== undefined) {
+		args.budgetUsed = values.budgetUsed;
+	}
+	if (values.budgetResetSeconds !== undefined) {
 		args.budgetResetSeconds = values.budgetResetSeconds;
+	}
 	return args;
 }
 
@@ -188,15 +197,17 @@ interface BudgetState {
 }
 
 function finiteNonNegative(value: number, name: string): number {
-	if (!Number.isFinite(value) || value < 0)
+	if (!Number.isFinite(value) || value < 0) {
 		throw new Error(`${name} must be a finite non-negative number`);
+	}
 	return value;
 }
 
 function redisCounter(raw: string | null, name: string): number {
 	const value = Number(raw ?? 0);
-	if (!Number.isFinite(value) || value < 0)
+	if (!Number.isFinite(value) || value < 0) {
 		throw new Error(`Redis contains an invalid ${name} counter`);
+	}
 	return value;
 }
 
@@ -219,12 +230,13 @@ async function budgetSpendFromRedisOrDb(
 	// authentication projection, and advance an expired reset window synchronously before admitting
 	// new spend. The conditional SQL update makes this exact-once across replicas.
 	const persisted = await getVirtualKeyById(key.id);
-	if (!persisted)
+	if (!persisted) {
 		throw new GatewayError({
 			class: "auth",
 			code: "invalid_api_key",
 			message: "Virtual API key no longer exists",
 		});
+	}
 	const resetAt = persisted.budgetResetAt?.getTime() ?? null;
 	if (
 		persisted.budgetReset !== null &&
@@ -235,7 +247,9 @@ async function budgetSpendFromRedisOrDb(
 			key.id,
 			persisted.budgetReset,
 		);
-		if (!reset) return budgetSpendFromRedisOrDb(key);
+		if (!reset) {
+			return budgetSpendFromRedisOrDb(key);
+		}
 		const ttlSeconds = periodSeconds(persisted.budgetReset);
 		await redis.set(actualKey, "0", "EX", ttlSeconds, "NX");
 		const seeded = await redis.get(actualKey);
@@ -253,9 +267,11 @@ async function budgetSpendFromRedisOrDb(
 		budgetReset: persisted.budgetReset,
 		budgetResetAt: persisted.budgetResetAt?.toISOString() ?? null,
 	});
-	if (ttlSeconds > 0)
+	if (ttlSeconds > 0) {
 		await redis.set(actualKey, String(spend), "EX", ttlSeconds, "NX");
-	else await redis.set(actualKey, String(spend), "NX");
+	} else {
+		await redis.set(actualKey, String(spend), "NX");
+	}
 	const seeded = await redis.get(actualKey);
 	return {
 		spend: redisCounter(seeded ?? String(spend), "budget"),
@@ -357,8 +373,9 @@ interface CounterLease {
 }
 
 function evalArray(value: unknown): readonly unknown[] {
-	if (!Array.isArray(value))
+	if (!Array.isArray(value)) {
 		throw new Error("Redis returned an invalid reservation result");
+	}
 	return value;
 }
 
@@ -373,8 +390,9 @@ async function reserveCounter(options: {
 	actualTtlSeconds: number;
 }): Promise<{ accepted: boolean; lease: CounterLease }> {
 	const id = randomUUID();
-	if (!Number.isFinite(options.limit) || options.limit < 0)
+	if (!Number.isFinite(options.limit) || options.limit < 0) {
 		throw new Error("Reservation limit must be a finite non-negative number");
+	}
 	const amount = finiteNonNegative(options.amount, "Reservation amount");
 	const result = evalArray(
 		await redis.eval(
@@ -489,7 +507,9 @@ export async function reserveVirtualKeyUsage(
 	let settled = false;
 	return {
 		settle: async (totalTokens, costCents) => {
-			if (settled) return;
+			if (settled) {
+				return;
+			}
 			settled = true;
 			const operations = leases.map((lease, index) =>
 				settleCounter(
@@ -497,11 +517,15 @@ export async function reserveVirtualKeyUsage(
 					index === 0 && key.tpm != null ? totalTokens : costCents,
 				),
 			);
-			if (costCents > 0) operations.push(addVirtualKeySpend(key.id, costCents));
+			if (costCents > 0) {
+				operations.push(addVirtualKeySpend(key.id, costCents));
+			}
 			await Promise.all(operations);
 		},
 		release: async () => {
-			if (settled) return;
+			if (settled) {
+				return;
+			}
 			settled = true;
 			await Promise.all(leases.map((lease) => settleCounter(lease, 0)));
 		},

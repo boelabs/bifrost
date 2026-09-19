@@ -21,15 +21,21 @@ export function nextResetAt(
 	from = new Date(),
 ): Date | null {
 	const seconds = periodSeconds(reset);
-	if (seconds <= 0) return null;
+	if (seconds <= 0) {
+		return null;
+	}
 	return new Date(from.getTime() + seconds * 1000);
 }
 
 export function secondsUntilReset(
 	key: Pick<VirtualKeyAuth, "budgetReset" | "budgetResetAt">,
 ): number {
-	if (!key.budgetReset) return 0;
-	if (!key.budgetResetAt) return periodSeconds(key.budgetReset);
+	if (!key.budgetReset) {
+		return 0;
+	}
+	if (!key.budgetResetAt) {
+		return periodSeconds(key.budgetReset);
+	}
 	const remaining = Math.ceil(
 		(new Date(key.budgetResetAt).getTime() - Date.now()) / 1000,
 	);

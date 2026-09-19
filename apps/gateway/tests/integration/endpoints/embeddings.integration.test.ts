@@ -231,6 +231,8 @@ test("POST /v1/embeddings routes, caches, and logs without storing vectors", {
 			await invalidateVirtualKey(virtualKey.row.keyHash);
 			await deleteVirtualKey(virtualKey.row.id);
 		}
-		if (deploymentId) await deleteDeployment(deploymentId);
+		if (deploymentId) {
+			await deleteDeployment(deploymentId);
+		}
 	}
 });

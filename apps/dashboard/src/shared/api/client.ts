@@ -38,10 +38,14 @@ async function withSession(request: Request): Promise<Response> {
 	const jar = await cookies();
 	const headers = new Headers(request.headers);
 	const cookie = jar.toString();
-	if (cookie) headers.set("cookie", cookie);
+	if (cookie) {
+		headers.set("cookie", cookie);
+	}
 	if (!SAFE_METHODS.has(request.method)) {
 		const token = jar.get(CSRF_COOKIE)?.value;
-		if (token) headers.set(CSRF_HEADER, token);
+		if (token) {
+			headers.set(CSRF_HEADER, token);
+		}
 	}
 	return fetch(resolve(new Request(request, { headers })));
 }
@@ -87,7 +91,9 @@ export function unwrap<T>(result: {
 	try {
 		return unwrapOrThrow(result);
 	} catch (cause) {
-		if (isUnauthenticated(cause)) redirect("/auth");
+		if (isUnauthenticated(cause)) {
+			redirect("/auth");
+		}
 		throw cause;
 	}
 }

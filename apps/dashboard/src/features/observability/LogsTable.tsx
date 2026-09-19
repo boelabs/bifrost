@@ -21,9 +21,15 @@ import {
 
 function relative(iso: string): string {
 	const seconds = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
-	if (seconds < 60) return `${seconds}s ago`;
-	if (seconds < 3600) return `${Math.round(seconds / 60)}m ago`;
-	if (seconds < 86_400) return `${Math.round(seconds / 3600)}h ago`;
+	if (seconds < 60) {
+		return `${seconds}s ago`;
+	}
+	if (seconds < 3600) {
+		return `${Math.round(seconds / 60)}m ago`;
+	}
+	if (seconds < 86_400) {
+		return `${Math.round(seconds / 3600)}h ago`;
+	}
 	return new Date(iso).toLocaleDateString();
 }
 
@@ -51,8 +57,8 @@ export function LogsTable({
 				// Rendered from the operator's own clock and timezone, which the server does not have:
 				// the markup it streamed is expected to differ from what hydration produces here.
 				<span
-					suppressHydrationWarning
 					className="whitespace-nowrap text-fg-muted text-xs"
+					suppressHydrationWarning
 					title={new Date(row.startedAt).toLocaleString()}
 				>
 					{relative(row.startedAt)}
@@ -130,13 +136,13 @@ export function LogsTable({
 			align: "end",
 			render: (row) => (
 				<Button
+					aria-label={`Inspect operation ${row.id}`}
+					mode="icon"
+					onClick={() => setInspecting(row.id)}
 					size="sm"
 					variant="ghost"
-					aria-label={`Inspect operation ${row.id}`}
-					onClick={() => setInspecting(row.id)}
-					mode="icon"
 				>
-					<IconSearch size={15} aria-hidden />
+					<IconSearch aria-hidden size={15} />
 				</Button>
 			),
 		},
@@ -146,24 +152,22 @@ export function LogsTable({
 		<>
 			{rows.length === 0 ? (
 				<EmptyState
-					title="No operations match"
 					description={
 						filtered || !everything
 							? "Widen the time range or clear the filters — traffic older than the window is not shown."
 							: "Traffic through /v1 appears here within seconds."
 					}
+					title="No operations match"
 				/>
 			) : (
 				<>
 					<DataTable
-						rows={rows}
+						caption="Gateway operations"
 						columns={columns}
 						rowKey={(row) => row.id}
-						caption="Gateway operations"
+						rows={rows}
 						toolbar={
 							<Button
-								size="sm"
-								variant="secondary"
 								onClick={() =>
 									downloadCsv(
 										`operations-${new Date().toISOString().slice(0, 10)}.csv`,
@@ -182,8 +186,10 @@ export function LogsTable({
 										],
 									)
 								}
+								size="sm"
+								variant="secondary"
 							>
-								<IconDownload size={15} aria-hidden className="mr-1" />
+								<IconDownload aria-hidden className="mr-1" size={15} />
 								CSV
 							</Button>
 						}
@@ -192,15 +198,15 @@ export function LogsTable({
 						label="operations"
 						limit={PAGE_SIZE}
 						offset={offset}
-						total={total}
 						onOffsetChange={(next) =>
 							set({ offset: next === 0 ? undefined : next })
 						}
+						total={total}
 					/>
 				</>
 			)}
 
-			<LogDetail operationId={inspecting} onClose={() => setInspecting(null)} />
+			<LogDetail onClose={() => setInspecting(null)} operationId={inspecting} />
 		</>
 	);
 }

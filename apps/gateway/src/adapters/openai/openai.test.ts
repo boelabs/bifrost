@@ -293,7 +293,7 @@ test("openai.buildRequest: extraBody does not overwrite managed fields", () => {
 test("openai.parseResponse: /responses output -> canonical", () => {
 	const raw = {
 		id: "resp_1",
-		created_at: 1700000000,
+		created_at: 1_700_000_000,
 		model: "gpt-5.5",
 		status: "completed",
 		output: [
@@ -347,11 +347,15 @@ test("openai.parseStream: response.* events -> canonical deltas", async () => {
 	let lastFinish: string | null = null;
 	let total: number | undefined;
 	for await (const chunk of openaiAdapter.chat!.parseStream(stream, ctx)) {
-		if (chunk.choices[0]?.delta.content)
+		if (chunk.choices[0]?.delta.content) {
 			out.push(chunk.choices[0].delta.content);
-		if (chunk.choices[0]?.finishReason)
+		}
+		if (chunk.choices[0]?.finishReason) {
 			lastFinish = chunk.choices[0].finishReason;
-		if (chunk.usage) total = chunk.usage.totalTokens;
+		}
+		if (chunk.usage) {
+			total = chunk.usage.totalTokens;
+		}
 	}
 	assert.equal(out.join(""), "Hello");
 	assert.equal(lastFinish, "stop");
@@ -367,8 +371,9 @@ test("openai.parseStream: reasoning summary deltas preserve their native item id
 	for await (const chunk of openaiAdapter.chat!.parseStream(
 		new Response(sse).body!,
 		ctx,
-	))
+	)) {
 		chunks.push(chunk);
+	}
 
 	assert.equal(chunks[0]!.choices[0]!.delta.reasoning, "Think");
 	const summaryFields = chunks[0]!.choices[0]!.delta.providerFields;
@@ -681,7 +686,9 @@ test("openai.parseStream: reasoning output_item.done -> delta.providerFields (de
 				const state = openaiReasoningFromProviderFields(
 					choice.delta.providerFields,
 				);
-				if (state !== undefined) collected.push(...state);
+				if (state !== undefined) {
+					collected.push(...state);
+				}
 				terminalOutput =
 					openaiResponsesStreamOutputFromProviderFields(
 						choice.delta.providerFields,

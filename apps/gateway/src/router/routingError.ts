@@ -30,8 +30,9 @@ function causePhrase(last: GatewayError | undefined): string {
 		last?.code?.startsWith("upstream_") &&
 		last.code.endsWith("_timeout") &&
 		last.provider === undefined
-	)
+	) {
 		return "deadlines set by this gateway, not upstream failures";
+	}
 	switch (last?.class) {
 		case "timeout":
 			return "upstream timeouts";
@@ -77,9 +78,9 @@ export function buildRoutingError(p: {
 	// upstream was contacted (e.g. pure cooldown, 0 attempts), lastError is undefined and there is no
 	// provider to attach.
 	const provider =
-		p.lastError?.provider !== undefined
-			? { provider: p.lastError.provider }
-			: {};
+		p.lastError?.provider === undefined
+			? {}
+			: { provider: p.lastError.provider };
 
 	if (p.reason === "cooldown") {
 		/**
@@ -120,15 +121,15 @@ export function buildRoutingError(p: {
 			message: internal,
 			publicMessage: `All deployments for public model "${p.publicModel}" are temporarily unavailable${fbNote}. Please retry shortly.`,
 			code: "deployments_in_cooldown",
-			...(p.retryAfterMs !== undefined
-				? {
+			...(p.retryAfterMs === undefined
+				? {}
+				: {
 						headers: {
 							"Retry-After": String(
 								Math.max(1, Math.ceil(p.retryAfterMs / 1000)),
 							),
 						},
-					}
-				: {}),
+					}),
 			...causeProvider,
 		});
 	}
@@ -138,15 +139,15 @@ export function buildRoutingError(p: {
 			message: internal,
 			publicMessage: `All deployments for public model "${p.publicModel}" are temporarily rate limited${fbNote}, either by configured RPM/TPM limits or by upstream capacity. Please try again later.`,
 			code: "rate_limit_exceeded",
-			...(p.retryAfterMs !== undefined
-				? {
+			...(p.retryAfterMs === undefined
+				? {}
+				: {
 						headers: {
 							"Retry-After": String(
 								Math.max(1, Math.ceil(p.retryAfterMs / 1000)),
 							),
 						},
-					}
-				: {}),
+					}),
 			...provider,
 		});
 	}
@@ -172,9 +173,9 @@ export function buildRoutingError(p: {
 			code: "routing_budget_exhausted",
 			...(p.lastError?.httpStatus ? { status: p.lastError.httpStatus } : {}),
 			...(p.lastError?.headers ? { headers: p.lastError.headers } : {}),
-			...(p.lastError?.retryAfterMs !== undefined
-				? { retryAfterMs: p.lastError.retryAfterMs }
-				: {}),
+			...(p.lastError?.retryAfterMs === undefined
+				? {}
+				: { retryAfterMs: p.lastError.retryAfterMs }),
 			...provider,
 		});
 	}
@@ -187,9 +188,9 @@ export function buildRoutingError(p: {
 		code: "no_deployments_available",
 		...(p.lastError?.httpStatus ? { status: p.lastError.httpStatus } : {}),
 		...(p.lastError?.headers ? { headers: p.lastError.headers } : {}),
-		...(p.lastError?.retryAfterMs !== undefined
-			? { retryAfterMs: p.lastError.retryAfterMs }
-			: {}),
+		...(p.lastError?.retryAfterMs === undefined
+			? {}
+			: { retryAfterMs: p.lastError.retryAfterMs }),
 		...provider,
 	});
 }

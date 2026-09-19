@@ -26,7 +26,7 @@ test("dialog sections keep footer outside the scroll region but inside the form"
 			<DialogHeader>Header</DialogHeader>
 			<Form className="flex min-h-0 flex-1 flex-col">
 				<DialogBody>
-					<Input name="name" aria-label="Name" required />
+					<Input aria-label="Name" name="name" required />
 				</DialogBody>
 				<DialogFooter>
 					<Button type="submit">Save</Button>
@@ -34,16 +34,22 @@ test("dialog sections keep footer outside the scroll region but inside the form"
 			</Form>
 		</>,
 	);
-	assert.match(html, /data-slot="dialog-header"[^>]*class="[^"]*shrink-0/);
 	assert.match(
 		html,
-		/data-slot="dialog-body"[^>]*class="[^"]*min-h-0[^"]*overflow-y-auto[^"]*scroll-p-6 p-6/,
+		/<div(?=[^>]*data-slot="dialog-header")(?=[^>]*class="[^"]*shrink-0)[^>]*>/,
+	);
+	assert.match(
+		html,
+		/<div(?=[^>]*data-slot="dialog-body")(?=[^>]*class="[^"]*min-h-0)(?=[^>]*class="[^"]*overflow-y-auto)(?=[^>]*class="[^"]*[\s"]scroll-p-6[\s"])(?=[^>]*class="[^"]*[\s"]p-6[\s"])[^>]*>/,
 	);
 	assert.match(html, /<input[^>]*name="name"/);
-	assert.match(html, /<\/div><\/div><div data-slot="dialog-footer"/);
 	assert.match(
 		html,
-		/data-slot="dialog-footer"[^>]*class="[^"]*shrink-0[^"]*flex-wrap/,
+		/<\/div><\/div><div(?=[^>]*data-slot="dialog-footer")[^>]*>/,
+	);
+	assert.match(
+		html,
+		/<div(?=[^>]*data-slot="dialog-footer")(?=[^>]*class="[^"]*shrink-0)(?=[^>]*class="[^"]*flex-wrap)[^>]*>/,
 	);
 	assert.match(
 		html,

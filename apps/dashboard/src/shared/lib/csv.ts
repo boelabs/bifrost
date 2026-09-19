@@ -5,7 +5,9 @@ export type CsvColumn<T> = [
 ];
 
 function cell(value: string | number | boolean | null | undefined): string {
-	if (value === null || value === undefined) return "";
+	if (value === null || value === undefined) {
+		return "";
+	}
 	const text = String(value);
 	// A model id with a comma, or an error message with a quote, must not shift every later column.
 	return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
@@ -13,8 +15,9 @@ function cell(value: string | number | boolean | null | undefined): string {
 
 export function toCsv<T>(rows: readonly T[], columns: CsvColumn<T>[]): string {
 	const lines = [columns.map(([header]) => cell(header)).join(",")];
-	for (const row of rows)
+	for (const row of rows) {
 		lines.push(columns.map(([, value]) => cell(value(row))).join(","));
+	}
 	return lines.join("\r\n");
 }
 
@@ -30,7 +33,9 @@ export function downloadCsv<T>(
 	rows: readonly T[],
 	columns: CsvColumn<T>[],
 ): void {
-	if (typeof document === "undefined") return;
+	if (typeof document === "undefined") {
+		return;
+	}
 	const blob = new Blob([toCsv(rows, columns)], {
 		type: "text/csv;charset=utf-8",
 	});

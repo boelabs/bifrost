@@ -56,7 +56,9 @@ export function useMutation() {
 						};
 					}
 					if (result.ok) {
-						if (options.success) notify.success(options.success);
+						if (options.success) {
+							notify.success(options.success);
+						}
 					} else {
 						notify.error(
 							result.message || options.failure || "The request failed.",
@@ -99,25 +101,32 @@ export function useRowActions<T>(
 	);
 
 	useEffect(() => {
-		if (pending) return;
+		if (pending) {
+			return;
+		}
 		setPatches((current) => (current.size === 0 ? current : new Map()));
 	}, [pending]);
 
 	const act = useCallback(
 		async (key: string, { optimistic, action, ...options }: RowAction<T>) => {
-			if (optimistic)
+			if (optimistic) {
 				setPatches((current) => new Map(current).set(key, optimistic));
+			}
 			return run(action, options);
 		},
 		[run],
 	);
 
 	const visible = useMemo(() => {
-		if (patches.size === 0) return rows;
+		if (patches.size === 0) {
+			return rows;
+		}
 		const result: T[] = [];
 		for (const row of rows) {
 			const value = patches.get(keyOf(row));
-			if (value === "removed") continue;
+			if (value === "removed") {
+				continue;
+			}
 			result.push(value ? { ...row, ...value } : row);
 		}
 		return result;

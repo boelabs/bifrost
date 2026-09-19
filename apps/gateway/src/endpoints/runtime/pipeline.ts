@@ -70,9 +70,9 @@ function zodToGatewayError(error: z.ZodError): GatewayError {
 		class: "bad_request",
 		message,
 		publicMessage:
-			publicMessage.length <= 4_096
+			publicMessage.length <= 4096
 				? publicMessage
-				: `${publicMessage.slice(0, 4_095)}…`,
+				: `${publicMessage.slice(0, 4095)}…`,
 		param: first ? first.path.join(".") : null,
 	});
 }
@@ -80,7 +80,9 @@ function zodToGatewayError(error: z.ZodError): GatewayError {
 /** Validates `json` against a zod schema; throws `bad_request` with the detail if it does not pass. */
 export function parseBody<T>(schema: z.ZodType<T>, json: unknown): T {
 	const parsed = schema.safeParse(json);
-	if (!parsed.success) throw zodToGatewayError(parsed.error);
+	if (!parsed.success) {
+		throw zodToGatewayError(parsed.error);
+	}
 	return parsed.data;
 }
 
@@ -98,7 +100,9 @@ export async function preflight(
 	assertModelAllowed(auth, model);
 	if (auth.type === "virtual") {
 		const limited = await enforceVirtualKey(auth.key);
-		if (options?.writeHeaders !== false) setHeaders(c, limited.headers);
+		if (options?.writeHeaders !== false) {
+			setHeaders(c, limited.headers);
+		}
 	}
 }
 
@@ -254,7 +258,9 @@ export function computeUsageCost(
 	meta: Pick<ResolvedModelMetadata, "pricing">,
 	usage: Usage | null,
 ): CostBreakdown | null {
-	if (!usage) return null;
+	if (!usage) {
+		return null;
+	}
 	const cost = computeCost(meta, usage);
 	return cost;
 }
@@ -285,8 +291,9 @@ export async function openResponseCache(opts: {
 }): Promise<CacheSlot> {
 	const auth = getAuth(opts.c);
 	const cfg = cacheConfigFromHeaders((name) => opts.c.req.header(name));
-	if (auth.type !== "virtual" || !cfg.enabled || !opts.eligible)
+	if (auth.type !== "virtual" || !cfg.enabled || !opts.eligible) {
 		return NO_CACHE;
+	}
 
 	const epoch = await responseCacheEpoch();
 	const key = buildCacheKey(opts.namespace, auth.key.id, {

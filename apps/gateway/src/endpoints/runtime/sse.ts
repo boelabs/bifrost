@@ -58,11 +58,12 @@ export function newDownstreamWriteObservation(
 		writeFailedAt: null,
 		deliveryState: "opened",
 	};
-	if (operationId)
+	if (operationId) {
 		renderSpans.set(
 			observation,
 			startOperationChildTelemetry(operationId, "render"),
 		);
+	}
 	return observation;
 }
 
@@ -70,8 +71,9 @@ export function markDownstreamSemanticWritten(
 	observation: DownstreamWriteObservation,
 ): void {
 	observation.firstSemanticWriteAt ??= Date.now();
-	if (observation.deliveryState === "opened")
+	if (observation.deliveryState === "opened") {
 		observation.deliveryState = "semantic_written";
+	}
 }
 
 export function markDownstreamTerminalWritten(
@@ -93,7 +95,9 @@ export function finishDownstreamWriteObservation(
 	errorCode?: string | null,
 ): void {
 	const span = renderSpans.get(observation);
-	if (!span) return;
+	if (!span) {
+		return;
+	}
 	finishOperationChildTelemetry(span, errorCode);
 	renderSpans.delete(observation);
 }
@@ -138,7 +142,9 @@ async function beforeDeadline(
 		}
 		throw error;
 	} finally {
-		if (timer) clearTimeout(timer);
+		if (timer) {
+			clearTimeout(timer);
+		}
 		if (observation) {
 			if (completed) {
 				observation.bytes += bytes;
@@ -158,7 +164,7 @@ export function writeSSE(
 	observation?: DownstreamWriteObservation,
 ): Promise<void> {
 	const bytes = Buffer.byteLength(
-		`${message.event ? `event: ${message.event}\n` : ""}${message.id ? `id: ${message.id}\n` : ""}${message.retry !== undefined ? `retry: ${message.retry}\n` : ""}${message.data
+		`${message.event ? `event: ${message.event}\n` : ""}${message.id ? `id: ${message.id}\n` : ""}${message.retry === undefined ? "" : `retry: ${message.retry}\n`}${message.data
 			.split("\n")
 			.map((line) => `data: ${line}\n`)
 			.join("")}\n`,
@@ -195,12 +201,16 @@ export async function awaitWithSSEHeartbeats<T>(
 				timer = setTimeout(() => resolve({ kind: "heartbeat" }), intervalMs);
 			}),
 		]);
-		if (timer) clearTimeout(timer);
+		if (timer) {
+			clearTimeout(timer);
+		}
 		if (result.kind === "heartbeat") {
 			await heartbeat();
 			continue;
 		}
-		if (result.kind === "error") throw result.error;
+		if (result.kind === "error") {
+			throw result.error;
+		}
 		return result.value;
 	}
 }
@@ -224,12 +234,16 @@ export async function* withSSEHeartbeats<T>(
 					);
 				}),
 			]);
-			if (timer) clearTimeout(timer);
+			if (timer) {
+				clearTimeout(timer);
+			}
 			if (result.kind === "heartbeat") {
 				await heartbeat();
 				continue;
 			}
-			if (result.item.done) return;
+			if (result.item.done) {
+				return;
+			}
 			pending = iterator.next();
 			yield result.item.value;
 		}

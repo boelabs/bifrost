@@ -20,7 +20,9 @@ export function recordUnknownAdapterEvent(
 	evidence: AdapterDiagnostics,
 	type: string,
 ): void {
-	if (evidence.metadata === undefined) evidence.metadata = {};
+	if (evidence.metadata === undefined) {
+		evidence.metadata = {};
+	}
 	const metadata = evidence.metadata;
 	const counts =
 		(metadata.unknownEventCounts as Record<string, number> | undefined) ?? {};
@@ -31,6 +33,8 @@ export function recordUnknownAdapterEvent(
 export function adapterContextDiagnostics(
 	ctx: AdapterContext,
 ): AdapterDiagnostics {
-	if (ctx.diagnostics === undefined) ctx.diagnostics = {};
+	if (ctx.diagnostics === undefined) {
+		ctx.diagnostics = {};
+	}
 	return ctx.diagnostics;
 }

@@ -34,7 +34,7 @@ test("async TTL cache invalidation cannot be undone by an older in-flight load",
 			});
 		}
 		return "fresh";
-	}, 1_000);
+	}, 1000);
 
 	const staleLoad = cache.get();
 	cache.invalidate();

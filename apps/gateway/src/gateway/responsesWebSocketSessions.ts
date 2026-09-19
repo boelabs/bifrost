@@ -137,14 +137,16 @@ export class ResponsesWebSocketUpstreams {
 		async function* chunks() {
 			try {
 				try {
-					for await (const chunk of turn.chunks) yield chunk;
+					for await (const chunk of turn.chunks) {
+						yield chunk;
+					}
 				} catch (error) {
 					if (
-						!canContinue ||
-						!GatewayError.is(error) ||
+						!(canContinue && GatewayError.is(error)) ||
 						error.code !== "previous_response_not_found"
-					)
+					) {
 						throw error;
+					}
 					// The gateway still owns the complete canonical state. If OpenAI evicted its
 					// connection-local id, retry once on the same socket with the full input.
 					activeBinding.latestPublicResponseId = null;
@@ -156,7 +158,9 @@ export class ResponsesWebSocketUpstreams {
 						}),
 						ctx,
 					);
-					for await (const chunk of turn.chunks) yield chunk;
+					for await (const chunk of turn.chunks) {
+						yield chunk;
+					}
 				}
 				resolveFinalId(await turn.upstreamResponseId);
 				adapterContextDiagnostics(ctx).transportTerminator = "websocket_turn";
@@ -181,14 +185,20 @@ export class ResponsesWebSocketUpstreams {
 		upstreamResponseId: Promise<string | null> | undefined,
 	): void {
 		for (const [id, other] of this.bindings) {
-			if (id === deploymentId) continue;
+			if (id === deploymentId) {
+				continue;
+			}
 			other.session.close();
 			this.bindings.delete(id);
 		}
 		const binding = this.bindings.get(deploymentId);
-		if (!binding || !upstreamResponseId) return;
+		if (!(binding && upstreamResponseId)) {
+			return;
+		}
 		void upstreamResponseId.then((id) => {
-			if (!id || binding.session.closed) return;
+			if (!id || binding.session.closed) {
+				return;
+			}
 			binding.latestPublicResponseId = publicResponseId;
 			binding.latestUpstreamResponseId = id;
 		});
@@ -196,14 +206,18 @@ export class ResponsesWebSocketUpstreams {
 
 	invalidate(publicResponseId: string): void {
 		for (const binding of this.bindings.values()) {
-			if (binding.latestPublicResponseId !== publicResponseId) continue;
+			if (binding.latestPublicResponseId !== publicResponseId) {
+				continue;
+			}
 			binding.latestPublicResponseId = null;
 			binding.latestUpstreamResponseId = null;
 		}
 	}
 
 	close(): void {
-		for (const binding of this.bindings.values()) binding.session.close();
+		for (const binding of this.bindings.values()) {
+			binding.session.close();
+		}
 		this.bindings.clear();
 	}
 }

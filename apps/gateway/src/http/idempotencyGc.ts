@@ -12,8 +12,9 @@ export function startIdempotencyGcJob(): () => void {
 	const run = (): void => {
 		void purgeExpiredIdempotencyKeys()
 			.then((deleted) => {
-				if (deleted > 0)
+				if (deleted > 0) {
 					log.info("idempotency", "gc deleted expired keys", { deleted });
+				}
 			})
 			.catch((err: unknown) => {
 				log.error("idempotency", "gc failed", { err });

@@ -40,10 +40,10 @@ function Similarity({ vectors }: { vectors: number[][] }) {
 						<th className="p-1" />
 						{vectors.map((_, column) => (
 							<th
+								className="px-2 py-1 text-fg-muted text-xs"
 								// biome-ignore lint/suspicious/noArrayIndexKey: position is the identity of an input here
 								key={column}
 								scope="col"
-								className="px-2 py-1 text-fg-muted text-xs"
 							>
 								{column + 1}
 							</th>
@@ -54,16 +54,16 @@ function Similarity({ vectors }: { vectors: number[][] }) {
 					{vectors.map((row, rowIndex) => (
 						// biome-ignore lint/suspicious/noArrayIndexKey: position is the identity of an input here
 						<tr key={rowIndex}>
-							<th scope="row" className="px-2 py-1 text-fg-muted text-xs">
+							<th className="px-2 py-1 text-fg-muted text-xs" scope="row">
 								{rowIndex + 1}
 							</th>
 							{vectors.map((column, columnIndex) => {
 								const value = cosineSimilarity(row, column);
 								return (
 									<td
+										className="px-2 py-1 text-center font-mono text-xs"
 										// biome-ignore lint/suspicious/noArrayIndexKey: position is the identity of an input here
 										key={columnIndex}
-										className="px-2 py-1 text-center font-mono text-xs"
 										style={{
 											// The number is the content; the wash is only a reading aid.
 											backgroundColor:
@@ -105,9 +105,9 @@ export function EmbeddingRunView({
 			>
 				{run.inputs.map((input, index) => (
 					<div
+						className="flex max-w-full items-start gap-2"
 						// biome-ignore lint/suspicious/noArrayIndexKey: the position is what the results are numbered by
 						key={index}
-						className="flex max-w-full items-start gap-2"
 					>
 						<span className="mt-2 text-fg-muted text-xs">{index + 1}</span>
 						<p className="w-fit max-w-full overflow-hidden break-words rounded-3xl border border-border/60 bg-surface-2 px-3.5 py-2.5 text-base leading-6 [overflow-wrap:anywhere]">
@@ -131,18 +131,18 @@ export function EmbeddingRunView({
 						<ul className="flex flex-col gap-1.5">
 							{run.vectors.map((vector, index) => (
 								<li
+									className="flex min-w-0 items-center gap-2"
 									// biome-ignore lint/suspicious/noArrayIndexKey: position matches the input above
 									key={index}
-									className="flex min-w-0 items-center gap-2"
 								>
 									<span className="text-fg-muted text-xs">{index + 1}</span>
 									<code className="min-w-0 flex-1 truncate rounded-lg bg-surface-2 px-2 py-1 font-mono text-xs">
 										{preview(vector)}
 									</code>
 									<CopyAction
-										text={JSON.stringify(vector)}
 										label={`Copy vector ${index + 1}`}
 										onCopy={onCopy}
+										text={JSON.stringify(vector)}
 									/>
 								</li>
 							))}
@@ -157,31 +157,31 @@ export function EmbeddingRunView({
 				) : null}
 				<div className="-ml-2 flex h-10 shrink-0 items-center gap-0.5 lg:h-8">
 					<Button
+						aria-label="Embed again"
+						className={MESSAGE_ACTION}
+						disabled={run.state === "running"}
+						mode="icon"
+						onClick={onRetry}
+						size="sm"
+						title="Embed again"
 						type="button"
 						variant="ghost"
-						size="sm"
-						mode="icon"
-						className={MESSAGE_ACTION}
-						aria-label="Embed again"
-						title="Embed again"
-						disabled={run.state === "running"}
-						onClick={onRetry}
 					>
-						<IconRotate2 className={MESSAGE_ACTION_ICON} aria-hidden />
+						<IconRotate2 aria-hidden className={MESSAGE_ACTION_ICON} />
 					</Button>
 					<p className="px-2 text-fg-muted text-xs">
 						{[
 							run.model,
-							dimensions !== undefined
-								? `${dimensions.toLocaleString()} dimensions`
-								: undefined,
+							dimensions === undefined
+								? undefined
+								: `${dimensions.toLocaleString()} dimensions`,
 							run.settings.encodingFormat,
-							run.durationMs !== undefined
-								? duration(run.durationMs)
-								: undefined,
-							run.totalTokens !== undefined
-								? `${run.totalTokens.toLocaleString()} tokens`
-								: undefined,
+							run.durationMs === undefined
+								? undefined
+								: duration(run.durationMs),
+							run.totalTokens === undefined
+								? undefined
+								: `${run.totalTokens.toLocaleString()} tokens`,
 						]
 							.filter(Boolean)
 							.join(" · ")}

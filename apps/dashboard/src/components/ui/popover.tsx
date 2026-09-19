@@ -69,8 +69,8 @@ export function PopoverPositioner({
 		<BasePopover.Positioner
 			positionMethod={positionMethod}
 			{...props}
-			sideOffset={sideOffset}
 			className={mergeClassName("z-50 outline-none", className)}
+			sideOffset={sideOffset}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -142,7 +142,7 @@ export function PopoverTitle({
 	return (
 		<BasePopover.Title
 			{...props}
-			className={mergeClassName("text-sm font-semibold text-fg", className)}
+			className={mergeClassName("font-semibold text-fg text-sm", className)}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -162,7 +162,7 @@ export function PopoverDescription({
 	return (
 		<BasePopover.Description
 			{...props}
-			className={mergeClassName("text-sm text-fg-muted", className)}
+			className={mergeClassName("text-fg-muted text-sm", className)}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);

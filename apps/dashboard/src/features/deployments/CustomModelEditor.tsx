@@ -62,31 +62,13 @@ export function CustomModelEditor({
 				must match your provider.
 			</p>
 			<div>
-				<Button size="sm" variant="secondary" onClick={toggleTechnical}>
+				<Button onClick={toggleTechnical} size="sm" variant="secondary">
 					{technical === null
 						? "Technical configuration"
 						: "Return to guided fields"}
 				</Button>
 			</div>
-			{technical !== null ? (
-				<div className="space-y-2">
-					<Textarea
-						label="Full custom configuration (JSON)"
-						description="Complete catalog entry: operations, capabilities, modalities, limits, parameters, reasoning, pricing and notes. The gateway validates the full schema and adapter compatibility before saving. Returning to guided fields preserves technical properties."
-						value={technical}
-						onValueChange={onTechnicalChange}
-						rows={14}
-						spellCheck={false}
-						className="resize-y font-mono text-xs"
-						aria-invalid={error !== null}
-					/>
-					{error ? (
-						<p role="alert" className="text-danger text-sm">
-							{error}
-						</p>
-					) : null}
-				</div>
-			) : (
+			{technical === null ? (
 				<>
 					{operations.map((operation) => {
 						const profile = value.operations[operation.id];
@@ -94,51 +76,71 @@ export function CustomModelEditor({
 							onChange(updateProfile(value, operation.id, patch));
 						return (
 							<div
-								key={operation.id}
 								className="flex flex-col gap-4 border-border/50 border-t pt-4"
+								key={operation.id}
 							>
 								<Switch
 									checked={profile !== undefined}
 									onCheckedChange={(checked) => {
 										const next = { ...value.operations };
-										if (checked)
+										if (checked) {
 											next[operation.id] = operationTemplate(operation.id);
-										else delete next[operation.id];
+										} else {
+											delete next[operation.id];
+										}
 										onChange({ ...value, operations: next });
 									}}
 								>
 									{operation.label}
 								</Switch>
-								{profile !== undefined ? (
+								{profile === undefined ? null : (
 									<>
 										{operation.id === "text.generate" ? (
-											<TextProfile profile={profile} onChange={setProfile} />
+											<TextProfile onChange={setProfile} profile={profile} />
 										) : (
 											<OperationFields
 												id={operation.id}
-												profile={profile}
 												onChange={setProfile}
+												profile={profile}
 											/>
 										)}
 									</>
-								) : null}
+								)}
 							</div>
 						);
 					})}
 					{Object.keys(value.operations).some(
 						(id) => !operations.some((operation) => operation.id === id),
 					) ? (
-						<p role="alert" className="text-sm text-warning">
+						<p className="text-sm text-warning" role="alert">
 							This entry contains operations not offered by this adapter. Review
 							them in Technical configuration.
 						</p>
 					) : null}
 					{Object.keys(value.operations).length === 0 ? (
-						<p role="alert" className="text-danger text-sm">
+						<p className="text-danger text-sm" role="alert">
 							Select at least one operation.
 						</p>
 					) : null}
 				</>
+			) : (
+				<div className="space-y-2">
+					<Textarea
+						aria-invalid={error !== null}
+						className="resize-y font-mono text-xs"
+						description="Complete catalog entry: operations, capabilities, modalities, limits, parameters, reasoning, pricing and notes. The gateway validates the full schema and adapter compatibility before saving. Returning to guided fields preserves technical properties."
+						label="Full custom configuration (JSON)"
+						onValueChange={onTechnicalChange}
+						rows={14}
+						spellCheck={false}
+						value={technical}
+					/>
+					{error ? (
+						<p className="text-danger text-sm" role="alert">
+							{error}
+						</p>
+					) : null}
+				</div>
 			)}
 			<details className="min-w-0">
 				<summary className="cursor-pointer font-medium text-fg text-sm">
@@ -161,13 +163,16 @@ export function CustomModelEditor({
 								<Select
 									key={operation.id}
 									label={`${operation.label} transport`}
-									value={current}
 									onValueChange={(transport) => {
 										const next = { ...transports };
-										if (transport) next[operation.id] = transport;
-										else delete next[operation.id];
+										if (transport) {
+											next[operation.id] = transport;
+										} else {
+											delete next[operation.id];
+										}
 										onTransportsChange(next);
 									}}
+									value={current}
 								>
 									<SelectItem value="">
 										{operation.defaultTransport
@@ -218,8 +223,8 @@ function TextProfile({
 					] as const
 				).map(([key, label]) => (
 					<Switch
-						key={key}
 						checked={capabilities[key] === true}
+						key={key}
 						onCheckedChange={(checked) =>
 							onChange({ capabilities: { ...capabilities, [key]: checked } })
 						}
@@ -231,23 +236,24 @@ function TextProfile({
 			<div className="grid gap-4 sm:grid-cols-2">
 				<ProfileNumber
 					label="Maximum input tokens"
-					property="maxInputTokens"
-					profile={profile}
 					onChange={onChange}
+					profile={profile}
+					property="maxInputTokens"
 				/>
 				<ProfileNumber
 					label="Maximum output tokens"
-					property="maxOutputTokens"
-					profile={profile}
 					onChange={onChange}
+					profile={profile}
+					property="maxOutputTokens"
 				/>
 			</div>
 			<Select
-				label="Reasoning"
-				value={kind}
 				description="Other protocols, budgets and custom effort mappings are available in Technical configuration."
+				label="Reasoning"
 				onValueChange={(next) => {
-					if (!next || next === kind) return;
+					if (!next || next === kind) {
+						return;
+					}
 					onChange({
 						capabilities: { ...capabilities, reasoning: next !== "none" },
 						reasoning:
@@ -260,25 +266,26 @@ function TextProfile({
 									},
 					});
 				}}
+				value={kind}
 			>
 				<SelectItem value="none">No reasoning</SelectItem>
 				<SelectItem value="openai_effort">OpenAI effort levels</SelectItem>
 				<SelectItem value="fixed">Always on (fixed)</SelectItem>
-				{!["none", "openai_effort", "fixed"].includes(kind) ? (
+				{["none", "openai_effort", "fixed"].includes(kind) ? null : (
 					<SelectItem value={kind}>{kind} (technical configuration)</SelectItem>
-				) : null}
+				)}
 			</Select>
-			{kind !== "none" ? (
+			{kind === "none" ? null : (
 				<ListInput
+					description="Comma-separated: none, minimal, low, medium, high, xhigh, max. Use only levels the model supports."
 					key={kind}
 					label="Reasoning levels"
-					description="Comma-separated: none, minimal, low, medium, high, xhigh, max. Use only levels the model supports."
-					value={reasoning.levels}
 					onChange={(levels) =>
 						onChange({ reasoning: { ...reasoning, levels } })
 					}
+					value={reasoning.levels}
 				/>
-			) : null}
+			)}
 		</>
 	);
 }
@@ -296,15 +303,15 @@ function ProfileNumber({
 }) {
 	return (
 		<Input
-			type="number"
-			min={1}
-			step={1}
 			label={label}
-			value={
-				typeof profile[property] === "number" ? String(profile[property]) : ""
-			}
+			min={1}
 			onValueChange={(value) =>
 				onChange({ [property]: value.trim() ? Number(value) : undefined })
+			}
+			step={1}
+			type="number"
+			value={
+				typeof profile[property] === "number" ? String(profile[property]) : ""
 			}
 		/>
 	);
@@ -325,9 +332,8 @@ function ListInput({
 	const [text, setText] = useState(serialized);
 	return (
 		<Input
-			label={label}
 			description={description}
-			value={text}
+			label={label}
 			onValueChange={(next) => {
 				setText(next);
 				onChange(
@@ -337,6 +343,7 @@ function ListInput({
 						.filter(Boolean),
 				);
 			}}
+			value={text}
 		/>
 	);
 }
@@ -350,54 +357,60 @@ function OperationFields({
 	profile: Record<string, unknown>;
 	onChange: (patch: Record<string, unknown>) => void;
 }) {
-	if (id === "embedding.create")
+	if (id === "embedding.create") {
 		return (
 			<div className="grid gap-4 sm:grid-cols-2">
 				<ProfileNumber
 					label="Embedding dimensions"
-					property="dimensions"
-					profile={profile}
 					onChange={onChange}
+					profile={profile}
+					property="dimensions"
 				/>
 				<ProfileNumber
 					label="Maximum inputs"
-					property="maxInputs"
-					profile={profile}
 					onChange={onChange}
+					profile={profile}
+					property="maxInputs"
 				/>
 				<ProfileNumber
 					label="Maximum input tokens"
-					property="maxInputTokens"
-					profile={profile}
 					onChange={onChange}
+					profile={profile}
+					property="maxInputTokens"
 				/>
 			</div>
 		);
-	if (id === "audio.transcribe")
+	}
+	if (id === "audio.transcribe") {
 		return (
 			<ListInput
-				label="Transcription response formats"
 				description="Comma-separated: json, text, srt, verbose_json, vtt."
-				value={profile.responseFormats}
+				label="Transcription response formats"
 				onChange={(responseFormats) => onChange({ responseFormats })}
+				value={profile.responseFormats}
 			/>
 		);
-	if (id === "rerank")
+	}
+	if (id === "rerank") {
 		return (
 			<ProfileNumber
 				label="Maximum documents"
-				property="maxDocuments"
-				profile={profile}
 				onChange={onChange}
+				profile={profile}
+				property="maxDocuments"
 			/>
 		);
-	if (id === "image.generate" || id === "image.edit" || id === "video.generate")
+	}
+	if (
+		id === "image.generate" ||
+		id === "image.edit" ||
+		id === "video.generate"
+	) {
 		return (
 			<>
 				<ListInput
-					label="Supported sizes"
 					description="Comma-separated, for example 1024x1024. Existing provider mappings are preserved; edit mappings or arbitrary sizing in Technical configuration."
-					value={Object.keys(objectValue(profile.sizes))}
+					label="Supported sizes"
 					onChange={(sizes) => {
 						const previous = objectValue(profile.sizes);
 						onChange({
@@ -406,23 +419,25 @@ function OperationFields({
 							),
 						});
 					}}
+					value={Object.keys(objectValue(profile.sizes))}
 				/>
 				{id === "video.generate" ? (
 					<ListInput
-						label="Durations (seconds)"
 						description="Comma-separated durations supported by the upstream."
-						value={profile.durations}
+						label="Durations (seconds)"
 						onChange={(durations) => onChange({ durations })}
+						value={profile.durations}
 					/>
 				) : (
 					<ListInput
-						label="Image output formats"
 						description="Comma-separated: png, jpeg, webp."
-						value={profile.outputFormats}
+						label="Image output formats"
 						onChange={(outputFormats) => onChange({ outputFormats })}
+						value={profile.outputFormats}
 					/>
 				)}
 			</>
 		);
+	}
 	return null;
 }

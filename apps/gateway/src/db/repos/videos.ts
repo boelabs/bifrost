@@ -109,7 +109,9 @@ export async function getVideoJobForScope(
 	opts: { includeDeleted?: boolean } = {},
 ): Promise<VideoJobRow | undefined> {
 	const conditions = [eq(videoJobs.id, id), scopeCondition(virtualKeyId)];
-	if (!opts.includeDeleted) conditions.push(isNull(videoJobs.deletedAt));
+	if (!opts.includeDeleted) {
+		conditions.push(isNull(videoJobs.deletedAt));
+	}
 	const [row] = await db
 		.select()
 		.from(videoJobs)
@@ -195,27 +197,27 @@ export async function updateVideoJobState(
 		.set({
 			status: patch.status,
 			progress: patch.progress,
-			...(patch.error !== undefined ? { error: patch.error } : {}),
-			...(patch.usage !== undefined ? { usage: patch.usage } : {}),
+			...(patch.error === undefined ? {} : { error: patch.error }),
+			...(patch.usage === undefined ? {} : { usage: patch.usage }),
 			updatedAt: new Date(),
-			...(patch.upstreamGenerationId !== undefined
-				? { upstreamGenerationId: patch.upstreamGenerationId }
-				: {}),
-			...(patch.upstreamPollingUrl !== undefined
-				? { upstreamPollingUrl: patch.upstreamPollingUrl }
-				: {}),
-			...(patch.providerState !== undefined
-				? { providerState: patch.providerState }
-				: {}),
-			...(patch.completedAt !== undefined
-				? { completedAt: patch.completedAt }
-				: {}),
-			...(patch.nextPollAt !== undefined
-				? { nextPollAt: patch.nextPollAt }
-				: {}),
-			...(patch.lastPolledAt !== undefined
-				? { lastPolledAt: patch.lastPolledAt }
-				: {}),
+			...(patch.upstreamGenerationId === undefined
+				? {}
+				: { upstreamGenerationId: patch.upstreamGenerationId }),
+			...(patch.upstreamPollingUrl === undefined
+				? {}
+				: { upstreamPollingUrl: patch.upstreamPollingUrl }),
+			...(patch.providerState === undefined
+				? {}
+				: { providerState: patch.providerState }),
+			...(patch.completedAt === undefined
+				? {}
+				: { completedAt: patch.completedAt }),
+			...(patch.nextPollAt === undefined
+				? {}
+				: { nextPollAt: patch.nextPollAt }),
+			...(patch.lastPolledAt === undefined
+				? {}
+				: { lastPolledAt: patch.lastPolledAt }),
 		})
 		.where(eq(videoJobs.id, id))
 		.returning();
@@ -293,7 +295,9 @@ export async function markVideoDeletedForScope(
 				),
 			)
 			.returning();
-		if (!row) return { row: undefined, assets: [] };
+		if (!row) {
+			return { row: undefined, assets: [] };
+		}
 		const assets = await tx
 			.update(videoAssets)
 			// Make every object immediately eligible for the retrying GC. The endpoint marks only
@@ -317,7 +321,9 @@ export async function listExpiredVideoAssets(
 }
 
 export async function markVideoAssetsDeleted(ids: string[]): Promise<void> {
-	if (ids.length === 0) return;
+	if (ids.length === 0) {
+		return;
+	}
 	await db
 		.update(videoAssets)
 		.set({ deletedAt: new Date() })
@@ -349,7 +355,9 @@ export async function claimDueVideoJobs(
 			.orderBy(asc(videoJobs.createdAt))
 			.limit(limit)
 			.for("update", { skipLocked: true });
-		if (due.length === 0) return [];
+		if (due.length === 0) {
+			return [];
+		}
 		return tx
 			.update(videoJobs)
 			.set({ nextPollAt: new Date(now.getTime() + claimMs) })

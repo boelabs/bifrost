@@ -30,7 +30,7 @@ test("s3 carries credentials, bucket and endpoint in one string", () => {
 			endpoint: "http://minio:9000",
 			accessKeyId: "key",
 			secretAccessKey: "secret",
-			forcePathStyle: false || true,
+			forcePathStyle: true,
 		},
 	);
 });

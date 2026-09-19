@@ -53,16 +53,17 @@ function NumberInput({
 		input.setCustomValidity(
 			input.value ? (validate?.(Number(input.value)) ?? "") : "",
 		);
-		if (!input.validity.badInput)
+		if (!input.validity.badInput) {
 			onChange(input.value === "" ? undefined : Number(input.value));
+		}
 	}
 	return (
 		<Input
 			{...props}
+			onChange={handleChange}
 			ref={ref}
 			type="number"
 			value={draft}
-			onChange={handleChange}
 		/>
 	);
 }
@@ -83,8 +84,11 @@ export function PricingEditor({
 	}
 	function updateRate(field: PricingRateField, rate: number | undefined) {
 		const next = { ...value };
-		if (rate === undefined) delete next[field];
-		else next[field] = rate;
+		if (rate === undefined) {
+			delete next[field];
+		} else {
+			next[field] = rate;
+		}
 		emit(next);
 	}
 	function updateTier(index: number, patch: Partial<PricingTier>) {
@@ -105,15 +109,15 @@ export function PricingEditor({
 					unset, not inherited. Clear the override to use catalog pricing.
 				</p>
 			</div>
-			<div key={reset} className="grid gap-3 sm:grid-cols-2">
+			<div className="grid gap-3 sm:grid-cols-2" key={reset}>
 				{PRICING_RATE_FIELDS.map((field) => (
 					<NumberInput
 						key={field}
 						label={RATE_LABELS[field]}
 						min={0}
+						onChange={(rate) => updateRate(field, rate)}
 						step="any"
 						value={value?.[field]}
-						onChange={(rate) => updateRate(field, rate)}
 					/>
 				))}
 			</div>
@@ -126,37 +130,42 @@ export function PricingEditor({
 					</p>
 				</div>
 				<Button
-					size="sm"
-					variant="secondary"
 					onClick={() => {
 						let threshold = 1;
-						while (tiers.some((tier) => tier.aboveInputTokens === threshold))
+						while (tiers.some((tier) => tier.aboveInputTokens === threshold)) {
 							threshold++;
+						}
 						setTierIds([...tierIds, nextId.current++]);
 						emit({
 							...value,
 							tiers: [...tiers, { aboveInputTokens: threshold }],
 						});
 					}}
+					size="sm"
+					variant="secondary"
 				>
 					Add tier
 				</Button>
 			</div>
 			{tiers.map((tier, index) => (
 				<fieldset
-					key={tierIds[index]}
 					className="flex min-w-0 flex-col gap-3 rounded-lg border border-border p-4"
+					key={tierIds[index]}
 				>
 					<legend className="px-1 font-medium text-fg text-sm">
 						Context tier {index + 1}
 					</legend>
 					<NumberInput
-						label="Above input tokens"
 						description="Positive whole number; each threshold must be unique."
+						label="Above input tokens"
 						min={1}
-						step={1}
+						onChange={(threshold) => {
+							if (threshold !== undefined) {
+								updateTier(index, { aboveInputTokens: threshold });
+							}
+						}}
 						required
-						value={tier.aboveInputTokens}
+						step={1}
 						validate={(threshold) =>
 							tiers.some(
 								(other, i) =>
@@ -165,10 +174,7 @@ export function PricingEditor({
 								? "Each threshold must be unique."
 								: ""
 						}
-						onChange={(threshold) => {
-							if (threshold !== undefined)
-								updateTier(index, { aboveInputTokens: threshold });
-						}}
+						value={tier.aboveInputTokens}
 					/>
 					<div className="grid gap-3 sm:grid-cols-2">
 						{TIER_FIELDS.map((field) => (
@@ -176,12 +182,13 @@ export function PricingEditor({
 								key={field}
 								label={RATE_LABELS[field]}
 								min={0}
-								step="any"
-								value={tier[field]}
 								onChange={(rate) => {
 									const next = { ...tier };
-									if (rate === undefined) delete next[field];
-									else next[field] = rate;
+									if (rate === undefined) {
+										delete next[field];
+									} else {
+										next[field] = rate;
+									}
 									emit({
 										...value,
 										tiers: tiers.map((existing, i) =>
@@ -189,22 +196,27 @@ export function PricingEditor({
 										),
 									});
 								}}
+								step="any"
+								value={tier[field]}
 							/>
 						))}
 					</div>
 					<div>
 						<Button
-							size="sm"
-							variant="ghost"
 							aria-label={`Remove context tier ${index + 1}`}
 							onClick={() => {
 								setTierIds(tierIds.filter((_, i) => i !== index));
 								const next = { ...value };
 								const remaining = tiers.filter((_, i) => i !== index);
-								if (remaining.length) next.tiers = remaining;
-								else delete next.tiers;
+								if (remaining.length) {
+									next.tiers = remaining;
+								} else {
+									delete next.tiers;
+								}
 								emit(next);
 							}}
+							size="sm"
+							variant="ghost"
 						>
 							Remove tier
 						</Button>
@@ -212,12 +224,12 @@ export function PricingEditor({
 				</fieldset>
 			))}
 			<Button
-				variant="ghost"
 				onClick={() => {
 					setReset(reset + 1);
 					setTierIds([]);
 					onChange(undefined);
 				}}
+				variant="ghost"
 			>
 				Clear pricing override
 			</Button>

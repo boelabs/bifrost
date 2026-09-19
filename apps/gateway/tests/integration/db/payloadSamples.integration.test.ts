@@ -77,7 +77,7 @@ test("payload samples: an expired sample reads as missing, and still audits", {
 	const operationId = randomUUID();
 	// Retention sweeps on an interval, so an expired row can outlive its own window: reading one must
 	// behave as if it were already gone rather than hand back content past its retention.
-	await seed(operationId, new Date(Date.now() - 1_000));
+	await seed(operationId, new Date(Date.now() - 1000));
 	try {
 		const read = await getPayloadSample(operationId, {
 			requestId: "itest",

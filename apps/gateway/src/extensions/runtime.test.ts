@@ -427,8 +427,9 @@ test("extensions: a breaker-disabled instance can be reset at runtime", async (t
 			stream: false,
 		});
 
-	for (let i = 0; i < 3; i += 1)
+	for (let i = 0; i < 3; i += 1) {
 		await assert.rejects(fire(), /Extension "broken"/);
+	}
 	assert.equal(
 		extensionRuntime.status().instances[0]!.status,
 		"runtime_disabled",

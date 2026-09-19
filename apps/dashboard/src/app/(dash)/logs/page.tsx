@@ -34,8 +34,8 @@ export default function LogsPage(props: PageProps<"/logs">) {
 	return (
 		<>
 			<PageHeader
-				title="Logs"
 				description="Operation summaries. Request and response bodies are never persisted in these rows — only metadata, alongside the encrypted forensic sample kept for every finished request."
+				title="Logs"
 			>
 				{/*
 				 * Two boundaries, for two different waits: this one covers the model list the filter
@@ -68,7 +68,7 @@ async function Filters({ searchParams }: { searchParams: Params }) {
 		publicModelNames(),
 		searchParams,
 	]);
-	return <LogsToolbar models={models} filters={parseLogsFilters(params)} />;
+	return <LogsToolbar filters={parseLogsFilters(params)} models={models} />;
 }
 
 async function Operations({ searchParams }: { searchParams: Params }) {
@@ -85,5 +85,5 @@ async function Operations({ searchParams }: { searchParams: Params }) {
 		...(range.start ? { start: range.start } : {}),
 		...(range.end ? { end: range.end } : {}),
 	});
-	return <LogsTable rows={data} total={pagination.total} filters={filters} />;
+	return <LogsTable filters={filters} rows={data} total={pagination.total} />;
 }

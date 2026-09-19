@@ -486,7 +486,6 @@ test("expandInputReferences: does not hit the store when the seed already has th
 	let lookupCalls = 0;
 	const out = await expandInputReferences(input, seed, async () => {
 		lookupCalls += 1;
-		return undefined;
 	});
 	assert.equal(lookupCalls, 0);
 	assert.deepEqual(out, seed);
@@ -669,7 +668,7 @@ const renderOpts = (): RenderOptions => ({
 test("canonical->response: message item, usage, and output_text", () => {
 	const resp: CanonicalChatResponse = {
 		id: "x",
-		created: 1700000000,
+		created: 1_700_000_000,
 		model: "gpt-x",
 		choices: [
 			{
@@ -939,9 +938,10 @@ test("stream->events: function_call items include opaque extra_content in the co
 		chunks(),
 		renderOpts(),
 	)) {
-		if (ev.event === "response.completed")
+		if (ev.event === "response.completed") {
 			completed = (JSON.parse(ev.data) as { response: TestJsonObject })
 				.response;
+		}
 	}
 	assert.ok(completed);
 	const fc = completed.output.find((item) => item.type === "function_call");
@@ -1171,7 +1171,9 @@ test("stream->events: output_item.added/done share the same suffixed call_id", a
 			ev.event === "response.output_item.done"
 		) {
 			const item = JSON.parse(ev.data).item;
-			if (item.type === "function_call") callIds.push(item.call_id);
+			if (item.type === "function_call") {
+				callIds.push(item.call_id);
+			}
 		}
 	}
 	assert.deepEqual(callIds, [
@@ -1314,11 +1316,13 @@ test("stream->events: state-only reasoning preserves arrival order before tool c
 		chunks(),
 		renderOpts(),
 	)) {
-		if (ev.event === "response.output_item.done")
+		if (ev.event === "response.output_item.done") {
 			order.push(JSON.parse(ev.data).item.type);
-		if (ev.event === "response.completed")
+		}
+		if (ev.event === "response.completed") {
 			completed = (JSON.parse(ev.data) as { response: TestJsonObject })
 				.response;
+		}
 	}
 	assert.deepEqual(order, ["reasoning", "function_call"]);
 	assert.ok(completed);
@@ -1375,8 +1379,9 @@ test("stream->events: state-only reasoning preserves arrival order before messag
 		renderOpts(),
 	)) {
 		const data = JSON.parse(event.data) as TestJsonObject;
-		if (event.event === "response.output_item.added")
+		if (event.event === "response.output_item.added") {
 			addedOrder.push(data.item.type);
+		}
 		if (event.event === "response.output_item.done") {
 			doneOrder.push(data.item.type);
 			if (data.item.type === "reasoning") {
@@ -1385,7 +1390,9 @@ test("stream->events: state-only reasoning preserves arrival order before messag
 				assert.deepEqual(data.item.summary, []);
 			}
 		}
-		if (event.event === "response.completed") completed = data.response;
+		if (event.event === "response.completed") {
+			completed = data.response;
+		}
 	}
 
 	assert.deepEqual(addedOrder, ["reasoning", "message"]);
@@ -1494,11 +1501,15 @@ test("responses transport->edge: Azure state-only reasoning stays before the fin
 	let completed: TestJsonObject | undefined;
 	for await (const event of publicEvents) {
 		const data = JSON.parse(event.data) as TestJsonObject;
-		if (event.event === "response.output_item.added")
+		if (event.event === "response.output_item.added") {
 			addedOrder.push(data.item.type);
-		if (event.event === "response.output_item.done")
+		}
+		if (event.event === "response.output_item.done") {
 			doneOrder.push(data.item.type);
-		if (event.event === "response.completed") completed = data.response;
+		}
+		if (event.event === "response.completed") {
+			completed = data.response;
+		}
 	}
 
 	assert.deepEqual(addedOrder, ["reasoning", "message"]);
@@ -1589,8 +1600,9 @@ test("responses transport->edge: native reasoning_text streams beside summary ev
 	for await (const event of canonicalChunksToResponsesEvents(
 		responsesEventsToCanonicalChunks(upstreamEvents()),
 		renderOpts(),
-	))
+	)) {
 		observed.push(JSON.parse(event.data) as TestJsonObject);
+	}
 
 	assert.deepEqual(
 		observed
@@ -1754,19 +1766,21 @@ test("responses transport->edge: native item lifecycle and output indexes pass t
 		},
 	];
 	async function* upstreamEvents(): AsyncGenerator<SSEEvent> {
-		for (const event of upstream)
+		for (const event of upstream) {
 			yield {
 				event: event.type,
 				data: JSON.stringify({ type: event.type, ...event.data }),
 			};
+		}
 	}
 
 	const observed: TestJsonObject[] = [];
 	for await (const event of canonicalChunksToResponsesEvents(
 		responsesEventsToCanonicalChunks(upstreamEvents()),
 		renderOpts(),
-	))
+	)) {
 		observed.push(JSON.parse(event.data) as TestJsonObject);
+	}
 
 	assert.deepEqual(
 		observed.slice(2, -1).map((event) => event.type),
@@ -1863,9 +1877,12 @@ test("stream->events: native reasoning identity merges visible summary and encry
 		if (
 			event.event === "response.output_item.done" &&
 			data.item.type === "reasoning"
-		)
+		) {
 			reasoningDone.push(data.item);
-		if (event.event === "response.completed") completed = data.response;
+		}
+		if (event.event === "response.completed") {
+			completed = data.response;
+		}
 	}
 
 	assert.equal(reasoningDone.length, 1);
@@ -1915,8 +1932,9 @@ test("response object: every OpenResponses 2.3 required field is present", () =>
 		"service_tier",
 		"safety_identifier",
 		"prompt_cache_key",
-	])
+	]) {
 		assert.equal(Object.hasOwn(response, field), true, field);
+	}
 });
 
 test("response include: encrypted reasoning is exposed only when requested", () => {

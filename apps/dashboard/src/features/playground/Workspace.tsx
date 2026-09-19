@@ -37,7 +37,9 @@ export function Workspace({
 	 */
 	useEffect(() => {
 		const area = scroll.current;
-		if (!area) return;
+		if (!area) {
+			return;
+		}
 		const resize = new ResizeObserver(() => {
 			area.style.setProperty("--transcript-height", `${area.clientHeight}px`);
 		});
@@ -48,10 +50,10 @@ export function Workspace({
 	return (
 		<div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
 			<div
-				ref={scroll}
 				// Bleeding into the shell's padding puts the scrollbar against the window edge, where a
 				// scrollbar belongs; the padding is given back inside so the text stays where it was.
-				className="-mr-4 md:-mr-8 min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-6 pr-4 md:pr-8 [scrollbar-gutter:stable]"
+				className="-mr-4 min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-6 pr-4 [scrollbar-gutter:stable] md:-mr-8 md:pr-8"
+				ref={scroll}
 			>
 				{empty ? (
 					<div className="flex h-full items-center justify-center px-4 pb-8 sm:hidden">
@@ -68,7 +70,7 @@ export function Workspace({
 			<div
 				className={`relative mx-auto w-full shrink-0 px-2 pt-3 pb-2 sm:max-w-2xl sm:px-0 sm:pb-4 xl:max-w-3xl ${
 					empty
-						? "sm:-translate-x-1/2 sm:-translate-y-1/2 sm:absolute sm:top-1/2 sm:left-1/2"
+						? "sm:absolute sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2"
 						: ""
 				}`}
 			>

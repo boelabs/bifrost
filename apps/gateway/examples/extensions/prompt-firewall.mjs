@@ -132,7 +132,9 @@ function scanContent(content, patterns, replacement) {
 	if (Array.isArray(content)) {
 		let hits = 0;
 		const parts = content.map((part) => {
-			if (part?.type !== "text" || typeof part.text !== "string") return part;
+			if (part?.type !== "text" || typeof part.text !== "string") {
+				return part;
+			}
 			const res = scan(part.text, patterns, replacement);
 			hits += res.hits;
 			return { ...part, text: res.text };
@@ -152,13 +154,17 @@ export default defineExtension({
 	configSchema,
 	hooks: {
 		onCanonicalRequest(ctx, request) {
-			if (request.callType !== "chat") return request;
+			if (request.callType !== "chat") {
+				return request;
+			}
 			const { action, scanRoles, replacement } = ctx.config;
 			const patterns = patternsFor(ctx.config);
 
 			let total = 0;
 			const messages = request.messages.map((message) => {
-				if (!scanRoles.has(message.role)) return message;
+				if (!scanRoles.has(message.role)) {
+					return message;
+				}
 				const { content, hits } = scanContent(
 					message.content,
 					patterns,
@@ -168,7 +174,9 @@ export default defineExtension({
 				return hits > 0 ? { ...message, content } : message;
 			});
 
-			if (total === 0) return request;
+			if (total === 0) {
+				return request;
+			}
 
 			if (action === "block") {
 				// NOTE: today this surfaces to the client as a 500 (the runtime wraps hook errors as

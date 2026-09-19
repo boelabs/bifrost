@@ -22,7 +22,9 @@ export function resolveAdapterReasoning(
 	const spec = ctx.meta.reasoning;
 	if (!spec) {
 		const effort = req.reasoning?.effort;
-		if (effort === undefined || effort === "none") return undefined;
+		if (effort === undefined || effort === "none") {
+			return undefined;
+		}
 		throw new GatewayError({
 			class: "bad_request",
 			message: "The selected model does not support reasoning controls",

@@ -50,7 +50,7 @@ export function PasswordDialog({
 
 	return (
 		<Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
-			<Dialog layout="sectioned" aria-label={`Reset password for ${username}`}>
+			<Dialog aria-label={`Reset password for ${username}`} layout="sectioned">
 				<DialogHeader>
 					<h2 className="font-semibold text-fg text-lg">
 						Reset password for {username}
@@ -60,24 +60,24 @@ export function PasswordDialog({
 						they have open is revoked.
 					</p>
 				</DialogHeader>
-				<Form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
+				<Form className="flex min-h-0 flex-1 flex-col" onSubmit={submit}>
 					<DialogBody>
 						<Input
+							autoFocus
+							description="At least 12 characters."
 							label="Temporary password"
+							onValueChange={setPassword}
+							required
 							type="password"
 							value={password}
-							onValueChange={setPassword}
-							description="At least 12 characters."
-							required
-							autoFocus
 						/>
 						{error ? <ErrorNote>{error}</ErrorNote> : null}
 					</DialogBody>
 					<DialogFooter>
-						<Button type="button" variant="secondary" onClick={onClose}>
+						<Button onClick={onClose} type="button" variant="secondary">
 							Cancel
 						</Button>
-						<Button type="submit" disabled={pending}>
+						<Button disabled={pending} type="submit">
 							{pending ? "Saving…" : "Set password"}
 						</Button>
 					</DialogFooter>

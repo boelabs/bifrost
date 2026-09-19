@@ -25,7 +25,9 @@ async function extractBoundedText(
 		const content = await (await document.getPage(pageNumber)).getTextContent();
 		let pageText = "";
 		for (const item of content.items) {
-			if (!("str" in item)) continue;
+			if (!("str" in item)) {
+				continue;
+			}
 			const fragment = item.str + (item.hasEOL ? "\n" : "");
 			characterCount += fragment.length;
 			if (characterCount > maxCharacters) {
@@ -45,7 +47,9 @@ async function extractBoundedText(
 }
 
 const port = parentPort;
-if (port === null) throw new Error("PDF parser must run in a worker thread");
+if (port === null) {
+	throw new Error("PDF parser must run in a worker thread");
+}
 
 port.on("message", async (request: PdfTextWorkerRequest) => {
 	let response: PdfTextWorkerResponse;

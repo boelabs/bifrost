@@ -14,10 +14,10 @@ describe("styled control composition", () => {
 	test("standalone labelled toggles do not require a field context", () => {
 		const html = renderToStaticMarkup(
 			<>
-				<Checkbox name="analytics" defaultChecked>
+				<Checkbox defaultChecked name="analytics">
 					Analytics
 				</Checkbox>
-				<Switch name="routing" defaultChecked>
+				<Switch defaultChecked name="routing">
 					Automatic routing
 				</Switch>
 			</>,
@@ -33,15 +33,15 @@ describe("styled control composition", () => {
 		const html = renderToStaticMarkup(
 			<Form>
 				<Input
+					defaultValue="local@example.com"
 					label="Email"
 					name="email"
-					defaultValue="local@example.com"
 					required
 				/>
-				<Select label="Region" name="region" defaultValue="eu">
+				<Select defaultValue="eu" label="Region" name="region">
 					<SelectItem value="eu">Europe</SelectItem>
 				</Select>
-				<Textarea label="Notes" name="notes" defaultValue="Local notes" />
+				<Textarea defaultValue="Local notes" label="Notes" name="notes" />
 			</Form>,
 		);
 		assert.match(html, /name="email"/);
@@ -72,13 +72,13 @@ describe("styled control composition", () => {
 			const html = renderToStaticMarkup(
 				<Form errors={{ email: "Email is required" }}>
 					<Control
-						name="email"
 						aria-label="Email"
-						required
-						width="50%"
 						borderRadius={3}
 						className="custom-control"
+						name="email"
+						required
 						style={{ marginLeft: 4 }}
+						width="50%"
 					/>
 				</Form>,
 			);
@@ -101,13 +101,13 @@ describe("styled control composition", () => {
 			for (const labelled of [false, true]) {
 				const html = renderToStaticMarkup(
 					<Form errors={{ outer: "Server validation failed" }}>
-						<Field.Root name="outer" disabled={!labelled}>
+						<Field.Root disabled={!labelled} name="outer">
 							{!labelled && <Field.Label>Outer label</Field.Label>}
 							<Control
-								name="inner"
-								label={labelled ? "Convenience label" : undefined}
 								description={labelled ? "Help text" : undefined}
 								errorMessage={labelled ? "Server validation failed" : undefined}
+								label={labelled ? "Convenience label" : undefined}
+								name="inner"
 								width="50%"
 							/>
 						</Field.Root>
@@ -120,8 +120,11 @@ describe("styled control composition", () => {
 				const control = html.match(/<(?:input|textarea)\b[^>]*>/)?.[0] ?? "";
 				assert.match(control, /name="outer"/);
 				assert.match(control, /data-invalid=""/);
-				if (!labelled) assert.match(control, /disabled=""/);
-				else assert.match(control, /aria-invalid="true"/);
+				if (labelled) {
+					assert.match(control, /aria-invalid="true"/);
+				} else {
+					assert.match(control, /disabled=""/);
+				}
 				assert.match(control, /width:50%/);
 				const labelId = html.match(/<label[^>]*for="([^"]+)"/)?.[1];
 				assert.ok(labelId);
@@ -137,13 +140,13 @@ describe("styled control composition", () => {
 	test("input appearance callbacks still target the control within its field", () => {
 		const html = renderToStaticMarkup(
 			<Input
-				name="email"
-				disabled
-				width="50%"
 				className={(state) =>
 					state.disabled ? "custom-disabled" : "custom-enabled"
 				}
+				disabled
+				name="email"
 				style={(state) => ({ width: state.disabled ? 240 : 120 })}
+				width="50%"
 			/>,
 		);
 		assert.match(html, /<input[^>]*class="[^"]*custom-disabled[^"]*"/);
@@ -153,8 +156,8 @@ describe("styled control composition", () => {
 
 	test("percentage widths apply once to labelled control layout", () => {
 		for (const control of [
-			<Input key="input" label="Name" width="50%" borderRadius={3} />,
-			<Select key="select" label="Region" width="50%" borderRadius={3}>
+			<Input borderRadius={3} key="input" label="Name" width="50%" />,
+			<Select borderRadius={3} key="select" label="Region" width="50%">
 				<SelectItem value="eu">Europe</SelectItem>
 			</Select>,
 		]) {
@@ -167,7 +170,7 @@ describe("styled control composition", () => {
 
 	test("loading buttons cannot submit and announce their busy state", () => {
 		const html = renderToStaticMarkup(
-			<Button type="submit" loading>
+			<Button loading type="submit">
 				Save
 			</Button>,
 		);

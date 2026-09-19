@@ -34,7 +34,7 @@ test("Responses reasoning parts keep identity, boundaries and plain-text separat
 			for (const [suffix, value] of [
 				["delta", { delta: text }],
 				["done", { text }],
-			] as const)
+			] as const) {
 				yield {
 					data: JSON.stringify({
 						type: `response.reasoning_summary_text.${suffix}`,
@@ -43,12 +43,14 @@ test("Responses reasoning parts keep identity, boundaries and plain-text separat
 						...value,
 					}),
 				};
+			}
 		}
 	}
 	const rendered = [];
 	const parts = new Map<number, string>();
-	for await (const chunk of responsesEventsToCanonicalChunks(events()))
+	for await (const chunk of responsesEventsToCanonicalChunks(events())) {
 		rendered.push(toOpenAIChatChunk(chunk, publicModel, parts));
+	}
 	assert.equal(
 		rendered.map((chunk) => chunk.choices[0]?.delta.reasoning ?? "").join(""),
 		"First\n\nSecond\n\nThird",
@@ -451,7 +453,7 @@ test("toCanonical: maps content part file (file_id and file_data)", () => {
 test("toOpenAIResponse: produces a schema-valid chat.completion", () => {
 	const canonical: CanonicalChatResponse = {
 		id: "resp_1",
-		created: 1700000000,
+		created: 1_700_000_000,
 		model: "gpt",
 		choices: [
 			{
@@ -541,7 +543,7 @@ test('toOpenAIChunk: first delta (role) carries content:"" and refusal:null like
 test("toOpenAIChunk: produces a valid chat.completion.chunk with final usage", () => {
 	const chunk: CanonicalChatStreamChunk = {
 		id: "resp_1",
-		created: 1700000000,
+		created: 1_700_000_000,
 		model: "gpt",
 		choices: [
 			{

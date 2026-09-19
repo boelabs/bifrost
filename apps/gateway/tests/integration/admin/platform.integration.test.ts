@@ -143,10 +143,11 @@ test("admin platform: catalog model with inline api key (without catalogEntry) w
 			"must not expose credentials",
 		);
 	} finally {
-		if (deploymentId)
+		if (deploymentId) {
 			await platformTestApp.request(`/deployments/${deploymentId}`, {
 				method: "DELETE",
 			});
+		}
 	}
 });
 
@@ -231,10 +232,11 @@ test("admin platform: deployment label and metadata round-trip through create, g
 		);
 		assert.equal(badCredentialsPatch.status, 400);
 	} finally {
-		if (deploymentId)
+		if (deploymentId) {
 			await platformTestApp.request(`/deployments/${deploymentId}`, {
 				method: "DELETE",
 			});
+		}
 	}
 });
 
@@ -283,9 +285,10 @@ test("admin platform: custom model requires catalogEntry; with it, creation succ
 		deploymentId = deployment.data.id;
 		assert.equal(deployment.data.custom, true);
 	} finally {
-		if (deploymentId)
+		if (deploymentId) {
 			await platformTestApp.request(`/deployments/${deploymentId}`, {
 				method: "DELETE",
 			});
+		}
 	}
 });

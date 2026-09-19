@@ -22,7 +22,7 @@ test("Messages preserves reported reasoning counts in JSON and streaming usage",
 			promptTokens: 3,
 			completionTokens: 8,
 			totalTokens: 11,
-			...(reasoningTokens !== undefined ? { reasoningTokens } : {}),
+			...(reasoningTokens === undefined ? {} : { reasoningTokens }),
 		};
 		const expected =
 			reasoningTokens === undefined
@@ -58,8 +58,9 @@ test("Messages preserves reported reasoning counts in JSON and streaming usage",
 		}
 		let terminalUsage: Record<string, unknown> | undefined;
 		for await (const event of canonicalChunksToMessagesEvents(chunks(), opts)) {
-			if (event.event === "message_delta")
+			if (event.event === "message_delta") {
 				terminalUsage = JSON.parse(event.data).usage;
+			}
 		}
 		assert.ok(terminalUsage);
 		assert.deepEqual(terminalUsage.output_tokens_details, expected);
@@ -689,11 +690,13 @@ test("stream->events: Anthropic sequence for text", async () => {
 	let streamModel: unknown;
 	for await (const ev of canonicalChunksToMessagesEvents(chunks(), opts)) {
 		types.push(ev.event!);
-		if (ev.event === "message_start")
+		if (ev.event === "message_start") {
 			streamModel = (JSON.parse(ev.data) as { message: { model: unknown } })
 				.message.model;
-		if (ev.event === "message_delta")
+		}
+		if (ev.event === "message_delta") {
 			deltaUsage = (JSON.parse(ev.data) as { usage: TestJsonObject }).usage;
+		}
 	}
 	assert.deepEqual(types, [
 		"message_start",
@@ -732,8 +735,9 @@ test("stream->events: reports the matched stop sequence", async () => {
 
 	let delta: TestJsonObject | undefined;
 	for await (const event of canonicalChunksToMessagesEvents(chunks(), opts)) {
-		if (event.event === "message_delta")
+		if (event.event === "message_delta") {
 			delta = (JSON.parse(event.data) as { delta: TestJsonObject }).delta;
+		}
 	}
 	assert.deepEqual(delta, {
 		stop_reason: "stop_sequence",
@@ -774,7 +778,9 @@ test("stream->events: Anthropic tool_use includes provider_specific_fields", asy
 	for await (const ev of canonicalChunksToMessagesEvents(chunks(), opts)) {
 		if (ev.event === "content_block_start") {
 			const data = JSON.parse(ev.data) as { content_block: TestJsonObject };
-			if (data.content_block.type === "tool_use") toolUse = data.content_block;
+			if (data.content_block.type === "tool_use") {
+				toolUse = data.content_block;
+			}
 		}
 	}
 	assert.ok(toolUse);
@@ -884,7 +890,9 @@ test("stream->events: content_block_start tool_use id carries the embedded signa
 	for await (const ev of canonicalChunksToMessagesEvents(chunks(), opts)) {
 		if (ev.event === "content_block_start") {
 			const d = JSON.parse(ev.data) as { content_block?: TestJsonObject };
-			if (d.content_block?.type === "tool_use") started = d.content_block;
+			if (d.content_block?.type === "tool_use") {
+				started = d.content_block;
+			}
 		}
 	}
 	assert.ok(started);
@@ -974,8 +982,9 @@ test("stream->events: native thinking emits its real signature delta", async () 
 	}
 	const deltas: unknown[] = [];
 	for await (const event of canonicalChunksToMessagesEvents(chunks(), opts)) {
-		if (event.event === "content_block_delta")
+		if (event.event === "content_block_delta") {
 			deltas.push(JSON.parse(event.data).delta);
+		}
 	}
 	assert.deepEqual(deltas, [
 		{ type: "thinking_delta", thinking: "plan" },
@@ -1004,8 +1013,9 @@ test("stream->events: portable interleaved reasoning never overlaps blocks", asy
 		if (
 			event.event !== "content_block_start" &&
 			event.event !== "content_block_stop"
-		)
+		) {
 			continue;
+		}
 		const data = JSON.parse(event.data) as {
 			index: number;
 			content_block?: { type?: string };

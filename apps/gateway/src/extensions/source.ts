@@ -55,19 +55,26 @@ export async function pruneExtensionCache(
 	try {
 		entries = await readdir(cacheDir, { withFileTypes: true });
 	} catch (error) {
-		if (isMissingFile(error)) return 0;
+		if (isMissingFile(error)) {
+			return 0;
+		}
 		throw error;
 	}
 	let removed = 0;
 	for (const entry of entries) {
-		if (!entry.isFile()) continue;
+		if (!entry.isFile()) {
+			continue;
+		}
 		const path = join(cacheDir, entry.name);
 		if (MATERIALIZED_MODULE_PATTERN.test(entry.name)) {
-			if (activeModulePaths.has(path)) continue;
+			if (activeModulePaths.has(path)) {
+				continue;
+			}
 		} else if (entry.name.endsWith(".tmp")) {
 			const info = await stat(path).catch(() => null);
-			if (info === null || Date.now() - info.mtimeMs < STALE_TEMP_FILE_MS)
+			if (info === null || Date.now() - info.mtimeMs < STALE_TEMP_FILE_MS) {
 				continue;
+			}
 		} else {
 			continue;
 		}
@@ -75,7 +82,9 @@ export async function pruneExtensionCache(
 			await unlink(path);
 			removed += 1;
 		} catch (error) {
-			if (!isMissingFile(error)) throw error;
+			if (!isMissingFile(error)) {
+				throw error;
+			}
 		}
 	}
 	return removed;
@@ -95,7 +104,9 @@ async function materialize(
 	code: string,
 ): Promise<string> {
 	const file = cacheFileFor(key, contentHash);
-	if (existsSync(file)) return file;
+	if (existsSync(file)) {
+		return file;
+	}
 	await mkdir(dirname(file), { recursive: true });
 	const tmp = `${file}.${randomUUID()}.tmp`;
 	try {
@@ -105,11 +116,15 @@ async function materialize(
 		} catch (error) {
 			// Concurrent reloads may materialize the same content-addressed module. The winner's
 			// identical file is authoritative; every other rename may safely converge on it.
-			if (!existsSync(file)) throw error;
+			if (!existsSync(file)) {
+				throw error;
+			}
 		}
 	} finally {
 		await unlink(tmp).catch((error: unknown) => {
-			if (!isMissingFile(error)) throw error;
+			if (!isMissingFile(error)) {
+				throw error;
+			}
 		});
 	}
 	return file;
@@ -131,8 +146,9 @@ export async function probeArtifact(
 	key: string,
 	code: string,
 ): Promise<ProbeResult> {
-	if (!EXTENSION_KEY_PATTERN.test(key))
+	if (!EXTENSION_KEY_PATTERN.test(key)) {
 		throw new Error(`Invalid extension key "${key}"`);
+	}
 	const contentHash = sha256Hex(code);
 	const file = await materialize(key, contentHash, code);
 
@@ -213,7 +229,7 @@ export class DbExtensionInstanceSource implements ExtensionInstanceSource {
 				definition: row.definitionKey,
 				enabled: row.enabled,
 				priority: row.priority,
-				...(row.critical !== null ? { critical: row.critical } : {}),
+				...(row.critical === null ? {} : { critical: row.critical }),
 				match: row.match,
 				config: row.config,
 			})),

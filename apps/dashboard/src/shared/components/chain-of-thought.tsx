@@ -22,7 +22,7 @@ export function ChainOfThought({
 }: ComponentProps<typeof CollapsibleRoot>) {
 	return (
 		<CollapsibleRoot
-			className={"not-prose w-full space-y-4 " + className}
+			className={"not-prose w-full space-y-4" + className}
 			{...props}
 		/>
 	);
@@ -53,8 +53,8 @@ export function ChainOfThoughtContent(
 ) {
 	return (
 		<CollapsiblePanel
-			keepMounted
 			className="motion-reduce:transition-none"
+			keepMounted
 			{...props}
 		/>
 	);
@@ -72,15 +72,15 @@ export function ChainOfThoughtStep({
 }) {
 	return (
 		<div
-			data-chain-step={status}
 			className={
-				"group/step relative flex gap-2 text-base " +
+				"group/step relative flex gap-2 text-base" +
 				(status === "active"
 					? "text-fg"
 					: status === "pending"
 						? "text-fg-muted/50"
 						: "text-fg-muted")
 			}
+			data-chain-step={status}
 		>
 			<div className="relative mt-0.5 shrink-0">
 				<Icon aria-hidden className="size-4" />

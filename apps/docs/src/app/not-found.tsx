@@ -13,8 +13,8 @@ export default function NotFound() {
 					The page may have moved, or the address may be incorrect.
 				</p>
 				<Link
-					href="/docs"
 					className="mt-2 rounded-lg bg-fd-primary px-4 py-2 font-medium text-fd-primary-foreground text-sm"
+					href="/docs"
 				>
 					Browse the documentation
 				</Link>

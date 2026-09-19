@@ -22,16 +22,16 @@ async function postgresAvailable(): Promise<boolean> {
 }
 
 try {
-	if (!(await postgresAvailable())) {
-		console.log(
-			`[integration cleanup] ${label}: Postgres unavailable, skipped`,
-		);
-		process.exitCode = 0;
-	} else {
+	if (await postgresAvailable()) {
 		const summary = await cleanupIntegrationArtifacts();
 		if (hasIntegrationCleanupWork(summary)) {
 			console.log(`[integration cleanup] ${label}: ${JSON.stringify(summary)}`);
 		}
+	} else {
+		console.log(
+			`[integration cleanup] ${label}: Postgres unavailable, skipped`,
+		);
+		process.exitCode = 0;
 	}
 } catch (err) {
 	console.error(`[integration cleanup] ${label} failed`, err);

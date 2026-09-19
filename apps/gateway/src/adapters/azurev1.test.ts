@@ -29,7 +29,7 @@ function context(
 ): AdapterContext {
 	return {
 		upstreamModel: model,
-		transport: transport,
+		transport,
 		credentials: {
 			apiKey: "azure-secret",
 			baseUrl: "https://omni-resource.openai.azure.com",

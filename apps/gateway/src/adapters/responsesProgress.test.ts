@@ -40,8 +40,9 @@ const events = [
 ];
 test("Responses item progress survives parsing without inventing visible reasoning", async () => {
 	async function* source(): AsyncGenerator<SSEEvent> {
-		for (const event of events)
+		for (const event of events) {
 			yield { event: event.type, data: JSON.stringify(event) };
+		}
 	}
 	const seen = [];
 	for await (const chunk of observeResponsesProgress(

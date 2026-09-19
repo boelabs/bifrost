@@ -89,7 +89,9 @@ export function validateProvider(
 	adapter: Adapter,
 	catalog: Record<string, CatalogEntry> | undefined,
 ): void {
-	if (!catalog) return;
+	if (!catalog) {
+		return;
+	}
 	const kinds = adapter.reasoningKinds;
 	for (const [model, entry] of Object.entries(catalog)) {
 		const kind = entry.operations["text.generate"]?.reasoning?.kind;
@@ -114,11 +116,15 @@ for (const { provider, catalogUrl } of PROVIDER_REGISTRATIONS) {
 				adapterKey: provider.adapter.key,
 			});
 		} catch (err) {
-			if (isMissingCatalog(err)) continue;
+			if (isMissingCatalog(err)) {
+				continue;
+			}
 			throw err;
 		}
 	}
 	registerAdapter(provider.adapter); // validates CallTypes↔handlers and rejects duplicates
 	validateProvider(provider.adapter, catalog);
-	if (catalog) MODEL_CATALOG[provider.adapter.key] = catalog;
+	if (catalog) {
+		MODEL_CATALOG[provider.adapter.key] = catalog;
+	}
 }

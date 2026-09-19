@@ -82,8 +82,9 @@ test("malformed technical configuration fails explicitly", () => {
 		"{}",
 		'{"operations":{}}',
 		'{"operations":{"text.generate":null}}',
-	])
+	]) {
 		assert.throws(() => parseCustomEntry(text));
+	}
 	assert.throws(() => parseCustomEntry("{"), /not valid JSON/);
 	assert.throws(() => parseObject("[]", "Metadata"), /must be a JSON object/);
 	assert.equal(parseObject(" ", "Metadata"), undefined);

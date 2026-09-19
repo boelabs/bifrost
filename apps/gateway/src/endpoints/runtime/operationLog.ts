@@ -79,13 +79,14 @@ export class OperationLogDraft {
 	}
 	set publicModel(value: string | null) {
 		this._publicModel = value;
-		if (this.operationStarted)
+		if (this.operationStarted) {
 			identifyOperation(
 				this.operationId,
 				this.operationStarted,
 				this.requestId,
 				value,
 			);
+		}
 	}
 	/** Request body as it is logged (raw JSON or a reduced multipart form). */
 	requestBody: unknown = undefined;
@@ -120,12 +121,16 @@ export class OperationLogDraft {
 		});
 		this.ip = clientIp(c);
 		this.userAgent = c.req.header("user-agent") ?? null;
-		if (opts?.publicModel !== undefined) this._publicModel = opts.publicModel;
-		if (c.req.raw.signal.aborted) this.abortClient();
-		else
+		if (opts?.publicModel !== undefined) {
+			this._publicModel = opts.publicModel;
+		}
+		if (c.req.raw.signal.aborted) {
+			this.abortClient();
+		} else {
 			c.req.raw.signal.addEventListener("abort", () => this.abortClient(), {
 				once: true,
 			});
+		}
 		this.operationStarted = beginOperation({
 			id: this.operationId,
 			requestId: this.requestId,
@@ -145,27 +150,31 @@ export class OperationLogDraft {
 	/** Persists a throttled liveness heartbeat without writing once per stream chunk. */
 	progress(): void {
 		const now = Date.now();
-		if (now - this.lastProgressWriteAt < 10_000) return;
+		if (now - this.lastProgressWriteAt < 10_000) {
+			return;
+		}
 		this.lastProgressWriteAt = now;
 		touchOperation(this.operationId, this.requestId);
 	}
 
 	abortClient(): void {
-		if (!this.clientAbortController.signal.aborted)
+		if (!this.clientAbortController.signal.aborted) {
 			this.clientAbortController.abort({
 				owner: "client",
 				type: "cancelled",
 			});
+		}
 	}
 
 	/** Cancels in-flight upstream work because the downstream can no longer be served. */
 	abortUpstream(): void {
-		if (!this.clientAbortController.signal.aborted)
+		if (!this.clientAbortController.signal.aborted) {
 			this.clientAbortController.abort({
 				owner: "gateway",
 				type: "downstream_backpressure",
 				phase: "rendering",
 			});
+		}
 	}
 
 	/** Fills the draft with the router's winning attempt. */
@@ -183,14 +192,18 @@ export class OperationLogDraft {
 	 */
 	applyFailedAttempts(attempts: unknown[] | null | undefined): void {
 		const list = (attempts ?? this.attemptLog) as AttemptLike[] | null;
-		if (!list || list.length === 0) return;
+		if (!list || list.length === 0) {
+			return;
+		}
 		this.attemptLog = list;
 		this.retries = Math.max(0, list.length - 1);
 		const last = list[list.length - 1]!;
-		if (this.deploymentId === null && last.deploymentId)
+		if (this.deploymentId === null && last.deploymentId) {
 			this.deploymentId = last.deploymentId;
-		if (this.adapterKey === null && last.adapterKey)
+		}
+		if (this.adapterKey === null && last.adapterKey) {
 			this.adapterKey = last.adapterKey;
+		}
 	}
 
 	/** Always-present log fields, resolved at write time. */
@@ -219,7 +232,9 @@ export class OperationLogDraft {
 
 	/** Emits the request's final log (not a cache hit). */
 	write(outcome: LogOutcome): void {
-		if (this.closed) return;
+		if (this.closed) {
+			return;
+		}
 		this.closed = true;
 		const effectiveOutcome: LogOutcome =
 			this.clientSignal.aborted && outcome.status === "success"
@@ -264,7 +279,9 @@ export class OperationLogDraft {
 		usage: Usage,
 		responseBody: unknown = body,
 	): void {
-		if (this.closed) return;
+		if (this.closed) {
+			return;
+		}
 		this.closed = true;
 		const input: OperationLogInput = {
 			...this.base(),

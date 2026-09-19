@@ -11,12 +11,15 @@ const REVOKED_GRACE_MS = 7 * 24 * 3_600_000;
  * (see AGENTS.md — background jobs are in-process, never cron). No-op when the dashboard is off.
  */
 export function startDashboardSessionGcJob(): () => void {
-	if (!env.DASH_ENABLED) return () => {};
+	if (!env.DASH_ENABLED) {
+		return () => {};
+	}
 	const run = (): void => {
 		void purgeDeadSessions(new Date(Date.now() - REVOKED_GRACE_MS))
 			.then((deleted) => {
-				if (deleted > 0)
+				if (deleted > 0) {
 					log.info("dashboard-sessions", "gc deleted dead rows", { deleted });
+				}
 			})
 			.catch((err: unknown) => {
 				log.error("dashboard-sessions", "gc failed", { err });

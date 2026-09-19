@@ -24,7 +24,7 @@ function summary(run: ImageRun): string {
 		n !== undefined && n > 1 ? `${n} images` : undefined,
 		background,
 		outputFormat,
-		outputCompression !== undefined ? `${outputCompression}%` : undefined,
+		outputCompression === undefined ? undefined : `${outputCompression}%`,
 	]
 		.filter(Boolean)
 		.join(" · ");
@@ -61,15 +61,15 @@ export function ImageRunView({
 						{run.sources.map((source) => (
 							// biome-ignore lint/performance/noImgElement: a data: URL, which next/image cannot optimise
 							<img
-								key={source}
-								src={source}
 								alt="Source"
 								className="size-20 rounded-xl border border-border/60 object-cover"
+								key={source}
+								src={source}
 							/>
 						))}
 					</div>
 				) : null}
-				<UserBubble text={run.prompt} hasAttachments={run.sources.length > 0} />
+				<UserBubble hasAttachments={run.sources.length > 0} text={run.prompt} />
 			</article>
 			<article
 				aria-label="Assistant message"
@@ -87,23 +87,23 @@ export function ImageRunView({
 					>
 						{run.images.map((image, index) => (
 							<figure
-								key={image.url.slice(-32)}
 								className="group/image relative overflow-hidden rounded-2xl border border-border/60 bg-surface-2"
+								key={image.url.slice(-32)}
 							>
 								{/* biome-ignore lint/performance/noImgElement: a data: URL, which next/image cannot optimise */}
 								<img
-									src={image.url}
 									alt={`${run.prompt} (${index + 1})`}
 									className="block w-full object-contain"
+									src={image.url}
 								/>
 								<a
-									href={image.url}
-									download={`image-${index + 1}.${image.mediaType.split("/")[1] ?? "png"}`}
 									aria-label={`Download image ${index + 1}`}
-									title="Download"
 									className="absolute top-2 right-2 inline-flex size-9 items-center justify-center rounded-xl bg-surface/80 text-fg opacity-0 backdrop-blur transition-opacity focus-visible:opacity-100 group-hover/image:opacity-100"
+									download={`image-${index + 1}.${image.mediaType.split("/")[1] ?? "png"}`}
+									href={image.url}
+									title="Download"
 								>
-									<IconDownload className="size-4.5" aria-hidden />
+									<IconDownload aria-hidden className="size-4.5" />
 								</a>
 							</figure>
 						))}
@@ -118,30 +118,30 @@ export function ImageRunView({
 				{run.error ? (
 					<ErrorNote width="fit-content">{run.error}</ErrorNote>
 				) : null}
-				<div className="-ml-2 mt-1 flex h-10 shrink-0 items-center gap-0.5 lg:h-8">
+				<div className="mt-1 -ml-2 flex h-10 shrink-0 items-center gap-0.5 lg:h-8">
 					<Button
+						aria-label="Generate again"
+						className={MESSAGE_ACTION}
+						disabled={run.state === "running"}
+						mode="icon"
+						onClick={onRetry}
+						size="sm"
+						title="Generate again"
 						type="button"
 						variant="ghost"
-						size="sm"
-						mode="icon"
-						className={MESSAGE_ACTION}
-						aria-label="Generate again"
-						title="Generate again"
-						disabled={run.state === "running"}
-						onClick={onRetry}
 					>
-						<IconRotate2 className={MESSAGE_ACTION_ICON} aria-hidden />
+						<IconRotate2 aria-hidden className={MESSAGE_ACTION_ICON} />
 					</Button>
 					<p className="px-2 text-fg-muted text-xs">
 						{[
 							run.model,
 							detail,
-							run.durationMs !== undefined
-								? duration(run.durationMs)
-								: undefined,
-							run.usage?.totalTokens !== undefined
-								? `${run.usage.totalTokens.toLocaleString()} tokens`
-								: undefined,
+							run.durationMs === undefined
+								? undefined
+								: duration(run.durationMs),
+							run.usage?.totalTokens === undefined
+								? undefined
+								: `${run.usage.totalTokens.toLocaleString()} tokens`,
 						]
 							.filter(Boolean)
 							.join(" · ")}

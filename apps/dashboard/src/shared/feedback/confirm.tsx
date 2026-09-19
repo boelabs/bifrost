@@ -65,10 +65,12 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 		<ConfirmContext value={confirm}>
 			{children}
 			<AlertDialogRoot
-				open={request !== null}
 				onOpenChange={(open) => {
-					if (!open) settle(false);
+					if (!open) {
+						settle(false);
+					}
 				}}
+				open={request !== null}
 			>
 				<AlertDialogContent className="gap-4">
 					<AlertDialogTitle className="font-semibold text-fg text-lg">
@@ -80,13 +82,13 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 						</AlertDialogDescription>
 					) : null}
 					<div className="flex justify-end gap-2">
-						<Button variant="secondary" size="sm" onClick={() => settle(false)}>
+						<Button onClick={() => settle(false)} size="sm" variant="secondary">
 							{request?.cancelLabel ?? "Cancel"}
 						</Button>
 						<Button
-							variant={request?.tone === "primary" ? "primary" : "danger"}
-							size="sm"
 							onClick={() => settle(true)}
+							size="sm"
+							variant={request?.tone === "primary" ? "primary" : "danger"}
 						>
 							{request?.confirmLabel ?? "Delete"}
 						</Button>
@@ -99,7 +101,8 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 
 export function useConfirm(): Confirm {
 	const confirm = use(ConfirmContext);
-	if (!confirm)
+	if (!confirm) {
 		throw new Error("useConfirm must be used inside ConfirmProvider");
+	}
 	return confirm;
 }

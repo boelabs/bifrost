@@ -138,11 +138,11 @@ export function DialogHeader({
 	return (
 		<div
 			{...props}
-			data-slot="dialog-header"
 			className={cn(
-				"shrink-0 space-y-2 border-b border-border/50 p-6",
+				"shrink-0 space-y-2 border-border/50 border-b p-6",
 				className,
 			)}
+			data-slot="dialog-header"
 			style={appearanceStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -159,11 +159,11 @@ export function DialogBody({
 	return (
 		<div
 			{...props}
-			data-slot="dialog-body"
 			className={cn(
-				"min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain scroll-p-6 p-6 [scrollbar-gutter:stable]",
+				"min-h-0 min-w-0 flex-1 scroll-p-6 overflow-y-auto overscroll-contain p-6 [scrollbar-gutter:stable]",
 				className,
 			)}
+			data-slot="dialog-body"
 			style={appearanceStyle({ borderRadius, width }, style)}
 		>
 			<div className="flex min-w-0 flex-col gap-5">{children}</div>
@@ -181,11 +181,11 @@ export function DialogFooter({
 	return (
 		<div
 			{...props}
-			data-slot="dialog-footer"
 			className={cn(
-				"flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-border/50 bg-popover px-6 py-4",
+				"flex shrink-0 flex-wrap items-center justify-end gap-2 border-border/50 border-t bg-popover px-6 py-4",
 				className,
 			)}
+			data-slot="dialog-footer"
 			style={appearanceStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -203,7 +203,7 @@ export function DialogTitle({
 	return (
 		<BaseDialog.Title
 			{...props}
-			className={mergeClassName("text-lg font-semibold text-fg", className)}
+			className={mergeClassName("font-semibold text-fg text-lg", className)}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -223,7 +223,7 @@ export function DialogDescription({
 	return (
 		<BaseDialog.Description
 			{...props}
-			className={mergeClassName("text-sm text-fg-muted", className)}
+			className={mergeClassName("text-fg-muted text-sm", className)}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);

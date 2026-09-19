@@ -18,7 +18,9 @@ interface ResolvedNumeric {
 }
 
 function within(a: number, b: number, relativeTolerance: number): boolean {
-	if (relativeTolerance === 0) return a === b;
+	if (relativeTolerance === 0) {
+		return a === b;
+	}
 	const scale = Math.max(Math.abs(a), Math.abs(b), 1e-9);
 	return Math.abs(a - b) / scale <= relativeTolerance;
 }
@@ -35,9 +37,12 @@ function resolveNumeric(
 	relativeTolerance: number,
 ): ResolvedNumeric {
 	const entries = Object.entries(values) as Array<[NumericSourceKey, number]>;
-	if (entries.length === 0) return { value: undefined, conflict: undefined };
-	if (entries.length === 1)
+	if (entries.length === 0) {
+		return { value: undefined, conflict: undefined };
+	}
+	if (entries.length === 1) {
 		return { value: entries[0]![1], conflict: undefined };
+	}
 
 	const vercel = values["vercel-ai-gateway"];
 	const openrouter = values.openrouter;
@@ -81,10 +86,14 @@ function pricingValues(
 		const bySource = candidate.bySource[source];
 		const value =
 			bySource?.endpoint?.pricing?.[field] ?? bySource?.model.pricing?.[field];
-		if (value !== undefined) values[source] = value;
+		if (value !== undefined) {
+			values[source] = value;
+		}
 	}
 	const modelsDevValue = modelsDevMatch?.pricing?.[field];
-	if (modelsDevValue !== undefined) values["models-dev"] = modelsDevValue;
+	if (modelsDevValue !== undefined) {
+		values["models-dev"] = modelsDevValue;
+	}
 	return values;
 }
 
@@ -97,7 +106,9 @@ function contextValues(
 		const bySource = candidate.bySource[source];
 		const value =
 			bySource?.endpoint?.contextLength ?? bySource?.model.contextWindow;
-		if (value !== undefined) values[source] = value;
+		if (value !== undefined) {
+			values[source] = value;
+		}
 	}
 	if (modelsDevMatch?.contextWindow !== undefined) {
 		values["models-dev"] = modelsDevMatch.contextWindow;
@@ -114,7 +125,9 @@ function maxTokensValues(
 		const bySource = candidate.bySource[source];
 		const value =
 			bySource?.endpoint?.maxCompletionTokens ?? bySource?.model.maxTokens;
-		if (value !== undefined) values[source] = value;
+		if (value !== undefined) {
+			values[source] = value;
+		}
 	}
 	if (modelsDevMatch?.maxOutputTokens !== undefined) {
 		values["models-dev"] = modelsDevMatch.maxOutputTokens;
@@ -128,8 +141,9 @@ function supportedParameterNames(candidate: MatchedCandidate): Set<string> {
 		const bySource = candidate.bySource[source];
 		for (const name of bySource?.endpoint?.supportedParameters ??
 			bySource?.model.supportedParameters ??
-			[])
+			[]) {
 			names.add(name);
+		}
 	}
 	return names;
 }
@@ -160,7 +174,9 @@ function ensureOperations(
 	entry: CatalogEntry,
 	candidate: MatchedCandidate,
 ): void {
-	if (Object.keys(entry.operations).length > 0) return;
+	if (Object.keys(entry.operations).length > 0) {
+		return;
+	}
 	const model = anySourceModel(candidate);
 	const outputModalities = model?.outputModalities ?? [];
 	if (
@@ -190,9 +206,12 @@ function fillNonReasoningCapabilities(
 	const model = anySourceModel(candidate);
 	const vision = model?.inputModalities.includes("image") ?? false;
 	text.capabilities ??= {};
-	if (text.capabilities.tools === undefined)
+	if (text.capabilities.tools === undefined) {
 		text.capabilities.tools = names.has("tools");
-	if (text.capabilities.vision === undefined) text.capabilities.vision = vision;
+	}
+	if (text.capabilities.vision === undefined) {
+		text.capabilities.vision = vision;
+	}
 	if (text.capabilities.structuredOutputs === undefined) {
 		text.capabilities.structuredOutputs = names.has("structured_outputs");
 	}
@@ -235,7 +254,9 @@ export function mergeCatalogEntry(
 			return;
 		}
 		// Absence of a resolved value is NOT evidence of removal: only act when sources actually agree.
-		if (value === undefined || value === current) return;
+		if (value === undefined || value === current) {
+			return;
+		}
 		set(value);
 		changes.push(`${label}: ${current ?? "unset"} -> ${value}`);
 	}
@@ -281,7 +302,9 @@ export function mergeCatalogEntry(
 		const names = supportedParameterNames(candidate);
 		text.parameters ??= {};
 		for (const name of names) {
-			if (text.parameters[name] !== undefined) continue; // never downgrade a manually-set entry
+			if (text.parameters[name] !== undefined) {
+				continue; // never downgrade a manually-set entry
+			}
 			text.parameters[name] = true;
 			changes.push(`parameters: added "${name}"`);
 		}

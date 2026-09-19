@@ -59,21 +59,21 @@ export function RequestOutcomes({ metrics }: { metrics: Metrics }) {
 				Reliability across finished requests
 			</p>
 			<div className="mt-5 flex items-baseline gap-2">
-				<span className="font-semibold text-[2rem] leading-none tracking-tight tabular-nums">
+				<span className="font-semibold text-[2rem] tabular-nums leading-none tracking-tight">
 					{share(metrics.successRate)}
 				</span>
 				<span className="text-fg-muted text-xs">success rate</span>
 			</div>
 			<div
-				className="mt-5 flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-surface-2"
 				aria-hidden
+				className="mt-5 flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-surface-2"
 			>
 				{outcomes.map(
 					(row) =>
 						row.value > 0 && (
 							<span
-								key={row.label}
 								className={row.color}
+								key={row.label}
 								style={{
 									width: `${metrics.finishedRequests > 0 ? (row.value / metrics.finishedRequests) * 100 : 0}%`,
 								}}
@@ -84,8 +84,8 @@ export function RequestOutcomes({ metrics }: { metrics: Metrics }) {
 			<dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-3.5">
 				{outcomes.map((row) => (
 					<div
-						key={row.label}
 						className="flex min-w-0 items-center justify-between gap-2 text-xs"
+						key={row.label}
 					>
 						<dt className="flex items-center gap-2 text-fg-muted">
 							<span
@@ -141,8 +141,8 @@ export function Reliability({ metrics }: { metrics: Metrics }) {
 			<dl className="mt-4 divide-y divide-border/50 text-sm">
 				{rows.map((row) => (
 					<div
-						key={row.label}
 						className="flex items-center justify-between gap-3 py-2.5"
+						key={row.label}
 					>
 						<dt className="text-fg-muted">{row.label}</dt>
 						<dd className="flex items-baseline gap-2 tabular-nums">

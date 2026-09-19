@@ -11,7 +11,9 @@ function mergeImageProfile(
 	base: ImageModelProfile | undefined,
 	override: ImageModelProfile | undefined,
 ): ImageModelProfile | undefined {
-	if (!base && !override) return undefined;
+	if (!(base || override)) {
+		return undefined;
+	}
 	return {
 		...(base ?? {}),
 		...(override ?? {}),
@@ -33,7 +35,9 @@ function mergeVideoProfile(
 	base: VideoModelProfile | undefined,
 	override: VideoModelProfile | undefined,
 ): VideoModelProfile | undefined {
-	if (!base && !override) return undefined;
+	if (!(base || override)) {
+		return undefined;
+	}
 	return {
 		...(base ?? {}),
 		...(override ?? {}),
@@ -47,9 +51,13 @@ function mergeVideoProfile(
 function profileSupportedCallTypes(operations: OperationProfiles): CallType[] {
 	const supportedCallTypes: CallType[] = [];
 	for (const operation of OPERATION_IDS) {
-		if (operations[operation] === undefined) continue;
+		if (operations[operation] === undefined) {
+			continue;
+		}
 		const callType = callTypeForOperation(operation);
-		if (callType) supportedCallTypes.push(callType);
+		if (callType) {
+			supportedCallTypes.push(callType);
+		}
 	}
 	return supportedCallTypes;
 }
@@ -93,19 +101,19 @@ export function profileToRuntimeMetadata(profile: {
 		supportedCallTypes: profileSupportedCallTypes(operations),
 		operations: structuredClone(operations),
 		...(capabilities ? { capabilities } : {}),
-		...(text?.maxInputTokens !== undefined
-			? { maxInputTokens: text.maxInputTokens }
-			: rerank?.maxTokensPerDocument !== undefined
-				? { maxInputTokens: rerank.maxTokensPerDocument }
-				: {}),
-		...(text?.maxOutputTokens !== undefined
-			? { maxOutputTokens: text.maxOutputTokens }
-			: {}),
-		...(text?.reasoning !== undefined ? { reasoning: text.reasoning } : {}),
+		...(text?.maxInputTokens === undefined
+			? rerank?.maxTokensPerDocument === undefined
+				? {}
+				: { maxInputTokens: rerank.maxTokensPerDocument }
+			: { maxInputTokens: text.maxInputTokens }),
+		...(text?.maxOutputTokens === undefined
+			? {}
+			: { maxOutputTokens: text.maxOutputTokens }),
+		...(text?.reasoning === undefined ? {} : { reasoning: text.reasoning }),
 		...(image ? { image } : {}),
 		...(video ? { video } : {}),
 		...(embedding ? { embedding: embedding as EmbeddingProfile } : {}),
 		...(rerank ? { rerank } : {}),
-		...(profile.pricing !== undefined ? { pricing: profile.pricing } : {}),
+		...(profile.pricing === undefined ? {} : { pricing: profile.pricing }),
 	};
 }

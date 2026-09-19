@@ -93,7 +93,9 @@ function ensureObjectStorageConfigured(): void {
 }
 
 function parseLimit(raw: string | undefined): number {
-	if (raw === undefined) return 20;
+	if (raw === undefined) {
+		return 20;
+	}
 	const value = Number(raw);
 	if (!Number.isInteger(value) || value < 1 || value > 100) {
 		throw new GatewayError({
@@ -106,8 +108,12 @@ function parseLimit(raw: string | undefined): number {
 }
 
 function parseOrder(raw: string | undefined): "asc" | "desc" {
-	if (raw === undefined) return "desc";
-	if (raw === "asc" || raw === "desc") return raw;
+	if (raw === undefined) {
+		return "desc";
+	}
+	if (raw === "asc" || raw === "desc") {
+		return raw;
+	}
 	throw new GatewayError({
 		class: "bad_request",
 		message: "order must be asc or desc",
@@ -116,9 +122,12 @@ function parseOrder(raw: string | undefined): "asc" | "desc" {
 }
 
 function parseVariant(raw: string | undefined): VideoAssetVariant {
-	if (raw === undefined) return "video";
-	if (raw === "video" || raw === "thumbnail" || raw === "spritesheet")
+	if (raw === undefined) {
+		return "video";
+	}
+	if (raw === "video" || raw === "thumbnail" || raw === "spritesheet") {
 		return raw;
+	}
 	throw new GatewayError({
 		class: "bad_request",
 		message: "variant must be video, thumbnail, or spritesheet",
@@ -135,20 +144,29 @@ function invalidRange(): GatewayError {
 }
 
 function parseRange(raw: string | undefined): ObjectRange | undefined {
-	if (!raw) return undefined;
+	if (!raw) {
+		return undefined;
+	}
 	const match = /^bytes=(\d*)-(\d*)$/.exec(raw.trim());
-	if (!match || (!match[1] && !match[2])) throw invalidRange();
+	if (!match || !(match[1] || match[2])) {
+		throw invalidRange();
+	}
 	if (!match[1]) {
 		// Suffix range (bytes=-N): the last N bytes; players use it to probe file tails.
 		const suffix = Number(match[2]);
-		if (!Number.isSafeInteger(suffix) || suffix <= 0) throw invalidRange();
+		if (!Number.isSafeInteger(suffix) || suffix <= 0) {
+			throw invalidRange();
+		}
 		return { suffix };
 	}
 	const start = Number(match[1]);
 	const end = match[2] ? Number(match[2]) : undefined;
-	if (!Number.isSafeInteger(start) || start < 0) throw invalidRange();
-	if (end !== undefined && (!Number.isSafeInteger(end) || end < start))
+	if (!Number.isSafeInteger(start) || start < 0) {
 		throw invalidRange();
+	}
+	if (end !== undefined && (!Number.isSafeInteger(end) || end < start)) {
+		throw invalidRange();
+	}
 	return end === undefined ? { start } : { start, end };
 }
 
@@ -173,7 +191,9 @@ async function handleVideoCreate(
 	let persisted = false;
 	let finished = false;
 	const finish = async (error?: GatewayError | null): Promise<void> => {
-		if (!routing || finished) return;
+		if (!routing || finished) {
+			return;
+		}
 		finished = true;
 		await routing.finish(
 			null,
@@ -333,7 +353,7 @@ export async function videoListHandler(c: Context<AppEnv>): Promise<Response> {
 		virtualKeyId: virtualKeyId(c),
 		limit,
 		order,
-		...(after !== undefined ? { after } : {}),
+		...(after === undefined ? {} : { after }),
 	});
 	return c.json({
 		...toOpenAIVideoList({
@@ -392,7 +412,8 @@ export async function videoContentHandler(
 		);
 		return new Response(stored.body, { status: 206, headers });
 	}
-	if (stored.contentLength !== undefined)
+	if (stored.contentLength !== undefined) {
 		headers.set("content-length", String(stored.contentLength));
+	}
 	return new Response(stored.body, { status: 200, headers });
 }

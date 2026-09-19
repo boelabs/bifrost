@@ -1,16 +1,14 @@
+import type { AdapterContext } from "#adapters/types.ts";
+import { beforeFirstOutput } from "./executor.ts";
+import { GatewayError } from "#core/errors.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
-
-import type { AdapterContext } from "#adapters/types.ts";
-import { GatewayError } from "#core/errors.ts";
-
-import { beforeFirstOutput } from "./executor.ts";
 
 const policy = {
 	idleMs: null,
 	reasoningOnlyMs: null,
-	preCommitMs: 1_000,
-	totalMs: 1_000,
+	preCommitMs: 1000,
+	totalMs: 1000,
 	maxAttempts: 2,
 };
 
@@ -53,7 +51,7 @@ test("a first-output deadline the router narrowed is not", async () => {
 test("an already-exhausted narrowed deadline is neutral too", async () => {
 	// The pre-flight branch raises before any promise is raced; it must agree with the timer.
 	const ctx = context({
-		attemptStartedAt: Date.now() - 1_000,
+		attemptStartedAt: Date.now() - 1000,
 		executionPolicy: { ...policy, firstOutputMs: 5, firstOutputNarrowed: true },
 	});
 	await assert.rejects(beforeFirstOutput(never(), ctx), (error: unknown) => {

@@ -45,7 +45,9 @@ function cost(cents: number): string {
 }
 
 function duration(ms: number | null): string {
-	if (ms === null) return "—";
+	if (ms === null) {
+		return "—";
+	}
 	return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(2)} s`;
 }
 
@@ -54,8 +56,12 @@ function duration(ms: number | null): string {
  * stop reading the colour, so anything below 99% is stated in the neutral pill instead.
  */
 function successTone(rate: number | null): StatusProps["tone"] {
-	if (rate === null) return "neutral";
-	if (rate >= 0.99) return "success";
+	if (rate === null) {
+		return "neutral";
+	}
+	if (rate >= 0.99) {
+		return "success";
+	}
 	return rate >= 0.95 ? "warning" : "danger";
 }
 
@@ -82,7 +88,7 @@ const usageColumns: Column<UsageRow>[] = [
 		render: (row) => (
 			<div className="tabular-nums">
 				<div>{count.format(row.totalTokens)}</div>
-				<div className="mt-1 text-xs text-fg-muted">
+				<div className="mt-1 text-fg-muted text-xs">
 					{count.format(row.promptTokens)} in ·{" "}
 					{count.format(row.completionTokens)} out
 				</div>
@@ -135,13 +141,14 @@ const actorColumns: Column<UsageRow>[] = [
  * not, the tables below are stale rather than empty, and an operator has to be told which.
  */
 export function SystemStatus({ ready }: { ready: Readiness | null }) {
-	if (!ready)
+	if (!ready) {
 		return (
 			<Status tone="warning">
 				<IconServer aria-hidden className="size-3.5" />
 				health unreachable
 			</Status>
 		);
+	}
 	const healthy = ready.status === "ok";
 	const failing = [
 		ready.dependencies.database ? null : "database",
@@ -161,10 +168,8 @@ export function SystemStatus({ ready }: { ready: Readiness | null }) {
 function UsageExport({ rows, name }: { rows: UsageRow[]; name: string }) {
 	return (
 		<Button
-			size="sm"
-			variant="ghost"
-			disabled={rows.length === 0}
 			aria-label={`Download ${name} as CSV`}
+			disabled={rows.length === 0}
 			onClick={() =>
 				downloadCsv(
 					`${name}-${new Date().toISOString().slice(0, 10)}.csv`,
@@ -190,8 +195,10 @@ function UsageExport({ rows, name }: { rows: UsageRow[]; name: string }) {
 					],
 				)
 			}
+			size="sm"
+			variant="ghost"
 		>
-			<IconDownload size={15} aria-hidden className="mr-1" />
+			<IconDownload aria-hidden className="mr-1" size={15} />
 			CSV
 		</Button>
 	);
@@ -224,27 +231,27 @@ function UsagePanel({
 	emptyMessage: string;
 }) {
 	return (
-		<Card className="flex min-w-0 flex-col p-7" aria-labelledby={id}>
+		<Card aria-labelledby={id} className="flex min-w-0 flex-col p-7">
 			<div className="flex items-start justify-between gap-3">
 				<div>
-					<h2 id={id} className="font-semibold">
+					<h2 className="font-semibold" id={id}>
 						{title}
 					</h2>
 					<p className="mt-1 text-fg-muted text-xs">{description}</p>
 				</div>
 				<div className="-mt-1 -mr-2">
-					<UsageExport rows={rows} name={name} />
+					<UsageExport name={name} rows={rows} />
 				</div>
 			</div>
 			<DataTable
-				rows={rows}
-				columns={columns}
-				rowKey={(row) => row.key ?? "none"}
 				caption={caption}
-				variant="plain"
-				pagination={{ pageSize: 10 }}
 				className="mt-5"
+				columns={columns}
 				emptyMessage={emptyMessage}
+				pagination={{ pageSize: 10 }}
+				rowKey={(row) => row.key ?? "none"}
+				rows={rows}
+				variant="plain"
 			/>
 		</Card>
 	);
@@ -299,10 +306,10 @@ export function Overview({
 				className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"
 			>
 				<StatCard
-					label="Requests"
-					value={compact.format(metrics.requests)}
+					detail={`Across ${modelCount} public ${modelCount === 1 ? "model" : "models"}`}
 					exact={count.format(metrics.requests)}
 					icon={IconActivity}
+					label="Requests"
 					note={{
 						text:
 							metrics.successRate === null
@@ -310,74 +317,74 @@ export function Overview({
 								: `${percent.format(metrics.successRate)} success`,
 						tone: successTone(metrics.successRate),
 					}}
-					detail={`Across ${modelCount} public ${modelCount === 1 ? "model" : "models"}`}
+					value={compact.format(metrics.requests)}
 				/>
 				<StatCard
-					label="Total tokens"
-					value={compact.format(metrics.totalTokens)}
+					detail={`${compact.format(metrics.promptTokens)} input tokens · includes cached input`}
 					exact={count.format(metrics.totalTokens)}
 					icon={IconStack2}
+					label="Total tokens"
 					note={{
 						text: `${compact.format(metrics.completionTokens)} output`,
 						exact: `${count.format(metrics.completionTokens)} output tokens`,
 					}}
-					detail={`${compact.format(metrics.promptTokens)} input tokens · includes cached input`}
+					value={compact.format(metrics.totalTokens)}
 				/>
 				<StatCard
-					label="Consumer cost"
-					value={cost(metrics.consumerCostCents)}
+					detail={`${cost(metrics.upstreamCostCents)} upstream cost`}
 					icon={IconCurrencyDollar}
+					label="Consumer cost"
 					note={{
 						text:
 							metrics.requests > 0
 								? `${cost(metrics.consumerCostCents / metrics.requests)}/req`
 								: "no requests",
 					}}
-					detail={`${cost(metrics.upstreamCostCents)} upstream cost`}
+					value={cost(metrics.consumerCostCents)}
 				/>
 				<StatCard
-					label="First output · p95"
-					value={duration(metrics.p95FirstOutputMs)}
-					icon={IconClock}
-					note={{ text: `${count.format(metrics.retried)} retried` }}
 					detail="Time to first generated output"
+					icon={IconClock}
+					label="First output · p95"
+					note={{ text: `${count.format(metrics.retried)} retried` }}
+					value={duration(metrics.p95FirstOutputMs)}
 				/>
 			</section>
 
 			<div className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-				<ActivityChart rows={series} bucket={bucket} />
-				<div className="grid min-w-0 gap-5 content-start">
+				<ActivityChart bucket={bucket} rows={series} />
+				<div className="grid min-w-0 content-start gap-5">
 					<RequestOutcomes metrics={metrics} />
 					<Reliability metrics={metrics} />
 				</div>
 			</div>
 			<CacheUsage
-				usage={aggregateCacheUsage(byModel)}
 				records={metrics.requests}
+				usage={aggregateCacheUsage(byModel)}
 			/>
 			<div className="grid items-start gap-5">
 				<UsagePanel
-					id="models-heading"
-					title="By public model"
-					description="Total = input + output. Cached, uncached and unclassified counts split the reported input."
-					rows={models}
-					columns={usageColumns}
 					caption="Usage by public model"
-					export="usage-by-model"
+					columns={usageColumns}
+					description="Total = input + output. Cached, uncached and unclassified counts split the reported input."
 					emptyMessage={`No model usage in this range (${rangeLabel.toLowerCase()}).`}
+					export="usage-by-model"
+					id="models-heading"
+					rows={models}
+					title="By public model"
 				/>
 				<UsagePanel
-					id="actors-heading"
-					title="By actor"
-					description="Includes operator traffic from the playground and manual tests."
-					rows={actors}
-					columns={actorColumns}
 					caption="Usage by actor"
-					export="usage-by-actor"
+					columns={actorColumns}
+					description="Includes operator traffic from the playground and manual tests."
 					emptyMessage={`No actor usage in this range (${rangeLabel.toLowerCase()}).`}
+					export="usage-by-actor"
+					id="actors-heading"
+					rows={actors}
+					title="By actor"
 				/>
 			</div>
-			<p className="px-1 text-xs text-fg-muted" role="status">
+			<p className="px-1 text-fg-muted text-xs" role="status">
 				Updated at {updatedTime.format(new Date(end))} UTC · Usage reflects
 				recorded requests.
 			</p>

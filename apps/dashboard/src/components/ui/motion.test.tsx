@@ -89,9 +89,11 @@ describe("component motion and keyboard focus", () => {
 			const style = popup.props.style({ swipeDirection: direction });
 			assert.match(style.transform, /--drawer-swipe-movement-x/);
 			assert.match(style.transform, /--drawer-swipe-movement-y/);
-			if (direction === "down")
+			if (direction === "down") {
 				assert.match(style.transform, /--drawer-snap-point-offset/);
-			else assert.doesNotMatch(style.transform, /--drawer-snap-point-offset/);
+			} else {
+				assert.doesNotMatch(style.transform, /--drawer-snap-point-offset/);
+			}
 		}
 		const indent = renderToStaticMarkup(
 			<DrawerProvider>
@@ -109,8 +111,8 @@ describe("component motion and keyboard focus", () => {
 					<Slider.Track>
 						<Slider.Indicator />
 					</Slider.Track>
-					<Slider.Thumb index={0} aria-label="Minimum" />
-					<Slider.Thumb index={1} aria-label="Maximum" />
+					<Slider.Thumb aria-label="Minimum" index={0} />
+					<Slider.Thumb aria-label="Maximum" index={1} />
 				</Slider.Control>
 			</Slider.Root>,
 		);

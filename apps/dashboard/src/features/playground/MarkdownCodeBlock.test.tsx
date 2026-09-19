@@ -21,7 +21,7 @@ test("code stays visible without a worker, including blank lines and escaped HTM
 
 test("inline code stays inline and unfinished fenced code retains its final characters", () => {
 	const html = renderToStaticMarkup(
-		<Markdown text={'Use `value`.\n\n```ts\nconst value = "par'} streaming />,
+		<Markdown streaming text={'Use `value`.\n\n```ts\nconst value = "par'} />,
 	);
 	assert.match(html, /data-streamdown="inline-code"/);
 	assert.equal((html.match(/data-streamdown="code-block"/g) ?? []).length, 1);

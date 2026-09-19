@@ -91,7 +91,7 @@ async function sortFiles(files: string[]): Promise<number> {
 }
 
 async function sortFile(file: string): Promise<boolean> {
-	if (!isSourceFile(file) || !existsSync(file)) {
+	if (!(isSourceFile(file) && existsSync(file))) {
 		return false;
 	}
 

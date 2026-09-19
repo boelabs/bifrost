@@ -36,7 +36,7 @@ test("deployments: create encrypts inline credentials, get/list, and delete", {
 }, async () => {
 	const publicModel = `itest-${randomUUID()}`;
 	const row = await createDeployment({
-		publicModel: publicModel,
+		publicModel,
 		adapterKey: "openai",
 		upstreamModel: "gpt-5.5",
 		credentials: { apiKey: "sk-secret-itest" },
@@ -163,7 +163,7 @@ test("observability summary counts operations with protocol failures", {
 	});
 	try {
 		const summary = await operationSummary(
-			new Date(startedAt.getTime() - 1_000),
+			new Date(startedAt.getTime() - 1000),
 		);
 		assert.ok(Number(summary.totals.protocolErrors) >= 1);
 	} finally {

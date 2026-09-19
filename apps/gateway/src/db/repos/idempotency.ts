@@ -30,7 +30,9 @@ export async function claimIdempotencyKey(
 			target: [idempotencyKeys.actor, idempotencyKeys.key],
 		})
 		.returning();
-	if (inserted.length > 0) return { claimed: true };
+	if (inserted.length > 0) {
+		return { claimed: true };
+	}
 
 	const existing = await db
 		.select()
@@ -45,7 +47,9 @@ export async function claimIdempotencyKey(
 	const row = existing[0];
 	// The row can disappear between the conflict and this read (expiry GC): treat that as a fresh
 	// claim rather than failing a request that has done nothing wrong.
-	if (!row) return claimIdempotencyKey(input);
+	if (!row) {
+		return claimIdempotencyKey(input);
+	}
 	return { claimed: false, existing: row };
 }
 

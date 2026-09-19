@@ -61,7 +61,9 @@ export function SettingsView({
 			description: `Requests that hit this case stop being redirected to ${row.fallbackModels.join(" → ")} and fail back to the caller instead.`,
 			confirmLabel: "Remove chain",
 		});
-		if (!confirmed) return;
+		if (!confirmed) {
+			return;
+		}
 		await act(row.id, {
 			optimistic: "removed",
 			action: () => deleteFallbackAction(row.primaryModel, row.reason),
@@ -77,7 +79,9 @@ export function SettingsView({
 				"Cached answers are dropped across the fleet, so the next request for each of them is paid for upstream again.",
 			confirmLabel: "Clear cache",
 		});
-		if (!confirmed) return;
+		if (!confirmed) {
+			return;
+		}
 		const result = await run(() => clearCacheAction(), {
 			failure: "The cache could not be cleared.",
 		});
@@ -107,15 +111,15 @@ export function SettingsView({
 			render: (row) =>
 				editable ? (
 					<RowActions
-						label={`Actions for the ${row.reason} chain of ${row.primaryModel}`}
 						actions={[
 							{
 								label: "Delete chain",
-								icon: <IconTrash size={15} aria-hidden />,
+								icon: <IconTrash aria-hidden size={15} />,
 								danger: true,
 								onSelect: () => void removeChain(row),
 							},
 						]}
+						label={`Actions for the ${row.reason} chain of ${row.primaryModel}`}
 					/>
 				) : null,
 		},
@@ -135,12 +139,12 @@ export function SettingsView({
 							</p>
 						</div>
 						<RouterForm
-							settings={settings}
 							editable={editable}
 							onSaved={() => {
 								refresh();
 								notify.success("Router settings saved");
 							}}
+							settings={settings}
 						/>
 						<p className="border-border/50 border-t pt-4 text-fg-muted text-xs">
 							Execution policies (per-operation deadlines and attempt caps) are
@@ -164,12 +168,12 @@ export function SettingsView({
 								</p>
 							</div>
 							<SessionForm
-								settings={sessions}
 								editable={can("users:manage")}
 								onSaved={() => {
 									refresh();
 									notify.success("Session policy saved");
 								}}
+								settings={sessions}
 							/>
 						</CardContent>
 					</Card>
@@ -189,26 +193,26 @@ export function SettingsView({
 									</div>
 									<Can permissions={["settings:write"]}>
 										<Button
-											size="sm"
 											onClick={() => setAddingFallback(kind.reason)}
+											size="sm"
 										>
-											<IconPlus size={15} aria-hidden className="mr-2" />
+											<IconPlus aria-hidden className="mr-2" size={15} />
 											New chain
 										</Button>
 									</Can>
 								</div>
 								{rows.length === 0 ? (
 									<EmptyState
-										title="No chain configured"
 										description={kind.empty}
+										title="No chain configured"
 									/>
 								) : (
 									<DataTable
-										rows={rows}
-										columns={fallbackColumns}
-										rowKey={(row) => row.id}
 										caption={kind.title}
+										columns={fallbackColumns}
 										pagination={{ pageSize: 10 }}
+										rowKey={(row) => row.id}
+										rows={rows}
 									/>
 								)}
 							</CardContent>
@@ -227,7 +231,7 @@ export function SettingsView({
 										: `Removed ${cleared} cached ${cleared === 1 ? "entry" : "entries"}.`}
 								</p>
 							</div>
-							<Button variant="secondary" onClick={() => void purgeCache()}>
+							<Button onClick={() => void purgeCache()} variant="secondary">
 								Clear cache
 							</Button>
 						</CardContent>
@@ -236,13 +240,13 @@ export function SettingsView({
 			</div>
 
 			<FallbackDialog
-				reason={addingFallback}
 				models={models}
 				onClose={() => setAddingFallback(null)}
 				onSaved={() => {
 					refresh();
 					notify.success("Fallback chain saved");
 				}}
+				reason={addingFallback}
 			/>
 		</>
 	);

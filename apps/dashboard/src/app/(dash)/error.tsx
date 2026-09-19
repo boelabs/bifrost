@@ -29,11 +29,11 @@ export default function AuthedError({
 	return (
 		<div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-surface px-4">
 			<EmptyState
-				title="The dashboard could not start"
 				description="Most often this means the gateway is not reachable from this process — check that it is running and that GATEWAY_URL points at it. Signing in again helps if the session simply expired."
+				title="The dashboard could not start"
 			/>
 			<div className="flex flex-wrap items-center justify-center gap-3">
-				<Button variant="secondary" onClick={reset}>
+				<Button onClick={reset} variant="secondary">
 					Try again
 				</Button>
 				<Button nativeButton={false} render={<a href="/auth" />}>

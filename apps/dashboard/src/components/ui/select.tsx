@@ -152,15 +152,15 @@ export function Select<Value = string>({
 			<BaseSelect.Root modal={false} {...props} items={props.items ?? items}>
 				<Trigger
 					aria-label={ariaLabel}
-					className={className}
-					style={style}
-					size={size}
-					variant={variant}
 					borderRadius={borderRadius}
+					className={className}
+					size={size}
+					style={style}
+					variant={variant}
 				>
 					<BaseSelect.Value
-						placeholder={placeholder}
 						className="truncate data-[placeholder]:text-fg-muted"
+						placeholder={placeholder}
 					/>
 					<BaseSelect.Icon>
 						<IconChevronDown className="size-4 shrink-0 text-fg-muted" />
@@ -177,10 +177,10 @@ export function Select<Value = string>({
 					 * Fixed, it never contributes to the page's height, so there is nothing to scroll.
 					 */}
 					<BaseSelect.Positioner
-						positionMethod="fixed"
-						sideOffset={6}
 						alignItemWithTrigger={false}
 						className="z-50"
+						positionMethod="fixed"
+						sideOffset={6}
 					>
 						<Popup className={popoverClassName}>
 							<List>{children}</List>
@@ -237,24 +237,24 @@ export function SearchableSelect({
 			>
 				<Combobox.Input
 					aria-label={ariaLabel}
-					placeholder={searchPlaceholder}
+					borderRadius={borderRadius}
 					className={className}
+					placeholder={searchPlaceholder}
 					size={size}
 					variant={variant}
-					borderRadius={borderRadius}
 				/>
 				<Combobox.Portal>
-					<Combobox.Positioner sideOffset={6} className="z-50">
+					<Combobox.Positioner className="z-50" sideOffset={6}>
 						<Combobox.Popup>
 							<Combobox.Empty>No results found.</Combobox.Empty>
 							<Combobox.List>
 								{(value: string) => (
 									<Combobox.Item
-										key={value}
-										value={value}
 										disabled={
 											items.find((item) => item.value === value)?.disabled
 										}
+										key={value}
+										value={value}
 									>
 										{labels.get(value)}
 										<Combobox.ItemIndicator />

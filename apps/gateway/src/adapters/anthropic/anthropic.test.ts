@@ -55,7 +55,9 @@ test("Anthropic preserves optional thinking usage from initial and terminal even
 		).body!;
 		let usage: Usage | undefined;
 		for await (const chunk of anthropicAdapter.chat!.parseStream(body, ctx)) {
-			if (chunk.usage) usage = chunk.usage;
+			if (chunk.usage) {
+				usage = chunk.usage;
+			}
 		}
 		assert.ok(usage);
 		assert.equal(usage.reasoningTokens, expected);
@@ -94,7 +96,7 @@ const budgetCtx: AdapterContext = {
 		reasoning: {
 			kind: "anthropic_budget",
 			levels: ["none", "low", "medium", "high"],
-			budgets: { low: 2048, medium: 8192, high: 16000 },
+			budgets: { low: 2048, medium: 8192, high: 16_000 },
 		},
 	},
 };
@@ -455,7 +457,7 @@ test("anthropic.buildRequest: legacy budget uses thinking.enabled and none uses 
 	);
 	assert.deepEqual(JSON.parse(high.body!).thinking, {
 		type: "enabled",
-		budget_tokens: 16000,
+		budget_tokens: 16_000,
 		display: "summarized",
 	});
 
@@ -701,7 +703,9 @@ test("anthropic.parseStream: signature deltas become replayable message state", 
 		ctx,
 	)) {
 		const value = chunk.choices[0]?.delta.providerFields;
-		if (value !== undefined) fields.push(value);
+		if (value !== undefined) {
+			fields.push(value);
+		}
 	}
 	assert.deepEqual(fields.at(-1), {
 		anthropic: {

@@ -47,15 +47,15 @@ export function appearanceStyle(
 	style?: CSSProperties,
 ): CSSProperties {
 	return {
-		...(borderRadius != null
-			? {
+		...(borderRadius == null
+			? {}
+			: {
 					borderRadius:
 						typeof borderRadius === "string"
 							? (radii[borderRadius] ?? borderRadius)
 							: borderRadius,
-				}
-			: {}),
-		...(width != null ? { width: width === "full" ? "100%" : width } : {}),
+				}),
+		...(width == null ? {} : { width: width === "full" ? "100%" : width }),
 		...style,
 	};
 }
@@ -81,7 +81,7 @@ export function mergeStyle<State>(
 export const focusRing =
 	"outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
 export const controlStyles = tv({
-	base: "ui-control flex min-w-0 items-center gap-2 rounded-[var(--ui-radius-control)] border text-fg outline-none transition-[color,background-color,border-color,box-shadow] placeholder:text-fg-muted focus-visible:border-focus focus-visible:ring-2 focus-visible:ring-focus/25 data-[focused]:border-focus data-[focused]:ring-2 data-[focused]:ring-focus/25 disabled:cursor-not-allowed disabled:opacity-50 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 aria-invalid:border-danger data-[invalid]:border-danger",
+	base: "ui-control flex min-w-0 items-center gap-2 rounded-[var(--ui-radius-control)] border text-fg outline-none transition-[color,background-color,border-color,box-shadow] placeholder:text-fg-muted focus-visible:border-focus focus-visible:ring-2 focus-visible:ring-focus/25 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-danger data-[disabled]:cursor-not-allowed data-[focused]:border-focus data-[invalid]:border-danger data-[disabled]:opacity-50 data-[focused]:ring-2 data-[focused]:ring-focus/25",
 	variants: {
 		/**
 		 * One step taller and wider than the kit shipped with. A 36px row of filters above a 20px

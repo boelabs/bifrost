@@ -60,9 +60,12 @@ export function createSessionFetch(
 		headers.delete("authorization");
 		headers.delete("x-api-key");
 		const token = (options.csrf ?? csrfTokenFromDocument)();
-		if (token) headers.set("x-csrf-token", token);
-		if (typeof init?.body !== "string")
+		if (token) {
+			headers.set("x-csrf-token", token);
+		}
+		if (typeof init?.body !== "string") {
 			throw new Error("Expected an SDK JSON inference request.");
+		}
 		const body = requestBody.parse(JSON.parse(init.body));
 		// Restore explicitly selected gateway parameters after SDK vendor-specific filtering.
 		const fields: Record<string, string> =
@@ -71,18 +74,21 @@ export function createSessionFetch(
 				: endpoint === "responses"
 					? { max_tokens: "max_output_tokens" }
 					: { max_tokens: "max_tokens" };
-		for (const [key, value] of Object.entries(settings.parameters))
+		for (const [key, value] of Object.entries(settings.parameters)) {
 			body[fields[key] ?? key] = value;
+		}
 		if (
 			settings.parameters.max_tokens !== undefined &&
 			endpoint === "chat.completions"
-		)
+		) {
 			delete body.max_completion_tokens;
+		}
 		const stopSequences = settings.stopSequences.filter(
 			(sequence) => sequence.length > 0,
 		);
-		if (stopSequences.length)
+		if (stopSequences.length) {
 			body[endpoint === "messages" ? "stop_sequences" : "stop"] = stopSequences;
+		}
 		if (settings.reasoningEffort !== undefined) {
 			if (endpoint === "messages") {
 				body.output_config = {
@@ -100,9 +106,13 @@ export function createSessionFetch(
 					effort: settings.reasoningEffort,
 					...(settings.reasoningEffort === "none" ? {} : { summary: "auto" }),
 				};
-			} else body.reasoning_effort = settings.reasoningEffort;
+			} else {
+				body.reasoning_effort = settings.reasoningEffort;
+			}
 		}
-		if (endpoint !== "messages") body.store = false;
+		if (endpoint !== "messages") {
+			body.store = false;
+		}
 		return (options.fetch ?? fetch)(input, {
 			...init,
 			body: JSON.stringify(body),
@@ -121,9 +131,12 @@ export function createSessionFetch(
  * survive it, so resolving here keeps all three on the same address.
  */
 function absoluteBaseURL(baseURL: string): string {
-	if (/^[a-z][a-z\d+.-]*:\/\//i.test(baseURL)) return baseURL;
-	if (typeof window === "undefined")
+	if (/^[a-z][a-z\d+.-]*:\/\//i.test(baseURL)) {
+		return baseURL;
+	}
+	if (typeof window === "undefined") {
 		throw new Error("A relative gateway base URL needs a document origin.");
+	}
 	return new URL(baseURL, window.location.origin).toString();
 }
 
@@ -152,11 +165,12 @@ export function modelFor(
 		settings,
 		options,
 	) as unknown as typeof fetch;
-	if (endpoint === "messages")
+	if (endpoint === "messages") {
 		return createAnthropic({ baseURL, apiKey: "session", fetch: sessionFetch })(
 			publicModel,
 		);
-	if (endpoint === "chat.completions")
+	}
+	if (endpoint === "chat.completions") {
 		return wrapLanguageModel({
 			model: createOpenAICompatible({
 				name: "bifrost",
@@ -166,6 +180,7 @@ export function modelFor(
 			})(publicModel),
 			middleware: chatReasoningMiddleware,
 		});
+	}
 	return createOpenAI({
 		baseURL,
 		apiKey: "session",

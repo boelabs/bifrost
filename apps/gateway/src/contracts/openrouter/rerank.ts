@@ -94,10 +94,10 @@ export function rerankRequestToCanonical(
 			type: "text" as const,
 			text: typeof document === "string" ? document : document.text,
 		})),
-		...(request.top_n !== undefined ? { topN: request.top_n } : {}),
-		...(request.provider !== undefined
-			? { provider: request.provider as RerankProviderPreferences }
-			: {}),
+		...(request.top_n === undefined ? {} : { topN: request.top_n }),
+		...(request.provider === undefined
+			? {}
+			: { provider: request.provider as RerankProviderPreferences }),
 	};
 }
 
@@ -108,9 +108,9 @@ export function toOpenRouterRerankResponse(
 ): Record<string, unknown> {
 	const usage = response.usage;
 	return {
-		...(response.id !== undefined ? { id: response.id } : {}),
+		...(response.id === undefined ? {} : { id: response.id }),
 		model: request.model,
-		...(response.provider !== undefined ? { provider: response.provider } : {}),
+		...(response.provider === undefined ? {} : { provider: response.provider }),
 		results: response.results.map((result) => {
 			const document = request.documents[result.index]!;
 			return {
@@ -134,9 +134,9 @@ export function toOpenRouterRerankResponse(
 			? {
 					usage: {
 						...(usage ? { total_tokens: usage.totalTokens } : {}),
-						...(usage?.searchUnits !== undefined
-							? { search_units: usage.searchUnits }
-							: {}),
+						...(usage?.searchUnits === undefined
+							? {}
+							: { search_units: usage.searchUnits }),
 						...(cost ? { cost: cost.totalCents / 100 } : {}),
 					},
 				}

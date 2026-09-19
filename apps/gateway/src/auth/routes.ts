@@ -118,7 +118,7 @@ authApp.post("/session", async (c) => {
 			user?.passwordHash ??
 			"$argon2id$v=19$m=65536,t=2,p=1$aaaaaaaaaaaaaaaa$aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 		const valid = await verifyPassword(input.password, digest);
-		if (!user?.enabled || !valid) {
+		if (!(user?.enabled && valid)) {
 			await recordLoginFailure(input.username, ip);
 			throw invalidCredentials();
 		}
@@ -184,7 +184,9 @@ authApp.get("/session", authMiddleware(), async (c) => {
 
 authApp.delete("/session", async (c) => {
 	const token = getCookie(c, SESSION_COOKIE);
-	if (token) await endSession(token);
+	if (token) {
+		await endSession(token);
+	}
 	// The attributes must match the ones the cookie was set with, or the browser treats this as a
 	// different cookie and leaves the original in place — a logout that does not log anyone out.
 	const clear = {
@@ -212,10 +214,10 @@ authApp.post("/password", authMiddleware(), async (c) => {
 	const input = await parseJsonBody(c, changePasswordSchema);
 	const user = await getDashboardUserById(auth.session.userId);
 	if (
-		!user ||
-		!(await verifyPassword(input.currentPassword, user.passwordHash))
-	)
+		!(user && (await verifyPassword(input.currentPassword, user.passwordHash)))
+	) {
 		throw invalidCredentials();
+	}
 
 	await updateDashboardUser(user.id, {
 		passwordHash: await hashPassword(input.newPassword),

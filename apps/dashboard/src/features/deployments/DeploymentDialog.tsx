@@ -113,13 +113,17 @@ export function DeploymentDialog({
 		const credentials: Record<string, unknown> = {};
 		for (const field of required) {
 			const value = optionalText(form.get(`cred_${field}`));
-			if (value !== undefined) credentials[field] = value;
+			if (value !== undefined) {
+				credentials[field] = value;
+			}
 		}
 		const extra = parseObject(
 			String(form.get("credentialsExtra") ?? ""),
 			"Extra credentials",
 		);
-		if (extra) Object.assign(credentials, extra);
+		if (extra) {
+			Object.assign(credentials, extra);
+		}
 		const entry = custom
 			? parseCustomEntry(technical ?? JSON.stringify(customEntry))
 			: undefined;
@@ -140,16 +144,24 @@ export function DeploymentDialog({
 			tpmLimit: optionalNumber(form.get("tpmLimit")) ?? null,
 			rpmLimit: optionalNumber(form.get("rpmLimit")) ?? null,
 		};
-		if (entry) body.catalogEntry = entry;
-		if (rates) body.pricing = rates;
+		if (entry) {
+			body.catalogEntry = entry;
+		}
+		if (rates) {
+			body.pricing = rates;
+		}
 		const weight = optionalNumber(form.get("weight"));
-		if (weight !== undefined) body.weight = weight;
+		if (weight !== undefined) {
+			body.weight = weight;
+		}
 		return body;
 	}
 
 	async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
-		if (submitting.current) return;
+		if (submitting.current) {
+			return;
+		}
 		submitting.current = true;
 		setError(null);
 		setPending(true);
@@ -181,13 +193,13 @@ export function DeploymentDialog({
 
 	return (
 		<Modal
+			className="md:w-2xl"
 			isOpen={isOpen}
 			onOpenChange={(open) => !open && onClose()}
-			className="md:w-2xl"
 		>
 			<Dialog
-				layout="sectioned"
 				aria-label={editing ? "Edit deployment" : "New deployment"}
+				layout="sectioned"
 			>
 				<DialogHeader>
 					<h2 className="font-semibold text-fg text-lg">
@@ -200,34 +212,35 @@ export function DeploymentDialog({
 				</DialogHeader>
 
 				<Form
+					className="flex min-h-0 flex-1 flex-col"
 					onSubmit={onSubmit}
 					onSubmitCapture={(event) => {
 						// Emit native invalid events so collapsed fields reveal their errors.
 						event.currentTarget.checkValidity();
 					}}
-					className="flex min-h-0 flex-1 flex-col"
 				>
 					<DialogBody>
 						<div className="grid gap-4 sm:grid-cols-2">
 							<Input
-								name="publicModel"
-								label="Public model"
-								description="The name clients send as `model`."
-								defaultValue={existing?.publicModel ?? ""}
-								required
 								autoFocus
+								defaultValue={existing?.publicModel ?? ""}
+								description="The name clients send as `model`."
+								label="Public model"
+								name="publicModel"
+								required
 							/>
 							<Select
-								label="Adapter"
 								description={
 									editing
 										? "Fixed for an existing deployment."
 										: "The provider protocol this deployment speaks."
 								}
 								disabled={editing}
-								value={adapterKey}
+								label="Adapter"
 								onValueChange={(key) => {
-									if (!key || key === adapterKey) return;
+									if (!key || key === adapterKey) {
+										return;
+									}
 									setAdapterKey(key);
 									setUpstreamModel("");
 									setCustomEntry(
@@ -241,6 +254,7 @@ export function DeploymentDialog({
 									setTechnical(null);
 									setTransports({});
 								}}
+								value={adapterKey}
 							>
 								{adapters.map((entry) => (
 									<SelectItem key={entry.id} value={entry.id}>
@@ -260,22 +274,22 @@ export function DeploymentDialog({
 							<Field.Root>
 								<Field.Label>Upstream model</Field.Label>
 								<Combobox.Root
+									inputValue={upstreamModel}
 									items={catalog.map((model) => model.id)}
-									value={upstreamModel}
+									onInputValueChange={setUpstreamModel}
 									onValueChange={(next: string | null) =>
 										setUpstreamModel(next ?? "")
 									}
-									inputValue={upstreamModel}
-									onInputValueChange={setUpstreamModel}
 									openOnInputClick
+									value={upstreamModel}
 								>
 									<Combobox.InputField
+										placeholder="Pick a catalog model or type an id"
 										required
 										showClear={upstreamModel !== ""}
-										placeholder="Pick a catalog model or type an id"
 									/>
 									<Combobox.Portal>
-										<Combobox.Positioner sideOffset={6} className="z-50">
+										<Combobox.Positioner className="z-50" sideOffset={6}>
 											<Combobox.Popup>
 												<Combobox.Empty>
 													No catalog match. You can use this custom model id.
@@ -303,11 +317,11 @@ export function DeploymentDialog({
 							</Field.Root>
 						) : (
 							<Input
-								label="Upstream model"
 								description="Enter the model ID used by your provider."
-								value={upstreamModel}
+								label="Upstream model"
 								onValueChange={setUpstreamModel}
 								required
+								value={upstreamModel}
 							/>
 						)}
 
@@ -328,12 +342,12 @@ export function DeploymentDialog({
 							</p>
 							{required.map((field) => (
 								<Input
-									key={`${adapterKey}:${field}`}
-									name={`cred_${field}`}
-									label={field}
-									type={field === "baseUrl" ? "url" : "password"}
 									autoComplete="off"
+									key={`${adapterKey}:${field}`}
+									label={field}
+									name={`cred_${field}`}
 									required={!editing}
+									type={field === "baseUrl" ? "url" : "password"}
 								/>
 							))}
 						</fieldset>
@@ -341,83 +355,83 @@ export function DeploymentDialog({
 						{custom && upstreamModel.trim() ? (
 							<CustomModelEditor
 								key={adapterKey}
-								value={customEntry}
 								onChange={setCustomEntry}
-								technical={technical}
 								onTechnicalChange={setTechnical}
-								operations={adapter?.operations ?? []}
-								transports={transports}
 								onTransportsChange={setTransports}
+								operations={adapter?.operations ?? []}
+								technical={technical}
+								transports={transports}
+								value={customEntry}
 							/>
 						) : null}
 
 						<Collapsible.Root
-							open={advancedOpen}
 							onOpenChange={setAdvancedOpen}
+							open={advancedOpen}
 						>
 							<Collapsible.Trigger className="w-full transition-none [&>svg]:transition-none">
 								Advanced options
 								<IconChevronDown aria-hidden className="size-4" />
 							</Collapsible.Trigger>
 							<Collapsible.Panel
+								className="h-auto overflow-visible transition-none data-[closed]:hidden"
 								keepMounted
 								onInvalidCapture={() => setAdvancedOpen(true)}
-								className="h-auto overflow-visible transition-none data-[closed]:hidden"
 							>
 								<div className="flex flex-col gap-5 pt-5">
 									<JsonField
-										name="credentialsExtra"
-										label="Extra credentials (JSON)"
 										description='Adapter-specific extras such as {"baseUrl": "https://…"}.'
+										label="Extra credentials (JSON)"
+										name="credentialsExtra"
 										rows={2}
 									/>
 
 									<div className="grid gap-4 sm:grid-cols-2">
 										<Input
-											name="label"
-											label="Label"
-											description="Tells deployments of the same model apart, e.g. which API key."
 											defaultValue={existing?.label ?? ""}
+											description="Tells deployments of the same model apart, e.g. which API key."
+											label="Label"
+											name="label"
 										/>
 										<Input
-											name="failureDomain"
-											label="Failure domain"
-											description="Deployments sharing this value share upstream throttle state."
 											defaultValue={existing?.failureDomain ?? ""}
+											description="Deployments sharing this value share upstream throttle state."
+											label="Failure domain"
+											name="failureDomain"
 										/>
 									</div>
 
 									<div className="grid gap-4 sm:grid-cols-3">
 										<Input
-											name="weight"
-											type="number"
-											min={0}
-											step={1}
-											label="Weight"
-											description="Share under simple-shuffle."
 											defaultValue={String(existing?.weight ?? 1)}
+											description="Share under simple-shuffle."
+											label="Weight"
+											min={0}
+											name="weight"
+											step={1}
+											type="number"
 										/>
 										<Input
-											name="rpmLimit"
-											type="number"
-											label="RPM limit"
 											defaultValue={
 												existing?.rpmLimit === null ||
 												existing?.rpmLimit === undefined
 													? ""
 													: String(existing.rpmLimit)
 											}
+											label="RPM limit"
+											name="rpmLimit"
+											type="number"
 										/>
 										<Input
-											name="tpmLimit"
-											type="number"
-											label="TPM limit"
 											defaultValue={
 												existing?.tpmLimit === null ||
 												existing?.tpmLimit === undefined
 													? ""
 													: String(existing.tpmLimit)
 											}
+											label="TPM limit"
+											name="tpmLimit"
+											type="number"
 										/>
 									</div>
 
@@ -425,18 +439,18 @@ export function DeploymentDialog({
 										Enabled
 									</Switch>
 
-									<PricingEditor value={pricing} onChange={setPricing} />
+									<PricingEditor onChange={setPricing} value={pricing} />
 									<JsonField
-										name="metadata"
-										label="Metadata (JSON)"
-										description="Free-form operator annotations, up to 16 KiB. Stored and returned verbatim."
-										rows={3}
 										defaultValue={
 											existing?.metadata &&
 											Object.keys(existing.metadata).length > 0
 												? JSON.stringify(existing.metadata, null, 2)
 												: ""
 										}
+										description="Free-form operator annotations, up to 16 KiB. Stored and returned verbatim."
+										label="Metadata (JSON)"
+										name="metadata"
+										rows={3}
 									/>
 									{known && Object.keys(catalogTransports).length > 0 ? (
 										<div className="text-fg-muted text-sm">
@@ -465,10 +479,10 @@ export function DeploymentDialog({
 								<ErrorNote>{error}</ErrorNote>
 							</div>
 						) : null}
-						<Button variant="secondary" onClick={onClose}>
+						<Button onClick={onClose} variant="secondary">
 							Cancel
 						</Button>
-						<Button type="submit" disabled={pending}>
+						<Button disabled={pending} type="submit">
 							{pending
 								? "Saving…"
 								: editing
@@ -497,13 +511,13 @@ function JsonField({
 }) {
 	return (
 		<Textarea
-			name={name}
-			label={label}
-			description={description}
-			rows={rows}
-			defaultValue={defaultValue}
-			spellCheck={false}
 			className="resize-y font-mono text-xs"
+			defaultValue={defaultValue}
+			description={description}
+			label={label}
+			name={name}
+			rows={rows}
+			spellCheck={false}
 		/>
 	);
 }

@@ -16,7 +16,9 @@ let drainingSince: number | null = null;
  * cannot restart the clock. Returns false when the process was already draining.
  */
 export function beginDraining(): boolean {
-	if (phase === "draining") return false;
+	if (phase === "draining") {
+		return false;
+	}
 	phase = "draining";
 	drainingSince = Date.now();
 	return true;

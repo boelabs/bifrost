@@ -65,7 +65,7 @@ export function AccordionHeader({
 	return (
 		<BaseAccordion.Header
 			{...props}
-			className={mergeClassName("m-0 text-sm font-semibold", className)}
+			className={mergeClassName("m-0 font-semibold text-sm", className)}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -108,7 +108,7 @@ export function AccordionPanel({
 		<BaseAccordion.Panel
 			{...props}
 			className={mergeClassName(
-				"h-[var(--accordion-panel-height)] overflow-hidden text-sm text-fg-muted transition-[height,opacity] duration-200 data-[starting-style]:h-0 data-[starting-style]:opacity-0 data-[ending-style]:h-0 data-[ending-style]:opacity-0",
+				"h-[var(--accordion-panel-height)] overflow-hidden text-fg-muted text-sm transition-[height,opacity] duration-200 data-[ending-style]:h-0 data-[starting-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

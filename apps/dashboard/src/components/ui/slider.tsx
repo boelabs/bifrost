@@ -39,7 +39,7 @@ function Control({
 		<BaseSlider.Control
 			{...props}
 			className={mergeClassName(
-				"flex touch-none items-center select-none data-[orientation=horizontal]:h-6 data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-48 data-[orientation=vertical]:w-6 data-[orientation=vertical]:flex-col",
+				"flex touch-none select-none items-center data-[orientation=horizontal]:h-6 data-[orientation=vertical]:h-48 data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-6 data-[orientation=vertical]:flex-col",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -90,7 +90,7 @@ function Thumb({
 		<BaseSlider.Thumb
 			{...props}
 			className={mergeClassName(
-				`${focusRing} has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-focus has-[input:focus-visible]:ring-offset-2 has-[input:focus-visible]:ring-offset-surface block size-5 rounded-full border-2 border-primary bg-surface shadow-sm`,
+				`${focusRing} block size-5 rounded-full border-2 border-primary bg-surface shadow-sm has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-focus has-[input:focus-visible]:ring-offset-2 has-[input:focus-visible]:ring-offset-surface`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -110,7 +110,7 @@ function Value({ className, ...props }: BaseSlider.Value.Props) {
 		<BaseSlider.Value
 			{...props}
 			className={mergeClassName(
-				"text-sm tabular-nums text-fg-muted",
+				"text-fg-muted text-sm tabular-nums",
 				className,
 			)}
 		/>

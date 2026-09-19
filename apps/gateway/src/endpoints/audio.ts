@@ -80,7 +80,9 @@ async function handleTranscription(
 		error?: GatewayError | null,
 		downstream?: DownstreamWriteObservation,
 	): Promise<void> => {
-		if (!routing || finished) return;
+		if (!routing || finished) {
+			return;
+		}
 		finished = true;
 		await routing.finish(
 			usage ?? fallbackUsage,
@@ -116,8 +118,9 @@ async function handleTranscription(
 			(candidate, ctx) => executeTranscription(candidate.adapter, req, ctx),
 		);
 		log.applyRouting(routing);
-		if (routing.value.kind === "json")
+		if (routing.value.kind === "json") {
 			fallbackUsage = transcriptionUsageToCore(routing.value.response.usage);
+		}
 		const meta = routing.candidate.meta;
 		const metadata: Record<string, unknown> = {
 			...candidateMetadata(routing.candidate),
@@ -179,8 +182,9 @@ async function handleTranscription(
 						firstAt = Date.now();
 						log.upstreamTtftMs = firstAt - streamRouting.upstreamStartedAt;
 					}
-					if (transformed.kind === "done" && transformed.usage)
+					if (transformed.kind === "done" && transformed.usage) {
 						usage = transformed.usage;
+					}
 					await writeSSE(
 						stream,
 						{
@@ -203,7 +207,7 @@ async function handleTranscription(
 					req.model,
 					streamError,
 				);
-				if (streamError.code !== "downstream_backpressure")
+				if (streamError.code !== "downstream_backpressure") {
 					await writeSSE(
 						stream,
 						{
@@ -211,6 +215,7 @@ async function handleTranscription(
 						},
 						downstream,
 					);
+				}
 			} finally {
 				const core = transcriptionUsageToCore(usage);
 				const cost = computeUsageCost(streamRouting.candidate.meta, core);
@@ -233,7 +238,9 @@ async function handleTranscription(
 		log.applyFailedAttempts(ge.attempts);
 		await finish(null, ge);
 		await notifyExtensionError(c, "audio.transcriptions", log.publicModel, ge);
-		if (!cleanupDeferred) await cleanup();
+		if (!cleanupDeferred) {
+			await cleanup();
+		}
 		log.writeError(ge);
 		throw ge;
 	}

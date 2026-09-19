@@ -17,10 +17,14 @@ export function useAutoRefresh(
 	intervalMs = 30_000,
 ): void {
 	useEffect(() => {
-		if (!enabled) return;
+		if (!enabled) {
+			return;
+		}
 		const id = setInterval(() => {
 			// A hidden tab refreshing every 30s is cost with nobody watching it.
-			if (document.hidden) return;
+			if (document.hidden) {
+				return;
+			}
 			refresh();
 		}, intervalMs);
 		return () => clearInterval(id);

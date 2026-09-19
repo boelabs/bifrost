@@ -57,15 +57,17 @@ export function Playground({ models }: { models: PlaygroundModel[] }) {
 			!choice.model.endpoints.includes(endpoint)
 		) {
 			const [first] = choice.model.endpoints;
-			if (first) setEndpoint(first);
+			if (first) {
+				setEndpoint(first);
+			}
 		}
 	}
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">
 			<PageHeader
-				title="Playground"
 				description="Try your models. Conversations stay in this session."
+				title="Playground"
 			/>
 			{selected && selection ? (
 				// The workspace belongs to the capability: moving to another one starts its own, which
@@ -107,22 +109,22 @@ export function Playground({ models }: { models: PlaygroundModel[] }) {
 					/>
 				) : (
 					<TextWorkspace
-						key="text"
-						model={selected}
-						models={models}
 						endpoint={
 							selected.endpoints.includes(endpoint)
 								? endpoint
 								: (selected.endpoints[0] ?? endpoint)
 						}
-						onSelect={select}
+						key="text"
+						model={selected}
+						models={models}
 						onEndpoint={setEndpoint}
+						onSelect={select}
 					/>
 				)
 			) : (
 				<EmptyState
-					title="No models available"
 					description="A model appears here when an enabled deployment exposes an operation this playground can run, through a compatible contract."
+					title="No models available"
 				/>
 			)}
 		</div>

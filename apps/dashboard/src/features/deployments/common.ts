@@ -49,10 +49,16 @@ export function isKnownUpstreamModel(
 	upstreamModel: string,
 ): boolean {
 	const id = upstreamModel.trim();
-	if (!id) return false;
-	if (models.some((model) => model.id === id)) return true;
+	if (!id) {
+		return false;
+	}
+	if (models.some((model) => model.id === id)) {
+		return true;
+	}
 	return models.some((model) => {
-		if (!id.startsWith(`${model.id}-`)) return false;
+		if (!id.startsWith(`${model.id}-`)) {
+			return false;
+		}
 		const suffix = id.slice(model.id.length + 1);
 		return /^\d{4}-\d{2}-\d{2}$/.test(suffix) || /^\d{2}-\d{4}$/.test(suffix);
 	});
@@ -77,8 +83,11 @@ export function groupByPublicModel(
 	const groups = new Map<string, Deployment[]>();
 	for (const deployment of deployments) {
 		const bucket = groups.get(deployment.publicModel);
-		if (bucket) bucket.push(deployment);
-		else groups.set(deployment.publicModel, [deployment]);
+		if (bucket) {
+			bucket.push(deployment);
+		} else {
+			groups.set(deployment.publicModel, [deployment]);
+		}
 	}
 	return [...groups.entries()]
 		.map(([publicModel, rows]) => ({

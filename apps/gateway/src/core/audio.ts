@@ -98,7 +98,9 @@ export interface TranscriptionProfile {
 export function transcriptionUsageToCore(
 	u: TranscriptionUsage | undefined,
 ): Usage | null {
-	if (!u || u.totalTokens === undefined) return null;
+	if (!u || u.totalTokens === undefined) {
+		return null;
+	}
 	return {
 		promptTokens: u.inputTokens ?? 0,
 		completionTokens: u.outputTokens ?? 0,

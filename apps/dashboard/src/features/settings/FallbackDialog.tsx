@@ -54,7 +54,9 @@ export function FallbackDialog({
 
 	async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
-		if (!reason) return;
+		if (!reason) {
+			return;
+		}
 		if (chain.length === 0) {
 			setError("A chain needs at least one fallback model.");
 			return;
@@ -88,7 +90,7 @@ export function FallbackDialog({
 
 	return (
 		<Modal isOpen={reason !== null} onOpenChange={(open) => !open && close()}>
-			<Dialog layout="sectioned" aria-label="Fallback chain">
+			<Dialog aria-label="Fallback chain" layout="sectioned">
 				<DialogHeader>
 					<h2 className="font-semibold text-fg text-lg">
 						{kind?.title ?? "Fallback chain"}
@@ -99,34 +101,34 @@ export function FallbackDialog({
 					</p>
 				</DialogHeader>
 
-				<Form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
+				<Form className="flex min-h-0 flex-1 flex-col" onSubmit={onSubmit}>
 					<DialogBody>
 						<ModelInput
-							label="Primary public model"
-							description="The model whose failures trigger this chain. It must already have at least one deployment."
-							value={primaryModel}
-							onChange={setPrimaryModel}
-							models={models}
-							required
 							autoFocus
+							description="The model whose failures trigger this chain. It must already have at least one deployment."
+							label="Primary public model"
+							models={models}
+							onChange={setPrimaryModel}
+							required
+							value={primaryModel}
 						/>
 						<ModelListInput
-							label="Fallback chain"
 							description="Tried in the order shown, left to right. One to five models, each sharing an executable operation with the primary."
-							value={chain}
-							onChange={setChain}
-							models={models.filter((model) => model !== primaryModel.trim())}
-							placeholder="Pick or type a model"
 							emptyHint="Press Enter to add this model to the chain."
+							label="Fallback chain"
+							models={models.filter((model) => model !== primaryModel.trim())}
+							onChange={setChain}
+							placeholder="Pick or type a model"
+							value={chain}
 						/>
 
 						{error ? <ErrorNote>{error}</ErrorNote> : null}
 					</DialogBody>
 					<DialogFooter>
-						<Button type="button" variant="secondary" onClick={close}>
+						<Button onClick={close} type="button" variant="secondary">
 							Cancel
 						</Button>
-						<Button type="submit" disabled={pending}>
+						<Button disabled={pending} type="submit">
 							{pending ? "Saving…" : "Save chain"}
 						</Button>
 					</DialogFooter>

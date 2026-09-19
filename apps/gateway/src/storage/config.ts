@@ -38,16 +38,22 @@ export function parseObjectStorage(
 	raw: string | undefined,
 ): ObjectStorageConfig {
 	const value = raw?.trim();
-	if (!value) return { backend: "disabled" };
+	if (!value) {
+		return { backend: "disabled" };
+	}
 
 	// Parsed by hand rather than through `URL`, which rewrites a relative path into an absolute one.
 	if (value.startsWith("file:")) {
 		const root = value.slice("file:".length).replace(/^\/\//, "");
-		if (!root) invalid("file: needs a path");
+		if (!root) {
+			invalid("file: needs a path");
+		}
 		return { backend: "local", root };
 	}
 
-	if (!value.startsWith("s3://")) invalid(`unknown scheme in "${value}"`);
+	if (!value.startsWith("s3://")) {
+		invalid(`unknown scheme in "${value}"`);
+	}
 	let url: URL;
 	try {
 		url = new URL(value);
@@ -55,8 +61,12 @@ export function parseObjectStorage(
 		return invalid(`could not parse "${value}"`);
 	}
 	const bucket = decodeURIComponent(url.pathname.replace(/^\//, ""));
-	if (!bucket) invalid("no bucket in the path");
-	if (!url.username || !url.password) invalid("no credentials before the host");
+	if (!bucket) {
+		invalid("no bucket in the path");
+	}
+	if (!(url.username && url.password)) {
+		invalid("no credentials before the host");
+	}
 
 	return {
 		backend: "s3",

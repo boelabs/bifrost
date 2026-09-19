@@ -92,7 +92,7 @@ export function TabPanel({
 		<BaseTabs.Panel
 			{...props}
 			className={mergeClassName(
-				`min-w-0 flex-1 rounded-[var(--ui-radius-surface)] text-sm text-fg ${focusRing}`,
+				`min-w-0 flex-1 rounded-[var(--ui-radius-surface)] text-fg text-sm ${focusRing}`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

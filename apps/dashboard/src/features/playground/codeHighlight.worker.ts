@@ -10,8 +10,11 @@ self.onmessage = (
 	work = work.then(async () => {
 		try {
 			const engine = await highlighter;
-			if ("release" in request) engine.release(request.release);
-			else self.postMessage(await engine.highlight(request));
+			if ("release" in request) {
+				engine.release(request.release);
+			} else {
+				self.postMessage(await engine.highlight(request));
+			}
 		} catch {
 			if ("id" in request) {
 				// A failed grammar must leave the current source visible.

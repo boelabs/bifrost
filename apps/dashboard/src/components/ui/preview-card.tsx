@@ -76,8 +76,8 @@ export function PreviewCardPositioner({
 		<BasePreviewCard.Positioner
 			positionMethod={positionMethod}
 			{...props}
-			sideOffset={sideOffset}
 			className={mergeClassName("z-50 outline-none", className)}
+			sideOffset={sideOffset}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);

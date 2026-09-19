@@ -4,15 +4,22 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 test("management paths are exactly /admin and /auth", () => {
-	for (const path of ["/admin", "/admin/keys", "/auth/session", "/auth/config"])
+	for (const path of [
+		"/admin",
+		"/admin/keys",
+		"/auth/session",
+		"/auth/config",
+	]) {
 		assert.equal(isManagementPath(path), true, path);
+	}
 	for (const path of [
 		"/v1/chat/completions",
 		"/v1/models",
 		"/health/ready",
 		"/dashboard/anything",
-	])
+	]) {
 		assert.equal(isManagementPath(path), false, path);
+	}
 });
 
 test("a configuration error is published with its real reason", () => {

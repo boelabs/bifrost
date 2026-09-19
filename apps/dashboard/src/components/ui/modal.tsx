@@ -48,7 +48,6 @@ export function Modal<Payload = unknown>({
 	return (
 		<BaseDialog.Root
 			{...props}
-			open={open ?? isOpen}
 			disablePointerDismissal={disablePointerDismissal ?? !isDismissable}
 			onOpenChange={(nextOpen, details) => {
 				if (isKeyboardDismissDisabled && details.reason === "escape-key") {
@@ -57,6 +56,7 @@ export function Modal<Payload = unknown>({
 				}
 				onOpenChange?.(nextOpen, details);
 			}}
+			open={open ?? isOpen}
 		>
 			<ModalAppearanceContext
 				value={{
@@ -89,7 +89,6 @@ export function Dialog({
 	return (
 		<DialogPopup
 			{...props}
-			effect={effect === undefined ? (inherited.effect ?? null) : effect}
 			className={(state) => {
 				const parentClassName =
 					typeof inherited.className === "function"
@@ -98,6 +97,7 @@ export function Dialog({
 				const merged = mergeClassName(parentClassName ?? "", className);
 				return typeof merged === "function" ? merged(state) : merged;
 			}}
+			effect={effect === undefined ? (inherited.effect ?? null) : effect}
 			style={(state) => {
 				const parentStyle = mergeStyle(
 					{ borderRadius: inherited.borderRadius, width: inherited.width },

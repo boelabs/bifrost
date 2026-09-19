@@ -60,14 +60,26 @@ function addModalitiesForOperation(
 		textProfile && "modalities" in textProfile
 			? textProfile.modalities
 			: undefined;
-	if (explicit?.input) for (const value of explicit.input) input.add(value);
-	if (explicit?.output) for (const value of explicit.output) output.add(value);
-	if (explicit?.input || explicit?.output) return;
+	if (explicit?.input) {
+		for (const value of explicit.input) {
+			input.add(value);
+		}
+	}
+	if (explicit?.output) {
+		for (const value of explicit.output) {
+			output.add(value);
+		}
+	}
+	if (explicit?.input || explicit?.output) {
+		return;
+	}
 
 	switch (operationId) {
 		case "text.generate":
 			input.add("text");
-			if (meta.capabilities.vision) input.add("image");
+			if (meta.capabilities.vision) {
+				input.add("image");
+			}
 			output.add("text");
 			break;
 		case "image.generate":
@@ -129,17 +141,25 @@ function aggregateModalities(metas: ResolvedModelMetadata[]): {
 function centsPerMillionToUsdPerToken(
 	value: number | undefined,
 ): string | undefined {
-	if (value === undefined) return undefined;
+	if (value === undefined) {
+		return undefined;
+	}
 	const normalized = value / 100_000_000;
-	if (normalized === 0) return "0";
+	if (normalized === 0) {
+		return "0";
+	}
 	return normalized.toFixed(12).replace(/\.?0+$/, "");
 }
 
 function minDefined(values: Array<number | undefined>): number | undefined {
 	let min: number | undefined;
 	for (const value of values) {
-		if (value === undefined) continue;
-		if (min === undefined || value < min) min = value;
+		if (value === undefined) {
+			continue;
+		}
+		if (min === undefined || value < min) {
+			min = value;
+		}
 	}
 	return min;
 }
@@ -160,15 +180,24 @@ function publicPricing(metas: ResolvedModelMetadata[]): Record<string, string> {
 		minDefined(pricing.map((p) => p?.cacheWriteCentsPerMTokens)),
 	);
 	const searchUnitCents = minDefined(pricing.map((p) => p?.searchUnitCents));
-	if (prompt !== undefined) result.prompt = prompt;
-	if (completion !== undefined) result.completion = completion;
-	if (cacheRead !== undefined) result.input_cache_read = cacheRead;
-	if (cacheWrite !== undefined) result.input_cache_write = cacheWrite;
-	if (searchUnitCents !== undefined)
+	if (prompt !== undefined) {
+		result.prompt = prompt;
+	}
+	if (completion !== undefined) {
+		result.completion = completion;
+	}
+	if (cacheRead !== undefined) {
+		result.input_cache_read = cacheRead;
+	}
+	if (cacheWrite !== undefined) {
+		result.input_cache_write = cacheWrite;
+	}
+	if (searchUnitCents !== undefined) {
 		result.search_unit =
 			searchUnitCents === 0
 				? "0"
 				: (searchUnitCents / 100).toFixed(12).replace(/\.?0+$/, "");
+	}
 	return result;
 }
 
@@ -177,7 +206,11 @@ function publicOperations(metas: ResolvedModelMetadata[]): Array<{
 	endpoints: string[];
 }> {
 	const ids = new Set<OperationId>();
-	for (const meta of metas) for (const id of operationIds(meta)) ids.add(id);
+	for (const meta of metas) {
+		for (const id of operationIds(meta)) {
+			ids.add(id);
+		}
+	}
 	return [...ids].sort().map((id) => ({
 		id,
 		endpoints: operationEndpoints(id),
@@ -189,7 +222,9 @@ function aggregateSupportedParameters(
 ): string[] {
 	const names = new Set<string>();
 	for (const meta of metas) {
-		for (const parameter of supportedParameterNames(meta)) names.add(parameter);
+		for (const parameter of supportedParameterNames(meta)) {
+			names.add(parameter);
+		}
 	}
 	return [...names].sort();
 }
@@ -243,7 +278,7 @@ function deploymentPricing(
 				reasoning: false,
 				structuredOutputs: false,
 			},
-			...(pricing !== undefined ? { pricing } : {}),
+			...(pricing === undefined ? {} : { pricing }),
 		},
 	]);
 }
@@ -269,7 +304,9 @@ async function deploymentObjects(group: PublicModelGroup): Promise<object[]> {
 	]);
 	return group.rows.map((row, index) => {
 		const meta = group.metas[index];
-		if (!meta) throw new Error(`Missing metadata for deployment ${row.id}`);
+		if (!meta) {
+			throw new Error(`Missing metadata for deployment ${row.id}`);
+		}
 		const m = metrics.get(row.id);
 		const circuit = circuits[index] ?? {
 			status: "available" as const,
@@ -323,7 +360,9 @@ function wildcardModelId(c: Context<AppEnv>): {
 	const raw = c.req.path.startsWith(prefix)
 		? c.req.path.slice(prefix.length)
 		: "";
-	if (!raw) throw notFound("");
+	if (!raw) {
+		throw notFound("");
+	}
 	const suffix = "/deployments";
 	const deployments = raw.endsWith(suffix);
 	const model = deployments ? raw.slice(0, -suffix.length) : raw;
@@ -349,12 +388,19 @@ export async function modelsWildcardHandler(
 	c: Context<AppEnv>,
 ): Promise<Response> {
 	const { model, deployments } = wildcardModelId(c);
-	if (deployments) await authMiddleware()(c, async () => {});
-	else enforcePublicModelRateLimit(c);
+	if (deployments) {
+		await authMiddleware()(c, async () => {});
+	} else {
+		enforcePublicModelRateLimit(c);
+	}
 	const groups = await loadPublicModelGroups();
 	const group = groups.get(model);
-	if (!group) throw notFound(model);
-	if (!deployments) return c.json(toModelObject(group));
+	if (!group) {
+		throw notFound(model);
+	}
+	if (!deployments) {
+		return c.json(toModelObject(group));
+	}
 	return c.json({
 		object: "list",
 		data: await deploymentObjects(group),

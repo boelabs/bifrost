@@ -380,16 +380,21 @@ export type OpenAIChatChunk = z.infer<typeof chatChunkSchema>;
  */
 
 function extraContent(value: unknown): Record<string, unknown> | undefined {
-	if (value === null || typeof value !== "object" || Array.isArray(value))
+	if (value === null || typeof value !== "object" || Array.isArray(value)) {
 		return undefined;
+	}
 	return value as Record<string, unknown>;
 }
 
 function mapContent(
 	content: z.infer<typeof messageContent> | null | undefined,
 ): string | CanonicalContentPart[] | null {
-	if (content === null || content === undefined) return null;
-	if (typeof content === "string") return content;
+	if (content === null || content === undefined) {
+		return null;
+	}
+	if (typeof content === "string") {
+		return content;
+	}
 	return content.map(
 		(part): CanonicalContentPart =>
 			readCacheBreakpoint(part, mapContentPart(part)),
@@ -405,13 +410,13 @@ function mapContentPart(
 		case "refusal":
 			return { type: "text", text: part.refusal };
 		case "image_url":
-			return part.image_url.detail !== undefined
-				? {
+			return part.image_url.detail === undefined
+				? { type: "image", url: part.image_url.url }
+				: {
 						type: "image",
 						url: part.image_url.url,
 						detail: part.image_url.detail,
-					}
-				: { type: "image", url: part.image_url.url };
+					};
 		case "input_audio":
 			return {
 				type: "audio",
@@ -420,13 +425,19 @@ function mapContentPart(
 			};
 		case "file": {
 			const f: CanonicalContentPart = { type: "file" };
-			if (part.file.file_id !== undefined) f.fileId = part.file.file_id;
-			if (part.file.file_data !== undefined) {
-				if (/^https:\/\//i.test(part.file.file_data))
-					f.fileUrl = part.file.file_data;
-				else f.fileData = part.file.file_data;
+			if (part.file.file_id !== undefined) {
+				f.fileId = part.file.file_id;
 			}
-			if (part.file.filename !== undefined) f.filename = part.file.filename;
+			if (part.file.file_data !== undefined) {
+				if (/^https:\/\//i.test(part.file.file_data)) {
+					f.fileUrl = part.file.file_data;
+				} else {
+					f.fileData = part.file.file_data;
+				}
+			}
+			if (part.file.filename !== undefined) {
+				f.filename = part.file.filename;
+			}
 			return f;
 		}
 		default:
@@ -443,7 +454,9 @@ function mapMessage(m: z.infer<typeof messageSchema>): CanonicalMessage {
 		role: m.role,
 		content: mapContent(m.content),
 	};
-	if (m.name !== undefined) msg.name = m.name;
+	if (m.name !== undefined) {
+		msg.name = m.name;
+	}
 	if (m.tool_calls !== undefined) {
 		msg.toolCalls = m.tool_calls.map((tc) => {
 			const raw = tc as unknown as Record<string, unknown>;
@@ -457,22 +470,24 @@ function mapMessage(m: z.infer<typeof messageSchema>): CanonicalMessage {
 				id: decoded.id,
 				name: tc.function.name,
 				arguments: tc.function.arguments,
-				...(extra !== undefined ? { extraContent: extra } : {}),
+				...(extra === undefined ? {} : { extraContent: extra }),
 			};
 		});
 	}
-	if (m.tool_call_id !== undefined)
+	if (m.tool_call_id !== undefined) {
 		msg.toolCallId = stripThoughtSignatureId(m.tool_call_id);
+	}
 	if (m.role === "assistant") {
 		const raw = m as unknown as Record<string, unknown>;
 		const providerFields = extraContent(raw.provider_specific_fields);
 		const reasoning = openaiReasoningFromProviderFields(providerFields);
 		const mergedProviderFields = mergeProviderFields(
 			providerFields,
-			reasoning !== undefined ? { openai: { reasoning } } : undefined,
+			reasoning === undefined ? undefined : { openai: { reasoning } },
 		);
-		if (mergedProviderFields !== undefined)
+		if (mergedProviderFields !== undefined) {
 			msg.providerFields = mergedProviderFields;
+		}
 	}
 	return msg;
 }
@@ -480,8 +495,12 @@ function mapMessage(m: z.infer<typeof messageSchema>): CanonicalMessage {
 function mapToolChoice(
 	tc: z.infer<typeof toolChoiceSchema>,
 ): CanonicalToolChoice {
-	if (typeof tc === "string") return tc;
-	if (tc.type === "function") return { name: tc.function.name };
+	if (typeof tc === "string") {
+		return tc;
+	}
+	if (tc.type === "function") {
+		return { name: tc.function.name };
+	}
 	return {
 		allowedTools: tc.allowed_tools.tools.map((tool) => tool.function.name),
 		mode: tc.allowed_tools.mode,
@@ -497,9 +516,12 @@ function mapResponseFormat(
 			name: rf.json_schema.name,
 			schema: rf.json_schema.schema ?? {},
 		};
-		if (rf.json_schema.description !== undefined)
+		if (rf.json_schema.description !== undefined) {
 			out.description = rf.json_schema.description;
-		if (rf.json_schema.strict != null) out.strict = rf.json_schema.strict;
+		}
+		if (rf.json_schema.strict != null) {
+			out.strict = rf.json_schema.strict;
+		}
 		return out;
 	}
 	return { type: rf.type };
@@ -518,50 +540,68 @@ export function toCanonicalChatRequest(
 		stream: req.stream,
 	};
 	const fileParser = fileParserOptionsFromPlugins(req.plugins);
-	if (fileParser !== undefined) u.fileParser = fileParser;
+	if (fileParser !== undefined) {
+		u.fileParser = fileParser;
+	}
 	const maxTokens = req.max_completion_tokens ?? req.max_tokens;
-	if (maxTokens !== undefined) u.maxTokens = maxTokens;
-	if (req.stream_options?.include_usage !== undefined)
+	if (maxTokens !== undefined) {
+		u.maxTokens = maxTokens;
+	}
+	if (req.stream_options?.include_usage !== undefined) {
 		u.includeUsage = req.stream_options.include_usage;
-	if (req.temperature !== undefined) u.temperature = req.temperature;
-	if (req.top_p !== undefined) u.topP = req.top_p;
-	if (req.n !== undefined) u.n = req.n;
-	if (req.stop != null)
+	}
+	if (req.temperature !== undefined) {
+		u.temperature = req.temperature;
+	}
+	if (req.top_p !== undefined) {
+		u.topP = req.top_p;
+	}
+	if (req.n !== undefined) {
+		u.n = req.n;
+	}
+	if (req.stop != null) {
 		u.stop = typeof req.stop === "string" ? [req.stop] : req.stop;
-	if (req.presence_penalty !== undefined)
+	}
+	if (req.presence_penalty !== undefined) {
 		u.presencePenalty = req.presence_penalty;
-	if (req.frequency_penalty !== undefined)
+	}
+	if (req.frequency_penalty !== undefined) {
 		u.frequencyPenalty = req.frequency_penalty;
-	if (req.seed !== undefined) u.seed = req.seed;
-	if (req.user !== undefined) u.user = req.user;
+	}
+	if (req.seed !== undefined) {
+		u.seed = req.seed;
+	}
+	if (req.user !== undefined) {
+		u.user = req.user;
+	}
 	const chatTransport = {
-		...(req.audio !== undefined ? { audio: req.audio } : {}),
-		...(req.logprobs !== undefined ? { logprobs: req.logprobs } : {}),
-		...(req.top_logprobs !== undefined
-			? { topLogprobs: req.top_logprobs }
-			: {}),
-		...(req.logit_bias !== undefined ? { logitBias: req.logit_bias } : {}),
-		...(req.metadata !== undefined ? { metadata: req.metadata } : {}),
-		...(req.modalities !== undefined ? { modalities: req.modalities } : {}),
-		...(req.prediction !== undefined ? { prediction: req.prediction } : {}),
-		...(req.service_tier !== undefined
-			? { serviceTier: req.service_tier }
-			: {}),
-		...(req.safety_identifier !== undefined
-			? { safetyIdentifier: req.safety_identifier }
-			: {}),
-		...(req.store !== undefined ? { store: req.store } : {}),
-		...(req.verbosity !== undefined ? { verbosity: req.verbosity } : {}),
-		...(req.web_search_options !== undefined
-			? { webSearchOptions: req.web_search_options }
-			: {}),
-		...(req.stream_options?.include_obfuscation !== undefined
-			? {
+		...(req.audio === undefined ? {} : { audio: req.audio }),
+		...(req.logprobs === undefined ? {} : { logprobs: req.logprobs }),
+		...(req.top_logprobs === undefined
+			? {}
+			: { topLogprobs: req.top_logprobs }),
+		...(req.logit_bias === undefined ? {} : { logitBias: req.logit_bias }),
+		...(req.metadata === undefined ? {} : { metadata: req.metadata }),
+		...(req.modalities === undefined ? {} : { modalities: req.modalities }),
+		...(req.prediction === undefined ? {} : { prediction: req.prediction }),
+		...(req.service_tier === undefined
+			? {}
+			: { serviceTier: req.service_tier }),
+		...(req.safety_identifier === undefined
+			? {}
+			: { safetyIdentifier: req.safety_identifier }),
+		...(req.store === undefined ? {} : { store: req.store }),
+		...(req.verbosity === undefined ? {} : { verbosity: req.verbosity }),
+		...(req.web_search_options === undefined
+			? {}
+			: { webSearchOptions: req.web_search_options }),
+		...(req.stream_options?.include_obfuscation === undefined
+			? {}
+			: {
 					streamOptions: {
 						include_obfuscation: req.stream_options.include_obfuscation,
 					},
-				}
-			: {}),
+				}),
 	};
 	if (Object.keys(chatTransport).length > 0) {
 		u.chatTransport = chatTransport;
@@ -580,9 +620,12 @@ export function toCanonicalChatRequest(
 		req.verbosity !== undefined ||
 		req.web_search_options !== undefined ||
 		req.stream_options?.include_obfuscation === true;
-	if (requiresNativeChatTransport) u.requiresNativeWire = true;
-	if (req.parallel_tool_calls !== undefined)
+	if (requiresNativeChatTransport) {
+		u.requiresNativeWire = true;
+	}
+	if (req.parallel_tool_calls !== undefined) {
 		u.parallelToolCalls = req.parallel_tool_calls;
+	}
 	const reasoningEffort = req.reasoning?.effort ?? req.reasoning_effort;
 	if (
 		req.reasoning?.effort !== undefined &&
@@ -602,12 +645,13 @@ export function toCanonicalChatRequest(
 	);
 	if (reasoningEffort !== undefined || reasoningSummary !== undefined) {
 		u.reasoning = {
-			...(reasoningEffort !== undefined ? { effort: reasoningEffort } : {}),
-			...(reasoningSummary !== undefined ? { summary: reasoningSummary } : {}),
+			...(reasoningEffort === undefined ? {} : { effort: reasoningEffort }),
+			...(reasoningSummary === undefined ? {} : { summary: reasoningSummary }),
 		};
 	}
-	if (req.prompt_cache_key !== undefined)
+	if (req.prompt_cache_key !== undefined) {
 		u.promptCacheKey = req.prompt_cache_key;
+	}
 	readPromptCachePolicy(req, u);
 	if (req.extra_body !== undefined) {
 		assertNoManagedExtraBodyKeys(req.extra_body, CHAT_EXTRA_BODY_MANAGED_KEYS);
@@ -618,18 +662,24 @@ export function toCanonicalChatRequest(
 			const tool: NonNullable<CanonicalChatRequest["tools"]>[number] = {
 				name: t.function.name,
 			};
-			if (t.function.description !== undefined)
+			if (t.function.description !== undefined) {
 				tool.description = t.function.description;
-			if (t.function.parameters !== undefined)
+			}
+			if (t.function.parameters !== undefined) {
 				tool.parameters = t.function.parameters;
-			if (t.function.strict != null) tool.strict = t.function.strict;
+			}
+			if (t.function.strict != null) {
+				tool.strict = t.function.strict;
+			}
 			return tool;
 		});
 	}
-	if (req.tool_choice !== undefined)
+	if (req.tool_choice !== undefined) {
 		u.toolChoice = mapToolChoice(req.tool_choice);
-	if (req.response_format !== undefined)
+	}
+	if (req.response_format !== undefined) {
 		u.responseFormat = mapResponseFormat(req.response_format);
+	}
 	return u;
 }
 
@@ -645,20 +695,20 @@ function toOpenAIUsage(u: Usage): z.infer<typeof usageSchema> {
 		u.promptAudioTokens !== undefined
 	) {
 		out.prompt_tokens_details = {
-			...(u.cacheReadTokens !== undefined
-				? { cached_tokens: u.cacheReadTokens }
-				: {}),
-			...(u.cacheWriteTokens !== undefined
-				? {
+			...(u.cacheReadTokens === undefined
+				? {}
+				: { cached_tokens: u.cacheReadTokens }),
+			...(u.cacheWriteTokens === undefined
+				? {}
+				: {
 						cache_write_tokens: u.cacheWriteTokens,
-						...(u.cacheWriteTokensByTtl !== undefined
-							? { cache_write_tokens_by_ttl: u.cacheWriteTokensByTtl }
-							: {}),
-					}
-				: {}),
-			...(u.promptAudioTokens !== undefined
-				? { audio_tokens: u.promptAudioTokens }
-				: {}),
+						...(u.cacheWriteTokensByTtl === undefined
+							? {}
+							: { cache_write_tokens_by_ttl: u.cacheWriteTokensByTtl }),
+					}),
+			...(u.promptAudioTokens === undefined
+				? {}
+				: { audio_tokens: u.promptAudioTokens }),
 		};
 	}
 	if (
@@ -668,18 +718,18 @@ function toOpenAIUsage(u: Usage): z.infer<typeof usageSchema> {
 		u.rejectedPredictionTokens !== undefined
 	) {
 		out.completion_tokens_details = {
-			...(u.reasoningTokens !== undefined
-				? { reasoning_tokens: u.reasoningTokens }
-				: {}),
-			...(u.completionAudioTokens !== undefined
-				? { audio_tokens: u.completionAudioTokens }
-				: {}),
-			...(u.acceptedPredictionTokens !== undefined
-				? { accepted_prediction_tokens: u.acceptedPredictionTokens }
-				: {}),
-			...(u.rejectedPredictionTokens !== undefined
-				? { rejected_prediction_tokens: u.rejectedPredictionTokens }
-				: {}),
+			...(u.reasoningTokens === undefined
+				? {}
+				: { reasoning_tokens: u.reasoningTokens }),
+			...(u.completionAudioTokens === undefined
+				? {}
+				: { audio_tokens: u.completionAudioTokens }),
+			...(u.acceptedPredictionTokens === undefined
+				? {}
+				: { accepted_prediction_tokens: u.acceptedPredictionTokens }),
+			...(u.rejectedPredictionTokens === undefined
+				? {}
+				: { rejected_prediction_tokens: u.rejectedPredictionTokens }),
 		};
 	}
 	return out;
@@ -712,12 +762,12 @@ function renderResponseToolCall(tc: {
 		id: encodeThoughtSignatureId(tc.id, tc.extraContent),
 		type: "function" as const,
 		function: { name: tc.name, arguments: tc.arguments },
-		...(tc.extraContent !== undefined
-			? { extra_content: tc.extraContent }
-			: {}),
-		...(providerSpecificFields !== undefined
-			? { provider_specific_fields: providerSpecificFields }
-			: {}),
+		...(tc.extraContent === undefined
+			? {}
+			: { extra_content: tc.extraContent }),
+		...(providerSpecificFields === undefined
+			? {}
+			: { provider_specific_fields: providerSpecificFields }),
 	};
 }
 
@@ -743,20 +793,20 @@ function renderChunkToolCall(tc: {
 	// would emit a clean id (accepted limitation; no known upstream does).
 	return {
 		index: tc.index,
-		...(tc.id !== undefined
-			? { id: encodeThoughtSignatureId(tc.id, tc.extraContent) }
-			: {}),
+		...(tc.id === undefined
+			? {}
+			: { id: encodeThoughtSignatureId(tc.id, tc.extraContent) }),
 		type: "function" as const,
 		function: {
-			...(tc.name !== undefined ? { name: tc.name } : {}),
-			...(tc.arguments !== undefined ? { arguments: tc.arguments } : {}),
+			...(tc.name === undefined ? {} : { name: tc.name }),
+			...(tc.arguments === undefined ? {} : { arguments: tc.arguments }),
 		},
-		...(tc.extraContent !== undefined
-			? { extra_content: tc.extraContent }
-			: {}),
-		...(providerSpecificFields !== undefined
-			? { provider_specific_fields: providerSpecificFields }
-			: {}),
+		...(tc.extraContent === undefined
+			? {}
+			: { extra_content: tc.extraContent }),
+		...(providerSpecificFields === undefined
+			? {}
+			: { provider_specific_fields: providerSpecificFields }),
 	};
 }
 
@@ -787,13 +837,13 @@ export function toOpenAIChatResponse(
 					content: c.message.content,
 					// OpenAI always includes `refusal` (null when the model did not refuse).
 					refusal: c.message.refusal ?? null,
-					...(c.message.audio !== undefined ? { audio: c.message.audio } : {}),
-					...(c.message.annotations !== undefined
-						? { annotations: c.message.annotations }
-						: {}),
-					...(c.message.reasoning !== undefined
-						? { reasoning: c.message.reasoning }
-						: {}),
+					...(c.message.audio === undefined ? {} : { audio: c.message.audio }),
+					...(c.message.annotations === undefined
+						? {}
+						: { annotations: c.message.annotations }),
+					...(c.message.reasoning === undefined
+						? {}
+						: { reasoning: c.message.reasoning }),
 					...(c.message.toolCalls
 						? {
 								tool_calls: c.message.toolCalls.map((tc) =>
@@ -801,16 +851,16 @@ export function toOpenAIChatResponse(
 										id: tc.id,
 										name: tc.name,
 										arguments: tc.arguments,
-										...(tc.extraContent !== undefined
-											? { extraContent: tc.extraContent }
-											: {}),
+										...(tc.extraContent === undefined
+											? {}
+											: { extraContent: tc.extraContent }),
 									}),
 								),
 							}
 						: {}),
-					...(providerSpecificFields !== undefined
-						? { provider_specific_fields: providerSpecificFields }
-						: {}),
+					...(providerSpecificFields === undefined
+						? {}
+						: { provider_specific_fields: providerSpecificFields }),
 				},
 			};
 		}),
@@ -854,33 +904,34 @@ export function toOpenAIChatChunk(
 				if (reasoning && reasoningParts) {
 					const key = `${part.id}:${part.index}`;
 					const previous = reasoningParts.get(c.index);
-					if (previous !== undefined && previous !== key)
+					if (previous !== undefined && previous !== key) {
 						reasoning = `\n\n${reasoning}`;
+					}
 					reasoningParts.set(c.index, key);
 				}
 			}
 			return {
 				index: c.index,
 				finish_reason: c.finishReason,
-				...(c.logprobs !== undefined ? { logprobs: c.logprobs } : {}),
+				...(c.logprobs === undefined ? {} : { logprobs: c.logprobs }),
 				delta: {
-					...(c.delta.role !== undefined ? { role: c.delta.role } : {}),
+					...(c.delta.role === undefined ? {} : { role: c.delta.role }),
 					// OpenAI: the first delta (with role) carries content:"" and refusal:null.
-					...(c.delta.content !== undefined
-						? { content: c.delta.content }
-						: c.delta.role !== undefined
-							? { content: "" }
-							: {}),
-					...(reasoning !== undefined ? { reasoning } : {}),
-					...(c.delta.refusal !== undefined
-						? { refusal: c.delta.refusal }
-						: c.delta.role !== undefined
-							? { refusal: null }
-							: {}),
-					...(c.delta.audio !== undefined ? { audio: c.delta.audio } : {}),
-					...(c.delta.annotations !== undefined
-						? { annotations: c.delta.annotations }
-						: {}),
+					...(c.delta.content === undefined
+						? c.delta.role === undefined
+							? {}
+							: { content: "" }
+						: { content: c.delta.content }),
+					...(reasoning === undefined ? {} : { reasoning }),
+					...(c.delta.refusal === undefined
+						? c.delta.role === undefined
+							? {}
+							: { refusal: null }
+						: { refusal: c.delta.refusal }),
+					...(c.delta.audio === undefined ? {} : { audio: c.delta.audio }),
+					...(c.delta.annotations === undefined
+						? {}
+						: { annotations: c.delta.annotations }),
 					...(c.delta.toolCalls
 						? {
 								tool_calls: c.delta.toolCalls.map((tc) =>
@@ -894,14 +945,14 @@ export function toOpenAIChatChunk(
 								),
 							}
 						: {}),
-					...(providerSpecificFields !== undefined
-						? { provider_specific_fields: providerSpecificFields }
-						: {}),
+					...(providerSpecificFields === undefined
+						? {}
+						: { provider_specific_fields: providerSpecificFields }),
 				},
 			};
 		}),
-		...(chunk.usage !== undefined
-			? { usage: chunk.usage ? toOpenAIUsage(chunk.usage) : null }
-			: {}),
+		...(chunk.usage === undefined
+			? {}
+			: { usage: chunk.usage ? toOpenAIUsage(chunk.usage) : null }),
 	};
 }

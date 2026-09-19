@@ -69,8 +69,9 @@ function fail(path: string, message: string): never {
 }
 
 function assertString(value: unknown, path: string): asserts value is string {
-	if (typeof value !== "string" || value.length === 0)
+	if (typeof value !== "string" || value.length === 0) {
 		fail(path, "must be a non-empty string");
+	}
 }
 
 function assertAdapterKey(
@@ -78,40 +79,60 @@ function assertAdapterKey(
 	path: string,
 ): asserts value is string {
 	assertString(value, path);
-	if (!ADAPTER_KEY_PATTERN.test(value)) fail(path, ADAPTER_KEY_RULE);
+	if (!ADAPTER_KEY_PATTERN.test(value)) {
+		fail(path, ADAPTER_KEY_RULE);
+	}
 }
 
 function assertNumber(value: unknown, path: string): asserts value is number {
-	if (typeof value !== "number" || !Number.isFinite(value))
+	if (typeof value !== "number" || !Number.isFinite(value)) {
 		fail(path, "must be a finite number");
+	}
 }
 
 function assertBoolean(value: unknown, path: string): asserts value is boolean {
-	if (typeof value !== "boolean") fail(path, "must be a boolean");
+	if (typeof value !== "boolean") {
+		fail(path, "must be a boolean");
+	}
 }
 
 function assertStringArray(
 	value: unknown,
 	path: string,
 ): asserts value is string[] {
-	if (!Array.isArray(value)) fail(path, "must be an array");
-	for (const [i, item] of value.entries()) assertString(item, `${path}[${i}]`);
+	if (!Array.isArray(value)) {
+		fail(path, "must be an array");
+	}
+	for (const [i, item] of value.entries()) {
+		assertString(item, `${path}[${i}]`);
+	}
 }
 
 function validateCacheWritePrices(value: unknown, path: string): void {
-	if (value === undefined) return;
-	if (!isRecord(value)) fail(path, "must be an object");
+	if (value === undefined) {
+		return;
+	}
+	if (!isRecord(value)) {
+		fail(path, "must be an object");
+	}
 	for (const [ttl, rate] of Object.entries(value)) {
-		if (!/^[1-9][0-9]*$/.test(ttl))
+		if (!/^[1-9][0-9]*$/.test(ttl)) {
 			fail(path, "keys must be positive lifetimes in seconds");
+		}
 		assertNumber(rate, `${path}.${ttl}`);
-		if (rate < 0) fail(`${path}.${ttl}`, "must be nonnegative");
+		if (rate < 0) {
+			fail(`${path}.${ttl}`, "must be nonnegative");
+		}
 	}
 }
 
 function validatePricing(value: unknown, path: string): void {
-	if (value === undefined) return;
-	if (!isRecord(value)) fail(path, "must be an object");
+	if (value === undefined) {
+		return;
+	}
+	if (!isRecord(value)) {
+		fail(path, "must be an object");
+	}
 	for (const key of [
 		"inputCentsPerMTokens",
 		"outputCentsPerMTokens",
@@ -119,16 +140,22 @@ function validatePricing(value: unknown, path: string): void {
 		"cacheWriteCentsPerMTokens",
 		"searchUnitCents",
 	]) {
-		if (value[key] !== undefined) assertNumber(value[key], `${path}.${key}`);
+		if (value[key] !== undefined) {
+			assertNumber(value[key], `${path}.${key}`);
+		}
 	}
 	validateCacheWritePrices(
 		value.cacheWriteCentsPerMTokensByTtl,
 		`${path}.cacheWriteCentsPerMTokensByTtl`,
 	);
 	if (value.tiers !== undefined) {
-		if (!Array.isArray(value.tiers)) fail(`${path}.tiers`, "must be an array");
+		if (!Array.isArray(value.tiers)) {
+			fail(`${path}.tiers`, "must be an array");
+		}
 		for (const [i, tier] of value.tiers.entries()) {
-			if (!isRecord(tier)) fail(`${path}.tiers[${i}]`, "must be an object");
+			if (!isRecord(tier)) {
+				fail(`${path}.tiers[${i}]`, "must be an object");
+			}
 			validateCacheWritePrices(
 				tier.cacheWriteCentsPerMTokensByTtl,
 				`${path}.tiers[${i}].cacheWriteCentsPerMTokensByTtl`,
@@ -143,16 +170,21 @@ function validatePricing(value: unknown, path: string): void {
 				"cacheReadCentsPerMTokens",
 				"cacheWriteCentsPerMTokens",
 			]) {
-				if (tier[key] !== undefined)
+				if (tier[key] !== undefined) {
 					assertNumber(tier[key], `${path}.tiers[${i}].${key}`);
+				}
 			}
 		}
 	}
 }
 
 function validateCapabilities(value: unknown, path: string): void {
-	if (value === undefined) return;
-	if (!isRecord(value)) fail(path, "must be an object");
+	if (value === undefined) {
+		return;
+	}
+	if (!isRecord(value)) {
+		fail(path, "must be an object");
+	}
 	for (const key of [
 		"tools",
 		"strictTools",
@@ -160,33 +192,44 @@ function validateCapabilities(value: unknown, path: string): void {
 		"reasoning",
 		"structuredOutputs",
 	]) {
-		if (value[key] !== undefined) assertBoolean(value[key], `${path}.${key}`);
+		if (value[key] !== undefined) {
+			assertBoolean(value[key], `${path}.${key}`);
+		}
 	}
 }
 
 function validateReasoning(value: unknown, path: string): void {
-	if (value === undefined) return;
-	if (!isRecord(value)) fail(path, "must be an object");
+	if (value === undefined) {
+		return;
+	}
+	if (!isRecord(value)) {
+		fail(path, "must be an object");
+	}
 	assertString(value.kind, `${path}.kind`);
 	if (!REASONING_KINDS.has(value.kind as ReasoningControlKind)) {
 		fail(`${path}.kind`, `unknown kind "${value.kind}"`);
 	}
 	assertStringArray(value.levels, `${path}.levels`);
 	for (const level of value.levels) {
-		if (!(EFFORT_ORDER as readonly string[]).includes(level))
+		if (!(EFFORT_ORDER as readonly string[]).includes(level)) {
 			fail(`${path}.levels`, `unknown effort "${level}"`);
+		}
 	}
 	if (value.budgets !== undefined) {
-		if (!isRecord(value.budgets)) fail(`${path}.budgets`, "must be an object");
+		if (!isRecord(value.budgets)) {
+			fail(`${path}.budgets`, "must be an object");
+		}
 		for (const [level, tokens] of Object.entries(value.budgets)) {
-			if (!(EFFORT_ORDER as readonly string[]).includes(level))
+			if (!(EFFORT_ORDER as readonly string[]).includes(level)) {
 				fail(`${path}.budgets`, `unknown effort "${level}"`);
+			}
 			assertNumber(tokens, `${path}.budgets.${level}`);
 		}
 	}
 	if (value.upstreamEffortMap !== undefined) {
-		if (!isRecord(value.upstreamEffortMap))
+		if (!isRecord(value.upstreamEffortMap)) {
 			fail(`${path}.upstreamEffortMap`, "must be an object");
+		}
 		for (const [level, upstream] of Object.entries(value.upstreamEffortMap)) {
 			if (!(EFFORT_ORDER as readonly string[]).includes(level)) {
 				fail(`${path}.upstreamEffortMap`, `unknown effort "${level}"`);
@@ -194,16 +237,19 @@ function validateReasoning(value: unknown, path: string): void {
 			assertString(upstream, `${path}.upstreamEffortMap.${level}`);
 		}
 	}
-	if (value.effortField !== undefined)
+	if (value.effortField !== undefined) {
 		assertString(value.effortField, `${path}.effortField`);
+	}
 	if (value.bodyField !== undefined) {
-		if (!isRecord(value.bodyField))
+		if (!isRecord(value.bodyField)) {
 			fail(`${path}.bodyField`, "must be an object");
+		}
 		assertString(value.bodyField.param, `${path}.bodyField.param`);
 	}
 	if (value.chatTemplateFlag !== undefined) {
-		if (!isRecord(value.chatTemplateFlag))
+		if (!isRecord(value.chatTemplateFlag)) {
 			fail(`${path}.chatTemplateFlag`, "must be an object");
+		}
 		assertString(
 			value.chatTemplateFlag.param,
 			`${path}.chatTemplateFlag.param`,
@@ -249,18 +295,28 @@ function validateReasoning(value: unknown, path: string): void {
 }
 
 function validateParameterSupport(value: unknown, path: string): void {
-	if (typeof value === "boolean") return;
-	if (!isRecord(value)) fail(path, "must be a boolean or object");
+	if (typeof value === "boolean") {
+		return;
+	}
+	if (!isRecord(value)) {
+		fail(path, "must be a boolean or object");
+	}
 	if (value.mode !== undefined) {
 		assertString(value.mode, `${path}.mode`);
-		if (!PARAMETER_MODES.has(value.mode))
+		if (!PARAMETER_MODES.has(value.mode)) {
 			fail(`${path}.mode`, `unknown mode "${value.mode}"`);
+		}
 	}
-	if (value.min !== undefined) assertNumber(value.min, `${path}.min`);
-	if (value.max !== undefined) assertNumber(value.max, `${path}.max`);
+	if (value.min !== undefined) {
+		assertNumber(value.min, `${path}.min`);
+	}
+	if (value.max !== undefined) {
+		assertNumber(value.max, `${path}.max`);
+	}
 	if (value.values !== undefined) {
-		if (!Array.isArray(value.values))
+		if (!Array.isArray(value.values)) {
 			fail(`${path}.values`, "must be an array");
+		}
 		for (const [i, item] of value.values.entries()) {
 			if (
 				typeof item !== "string" &&
@@ -271,14 +327,21 @@ function validateParameterSupport(value: unknown, path: string): void {
 			}
 		}
 	}
-	if (value.upstreamField !== undefined)
+	if (value.upstreamField !== undefined) {
 		assertString(value.upstreamField, `${path}.upstreamField`);
-	if (value.notes !== undefined) assertString(value.notes, `${path}.notes`);
+	}
+	if (value.notes !== undefined) {
+		assertString(value.notes, `${path}.notes`);
+	}
 }
 
 function validateParameters(value: unknown, path: string): void {
-	if (value === undefined) return;
-	if (!isRecord(value)) fail(path, "must be an object");
+	if (value === undefined) {
+		return;
+	}
+	if (!isRecord(value)) {
+		fail(path, "must be an object");
+	}
 	for (const [name, support] of Object.entries(value)) {
 		assertString(name, `${path} key`);
 		validateParameterSupport(support, `${path}.${name}`);
@@ -286,26 +349,33 @@ function validateParameters(value: unknown, path: string): void {
 }
 
 function validateOperations(value: unknown, path: string): void {
-	if (!isRecord(value)) fail(path, "must be an object");
+	if (!isRecord(value)) {
+		fail(path, "must be an object");
+	}
 	for (const [operation, profile] of Object.entries(value)) {
-		if (!OPERATION_IDS.has(operation as keyof OperationProfiles))
+		if (!OPERATION_IDS.has(operation as keyof OperationProfiles)) {
 			fail(path, `unknown operation "${operation}"`);
-		if (!isRecord(profile)) fail(`${path}.${operation}`, "must be an object");
+		}
+		if (!isRecord(profile)) {
+			fail(`${path}.${operation}`, "must be an object");
+		}
 		if (operation === "text.generate") {
 			validateCapabilities(
 				profile.capabilities,
 				`${path}.${operation}.capabilities`,
 			);
-			if (profile.maxInputTokens !== undefined)
+			if (profile.maxInputTokens !== undefined) {
 				assertNumber(
 					profile.maxInputTokens,
 					`${path}.${operation}.maxInputTokens`,
 				);
-			if (profile.maxOutputTokens !== undefined)
+			}
+			if (profile.maxOutputTokens !== undefined) {
 				assertNumber(
 					profile.maxOutputTokens,
 					`${path}.${operation}.maxOutputTokens`,
 				);
+			}
 			validateReasoning(profile.reasoning, `${path}.${operation}.reasoning`);
 			validateParameters(profile.parameters, `${path}.${operation}.parameters`);
 		} else if (operation === "embedding.create") {
@@ -319,12 +389,14 @@ function validateOperations(value: unknown, path: string): void {
 				"maxInputBytes",
 				"maxTotalInputBytes",
 			]) {
-				if (profile[key] !== undefined)
+				if (profile[key] !== undefined) {
 					assertNumber(profile[key], `${path}.${operation}.${key}`);
+				}
 			}
 			for (const key of ["supportsDimensions", "supportsTokenInput"]) {
-				if (profile[key] !== undefined)
+				if (profile[key] !== undefined) {
 					assertBoolean(profile[key], `${path}.${operation}.${key}`);
+				}
 			}
 			if (profile.encodingFormats !== undefined) {
 				assertStringArray(
@@ -332,11 +404,12 @@ function validateOperations(value: unknown, path: string): void {
 					`${path}.${operation}.encodingFormats`,
 				);
 				for (const format of profile.encodingFormats) {
-					if (format !== "float" && format !== "base64")
+					if (format !== "float" && format !== "base64") {
 						fail(
 							`${path}.${operation}.encodingFormats`,
 							`unknown format "${format}"`,
 						);
+					}
 				}
 			}
 		} else if (operation === "rerank") {
@@ -345,11 +418,12 @@ function validateOperations(value: unknown, path: string): void {
 				`${path}.${operation}.documentModalities`,
 			);
 			for (const modality of profile.documentModalities as string[]) {
-				if (modality !== "text" && modality !== "image")
+				if (modality !== "text" && modality !== "image") {
 					fail(
 						`${path}.${operation}.documentModalities`,
 						`unknown modality "${modality}"`,
 					);
+				}
 			}
 			if (profile.imageSources !== undefined) {
 				assertStringArray(
@@ -357,11 +431,12 @@ function validateOperations(value: unknown, path: string): void {
 					`${path}.${operation}.imageSources`,
 				);
 				for (const source of profile.imageSources) {
-					if (source !== "url" && source !== "data_url")
+					if (source !== "url" && source !== "data_url") {
 						fail(
 							`${path}.${operation}.imageSources`,
 							`unknown source "${source}"`,
 						);
+					}
 				}
 			}
 			for (const key of [
@@ -373,8 +448,9 @@ function validateOperations(value: unknown, path: string): void {
 				"maxTotalTokens",
 				"documentsPerSearchUnit",
 			]) {
-				if (profile[key] !== undefined)
+				if (profile[key] !== undefined) {
 					assertNumber(profile[key], `${path}.${operation}.${key}`);
+				}
 			}
 		} else if (operation === "video.generate") {
 			for (const key of [
@@ -382,8 +458,9 @@ function validateOperations(value: unknown, path: string): void {
 				"maxInputReferences",
 				"pollIntervalSeconds",
 			]) {
-				if (profile[key] !== undefined)
+				if (profile[key] !== undefined) {
 					assertNumber(profile[key], `${path}.${operation}.${key}`);
+				}
 			}
 			for (const key of [
 				"supportsImageUrl",
@@ -394,8 +471,9 @@ function validateOperations(value: unknown, path: string): void {
 				"supportsSeed",
 				"supportsGenerateAudio",
 			]) {
-				if (profile[key] !== undefined)
+				if (profile[key] !== undefined) {
 					assertBoolean(profile[key], `${path}.${operation}.${key}`);
+				}
 			}
 			for (const key of [
 				"tasks",
@@ -403,8 +481,9 @@ function validateOperations(value: unknown, path: string): void {
 				"qualities",
 				"contentVariants",
 			]) {
-				if (profile[key] !== undefined)
+				if (profile[key] !== undefined) {
 					assertStringArray(profile[key], `${path}.${operation}.${key}`);
+				}
 			}
 			if (Array.isArray(profile.tasks)) {
 				for (const task of profile.tasks) {
@@ -414,8 +493,9 @@ function validateOperations(value: unknown, path: string): void {
 				}
 			}
 			if (profile.sizes !== undefined) {
-				if (!isRecord(profile.sizes))
+				if (!isRecord(profile.sizes)) {
 					fail(`${path}.${operation}.sizes`, "must be an object");
+				}
 				for (const [size, mapping] of Object.entries(profile.sizes)) {
 					assertString(size, `${path}.${operation}.sizes key`);
 					if (!isRecord(mapping)) {
@@ -440,11 +520,16 @@ function validateModelMetadata(
 	path: string,
 ): void {
 	for (const key of Object.keys(model)) {
-		if (!MODEL_KEYS.has(key)) fail(path, `unknown field "${key}"`);
+		if (!MODEL_KEYS.has(key)) {
+			fail(path, `unknown field "${key}"`);
+		}
 	}
-	if (model.notes !== undefined) assertString(model.notes, `${path}.notes`);
-	if (model.needsHumanReview !== undefined)
+	if (model.notes !== undefined) {
+		assertString(model.notes, `${path}.notes`);
+	}
+	if (model.needsHumanReview !== undefined) {
 		assertStringArray(model.needsHumanReview, `${path}.needsHumanReview`);
+	}
 }
 
 function validateDocument(
@@ -452,11 +537,18 @@ function validateDocument(
 	path: string,
 	opts: LoadCatalogOptions,
 ): asserts value is CatalogDocument {
-	if (!isRecord(value)) fail(path, "the root must be an object");
-	if (value.$schema !== undefined)
+	if (!isRecord(value)) {
+		fail(path, "the root must be an object");
+	}
+	if (value.$schema !== undefined) {
 		assertString(value.$schema, `${path}.$schema`);
-	if (value.schemaVersion !== 1) fail(`${path}.schemaVersion`, "must be 1");
-	if (!isRecord(value.provider)) fail(`${path}.provider`, "must be an object");
+	}
+	if (value.schemaVersion !== 1) {
+		fail(`${path}.schemaVersion`, "must be 1");
+	}
+	if (!isRecord(value.provider)) {
+		fail(`${path}.provider`, "must be an object");
+	}
 	assertString(value.provider.id, `${path}.provider.id`);
 	assertAdapterKey(value.provider.adapterKey, `${path}.provider.adapterKey`);
 	if (
@@ -468,23 +560,28 @@ function validateDocument(
 			`expected "${opts.adapterKey}", received "${value.provider.adapterKey}"`,
 		);
 	}
-	if (value.provider.name !== undefined)
+	if (value.provider.name !== undefined) {
 		assertString(value.provider.name, `${path}.provider.name`);
-	if (value.provider.docs !== undefined)
+	}
+	if (value.provider.docs !== undefined) {
 		assertStringArray(value.provider.docs, `${path}.provider.docs`);
-	if (!isRecord(value.models))
+	}
+	if (!isRecord(value.models)) {
 		fail(`${path}.models`, "must be an object keyed by model id");
+	}
 	for (const [modelId, model] of Object.entries(value.models)) {
-		if (!isRecord(model))
+		if (!isRecord(model)) {
 			fail(`${path}.models.${modelId}`, "must be an object");
+		}
 		validateModelMetadata(model, `${path}.models.${modelId}`);
 		validateOperations(
 			model.operations,
 			`${path}.models.${modelId}.operations`,
 		);
 		validatePricing(model.pricing, `${path}.models.${modelId}.pricing`);
-		if (model.deprecated !== undefined)
+		if (model.deprecated !== undefined) {
 			assertBoolean(model.deprecated, `${path}.models.${modelId}.deprecated`);
+		}
 	}
 }
 

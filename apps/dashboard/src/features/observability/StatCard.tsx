@@ -54,14 +54,14 @@ export function StatCard({
 				<h2 className="font-medium text-fg-muted text-sm">{label}</h2>
 			</div>
 			<p
-				className="mt-6 font-semibold text-[2rem] leading-none tracking-tight tabular-nums"
+				className="mt-6 font-semibold text-[2rem] tabular-nums leading-none tracking-tight"
 				title={exact}
 			>
 				{value}
 			</p>
 			{note ? (
 				<div className="mt-3.5">
-					<Status tone={note.tone ?? "neutral"} title={note.exact}>
+					<Status title={note.exact} tone={note.tone ?? "neutral"}>
 						{note.text}
 					</Status>
 				</div>

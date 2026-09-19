@@ -62,15 +62,15 @@ export default function HomePage() {
 					</p>
 					<div className="mt-8 flex flex-wrap items-center gap-3">
 						<Link
-							href="/docs/quickstart"
 							className="inline-flex items-center gap-2 rounded-lg bg-fd-primary px-5 py-2.5 font-medium text-fd-primary-foreground text-sm transition-opacity hover:opacity-90"
+							href="/docs/quickstart"
 						>
 							Get started
 							<ArrowRight aria-hidden className="size-4" />
 						</Link>
 						<Link
-							href="/docs/api-overview"
 							className="inline-flex items-center gap-2 rounded-lg border border-fd-border bg-fd-card px-5 py-2.5 font-medium text-sm transition-colors hover:bg-fd-accent"
+							href="/docs/api-overview"
 						>
 							Explore the API
 						</Link>
@@ -80,14 +80,14 @@ export default function HomePage() {
 
 			<section className="mx-auto grid w-full max-w-5xl gap-8 border-fd-border border-b px-4 py-12 sm:grid-cols-3">
 				{PATHS.map((path) => (
-					<div key={path.href} className="flex min-w-0 flex-col">
+					<div className="flex min-w-0 flex-col" key={path.href}>
 						<h2 className="font-medium text-lg">{path.title}</h2>
 						<p className="mt-2 text-fd-muted-foreground text-sm">
 							{path.description}
 						</p>
 						<Link
-							href={path.href}
 							className="mt-4 inline-flex items-center gap-1.5 font-medium text-fd-primary text-sm hover:underline"
+							href={path.href}
 						>
 							{path.action}
 							<ArrowRight aria-hidden className="size-3.5" />
@@ -106,10 +106,10 @@ export default function HomePage() {
 					resolves to deployments you configure.
 				</p>
 				<div className="mt-5">
-					<DynamicCodeBlock lang="bash" code={REQUEST} />
+					<DynamicCodeBlock code={REQUEST} lang="bash" />
 				</div>
 				<p className="mt-6 text-sm">
-					<Link href="/docs" className="text-fd-primary hover:underline">
+					<Link className="text-fd-primary hover:underline" href="/docs">
 						Read the documentation
 					</Link>{" "}
 					<span className="text-fd-muted-foreground">

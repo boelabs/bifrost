@@ -22,7 +22,7 @@ export function rerankRequestSummary(
 		document_count: request.documents.length,
 		document_bytes: documentBytes.reduce((sum, value) => sum + value, 0),
 		query_bytes: encoder.encode(request.query).length,
-		...(request.topN !== undefined ? { top_n: request.topN } : {}),
+		...(request.topN === undefined ? {} : { top_n: request.topN }),
 		provider_options: Object.keys(request.provider ?? {}).sort(),
 	};
 }
@@ -37,9 +37,9 @@ export function rerankResponseSummary(
 		usage: response.usage
 			? {
 					total_tokens: response.usage.totalTokens,
-					...(response.usage.searchUnits !== undefined
-						? { search_units: response.usage.searchUnits }
-						: {}),
+					...(response.usage.searchUnits === undefined
+						? {}
+						: { search_units: response.usage.searchUnits }),
 				}
 			: null,
 		cost_cents: cost?.totalCents ?? null,

@@ -35,7 +35,7 @@ const FIELDS = [
 		label: "Lockout (min)",
 		help: "How long that lockout lasts.",
 		min: 1,
-		max: 1_440,
+		max: 1440,
 	},
 ] as const;
 
@@ -79,19 +79,19 @@ export function SessionForm({
 	}
 
 	return (
-		<Form onSubmit={onSubmit} className="flex flex-col gap-6">
+		<Form className="flex flex-col gap-6" onSubmit={onSubmit}>
 			<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 				{FIELDS.map((field) => (
 					<Input
-						key={field.key}
-						name={field.key}
-						type="number"
-						min={field.min}
-						max={field.max}
-						label={field.label}
+						defaultValue={String(settings[field.key])}
 						description={field.help}
 						disabled={!editable}
-						defaultValue={String(settings[field.key])}
+						key={field.key}
+						label={field.label}
+						max={field.max}
+						min={field.min}
+						name={field.key}
+						type="number"
 					/>
 				))}
 			</div>
@@ -101,7 +101,7 @@ export function SessionForm({
 			{editable ? (
 				<div className="flex items-center justify-end gap-3">
 					{saved ? <span className="text-fg-muted text-sm">Saved.</span> : null}
-					<Button type="submit" disabled={pending}>
+					<Button disabled={pending} type="submit">
 						{pending ? "Saving…" : "Save session policy"}
 					</Button>
 				</div>

@@ -136,7 +136,7 @@ function Empty({ className, ...props }: BaseCombobox.Empty.Props) {
 		<BaseCombobox.Empty
 			{...props}
 			className={mergeClassName(
-				"px-3 py-4 text-sm text-fg-muted empty:hidden",
+				"px-3 py-4 text-fg-muted text-sm empty:hidden",
 				className,
 			)}
 		/>
@@ -202,7 +202,7 @@ function Chip({
 		<BaseCombobox.Chip
 			{...props}
 			className={mergeClassName(
-				"inline-flex items-center gap-1 rounded-[var(--ui-radius-item)] bg-secondary px-2 py-1 text-sm text-secondary-fg",
+				"inline-flex items-center gap-1 rounded-[var(--ui-radius-item)] bg-secondary px-2 py-1 text-secondary-fg text-sm",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -337,11 +337,11 @@ function InputField({
 }: InputFieldProps) {
 	return (
 		<InputGroup
+			borderRadius={borderRadius}
+			className={groupClassName}
 			size={size}
 			variant={variant}
-			borderRadius={borderRadius}
 			width={width}
-			className={groupClassName}
 		>
 			<BareInput {...props} />
 			{showClear ? <InlineClear /> : null}

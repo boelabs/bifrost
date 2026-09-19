@@ -49,7 +49,9 @@ export function cacheConfigFromHeaders(
 
 export async function cacheGet(key: string): Promise<CachedEntry | null> {
 	const raw = await redis.get(key);
-	if (!raw) return null;
+	if (!raw) {
+		return null;
+	}
 	try {
 		return JSON.parse(raw) as CachedEntry;
 	} catch {
@@ -64,7 +66,9 @@ export async function cacheSet(
 ): Promise<void> {
 	const payload = JSON.stringify(entry);
 	// Best-effort: an oversized entry is silently skipped (serving without cache is not an error).
-	if (Buffer.byteLength(payload, "utf8") > MAX_VALUE_BYTES) return;
+	if (Buffer.byteLength(payload, "utf8") > MAX_VALUE_BYTES) {
+		return;
+	}
 	await redis.set(key, payload, "EX", ttlSeconds);
 }
 

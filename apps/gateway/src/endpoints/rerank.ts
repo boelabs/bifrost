@@ -51,7 +51,9 @@ export async function rerankHandler(c: Context<AppEnv>): Promise<Response> {
 		usage: Usage | null,
 		error?: ReturnType<typeof toGatewayError> | null,
 	): Promise<void> => {
-		if (!routing || finished) return;
+		if (!routing || finished) {
+			return;
+		}
 		finished = true;
 		await routing.finish(usage ?? fallbackUsage, undefined, error);
 	};

@@ -61,15 +61,15 @@ function Breakdown({ data }: { data: DetailedMetrics }) {
 		<div className="grid gap-5 lg:grid-cols-2">
 			<Card className="p-7">
 				<h2 className="font-semibold">Request outcomes</h2>
-				<p className="mt-1 text-xs text-fg-muted">
+				<p className="mt-1 text-fg-muted text-xs">
 					Final result after all attempts. In-progress requests are excluded
 					from rates.
 				</p>
 				<div className="mt-5 space-y-3">
 					{outcomes.map((row) => (
 						<div
-							key={row.label}
 							className="grid grid-cols-[9rem_1fr_3.5rem] items-center gap-3 text-xs"
+							key={row.label}
 						>
 							<span>{row.label}</span>
 							<div className="h-1.5 overflow-hidden rounded-full bg-secondary">
@@ -89,7 +89,7 @@ function Breakdown({ data }: { data: DetailedMetrics }) {
 			</Card>
 			<Card className="p-7">
 				<h2 className="font-semibold">Deployment token breakdown</h2>
-				<p className="mt-1 text-xs text-fg-muted">
+				<p className="mt-1 text-fg-muted text-xs">
 					Reported upstream usage, including retries. Reasoning and cache are
 					subsets, not additional totals.
 				</p>
@@ -104,7 +104,7 @@ function Breakdown({ data }: { data: DetailedMetrics }) {
 							["Search units", tokens.searchUnits],
 						] as const
 					).map(([label, value]) => (
-						<div key={label} className="flex justify-between gap-3 py-2">
+						<div className="flex justify-between gap-3 py-2" key={label}>
 							<dt className="text-fg-muted">{label}</dt>
 							<dd className="tabular-nums">
 								{value === null ? "—" : count.format(value)}
@@ -112,7 +112,7 @@ function Breakdown({ data }: { data: DetailedMetrics }) {
 						</div>
 					))}
 				</dl>
-				<p className="mt-3 text-xs text-fg-muted">
+				<p className="mt-3 text-fg-muted text-xs">
 					Token totals reported by {count.format(tokens.usageReported)} of{" "}
 					{count.format(tokens.attempts)} attempts. Unreported usage is not
 					estimated.
@@ -153,8 +153,9 @@ export function Metrics({
 	if (
 		search.publicModel &&
 		!modelOptions.some((row) => row.value === search.publicModel)
-	)
+	) {
 		modelOptions.push({ value: search.publicModel, label: search.publicModel });
+	}
 	const deploymentOptions = options.deployments.flatMap((row) =>
 		row.key
 			? [
@@ -168,11 +169,12 @@ export function Metrics({
 	if (
 		search.deploymentId &&
 		!deploymentOptions.some((row) => row.value === search.deploymentId)
-	)
+	) {
 		deploymentOptions.push({
 			value: search.deploymentId,
 			label: search.deploymentId,
 		});
+	}
 	const deployments: Column<Deployment>[] = [
 		{
 			key: "label",
@@ -180,15 +182,15 @@ export function Metrics({
 			render: (row) => (
 				<div>
 					<Button
-						variant="link"
-						size="sm"
-						title={row.key ?? undefined}
 						disabled={!row.key}
 						onClick={() => onChange({ deploymentId: row.key ?? undefined })}
+						size="sm"
+						title={row.key ?? undefined}
+						variant="link"
 					>
 						{row.label ?? row.key?.slice(0, 8) ?? "Unattributed"}
 					</Button>
-					<p className="mt-0.5 text-xs text-fg-muted">
+					<p className="mt-0.5 text-fg-muted text-xs">
 						{row.adapter ?? "Unknown adapter"} ·{" "}
 						{row.key?.slice(0, 8) ?? "No deployment"}
 					</p>
@@ -223,7 +225,7 @@ export function Metrics({
 			render: (row) => (
 				<div className="tabular-nums">
 					<div>{tokenCount(row.cacheReadTokens)}</div>
-					<div className="mt-1 text-xs text-fg-muted">
+					<div className="mt-1 text-fg-muted text-xs">
 						{cacheReuseRate(row) === null
 							? "—"
 							: rate(
@@ -269,8 +271,6 @@ export function Metrics({
 			header: "Public model",
 			render: (row) => (
 				<Button
-					variant="link"
-					size="sm"
 					disabled={!row.key}
 					onClick={() =>
 						onChange({
@@ -278,6 +278,8 @@ export function Metrics({
 							deploymentId: undefined,
 						})
 					}
+					size="sm"
+					variant="link"
 				>
 					{row.key ?? "Unattributed"}
 				</Button>
@@ -350,20 +352,21 @@ export function Metrics({
 		},
 	];
 	return (
-		<div className="space-y-6" aria-busy={refreshing}>
+		<div aria-busy={refreshing} className="space-y-6">
 			<Card className="p-5">
 				<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 					<Select
 						label="Period · UTC"
-						size="sm"
-						value={search.period}
 						onValueChange={(period) => {
-							if (period)
+							if (period) {
 								onChange({
 									period: period as MetricsSearch["period"],
 									...(period === "custom" ? { from, to } : {}),
 								});
+							}
 						}}
+						size="sm"
+						value={search.period}
 					>
 						{[
 							["today", "Today"],
@@ -379,8 +382,6 @@ export function Metrics({
 					</Select>
 					<Select
 						label="Operation"
-						size="sm"
-						value={search.operation ?? "all"}
 						onValueChange={(value) =>
 							onChange({
 								operation:
@@ -391,6 +392,8 @@ export function Metrics({
 								deploymentId: undefined,
 							})
 						}
+						size="sm"
+						value={search.operation ?? "all"}
 					>
 						<SelectItem value="all">All operations</SelectItem>
 						{operations.map(([value, label]) => (
@@ -400,10 +403,8 @@ export function Metrics({
 						))}
 					</Select>
 					<SearchableSelect
-						label="Public model"
-						size="sm"
 						items={modelOptions}
-						value={search.publicModel ?? null}
+						label="Public model"
 						onValueChange={(value) =>
 							onChange({
 								publicModel: value ?? undefined,
@@ -411,16 +412,18 @@ export function Metrics({
 							})
 						}
 						searchPlaceholder="All public models"
+						size="sm"
+						value={search.publicModel ?? null}
 					/>
 					<SearchableSelect
-						label="Deployment"
-						size="sm"
 						items={deploymentOptions}
-						value={search.deploymentId ?? null}
+						label="Deployment"
 						onValueChange={(value) =>
 							onChange({ deploymentId: value ?? undefined })
 						}
 						searchPlaceholder="All deployments"
+						size="sm"
+						value={search.deploymentId ?? null}
 					/>
 				</div>
 				{search.period === "custom" && (
@@ -428,34 +431,36 @@ export function Metrics({
 						className="mt-4 flex flex-wrap items-end gap-3"
 						onSubmit={(event) => {
 							event.preventDefault();
-							if (rangeValid) onChange({ from, to });
+							if (rangeValid) {
+								onChange({ from, to });
+							}
 						}}
 					>
 						<Input
 							label="From (UTC)"
-							type="date"
-							size="sm"
-							value={from}
 							onChange={(event) => setFrom(event.target.value)}
 							required
+							size="sm"
+							type="date"
+							value={from}
 						/>
 						<Input
 							label="Through (UTC)"
-							type="date"
-							size="sm"
-							value={to}
 							onChange={(event) => setTo(event.target.value)}
 							required
+							size="sm"
+							type="date"
+							value={to}
 						/>
 						<Button
+							disabled={!rangeValid || refreshing}
+							size="sm"
 							type="submit"
 							variant="secondary"
-							size="sm"
-							disabled={!rangeValid || refreshing}
 						>
 							Apply dates
 						</Button>
-						<p className="pb-2 text-xs text-fg-muted">
+						<p className="pb-2 text-fg-muted text-xs">
 							Up to 31 days. End date is included.
 						</p>
 					</form>
@@ -463,8 +468,6 @@ export function Metrics({
 				{(search.publicModel || search.deploymentId || search.operation) && (
 					<Button
 						className="mt-3"
-						variant="link"
-						size="sm"
 						onClick={() =>
 							onChange({
 								publicModel: undefined,
@@ -472,17 +475,19 @@ export function Metrics({
 								operation: undefined,
 							})
 						}
+						size="sm"
+						variant="link"
 					>
 						Clear model, deployment and operation filters
 					</Button>
 				)}
-				<p className="mt-3 text-xs text-fg-muted">
+				<p className="mt-3 text-fg-muted text-xs">
 					{new Date(data.start).toLocaleString("en-US", { timeZone: "UTC" })} –{" "}
 					{new Date(data.end).toLocaleString("en-US", { timeZone: "UTC" })} UTC
 				</p>
 			</Card>
 			{search.deploymentId && (
-				<p className="rounded-lg border border-border bg-secondary/40 p-3 text-sm text-fg-muted">
+				<p className="rounded-lg border border-border bg-secondary/40 p-3 text-fg-muted text-sm">
 					Request metrics cover requests that used this deployment, including
 					any fallback. Deployment tokens and errors cover only its own
 					attempts.
@@ -493,43 +498,43 @@ export function Metrics({
 				className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3"
 			>
 				<StatCard
+					detail={`${count.format(attempts.usageReported)} / ${count.format(attempts.attempts)} attempts reported usage · includes retries`}
+					exact={reportedTokens(attempts)}
 					label="Deployment tokens"
 					value={reportedTokens(attempts, true)}
-					exact={reportedTokens(attempts)}
-					detail={`${count.format(attempts.usageReported)} / ${count.format(attempts.attempts)} attempts reported usage · includes retries`}
 				/>
 				<StatCard
+					detail={`${rate(requests.success, requests.finished)} successful · ${count.format(requests.requests - requests.finished)} in progress`}
+					exact={count.format(requests.requests)}
 					label="Requests"
 					value={compact.format(requests.requests)}
-					exact={count.format(requests.requests)}
-					detail={`${rate(requests.success, requests.finished)} successful · ${count.format(requests.requests - requests.finished)} in progress`}
 				/>
 				<StatCard
+					detail={`${money(requests.upstreamCostCents)} recorded upstream cost · selected requests`}
 					label="Consumer cost"
 					value={money(requests.consumerCostCents)}
-					detail={`${money(requests.upstreamCostCents)} recorded upstream cost · selected requests`}
 				/>
 				<StatCard
+					detail={`${rate(attempts.errors, attempts.finished)} of finished attempts · ${count.format(requests.errors)} final request errors`}
 					label="Deployment errors"
 					value={count.format(attempts.errors)}
-					detail={`${rate(attempts.errors, attempts.finished)} of finished attempts · ${count.format(requests.errors)} final request errors`}
 				/>
 				<StatCard
+					detail={`${duration(requests.p50DurationMs)} median · ${duration(requests.p95FirstOutputMs)} first output p95 (streamed)`}
 					label="Request latency · p95"
 					value={duration(requests.p95DurationMs)}
-					detail={`${duration(requests.p50DurationMs)} median · ${duration(requests.p95FirstOutputMs)} first output p95 (streamed)`}
 				/>
 				<StatCard
+					detail={`${count.format(requests.cacheHits)} response-cache hits · ${count.format(requests.degraded)} degraded requests`}
+					exact={reportedTokens(requests)}
 					label="Request tokens"
 					value={reportedTokens(requests, true)}
-					exact={reportedTokens(requests)}
-					detail={`${count.format(requests.cacheHits)} response-cache hits · ${count.format(requests.degraded)} degraded requests`}
 				/>
 			</section>
 			{requests.requests === 0 ? (
 				<EmptyState
-					title="No activity in this period"
 					description="Change the dates or clear filters. Metrics appear after the gateway records traffic."
+					title="No activity in this period"
 				/>
 			) : (
 				<>
@@ -537,62 +542,64 @@ export function Metrics({
 						<MetricsChart data={data} />
 						<MetricsChart data={data} upstream />
 					</div>
-					<CacheUsage usage={attempts} records={attempts.attempts} upstream />
+					<CacheUsage records={attempts.attempts} upstream usage={attempts} />
 					<Breakdown data={data} />
 					<section className="space-y-3">
 						<div>
 							<h2 className="font-semibold">By deployment</h2>
-							<p className="mt-1 text-xs text-fg-muted">
+							<p className="mt-1 text-fg-muted text-xs">
 								An executable route to a provider. Select one to inspect its
 								consumption and failures. Error rates use finished attempts.
 							</p>
 						</div>
 						<DataTable
+							caption="Deployment metrics"
+							columns={deployments}
+							emptyMessage="No upstream attempts. Requests may have been cached or rejected before routing."
+							pagination={{ pageSize: 10 }}
+							rowKey={(row) => row.key ?? "none"}
 							rows={[...data.deployments].sort(
 								(a, b) => b.totalTokens - a.totalTokens,
 							)}
-							columns={deployments}
-							rowKey={(row) => row.key ?? "none"}
-							caption="Deployment metrics"
 							search={{
 								getText: (row) => `${row.label} ${row.adapter} ${row.key}`,
 								placeholder: "Search deployments…",
 							}}
-							pagination={{ pageSize: 10 }}
-							emptyMessage="No upstream attempts. Requests may have been cached or rejected before routing."
 						/>
 					</section>
 					<section className="space-y-3">
 						<div>
 							<h2 className="font-semibold">By public model</h2>
-							<p className="mt-1 text-xs text-fg-muted">
+							<p className="mt-1 text-fg-muted text-xs">
 								The model name clients request. Each request is counted once,
 								even if it required several attempts.
 							</p>
 						</div>
 						<DataTable
-							rows={data.models}
-							columns={models}
-							rowKey={(row) => row.key ?? "none"}
 							caption="Public model metrics"
+							columns={models}
+							pagination={{ pageSize: 10 }}
+							rowKey={(row) => row.key ?? "none"}
+							rows={data.models}
 							search={{
 								getText: (row) => row.key ?? "",
 								placeholder: "Search public models…",
 							}}
-							pagination={{ pageSize: 10 }}
 						/>
 					</section>
 					<section className="space-y-3">
 						<div>
 							<h2 className="font-semibold">Deployment failures</h2>
-							<p className="mt-1 text-xs text-fg-muted">
+							<p className="mt-1 text-fg-muted text-xs">
 								Failed attempts, including failures recovered by retries or
 								fallback.
 							</p>
 						</div>
 						<DataTable
-							rows={[...data.failures].sort((a, b) => b.count - a.count)}
+							caption="Deployment failure breakdown"
 							columns={failures}
+							emptyMessage="No deployment errors recorded in this period."
+							pagination={{ pageSize: 10 }}
 							rowKey={(row) =>
 								JSON.stringify([
 									row.deploymentId,
@@ -601,14 +608,12 @@ export function Metrics({
 									row.status,
 								])
 							}
-							caption="Deployment failure breakdown"
-							pagination={{ pageSize: 10 }}
-							emptyMessage="No deployment errors recorded in this period."
+							rows={[...data.failures].sort((a, b) => b.count - a.count)}
 						/>
 					</section>
 				</>
 			)}
-			<p role="status" className="text-xs text-fg-muted">
+			<p className="text-fg-muted text-xs" role="status">
 				Based on retained records, grouped by request start in UTC. Deleted
 				deployments remain visible while their history is retained. Refresh to
 				include new traffic and completed requests.

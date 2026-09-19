@@ -28,7 +28,9 @@ export async function createUserAction(
 		() => createUser(body, idempotencyKey),
 		"The operator could not be created.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }
 
@@ -40,7 +42,9 @@ export async function updateUserAction(
 		() => updateUser(id, body),
 		"The account could not be updated.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }
 
@@ -49,7 +53,9 @@ export async function setPasswordAction(id: string, password: string) {
 		() => setPassword(id, password),
 		"The password could not be set.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }
 
@@ -58,7 +64,9 @@ export async function deleteUserAction(id: string) {
 		() => deleteUser(id),
 		"The operator could not be deleted.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }
 

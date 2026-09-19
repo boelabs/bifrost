@@ -16,7 +16,9 @@ function rejectedRequest(body: unknown): GatewayError {
 	try {
 		parseBody(responsesRequestSchema, body);
 	} catch (error) {
-		if (GatewayError.is(error)) return error;
+		if (GatewayError.is(error)) {
+			return error;
+		}
 		throw error;
 	}
 	throw new Error("Expected request validation to fail");

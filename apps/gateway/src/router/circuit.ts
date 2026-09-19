@@ -220,7 +220,9 @@ export function capacitySubject(
 }
 
 function evalNumbers(value: unknown): number[] {
-	if (!Array.isArray(value)) return [];
+	if (!Array.isArray(value)) {
+		return [];
+	}
 	return value.map((part) => Number(part));
 }
 
@@ -322,7 +324,7 @@ function safeCause(cause: CooldownCause): string {
 	return JSON.stringify({
 		class: cause.class,
 		message: `Upstream ${cause.class} failure`,
-		...(cause.status !== undefined ? { status: cause.status } : {}),
+		...(cause.status === undefined ? {} : { status: cause.status }),
 		fingerprint: hash.digest("hex").slice(0, 24),
 	});
 }
@@ -339,10 +341,14 @@ async function recordFailure(
 	allowedFails: number,
 	mayOpen: boolean,
 ): Promise<number | null> {
-	if (!settings.enabled) return null;
+	if (!settings.enabled) {
+		return null;
+	}
 	// The circuit is already open for this subject; a forced attempt is a symptom of that, not new
 	// evidence, and counting it would ratchet the backoff every time the pool runs dry.
-	if (permitMode === "forced") return null;
+	if (permitMode === "forced") {
+		return null;
+	}
 	const subjectKeys = keys(subject);
 	const effectiveMode = permitMode === "half_open" ? "half_open" : mode;
 	const result = evalNumbers(
@@ -517,7 +523,9 @@ async function releaseSubject(
 	mode: PermitMode,
 	token: string,
 ): Promise<void> {
-	if (mode !== "half_open") return;
+	if (mode !== "half_open") {
+		return;
+	}
 	const subjectKeys = keys(subject);
 	await redis.eval(RELEASE_SCRIPT, 1, subjectKeys.probe, token);
 }
@@ -538,7 +546,9 @@ export async function getCircuitSnapshots(
 		capacity: CircuitSubject;
 	}>,
 ): Promise<CircuitSnapshot[]> {
-	if (inputs.length === 0) return [];
+	if (inputs.length === 0) {
+		return [];
+	}
 	const pipe = redis.pipeline();
 	for (const input of inputs) {
 		const deploymentKeys = keys(input.deployment);
@@ -559,23 +569,25 @@ export async function getCircuitSnapshots(
 		const capacityCooldown = Number(result?.[offset + 3]?.[1] ?? -2);
 		const capacityHistory = Number(result?.[offset + 4]?.[1] ?? 0) === 1;
 		const capacityProbe = Number(result?.[offset + 5]?.[1] ?? -2);
-		if (capacityCooldown > 0)
+		if (capacityCooldown > 0) {
 			return { status: "rate_limited", retryAfterMs: capacityCooldown };
-		if (deploymentCooldown > 0)
+		}
+		if (deploymentCooldown > 0) {
 			return { status: "cooldown", retryAfterMs: deploymentCooldown };
+		}
 		if (deploymentHistory || capacityHistory) {
 			const retryAfterMs = Math.max(deploymentProbe, capacityProbe, 0) || null;
 			return {
 				status: "half_open",
 				retryAfterMs,
-				...(retryAfterMs !== null
-					? {
+				...(retryAfterMs === null
+					? {}
+					: {
 							blockedBy:
 								capacityProbe >= deploymentProbe
 									? ("capacity" as const)
 									: ("deployment" as const),
-						}
-					: {}),
+						}),
 			};
 		}
 		return { status: "available", retryAfterMs: null };
@@ -591,7 +603,9 @@ export async function getCircuitSnapshots(
 export async function resetCircuits(
 	subjects: CircuitSubject[],
 ): Promise<number> {
-	if (subjects.length === 0) return 0;
+	if (subjects.length === 0) {
+		return 0;
+	}
 	const names = subjects.flatMap((subject) => {
 		const subjectKeys = keys(subject);
 		return [
@@ -611,13 +625,19 @@ export async function getCircuitCauses(
 	subjects: CircuitSubject[],
 ): Promise<Map<string, CooldownCause>> {
 	const output = new Map<string, CooldownCause>();
-	if (subjects.length === 0) return output;
+	if (subjects.length === 0) {
+		return output;
+	}
 	const pipe = redis.pipeline();
-	for (const subject of subjects) pipe.get(keys(subject).cause);
+	for (const subject of subjects) {
+		pipe.get(keys(subject).cause);
+	}
 	const result = await pipe.exec();
 	subjects.forEach((subject, index) => {
 		const raw = result?.[index]?.[1];
-		if (typeof raw !== "string") return;
+		if (typeof raw !== "string") {
+			return;
+		}
 		try {
 			output.set(`${subject.kind}:${subject.id}`, JSON.parse(raw));
 		} catch {

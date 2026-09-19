@@ -17,14 +17,18 @@ const MINIMUM_EXPECTED_SOURCE_MODELS = 100;
 function argValue(name: string): string | undefined {
 	const prefix = `${name}=`;
 	const directIndex = process.argv.indexOf(name);
-	if (directIndex >= 0) return process.argv[directIndex + 1];
+	if (directIndex >= 0) {
+		return process.argv[directIndex + 1];
+	}
 	const item = process.argv.find((arg) => arg.startsWith(prefix));
 	return item?.slice(prefix.length);
 }
 
 function mode(): Mode {
 	const raw = argValue("--mode") ?? "report";
-	if (raw === "report" || raw === "write" || raw === "verify") return raw;
+	if (raw === "report" || raw === "write" || raw === "verify") {
+		return raw;
+	}
 	throw new Error("--mode must be report, write, or verify");
 }
 
@@ -103,7 +107,9 @@ async function run(): Promise<void> {
 	const skipped = Object.entries(generated.report.skippedByType)
 		.map(([type, count]) => `${type}=${count}`)
 		.join(", ");
-	if (skipped) console.log(`skipped unsupported operations: ${skipped}`);
+	if (skipped) {
+		console.log(`skipped unsupported operations: ${skipped}`);
+	}
 	if (generated.report.unrepresentedPricing.length > 0) {
 		console.log(
 			`pricing fields not representable by token pricing: ${generated.report.unrepresentedPricing.length}`,

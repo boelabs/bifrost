@@ -121,9 +121,9 @@ const ANTHROPIC_BODY_MANAGED_KEYS = [
 	"speed",
 ] as const;
 const DEFAULT_ANTHROPIC_BUDGETS = {
-	minimal: 1_024,
-	low: 2_048,
-	medium: 8_192,
+	minimal: 1024,
+	low: 2048,
+	medium: 8192,
 	high: 16_000,
 	xhigh: 32_000,
 } as const;
@@ -139,14 +139,16 @@ function withPartCacheControl(
 	part: CanonicalContentPart,
 	block: Record<string, unknown>,
 ): Record<string, unknown> {
-	return part.cacheControl !== undefined
-		? { ...block, cache_control: part.cacheControl }
-		: block;
+	return part.cacheControl === undefined
+		? block
+		: { ...block, cache_control: part.cacheControl };
 }
 
 function dataUrlSource(value: string): Record<string, unknown> | null {
 	const match = /^data:([^;,]+);base64,(.*)$/s.exec(value);
-	if (!match) return null;
+	if (!match) {
+		return null;
+	}
 	return { type: "base64", media_type: match[1], data: match[2] };
 }
 
@@ -167,26 +169,31 @@ function textPartToAnthropic(
 }
 
 function partToAnthropic(part: CanonicalContentPart): Record<string, unknown> {
-	if (part.type === "text") return textPartToAnthropic(part);
+	if (part.type === "text") {
+		return textPartToAnthropic(part);
+	}
 	if (part.type === "image") {
 		const source =
 			dataUrlSource(part.url) ??
 			(/^https:\/\//i.test(part.url) ? { type: "url", url: part.url } : null);
-		if (source !== null)
+		if (source !== null) {
 			return withPartCacheControl(part, { type: "image", source });
+		}
 	}
 	if (part.type === "file") {
 		let source: Record<string, unknown> | null = null;
-		if (part.fileData !== undefined) source = dataUrlSource(part.fileData);
-		else if (part.fileUrl !== undefined)
+		if (part.fileData !== undefined) {
+			source = dataUrlSource(part.fileData);
+		} else if (part.fileUrl !== undefined) {
 			source = { type: "url", url: part.fileUrl };
-		else if (part.fileId !== undefined)
+		} else if (part.fileId !== undefined) {
 			source = { type: "file", file_id: part.fileId };
+		}
 		if (source !== null) {
 			return withPartCacheControl(part, {
 				type: "document",
 				source,
-				...(part.filename !== undefined ? { title: part.filename } : {}),
+				...(part.filename === undefined ? {} : { title: part.filename }),
 			});
 		}
 	}
@@ -200,8 +207,12 @@ function partToAnthropic(part: CanonicalContentPart): Record<string, unknown> {
 function contentToAnthropic(
 	content: CanonicalMessage["content"],
 ): string | Record<string, unknown>[] {
-	if (content === null) return "";
-	if (typeof content === "string") return content;
+	if (content === null) {
+		return "";
+	}
+	if (typeof content === "string") {
+		return content;
+	}
 	return content.map(partToAnthropic);
 }
 
@@ -216,7 +227,9 @@ function requestUsesProviderFileId(req: CanonicalChatRequest): boolean {
 }
 
 function parseToolArguments(args: string): Record<string, unknown> {
-	if (!args) return {};
+	if (!args) {
+		return {};
+	}
 	try {
 		const parsed = JSON.parse(args) as unknown;
 		return parsed && typeof parsed === "object" && !Array.isArray(parsed)
@@ -241,12 +254,15 @@ function buildMessages(req: CanonicalChatRequest): {
 		if (message.role === "system" || message.role === "developer") {
 			const content = message.content;
 			if (typeof content === "string") {
-				if (content.length > 0)
+				if (content.length > 0) {
 					systemBlocks.push({ type: "text", text: content });
+				}
 			} else if (Array.isArray(content)) {
 				for (const part of content) {
 					const block = textPartToAnthropic(part);
-					if (block.cache_control !== undefined) systemHasCacheControl = true;
+					if (block.cache_control !== undefined) {
+						systemHasCacheControl = true;
+					}
 					systemBlocks.push(block);
 				}
 			}
@@ -261,12 +277,12 @@ function buildMessages(req: CanonicalChatRequest): {
 						type: "tool_result",
 						tool_use_id: message.toolCallId ?? "",
 						content: contentToAnthropic(message.content),
-						...(message.cacheControl !== undefined
-							? { cache_control: message.cacheControl }
-							: {}),
-						...(message.toolResultError !== undefined
-							? { is_error: message.toolResultError }
-							: {}),
+						...(message.cacheControl === undefined
+							? {}
+							: { cache_control: message.cacheControl }),
+						...(message.toolResultError === undefined
+							? {}
+							: { is_error: message.toolResultError }),
 					},
 				],
 			});
@@ -279,25 +295,30 @@ function buildMessages(req: CanonicalChatRequest): {
 				...(anthropicThinkingFromProviderFields(message.providerFields) ?? []),
 			);
 			const content = contentToAnthropic(message.content);
-			if (typeof content === "string" && content.length > 0)
+			if (typeof content === "string" && content.length > 0) {
 				blocks.push({ type: "text", text: content });
-			else if (Array.isArray(content)) blocks.push(...content);
+			} else if (Array.isArray(content)) {
+				blocks.push(...content);
+			}
 			for (const toolCall of message.toolCalls ?? []) {
 				const block = {
 					type: "tool_use",
 					id: toolCall.id,
 					name: toolCall.name,
 					input: parseToolArguments(toolCall.arguments),
-					...(toolCall.cacheControl !== undefined
-						? { cache_control: toolCall.cacheControl }
-						: {}),
+					...(toolCall.cacheControl === undefined
+						? {}
+						: { cache_control: toolCall.cacheControl }),
 				};
-				if (toolCall.contentIndex !== undefined)
+				if (toolCall.contentIndex === undefined) {
+					blocks.push(block);
+				} else {
 					blocks.splice(toolCall.contentIndex, 0, block);
-				else blocks.push(block);
+				}
 			}
-			if (blocks.length > 0)
+			if (blocks.length > 0) {
 				messages.push({ role: "assistant", content: blocks });
+			}
 			continue;
 		}
 
@@ -315,7 +336,7 @@ function buildMessages(req: CanonicalChatRequest): {
 	}
 
 	return {
-		...(system !== undefined ? { system } : {}),
+		...(system === undefined ? {} : { system }),
 		messages,
 	};
 }
@@ -329,7 +350,9 @@ function applyReasoning(
 		"anthropic_adaptive",
 		"anthropic_budget",
 	]);
-	if (resolved === undefined) return;
+	if (resolved === undefined) {
+		return;
+	}
 	const { effort } = resolved;
 	const spec = ctx.meta.reasoning!;
 	const display = summaryVisible(resolved.summary) ? "summarized" : "omitted";
@@ -370,7 +393,9 @@ function applyResponseFormat(
 	req: CanonicalChatRequest,
 ): void {
 	const format = req.responseFormat;
-	if (format === undefined || format.type === "text") return;
+	if (format === undefined || format.type === "text") {
+		return;
+	}
 	const schema =
 		format.type === "json_schema" ? format.schema : { type: "object" };
 	const outputConfig = (body.output_config ?? {}) as Record<string, unknown>;
@@ -399,42 +424,58 @@ function buildBody(
 		stream: req.stream,
 		...buildMessages(req),
 	};
-	if (nativeModel !== undefined) body.speed = "fast";
-	if (req.temperature !== undefined) body.temperature = req.temperature;
-	if (req.topP !== undefined) body.top_p = req.topP;
-	if (req.topK !== undefined) body.top_k = req.topK;
-	if (req.messagesTransport?.cacheControl !== undefined)
+	if (nativeModel !== undefined) {
+		body.speed = "fast";
+	}
+	if (req.temperature !== undefined) {
+		body.temperature = req.temperature;
+	}
+	if (req.topP !== undefined) {
+		body.top_p = req.topP;
+	}
+	if (req.topK !== undefined) {
+		body.top_k = req.topK;
+	}
+	if (req.messagesTransport?.cacheControl !== undefined) {
 		body.cache_control = req.messagesTransport.cacheControl;
-	if (req.messagesTransport?.metadata !== undefined)
+	}
+	if (req.messagesTransport?.metadata !== undefined) {
 		body.metadata = req.messagesTransport.metadata;
-	if (req.stop !== undefined) body.stop_sequences = req.stop;
+	}
+	if (req.stop !== undefined) {
+		body.stop_sequences = req.stop;
+	}
 	if (req.messagesTransport?.rawTools) {
 		body.tools = structuredClone(req.messagesTransport.rawTools);
 	} else if (req.tools) {
 		body.tools = req.tools.map((tool) => ({
 			name: tool.name,
-			...(tool.description !== undefined
-				? { description: tool.description }
-				: {}),
+			...(tool.description === undefined
+				? {}
+				: { description: tool.description }),
 			input_schema: tool.parameters ?? { type: "object", properties: {} },
-			...(tool.strict !== undefined ? { strict: tool.strict } : {}),
-			...(tool.cacheControl !== undefined
-				? { cache_control: tool.cacheControl }
-				: {}),
+			...(tool.strict === undefined ? {} : { strict: tool.strict }),
+			...(tool.cacheControl === undefined
+				? {}
+				: { cache_control: tool.cacheControl }),
 		}));
 	}
 	if (req.toolChoice !== undefined) {
-		if (req.toolChoice === "auto") body.tool_choice = { type: "auto" };
-		else if (req.toolChoice === "none") body.tool_choice = { type: "none" };
-		else if (req.toolChoice === "required") body.tool_choice = { type: "any" };
-		else if ("name" in req.toolChoice)
+		if (req.toolChoice === "auto") {
+			body.tool_choice = { type: "auto" };
+		} else if (req.toolChoice === "none") {
+			body.tool_choice = { type: "none" };
+		} else if (req.toolChoice === "required") {
+			body.tool_choice = { type: "any" };
+		} else if ("name" in req.toolChoice) {
 			body.tool_choice = { type: "tool", name: req.toolChoice.name };
-		else {
+		} else {
 			const allowed = new Set(req.toolChoice.allowedTools);
-			if (Array.isArray(body.tools))
+			if (Array.isArray(body.tools)) {
 				body.tools = body.tools.filter((tool) =>
 					allowed.has(String((tool as { name?: unknown }).name ?? "")),
 				);
+			}
 			body.tool_choice = {
 				type: req.toolChoice.mode === "required" ? "any" : "auto",
 			};
@@ -444,15 +485,17 @@ function buildBody(
 	applyResponseFormat(body, req);
 	const extraBody = req.extraBody ? { ...req.extraBody } : undefined;
 	if (extraBody !== undefined) {
-		if (body.top_k === undefined && typeof extraBody.top_k === "number")
+		if (body.top_k === undefined && typeof extraBody.top_k === "number") {
 			body.top_k = extraBody.top_k;
+		}
 		if (
 			body.metadata === undefined &&
 			extraBody.metadata !== null &&
 			typeof extraBody.metadata === "object" &&
 			!Array.isArray(extraBody.metadata)
-		)
+		) {
 			body.metadata = extraBody.metadata;
+		}
 		delete extraBody.top_k;
 		delete extraBody.metadata;
 	}
@@ -472,21 +515,25 @@ function mapUsage(usage: AnthropicUsage | undefined): Usage {
 		completionTokens: completion,
 		totalTokens: prompt + completion,
 	};
-	if (usage?.cache_read_input_tokens != null) out.cacheReadTokens = cacheRead;
-	if (usage?.cache_creation_input_tokens != null)
+	if (usage?.cache_read_input_tokens != null) {
+		out.cacheReadTokens = cacheRead;
+	}
+	if (usage?.cache_creation_input_tokens != null) {
 		out.cacheWriteTokens = cacheWrite;
+	}
 	if (usage?.cache_creation != null) {
 		out.cacheWriteTokensByTtl = {
-			...(usage.cache_creation.ephemeral_5m_input_tokens !== undefined
-				? { "300": usage.cache_creation.ephemeral_5m_input_tokens }
-				: {}),
-			...(usage.cache_creation.ephemeral_1h_input_tokens !== undefined
-				? { "3600": usage.cache_creation.ephemeral_1h_input_tokens }
-				: {}),
+			...(usage.cache_creation.ephemeral_5m_input_tokens === undefined
+				? {}
+				: { "300": usage.cache_creation.ephemeral_5m_input_tokens }),
+			...(usage.cache_creation.ephemeral_1h_input_tokens === undefined
+				? {}
+				: { "3600": usage.cache_creation.ephemeral_1h_input_tokens }),
 		};
 	}
-	if (usage?.output_tokens_details?.thinking_tokens != null)
+	if (usage?.output_tokens_details?.thinking_tokens != null) {
 		out.reasoningTokens = usage.output_tokens_details.thinking_tokens;
+	}
 	return out;
 }
 
@@ -511,11 +558,15 @@ function mapFinishReason(
 			return hasToolCalls ? "tool_calls" : null;
 		default: {
 			const normalized = reason.toLowerCase();
-			if (/max.?tokens?|context.?window|length/.test(normalized))
+			if (/max.?tokens?|context.?window|length/.test(normalized)) {
 				return "length";
-			if (/tool.?use|function.?call/.test(normalized)) return "tool_calls";
-			if (/filter|safety|guardrail|block|prohibit|refus/.test(normalized))
+			}
+			if (/tool.?use|function.?call/.test(normalized)) {
+				return "tool_calls";
+			}
+			if (/filter|safety|guardrail|block|prohibit|refus/.test(normalized)) {
 				return "content_filter";
+			}
 			return hasToolCalls ? "tool_calls" : "stop";
 		}
 	}
@@ -533,19 +584,22 @@ function parseResponse(
 		CanonicalChatResponse["choices"][number]["message"]["toolCalls"]
 	> = [];
 	for (const block of message.content ?? []) {
-		if (block.type === "text" && block.text !== undefined)
+		if (block.type === "text" && block.text !== undefined) {
 			texts.push(block.text);
+		}
 		if (block.type === "thinking" && block.thinking !== undefined) {
 			reasoning.push(block.thinking);
-			if (typeof block.signature === "string")
+			if (typeof block.signature === "string") {
 				thinkingBlocks.push({
 					type: "thinking",
 					thinking: block.thinking,
 					signature: block.signature,
 				});
+			}
 		}
-		if (block.type === "redacted_thinking" && typeof block.data === "string")
+		if (block.type === "redacted_thinking" && typeof block.data === "string") {
 			thinkingBlocks.push({ type: "redacted_thinking", data: block.data });
+		}
 		if (block.type === "tool_use") {
 			toolCalls.push({
 				id: block.id ?? `toolu_${randomUUID()}`,
@@ -558,16 +612,21 @@ function parseResponse(
 		role: "assistant",
 		content: texts.length > 0 ? texts.join("") : null,
 	};
-	if (reasoning.length > 0) outMessage.reasoning = reasoning.join("");
+	if (reasoning.length > 0) {
+		outMessage.reasoning = reasoning.join("");
+	}
 	if (thinkingBlocks.length > 0) {
 		const providerFields = mergeProviderFields(
 			outMessage.providerFields,
 			providerFieldsWithAnthropicThinking(thinkingBlocks),
 		);
-		if (providerFields !== undefined)
+		if (providerFields !== undefined) {
 			outMessage.providerFields = providerFields;
+		}
 	}
-	if (toolCalls.length > 0) outMessage.toolCalls = toolCalls;
+	if (toolCalls.length > 0) {
+		outMessage.toolCalls = toolCalls;
+	}
 	const response: CanonicalChatResponse = {
 		id: message.id ?? `msg_${randomUUID()}`,
 		created: Math.floor(Date.now() / 1000),
@@ -611,7 +670,9 @@ function mergeStreamUsage(
 	previous: AnthropicUsage,
 	update: AnthropicUsage | undefined,
 ): AnthropicUsage {
-	if (update === undefined) return previous;
+	if (update === undefined) {
+		return previous;
+	}
 	const merged = { ...previous, ...update };
 	for (const field of [
 		"input_tokens",
@@ -620,8 +681,11 @@ function mergeStreamUsage(
 		"cache_creation_input_tokens",
 	] as const) {
 		if (update[field] == null) {
-			if (previous[field] !== undefined) merged[field] = previous[field];
-			else delete merged[field];
+			if (previous[field] === undefined) {
+				delete merged[field];
+			} else {
+				merged[field] = previous[field];
+			}
 		}
 	}
 	if (
@@ -629,13 +693,15 @@ function mergeStreamUsage(
 		update.cache_creation_input_tokens !==
 			previous.cache_creation_input_tokens &&
 		update.cache_creation == null
-	)
+	) {
 		delete merged.cache_creation;
+	}
 	if (
 		update.output_tokens_details == null &&
 		previous.output_tokens_details !== undefined
-	)
+	) {
 		merged.output_tokens_details = previous.output_tokens_details;
+	}
 	return merged;
 }
 
@@ -662,7 +728,9 @@ async function* parseStream(
 	let nextToolCallIndex = 0;
 	const toolCallIndex = (blockIndex: number): number => {
 		const existing = toolCallIndexes.get(blockIndex);
-		if (existing !== undefined) return existing;
+		if (existing !== undefined) {
+			return existing;
+		}
 		const index = nextToolCallIndex++;
 		toolCallIndexes.set(blockIndex, index);
 		return index;
@@ -681,7 +749,9 @@ async function* parseStream(
 				cause,
 			});
 		}
-		if (event.type === "error") throw mapStreamError(event);
+		if (event.type === "error") {
+			throw mapStreamError(event);
+		}
 		if (event.type === "message_start") {
 			id = event.message?.id ?? id;
 			model = event.message?.model ?? model;
@@ -722,10 +792,12 @@ async function* parseStream(
 				index,
 				arguments: "",
 			};
-			if (event.content_block.id !== undefined)
+			if (event.content_block.id !== undefined) {
 				toolCall.id = event.content_block.id;
-			if (event.content_block.name !== undefined)
+			}
+			if (event.content_block.name !== undefined) {
 				toolCall.name = event.content_block.name;
+			}
 			yield {
 				id,
 				created,
@@ -816,7 +888,9 @@ async function* parseStream(
 				event.delta.thinking !== undefined
 			) {
 				const block = thinkingBlocks.get(event.index ?? 0);
-				if (block?.type === "thinking") block.thinking += event.delta.thinking;
+				if (block?.type === "thinking") {
+					block.thinking += event.delta.thinking;
+				}
 				yield {
 					id,
 					created,
@@ -834,8 +908,9 @@ async function* parseStream(
 				event.delta.signature !== undefined
 			) {
 				const block = thinkingBlocks.get(event.index ?? 0);
-				if (block?.type === "thinking")
+				if (block?.type === "thinking") {
 					block.signature += event.delta.signature;
+				}
 			} else if (
 				event.delta?.type === "input_json_delta" &&
 				event.delta.partial_json !== undefined
@@ -886,23 +961,25 @@ async function* parseStream(
 			continue;
 		}
 		if (event.type === "message_delta") {
-			if (pendingTerminal)
+			if (pendingTerminal) {
 				throw new GatewayError({
 					class: "server",
 					code: "upstream_protocol_error",
 					message: "Anthropic emitted more than one terminal message_delta",
 				});
+			}
 			streamUsage = mergeStreamUsage(streamUsage, event.usage);
 			const finishReason = mapFinishReason(
 				event.delta?.stop_reason,
 				event.delta?.stop_reason === "tool_use",
 			);
-			if (finishReason === null)
+			if (finishReason === null) {
 				throw new GatewayError({
 					class: "server",
 					code: "upstream_protocol_error",
 					message: "Anthropic terminal message_delta omitted stop_reason",
 				});
+			}
 			const usage = mapUsage(streamUsage);
 			pendingTerminal = {
 				finishReason,
@@ -913,12 +990,13 @@ async function* parseStream(
 			continue;
 		}
 		if (event.type === "message_stop") {
-			if (messageStopped || !pendingTerminal)
+			if (messageStopped || !pendingTerminal) {
 				throw new GatewayError({
 					class: "server",
 					code: "upstream_protocol_error",
 					message: "Anthropic emitted an invalid message_stop sequence",
 				});
+			}
 			messageStopped = true;
 			yield attachAdapterDiagnostics(
 				{
@@ -947,11 +1025,12 @@ async function* parseStream(
 			model,
 			choices: [],
 		};
-		if (event.type !== "ping")
+		if (event.type !== "ping") {
 			recordUnknownAdapterEvent(
 				adapterContextDiagnostics(ctx),
 				event.type ?? "missing_type",
 			);
+		}
 		yield attachAdapterDiagnostics(metadataChunk, {
 			metadata:
 				event.type === "ping"
@@ -969,10 +1048,12 @@ function mapError(err: unknown, ctx: AdapterContext): GatewayError {
 			// Anthropic classifies by `error.type` before looking at the HTTP status.
 			classifyBody: (_status, body) => {
 				const typ = (body as { error?: { type?: string } })?.error?.type;
-				if (typ === "rate_limit_error" || typ === "overloaded_error")
+				if (typ === "rate_limit_error" || typ === "overloaded_error") {
 					return "rate_limit";
-				if (typ === "authentication_error" || typ === "permission_error")
+				}
+				if (typ === "authentication_error" || typ === "permission_error") {
 					return "auth";
+				}
 				return null;
 			},
 			refineBadRequest: (message) =>
@@ -991,7 +1072,9 @@ function addBetaHeader(headers: Record<string, string>, beta: string): void {
 		return;
 	}
 	const betas = headers[betaName]!.split(",").map((value) => value.trim());
-	if (!betas.includes(beta)) headers[betaName] = `${headers[betaName]},${beta}`;
+	if (!betas.includes(beta)) {
+		headers[betaName] = `${headers[betaName]},${beta}`;
+	}
 }
 
 function requestHeaders(
@@ -1005,8 +1088,12 @@ function requestHeaders(
 		"anthropic-version": c.version ?? DEFAULT_VERSION,
 		...(c.headers ?? {}),
 	};
-	if (options.fastMode) addBetaHeader(headers, FAST_MODE_BETA);
-	if (options.providerFileId) addBetaHeader(headers, "files-api-2025-04-14");
+	if (options.fastMode) {
+		addBetaHeader(headers, FAST_MODE_BETA);
+	}
+	if (options.providerFileId) {
+		addBetaHeader(headers, "files-api-2025-04-14");
+	}
 	return {
 		base: (c.baseUrl ?? DEFAULT_BASE).replace(/\/+$/, ""),
 		headers,

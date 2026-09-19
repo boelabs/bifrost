@@ -35,7 +35,9 @@ function deploymentOperations(row: DeploymentRow): Set<OperationId> {
 	const operations = new Set<OperationId>();
 	for (const callType of meta.supportedCallTypes ?? []) {
 		const operation = operationForCallType(callType);
-		if (operation) operations.add(operation.id);
+		if (operation) {
+			operations.add(operation.id);
+		}
 	}
 	for (const operation of OPERATION_IDS) {
 		if (
@@ -54,11 +56,14 @@ async function publicModelOperations(
 	const deployments = await listDeploymentsByPublicModel(publicModel, {
 		includeDisabled: true,
 	});
-	if (deployments.length === 0) return undefined;
+	if (deployments.length === 0) {
+		return undefined;
+	}
 	const operations = new Set<OperationId>();
 	for (const deployment of deployments) {
-		for (const operation of deploymentOperations(deployment))
+		for (const operation of deploymentOperations(deployment)) {
 			operations.add(operation);
+		}
 	}
 	return operations;
 }

@@ -59,7 +59,9 @@ export function summaryForEffort(
 	effort: ReasoningEffort | undefined,
 	summary: ReasoningSummary | undefined,
 ): ReasoningSummary | undefined {
-	if (summary !== undefined) return summary;
+	if (summary !== undefined) {
+		return summary;
+	}
 	return effort !== undefined && effort !== "none" ? "auto" : undefined;
 }
 
@@ -174,19 +176,28 @@ export function snapEffort(
 	const sorted = [...spec.levels].sort(
 		(a, b) => effortIndex(a) - effortIndex(b),
 	);
-	if (sorted.length === 0) return requested;
+	if (sorted.length === 0) {
+		return requested;
+	}
 	// Explicit OFF, honored only if the model actually exposes it (lowest rung is "none").
-	if (requested === "none" && sorted[0] === "none") return "none";
+	if (requested === "none" && sorted[0] === "none") {
+		return "none";
+	}
 
 	// Positive request (or "none" on a mandatory reasoner): pick among the reasoning levels, never "none".
 	const positives = sorted.filter((lvl) => lvl !== "none");
-	if (positives.length === 0) return "none"; // degenerate: the model only declares "none"
+	if (positives.length === 0) {
+		return "none"; // degenerate: the model only declares "none"
+	}
 
 	const reqIdx = effortIndex(requested);
 	let chosen = positives[0]!; // floor if the request is below all of them
 	for (const lvl of positives) {
-		if (effortIndex(lvl) <= reqIdx) chosen = lvl;
-		else break;
+		if (effortIndex(lvl) <= reqIdx) {
+			chosen = lvl;
+		} else {
+			break;
+		}
 	}
 	return chosen;
 }
@@ -235,10 +246,14 @@ export function resolveChatTemplateFlag(
 	spec: ReasoningSpec,
 ): { param: string; value: boolean | string | number } | undefined {
 	const cfg = spec.chatTemplateFlag;
-	if (spec.kind !== "chat_template_flag" || !cfg) return undefined;
+	if (spec.kind !== "chat_template_flag" || !cfg) {
+		return undefined;
+	}
 	const on = resolveReasoning(reasoning, spec).effort !== "none";
 	const value = on ? (cfg.onValue ?? true) : cfg.offValue;
-	if (value === undefined) return undefined;
+	if (value === undefined) {
+		return undefined;
+	}
 	return { param: cfg.param, value };
 }
 
@@ -251,10 +266,14 @@ export function resolveBodyFieldReasoning(
 	spec: ReasoningSpec,
 ): { param: string; value: unknown } | undefined {
 	const cfg = spec.bodyField;
-	if (spec.kind !== "openai_body" || !cfg) return undefined;
+	if (spec.kind !== "openai_body" || !cfg) {
+		return undefined;
+	}
 	const on = resolveReasoning(reasoning, spec).effort !== "none";
 	const value = on ? (cfg.onValue ?? true) : cfg.offValue;
-	if (value === undefined) return undefined;
+	if (value === undefined) {
+		return undefined;
+	}
 	return { param: cfg.param, value };
 }
 
@@ -281,7 +300,9 @@ export function reasoningLogInfo(
 	reasoning: CanonicalReasoning | undefined,
 	spec: ReasoningSpec | undefined,
 ): ReasoningLogInfo | undefined {
-	if (!spec) return undefined;
+	if (!spec) {
+		return undefined;
+	}
 	const requested = reasoning?.effort ?? null;
 	const effective = resolveReasoning(reasoning, spec).effort;
 	const clamped = requested !== null && requested !== effective;
@@ -299,10 +320,20 @@ export function reasoningLogInfo(
  * threshold, so only an explicit effort request can select it.
  */
 export function effortFromBudgetTokens(tokens: number): ReasoningEffort {
-	if (tokens <= 0) return "none";
-	if (tokens <= 512) return "minimal";
-	if (tokens <= 4_096) return "low";
-	if (tokens <= 12_000) return "medium";
-	if (tokens <= 20_000) return "high";
+	if (tokens <= 0) {
+		return "none";
+	}
+	if (tokens <= 512) {
+		return "minimal";
+	}
+	if (tokens <= 4096) {
+		return "low";
+	}
+	if (tokens <= 12_000) {
+		return "medium";
+	}
+	if (tokens <= 20_000) {
+		return "high";
+	}
 	return "xhigh";
 }

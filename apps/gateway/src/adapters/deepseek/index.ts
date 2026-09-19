@@ -71,7 +71,9 @@ function prepareDeepSeekRequest(
 	req: CanonicalChatRequest,
 	ctx: { transport: string },
 ): CanonicalChatRequest {
-	if (ctx.transport !== "responses") return req;
+	if (ctx.transport !== "responses") {
+		return req;
+	}
 	// DeepSeek's Responses schema is inherently strict and its format/tool objects do not
 	// expose OpenAI's optional `strict` members. Strip those markers after validation so the
 	// upstream receives its native shape while the gateway still enforces the requested guarantee.
@@ -87,11 +89,13 @@ function prepareDeepSeekRequest(
 		const { strict: _strict, ...rest } = tool;
 		return rest;
 	});
-	if (responseFormat === req.responseFormat && tools === undefined) return req;
+	if (responseFormat === req.responseFormat && tools === undefined) {
+		return req;
+	}
 	return {
 		...req,
-		...(responseFormat !== undefined ? { responseFormat } : {}),
-		...(tools !== undefined ? { tools } : {}),
+		...(responseFormat === undefined ? {} : { responseFormat }),
+		...(tools === undefined ? {} : { tools }),
 	};
 }
 
@@ -111,13 +115,16 @@ function deepSeekChatBaseUrl(
 		: ctx.transport === "responses"
 			? ""
 			: undefined;
-	if (prefix === undefined) return baseUrl;
+	if (prefix === undefined) {
+		return baseUrl;
+	}
 	const url = new URL(baseUrl);
 	if (
 		url.hostname.toLowerCase() !== "api.deepseek.com" ||
 		(url.pathname !== "/v1" && url.pathname !== "/" && url.pathname !== "/beta")
-	)
+	) {
 		return baseUrl;
+	}
 	url.pathname = prefix;
 	return url.toString().replace(/\/+$/, "");
 }

@@ -36,14 +36,18 @@ export const chatReasoningMiddleware: LanguageModelMiddleware = {
 		...params,
 		includeRawChunks: true,
 		prompt: params.prompt.map((message) => {
-			if (message.role !== "assistant") return message;
+			if (message.role !== "assistant") {
+				return message;
+			}
 			const states = message.content.flatMap((part) => {
 				const parsed = reasoningState.safeParse(
 					part.providerOptions?.bifrost?.reasoning,
 				);
 				return parsed.success ? parsed.data : [];
 			});
-			if (!states.length) return message;
+			if (!states.length) {
+				return message;
+			}
 			return {
 				...message,
 				providerOptions: {
@@ -65,8 +69,9 @@ export const chatReasoningMiddleware: LanguageModelMiddleware = {
 		let sequence = 0;
 		const states = new Map<string, z.infer<typeof reasoningState>[number]>();
 		const close = (controller: TransformStreamDefaultController<Part>) => {
-			if (active !== undefined)
+			if (active !== undefined) {
 				controller.enqueue({ type: "reasoning-end", id: active });
+			}
 			active = undefined;
 		};
 		return {
@@ -76,7 +81,7 @@ export const chatReasoningMiddleware: LanguageModelMiddleware = {
 					transform(part, controller) {
 						if (part.type === "raw") {
 							const parsed = chunkSchema.safeParse(part.rawValue);
-							if (parsed.success)
+							if (parsed.success) {
 								for (const state of parsed.data.choices[0]?.delta
 									?.provider_specific_fields?.openai?.reasoning ?? []) {
 									states.set(
@@ -86,6 +91,7 @@ export const chatReasoningMiddleware: LanguageModelMiddleware = {
 										state,
 									);
 								}
+							}
 							const boundary = parsed.success
 								? parsed.data.choices[0]?.delta?.provider_specific_fields
 										?.openai?.responses?.reasoning_part
@@ -95,13 +101,16 @@ export const chatReasoningMiddleware: LanguageModelMiddleware = {
 								if (
 									active !== undefined &&
 									(active !== key || boundary.status === "done")
-								)
+								) {
 									close(controller);
+								}
 								pending = key;
 							}
 							return;
 						}
-						if (part.type === "reasoning-start") return;
+						if (part.type === "reasoning-start") {
+							return;
+						}
 						if (part.type === "reasoning-delta") {
 							if (active === undefined) {
 								active = pending ?? `reasoning-${sequence++}`;
@@ -115,8 +124,9 @@ export const chatReasoningMiddleware: LanguageModelMiddleware = {
 							pending = undefined;
 							return;
 						}
-						if (part.type === "finish" || part.type === "error")
+						if (part.type === "finish" || part.type === "error") {
 							close(controller);
+						}
 						if (part.type === "finish" && states.size) {
 							controller.enqueue({
 								...part,

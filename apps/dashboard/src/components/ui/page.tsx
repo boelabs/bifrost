@@ -55,8 +55,8 @@ export function EmptyState({
 } & AppearanceProps) {
 	return (
 		<div
-			style={appearanceStyle({ borderRadius, width }, style)}
 			className="flex flex-col items-center justify-center gap-2 rounded-[var(--ui-radius-surface)] border border-border/50 border-dashed px-6 py-16 text-center"
+			style={appearanceStyle({ borderRadius, width }, style)}
 		>
 			<p className="font-medium text-fg">{title}</p>
 			{description ? (
@@ -75,9 +75,9 @@ export function ErrorNote({
 }: { children: ReactNode; style?: CSSProperties } & AppearanceProps) {
 	return (
 		<p
+			className="rounded-[var(--ui-radius-control)] border border-danger/30 bg-danger/10 px-3 py-2 font-medium text-danger text-sm"
 			role="alert"
 			style={appearanceStyle({ borderRadius, width }, style)}
-			className="rounded-[var(--ui-radius-control)] border border-danger/30 bg-danger/10 px-3 py-2 font-medium text-danger text-sm"
 		>
 			{children}
 		</p>

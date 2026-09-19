@@ -48,7 +48,7 @@ function request(
 		model: "public-model",
 		messages: [{ role: "user", content: [file] }],
 		stream: false,
-		...(fileParser !== undefined ? { fileParser } : {}),
+		...(fileParser === undefined ? {} : { fileParser }),
 	};
 }
 

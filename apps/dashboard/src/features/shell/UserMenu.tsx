@@ -63,22 +63,22 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
 			<MenuRoot>
 				<MenuTrigger
 					aria-label={`User menu for ${name}`}
-					title={collapsed ? name : undefined}
 					className="w-full justify-start gap-3 p-2 text-left hover:bg-secondary"
+					title={collapsed ? name : undefined}
 				>
 					<span
 						aria-hidden
-						className="flex size-8 shrink-0 items-center justify-center rounded-[var(--ui-radius-control)] border border-border/50 bg-card text-sm font-semibold"
+						className="flex size-8 shrink-0 items-center justify-center rounded-[var(--ui-radius-control)] border border-border/50 bg-card font-semibold text-sm"
 					>
 						{name.slice(0, 1).toUpperCase()}
 					</span>
 					{!collapsed && (
 						<>
 							<span className="min-w-0 flex-1">
-								<span className="block truncate text-sm font-medium">
+								<span className="block truncate font-medium text-sm">
 									{name}
 								</span>
-								<span className="block truncate text-xs text-fg-muted">
+								<span className="block truncate text-fg-muted text-xs">
 									{role}
 								</span>
 							</span>
@@ -90,20 +90,22 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
 					)}
 				</MenuTrigger>
 				<MenuPortal>
-					<MenuPositioner side="top" align="start" sideOffset={8}>
+					<MenuPositioner align="start" side="top" sideOffset={8}>
 						<MenuPopup className="w-64">
 							<div className="min-w-0 px-3 py-3">
-								<p className="truncate text-sm font-semibold">{name}</p>
-								<p className="truncate text-xs text-fg-muted">{role}</p>
+								<p className="truncate font-semibold text-sm">{name}</p>
+								<p className="truncate text-fg-muted text-xs">{role}</p>
 							</div>
 							<MenuSeparator />
 							<MenuGroup>
 								<MenuGroupLabel>Appearance</MenuGroupLabel>
 								<MenuRadioGroup
-									value={preference}
 									onValueChange={(value) => {
-										if (isThemePreference(value)) setPreference(value);
+										if (isThemePreference(value)) {
+											setPreference(value);
+										}
 									}}
+									value={preference}
 								>
 									{(
 										[
@@ -117,9 +119,9 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
 										] as const
 									).map(({ value, label, icon: Icon }) => (
 										<MenuRadioItem
+											className="flex items-center gap-2"
 											key={value}
 											value={value}
-											className="flex items-center gap-2"
 										>
 											<Icon aria-hidden className="size-4" />
 											<span className="flex-1">{label}</span>
@@ -132,9 +134,9 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
 							</MenuGroup>
 							<MenuSeparator />
 							<MenuItem
+								className="flex items-center gap-2 text-danger"
 								disabled={pending}
 								onClick={logout}
-								className="flex items-center gap-2 text-danger"
 							>
 								<IconLogout aria-hidden className="size-4" />
 								{pending ? "Signing out..." : "Sign out"}
@@ -144,7 +146,7 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
 				</MenuPortal>
 			</MenuRoot>
 			{error && (
-				<p role="alert" className="px-2 py-1 text-xs text-danger">
+				<p className="px-2 py-1 text-danger text-xs" role="alert">
 					{error}
 				</p>
 			)}

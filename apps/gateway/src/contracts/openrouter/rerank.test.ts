@@ -84,7 +84,7 @@ test("rerank contract rejects blank content, images, unknown fields, and invalid
 		rerankRequestSchema.safeParse({
 			model: "m",
 			query: "q",
-			documents: Array.from({ length: 1_001 }, () => "d"),
+			documents: Array.from({ length: 1001 }, () => "d"),
 		}).success,
 		false,
 	);

@@ -19,7 +19,9 @@ export function parseObject(
 	text: string,
 	label: string,
 ): Record<string, unknown> | undefined {
-	if (!text.trim()) return undefined;
+	if (!text.trim()) {
+		return undefined;
+	}
 	let value: unknown;
 	try {
 		value = JSON.parse(text);
@@ -27,7 +29,9 @@ export function parseObject(
 		throw new Error(`${label} is not valid JSON.`);
 	}
 	const result = objectSchema.safeParse(value);
-	if (!result.success) throw new Error(`${label} must be a JSON object.`);
+	if (!result.success) {
+		throw new Error(`${label} must be a JSON object.`);
+	}
 	return result.data;
 }
 
@@ -35,10 +39,11 @@ export function parseCustomEntry(text: string): CustomEntry {
 	const result = entrySchema.safeParse(
 		parseObject(text, "Custom configuration"),
 	);
-	if (!result.success)
+	if (!result.success) {
 		throw new Error(
 			"Custom configuration must contain at least one operation with an object profile.",
 		);
+	}
 	return result.data;
 }
 

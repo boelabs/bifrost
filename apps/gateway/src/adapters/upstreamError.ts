@@ -37,7 +37,7 @@ interface UpstreamErrorDetail {
 	code?: string;
 }
 
-const PUBLIC_MESSAGE_MAX_CHARS = 4_096;
+const PUBLIC_MESSAGE_MAX_CHARS = 4096;
 const PUBLIC_FIELD_MAX_CHARS = 512;
 
 function record(value: unknown): Record<string, unknown> | null {
@@ -53,7 +53,9 @@ function nonEmptyString(value: unknown): string | undefined {
 /** Reads the common OpenAI envelope plus the root-level shape used by Cohere-like APIs. */
 function upstreamDetail(body: unknown): UpstreamErrorDetail {
 	const root = record(body);
-	if (!root) return {};
+	if (!root) {
+		return {};
+	}
 	const nested = record(root.error);
 	const message =
 		nonEmptyString(nested?.message) ??
@@ -62,9 +64,9 @@ function upstreamDetail(body: unknown): UpstreamErrorDetail {
 	const param = nonEmptyString(nested?.param) ?? nonEmptyString(root.param);
 	const code = nonEmptyString(nested?.code) ?? nonEmptyString(root.code);
 	return {
-		...(message !== undefined ? { message } : {}),
-		...(param !== undefined ? { param } : {}),
-		...(code !== undefined ? { code } : {}),
+		...(message === undefined ? {} : { message }),
+		...(param === undefined ? {} : { param }),
+		...(code === undefined ? {} : { code }),
 	};
 }
 
@@ -73,19 +75,28 @@ function collectSensitiveStrings(
 	output: Set<string>,
 	depth = 0,
 ): void {
-	if (depth > 4 || value === null) return;
+	if (depth > 4 || value === null) {
+		return;
+	}
 	if (typeof value === "string") {
-		if (value !== "") output.add(value);
+		if (value !== "") {
+			output.add(value);
+		}
 		return;
 	}
 	if (Array.isArray(value)) {
-		for (const item of value) collectSensitiveStrings(item, output, depth + 1);
+		for (const item of value) {
+			collectSensitiveStrings(item, output, depth + 1);
+		}
 		return;
 	}
 	const object = record(value);
-	if (!object) return;
-	for (const child of Object.values(object))
+	if (!object) {
+		return;
+	}
+	for (const child of Object.values(object)) {
 		collectSensitiveStrings(child, output, depth + 1);
+	}
 }
 
 function identifierCharacter(value: string | undefined): boolean {
@@ -93,19 +104,23 @@ function identifierCharacter(value: string | undefined): boolean {
 }
 
 function redactSensitiveValue(input: string, sensitive: string): string {
-	if (sensitive.length >= 4) return input.split(sensitive).join("[redacted]");
+	if (sensitive.length >= 4) {
+		return input.split(sensitive).join("[redacted]");
+	}
 	let output = "";
 	let offset = 0;
 	while (offset < input.length) {
 		const index = input.indexOf(sensitive, offset);
-		if (index < 0) return output + input.slice(offset);
+		if (index < 0) {
+			return output + input.slice(offset);
+		}
 		const before = index === 0 ? undefined : input[index - 1];
 		const after = input[index + sensitive.length];
 		output += input.slice(offset, index);
-		if (!identifierCharacter(before) && !identifierCharacter(after)) {
-			output += "[redacted]";
-		} else {
+		if (identifierCharacter(before) || identifierCharacter(after)) {
 			output += sensitive;
+		} else {
+			output += "[redacted]";
 		}
 		offset = index + sensitive.length;
 	}
@@ -130,7 +145,9 @@ function publicProviderField(
 	}
 	const sensitive = new Set<string>();
 	if (ctx) {
-		if (ctx.upstreamModel !== "") sensitive.add(ctx.upstreamModel);
+		if (ctx.upstreamModel !== "") {
+			sensitive.add(ctx.upstreamModel);
+		}
 		collectSensitiveStrings(ctx.credentials, sensitive);
 	}
 	for (const secret of [...sensitive].sort((a, b) => b.length - a.length)) {
@@ -155,7 +172,9 @@ export function mapUpstreamHttpError(
 	mapping: UpstreamErrorMapping,
 	ctx?: Pick<AdapterContext, "upstreamModel" | "credentials">,
 ): GatewayError {
-	if (GatewayError.is(err)) return err;
+	if (GatewayError.is(err)) {
+		return err;
+	}
 	const { label } = mapping;
 	if (isAbortError(err)) {
 		return new GatewayError({
@@ -212,10 +231,10 @@ export function mapUpstreamHttpError(
 					}
 				: {}),
 			provider: { status: up.status, body: up.body },
-			...(retryAfterMs !== undefined ? { retryAfterMs } : {}),
-			...(up.headers?.["retry-after"] !== undefined
-				? { headers: { "Retry-After": up.headers["retry-after"] } }
-				: {}),
+			...(retryAfterMs === undefined ? {} : { retryAfterMs }),
+			...(up.headers?.["retry-after"] === undefined
+				? {}
+				: { headers: { "Retry-After": up.headers["retry-after"] } }),
 		});
 	}
 	const d = describeUnknownError(err);

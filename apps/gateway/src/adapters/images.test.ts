@@ -31,7 +31,7 @@ function ctx(
 ): AdapterContext {
 	return {
 		upstreamModel: "upstream-image",
-		transport: transport,
+		transport,
 		credentials:
 			adapter === "google"
 				? { apiKey: "google" }
@@ -196,8 +196,9 @@ test("OpenAI images: normalizes partial/completed SSE events", async () => {
 	for await (const event of openaiAdapter.imageGeneration!.parseStream!(
 		stream,
 		ctx("images"),
-	))
+	)) {
 		events.push(event);
+	}
 	assert.equal(events[0]?.kind, "partial");
 	assert.equal(events[1]?.kind, "completed");
 	assert.equal(

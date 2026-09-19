@@ -26,7 +26,9 @@ export async function createKeyAction(
 		() => createKey(body, idempotencyKey),
 		"The key could not be created.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }
 
@@ -35,7 +37,9 @@ export async function updateKeyAction(id: string, body: UpdateKeyInput) {
 		() => updateKey(id, body),
 		"The key could not be updated.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }
 
@@ -44,6 +48,8 @@ export async function deleteKeyAction(id: string) {
 		() => deleteKey(id),
 		"The key could not be deleted.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }

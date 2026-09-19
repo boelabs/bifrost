@@ -20,7 +20,7 @@ export function RefreshControls({
 	const { refresh, pending } = useRefresh();
 	useAutoRefresh(refresh, auto);
 	return (
-		<Button variant="secondary" size="sm" disabled={pending} onClick={refresh}>
+		<Button disabled={pending} onClick={refresh} size="sm" variant="secondary">
 			<IconRefresh aria-hidden className="size-4" />
 			{pending ? "Refreshing…" : label}
 		</Button>

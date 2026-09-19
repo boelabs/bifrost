@@ -16,11 +16,12 @@ import {
 function app(): Hono<AppEnv> {
 	const instance = new Hono<AppEnv>();
 	instance.onError((error, c) => {
-		if (GatewayError.is(error))
+		if (GatewayError.is(error)) {
 			return c.text(
 				error.code ?? error.class,
 				error.httpStatus as ContentfulStatusCode,
 			);
+		}
 		throw error;
 	});
 	instance.use("*", authMiddleware());
@@ -47,11 +48,12 @@ test("authentication accepts header credentials", async () => {
 test("a virtual key never satisfies an operator-only route", async () => {
 	const instance = new Hono<AppEnv>();
 	instance.onError((error, c) => {
-		if (GatewayError.is(error))
+		if (GatewayError.is(error)) {
 			return c.text(
 				error.code ?? error.class,
 				error.httpStatus as ContentfulStatusCode,
 			);
+		}
 		throw error;
 	});
 	instance.use("*", async (c, next) => {
@@ -87,11 +89,12 @@ test("permissions follow the session role, and the master key satisfies all of t
 	) {
 		const instance = new Hono<AppEnv>();
 		instance.onError((error, c) => {
-			if (GatewayError.is(error))
+			if (GatewayError.is(error)) {
 				return c.text(
 					error.code ?? error.class,
 					error.httpStatus as ContentfulStatusCode,
 				);
+			}
 			throw error;
 		});
 		instance.use("*", async (c, next) => {

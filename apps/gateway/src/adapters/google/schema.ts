@@ -65,9 +65,12 @@ function translate(
 	seen: ReadonlySet<string>,
 	dialect: GeminiSchemaDialect,
 ): unknown {
-	if (Array.isArray(node))
+	if (Array.isArray(node)) {
 		return node.map((n) => translate(n, defs, seen, dialect));
-	if (node === null || typeof node !== "object") return node;
+	}
+	if (node === null || typeof node !== "object") {
+		return node;
+	}
 	const src = node as Record<string, unknown>;
 
 	// Bring any locally-declared definitions into scope so nested $refs resolve.
@@ -96,7 +99,9 @@ function translate(
 			continue;
 		}
 		if (key === "examples" && Array.isArray(value)) {
-			if (value.length > 0) out.example = value[0];
+			if (value.length > 0) {
+				out.example = value[0];
+			}
 			continue;
 		}
 		// Gemini has no oneOf/allOf; anyOf is the closest expressible union.
@@ -106,15 +111,22 @@ function translate(
 		}
 		const allowedKeys =
 			dialect === "json_schema" ? GEMINI_JSON_SCHEMA_KEYS : GEMINI_SCHEMA_KEYS;
-		if (!allowedKeys.has(key)) continue;
-		if (dialect === "json_schema" && key === "nullable") continue;
+		if (!allowedKeys.has(key)) {
+			continue;
+		}
+		if (dialect === "json_schema" && key === "nullable") {
+			continue;
+		}
 
 		if (key === "type" && Array.isArray(value)) {
-			if (dialect === "json_schema") out.type = structuredClone(value);
-			else {
+			if (dialect === "json_schema") {
+				out.type = structuredClone(value);
+			} else {
 				// `["string", "null"]` → a single type plus `nullable`.
 				const real = (value as unknown[]).filter((t) => t !== "null");
-				if (value.includes("null")) out.nullable = true;
+				if (value.includes("null")) {
+					out.nullable = true;
+				}
 				out.type = real[0] ?? "object";
 			}
 		} else if (
@@ -140,9 +152,11 @@ function translate(
 		}
 	}
 	if (dialect === "json_schema" && src.nullable === true) {
-		if (typeof out.type === "string") out.type = [out.type, "null"];
-		else if (Array.isArray(out.type) && !out.type.includes("null"))
+		if (typeof out.type === "string") {
+			out.type = [out.type, "null"];
+		} else if (Array.isArray(out.type) && !out.type.includes("null")) {
 			out.type = [...out.type, "null"];
+		}
 	}
 
 	// Drop `format` values Gemini does not recognise for the resolved type (e.g. "uri", "uuid").
@@ -153,7 +167,9 @@ function translate(
 		const ok =
 			(t === "string" && stringFormats.has(out.format)) ||
 			((t === "integer" || t === "number") && NUMERIC_FORMATS.has(out.format));
-		if (!ok) delete out.format;
+		if (!ok) {
+			delete out.format;
+		}
 	}
 
 	return out;
@@ -170,7 +186,9 @@ export function toGeminiSchema(
 			? (translated as Record<string, unknown>)
 			: {};
 	// Tool parameters are an object; Gemini requires an explicit type at the root.
-	if (out.type === undefined && out.anyOf === undefined) out.type = "object";
+	if (out.type === undefined && out.anyOf === undefined) {
+		out.type = "object";
+	}
 	return out;
 }
 
@@ -185,6 +203,8 @@ export function toGeminiJsonSchema(
 		!Array.isArray(translated)
 			? (translated as Record<string, unknown>)
 			: {};
-	if (out.type === undefined && out.anyOf === undefined) out.type = "object";
+	if (out.type === undefined && out.anyOf === undefined) {
+		out.type = "object";
+	}
 	return out;
 }

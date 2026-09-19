@@ -67,8 +67,8 @@ export const videoInputReferenceSchema = z
 	.strict()
 	.superRefine((value, ctx) => {
 		const count =
-			(value.image_url !== undefined ? 1 : 0) +
-			(value.file_id !== undefined ? 1 : 0);
+			(value.image_url === undefined ? 0 : 1) +
+			(value.file_id === undefined ? 0 : 1);
 		if (count !== 1) {
 			ctx.addIssue({
 				code: "custom",
@@ -133,27 +133,38 @@ function inputReferencesToCanonical(
 ): VideoInputReference[] | undefined {
 	if (req.input_references != null) {
 		return req.input_references.map((part): VideoInputReference => {
-			if (part.type === "image_url")
+			if (part.type === "image_url") {
 				return { type: "image_url", url: part.image_url.url };
-			if (part.type === "audio_url")
+			}
+			if (part.type === "audio_url") {
 				return { type: "audio_url", url: part.audio_url.url };
+			}
 			return { type: "video_url", url: part.video_url.url };
 		});
 	}
 	const single = req.input_reference;
-	if (single == null) return undefined;
-	if (single.file_id !== undefined)
+	if (single == null) {
+		return undefined;
+	}
+	if (single.file_id !== undefined) {
 		return [{ type: "file_id", fileId: single.file_id }];
+	}
 	const image = single.image_url;
-	if (typeof image === "string") return [{ type: "image_url", url: image }];
-	if (image?.url !== undefined) return [{ type: "image_url", url: image.url }];
+	if (typeof image === "string") {
+		return [{ type: "image_url", url: image }];
+	}
+	if (image?.url !== undefined) {
+		return [{ type: "image_url", url: image.url }];
+	}
 	return undefined;
 }
 
 function frameImagesToCanonical(
 	req: VideoCreateRequest,
 ): VideoFrameImage[] | undefined {
-	if (req.frame_images == null) return undefined;
+	if (req.frame_images == null) {
+		return undefined;
+	}
 	return req.frame_images.map((frame) => ({
 		frame: frame.frame_type === "first_frame" ? "first" : "last",
 		url: frame.image_url.url,
@@ -168,30 +179,52 @@ export function videoCreateToCanonical(
 		prompt: req.prompt,
 	};
 	const task = defined(req.task);
-	if (task !== undefined) canonical.task = task;
+	if (task !== undefined) {
+		canonical.task = task;
+	}
 	const inputReferences = inputReferencesToCanonical(req);
-	if (inputReferences !== undefined && inputReferences.length > 0)
+	if (inputReferences !== undefined && inputReferences.length > 0) {
 		canonical.inputReferences = inputReferences;
+	}
 	const frameImages = frameImagesToCanonical(req);
-	if (frameImages !== undefined && frameImages.length > 0)
+	if (frameImages !== undefined && frameImages.length > 0) {
 		canonical.frameImages = frameImages;
+	}
 	const seconds = defined(req.seconds) ?? defined(req.duration);
-	if (seconds !== undefined) canonical.seconds = String(seconds);
+	if (seconds !== undefined) {
+		canonical.seconds = String(seconds);
+	}
 	const size = defined(req.size);
-	if (size !== undefined) canonical.size = size;
+	if (size !== undefined) {
+		canonical.size = size;
+	}
 	const aspectRatio = defined(req.aspect_ratio);
-	if (aspectRatio !== undefined) canonical.aspectRatio = aspectRatio;
+	if (aspectRatio !== undefined) {
+		canonical.aspectRatio = aspectRatio;
+	}
 	const resolution = defined(req.resolution);
-	if (resolution !== undefined) canonical.resolution = resolution;
+	if (resolution !== undefined) {
+		canonical.resolution = resolution;
+	}
 	const seed = defined(req.seed);
-	if (seed !== undefined) canonical.seed = seed;
+	if (seed !== undefined) {
+		canonical.seed = seed;
+	}
 	const generateAudio = defined(req.generate_audio);
-	if (generateAudio !== undefined) canonical.generateAudio = generateAudio;
+	if (generateAudio !== undefined) {
+		canonical.generateAudio = generateAudio;
+	}
 	const quality = defined(req.quality);
-	if (quality !== undefined) canonical.quality = normalizeQuality(quality);
+	if (quality !== undefined) {
+		canonical.quality = normalizeQuality(quality);
+	}
 	const user = defined(req.user);
-	if (user !== undefined) canonical.user = user;
-	if (req.extra_body !== undefined) canonical.extraBody = req.extra_body;
+	if (user !== undefined) {
+		canonical.user = user;
+	}
+	if (req.extra_body !== undefined) {
+		canonical.extraBody = req.extra_body;
+	}
 	return canonical;
 }
 
@@ -214,9 +247,9 @@ export function toOpenAIVideoObject(
 		prompt: video.prompt,
 		error: video.error ?? null,
 		remixed_from_video_id: video.remixedFromVideoId ?? null,
-		...(video.seconds !== undefined ? { seconds: video.seconds } : {}),
-		...(video.size !== undefined ? { size: video.size } : {}),
-		...(video.quality !== undefined ? { quality: video.quality } : {}),
+		...(video.seconds === undefined ? {} : { seconds: video.seconds }),
+		...(video.size === undefined ? {} : { size: video.size }),
+		...(video.quality === undefined ? {} : { quality: video.quality }),
 	};
 }
 

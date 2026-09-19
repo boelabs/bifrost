@@ -23,14 +23,16 @@ export function buildEmbeddingsBody(
 		model: upstreamModel,
 		input: req.input,
 		encoding_format: req.encodingFormat,
-		...(req.dimensions !== undefined ? { dimensions: req.dimensions } : {}),
-		...(req.user !== undefined ? { user: req.user } : {}),
+		...(req.dimensions === undefined ? {} : { dimensions: req.dimensions }),
+		...(req.user === undefined ? {} : { user: req.user }),
 	};
 	return mergeExtraBodyDeep(body, req.extraBody, EMBEDDINGS_MANAGED_KEYS);
 }
 
 function parseEmbedding(raw: unknown): EmbeddingVector {
-	if (typeof raw === "string") return raw;
+	if (typeof raw === "string") {
+		return raw;
+	}
 	if (
 		Array.isArray(raw) &&
 		raw.every((value) => typeof value === "number" && Number.isFinite(value))

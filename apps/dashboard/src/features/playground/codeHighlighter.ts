@@ -30,8 +30,9 @@ export async function createCodeHighlighter() {
 			if (
 				language !== "text" &&
 				!highlighter.getLoadedLanguages().includes(language)
-			)
+			) {
 				await highlighter.loadLanguage(language);
+			}
 			let state = blocks.get(request.id);
 			if (
 				!state ||

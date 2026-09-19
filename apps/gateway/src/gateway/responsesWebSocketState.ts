@@ -13,8 +13,9 @@ export function inheritWarmupRequest(
 	current: ResponsesRequest,
 	state: ConnectionResponseState | null,
 ): ResponsesRequest {
-	if (!state?.warmupRequest || current.previous_response_id !== state.id)
+	if (!state?.warmupRequest || current.previous_response_id !== state.id) {
 		return current;
+	}
 	const {
 		input: _input,
 		previous_response_id: _previousResponseId,

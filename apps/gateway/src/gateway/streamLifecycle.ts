@@ -102,9 +102,13 @@ async function nextBefore<T>(
 	phase: "first_output" | "idle" | "reasoning_only",
 	policy?: ExecutionPolicy,
 ): Promise<IteratorResult<T>> {
-	if (deadline === null) return iterator.next();
+	if (deadline === null) {
+		return iterator.next();
+	}
 	const remaining = deadline - Date.now();
-	if (remaining <= 0) throw timeoutError(phase, policy);
+	if (remaining <= 0) {
+		throw timeoutError(phase, policy);
+	}
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	try {
 		return await Promise.race([
@@ -117,7 +121,9 @@ async function nextBefore<T>(
 			}),
 		]);
 	} finally {
-		if (timer) clearTimeout(timer);
+		if (timer) {
+			clearTimeout(timer);
+		}
 	}
 }
 
@@ -199,8 +205,11 @@ function recordFrame(
 export function chatChunkSemantic(
 	chunk: CanonicalChatStreamChunk,
 ): StreamSemantic {
-	if (chunk.choices.some((choice) => (choice.delta.toolCalls?.length ?? 0) > 0))
+	if (
+		chunk.choices.some((choice) => (choice.delta.toolCalls?.length ?? 0) > 0)
+	) {
 		return "tool";
+	}
 	if (
 		chunk.choices.some(
 			(choice) =>
@@ -208,22 +217,30 @@ export function chatChunkSemantic(
 				(choice.delta.refusal?.length ?? 0) > 0 ||
 				choice.delta.audio !== undefined,
 		)
-	)
+	) {
 		return "content";
-	if (chunk.choices.some((choice) => (choice.delta.reasoning?.length ?? 0) > 0))
+	}
+	if (
+		chunk.choices.some((choice) => (choice.delta.reasoning?.length ?? 0) > 0)
+	) {
 		return "reasoning";
-	if (chunk.usage !== undefined && chunk.usage !== null) return "usage";
+	}
+	if (chunk.usage !== undefined && chunk.usage !== null) {
+		return "usage";
+	}
 	return "metadata";
 }
 
 export function terminalForChatResponse(
 	response: import("#core/canonical.ts").CanonicalChatResponse,
 ): CanonicalTerminal {
-	if (response.choices.length === 0)
+	if (response.choices.length === 0) {
 		throw protocolError("Upstream response contained no choices");
+	}
 	const reasons = response.choices.map((choice) => choice.finishReason);
-	if (reasons.some((reason) => reason === null))
+	if (reasons.some((reason) => reason === null)) {
 		throw protocolError("Upstream response omitted a terminal reason");
+	}
 	for (const choice of response.choices) {
 		const hasOutput =
 			(choice.message.content?.length ?? 0) > 0 ||
@@ -231,24 +248,29 @@ export function terminalForChatResponse(
 			(choice.message.refusal?.length ?? 0) > 0 ||
 			(choice.message.toolCalls?.length ?? 0) > 0 ||
 			choice.message.audio != null;
-		if (!hasOutput && choice.finishReason === "stop")
+		if (!hasOutput && choice.finishReason === "stop") {
 			throw protocolError(
 				"Upstream response completed without semantic output",
 			);
+		}
 		if (
 			choice.finishReason === "tool_calls" &&
 			(choice.message.toolCalls?.length ?? 0) === 0
-		)
+		) {
 			throw protocolError(
 				"Upstream response declared tool calls without a tool call",
 			);
+		}
 	}
 	const normalizedReasons = reasons as CanonicalFinishReason[];
 	const adapterTerminal = adapterDiagnostics(response)?.terminal;
-	if (adapterTerminal) return { ...adapterTerminal, usage: response.usage };
+	if (adapterTerminal) {
+		return { ...adapterTerminal, usage: response.usage };
+	}
 	const uniqueReasons = new Set(normalizedReasons);
-	if (uniqueReasons.size === 1)
+	if (uniqueReasons.size === 1) {
 		return terminalForFinish(normalizedReasons[0]!, response.usage);
+	}
 	return {
 		outcome: normalizedReasons.includes("length")
 			? "incomplete"
@@ -272,7 +294,9 @@ export function observeChatStream(
 	contextDiagnostics?: AdapterDiagnostics,
 ): ObservedStream<CanonicalChatStreamChunk> {
 	const observation = emptyObservation();
-	if (contextDiagnostics) observation.diagnostics = contextDiagnostics;
+	if (contextDiagnostics) {
+		observation.diagnostics = contextDiagnostics;
+	}
 	return {
 		observation,
 		items: (async function* () {
@@ -319,10 +343,11 @@ export function observeChatStream(
 							adapterTerminal &&
 							(adapterTerminal.outcome !== diagnostics.terminal.outcome ||
 								adapterTerminal.reason !== diagnostics.terminal.reason)
-						)
+						) {
 							throw protocolError(
 								"Upstream stream emitted conflicting adapter terminals",
 							);
+						}
 						adapterTerminal = diagnostics.terminal;
 					}
 					const accumulated = observation.diagnostics ?? {};
@@ -343,12 +368,14 @@ export function observeChatStream(
 					progressPhase = "idle";
 					progressDeadline = policy?.idleMs ? Date.now() + policy.idleMs : null;
 				}
-				if (progress === "reasoning" && reasoningDeadline === null)
+				if (progress === "reasoning" && reasoningDeadline === null) {
 					reasoningDeadline = policy?.reasoningOnlyMs
 						? Date.now() + policy.reasoningOnlyMs
 						: null;
-				if (progress === "content" || progress === "tool")
+				}
+				if (progress === "content" || progress === "tool") {
 					reasoningDeadline = null;
+				}
 				if (chunk.usage) {
 					usage = chunk.usage;
 					observation.usage = chunk.usage;
@@ -377,10 +404,11 @@ export function observeChatStream(
 								[state.finish, choice.finishReason].includes("stop") &&
 								[state.finish, choice.finishReason].includes("tool_calls")
 							)
-						)
+						) {
 							throw protocolError(
 								`Upstream stream emitted conflicting terminal reasons for choice ${choice.index}`,
 							);
+						}
 						state.finish =
 							state.finish === "tool_calls" ||
 							choice.finishReason === "tool_calls"
@@ -408,18 +436,20 @@ export function observeChatStream(
 					yield chunk;
 				}
 			}
-			if (choices.size === 0 || lastChunk === null)
+			if (choices.size === 0 || lastChunk === null) {
 				throw protocolError(
 					"Upstream stream ended without a semantic terminal",
 				);
+			}
 
 			const terminalChoices = [...choices.entries()]
 				.sort(([left], [right]) => left - right)
 				.map(([index, state]) => {
-					if (state.finish === null)
+					if (state.finish === null) {
 						throw protocolError(
 							`Upstream stream ended without a terminal reason for choice ${index}`,
 						);
+					}
 					const finish =
 						state.hasTool && state.finish === "stop"
 							? "tool_calls"
@@ -428,14 +458,16 @@ export function observeChatStream(
 						!state.hasOutput &&
 						finish === "stop" &&
 						observation.diagnostics?.metadata?.emptyOutputAllowed !== true
-					)
+					) {
 						throw protocolError(
 							`Upstream stream completed choice ${index} without semantic output`,
 						);
-					if (finish === "tool_calls" && !state.hasTool)
+					}
+					if (finish === "tool_calls" && !state.hasTool) {
 						throw protocolError(
 							`Upstream stream completed choice ${index} with tool_calls but emitted no tool call`,
 						);
+					}
 					return { index, delta: {}, finishReason: finish };
 				});
 			const reasons = terminalChoices.map((choice) => choice.finishReason);
@@ -472,7 +504,9 @@ export function observeImageStream(
 	contextDiagnostics?: AdapterDiagnostics,
 ): ObservedStream<CanonicalImageStreamEvent> {
 	const observation = emptyObservation();
-	if (contextDiagnostics) observation.diagnostics = contextDiagnostics;
+	if (contextDiagnostics) {
+		observation.diagnostics = contextDiagnostics;
+	}
 	return {
 		observation,
 		items: (async function* () {
@@ -492,23 +526,26 @@ export function observeImageStream(
 					break;
 				}
 				const event = next.value;
-				if (completed)
+				if (completed) {
 					throw protocolError(
 						"Image stream emitted data after its terminal event",
 					);
+				}
 				recordFrame(observation, "media");
 				deadline = policy?.idleMs ? Date.now() + policy.idleMs : null;
 				if (event.kind === "completed") {
-					if (completed)
+					if (completed) {
 						throw protocolError(
 							"Image stream emitted more than one terminal event",
 						);
+					}
 					completed = true;
 				}
 				yield event;
 			}
-			if (!completed)
+			if (!completed) {
 				throw protocolError("Image stream ended without a completed event");
+			}
 			observation.terminal = {
 				outcome: "completed",
 				reason: "stop",
@@ -524,7 +561,9 @@ export function observeTranscriptionStream(
 	contextDiagnostics?: AdapterDiagnostics,
 ): ObservedStream<CanonicalTranscriptionStreamEvent> {
 	const observation = emptyObservation();
-	if (contextDiagnostics) observation.diagnostics = contextDiagnostics;
+	if (contextDiagnostics) {
+		observation.diagnostics = contextDiagnostics;
+	}
 	return {
 		observation,
 		items: (async function* () {
@@ -544,23 +583,26 @@ export function observeTranscriptionStream(
 					break;
 				}
 				const event = next.value;
-				if (completed)
+				if (completed) {
 					throw protocolError(
 						"Transcription stream emitted data after its terminal event",
 					);
+				}
 				recordFrame(observation, event.kind === "delta" ? "content" : "usage");
 				deadline = policy?.idleMs ? Date.now() + policy.idleMs : null;
 				if (event.kind === "done") {
-					if (completed)
+					if (completed) {
 						throw protocolError(
 							"Transcription stream emitted more than one terminal event",
 						);
+					}
 					completed = true;
 				}
 				yield event;
 			}
-			if (!completed)
+			if (!completed) {
 				throw protocolError("Transcription stream ended without a done event");
+			}
 			observation.terminal = {
 				outcome: "completed",
 				reason: "stop",

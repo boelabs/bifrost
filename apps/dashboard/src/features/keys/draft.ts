@@ -47,22 +47,32 @@ export function draftFromKey(key: VirtualKey): KeyDraft {
 /** `"12.5"` → `1250`. Empty is "no budget", which is a real, different setting from zero. */
 export function dollarsToCents(value: string): number | null {
 	const trimmed = value.trim();
-	if (trimmed === "") return null;
+	if (trimmed === "") {
+		return null;
+	}
 	const parsed = Number(trimmed);
-	if (!Number.isFinite(parsed) || parsed < 0) return null;
+	if (!Number.isFinite(parsed) || parsed < 0) {
+		return null;
+	}
 	return Math.round(parsed * 100);
 }
 
 export function centsToDollars(cents: number | null): string {
-	if (cents === null) return "";
+	if (cents === null) {
+		return "";
+	}
 	return (cents / 100).toFixed(2).replace(/\.00$/, "");
 }
 
 function toInteger(value: string): number | null {
 	const trimmed = value.trim();
-	if (trimmed === "") return null;
+	if (trimmed === "") {
+		return null;
+	}
 	const parsed = Number(trimmed);
-	if (!Number.isFinite(parsed) || parsed < 0) return null;
+	if (!Number.isFinite(parsed) || parsed < 0) {
+		return null;
+	}
 	return Math.trunc(parsed);
 }
 
@@ -72,16 +82,24 @@ function toInteger(value: string): number | null {
  */
 export function localToIso(value: string): string | null {
 	const trimmed = value.trim();
-	if (trimmed === "") return null;
+	if (trimmed === "") {
+		return null;
+	}
 	const parsed = new Date(trimmed);
-	if (Number.isNaN(parsed.getTime())) return null;
+	if (Number.isNaN(parsed.getTime())) {
+		return null;
+	}
 	return parsed.toISOString();
 }
 
 export function isoToLocal(iso: string | null): string {
-	if (!iso) return "";
+	if (!iso) {
+		return "";
+	}
 	const parsed = new Date(iso);
-	if (Number.isNaN(parsed.getTime())) return "";
+	if (Number.isNaN(parsed.getTime())) {
+		return "";
+	}
 	const offset = parsed.getTimezoneOffset() * 60_000;
 	return new Date(parsed.getTime() - offset).toISOString().slice(0, 16);
 }
@@ -115,32 +133,48 @@ export function toUpdateBody(
 ): UpdateKeyInput {
 	const body: UpdateKeyInput = {};
 	const name = draft.name.trim();
-	if (name !== original.name) body.name = name;
+	if (name !== original.name) {
+		body.name = name;
+	}
 
 	const models = draft.allowedModels;
 	const sameModels =
 		models.length === original.allowedModels.length &&
 		models.every((model, index) => model === original.allowedModels[index]);
-	if (!sameModels) body.allowedModels = models;
+	if (!sameModels) {
+		body.allowedModels = models;
+	}
 
 	const budget = dollarsToCents(draft.budget);
-	if (budget !== original.maxBudgetCents) body.maxBudgetCents = budget;
+	if (budget !== original.maxBudgetCents) {
+		body.maxBudgetCents = budget;
+	}
 
 	const reset = draft.budgetReset === "" ? null : draft.budgetReset;
-	if (reset !== original.budgetReset) body.budgetReset = reset;
+	if (reset !== original.budgetReset) {
+		body.budgetReset = reset;
+	}
 
 	const rpm = toInteger(draft.rpm);
-	if (rpm !== original.rpm) body.rpm = rpm;
+	if (rpm !== original.rpm) {
+		body.rpm = rpm;
+	}
 
 	const tpm = toInteger(draft.tpm);
-	if (tpm !== original.tpm) body.tpm = tpm;
+	if (tpm !== original.tpm) {
+		body.tpm = tpm;
+	}
 
 	const expiresAt = localToIso(draft.expiresAt);
 	const originalExpiry = original.expiresAt
 		? new Date(original.expiresAt).toISOString()
 		: null;
-	if (expiresAt !== originalExpiry) body.expiresAt = expiresAt;
+	if (expiresAt !== originalExpiry) {
+		body.expiresAt = expiresAt;
+	}
 
-	if (draft.enabled !== original.enabled) body.enabled = draft.enabled;
+	if (draft.enabled !== original.enabled) {
+		body.enabled = draft.enabled;
+	}
 	return body;
 }

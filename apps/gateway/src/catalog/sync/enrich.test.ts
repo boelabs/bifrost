@@ -31,10 +31,10 @@ function existenceModel(
 				inputModalities: [],
 				outputModalities: ["text"],
 				endpoints: [],
-				...(contextWindow !== undefined ? { contextWindow } : {}),
-				...(inputPrice !== undefined
-					? { pricing: { inputCentsPerMTokens: inputPrice } }
-					: {}),
+				...(contextWindow === undefined ? {} : { contextWindow }),
+				...(inputPrice === undefined
+					? {}
+					: { pricing: { inputCentsPerMTokens: inputPrice } }),
 			},
 			endpoint: undefined,
 		},

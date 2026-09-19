@@ -25,7 +25,7 @@ function Root({
 		<BaseSwitch.Root
 			{...props}
 			className={mergeClassName(
-				`${focusRing} ${sizes[size]} relative inline-flex shrink-0 items-center rounded-full border p-0.5 ${variant === "outlined" ? "border-border bg-surface" : variant === "ghost" ? "border-transparent bg-secondary/60" : "border-transparent bg-secondary"} transition-colors data-[checked]:border-primary data-[checked]:bg-primary data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50`,
+				`${focusRing} ${sizes[size]} relative inline-flex shrink-0 items-center rounded-full border p-0.5 ${variant === "outlined" ? "border-border bg-surface" : variant === "ghost" ? "border-transparent bg-secondary/60" : "border-transparent bg-secondary"} transition-colors data-[disabled]:cursor-not-allowed data-[checked]:border-primary data-[checked]:bg-primary data-[disabled]:opacity-50`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -61,8 +61,8 @@ export function Switch({ children, ...props }: SwitchProps) {
 	);
 	return children ? (
 		<label
+			className="inline-flex cursor-pointer items-center gap-2 text-fg text-sm"
 			htmlFor={id}
-			className="inline-flex cursor-pointer items-center gap-2 text-sm text-fg"
 		>
 			{control}
 			{children}

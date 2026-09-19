@@ -28,7 +28,8 @@ const server = Bun.spawn(["bun", "server.js"], {
 	env: { ...process.env, PORT: process.env.PORT ?? "3000" },
 });
 
-for (const signal of ["SIGINT", "SIGTERM"] as const)
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
 	process.on(signal, () => server.kill(signal));
+}
 
 process.exit(await server.exited);

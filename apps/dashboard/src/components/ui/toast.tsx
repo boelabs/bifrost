@@ -68,7 +68,7 @@ export function ToastRoot({
 		<BaseToast.Root
 			{...props}
 			className={mergeClassName(
-				`${overlayFadeStyles} relative flex w-full shrink-0 flex-col gap-3 rounded-[var(--ui-radius-dialog)] border border-border/60 bg-surface p-4 pr-10 text-fg shadow-xl outline-none transition-[opacity,transform] data-[limited]:hidden data-[swiping]:select-none data-[swiping]:transition-none data-[type=error]:border-danger/50 data-[type=success]:border-success/50`,
+				`${overlayFadeStyles} relative flex w-full shrink-0 flex-col gap-3 rounded-[var(--ui-radius-dialog)] border border-border/60 bg-surface p-4 pr-10 text-fg shadow-xl outline-none transition-[opacity,transform] data-[limited]:hidden data-[swiping]:select-none data-[type=error]:border-danger/50 data-[type=success]:border-success/50 data-[swiping]:transition-none`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, (state) => ({
@@ -110,7 +110,7 @@ export function ToastTitle({
 	return (
 		<BaseToast.Title
 			{...props}
-			className={mergeClassName("text-sm font-semibold text-fg", className)}
+			className={mergeClassName("font-semibold text-fg text-sm", className)}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -130,7 +130,7 @@ export function ToastDescription({
 	return (
 		<BaseToast.Description
 			{...props}
-			className={mergeClassName("text-sm text-fg-muted", className)}
+			className={mergeClassName("text-fg-muted text-sm", className)}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -195,11 +195,11 @@ export function ToastPositioner({
 	return (
 		<BaseToast.Positioner
 			{...props}
-			sideOffset={sideOffset}
 			className={mergeClassName(
 				"z-[100] w-80 max-w-[calc(100vw-2rem)] outline-none",
 				className,
 			)}
+			sideOffset={sideOffset}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);

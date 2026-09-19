@@ -50,8 +50,8 @@ export default function RootLayout({
 		// `suppressHydrationWarning` is required by the theme provider, which writes the resolved
 		// theme onto <html> before React hydrates so the first paint is never the wrong one.
 		<html
-			lang="en"
 			className={`${sans.variable} ${mono.variable}`}
+			lang="en"
 			suppressHydrationWarning
 		>
 			<body className="flex min-h-screen flex-col">

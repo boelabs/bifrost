@@ -140,7 +140,66 @@ for (const key of [
 								],
 								usage: chatUsage,
 							};
-				if (!stream) {
+				if (stream) {
+					const events =
+						transport === "responses"
+							? [{ type: "response.completed", response: raw }]
+							: [
+									{
+										...raw,
+										choices: [
+											{
+												index: 0,
+												delta: { content: "ok" },
+												finish_reason: "stop",
+											},
+										],
+									},
+									"[DONE]",
+								];
+					const chunks: CanonicalChatStreamChunk[] = [];
+					for await (const chunk of adapter.chat!.parseStream(
+						sse(events),
+						context(transport),
+					)) {
+						chunks.push(chunk);
+					}
+					assert.deepEqual(
+						chunks.find((chunk) => chunk.usage)?.usage,
+						readWriteUsage,
+					);
+					async function* replay() {
+						yield* chunks;
+					}
+					const rendered = [];
+					for await (const event of canonicalChunksToResponsesEvents(replay(), {
+						req: responseRequest(),
+						publicModel: "public-model",
+					})) {
+						rendered.push(JSON.parse(event.data));
+					}
+					assert.equal(
+						rendered.find((event) => event.type === "response.completed")
+							.response.usage.input_tokens_details.cache_write_tokens,
+						300,
+					);
+					let roundTrip: Usage | undefined;
+					const messages = [];
+					for await (const event of canonicalChunksToMessagesEvents(replay(), {
+						publicModel: "public-model",
+					})) {
+						messages.push(JSON.parse(event.data));
+					}
+					for await (const chunk of getAdapter("anthropic")!.chat!.parseStream(
+						sse(messages),
+						context("messages"),
+					)) {
+						if (chunk.usage) {
+							roundTrip = chunk.usage;
+						}
+					}
+					assert.deepEqual(roundTrip, readWriteUsage);
+				} else {
 					const parsed = adapter.chat!.parseResponse(raw, context(transport));
 					assert.deepEqual(parsed.usage, readWriteUsage);
 					assert.equal(
@@ -168,67 +227,14 @@ for (const key of [
 						(messages.usage as Record<string, unknown>).input_tokens,
 						200,
 					);
-				} else {
-					const events =
-						transport === "responses"
-							? [{ type: "response.completed", response: raw }]
-							: [
-									{
-										...raw,
-										choices: [
-											{
-												index: 0,
-												delta: { content: "ok" },
-												finish_reason: "stop",
-											},
-										],
-									},
-									"[DONE]",
-								];
-					const chunks: CanonicalChatStreamChunk[] = [];
-					for await (const chunk of adapter.chat!.parseStream(
-						sse(events),
-						context(transport),
-					))
-						chunks.push(chunk);
-					assert.deepEqual(
-						chunks.find((chunk) => chunk.usage)?.usage,
-						readWriteUsage,
-					);
-					async function* replay() {
-						yield* chunks;
-					}
-					const rendered = [];
-					for await (const event of canonicalChunksToResponsesEvents(replay(), {
-						req: responseRequest(),
-						publicModel: "public-model",
-					}))
-						rendered.push(JSON.parse(event.data));
-					assert.equal(
-						rendered.find((event) => event.type === "response.completed")
-							.response.usage.input_tokens_details.cache_write_tokens,
-						300,
-					);
-					let roundTrip: Usage | undefined;
-					const messages = [];
-					for await (const event of canonicalChunksToMessagesEvents(replay(), {
-						publicModel: "public-model",
-					}))
-						messages.push(JSON.parse(event.data));
-					for await (const chunk of getAdapter("anthropic")!.chat!.parseStream(
-						sse(messages),
-						context("messages"),
-					))
-						if (chunk.usage) roundTrip = chunk.usage;
-					assert.deepEqual(roundTrip, readWriteUsage);
 				}
 			});
 		}
 	}
 }
 
-for (const source of ["chat", "responses"])
-	for (const transport of ["chat_completions", "responses"] as const)
+for (const source of ["chat", "responses"]) {
+	for (const transport of ["chat_completions", "responses"] as const) {
 		for (const stream of [false, true]) {
 			test(`Azure ${source} to ${transport}, stream=${stream}: preserve policy and instruction boundaries`, () => {
 				const marker = { mode: "explicit" };
@@ -289,8 +295,9 @@ for (const source of ["chat", "responses"])
 				);
 				assert.equal(body.instructions, undefined);
 				assert.equal(messages[1].role, "user");
-				if (stream && transport === "chat_completions")
+				if (stream && transport === "chat_completions") {
 					assert.equal(body.stream_options.include_usage, true);
+				}
 				const ws = buildResponsesWebSocketMessage(
 					canonical,
 					context("responses"),
@@ -300,6 +307,8 @@ for (const source of ["chat", "responses"])
 				assert.match(JSON.stringify(ws.input), /prompt_cache_breakpoint/);
 			});
 		}
+	}
+}
 
 test("cache controls accept the previous extra_body escape hatch and reject collisions", () => {
 	const canonical = chatRequest({
@@ -323,15 +332,16 @@ test("cache controls accept the previous extra_body escape hatch and reject coll
 	for (const [provider, transport] of [
 		["anthropic", "messages"],
 		["googleaistudio", "generate_content"],
-	] as const)
+	] as const) {
 		assert.throws(
 			() => build(provider, canonical, transport),
 			/cannot preserve/,
 		);
+	}
 });
 
 test("provider cache aliases preserve zero, absence, and nested-field precedence", () => {
-	for (const field of ["cached_tokens", "prompt_cache_hit_tokens"])
+	for (const field of ["cached_tokens", "prompt_cache_hit_tokens"]) {
 		for (const value of [0, 1500]) {
 			const raw = {
 				choices: [],
@@ -347,6 +357,7 @@ test("provider cache aliases preserve zero, absence, and nested-field precedence
 				0,
 			);
 		}
+	}
 	assert.equal(
 		parseOpenAIChatResponse({ choices: [], usage: {} }).usage.cacheReadTokens,
 		undefined,
@@ -443,8 +454,11 @@ test("Anthropic terminal usage replaces cumulative values without losing omitted
 		for await (const chunk of getAdapter("anthropic")!.chat!.parseStream(
 			sse(events),
 			context("messages"),
-		))
-			if (chunk.usage) result = chunk.usage;
+		)) {
+			if (chunk.usage) {
+				result = chunk.usage;
+			}
+		}
 		const read =
 			terminal.cache_read_input_tokens ?? initial.cache_read_input_tokens;
 		const write =
@@ -494,8 +508,11 @@ test("Google retains explicit resource references and cached token usage in JSON
 	for await (const chunk of handler.parseStream(
 		sse([raw]),
 		context("generate_content"),
-	))
-		if (chunk.usage) usage = chunk.usage;
+	)) {
+		if (chunk.usage) {
+			usage = chunk.usage;
+		}
+	}
 	assert.equal(usage?.cacheReadTokens, 1500);
 });
 
@@ -511,12 +528,14 @@ test("Vercel receives automatic caching options from both public OpenAI contract
 			}),
 		),
 	];
-	for (const req of requests)
-		for (const transport of ["responses", "chat_completions"] as const)
+	for (const req of requests) {
+		for (const transport of ["responses", "chat_completions"] as const) {
 			assert.deepEqual(
 				build("vercel", req, transport).providerOptions,
 				options,
 			);
+		}
+	}
 	assert.throws(() =>
 		chatRequest({
 			providerOptions: options,

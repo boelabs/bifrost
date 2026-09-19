@@ -32,8 +32,8 @@ export default function AuditPage(props: PageProps<"/audit">) {
 	return (
 		<>
 			<PageHeader
-				title="Audit"
 				description="Who changed the gateway's configuration, and who read a retained prompt or completion. Append-only: nothing here can be edited or removed from the dashboard."
+				title="Audit"
 			>
 				<Suspense
 					fallback={<ToolbarSkeleton widths={["11rem", "16rem", "16rem"]} />}
@@ -71,5 +71,5 @@ async function Trail({ searchParams }: { searchParams: Params }) {
 		...(range.start ? { start: range.start } : {}),
 		...(range.end ? { end: range.end } : {}),
 	});
-	return <AuditTable rows={data} total={pagination.total} filters={filters} />;
+	return <AuditTable filters={filters} rows={data} total={pagination.total} />;
 }

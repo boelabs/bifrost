@@ -36,14 +36,21 @@ export function SessionsDialog({
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
-		if (!userId) return;
+		if (!userId) {
+			return;
+		}
 		let cancelled = false;
 		setSessions(null);
 		setError(null);
 		void loadSessionsAction(userId).then((result) => {
-			if (cancelled) return;
-			if (result.ok) setSessions(result.data);
-			else setError(result.message);
+			if (cancelled) {
+				return;
+			}
+			if (result.ok) {
+				setSessions(result.data);
+			} else {
+				setError(result.message);
+			}
 		});
 		return () => {
 			cancelled = true;
@@ -56,7 +63,9 @@ export function SessionsDialog({
 			header: "State",
 			render: (session) => {
 				const expired = Date.parse(session.expiresAt) < Date.now();
-				if (session.revokedAt) return <Status tone="muted">revoked</Status>;
+				if (session.revokedAt) {
+					return <Status tone="muted">revoked</Status>;
+				}
 				return expired ? (
 					<Status tone="muted">expired</Status>
 				) : (
@@ -108,8 +117,8 @@ export function SessionsDialog({
 	return (
 		<Modal isOpen={userId !== null} onOpenChange={(open) => !open && onClose()}>
 			<Dialog
-				layout="sectioned"
 				aria-label={`Sessions for ${username}`}
+				layout="sectioned"
 				width="min(100%, 46rem)"
 			>
 				<DialogHeader>
@@ -128,16 +137,16 @@ export function SessionsDialog({
 					) : null}
 					{sessions ? (
 						<DataTable
-							rows={sessions}
-							columns={columns}
-							rowKey={(session) => session.id}
 							caption={`Sessions for ${username}`}
+							columns={columns}
 							emptyMessage="No sessions on record. Nobody has signed in as this account."
+							rowKey={(session) => session.id}
+							rows={sessions}
 						/>
 					) : null}
 				</DialogBody>
 				<DialogFooter>
-					<Button variant="secondary" onClick={onClose}>
+					<Button onClick={onClose} variant="secondary">
 						Close
 					</Button>
 				</DialogFooter>

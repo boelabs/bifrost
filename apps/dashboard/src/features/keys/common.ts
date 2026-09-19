@@ -13,9 +13,13 @@ export type UpdateKeyInput = components["schemas"]["UpdateKey"];
 
 /** Cents are stored with 10 decimal places; render money, not a raw numeric string. */
 export function formatCents(value: string | number | null | undefined): string {
-	if (value === null || value === undefined) return "—";
+	if (value === null || value === undefined) {
+		return "—";
+	}
 	const cents = typeof value === "string" ? Number.parseFloat(value) : value;
-	if (!Number.isFinite(cents)) return "—";
+	if (!Number.isFinite(cents)) {
+		return "—";
+	}
 	return `$${(cents / 100).toFixed(cents < 100 ? 4 : 2)}`;
 }
 

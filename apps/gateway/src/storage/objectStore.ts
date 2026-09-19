@@ -52,20 +52,25 @@ export function resolveRange(
 	totalSize: number,
 ): { start: number; end: number } {
 	if ("suffix" in range) {
-		if (range.suffix <= 0 || totalSize === 0) throw rangeNotSatisfiable();
+		if (range.suffix <= 0 || totalSize === 0) {
+			throw rangeNotSatisfiable();
+		}
 		return { start: Math.max(0, totalSize - range.suffix), end: totalSize - 1 };
 	}
 	const end =
-		range.end !== undefined
-			? Math.min(range.end, totalSize - 1)
-			: totalSize - 1;
-	if (range.start >= totalSize || end < range.start)
+		range.end === undefined
+			? totalSize - 1
+			: Math.min(range.end, totalSize - 1);
+	if (range.start >= totalSize || end < range.start) {
 		throw rangeNotSatisfiable();
+	}
 	return { start: range.start, end };
 }
 
 function toHttpRange(range: ObjectRange): string {
-	if ("suffix" in range) return `bytes=-${range.suffix}`;
+	if ("suffix" in range) {
+		return `bytes=-${range.suffix}`;
+	}
 	return range.end === undefined
 		? `bytes=${range.start}-`
 		: `bytes=${range.start}-${range.end}`;
@@ -115,8 +120,12 @@ function toNodeReadable(
 }
 
 function toWebReadable(body: unknown): ReadableStream<Uint8Array> {
-	if (body instanceof ReadableStream) return body;
-	if (body instanceof Uint8Array) return Readable.toWeb(Readable.from(body));
+	if (body instanceof ReadableStream) {
+		return body;
+	}
+	if (body instanceof Uint8Array) {
+		return Readable.toWeb(Readable.from(body));
+	}
 	if (
 		body &&
 		typeof (body as { transformToWebStream?: unknown }).transformToWebStream ===
@@ -133,7 +142,9 @@ function parseContentRange(
 	value: string | undefined,
 ): StoredObject["range"] | undefined {
 	const match = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(value ?? "");
-	if (!match) return undefined;
+	if (!match) {
+		return undefined;
+	}
 	return {
 		start: Number(match[1]),
 		end: Number(match[2]),
@@ -197,7 +208,9 @@ class LocalObjectStore implements ObjectStore {
 			throw missingObject(key);
 		}
 		if (info.size === 0) {
-			if (range) throw rangeNotSatisfiable();
+			if (range) {
+				throw rangeNotSatisfiable();
+			}
 			return {
 				body: Readable.toWeb(Readable.from([])) as ReadableStream<Uint8Array>,
 				contentType: contentTypeForKey(key),
@@ -233,7 +246,9 @@ class LocalObjectStore implements ObjectStore {
 	async delete(key: string): Promise<void> {
 		const path = this.pathFor(key);
 		await unlink(path).catch((err: { code?: string }) => {
-			if (err.code !== "ENOENT") throw err;
+			if (err.code !== "ENOENT") {
+				throw err;
+			}
 		});
 	}
 }
@@ -285,8 +300,12 @@ class S3ObjectStore implements ObjectStore {
 			)
 			.catch((err) => {
 				const name = (err as { name?: string }).name;
-				if (name === "NoSuchKey") throw missingObject(key);
-				if (name === "InvalidRange") throw rangeNotSatisfiable();
+				if (name === "NoSuchKey") {
+					throw missingObject(key);
+				}
+				if (name === "InvalidRange") {
+					throw rangeNotSatisfiable();
+				}
 				throw err;
 			});
 		const parsedRange = range
@@ -295,9 +314,9 @@ class S3ObjectStore implements ObjectStore {
 		return {
 			body: toWebReadable(result.Body),
 			contentType: result.ContentType ?? contentTypeForKey(key),
-			...(result.ContentLength !== undefined
-				? { contentLength: result.ContentLength }
-				: {}),
+			...(result.ContentLength === undefined
+				? {}
+				: { contentLength: result.ContentLength }),
 			...(result.ETag ? { etag: result.ETag } : {}),
 			...(parsedRange ? { range: parsedRange } : {}),
 		};
@@ -308,15 +327,16 @@ class S3ObjectStore implements ObjectStore {
 		const result = await this.client
 			.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }))
 			.catch((err) => {
-				if ((err as { name?: string }).name === "NotFound")
+				if ((err as { name?: string }).name === "NotFound") {
 					throw missingObject(key);
+				}
 				throw err;
 			});
 		return {
 			contentType: result.ContentType ?? contentTypeForKey(key),
-			...(result.ContentLength !== undefined
-				? { contentLength: result.ContentLength }
-				: {}),
+			...(result.ContentLength === undefined
+				? {}
+				: { contentLength: result.ContentLength }),
 			...(result.ETag ? { etag: result.ETag } : {}),
 		};
 	}
@@ -330,17 +350,27 @@ class S3ObjectStore implements ObjectStore {
 }
 
 export function contentTypeForKey(key: string): string {
-	if (key.endsWith(".mp4")) return "video/mp4";
-	if (key.endsWith(".webm")) return "video/webm";
-	if (key.endsWith(".png")) return "image/png";
-	if (key.endsWith(".jpg") || key.endsWith(".jpeg")) return "image/jpeg";
+	if (key.endsWith(".mp4")) {
+		return "video/mp4";
+	}
+	if (key.endsWith(".webm")) {
+		return "video/webm";
+	}
+	if (key.endsWith(".png")) {
+		return "image/png";
+	}
+	if (key.endsWith(".jpg") || key.endsWith(".jpeg")) {
+		return "image/jpeg";
+	}
 	return "application/octet-stream";
 }
 
 let singleton: ObjectStore | undefined;
 
 export function getObjectStore(): ObjectStore {
-	if (singleton) return singleton;
+	if (singleton) {
+		return singleton;
+	}
 	switch (objectStorage.backend) {
 		case "local":
 			singleton = new LocalObjectStore(objectStorage.root);

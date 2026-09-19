@@ -122,8 +122,8 @@ test("overview leaves unavailable rates empty and rejects malformed projection v
 		"",
 		"invalid",
 		-1,
-		Infinity,
-		NaN,
+		Number.POSITIVE_INFINITY,
+		Number.NaN,
 		false,
 	]) {
 		const metrics = getOverviewMetrics(
@@ -215,7 +215,7 @@ test("hourly usage keeps a full empty window and excludes zero-width end buckets
 	assert.deepEqual(buildUsageSeries([], end, start), []);
 	assert.deepEqual(buildUsageSeries([], start, start), []);
 	assert.deepEqual(buildUsageSeries([], "invalid", end), []);
-	assert.deepEqual(buildUsageSeries([], start, Infinity), []);
+	assert.deepEqual(buildUsageSeries([], start, Number.POSITIVE_INFINITY), []);
 });
 
 test("daily usage lands in its own bucket, from the bare dates the gateway groups by", () => {

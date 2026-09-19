@@ -33,13 +33,13 @@ function RouteErrorFallback(
 	return (
 		<>
 			<EmptyState
-				title={title}
 				description={
 					(error instanceof Error && error.message) || "Please try again."
 				}
+				title={title}
 			/>
 			<div className="flex justify-center gap-3 pt-4">
-				<Button variant="secondary" onClick={() => retry()}>
+				<Button onClick={() => retry()} variant="secondary">
 					Retry
 				</Button>
 				{resetHref ? (

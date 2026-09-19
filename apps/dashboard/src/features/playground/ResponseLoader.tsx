@@ -8,12 +8,12 @@ const dots = Array.from({ length: 25 }, (_, index) => {
 
 export function ResponseLoader() {
 	return (
-		<div role="status" className="flex h-7 items-center text-fg-muted">
-			<span className="playground-dotmatrix" aria-hidden="true">
+		<div className="flex h-7 items-center text-fg-muted" role="status">
+			<span aria-hidden="true" className="playground-dotmatrix">
 				{dots.map(({ index, path, parity }) => (
 					<span
-						key={index}
 						className="playground-dotmatrix-dot"
+						key={index}
 						style={
 							{
 								"--dot-delay": `${(path * 0.2 + parity * 0.5) * 1500}ms`,

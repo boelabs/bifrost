@@ -140,7 +140,9 @@ app.use("*", async (c, next) => {
 // proxy happily reuses the connection and the client gets the reset instead of a clean handover.
 app.use("*", async (c, next) => {
 	await next();
-	if (isDraining()) c.header("connection", "close");
+	if (isDraining()) {
+		c.header("connection", "close");
+	}
 });
 
 // Global error handler: translates GatewayError to the shape of each public contract.
@@ -160,8 +162,9 @@ app.onError((err, c) => {
 	const gatewayError =
 		raw && isManagementPath(c.req.path) ? publicizeManagementError(raw) : raw;
 	if (gatewayError) {
-		if (!GatewayError.is(err))
+		if (!GatewayError.is(err)) {
 			log.error("http", "dependency unavailable", { err });
+		}
 		for (const [name, value] of Object.entries(gatewayError.headers ?? {})) {
 			c.header(name, value);
 		}
@@ -247,7 +250,9 @@ async function readiness(c: Context) {
 	const extensions = extensionStatus();
 	const observability = operationPersistenceStatus();
 	const ok = database && cache && extensions.healthy && observability.healthy;
-	if (!ok) c.header("retry-after", String(DEPENDENCY_RETRY_AFTER_SECONDS));
+	if (!ok) {
+		c.header("retry-after", String(DEPENDENCY_RETRY_AFTER_SECONDS));
+	}
 	return c.json(
 		{
 			status: ok ? "ok" : "degraded",
@@ -289,7 +294,9 @@ app.get("/auth/config", dashboardConfigHandler);
 // Human (dashboard) authentication. Mounted only when DASH_ENABLED, and deliberately OUTSIDE
 // adminApp: every /admin route requires an already-resolved operator identity, so the route that
 // creates one cannot live under it.
-if (env.DASH_ENABLED) app.route("/auth", authApp);
+if (env.DASH_ENABLED) {
+	app.route("/auth", authApp);
+}
 
 // Admin (CRUD of models and keys) - requires an operator identity (middleware inside adminApp).
 app.route("/admin", adminApp);

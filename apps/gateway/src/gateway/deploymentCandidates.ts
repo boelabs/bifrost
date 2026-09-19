@@ -50,19 +50,33 @@ export async function listDeploymentCandidates(
 				row.catalogEntry,
 				row.pricing,
 			);
-			if (!(meta.supportedCallTypes ?? ["chat"]).includes(callType)) continue;
+			if (!(meta.supportedCallTypes ?? ["chat"]).includes(callType)) {
+				continue;
+			}
 			if (
 				callType === "images.generations" &&
 				!imageProfileFor(meta, "generation")
-			)
+			) {
 				continue;
-			if (callType === "images.edits" && !imageProfileFor(meta, "edit"))
+			}
+			if (callType === "images.edits" && !imageProfileFor(meta, "edit")) {
 				continue;
-			if (callType === "videos.generations" && !videoProfileFor(meta)) continue;
-			if (callType === "audio.transcriptions" && !transcriptionProfileFor(meta))
+			}
+			if (callType === "videos.generations" && !videoProfileFor(meta)) {
 				continue;
-			if (callType === "embeddings" && !embeddingProfileFor(meta)) continue;
-			if (callType === "rerank" && !rerankProfileFor(meta)) continue;
+			}
+			if (
+				callType === "audio.transcriptions" &&
+				!transcriptionProfileFor(meta)
+			) {
+				continue;
+			}
+			if (callType === "embeddings" && !embeddingProfileFor(meta)) {
+				continue;
+			}
+			if (callType === "rerank" && !rerankProfileFor(meta)) {
+				continue;
+			}
 			out.push({ row, adapter, upstreamModel, meta });
 		}
 	}

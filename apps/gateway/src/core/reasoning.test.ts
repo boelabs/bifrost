@@ -114,7 +114,7 @@ test("reasoningLogInfo: reports requested vs effective and flags clamping", () =
 
 test("effortFromBudgetTokens: buckets legacy budgets", () => {
 	assert.equal(effortFromBudgetTokens(0), "none");
-	assert.equal(effortFromBudgetTokens(2_048), "low");
+	assert.equal(effortFromBudgetTokens(2048), "low");
 	assert.equal(effortFromBudgetTokens(10_000), "medium");
 	assert.equal(effortFromBudgetTokens(32_000), "xhigh");
 	assert.equal(effortFromBudgetTokens(1_000_000), "xhigh");

@@ -136,7 +136,9 @@ function nowIso(): string {
 /** Normalizes an AbortSignal's reason to an Error for throwing. */
 function abortReason(signal: AbortSignal): Error {
 	const reason: unknown = signal.reason;
-	if (reason instanceof Error) return reason;
+	if (reason instanceof Error) {
+		return reason;
+	}
 	return new Error(
 		typeof reason === "string" ? reason : "extension hook aborted",
 	);
@@ -154,7 +156,9 @@ async function withHookGuard<R>(
 	const timeoutMs = env.EXTENSIONS_HOOK_TIMEOUT_MS;
 	const timeoutController = new AbortController();
 	const combined = AbortSignal.any([requestSignal, timeoutController.signal]);
-	if (combined.aborted) throw abortReason(combined);
+	if (combined.aborted) {
+		throw abortReason(combined);
+	}
 
 	const timer =
 		timeoutMs > 0
@@ -177,14 +181,18 @@ async function withHookGuard<R>(
 		rejectAbort = reject;
 		combined.addEventListener("abort", onAbort, { once: true });
 		// Abort can happen between the initial check above and listener registration.
-		if (combined.aborted) onAbort();
+		if (combined.aborted) {
+			onAbort();
+		}
 	});
 
 	try {
 		return await Promise.race([runPromise, abortPromise]);
 	} finally {
 		combined.removeEventListener("abort", onAbort);
-		if (timer) clearTimeout(timer);
+		if (timer) {
+			clearTimeout(timer);
+		}
 	}
 }
 
@@ -205,7 +213,9 @@ function schemaErrorMessage(error: unknown): string {
 		if (Array.isArray(issues)) {
 			return issues
 				.map((issue) => {
-					if (!issue || typeof issue !== "object") return String(issue);
+					if (!issue || typeof issue !== "object") {
+						return String(issue);
+					}
 					const path = Array.isArray((issue as { path?: unknown }).path)
 						? ((issue as { path: unknown[] }).path.join(".") ?? "")
 						: "";
@@ -231,8 +241,9 @@ function parseWithSchema<T>(
 	label: string,
 ): T {
 	const parsed = schema.safeParse(value);
-	if (!parsed.success)
+	if (!parsed.success) {
 		throw new Error(`${label}: ${schemaErrorMessage(parsed.error)}`);
+	}
 	return parsed.data;
 }
 
@@ -262,15 +273,20 @@ function matchApplies(
 	scope: ExtensionScope,
 ): boolean {
 	const models = match.models;
-	if (Array.isArray(models)) {
-		if (!scope.publicModel || !models.includes(scope.publicModel)) return false;
+	if (
+		Array.isArray(models) &&
+		!(scope.publicModel && models.includes(scope.publicModel))
+	) {
+		return false;
 	}
 	const callTypes = match.callTypes;
-	if (Array.isArray(callTypes) && !callTypes.includes(scope.callType))
+	if (Array.isArray(callTypes) && !callTypes.includes(scope.callType)) {
 		return false;
+	}
 	const endpoints = match.endpoints;
-	if (Array.isArray(endpoints) && !endpoints.includes(scope.endpoint))
+	if (Array.isArray(endpoints) && !endpoints.includes(scope.endpoint)) {
 		return false;
+	}
 	return true;
 }
 
@@ -322,10 +338,13 @@ function makeLogger(
 }
 
 function validateImageOutput(value: unknown): ExtensionImageOutput {
-	if (!isRecord(value)) throw new Error("onImageOutput must return an object");
+	if (!isRecord(value)) {
+		throw new Error("onImageOutput must return an object");
+	}
 	const data = value.data;
-	if (!(data instanceof Uint8Array))
+	if (!(data instanceof Uint8Array)) {
 		throw new Error("onImageOutput.data must be a Uint8Array");
+	}
 	const mimeType = value.mimeType;
 	if (
 		mimeType !== "image/png" &&
@@ -337,15 +356,18 @@ function validateImageOutput(value: unknown): ExtensionImageOutput {
 		);
 	}
 	const format = value.format;
-	if (format !== "png" && format !== "jpeg" && format !== "webp")
+	if (format !== "png" && format !== "jpeg" && format !== "webp") {
 		throw new Error("onImageOutput.format must be png, jpeg, or webp");
-	if (`image/${format}` !== mimeType)
+	}
+	if (`image/${format}` !== mimeType) {
 		throw new Error(
 			`onImageOutput.mimeType "${mimeType}" does not match format "${format}"`,
 		);
+	}
 	const { width, height } = value;
-	if (!isPositiveInteger(width) || !isPositiveInteger(height))
+	if (!(isPositiveInteger(width) && isPositiveInteger(height))) {
 		throw new Error("onImageOutput.width and height must be positive integers");
+	}
 	return { data, mimeType, format, width, height };
 }
 
@@ -368,7 +390,9 @@ class ExtensionRuntime {
 	 */
 	async reloadIfChanged(): Promise<boolean> {
 		const version = await getRegistryVersion();
-		if (version === this.loadedRegistryVersion) return false;
+		if (version === this.loadedRegistryVersion) {
+			return false;
+		}
 		await this.buildAndSwap(new DbExtensionInstanceSource());
 		this.loadedRegistryVersion = version;
 		log.info("extensions", "reloaded after registry change", { version });
@@ -395,21 +419,26 @@ class ExtensionRuntime {
 			[...this.definitions.values()].map((definition) => definition.modulePath),
 		);
 		const removed = await pruneExtensionCache(activePaths);
-		if (removed > 0)
+		if (removed > 0) {
 			log.info("extensions", "pruned inactive materialized modules", {
 				removed,
 			});
+		}
 	}
 
 	private async teardownReplaced(
 		previous: Map<string, LoadedDefinition>,
 	): Promise<void> {
 		for (const old of previous.values()) {
-			if (!old.setupDone || !old.definition.teardown) continue;
+			if (!(old.setupDone && old.definition.teardown)) {
+				continue;
+			}
 			// modulePath is content-addressed, so an identical key+path means the same code is still
 			// loaded and must keep its setup state.
 			const current = this.definitions.get(old.definition.key);
-			if (current && current.modulePath === old.modulePath) continue;
+			if (current && current.modulePath === old.modulePath) {
+				continue;
+			}
 			try {
 				await old.definition.teardown({
 					extensionKey: old.definition.key,
@@ -549,18 +578,19 @@ class ExtensionRuntime {
 					critical,
 					err: error,
 				};
-				if (critical)
+				if (critical) {
 					log.error(
 						"extensions",
 						"disabled invalid critical extension instance; gateway is unhealthy until fixed",
 						fields,
 					);
-				else
+				} else {
 					log.warn(
 						"extensions",
 						"disabled invalid non-critical extension instance",
 						fields,
 					);
+				}
 			}
 			instances.push(base);
 		}
@@ -571,10 +601,11 @@ class ExtensionRuntime {
 		instance: LoadedInstance,
 		loadedDefinition: LoadedDefinition | undefined,
 	): Error | null {
-		if (!loadedDefinition)
+		if (!loadedDefinition) {
 			return new Error(
 				`Extension instance "${instance.id}" references unknown definition "${instance.definitionKey}"`,
 			);
+		}
 		try {
 			instance.match = parseWithSchema(
 				builtinMatchSchema,
@@ -613,7 +644,9 @@ class ExtensionRuntime {
 					instance.enabled &&
 					instance.status === "active",
 			);
-			if (activeInstances.length === 0 || !loaded.definition.setup) continue;
+			if (activeInstances.length === 0 || !loaded.definition.setup) {
+				continue;
+			}
 			try {
 				await loaded.definition.setup({
 					extensionKey: loaded.definition.key,
@@ -631,18 +664,19 @@ class ExtensionRuntime {
 					instance.lastError = errorView(err, "setup");
 				}
 				const fields = { extensionKey: loaded.definition.key, critical, err };
-				if (critical)
+				if (critical) {
 					log.error(
 						"extensions",
 						"disabled critical extension after setup failure; gateway is unhealthy until fixed",
 						fields,
 					);
-				else
+				} else {
 					log.warn(
 						"extensions",
 						"disabled non-critical extension after setup failure",
 						fields,
 					);
+				}
 			}
 		}
 	}
@@ -668,13 +702,19 @@ class ExtensionRuntime {
 	): LoadedInstance[] {
 		const selected: LoadedInstance[] = [];
 		for (const instance of this.instances) {
-			if (!instance.enabled || !matchApplies(instance.match, scope)) continue;
-			const hasHook = instance.definition?.hooks[hook] !== undefined;
-			if (instance.status !== "active") {
-				if (instance.critical) throw disabledError(instance);
+			if (!(instance.enabled && matchApplies(instance.match, scope))) {
 				continue;
 			}
-			if (hasHook) selected.push(instance);
+			const hasHook = instance.definition?.hooks[hook] !== undefined;
+			if (instance.status !== "active") {
+				if (instance.critical) {
+					throw disabledError(instance);
+				}
+				continue;
+			}
+			if (hasHook) {
+				selected.push(instance);
+			}
 		}
 		return selected;
 	}
@@ -725,8 +765,9 @@ class ExtensionRuntime {
 					),
 				);
 				if (out !== undefined) {
-					if (!isRecord(out))
+					if (!isRecord(out)) {
 						throw new Error("onCanonicalRequest must return an object");
+					}
 					current = out;
 				}
 				this.recordSuccess(instance);
@@ -752,8 +793,9 @@ class ExtensionRuntime {
 					),
 				);
 				if (out !== undefined) {
-					if (!isRecord(out))
+					if (!isRecord(out)) {
 						throw new Error("onCanonicalResponse must return an object");
+					}
 					current = out;
 				}
 				this.recordSuccess(instance);
@@ -779,8 +821,9 @@ class ExtensionRuntime {
 					),
 				);
 				if (out !== undefined) {
-					if (!isRecord(out))
+					if (!isRecord(out)) {
 						throw new Error("onStreamEvent must return an object");
+					}
 					current = out;
 				}
 				this.recordSuccess(instance);
@@ -805,8 +848,11 @@ class ExtensionRuntime {
 						current,
 					),
 				);
-				if (out instanceof Uint8Array) current = { ...current, data: out };
-				else if (out !== undefined) current = validateImageOutput(out);
+				if (out instanceof Uint8Array) {
+					current = { ...current, data: out };
+				} else if (out !== undefined) {
+					current = validateImageOutput(out);
+				}
 				this.recordSuccess(instance);
 			} catch (err) {
 				this.recordFailure(instance, "onImageOutput", err);
@@ -891,12 +937,15 @@ class ExtensionRuntime {
 		reason?: string;
 	} {
 		const instance = this.instances.find((candidate) => candidate.id === id);
-		if (!instance) return { found: false, reset: false };
+		if (!instance) {
+			return { found: false, reset: false };
+		}
 		if (
 			instance.status !== "runtime_disabled" ||
 			instance.disabledKind === null
-		)
+		) {
 			return { found: true, reset: false, reason: "instance is not disabled" };
+		}
 		if (instance.disabledKind !== "breaker") {
 			return {
 				found: true,

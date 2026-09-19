@@ -273,7 +273,9 @@ test("responses websocket sessions: generate:false stays local for providers wit
 	assert.equal(result.kind, "stream");
 	if (result.kind === "stream") {
 		const chunks: CanonicalChatStreamChunk[] = [];
-		for await (const chunk of result.chunks) chunks.push(chunk);
+		for await (const chunk of result.chunks) {
+			chunks.push(chunk);
+		}
 		assert.equal(chunks.length, 2);
 		assert.deepEqual(chunks[0]?.choices[0]?.delta, {});
 		assert.equal(chunks[0]?.choices[0]?.finishReason, null);

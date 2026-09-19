@@ -73,7 +73,9 @@ test("default text policy allows long reasoning and silence while preserving the
 
 async function drain<T>(items: AsyncIterable<T>): Promise<T[]> {
 	const values: T[] = [];
-	for await (const item of items) values.push(item);
+	for await (const item of items) {
+		values.push(item);
+	}
 	return values;
 }
 

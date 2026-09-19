@@ -1,7 +1,6 @@
+import { failureOwner } from "./operations.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
-
-import { failureOwner } from "./operations.ts";
 
 const attempt = (over: Record<string, unknown>) =>
 	({ ok: false, ...over }) as Parameters<typeof failureOwner>[0];

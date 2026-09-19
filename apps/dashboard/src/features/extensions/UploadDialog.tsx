@@ -63,7 +63,7 @@ export function UploadDialog({
 
 	return (
 		<Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
-			<Dialog layout="sectioned" aria-label="Upload extension code">
+			<Dialog aria-label="Upload extension code" layout="sectioned">
 				<DialogHeader>
 					<h2 className="font-semibold text-fg text-lg">
 						{initialKey ? `New version of ${initialKey}` : "Upload extension"}
@@ -74,35 +74,35 @@ export function UploadDialog({
 					</p>
 				</DialogHeader>
 
-				<Form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
+				<Form className="flex min-h-0 flex-1 flex-col" onSubmit={onSubmit}>
 					<DialogBody>
 						<Input
-							name="key"
-							label="Key"
-							description="Lowercase letters and digits. Uploading an existing key adds a version to it."
-							pattern="[a-z0-9]+"
+							autoFocus={initialKey === null}
 							defaultValue={initialKey ?? ""}
+							description="Lowercase letters and digits. Uploading an existing key adds a version to it."
+							label="Key"
+							name="key"
+							pattern="[a-z0-9]+"
 							readOnly={initialKey !== null}
 							required
-							autoFocus={initialKey === null}
 						/>
 						<Textarea
-							name="code"
-							label="Module"
-							description="The starter below logs every request and response. Replace it with your own."
-							rows={18}
 							className="font-mono text-xs"
 							defaultValue={STARTER_MODULE}
+							description="The starter below logs every request and response. Replace it with your own."
+							label="Module"
+							name="code"
 							required
+							rows={18}
 						/>
 
 						{error ? <ErrorNote>{error}</ErrorNote> : null}
 					</DialogBody>
 					<DialogFooter>
-						<Button variant="secondary" onClick={onClose}>
+						<Button onClick={onClose} variant="secondary">
 							Cancel
 						</Button>
-						<Button type="submit" disabled={pending}>
+						<Button disabled={pending} type="submit">
 							{pending ? "Probing…" : "Upload and activate"}
 						</Button>
 					</DialogFooter>

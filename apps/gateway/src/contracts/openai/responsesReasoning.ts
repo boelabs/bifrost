@@ -3,21 +3,28 @@ import type { OpenAIReasoningStateItem } from "#core/providerSpecificFields.ts";
 type ReasoningPartType = "reasoning_text" | "summary_text";
 
 function recordValue(value: unknown): Record<string, unknown> | undefined {
-	if (value === null || typeof value !== "object" || Array.isArray(value))
+	if (value === null || typeof value !== "object" || Array.isArray(value)) {
 		return undefined;
+	}
 	return value as Record<string, unknown>;
 }
 
 function reasoningTexts(value: unknown): string[] {
-	if (!Array.isArray(value)) return [];
+	if (!Array.isArray(value)) {
+		return [];
+	}
 	const texts: string[] = [];
 	for (const part of value) {
 		if (typeof part === "string") {
-			if (part.length > 0) texts.push(part);
+			if (part.length > 0) {
+				texts.push(part);
+			}
 			continue;
 		}
 		const text = recordValue(part)?.text;
-		if (typeof text === "string" && text.length > 0) texts.push(text);
+		if (typeof text === "string" && text.length > 0) {
+			texts.push(text);
+		}
 	}
 	return texts;
 }
@@ -36,19 +43,27 @@ function parts(
 export function mirrorReasoningItem(
 	item: Record<string, unknown>,
 ): Record<string, unknown> {
-	if (item.type !== "reasoning") return structuredClone(item);
+	if (item.type !== "reasoning") {
+		return structuredClone(item);
+	}
 	const mirrored = structuredClone(item);
 	const summaryTexts = reasoningTexts(mirrored.summary);
 	const contentTexts = reasoningTexts(mirrored.content);
-	if (summaryTexts.length === 0 && contentTexts.length === 0) return mirrored;
+	if (summaryTexts.length === 0 && contentTexts.length === 0) {
+		return mirrored;
+	}
 
-	if (summaryTexts.length === 0 && contentTexts.length > 0)
+	if (summaryTexts.length === 0 && contentTexts.length > 0) {
 		mirrored.summary = parts(contentTexts, "summary_text");
-	else if (!Array.isArray(mirrored.summary)) mirrored.summary = [];
+	} else if (!Array.isArray(mirrored.summary)) {
+		mirrored.summary = [];
+	}
 
-	if (contentTexts.length === 0 && summaryTexts.length > 0)
+	if (contentTexts.length === 0 && summaryTexts.length > 0) {
 		mirrored.content = parts(summaryTexts, "reasoning_text");
-	else if (!Array.isArray(mirrored.content)) mirrored.content = [];
+	} else if (!Array.isArray(mirrored.content)) {
+		mirrored.content = [];
+	}
 
 	return mirrored;
 }
@@ -67,7 +82,7 @@ export function reasoningItemForRequest(
 ): Record<string, unknown> {
 	return {
 		type: "reasoning",
-		...(item.id !== undefined ? { id: item.id } : {}),
+		...(item.id === undefined ? {} : { id: item.id }),
 		encrypted_content: item.encrypted_content,
 		summary: structuredClone(item.summary ?? []),
 	};
@@ -90,7 +105,9 @@ export function mirrorReasoningEventData(
 ): Record<string, unknown> {
 	const mirrored = structuredClone(data);
 	const item = recordValue(mirrored.item);
-	if (item !== undefined) mirrored.item = mirrorReasoningItem(item);
+	if (item !== undefined) {
+		mirrored.item = mirrorReasoningItem(item);
+	}
 	const response = recordValue(mirrored.response);
 	if (response !== undefined && Array.isArray(response.output)) {
 		response.output = response.output.map((outputItem) => {

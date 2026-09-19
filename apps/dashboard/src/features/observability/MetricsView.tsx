@@ -29,10 +29,10 @@ export function MetricsView({
 	return (
 		<Metrics
 			data={data}
-			options={options}
-			search={search}
-			refreshing={navigating || refreshing}
 			onChange={(patch) => set(patch)}
+			options={options}
+			refreshing={navigating || refreshing}
+			search={search}
 		/>
 	);
 }

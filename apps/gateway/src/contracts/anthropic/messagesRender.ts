@@ -94,8 +94,9 @@ function withCacheControl(
 	part: CanonicalContentPart,
 	block: { cache_control?: Record<string, unknown> },
 ): CanonicalContentPart {
-	if (block.cache_control !== undefined)
+	if (block.cache_control !== undefined) {
 		part.cacheControl = block.cache_control;
+	}
 	return part;
 }
 
@@ -111,8 +112,9 @@ function blockToPart(block: Block): CanonicalContentPart | null {
 					block,
 				);
 			}
-			if (s?.type === "url" && s.url)
+			if (s?.type === "url" && s.url) {
 				return withCacheControl({ type: "image", url: s.url }, block);
+			}
 			return null;
 		}
 		case "document": {
@@ -122,7 +124,7 @@ function blockToPart(block: Block): CanonicalContentPart | null {
 					{
 						type: "file",
 						fileData: `data:${s.media_type};base64,${s.data}`,
-						...(block.title !== undefined ? { filename: block.title } : {}),
+						...(block.title === undefined ? {} : { filename: block.title }),
 					},
 					block,
 				);
@@ -132,7 +134,7 @@ function blockToPart(block: Block): CanonicalContentPart | null {
 					{
 						type: "file",
 						fileUrl: s.url,
-						...(block.title !== undefined ? { filename: block.title } : {}),
+						...(block.title === undefined ? {} : { filename: block.title }),
 					},
 					block,
 				);
@@ -142,7 +144,7 @@ function blockToPart(block: Block): CanonicalContentPart | null {
 					{
 						type: "file",
 						fileId: s.file_id,
-						...(block.title !== undefined ? { filename: block.title } : {}),
+						...(block.title === undefined ? {} : { filename: block.title }),
 					},
 					block,
 				);
@@ -168,18 +170,28 @@ function blockToPart(block: Block): CanonicalContentPart | null {
 function systemToCanonicalContent(
 	system: MessagesRequest["system"],
 ): string | CanonicalContentPart[] | null {
-	if (typeof system === "string") return system || null;
+	if (typeof system === "string") {
+		return system || null;
+	}
 	if (Array.isArray(system)) {
 		const parts: CanonicalContentPart[] = [];
 		let hasCacheControl = false;
 		for (const raw of system) {
 			const b = raw as Block;
-			if (b.type !== undefined && b.type !== "text") continue;
-			if (b.cache_control !== undefined) hasCacheControl = true;
+			if (b.type !== undefined && b.type !== "text") {
+				continue;
+			}
+			if (b.cache_control !== undefined) {
+				hasCacheControl = true;
+			}
 			parts.push(withCacheControl({ type: "text", text: b.text ?? "" }, b));
 		}
-		if (parts.length === 0) return null;
-		if (hasCacheControl) return parts;
+		if (parts.length === 0) {
+			return null;
+		}
+		if (hasCacheControl) {
+			return parts;
+		}
 		return (
 			parts
 				.map((p) => (p as { text: string }).text)
@@ -193,10 +205,14 @@ function systemToCanonicalContent(
 function toolResultToCanonical(
 	content: unknown,
 ): string | CanonicalContentPart[] {
-	if (typeof content === "string") return content;
+	if (typeof content === "string") {
+		return content;
+	}
 	if (Array.isArray(content)) {
 		return content.map((value): CanonicalContentPart => {
-			if (typeof value === "string") return { type: "text", text: value };
+			if (typeof value === "string") {
+				return { type: "text", text: value };
+			}
 			const part = blockToPart(value as Block);
 			return part ?? { type: "text", text: JSON.stringify(value) };
 		});
@@ -207,11 +223,19 @@ function toolResultToCanonical(
 function mapToolChoice(
 	tc: MessagesRequest["tool_choice"],
 ): CanonicalToolChoice | undefined {
-	if (!tc) return undefined;
+	if (!tc) {
+		return undefined;
+	}
 	const type = (tc as { type?: string }).type;
-	if (type === "auto") return "auto";
-	if (type === "any") return "required";
-	if (type === "none") return "none";
+	if (type === "auto") {
+		return "auto";
+	}
+	if (type === "any") {
+		return "required";
+	}
+	if (type === "none") {
+		return "none";
+	}
 	if (type === "tool") {
 		const name = (tc as { name?: string }).name;
 		return name ? { name } : "auto";
@@ -243,12 +267,19 @@ function reasoningEffortFromMessages(
 		return outputEffort;
 	}
 
-	if (req.thinking === undefined) return undefined;
-	if (req.thinking.type === "disabled") return "none";
+	if (req.thinking === undefined) {
+		return undefined;
+	}
+	if (req.thinking.type === "disabled") {
+		return "none";
+	}
 	const budget = req.thinking.budget_tokens;
-	if (typeof budget === "number") return effortFromBudgetTokens(budget);
-	if (req.thinking.type === "enabled" || req.thinking.type === "adaptive")
+	if (typeof budget === "number") {
+		return effortFromBudgetTokens(budget);
+	}
+	if (req.thinking.type === "enabled" || req.thinking.type === "adaptive") {
 		return "high";
+	}
 	return undefined;
 }
 
@@ -258,7 +289,9 @@ export function messagesRequestToCanonical(
 	const messages: CanonicalMessage[] = [];
 	if (req.system) {
 		const sys = systemToCanonicalContent(req.system);
-		if (sys) messages.push({ role: "system", content: sys });
+		if (sys) {
+			messages.push({ role: "system", content: sys });
+		}
 	}
 
 	for (const m of req.messages) {
@@ -302,24 +335,29 @@ export function messagesRequestToCanonical(
 						...(blocks.some((block) => block.cache_control !== undefined)
 							? { contentIndex: blockIndex }
 							: {}),
-						...(b.cache_control !== undefined
-							? { cacheControl: b.cache_control }
-							: {}),
-						...(extraContent !== undefined ? { extraContent } : {}),
+						...(b.cache_control === undefined
+							? {}
+							: { cacheControl: b.cache_control }),
+						...(extraContent === undefined ? {} : { extraContent }),
 					});
 				} else {
 					const p = blockToPart(b);
-					if (p) parts.push(p);
+					if (p) {
+						parts.push(p);
+					}
 				}
 			}
 			const msg: CanonicalMessage = {
 				role: "assistant",
 				content: parts.length > 0 ? parts : null,
 			};
-			if (toolCalls.length > 0) msg.toolCalls = toolCalls;
-			if (thinkingBlocks.length > 0)
+			if (toolCalls.length > 0) {
+				msg.toolCalls = toolCalls;
+			}
+			if (thinkingBlocks.length > 0) {
 				msg.providerFields =
 					providerFieldsWithAnthropicThinking(thinkingBlocks);
+			}
 			messages.push(msg);
 			continue;
 		}
@@ -339,14 +377,16 @@ export function messagesRequestToCanonical(
 					role: "tool",
 					toolCallId: stripThoughtSignatureId(b.tool_use_id ?? ""),
 					content: toolResultToCanonical(b.content),
-					...(b.cache_control !== undefined
-						? { cacheControl: b.cache_control }
-						: {}),
-					...(b.is_error !== undefined ? { toolResultError: b.is_error } : {}),
+					...(b.cache_control === undefined
+						? {}
+						: { cacheControl: b.cache_control }),
+					...(b.is_error === undefined ? {} : { toolResultError: b.is_error }),
 				});
 			} else {
 				const p = blockToPart(b);
-				if (p) pending.push(p);
+				if (p) {
+					pending.push(p);
+				}
 			}
 		}
 		flush();
@@ -360,10 +400,18 @@ export function messagesRequestToCanonical(
 		stream: req.stream,
 	};
 	u.maxTokens = req.max_tokens;
-	if (req.temperature !== undefined) u.temperature = req.temperature;
-	if (req.top_p !== undefined) u.topP = req.top_p;
-	if (req.top_k !== undefined) u.topK = req.top_k;
-	if (req.stop_sequences !== undefined) u.stop = req.stop_sequences;
+	if (req.temperature !== undefined) {
+		u.temperature = req.temperature;
+	}
+	if (req.top_p !== undefined) {
+		u.topP = req.top_p;
+	}
+	if (req.top_k !== undefined) {
+		u.topK = req.top_k;
+	}
+	if (req.stop_sequences !== undefined) {
+		u.stop = req.stop_sequences;
+	}
 	if (req.metadata !== undefined) {
 		u.messagesTransport = { metadata: req.metadata };
 	}
@@ -381,9 +429,9 @@ export function messagesRequestToCanonical(
 		display === "omitted" ? "none" : summaryForEffort(effort, undefined);
 	if (effort !== undefined || display !== undefined) {
 		u.reasoning = {
-			...(effort !== undefined ? { effort } : {}),
-			...(summary !== undefined ? { summary } : {}),
-			...(display !== undefined ? { display } : {}),
+			...(effort === undefined ? {} : { effort }),
+			...(summary === undefined ? {} : { summary }),
+			...(display === undefined ? {} : { display }),
 		};
 	}
 	const outputFormat = req.output_config?.format;
@@ -414,22 +462,30 @@ export function messagesRequestToCanonical(
 				cache_control?: Record<string, unknown>;
 			};
 			if (typeof tool.name === "string") {
-				if (typeof tool.type === "string" || tool.input_schema === undefined)
+				if (typeof tool.type === "string" || tool.input_schema === undefined) {
 					hasNativeTool = true;
+				}
 				const entry: NonNullable<CanonicalChatRequest["tools"]>[number] = {
 					name: tool.name,
 				};
-				if (tool.description !== undefined)
+				if (tool.description !== undefined) {
 					entry.description = tool.description;
-				if (tool.input_schema !== undefined)
+				}
+				if (tool.input_schema !== undefined) {
 					entry.parameters = tool.input_schema;
-				if (tool.strict !== undefined) entry.strict = tool.strict;
-				if (tool.cache_control !== undefined)
+				}
+				if (tool.strict !== undefined) {
+					entry.strict = tool.strict;
+				}
+				if (tool.cache_control !== undefined) {
 					entry.cacheControl = tool.cache_control;
+				}
 				tools.push(entry);
 			}
 		}
-		if (tools.length > 0) u.tools = tools;
+		if (tools.length > 0) {
+			u.tools = tools;
+		}
 		if (hasNativeTool) {
 			u.messagesTransport = {
 				...u.messagesTransport,
@@ -439,17 +495,21 @@ export function messagesRequestToCanonical(
 		}
 	}
 	const tc = mapToolChoice(req.tool_choice);
-	if (tc !== undefined) u.toolChoice = tc;
+	if (tc !== undefined) {
+		u.toolChoice = tc;
+	}
 	const carriesNativeMessageState = messages.some((message) => {
 		if (
 			anthropicThinkingFromProviderFields(message.providerFields) !== undefined
-		)
+		) {
 			return true;
+		}
 		if (
 			message.cacheControl !== undefined ||
 			message.toolCalls?.some((call) => call.cacheControl !== undefined)
-		)
+		) {
 			return true;
+		}
 		return Array.isArray(message.content)
 			? message.content.some((part) => part.cacheControl !== undefined)
 			: false;
@@ -457,8 +517,9 @@ export function messagesRequestToCanonical(
 	const carriesNativeToolState = u.tools?.some(
 		(tool) => tool.cacheControl !== undefined,
 	);
-	if (carriesNativeMessageState || carriesNativeToolState)
+	if (carriesNativeMessageState || carriesNativeToolState) {
 		u.requiresNativeWire = true;
+	}
 	return u;
 }
 
@@ -468,7 +529,9 @@ function mapStopReason(
 	finish: CanonicalFinishReason | null,
 	stopSequence?: string | null,
 ): string | null {
-	if (stopSequence) return "stop_sequence";
+	if (stopSequence) {
+		return "stop_sequence";
+	}
 	switch (finish) {
 		case null:
 			return null;
@@ -499,18 +562,18 @@ function usageToAnthropic(usage: Usage): Record<string, unknown> {
 		input_tokens: Math.max(0, usage.promptTokens - cacheRead - cacheWrite),
 		cache_creation_input_tokens: cacheWrite,
 		cache_read_input_tokens: cacheRead,
-		...(usage.cacheWriteTokensByTtl !== undefined
-			? {
+		...(usage.cacheWriteTokensByTtl === undefined
+			? {}
+			: {
 					cache_creation: {
 						ephemeral_5m_input_tokens: usage.cacheWriteTokensByTtl["300"] ?? 0,
 						ephemeral_1h_input_tokens: usage.cacheWriteTokensByTtl["3600"] ?? 0,
 					},
-				}
-			: {}),
+				}),
 		output_tokens: usage.completionTokens,
-		...(usage.reasoningTokens !== undefined
-			? { output_tokens_details: { thinking_tokens: usage.reasoningTokens } }
-			: {}),
+		...(usage.reasoningTokens === undefined
+			? {}
+			: { output_tokens_details: { thinking_tokens: usage.reasoningTokens } }),
 	};
 }
 
@@ -539,7 +602,9 @@ export function canonicalToMessagesResponse(
 			signature: "",
 		});
 	}
-	if (content) blocks.push({ type: "text", text: content });
+	if (content) {
+		blocks.push({ type: "text", text: content });
+	}
 	for (const tc of choice?.message.toolCalls ?? []) {
 		const providerSpecificFields = providerSpecificFieldsFromExtraContent(
 			tc.extraContent,
@@ -550,9 +615,9 @@ export function canonicalToMessagesResponse(
 			id: encodeThoughtSignatureId(tc.id, tc.extraContent),
 			name: tc.name,
 			input: parseArgs(tc.arguments),
-			...(providerSpecificFields !== undefined
-				? { provider_specific_fields: providerSpecificFields }
-				: {}),
+			...(providerSpecificFields === undefined
+				? {}
+				: { provider_specific_fields: providerSpecificFields }),
 		});
 	}
 	return {
@@ -613,11 +678,19 @@ export async function* canonicalChunksToMessagesEvents(
 	yield sse("ping", {});
 
 	for await (const chunk of chunks) {
-		if (chunk.usage) finalUsage = chunk.usage;
+		if (chunk.usage) {
+			finalUsage = chunk.usage;
+		}
 		const choice = chunk.choices[0];
-		if (!choice) continue;
-		if (choice.finishReason) finish = choice.finishReason;
-		if (choice.stopSequence !== undefined) stopSequence = choice.stopSequence;
+		if (!choice) {
+			continue;
+		}
+		if (choice.finishReason) {
+			finish = choice.finishReason;
+		}
+		if (choice.stopSequence !== undefined) {
+			stopSequence = choice.stopSequence;
+		}
 		const delta = choice.delta;
 		for (const block of anthropicThinkingFromProviderFields(
 			delta.providerFields,
@@ -701,13 +774,13 @@ export async function* canonicalChunksToMessagesEvents(
 						id: encodeThoughtSignatureId(tc.id ?? "", tc.extraContent),
 						name: tc.name ?? "",
 						input: {},
-						...(providerSpecificFieldsFromExtraContent(tc.extraContent) !==
+						...(providerSpecificFieldsFromExtraContent(tc.extraContent) ===
 						undefined
-							? {
+							? {}
+							: {
 									provider_specific_fields:
 										providerSpecificFieldsFromExtraContent(tc.extraContent),
-								}
-							: {}),
+								}),
 					},
 				});
 			}
@@ -720,10 +793,15 @@ export async function* canonicalChunksToMessagesEvents(
 		}
 	}
 
-	if (thinkingOpen) yield sse("content_block_stop", { index: thinkingIndex });
-	if (textOpen) yield sse("content_block_stop", { index: textIndex });
-	for (const blockIndex of toolBlock.values())
+	if (thinkingOpen) {
+		yield sse("content_block_stop", { index: thinkingIndex });
+	}
+	if (textOpen) {
+		yield sse("content_block_stop", { index: textIndex });
+	}
+	for (const blockIndex of toolBlock.values()) {
 		yield sse("content_block_stop", { index: blockIndex });
+	}
 
 	yield sse("message_delta", {
 		delta: {

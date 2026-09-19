@@ -16,7 +16,7 @@ export function Separator({
 		<BaseSeparator
 			{...props}
 			className={mergeClassName(
-				"shrink-0 bg-border data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:min-h-4 data-[orientation=vertical]:w-px data-[orientation=vertical]:self-stretch",
+				"shrink-0 bg-border data-[orientation=horizontal]:h-px data-[orientation=vertical]:min-h-4 data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-px data-[orientation=vertical]:self-stretch",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

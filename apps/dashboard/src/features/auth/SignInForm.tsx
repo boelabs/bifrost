@@ -41,23 +41,23 @@ export function SignInForm({ next }: { next: string }) {
 	}
 
 	return (
-		<Form onSubmit={onSubmit} className="flex flex-col gap-4">
+		<Form className="flex flex-col gap-4" onSubmit={onSubmit}>
 			<Input
-				name="username"
-				label="Username"
 				autoComplete="username"
 				autoFocus
+				label="Username"
+				name="username"
 				required
 			/>
 			<Input
-				name="password"
-				label="Password"
-				type="password"
 				autoComplete="current-password"
+				label="Password"
+				name="password"
 				required
+				type="password"
 			/>
 			{error ? <ErrorNote>{error}</ErrorNote> : null}
-			<Button type="submit" disabled={pending} className="mt-2 w-full">
+			<Button className="mt-2 w-full" disabled={pending} type="submit">
 				{pending ? "Signing in…" : "Sign in"}
 			</Button>
 		</Form>

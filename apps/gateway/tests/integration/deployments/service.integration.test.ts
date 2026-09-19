@@ -104,6 +104,8 @@ test("deployments: custom OpenAI-compatible aggregator with inline catalogEntry 
 			"test-key",
 		);
 	} finally {
-		if (deploymentId) await deleteDeployment(deploymentId);
+		if (deploymentId) {
+			await deleteDeployment(deploymentId);
+		}
 	}
 });

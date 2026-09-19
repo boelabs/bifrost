@@ -76,8 +76,9 @@ function buildFields(
 	const out: Record<string, unknown> = { ...scalars };
 	if (scalars.temperature !== undefined) {
 		const value = Number(scalars.temperature);
-		if (Number.isNaN(value))
+		if (Number.isNaN(value)) {
 			throw badMultipart("temperature must be a number", "temperature");
+		}
 		out.temperature = value;
 	}
 	if (scalars.stream !== undefined) {
@@ -102,7 +103,9 @@ function buildFields(
 		}
 		out.extra_body = parsed;
 	}
-	for (const [key, value] of Object.entries(arrays)) out[key] = value;
+	for (const [key, value] of Object.entries(arrays)) {
+		out[key] = value;
+	}
 	return out;
 }
 
@@ -113,7 +116,9 @@ export async function parseTranscriptionMultipart(
 	if (!contentType?.toLowerCase().startsWith("multipart/form-data")) {
 		throw badMultipart("Content-Type must be multipart/form-data", null);
 	}
-	if (!request.body) throw badMultipart("Missing multipart body", null);
+	if (!request.body) {
+		throw badMultipart("Missing multipart body", null);
+	}
 
 	const dir = await mkdtemp(join(tmpdir(), "bifrost-audio-"));
 	const cleanup = () => rm(dir, { recursive: true, force: true });
@@ -137,8 +142,9 @@ export async function parseTranscriptionMultipart(
 		});
 
 		bb.on("field", (name, value, info) => {
-			if (info.valueTruncated)
+			if (info.valueTruncated) {
 				failure ??= badMultipart(`Field "${name}" exceeds 64 KiB`, name);
+			}
 			if (name.endsWith("[]")) {
 				const base = name.slice(0, -2);
 				const list = arrays[base] ?? [];
@@ -152,8 +158,9 @@ export async function parseTranscriptionMultipart(
 				arrays[name] = list;
 				return;
 			}
-			if (scalars[name] !== undefined)
+			if (scalars[name] !== undefined) {
 				failure ??= badMultipart(`Duplicate field "${name}"`, name);
+			}
 			scalars[name] = value;
 		});
 		bb.on("file", (name, stream, info) => {
@@ -205,8 +212,12 @@ export async function parseTranscriptionMultipart(
 		} finally {
 			request.signal.removeEventListener("abort", abort);
 		}
-		if (failure) throw failure;
-		if (!upload) throw badMultipart("A `file` audio part is required", "file");
+		if (failure) {
+			throw failure;
+		}
+		if (!upload) {
+			throw badMultipart("A `file` audio part is required", "file");
+		}
 		const file = upload as { path: string; filename: string };
 
 		const mimeType = mimeForFilename(file.filename);
@@ -217,7 +228,9 @@ export async function parseTranscriptionMultipart(
 			);
 		}
 		const { size } = await stat(file.path);
-		if (size === 0) throw badMultipart("The audio file is empty", "file");
+		if (size === 0) {
+			throw badMultipart("The audio file is empty", "file");
+		}
 		if (size > env.AUDIO_MAX_MULTIPART_BYTES) {
 			throw badMultipart(
 				"Multipart body exceeds the configured aggregate limit",
@@ -260,7 +273,9 @@ export async function parseTranscriptionMultipart(
 		};
 	} catch (error) {
 		await cleanup();
-		if (GatewayError.is(error)) throw error;
+		if (GatewayError.is(error)) {
+			throw error;
+		}
 		throw badMultipart(
 			error instanceof Error ? error.message : "Invalid multipart body",
 			null,

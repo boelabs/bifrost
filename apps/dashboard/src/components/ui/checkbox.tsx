@@ -27,7 +27,7 @@ function Root({
 		<BaseCheckbox.Root
 			{...props}
 			className={mergeClassName(
-				`${focusRing} ${sizes[size]} inline-flex shrink-0 items-center justify-center rounded-[var(--ui-radius-item)] border ${variant === "filled" ? "border-transparent bg-surface-2" : variant === "ghost" ? "border-transparent bg-transparent" : "border-border bg-surface"} transition-colors data-[checked]:border-primary data-[checked]:bg-primary data-[checked]:text-primary-fg data-[indeterminate]:border-primary data-[indeterminate]:bg-primary data-[indeterminate]:text-primary-fg data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 data-[invalid]:border-danger`,
+				`${focusRing} ${sizes[size]} inline-flex shrink-0 items-center justify-center rounded-[var(--ui-radius-item)] border ${variant === "filled" ? "border-transparent bg-surface-2" : variant === "ghost" ? "border-transparent bg-transparent" : "border-border bg-surface"} transition-colors data-[disabled]:cursor-not-allowed data-[checked]:border-primary data-[indeterminate]:border-primary data-[invalid]:border-danger data-[checked]:bg-primary data-[indeterminate]:bg-primary data-[checked]:text-primary-fg data-[indeterminate]:text-primary-fg data-[disabled]:opacity-50`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -59,8 +59,8 @@ export function Checkbox({ children, ...props }: CheckboxProps) {
 	);
 	return children ? (
 		<label
+			className="inline-flex cursor-pointer items-center gap-2 text-fg text-sm"
 			htmlFor={id}
-			className="inline-flex cursor-pointer items-center gap-2 text-sm text-fg"
 		>
 			{control}
 			{children}

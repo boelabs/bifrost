@@ -206,7 +206,9 @@ platformAdminApp.get("/operations", (c) =>
 			models: catalogModels(adapter.key),
 			operations: OPERATIONS.flatMap((operation) => {
 				const callType = callTypeForOperation(operation.id);
-				if (!callType || !adapter.supportedCallTypes.has(callType)) return [];
+				if (!(callType && adapter.supportedCallTypes.has(callType))) {
+					return [];
+				}
 				const transports = adapter.transports?.[callType];
 				return [
 					{
@@ -236,18 +238,18 @@ platformAdminApp.post("/deployments/resolve", async (c) => {
 		publicModel: input.publicModel,
 		adapterKey,
 		upstreamModel: input.upstreamModel,
-		...(input.transportOverrides !== undefined
-			? { transportOverrides: input.transportOverrides }
-			: {}),
-		...(input.executionPolicyOverrides !== undefined
-			? { executionPolicyOverrides: input.executionPolicyOverrides }
-			: {}),
-		...(input.catalogEntry !== undefined
-			? { catalogEntry: input.catalogEntry as CatalogEntry }
-			: {}),
-		...(input.pricing !== undefined
-			? { pricing: input.pricing as RuntimeModelMetadata["pricing"] }
-			: {}),
+		...(input.transportOverrides === undefined
+			? {}
+			: { transportOverrides: input.transportOverrides }),
+		...(input.executionPolicyOverrides === undefined
+			? {}
+			: { executionPolicyOverrides: input.executionPolicyOverrides }),
+		...(input.catalogEntry === undefined
+			? {}
+			: { catalogEntry: input.catalogEntry as CatalogEntry }),
+		...(input.pricing === undefined
+			? {}
+			: { pricing: input.pricing as RuntimeModelMetadata["pricing"] }),
 	};
 	return ok(c, await previewDeployment(previewInput));
 });
@@ -275,27 +277,27 @@ platformAdminApp.post("/deployments", async (c) => {
 		adapterKey,
 		upstreamModel: input.upstreamModel,
 		credentials: input.credentials,
-		...(input.transportOverrides !== undefined
-			? { transportOverrides: input.transportOverrides }
-			: {}),
-		...(input.executionPolicyOverrides !== undefined
-			? { executionPolicyOverrides: input.executionPolicyOverrides }
-			: {}),
-		...(input.label !== undefined ? { label: input.label } : {}),
-		...(input.failureDomain !== undefined
-			? { failureDomain: input.failureDomain }
-			: {}),
-		...(input.metadata !== undefined ? { metadata: input.metadata } : {}),
-		...(input.catalogEntry !== undefined
-			? { catalogEntry: input.catalogEntry as CatalogEntry }
-			: {}),
-		...(input.pricing !== undefined
-			? { pricing: input.pricing as RuntimeModelMetadata["pricing"] }
-			: {}),
-		...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
-		...(input.weight !== undefined ? { weight: input.weight } : {}),
-		...(input.tpmLimit !== undefined ? { tpmLimit: input.tpmLimit } : {}),
-		...(input.rpmLimit !== undefined ? { rpmLimit: input.rpmLimit } : {}),
+		...(input.transportOverrides === undefined
+			? {}
+			: { transportOverrides: input.transportOverrides }),
+		...(input.executionPolicyOverrides === undefined
+			? {}
+			: { executionPolicyOverrides: input.executionPolicyOverrides }),
+		...(input.label === undefined ? {} : { label: input.label }),
+		...(input.failureDomain === undefined
+			? {}
+			: { failureDomain: input.failureDomain }),
+		...(input.metadata === undefined ? {} : { metadata: input.metadata }),
+		...(input.catalogEntry === undefined
+			? {}
+			: { catalogEntry: input.catalogEntry as CatalogEntry }),
+		...(input.pricing === undefined
+			? {}
+			: { pricing: input.pricing as RuntimeModelMetadata["pricing"] }),
+		...(input.enabled === undefined ? {} : { enabled: input.enabled }),
+		...(input.weight === undefined ? {} : { weight: input.weight }),
+		...(input.tpmLimit === undefined ? {} : { tpmLimit: input.tpmLimit }),
+		...(input.rpmLimit === undefined ? {} : { rpmLimit: input.rpmLimit }),
 	};
 	const result = await createDeployment(createInput);
 	return ok(
@@ -307,47 +309,48 @@ platformAdminApp.post("/deployments", async (c) => {
 
 platformAdminApp.get("/deployments/:id", async (c) => {
 	const row = await getDeploymentById(c.req.param("id"));
-	if (!row)
+	if (!row) {
 		throw new GatewayError({
 			class: "not_found",
 			message: "Deployment not found",
 		});
+	}
 	return ok(c, deploymentView(row));
 });
 
 platformAdminApp.patch("/deployments/:id", async (c) => {
 	const input = await parseJsonBody(c, updateDeploymentSchema);
 	const patch: UpdateDeploymentInput = {
-		...(input.publicModel !== undefined
-			? { publicModel: input.publicModel }
-			: {}),
-		...(input.upstreamModel !== undefined
-			? { upstreamModel: input.upstreamModel }
-			: {}),
-		...(input.credentials !== undefined
-			? { credentials: input.credentials }
-			: {}),
-		...(input.label !== undefined ? { label: input.label } : {}),
-		...(input.failureDomain !== undefined
-			? { failureDomain: input.failureDomain }
-			: {}),
-		...(input.metadata !== undefined ? { metadata: input.metadata } : {}),
-		...(input.catalogEntry !== undefined
-			? { catalogEntry: input.catalogEntry as CatalogEntry | null }
-			: {}),
-		...(input.pricing !== undefined
-			? { pricing: input.pricing as RuntimeModelMetadata["pricing"] | null }
-			: {}),
-		...(input.transportOverrides !== undefined
-			? { transportOverrides: input.transportOverrides }
-			: {}),
-		...(input.executionPolicyOverrides !== undefined
-			? { executionPolicyOverrides: input.executionPolicyOverrides }
-			: {}),
-		...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
-		...(input.weight !== undefined ? { weight: input.weight } : {}),
-		...(input.tpmLimit !== undefined ? { tpmLimit: input.tpmLimit } : {}),
-		...(input.rpmLimit !== undefined ? { rpmLimit: input.rpmLimit } : {}),
+		...(input.publicModel === undefined
+			? {}
+			: { publicModel: input.publicModel }),
+		...(input.upstreamModel === undefined
+			? {}
+			: { upstreamModel: input.upstreamModel }),
+		...(input.credentials === undefined
+			? {}
+			: { credentials: input.credentials }),
+		...(input.label === undefined ? {} : { label: input.label }),
+		...(input.failureDomain === undefined
+			? {}
+			: { failureDomain: input.failureDomain }),
+		...(input.metadata === undefined ? {} : { metadata: input.metadata }),
+		...(input.catalogEntry === undefined
+			? {}
+			: { catalogEntry: input.catalogEntry as CatalogEntry | null }),
+		...(input.pricing === undefined
+			? {}
+			: { pricing: input.pricing as RuntimeModelMetadata["pricing"] | null }),
+		...(input.transportOverrides === undefined
+			? {}
+			: { transportOverrides: input.transportOverrides }),
+		...(input.executionPolicyOverrides === undefined
+			? {}
+			: { executionPolicyOverrides: input.executionPolicyOverrides }),
+		...(input.enabled === undefined ? {} : { enabled: input.enabled }),
+		...(input.weight === undefined ? {} : { weight: input.weight }),
+		...(input.tpmLimit === undefined ? {} : { tpmLimit: input.tpmLimit }),
+		...(input.rpmLimit === undefined ? {} : { rpmLimit: input.rpmLimit }),
 	};
 	const result = await updateDeployment(c.req.param("id"), patch);
 	return ok(c, { ...deploymentView(result.row), resolved: result.preview });
@@ -360,11 +363,12 @@ platformAdminApp.patch("/deployments/:id", async (c) => {
  */
 platformAdminApp.delete("/deployments/:id/circuit", async (c) => {
 	const row = await getDeploymentById(c.req.param("id"));
-	if (!row)
+	if (!row) {
 		throw new GatewayError({
 			class: "not_found",
 			message: "Deployment not found",
 		});
+	}
 	const cleared = await resetCircuits([
 		deploymentSubject(row.id),
 		capacitySubject(row.id, row.failureDomain),
@@ -374,11 +378,12 @@ platformAdminApp.delete("/deployments/:id/circuit", async (c) => {
 
 platformAdminApp.delete("/deployments/:id", async (c) => {
 	const row = await getDeploymentById(c.req.param("id"));
-	if (!row)
+	if (!row) {
 		throw new GatewayError({
 			class: "not_found",
 			message: "Deployment not found",
 		});
+	}
 	await deleteDeployment(row.id);
 	return c.body(null, 204);
 });

@@ -93,18 +93,23 @@ function maskText(text, vault, detectors) {
 }
 
 function maskContent(content, vault, detectors) {
-	if (typeof content === "string") return maskText(content, vault, detectors);
-	if (Array.isArray(content))
+	if (typeof content === "string") {
+		return maskText(content, vault, detectors);
+	}
+	if (Array.isArray(content)) {
 		return content.map((part) =>
 			part?.type === "text" && typeof part.text === "string"
 				? { ...part, text: maskText(part.text, vault, detectors) }
 				: part,
 		);
+	}
 	return content;
 }
 
 function unmask(text, vault) {
-	if (!text) return text;
+	if (!text) {
+		return text;
+	}
 	return text.replace(TOKEN_RE, (token) => vault.byToken.get(token) ?? token);
 }
 
@@ -118,7 +123,9 @@ export default defineExtension({
 	configSchema,
 	hooks: {
 		onCanonicalRequest(ctx, request) {
-			if (request.callType !== "chat") return request;
+			if (request.callType !== "chat") {
+				return request;
+			}
 			const { detectors, scanRoles } = ctx.config;
 			const vault = { byValue: new Map(), byToken: new Map(), seq: 0 };
 
@@ -131,7 +138,9 @@ export default defineExtension({
 					: message,
 			);
 
-			if (vault.seq === 0) return request; // nothing to protect: stay invisible
+			if (vault.seq === 0) {
+				return request; // nothing to protect: stay invisible
+			}
 			vaults.set(ctx.requestId, vault);
 			ctx.log.debug("masked PII", {
 				requestId: ctx.requestId,
@@ -142,7 +151,9 @@ export default defineExtension({
 
 		onCanonicalResponse(ctx, response) {
 			const vault = vaults.get(ctx.requestId);
-			if (!vault) return response;
+			if (!vault) {
+				return response;
+			}
 			vaults.delete(ctx.requestId); // non-stream: this is the only reply, tear down now
 			return {
 				...response,
@@ -160,7 +171,9 @@ export default defineExtension({
 
 		onStreamEvent(ctx, event) {
 			const vault = vaults.get(ctx.requestId);
-			if (!vault) return event;
+			if (!vault) {
+				return event;
+			}
 
 			const choices = event.choices.map((choice) => {
 				const key = `${ctx.requestId}#${choice.index}`;
@@ -168,10 +181,7 @@ export default defineExtension({
 				const buffer = (pending.get(key) ?? "") + incoming;
 
 				let emit;
-				if (choice.finishReason !== null) {
-					emit = buffer; // last chunk: flush everything we were holding
-					pending.delete(key);
-				} else {
+				if (choice.finishReason === null) {
 					// A token is «V…». If the buffer ends inside an unclosed «…», hold from there: the
 					// rest may arrive in the next delta. Everything before it is safe to emit.
 					const open = buffer.lastIndexOf("«");
@@ -182,23 +192,30 @@ export default defineExtension({
 						emit = buffer;
 						pending.set(key, "");
 					}
+				} else {
+					emit = buffer; // last chunk: flush everything we were holding
+					pending.delete(key);
 				}
 
 				const delta = { ...choice.delta };
-				if (choice.delta.content !== undefined || emit !== "")
+				if (choice.delta.content !== undefined || emit !== "") {
 					delta.content = unmask(emit, vault);
+				}
 				// reasoning/refusal deltas are restored directly (they rarely carry tokens; a split
 				// there would only mean a token shows through in those side channels).
-				if (choice.delta.reasoning !== undefined)
+				if (choice.delta.reasoning !== undefined) {
 					delta.reasoning = unmask(choice.delta.reasoning, vault);
-				if (choice.delta.refusal !== undefined)
+				}
+				if (choice.delta.refusal !== undefined) {
 					delta.refusal = unmask(choice.delta.refusal, vault);
+				}
 				return { ...choice, delta };
 			});
 
 			// When every choice has finished, the vault is no longer needed.
-			if (event.choices.every((c) => c.finishReason !== null))
+			if (event.choices.every((c) => c.finishReason !== null)) {
 				vaults.delete(ctx.requestId);
+			}
 
 			return { ...event, choices };
 		},
@@ -207,8 +224,11 @@ export default defineExtension({
 			// The request failed before it produced a (complete) reply: drop all per-request state so
 			// the maps never grow unbounded.
 			vaults.delete(ctx.requestId);
-			for (const key of pending.keys())
-				if (key.startsWith(`${ctx.requestId}#`)) pending.delete(key);
+			for (const key of pending.keys()) {
+				if (key.startsWith(`${ctx.requestId}#`)) {
+					pending.delete(key);
+				}
+			}
 		},
 	},
 });

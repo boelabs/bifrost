@@ -26,7 +26,9 @@ export async function saveRouterSettingsAction(body: RouterSettingsPatch) {
 		() => updateRouterSettings(body),
 		"The router settings could not be saved.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }
 
@@ -37,7 +39,9 @@ export async function saveFallbackAction(
 		() => upsertFallback(body),
 		"The chain could not be saved.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }
 
@@ -49,7 +53,9 @@ export async function deleteFallbackAction(
 		() => deleteFallback(primaryModel, reason),
 		"The chain could not be removed.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }
 
@@ -68,6 +74,8 @@ export async function saveDashboardSettingsAction(
 		() => updateDashboardSettings(body),
 		"The session policy could not be saved.",
 	);
-	if (result.ok) revalidatePath(PAGE);
+	if (result.ok) {
+		revalidatePath(PAGE);
+	}
 	return result;
 }

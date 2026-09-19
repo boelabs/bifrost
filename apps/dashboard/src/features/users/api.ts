@@ -47,14 +47,18 @@ export async function setPassword(
 		params: { path: { id } },
 		body: { password, mustChangePassword },
 	});
-	if (result.error !== undefined) unwrap(result);
+	if (result.error !== undefined) {
+		unwrap(result);
+	}
 }
 
 export async function deleteUser(id: string): Promise<void> {
 	const result = await api.DELETE("/admin/users/{id}", {
 		params: { path: { id } },
 	});
-	if (result.error !== undefined) unwrap(result);
+	if (result.error !== undefined) {
+		unwrap(result);
+	}
 }
 
 export async function listSessions(id: string) {

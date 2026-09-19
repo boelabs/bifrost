@@ -46,21 +46,21 @@ export function ModelInput({
 		<Field.Root name={name}>
 			<Field.Label>{label}</Field.Label>
 			<Combobox.Root
-				items={items}
-				value={value}
-				onValueChange={(next: string | null) => onChange(next ?? "")}
 				inputValue={value}
+				items={items}
 				onInputValueChange={onChange}
+				onValueChange={(next: string | null) => onChange(next ?? "")}
 				openOnInputClick
+				value={value}
 			>
 				<Combobox.InputField
-					required={required}
 					autoFocus={autoFocus}
-					showClear={value !== ""}
 					placeholder="Pick or type a model"
+					required={required}
+					showClear={value !== ""}
 				/>
 				<Combobox.Portal>
-					<Combobox.Positioner sideOffset={6} className="z-50">
+					<Combobox.Positioner className="z-50" sideOffset={6}>
 						<Combobox.Popup>
 							<Combobox.Empty>
 								No deployed model matches. The name is still accepted.
@@ -119,21 +119,23 @@ export function ModelListInput({
 		<Field.Root>
 			<Field.Label>{label}</Field.Label>
 			<Combobox.Root
+				inputValue={query}
 				items={items}
 				multiple
-				value={value as string[]}
+				onInputValueChange={setQuery}
+				onOpenChange={(open, details) => {
+					// Picking an item would close the popup; several names usually go in at once.
+					if (!open && details.reason === "item-press") {
+						details.cancel();
+					}
+				}}
 				onValueChange={(next: string[]) => {
 					onChange([
 						...new Set(next.map((entry) => entry.trim()).filter(Boolean)),
 					]);
 					setQuery("");
 				}}
-				inputValue={query}
-				onInputValueChange={setQuery}
-				onOpenChange={(open, details) => {
-					// Picking an item would close the popup; several names usually go in at once.
-					if (!open && details.reason === "item-press") details.cancel();
-				}}
+				value={value as string[]}
 			>
 				<Combobox.Value>
 					{(selected: string[]) => (
@@ -143,9 +145,9 @@ export function ModelListInput({
 						>
 							{selected.map((model) => (
 								<Combobox.Chip
-									key={model}
-									aria-label={model}
 									aria-description="Press Backspace or Delete to remove"
+									aria-label={model}
+									key={model}
 								>
 									{model}
 									<Combobox.ChipRemove aria-label={`Remove ${model}`} />
@@ -159,7 +161,7 @@ export function ModelListInput({
 					)}
 				</Combobox.Value>
 				<Combobox.Portal>
-					<Combobox.Positioner sideOffset={6} className="z-50">
+					<Combobox.Positioner className="z-50" sideOffset={6}>
 						<Combobox.Popup>
 							<Combobox.Empty>{emptyHint}</Combobox.Empty>
 							<Combobox.List>

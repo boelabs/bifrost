@@ -95,7 +95,9 @@ function resolveOpenAIReasoning(
 ): ResolvedReasoning | undefined {
 	const effort = req.reasoning?.effort;
 	if (!spec) {
-		if (effort === undefined || effort === "none") return undefined;
+		if (effort === undefined || effort === "none") {
+			return undefined;
+		}
 		throw new GatewayError({
 			class: "bad_request",
 			message:
@@ -120,15 +122,17 @@ function resolveOpenAIReasoning(
 function toResponsesTextFormat(
 	format: CanonicalResponseFormat,
 ): Record<string, unknown> {
-	if (format.type !== "json_schema") return { type: format.type };
+	if (format.type !== "json_schema") {
+		return { type: format.type };
+	}
 	return {
 		type: "json_schema",
 		name: format.name ?? "structured_output",
 		schema: format.schema,
-		...(format.description !== undefined
-			? { description: format.description }
-			: {}),
-		...(format.strict !== undefined ? { strict: format.strict } : {}),
+		...(format.description === undefined
+			? {}
+			: { description: format.description }),
+		...(format.strict === undefined ? {} : { strict: format.strict }),
 	};
 }
 
@@ -157,14 +161,14 @@ function partToInput(
 			return {
 				type: "input_file",
 				...writeCacheBreakpoint(p),
-				...(p.fileId !== undefined ? { file_id: p.fileId } : {}),
-				...(p.fileUrl !== undefined ? { file_url: p.fileUrl } : {}),
-				...(p.fileData !== undefined ? { file_data: p.fileData } : {}),
-				...(p.filename !== undefined ? { filename: p.filename } : {}),
-				...(p.detail !== undefined ? { detail: p.detail } : {}),
+				...(p.fileId === undefined ? {} : { file_id: p.fileId }),
+				...(p.fileUrl === undefined ? {} : { file_url: p.fileUrl }),
+				...(p.fileData === undefined ? {} : { file_data: p.fileData }),
+				...(p.filename === undefined ? {} : { filename: p.filename }),
+				...(p.detail === undefined ? {} : { detail: p.detail }),
 			};
 		case "audio":
-			if (p.cacheBreakpoint)
+			if (p.cacheBreakpoint) {
 				throw new GatewayError({
 					class: "bad_request",
 					code: "unsupported_parameter",
@@ -173,6 +177,7 @@ function partToInput(
 					message:
 						"Responses does not support cache breakpoints on audio blocks; use Chat Completions",
 				});
+			}
 			return {
 				type: "input_audio",
 				...writeCacheBreakpoint(p),
@@ -185,7 +190,9 @@ function contentToInput(
 	content: CanonicalMessage["content"],
 	role: "user" | "assistant",
 ): Record<string, unknown>[] {
-	if (content === null) return [];
+	if (content === null) {
+		return [];
+	}
 	if (typeof content === "string") {
 		return [
 			{
@@ -204,14 +211,14 @@ export function assertResponsesRequestSupported(
 	req: CanonicalChatRequest,
 ): void {
 	const param =
-		(req.n ?? 1) !== 1
-			? "n"
-			: (req.stop?.length ?? 0) > 0
+		(req.n ?? 1) === 1
+			? (req.stop?.length ?? 0) > 0
 				? "stop"
-				: req.seed !== undefined
-					? "seed"
-					: undefined;
-	if (param !== undefined)
+				: req.seed === undefined
+					? undefined
+					: "seed"
+			: "n";
+	if (param !== undefined) {
 		throw new GatewayError({
 			class: "bad_request",
 			code: "unsupported_parameter",
@@ -219,6 +226,7 @@ export function assertResponsesRequestSupported(
 			deploymentHealth: "neutral",
 			message: `The Responses transport cannot preserve "${param}"; configure a Chat Completions deployment override`,
 		});
+	}
 }
 
 export function buildResponsesRequestBody(
@@ -245,8 +253,9 @@ export function buildResponsesRequestBody(
 				});
 				continue;
 			}
-			if (typeof m.content === "string") instructions.push(m.content);
-			else if (Array.isArray(m.content)) {
+			if (typeof m.content === "string") {
+				instructions.push(m.content);
+			} else if (Array.isArray(m.content)) {
 				instructions.push(
 					m.content
 						.filter((p) => p.type === "text")
@@ -288,13 +297,14 @@ export function buildResponsesRequestBody(
 				[]) {
 				input.push(reasoningItemForRequest(item));
 			}
-			if (m.content)
+			if (m.content) {
 				input.push({
 					type: "message",
 					role: "assistant",
 					content: contentToInput(m.content, "assistant"),
-					...(m.phase !== undefined ? { phase: m.phase } : {}),
+					...(m.phase === undefined ? {} : { phase: m.phase }),
 				});
+			}
 			for (const tc of m.toolCalls ?? []) {
 				input.push({
 					type: "function_call",
@@ -317,38 +327,54 @@ export function buildResponsesRequestBody(
 		input: req.responsesTransport?.rawInput ?? input,
 		stream: req.stream,
 	};
-	if (instructions.length > 0) body.instructions = instructions.join("\n");
-	if (req.maxTokens !== undefined) body.max_output_tokens = req.maxTokens;
-	if (req.temperature !== undefined) body.temperature = req.temperature;
-	if (req.topP !== undefined) body.top_p = req.topP;
-	if (req.presencePenalty !== undefined)
+	if (instructions.length > 0) {
+		body.instructions = instructions.join("\n");
+	}
+	if (req.maxTokens !== undefined) {
+		body.max_output_tokens = req.maxTokens;
+	}
+	if (req.temperature !== undefined) {
+		body.temperature = req.temperature;
+	}
+	if (req.topP !== undefined) {
+		body.top_p = req.topP;
+	}
+	if (req.presencePenalty !== undefined) {
 		body.presence_penalty = req.presencePenalty;
-	if (req.frequencyPenalty !== undefined)
+	}
+	if (req.frequencyPenalty !== undefined) {
 		body.frequency_penalty = req.frequencyPenalty;
+	}
 	const user = req.responsesTransport?.user ?? req.user;
-	if (user !== undefined) body.user = user;
-	if (req.responsesTransport?.truncation !== undefined)
+	if (user !== undefined) {
+		body.user = user;
+	}
+	if (req.responsesTransport?.truncation !== undefined) {
 		body.truncation = req.responsesTransport.truncation;
-	if (req.responsesTransport?.contextManagement !== undefined)
+	}
+	if (req.responsesTransport?.contextManagement !== undefined) {
 		body.context_management = req.responsesTransport.contextManagement;
-	if (req.parallelToolCalls !== undefined)
+	}
+	if (req.parallelToolCalls !== undefined) {
 		body.parallel_tool_calls = req.parallelToolCalls;
+	}
 	if (req.responsesTransport?.rawTools) {
 		body.tools = req.responsesTransport.rawTools;
 	} else if (req.tools) {
 		body.tools = req.tools.map((t) => ({
 			type: "function",
 			name: t.name,
-			...(t.description !== undefined ? { description: t.description } : {}),
-			...(t.parameters !== undefined ? { parameters: t.parameters } : {}),
-			...(t.strict !== undefined ? { strict: t.strict } : {}),
+			...(t.description === undefined ? {} : { description: t.description }),
+			...(t.parameters === undefined ? {} : { parameters: t.parameters }),
+			...(t.strict === undefined ? {} : { strict: t.strict }),
 		}));
 	}
 	if (req.toolChoice !== undefined) {
-		if (typeof req.toolChoice === "string") body.tool_choice = req.toolChoice;
-		else if ("name" in req.toolChoice)
+		if (typeof req.toolChoice === "string") {
+			body.tool_choice = req.toolChoice;
+		} else if ("name" in req.toolChoice) {
 			body.tool_choice = { type: "function", name: req.toolChoice.name };
-		else
+		} else {
 			body.tool_choice = {
 				type: "allowed_tools",
 				mode: req.toolChoice.mode,
@@ -357,6 +383,7 @@ export function buildResponsesRequestBody(
 					name,
 				})),
 			};
+		}
 	}
 	// Encrypted reasoning state: request it for reasoning-capable models so multi-turn tool flows
 	// can replay it. OpenAI only returns encrypted_content for unstored responses; the gateway is
@@ -367,16 +394,24 @@ export function buildResponsesRequestBody(
 	if (
 		reasoningSpec?.kind === "openai_effort" &&
 		!include.includes(ENCRYPTED_REASONING_INCLUDE)
-	)
+	) {
 		include.push(ENCRYPTED_REASONING_INCLUDE);
-	if (include.length > 0) body.include = include;
+	}
+	if (include.length > 0) {
+		body.include = include;
+	}
 	const metadata =
 		req.responsesTransport?.metadata ?? req.chatTransport?.metadata;
-	if (metadata !== undefined) body.metadata = metadata;
+	if (metadata !== undefined) {
+		body.metadata = metadata;
+	}
 	const text = { ...(req.responsesTransport?.text ?? {}) };
-	if (req.responseFormat !== undefined)
+	if (req.responseFormat !== undefined) {
 		text.format = toResponsesTextFormat(req.responseFormat);
-	if (Object.keys(text).length > 0) body.text = text;
+	}
+	if (Object.keys(text).length > 0) {
+		body.text = text;
+	}
 	const resolvedReasoning = resolveOpenAIReasoning(req, reasoningSpec);
 	if (
 		req.responsesTransport?.reasoning !== undefined ||
@@ -384,38 +419,47 @@ export function buildResponsesRequestBody(
 	) {
 		body.reasoning = {
 			...(req.responsesTransport?.reasoning ?? {}),
-			...(resolvedReasoning !== undefined
-				? {
+			...(resolvedReasoning === undefined
+				? {}
+				: {
 						effort: toUpstreamReasoningEffort(
 							resolvedReasoning.effort,
 							reasoningSpec!,
 						),
-					}
-				: {}),
+					}),
 			...(resolvedReasoning && summaryVisible(resolvedReasoning.summary)
 				? { summary: resolvedReasoning.summary }
 				: {}),
 		};
 	}
-	if (req.responsesTransport?.streamOptions !== undefined)
+	if (req.responsesTransport?.streamOptions !== undefined) {
 		body.stream_options = req.responsesTransport.streamOptions;
+	}
 	const serviceTier =
 		req.responsesTransport?.serviceTier ?? req.chatTransport?.serviceTier;
-	if (serviceTier !== undefined) body.service_tier = serviceTier;
+	if (serviceTier !== undefined) {
+		body.service_tier = serviceTier;
+	}
 	const safetyIdentifier =
 		req.responsesTransport?.safetyIdentifier ??
 		req.chatTransport?.safetyIdentifier;
-	if (safetyIdentifier !== undefined) body.safety_identifier = safetyIdentifier;
+	if (safetyIdentifier !== undefined) {
+		body.safety_identifier = safetyIdentifier;
+	}
 	// The /responses contract carries it in responsesTransport; a /chat request routed to this
 	// transport (OpenAI uses /responses as its native transport) carries it in the top-level promptCacheKey.
 	Object.assign(body, writePromptCachePolicy(req));
 	const promptCacheKey =
 		req.responsesTransport?.promptCacheKey ?? req.promptCacheKey;
-	if (promptCacheKey !== undefined) body.prompt_cache_key = promptCacheKey;
-	if (req.responsesTransport?.topLogprobs !== undefined)
+	if (promptCacheKey !== undefined) {
+		body.prompt_cache_key = promptCacheKey;
+	}
+	if (req.responsesTransport?.topLogprobs !== undefined) {
 		body.top_logprobs = req.responsesTransport.topLogprobs;
-	if (req.responsesTransport?.maxToolCalls !== undefined)
+	}
+	if (req.responsesTransport?.maxToolCalls !== undefined) {
 		body.max_tool_calls = req.responsesTransport.maxToolCalls;
+	}
 	return mergeExtraBody(
 		body,
 		req.extraBody,
@@ -446,15 +490,19 @@ export function parseResponsesUsage(
 		totalTokens:
 			u?.total_tokens ?? (u?.input_tokens ?? 0) + (u?.output_tokens ?? 0),
 	};
-	if (u?.input_tokens_details?.cached_tokens != null)
+	if (u?.input_tokens_details?.cached_tokens != null) {
 		usage.cacheReadTokens = u.input_tokens_details.cached_tokens;
-	if (u?.input_tokens_details?.cache_write_tokens_by_ttl !== undefined)
+	}
+	if (u?.input_tokens_details?.cache_write_tokens_by_ttl !== undefined) {
 		usage.cacheWriteTokensByTtl =
 			u.input_tokens_details.cache_write_tokens_by_ttl;
-	if (u?.input_tokens_details?.cache_write_tokens != null)
+	}
+	if (u?.input_tokens_details?.cache_write_tokens != null) {
 		usage.cacheWriteTokens = u.input_tokens_details.cache_write_tokens;
-	if (u?.output_tokens_details?.reasoning_tokens !== undefined)
+	}
+	if (u?.output_tokens_details?.reasoning_tokens !== undefined) {
 		usage.reasoningTokens = u.output_tokens_details.reasoning_tokens;
+	}
 	return usage;
 }
 
@@ -475,12 +523,15 @@ interface RWOutputItem {
 function reasoningStateFromItem(
 	item: RWOutputItem,
 ): OpenAIReasoningStateItem | undefined {
-	if (item.type !== "reasoning") return undefined;
+	if (item.type !== "reasoning") {
+		return undefined;
+	}
 	if (
 		typeof item.encrypted_content !== "string" ||
 		item.encrypted_content.length === 0
-	)
+	) {
 		return undefined;
+	}
 	return {
 		encrypted_content: item.encrypted_content,
 		...(typeof item.id === "string" && item.id.length > 0
@@ -514,26 +565,30 @@ function finishFrom(
 			? "length"
 			: "content_filter";
 	}
-	if (hasToolCalls) return "tool_calls";
+	if (hasToolCalls) {
+		return "tool_calls";
+	}
 	return "stop";
 }
 
 export function parseResponsesResponse(raw: unknown): CanonicalChatResponse {
 	const r = (raw ?? {}) as RWResponse;
-	if (r.status === "failed")
+	if (r.status === "failed") {
 		throw new GatewayError({
 			class: "server",
 			code: "upstream_response_failed",
 			message: "Responses upstream returned a failed response",
 			provider: { body: r.error ?? raw },
 		});
-	if (r.status !== "completed" && r.status !== "incomplete")
+	}
+	if (r.status !== "completed" && r.status !== "incomplete") {
 		throw new GatewayError({
 			class: "server",
 			code: "upstream_protocol_error",
 			message: "Responses upstream omitted a recognized terminal status",
 			provider: { body: { status: r.status ?? null } },
 		});
+	}
 	let content = "";
 	const reasoning: string[] = [];
 	const reasoningState: OpenAIReasoningStateItem[] = [];
@@ -545,20 +600,25 @@ export function parseResponsesResponse(raw: unknown): CanonicalChatResponse {
 	) as RWOutputItem[];
 	for (const item of output) {
 		if (item.type === "message") {
-			for (const c of item.content ?? [])
-				if (c.type === "output_text") content += c.text ?? "";
+			for (const c of item.content ?? []) {
+				if (c.type === "output_text") {
+					content += c.text ?? "";
+				}
+			}
 		} else if (item.type === "reasoning") {
 			reasoning.push(...reasoningTextFromItem(item));
 			const state = reasoningStateFromItem(item);
-			if (state !== undefined) reasoningState.push(state);
+			if (state !== undefined) {
+				reasoningState.push(state);
+			}
 		} else if (item.type === "function_call") {
 			toolCalls.push({
 				id: item.call_id ?? item.id ?? "",
 				name: item.name ?? "",
 				arguments: item.arguments ?? "",
-				...(item.extra_content !== undefined
-					? { extraContent: item.extra_content }
-					: {}),
+				...(item.extra_content === undefined
+					? {}
+					: { extraContent: item.extra_content }),
 			});
 		}
 	}
@@ -569,19 +629,27 @@ export function parseResponsesResponse(raw: unknown): CanonicalChatResponse {
 	const responseMessage = output.find(
 		(item) => item.type === "message" && item.phase !== undefined,
 	);
-	if (responseMessage?.phase !== undefined)
+	if (responseMessage?.phase !== undefined) {
 		message.phase = responseMessage.phase;
-	if (reasoning.length > 0) message.reasoning = reasoning.join("\n\n");
-	if (reasoningState.length > 0)
+	}
+	if (reasoning.length > 0) {
+		message.reasoning = reasoning.join("\n\n");
+	}
+	if (reasoningState.length > 0) {
 		message.providerFields = providerFieldsWithOpenAIReasoning(reasoningState);
+	}
 	if (output.length > 0) {
 		const providerFields = mergeProviderFields(
 			message.providerFields,
 			providerFieldsWithResponsesOutput(output),
 		);
-		if (providerFields !== undefined) message.providerFields = providerFields;
+		if (providerFields !== undefined) {
+			message.providerFields = providerFields;
+		}
 	}
-	if (toolCalls.length > 0) message.toolCalls = toolCalls;
+	if (toolCalls.length > 0) {
+		message.toolCalls = toolCalls;
+	}
 	return {
 		id: r.id ?? `resp-${randomUUID()}`,
 		created: r.created_at ?? Math.floor(Date.now() / 1000),
@@ -631,9 +699,13 @@ export async function* responsesEventsToCanonicalChunks(
 						data.output_index >= 0
 					? `index:${data.output_index}`
 					: undefined;
-		if (key === undefined) return true;
+		if (key === undefined) {
+			return true;
+		}
 		const selectedLane = reasoningLanes.get(key);
-		if (selectedLane !== undefined && selectedLane !== lane) return false;
+		if (selectedLane !== undefined && selectedLane !== lane) {
+			return false;
+		}
 		reasoningLanes.set(key, lane);
 		return true;
 	};
@@ -657,13 +729,14 @@ export async function* responsesEventsToCanonicalChunks(
 			});
 		}
 		const type = (ev.event ?? d.type) as string | undefined;
-		if (terminalSeen)
+		if (terminalSeen) {
 			throw new GatewayError({
 				class: "server",
 				code: "upstream_protocol_error",
 				message: "Responses upstream emitted an event after its terminal event",
 				provider: { body: { type: type ?? null } },
 			});
+		}
 		if (type === "error" || type === "response.failed") {
 			const response = d.response as Record<string, unknown> | undefined;
 			const error = (d.error ?? response?.error ?? d) as
@@ -693,8 +766,12 @@ export async function* responsesEventsToCanonicalChunks(
 
 		if (type === "response.created" || type === "response.in_progress") {
 			const resp = d.response as { id?: string; model?: string } | undefined;
-			if (resp?.id) id = resp.id;
-			if (resp?.model) model = resp.model;
+			if (resp?.id) {
+				id = resp.id;
+			}
+			if (resp?.model) {
+				model = resp.model;
+			}
 			continue;
 		}
 
@@ -718,7 +795,9 @@ export async function* responsesEventsToCanonicalChunks(
 			type === "response.reasoning.delta"
 		) {
 			const lane = type.includes("summary") ? "summary" : "content";
-			if (!selectReasoningLane(d, lane)) continue;
+			if (!selectReasoningLane(d, lane)) {
+				continue;
+			}
 			const delta: CanonicalChatStreamChunk["choices"][number]["delta"] = {};
 			delta.providerFields = providerFieldsWithOpenAIResponsesStreamEvent(
 				type,
@@ -729,11 +808,12 @@ export async function* responsesEventsToCanonicalChunks(
 				roleSent = true;
 			}
 			delta.reasoning = String(d.delta ?? "");
-			if (typeof d.item_id === "string" && d.item_id.length > 0)
+			if (typeof d.item_id === "string" && d.item_id.length > 0) {
 				delta.providerFields = mergeProviderFields(
 					delta.providerFields,
 					providerFieldsWithOpenAIReasoningItemId(d.item_id),
 				)!;
+			}
 			yield { ...base(), choices: [{ index: 0, delta, finishReason: null }] };
 			continue;
 		}
@@ -745,7 +825,9 @@ export async function* responsesEventsToCanonicalChunks(
 			type === "response.reasoning.done"
 		) {
 			const lane = type.includes("summary") ? "summary" : "content";
-			if (!selectReasoningLane(d, lane)) continue;
+			if (!selectReasoningLane(d, lane)) {
+				continue;
+			}
 			yield {
 				...base(),
 				choices: [
@@ -777,9 +859,9 @@ export async function* responsesEventsToCanonicalChunks(
 						id: item.call_id ?? "",
 						name: item.name ?? "",
 						arguments: "",
-						...(item.extra_content !== undefined
-							? { extraContent: item.extra_content }
-							: {}),
+						...(item.extra_content === undefined
+							? {}
+							: { extraContent: item.extra_content }),
 					},
 				];
 			}
@@ -814,7 +896,7 @@ export async function* responsesEventsToCanonicalChunks(
 		if (type === "response.output_item.done") {
 			const item = d.item as RWOutputItem | undefined;
 			const state =
-				item !== undefined ? reasoningStateFromItem(item) : undefined;
+				item === undefined ? undefined : reasoningStateFromItem(item);
 			let providerFields = providerFieldsWithOpenAIResponsesStreamEvent(
 				type,
 				d,
@@ -823,7 +905,9 @@ export async function* responsesEventsToCanonicalChunks(
 				state !== undefined &&
 				(state.id === undefined || !reasoningStateSeen.has(state.id))
 			) {
-				if (state.id !== undefined) reasoningStateSeen.add(state.id);
+				if (state.id !== undefined) {
+					reasoningStateSeen.add(state.id);
+				}
 				providerFields = mergeProviderFields(
 					providerFields,
 					providerFieldsWithOpenAIReasoning([state]),
@@ -865,8 +949,11 @@ export async function* responsesEventsToCanonicalChunks(
 						(state.id === undefined || !reasoningStateSeen.has(state.id)),
 				);
 			if (missed.length > 0) {
-				for (const state of missed)
-					if (state.id !== undefined) reasoningStateSeen.add(state.id);
+				for (const state of missed) {
+					if (state.id !== undefined) {
+						reasoningStateSeen.add(state.id);
+					}
+				}
 				yield {
 					...base(),
 					choices: [

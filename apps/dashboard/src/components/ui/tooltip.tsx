@@ -74,8 +74,8 @@ export function TooltipPositioner({
 		<BaseTooltip.Positioner
 			positionMethod={positionMethod}
 			{...props}
-			sideOffset={sideOffset}
 			className={mergeClassName("z-50", className)}
+			sideOffset={sideOffset}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);

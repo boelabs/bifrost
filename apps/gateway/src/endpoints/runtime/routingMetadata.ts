@@ -23,12 +23,12 @@ export function publicRoutingMetadata<T>(
 			index,
 			ok: attempt.ok,
 			latency_ms: attempt.ms,
-			...(attempt.errorClass !== undefined
-				? { error_class: attempt.errorClass }
-				: {}),
-			...(attempt.httpStatus !== undefined
-				? { http_status: attempt.httpStatus }
-				: {}),
+			...(attempt.errorClass === undefined
+				? {}
+				: { error_class: attempt.errorClass }),
+			...(attempt.httpStatus === undefined
+				? {}
+				: { http_status: attempt.httpStatus }),
 			...(attempt.deploymentHealth === "neutral"
 				? { health_impact: "neutral" }
 				: {}),
@@ -40,6 +40,8 @@ export function attachRoutingMetadata<T extends Record<string, unknown>>(
 	body: T,
 	metadata: Record<string, unknown> | null,
 ): T {
-	if (!metadata) return body;
+	if (!metadata) {
+		return body;
+	}
 	return { ...body, unified_routing: metadata };
 }

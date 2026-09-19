@@ -18,7 +18,9 @@ import {
 type Json = Record<string, unknown>;
 
 function Block({ title, value }: { title: string; value: unknown }) {
-	if (value === undefined || value === null) return null;
+	if (value === undefined || value === null) {
+		return null;
+	}
 	return (
 		<div className="flex flex-col gap-2">
 			<h4 className="font-medium text-fg text-xs uppercase tracking-wide">
@@ -45,11 +47,15 @@ interface PayloadState {
  * a button would be a lie: a deployment that seals payloads, and a sample retention already swept.
  */
 function payloadNote(sample: PayloadState | undefined): string {
-	if (!sample) return "Loading…";
-	if (sample.access === "sealed")
+	if (!sample) {
+		return "Loading…";
+	}
+	if (sample.access === "sealed") {
 		return "Sealed on this deployment: the gateway still captures and encrypts every sample, and no operator can read one here.";
-	if (!sample.retained)
+	}
+	if (!sample.retained) {
 		return "Nothing retained for this operation — the retention window has passed.";
+	}
 	const until = sample.expiresAt
 		? ` Kept until ${new Date(sample.expiresAt).toLocaleString()}.`
 		: "";
@@ -122,15 +128,22 @@ export function LogDetail({
 	const [loadingPayload, setLoadingPayload] = useState(false);
 
 	useEffect(() => {
-		if (!operationId) return;
+		if (!operationId) {
+			return;
+		}
 		setDetail(null);
 		setPayload(null);
 		setError(null);
 		let cancelled = false;
 		void loadOperationDetail(operationId).then((result) => {
-			if (cancelled) return;
-			if (result.ok) setDetail(result.data as Json);
-			else setError(result.message);
+			if (cancelled) {
+				return;
+			}
+			if (result.ok) {
+				setDetail(result.data as Json);
+			} else {
+				setError(result.message);
+			}
 		});
 		return () => {
 			cancelled = true;
@@ -138,12 +151,17 @@ export function LogDetail({
 	}, [operationId]);
 
 	async function revealPayload() {
-		if (!operationId) return;
+		if (!operationId) {
+			return;
+		}
 		setLoadingPayload(true);
 		setError(null);
 		const result = await loadPayloadSample(operationId);
-		if (result.ok) setPayload(result.data as Json);
-		else setError(result.message);
+		if (result.ok) {
+			setPayload(result.data as Json);
+		} else {
+			setError(result.message);
+		}
 		setLoadingPayload(false);
 	}
 
@@ -156,7 +174,7 @@ export function LogDetail({
 			isOpen={operationId !== null}
 			onOpenChange={(open) => !open && onClose()}
 		>
-			<Dialog layout="sectioned" aria-label="Operation detail">
+			<Dialog aria-label="Operation detail" layout="sectioned">
 				<DialogHeader>
 					<h2 className="font-semibold text-fg text-lg">Operation</h2>
 					<p className="pt-2 text-fg-muted text-sm">
@@ -209,8 +227,8 @@ export function LogDetail({
 								<ul className="flex flex-col">
 									{attempts.map((attempt, index) => (
 										<Attempt
-											key={String(attempt.id ?? index)}
 											attempt={attempt}
+											key={String(attempt.id ?? index)}
 										/>
 									))}
 								</ul>
@@ -229,10 +247,10 @@ export function LogDetail({
 								</div>
 								{payload === null && sample?.readable ? (
 									<Button
-										size="sm"
-										variant="secondary"
 										disabled={loadingPayload}
 										onClick={revealPayload}
+										size="sm"
+										variant="secondary"
 									>
 										{loadingPayload ? "Loading…" : "Reveal payload"}
 									</Button>
@@ -253,7 +271,7 @@ export function LogDetail({
 				</DialogBody>
 
 				<DialogFooter>
-					<Button variant="secondary" onClick={onClose}>
+					<Button onClick={onClose} variant="secondary">
 						Close
 					</Button>
 				</DialogFooter>

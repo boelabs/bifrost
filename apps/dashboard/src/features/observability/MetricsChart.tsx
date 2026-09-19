@@ -58,32 +58,34 @@ export function MetricsChart({
 	});
 	const label = options.find((option) => option.key === metric)?.label;
 	return (
-		<Card className="min-w-0 p-7" aria-labelledby={id}>
+		<Card aria-labelledby={id} className="min-w-0 p-7">
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div>
-					<h2 id={id} className="font-semibold">
+					<h2 className="font-semibold" id={id}>
 						{upstream ? "Deployment activity" : "Request activity"}
 					</h2>
-					<p className="mt-1 text-xs text-fg-muted">
+					<p className="mt-1 text-fg-muted text-xs">
 						{data.bucket === "hour" ? "Hourly" : "Daily"} · UTC
 						{upstream ? " · includes retries" : ""}
 					</p>
 				</div>
 				<ToggleGroup
-					className="flex-wrap"
 					aria-label={
 						upstream ? "Deployment chart metric" : "Request chart metric"
 					}
-					value={[metric]}
+					className="flex-wrap"
 					onValueChange={(values) => {
-						if (values[0]) setMetric(values[0]);
+						if (values[0]) {
+							setMetric(values[0]);
+						}
 					}}
+					value={[metric]}
 				>
 					{options.map((option) => (
 						<Toggle
 							key={option.key}
-							value={option.key}
 							size="xs"
+							value={option.key}
 							variant="ghost"
 						>
 							{option.label}
@@ -91,11 +93,11 @@ export function MetricsChart({
 					))}
 				</ToggleGroup>
 			</div>
-			<figure className="mt-7" aria-label={`${label} over time`}>
+			<figure aria-label={`${label} over time`} className="mt-7">
 				<div className="grid grid-cols-[3rem_minmax(0,1fr)] gap-3">
 					<div
-						className="flex h-40 flex-col justify-between text-right text-[10px] text-fg-muted tabular-nums"
 						aria-hidden
+						className="flex h-40 flex-col justify-between text-right text-[10px] text-fg-muted tabular-nums"
 					>
 						{[1, 0.5, 0].map((fraction) => (
 							<span key={fraction}>{format(max * fraction, true)}</span>
@@ -103,27 +105,27 @@ export function MetricsChart({
 					</div>
 					<div className="relative h-40">
 						<div
-							className="pointer-events-none absolute inset-0 flex flex-col justify-between"
 							aria-hidden
+							className="pointer-events-none absolute inset-0 flex flex-col justify-between"
 						>
 							{[0, 1, 2].map((i) => (
 								<div
+									className="border-border/60 border-t border-dashed"
 									key={i}
-									className="border-t border-dashed border-border/60"
 								/>
 							))}
 						</div>
 						<div className="relative flex h-full gap-1">
 							{rows.map((row) => (
 								<button
-									key={row.timestamp}
-									type="button"
-									className="flex min-w-0 flex-1 items-end rounded-sm hover:bg-secondary focus-visible:outline-2 focus-visible:outline-focus"
 									aria-label={`${date.format(row.timestamp)} UTC: ${format(row.value)} ${label}`}
-									onPointerEnter={() => setActive(row.timestamp)}
-									onFocus={() => setActive(row.timestamp)}
+									className="flex min-w-0 flex-1 items-end rounded-sm hover:bg-secondary focus-visible:outline-2 focus-visible:outline-focus"
+									key={row.timestamp}
 									onBlur={() => setActive(null)}
 									onClick={() => setActive(row.timestamp)}
+									onFocus={() => setActive(row.timestamp)}
+									onPointerEnter={() => setActive(row.timestamp)}
+									type="button"
 								>
 									<span
 										className={`w-full rounded-t-sm ${metric === "errors" ? "bg-danger" : upstream ? "bg-chart-2" : "bg-chart-1"} ${active === row.timestamp ? "opacity-100" : "opacity-70"}`}
@@ -135,7 +137,7 @@ export function MetricsChart({
 							))}
 						</div>
 						{max === 0 && (
-							<p className="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-fg-muted">
+							<p className="pointer-events-none absolute inset-0 flex items-center justify-center text-fg-muted text-xs">
 								{rows.some((row) => row.value !== null)
 									? "No activity recorded for this metric"
 									: "No measurements reported"}
@@ -144,14 +146,14 @@ export function MetricsChart({
 					</div>
 					<div />
 					<div
-						className="flex justify-between gap-2 text-[10px] text-fg-muted"
 						aria-hidden
+						className="flex justify-between gap-2 text-[10px] text-fg-muted"
 					>
 						<span>{date.format(Date.parse(data.start))}</span>
 						<span>{date.format(Date.parse(data.end))}</span>
 					</div>
 				</div>
-				<figcaption className="mt-4 flex min-h-10 items-center justify-between gap-3 border-t border-border/50 pt-3 text-xs">
+				<figcaption className="mt-4 flex min-h-10 items-center justify-between gap-3 border-border/50 border-t pt-3 text-xs">
 					<span className="text-fg-muted">
 						{selected
 							? `${date.format(selected.timestamp)} UTC${selected.timestamp + (data.bucket === "day" ? 86_400_000 : 3_600_000) > Date.parse(data.end) ? " · partial interval" : ""}`

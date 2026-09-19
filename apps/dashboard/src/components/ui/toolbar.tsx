@@ -122,8 +122,8 @@ export function ToolbarInput({
 	return (
 		<BaseToolbar.Input
 			{...props}
-			size={htmlSize}
 			className={mergeClassName(controlStyles({ size, variant }), className)}
+			size={htmlSize}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -140,7 +140,7 @@ export function ToolbarSeparator({
 		<BaseToolbar.Separator
 			{...props}
 			className={mergeClassName(
-				"shrink-0 bg-border data-[orientation=vertical]:mx-1 data-[orientation=vertical]:my-1 data-[orientation=vertical]:w-px data-[orientation=vertical]:self-stretch data-[orientation=horizontal]:my-1 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full",
+				"shrink-0 bg-border data-[orientation=vertical]:mx-1 data-[orientation=horizontal]:my-1 data-[orientation=vertical]:my-1 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-px data-[orientation=vertical]:self-stretch",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

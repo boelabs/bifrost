@@ -38,8 +38,9 @@ export function SessionProvider({
 /** Only valid inside the authenticated layout, which is what provides the promise. */
 export function useSession(): SessionValue {
 	const promise = use(SessionContext);
-	if (!promise)
+	if (!promise) {
 		throw new Error("useSession must be used inside the authenticated layout");
+	}
 	const identity = use(promise);
 	const router = useRouter();
 

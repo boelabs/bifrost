@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 test("public model limiter isolates clients and resets at the next minute", () => {
-	let timestamp = 1_000;
+	let timestamp = 1000;
 	const consume = createFixedWindowRateLimiter(2, () => timestamp);
 
 	assert.equal(consume("client-a"), null);

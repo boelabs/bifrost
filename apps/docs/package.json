@@ -2,18 +2,18 @@
 	"name": "@boelabs/docs",
 	"version": "0.0.0",
 	"private": true,
-	"type": "module",
 	"description": "Bifrost documentation site (Next.js App Router, Fumadocs).",
+	"type": "module",
 	"imports": {
 		"#/*": "./src/*"
 	},
 	"scripts": {
-		"postinstall": "fumadocs-mdx",
-		"dev": "bun scripts/dev.ts",
 		"build": "next build && bun scripts/check-links.ts",
+		"dev": "bun scripts/dev.ts",
+		"postinstall": "fumadocs-mdx",
 		"start": "bun scripts/start.ts",
-		"typecheck": "next typegen && tsc --noEmit",
-		"test": "bun test tests"
+		"test": "bun test tests",
+		"typecheck": "next typegen && tsc --noEmit"
 	},
 	"dependencies": {
 		"fumadocs-core": "16.15.9",

@@ -39,20 +39,24 @@ export function pricing(p: PricingInput): Pricing {
 	const out: Pricing = {
 		inputCentsPerMTokens: p.input,
 		outputCentsPerMTokens: p.output,
-		...(p.cacheRead !== undefined
-			? { cacheReadCentsPerMTokens: p.cacheRead }
-			: {}),
-		...(p.cacheWrite !== undefined
-			? { cacheWriteCentsPerMTokens: p.cacheWrite }
-			: {}),
+		...(p.cacheRead === undefined
+			? {}
+			: { cacheReadCentsPerMTokens: p.cacheRead }),
+		...(p.cacheWrite === undefined
+			? {}
+			: { cacheWriteCentsPerMTokens: p.cacheWrite }),
 	};
-	if (!p.tiers?.length) return out;
+	if (!p.tiers?.length) {
+		return out;
+	}
 	out.tiers = p.tiers.map((t): StoredTier => {
 		const stored: StoredTier = { aboveInputTokens: t.above };
-		if (t.input !== undefined)
+		if (t.input !== undefined) {
 			stored.inputCentsPerMTokens = round(p.input * t.input);
-		if (t.output !== undefined)
+		}
+		if (t.output !== undefined) {
 			stored.outputCentsPerMTokens = round(p.output * t.output);
+		}
 		// cache read/write scale with the input multiplier by default (only if there is a base rate).
 		if (p.cacheRead !== undefined) {
 			stored.cacheReadCentsPerMTokens = round(

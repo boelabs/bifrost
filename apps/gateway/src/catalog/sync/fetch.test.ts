@@ -94,7 +94,9 @@ test("boundedMap never runs more than `concurrency` workers at once", async () =
 test("boundedMap isolates one item's failure from the rest", async () => {
 	const items = [1, 2, 3, 4];
 	const { succeeded, failed } = await boundedMap(items, 2, async (item) => {
-		if (item === 3) throw new Error("boom");
+		if (item === 3) {
+			throw new Error("boom");
+		}
 		return item;
 	});
 	assert.equal(succeeded.size, 3);

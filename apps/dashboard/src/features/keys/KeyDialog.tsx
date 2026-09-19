@@ -63,14 +63,16 @@ export function KeyDialog({
 			setError("The key needs a name.");
 			return;
 		}
-		if (await onSubmit(draft)) onClose();
+		if (await onSubmit(draft)) {
+			onClose();
+		}
 	}
 
 	return (
 		<Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
 			<Dialog
-				layout="sectioned"
 				aria-label={editing ? "Edit virtual key" : "New virtual key"}
+				layout="sectioned"
 				width="min(100%, 34rem)"
 			>
 				<DialogHeader>
@@ -83,38 +85,38 @@ export function KeyDialog({
 							: "Scope the key to the models a client may call, and give it limits it cannot exceed."}
 					</p>
 				</DialogHeader>
-				<Form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
+				<Form className="flex min-h-0 flex-1 flex-col" onSubmit={submit}>
 					<DialogBody>
 						<Input
+							autoFocus={!editing}
 							label="Name"
-							value={draft.name}
 							onValueChange={(value) => set("name", value)}
 							required
-							autoFocus={!editing}
+							value={draft.name}
 						/>
 
 						<ModelListInput
-							label="Allowed public models"
-							value={draft.allowedModels}
-							onChange={(value) => set("allowedModels", value)}
-							models={models}
 							description="Leave empty to allow every public model. Names that are not deployed yet are accepted."
 							emptyHint="Press Enter to allow this model name."
+							label="Allowed public models"
+							models={models}
+							onChange={(value) => set("allowedModels", value)}
+							value={draft.allowedModels}
 						/>
 
 						<div className="grid gap-4 sm:grid-cols-2">
 							<Input
-								label="Budget (USD)"
-								type="number"
-								min={0}
-								step="0.01"
-								value={draft.budget}
-								onValueChange={(value) => set("budget", value)}
 								description="Empty means no ceiling."
+								label="Budget (USD)"
+								min={0}
+								onValueChange={(value) => set("budget", value)}
+								step="0.01"
+								type="number"
+								value={draft.budget}
 							/>
 							<Select
+								description="Without a period the budget is a lifetime total."
 								label="Budget resets"
-								value={draft.budgetReset === "" ? NO_RESET : draft.budgetReset}
 								onValueChange={(value) =>
 									set(
 										"budgetReset",
@@ -123,7 +125,7 @@ export function KeyDialog({
 											: (value as (typeof RESET_PERIODS)[number]),
 									)
 								}
-								description="Without a period the budget is a lifetime total."
+								value={draft.budgetReset === "" ? NO_RESET : draft.budgetReset}
 							>
 								<SelectItem value={NO_RESET}>never</SelectItem>
 								{RESET_PERIODS.map((period) => (
@@ -137,26 +139,26 @@ export function KeyDialog({
 						<div className="grid gap-4 sm:grid-cols-2">
 							<Input
 								label="Requests / minute"
-								type="number"
 								min={0}
-								value={draft.rpm}
 								onValueChange={(value) => set("rpm", value)}
+								type="number"
+								value={draft.rpm}
 							/>
 							<Input
 								label="Tokens / minute"
-								type="number"
 								min={0}
-								value={draft.tpm}
 								onValueChange={(value) => set("tpm", value)}
+								type="number"
+								value={draft.tpm}
 							/>
 						</div>
 
 						<Input
+							description="In your timezone. Empty means the key never expires on its own."
 							label="Expires"
+							onValueChange={(value) => set("expiresAt", value)}
 							type="datetime-local"
 							value={draft.expiresAt}
-							onValueChange={(value) => set("expiresAt", value)}
-							description="In your timezone. Empty means the key never expires on its own."
 						/>
 
 						{editing ? (
@@ -178,10 +180,10 @@ export function KeyDialog({
 											period.
 										</span>
 										<Button
-											type="button"
-											size="sm"
-											variant="secondary"
 											onClick={onResetSpend}
+											size="sm"
+											type="button"
+											variant="secondary"
 										>
 											Reset spend
 										</Button>
@@ -193,10 +195,10 @@ export function KeyDialog({
 						{error ? <ErrorNote>{error}</ErrorNote> : null}
 					</DialogBody>
 					<DialogFooter>
-						<Button type="button" variant="secondary" onClick={onClose}>
+						<Button onClick={onClose} type="button" variant="secondary">
 							Cancel
 						</Button>
-						<Button type="submit" disabled={pending}>
+						<Button disabled={pending} type="submit">
 							{pending ? "Saving…" : editing ? "Save changes" : "Create key"}
 						</Button>
 					</DialogFooter>

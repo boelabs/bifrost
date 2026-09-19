@@ -103,8 +103,7 @@ export function DataTable<T>({
 	const normalizedQuery = query.trim().toLocaleLowerCase();
 	const filtered = rows.filter(
 		(row) =>
-			(!search ||
-				!normalizedQuery ||
+			(!(search && normalizedQuery) ||
 				search.getText(row).toLocaleLowerCase().includes(normalizedQuery)) &&
 			filters.every(
 				(filter) =>
@@ -114,12 +113,15 @@ export function DataTable<T>({
 	);
 	const compare =
 		sorting && columns.find((column) => column.key === sorting.key)?.compare;
-	if (compare)
+	if (compare) {
 		filtered.sort((a, b) => compare(a, b) * (sorting?.descending ? -1 : 1));
+	}
 	const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
 	const currentPage = Math.min(page, pageCount - 1);
 	useEffect(() => {
-		if (page !== currentPage) setPage(currentPage);
+		if (page !== currentPage) {
+			setPage(currentPage);
+		}
 	}, [page, currentPage]);
 	const visible = pagination
 		? filtered.slice(currentPage * pageSize, (currentPage + 1) * pageSize)
@@ -133,6 +135,7 @@ export function DataTable<T>({
 	const framed = variant === "framed";
 	return (
 		<div
+			aria-busy={loading}
 			className={cn(
 				"min-w-0 rounded-[var(--ui-radius-surface)]",
 				framed && "p-1",
@@ -140,7 +143,6 @@ export function DataTable<T>({
 				className,
 			)}
 			style={frameStyle}
-			aria-busy={loading}
 		>
 			{(search || filters.length > 0 || toolbar) && (
 				<div
@@ -152,25 +154,22 @@ export function DataTable<T>({
 					{search && (
 						<div className="w-full sm:w-64">
 							<Input
-								type="search"
-								size="sm"
 								aria-label={search.placeholder ?? "Search table"}
-								placeholder={search.placeholder ?? "Search..."}
-								value={query}
 								onValueChange={(value) => {
 									setQuery(value);
 									setPage(0);
 								}}
+								placeholder={search.placeholder ?? "Search..."}
+								size="sm"
+								type="search"
+								value={query}
 							/>
 						</div>
 					)}
 					{filters.map((filter) => (
 						<Select
-							key={filter.key}
-							size="sm"
 							aria-label={filter.label}
-							placeholder={`All ${filter.label.toLowerCase()}`}
-							value={filterValues[filter.key] ?? null}
+							key={filter.key}
 							onValueChange={(value) => {
 								setFilterValues((previous) => ({
 									...previous,
@@ -178,6 +177,9 @@ export function DataTable<T>({
 								}));
 								setPage(0);
 							}}
+							placeholder={`All ${filter.label.toLowerCase()}`}
+							size="sm"
+							value={filterValues[filter.key] ?? null}
 						>
 							<SelectItem value={null}>
 								All {filter.label.toLowerCase()}
@@ -191,14 +193,14 @@ export function DataTable<T>({
 					))}
 					{hasFilters && (
 						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
 							onClick={() => {
 								setQuery("");
 								setFilterValues({});
 								setPage(0);
 							}}
+							size="sm"
+							type="button"
+							variant="ghost"
 						>
 							Clear filters
 						</Button>
@@ -224,9 +226,9 @@ export function DataTable<T>({
 					} as CSSProperties
 				}
 			>
-				<table id={id} className="w-full border-collapse text-sm">
+				<table className="w-full border-collapse text-sm" id={id}>
 					{caption && <caption className="sr-only">{caption}</caption>}
-					<thead className="border-b border-border/50">
+					<thead className="border-border/50 border-b">
 						<tr>
 							{columns.map((column) => {
 								const active = sorting?.key === column.key;
@@ -237,8 +239,6 @@ export function DataTable<T>({
 									: IconSelector;
 								return (
 									<th
-										key={column.key}
-										scope="col"
 										aria-sort={
 											column.compare
 												? active
@@ -252,12 +252,11 @@ export function DataTable<T>({
 											"whitespace-nowrap px-5 py-4 text-left font-medium text-fg-muted text-xs",
 											column.align === "end" && "text-right",
 										)}
+										key={column.key}
+										scope="col"
 									>
 										{column.compare ? (
 											<Button
-												type="button"
-												variant="ghost"
-												size="xs"
 												className={cn(
 													"-mx-2 gap-1 px-2 font-medium text-xs",
 													column.align === "end" && "ml-auto",
@@ -269,6 +268,9 @@ export function DataTable<T>({
 													});
 													setPage(0);
 												}}
+												size="xs"
+												type="button"
+												variant="ghost"
 											>
 												{column.header}
 												<SortIcon aria-hidden className="size-3.5" />
@@ -284,16 +286,16 @@ export function DataTable<T>({
 					<tbody>
 						{visible.map((row) => (
 							<tr
+								className="border-border/30 border-b last:border-0 hover:bg-surface-2/40"
 								key={rowKey(row)}
-								className="border-b border-border/30 last:border-0 hover:bg-surface-2/40"
 							>
 								{columns.map((column) => (
 									<td
-										key={column.key}
 										className={cn(
 											"px-5 py-4 align-middle text-fg",
 											column.align === "end" && "text-right",
 										)}
+										key={column.key}
 									>
 										{column.render(row)}
 									</td>
@@ -303,8 +305,8 @@ export function DataTable<T>({
 						{visible.length === 0 && (
 							<tr>
 								<td
-									colSpan={Math.max(columns.length, 1)}
 									className="px-5 py-12 text-center text-fg-muted"
+									colSpan={Math.max(columns.length, 1)}
 								>
 									<span role="status">
 										{loading ? "Loading..." : emptyMessage}
@@ -322,22 +324,22 @@ export function DataTable<T>({
 						framed ? "p-3" : "pt-4",
 					)}
 				>
-					<p className="text-sm text-fg-muted" role="status">
+					<p className="text-fg-muted text-sm" role="status">
 						{filtered.length ? currentPage * pageSize + 1 : 0}–
 						{Math.min((currentPage + 1) * pageSize, filtered.length)} of{" "}
 						{filtered.length} results
 					</p>
 					<div className="flex flex-wrap items-center gap-3">
 						<Select
-							size="sm"
 							aria-label="Rows per page"
-							value={pageSize}
 							onValueChange={(value) => {
 								if (value != null) {
 									setSelectedPageSize(value);
 									setPage(0);
 								}
 							}}
+							size="sm"
+							value={pageSize}
 						>
 							{sizes.map((size) => (
 								<SelectItem key={size} value={size}>
@@ -352,27 +354,27 @@ export function DataTable<T>({
 							className="flex items-center gap-2"
 						>
 							<Button
-								type="button"
-								variant="ghost"
-								size="sm"
-								aria-label="Previous page"
 								aria-controls={id}
+								aria-label="Previous page"
 								disabled={loading || currentPage === 0}
 								onClick={() => setPage(currentPage - 1)}
+								size="sm"
+								type="button"
+								variant="ghost"
 							>
 								<IconChevronLeft aria-hidden className="size-4" />
 							</Button>
-							<span className="text-sm tabular-nums text-fg-muted">
+							<span className="text-fg-muted text-sm tabular-nums">
 								{currentPage + 1} / {pageCount}
 							</span>
 							<Button
-								type="button"
-								variant="ghost"
-								size="sm"
-								aria-label="Next page"
 								aria-controls={id}
+								aria-label="Next page"
 								disabled={loading || currentPage >= pageCount - 1}
 								onClick={() => setPage(currentPage + 1)}
+								size="sm"
+								type="button"
+								variant="ghost"
 							>
 								<IconChevronRight aria-hidden className="size-4" />
 							</Button>

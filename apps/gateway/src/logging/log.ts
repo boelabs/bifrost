@@ -40,7 +40,9 @@ function emit(
 	message: string,
 	fields?: Fields,
 ): void {
-	if (LEVEL_ORDER[level] < LEVEL_ORDER[env.LOG_LEVEL]) return;
+	if (LEVEL_ORDER[level] < LEVEL_ORDER[env.LOG_LEVEL]) {
+		return;
+	}
 
 	const normalized: Fields = {};
 	if (fields) {
@@ -58,8 +60,11 @@ function emit(
 	});
 
 	// stderr for warn/error keeps them on the conventional stream for alerting.
-	if (level === "error" || level === "warn") process.stderr.write(`${line}\n`);
-	else process.stdout.write(`${line}\n`);
+	if (level === "error" || level === "warn") {
+		process.stderr.write(`${line}\n`);
+	} else {
+		process.stdout.write(`${line}\n`);
+	}
 }
 
 export const log = {

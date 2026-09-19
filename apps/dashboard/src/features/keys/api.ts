@@ -49,5 +49,7 @@ export async function deleteKey(id: string): Promise<void> {
 	const result = await api.DELETE("/admin/keys/{id}", {
 		params: { path: { id } },
 	});
-	if (result.error !== undefined) unwrap(result);
+	if (result.error !== undefined) {
+		unwrap(result);
+	}
 }

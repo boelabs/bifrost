@@ -2,15 +2,27 @@ import type { ErrorClass } from "./errors.ts";
 
 /** Base classification by HTTP status. Adapters can refine it (e.g. 400 -> context_window). */
 export function classifyStatus(status: number): ErrorClass {
-	if (status === 401 || status === 403) return "auth";
-	if (status === 404) return "not_found";
-	if (status === 429) return "rate_limit";
-	if (status === 408 || status === 504) return "timeout";
-	if (status >= 500) return "server";
+	if (status === 401 || status === 403) {
+		return "auth";
+	}
+	if (status === 404) {
+		return "not_found";
+	}
+	if (status === 429) {
+		return "rate_limit";
+	}
+	if (status === 408 || status === 504) {
+		return "timeout";
+	}
+	if (status >= 500) {
+		return "server";
+	}
 	// A provider-side 4xx is a rejection of this request or deployment configuration. It is never
 	// evidence of a transient server outage merely because the gateway does not recognize the exact
 	// status (402, 409, 413, 415, 425, 451, ...).
-	if (status >= 400 && status < 500) return "bad_request";
+	if (status >= 400 && status < 500) {
+		return "bad_request";
+	}
 	return "server";
 }
 
@@ -19,12 +31,17 @@ export function parseRetryAfter(
 	value: string | null | undefined,
 	nowMs = Date.now(),
 ): number | undefined {
-	if (!value) return undefined;
+	if (!value) {
+		return undefined;
+	}
 	const seconds = Number(value);
-	if (Number.isFinite(seconds) && seconds >= 0)
+	if (Number.isFinite(seconds) && seconds >= 0) {
 		return Math.min(Math.ceil(seconds * 1000), 86_400_000);
+	}
 	const dateMs = Date.parse(value);
-	if (!Number.isFinite(dateMs)) return undefined;
+	if (!Number.isFinite(dateMs)) {
+		return undefined;
+	}
 	const delay = dateMs - nowMs;
 	return delay > 0 ? Math.min(delay, 86_400_000) : undefined;
 }
@@ -49,11 +66,14 @@ export function describeUnknownError(err: unknown): {
 			name: err.name,
 			message: err.message,
 		};
-		if (err.stack) body.stack = err.stack;
+		if (err.stack) {
+			body.stack = err.stack;
+		}
 		// `fetch failed` often hides the real cause (ECONNRESET, TLS...) in err.cause.
-		if (err.cause !== undefined)
+		if (err.cause !== undefined) {
 			body.cause =
 				err.cause instanceof Error ? err.cause.message : String(err.cause);
+		}
 		return { message: err.message || err.name || "unknown error", body };
 	}
 	return { message: String(err), body: { value: String(err) } };
@@ -89,7 +109,11 @@ const TOKENS_OR_CONTEXT = /\btokens?\b|\bcontext\b/i;
 export function looksLikeContextWindowError(
 	message: string | undefined,
 ): boolean {
-	if (!message) return false;
-	if (CONTEXT_PHRASES.test(message)) return true;
+	if (!message) {
+		return false;
+	}
+	if (CONTEXT_PHRASES.test(message)) {
+		return true;
+	}
 	return TOO_LONG.test(message) && TOKENS_OR_CONTEXT.test(message);
 }

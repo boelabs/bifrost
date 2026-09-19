@@ -21,15 +21,21 @@ export function reasoningGroupAt(
 ): ReasoningPart[] {
 	for (let previous = index - 1; previous >= 0; previous--) {
 		const part = parts[previous];
-		if (part?.type === "step-start") continue;
-		if (part?.type === "reasoning") return [];
+		if (part?.type === "step-start") {
+			continue;
+		}
+		if (part?.type === "reasoning") {
+			return [];
+		}
 		break;
 	}
 	const group: ReasoningPart[] = [];
 	for (const [offset, part] of parts.slice(index).entries()) {
-		if (part.type === "reasoning")
+		if (part.type === "reasoning") {
 			group.push({ ...part, key: `reasoning-${index + offset}` });
-		else if (part.type !== "step-start") break;
+		} else if (part.type !== "step-start") {
+			break;
+		}
 	}
 	return group;
 }
@@ -46,13 +52,17 @@ export function Reasoning({
 	interrupted?: boolean;
 }) {
 	const completed = !interrupted && (!streaming || hasFollowingText);
-	const [open, setOpen] = useState(!completed && !hasFollowingText);
+	const [open, setOpen] = useState(!(completed || hasFollowingText));
 	useEffect(() => {
-		if (completed) setOpen(false);
+		if (completed) {
+			setOpen(false);
+		}
 	}, [completed]);
-	if (!steps.length) return null;
+	if (!steps.length) {
+		return null;
+	}
 	return (
-		<ChainOfThought open={open} onOpenChange={setOpen}>
+		<ChainOfThought onOpenChange={setOpen} open={open}>
 			<ChainOfThoughtHeader aria-label="Toggle reasoning">
 				{completed
 					? "Reasoning"
@@ -71,8 +81,8 @@ export function Reasoning({
 						>
 							{step.text.trim() ? (
 								<Markdown
-									text={step.text}
 									streaming={streaming && step.state === "streaming"}
+									text={step.text}
 								/>
 							) : (
 								<p className="text-fg-muted leading-7">

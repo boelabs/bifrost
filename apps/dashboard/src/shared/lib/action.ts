@@ -35,15 +35,17 @@ export async function attempt<T>(
 		 * reading "NEXT_REDIRECT" and go nowhere.
 		 */
 		rethrowFrameworkError(cause);
-		if (cause instanceof ApiError)
+		if (cause instanceof ApiError) {
 			return {
 				ok: false,
 				message: cause.message,
 				status: cause.status,
 				code: cause.code,
 			};
-		if (cause instanceof Error && cause.message)
+		}
+		if (cause instanceof Error && cause.message) {
 			return { ok: false, message: cause.message, status: null, code: null };
+		}
 		return { ok: false, message: fallback, status: null, code: null };
 	}
 }

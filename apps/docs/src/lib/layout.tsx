@@ -13,13 +13,13 @@ export const baseOptions: BaseLayoutProps = {
 		title: (
 			<>
 				<Image
-					src="/logo.svg"
 					alt=""
-					width={26}
-					height={17}
 					// The mark is one colour on transparent, so the theme is a filter rather than a
 					// second file: black ink as drawn, flipped to white on a dark background.
 					className="dark:invert"
+					height={17}
+					src="/logo.svg"
+					width={26}
 				/>
 				<span className="font-medium">Bifrost</span>
 			</>

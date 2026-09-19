@@ -45,7 +45,9 @@ test("highlight queue coalesces updates and preserves the final chunk", async ()
 		subscription.update("ab", "ts");
 		await tick();
 		assert.deepEqual(sent, [{ id: 1, code: "ab", language: "ts" }]);
-		for (let i = 0; i < 100; i++) subscription.update(`ab\n${i}`, "ts");
+		for (let i = 0; i < 100; i++) {
+			subscription.update(`ab\n${i}`, "ts");
+		}
 		await tick();
 		assert.equal(sent.length, 1);
 		reply(1, "ab");

@@ -133,8 +133,9 @@ export function createPlaygroundTransport(
 						endpoint !== "chat.completions" ||
 						message.role !== "assistant" ||
 						!metadata?.bifrost?.reasoning
-					)
+					) {
 						return message;
+					}
 					const index = message.parts.findIndex(
 						(part) => part.type === "text" || part.type === "reasoning",
 					);
@@ -198,8 +199,9 @@ export function createPlaygroundTransport(
 					const elapsed = now() - start;
 					if (part.type === "finish-step") {
 						reportedUsage = part.usage;
-						if (part.providerMetadata)
+						if (part.providerMetadata) {
 							metrics = { ...metrics, providerMetadata: part.providerMetadata };
+						}
 					}
 					if (
 						(part.type === "text-delta" || part.type === "reasoning-delta") &&
@@ -208,7 +210,9 @@ export function createPlaygroundTransport(
 						if (part.type === "text-delta") {
 							lastTextMs = elapsed;
 							textChunks++;
-						} else hasReasoning = true;
+						} else {
+							hasReasoning = true;
+						}
 						metrics = {
 							...metrics,
 							ttftMs: metrics.ttftMs ?? elapsed,
@@ -246,12 +250,13 @@ export function createPlaygroundTransport(
 							state: "completed",
 						};
 					}
-					if (part.type === "abort" || part.type === "error")
+					if (part.type === "abort" || part.type === "error") {
 						return {
 							...metrics,
 							durationMs: elapsed,
 							state: part.type === "abort" ? "stopped" : "failed",
 						};
+					}
 					return part.type === "start" ? metrics : undefined;
 				},
 			});

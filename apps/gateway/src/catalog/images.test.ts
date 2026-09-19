@@ -116,7 +116,7 @@ test("catalog images: GPT Image 2.5 raises the quality ladder, earlier models st
 		getCatalogEntry("azureopenai", "gpt-image-2.5-flare")?.operations[
 			"image.generate"
 		]?.maxPromptChars,
-		4_000,
+		4000,
 	);
 	// "Earlier GPT Image models support quality settings up to high."
 	assert.deepEqual(

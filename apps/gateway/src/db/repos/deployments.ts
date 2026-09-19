@@ -28,10 +28,12 @@ export async function listDeploymentsPage(
 	opts: Page & DeploymentListFilter,
 ): Promise<PageResult<DeploymentRow>> {
 	const conds: SQL[] = [];
-	if (opts.enabled !== undefined)
+	if (opts.enabled !== undefined) {
 		conds.push(eq(modelDeployments.enabled, opts.enabled));
-	if (opts.publicModel)
+	}
+	if (opts.publicModel) {
 		conds.push(eq(modelDeployments.publicModel, opts.publicModel));
+	}
 	if (opts.q) {
 		const like = `%${opts.q}%`;
 		conds.push(
@@ -151,32 +153,57 @@ export async function updateDeployment(
 	const set: Partial<typeof modelDeployments.$inferInsert> = {
 		updatedAt: new Date(),
 	};
-	if (input.publicModel !== undefined) set.publicModel = input.publicModel;
-	if (input.upstreamModel !== undefined)
+	if (input.publicModel !== undefined) {
+		set.publicModel = input.publicModel;
+	}
+	if (input.upstreamModel !== undefined) {
 		set.upstreamModel = input.upstreamModel;
-	if (input.credentials !== undefined)
+	}
+	if (input.credentials !== undefined) {
 		set.credentials = encryptJson(input.credentials, "deployment-credentials");
-	if (input.label !== undefined) set.label = input.label;
-	if (input.failureDomain !== undefined)
+	}
+	if (input.label !== undefined) {
+		set.label = input.label;
+	}
+	if (input.failureDomain !== undefined) {
 		set.failureDomain = input.failureDomain;
-	if (input.metadata !== undefined) set.metadata = input.metadata;
-	if (input.catalogEntry !== undefined) set.catalogEntry = input.catalogEntry;
-	if (input.pricing !== undefined) set.pricing = input.pricing;
-	if (input.transportOverrides !== undefined)
+	}
+	if (input.metadata !== undefined) {
+		set.metadata = input.metadata;
+	}
+	if (input.catalogEntry !== undefined) {
+		set.catalogEntry = input.catalogEntry;
+	}
+	if (input.pricing !== undefined) {
+		set.pricing = input.pricing;
+	}
+	if (input.transportOverrides !== undefined) {
 		set.transportOverrides = input.transportOverrides;
-	if (input.executionPolicyOverrides !== undefined)
+	}
+	if (input.executionPolicyOverrides !== undefined) {
 		set.executionPolicyOverrides = input.executionPolicyOverrides;
-	if (input.enabled !== undefined) set.enabled = input.enabled;
-	if (input.weight !== undefined) set.weight = input.weight;
-	if (input.tpmLimit !== undefined) set.tpmLimit = input.tpmLimit;
-	if (input.rpmLimit !== undefined) set.rpmLimit = input.rpmLimit;
+	}
+	if (input.enabled !== undefined) {
+		set.enabled = input.enabled;
+	}
+	if (input.weight !== undefined) {
+		set.weight = input.weight;
+	}
+	if (input.tpmLimit !== undefined) {
+		set.tpmLimit = input.tpmLimit;
+	}
+	if (input.rpmLimit !== undefined) {
+		set.rpmLimit = input.rpmLimit;
+	}
 	return db.transaction(async (tx) => {
 		const [existing] = await tx
 			.select({ publicModel: modelDeployments.publicModel })
 			.from(modelDeployments)
 			.where(eq(modelDeployments.id, id))
 			.limit(1);
-		if (!existing) return undefined;
+		if (!existing) {
+			return;
+		}
 
 		const nextPublicModel = input.publicModel ?? existing.publicModel;
 		const publicModelsToLock = [
@@ -204,8 +231,9 @@ export async function updateDeployment(
 						),
 					)
 					.limit(1);
-				if (reference)
+				if (reference) {
 					throw new PublicModelReferencedError(existing.publicModel);
+				}
 			}
 		}
 
@@ -266,7 +294,9 @@ export async function listPublicModels(): Promise<
 	const earliest = new Map<string, Date>();
 	for (const r of rows) {
 		const prev = earliest.get(r.name);
-		if (!prev || r.createdAt < prev) earliest.set(r.name, r.createdAt);
+		if (!prev || r.createdAt < prev) {
+			earliest.set(r.name, r.createdAt);
+		}
 	}
 	return [...earliest.entries()].map(([name, createdAt]) => ({
 		name,
@@ -279,7 +309,9 @@ export async function getDeploymentCredentials(
 	id: string,
 ): Promise<Record<string, unknown> | undefined> {
 	const row = await getDeploymentById(id);
-	if (!row) return undefined;
+	if (!row) {
+		return undefined;
+	}
 	return decryptRecord(row.credentials, "deployment-credentials");
 }
 
@@ -290,7 +322,9 @@ export async function deleteDeployment(id: string): Promise<void> {
 			.from(modelDeployments)
 			.where(eq(modelDeployments.id, id))
 			.limit(1);
-		if (!existing) return;
+		if (!existing) {
+			return;
+		}
 
 		await tx.execute(
 			sql`SELECT pg_advisory_xact_lock(hashtext(${existing.publicModel}))`,
@@ -301,7 +335,9 @@ export async function deleteDeployment(id: string): Promise<void> {
 			.select({ value: count() })
 			.from(modelDeployments)
 			.where(eq(modelDeployments.publicModel, existing.publicModel));
-		if (Number(remaining?.value ?? 0) > 0) return;
+		if (Number(remaining?.value ?? 0) > 0) {
+			return;
+		}
 
 		for (const fallback of await tx.select().from(fallbackPolicies)) {
 			if (fallback.primaryModel === existing.publicModel) {
@@ -313,7 +349,9 @@ export async function deleteDeployment(id: string): Promise<void> {
 			const fallbackModels = fallback.fallbackModels.filter(
 				(publicModel) => publicModel !== existing.publicModel,
 			);
-			if (fallbackModels.length === fallback.fallbackModels.length) continue;
+			if (fallbackModels.length === fallback.fallbackModels.length) {
+				continue;
+			}
 			if (fallbackModels.length === 0) {
 				await tx
 					.delete(fallbackPolicies)

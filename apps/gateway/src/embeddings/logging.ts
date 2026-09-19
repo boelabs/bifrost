@@ -4,15 +4,22 @@ export function embeddingsResponseLog(body: unknown): Record<string, unknown> {
 	const data = Array.isArray(response.data) ? response.data : [];
 	const dimensions = data.map((item) => {
 		const embedding = (item as { embedding?: unknown })?.embedding;
-		if (Array.isArray(embedding)) return embedding.length;
-		if (typeof embedding === "string") return null;
-		return undefined;
+		if (Array.isArray(embedding)) {
+			return embedding.length;
+		}
+		if (typeof embedding === "string") {
+			return null;
+		}
 	});
 	const encodings = new Set(
 		data.map((item) => {
 			const embedding = (item as { embedding?: unknown })?.embedding;
-			if (Array.isArray(embedding)) return "float";
-			if (typeof embedding === "string") return "base64";
+			if (Array.isArray(embedding)) {
+				return "float";
+			}
+			if (typeof embedding === "string") {
+				return "base64";
+			}
 			return "unknown";
 		}),
 	);

@@ -26,7 +26,9 @@ export function Pagination({
 	/** Plural noun for the rows being paged, e.g. "keys". */
 	label: string;
 }) {
-	if (total <= limit && offset === 0) return null;
+	if (total <= limit && offset === 0) {
+		return null;
+	}
 	const first = total === 0 ? 0 : offset + 1;
 	const last = Math.min(offset + limit, total);
 	return (
@@ -40,22 +42,22 @@ export function Pagination({
 			</p>
 			<div className="flex items-center gap-2">
 				<Button
-					size="sm"
-					variant="secondary"
 					disabled={offset === 0}
 					onClick={() => onOffsetChange(Math.max(0, offset - limit))}
+					size="sm"
+					variant="secondary"
 				>
-					<IconChevronLeft size={15} aria-hidden className="mr-1" />
+					<IconChevronLeft aria-hidden className="mr-1" size={15} />
 					Previous
 				</Button>
 				<Button
-					size="sm"
-					variant="secondary"
 					disabled={last >= total}
 					onClick={() => onOffsetChange(offset + limit)}
+					size="sm"
+					variant="secondary"
 				>
 					Next
-					<IconChevronRight size={15} aria-hidden className="ml-1" />
+					<IconChevronRight aria-hidden className="ml-1" size={15} />
 				</Button>
 			</div>
 		</nav>

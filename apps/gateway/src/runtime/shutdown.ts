@@ -35,8 +35,11 @@ export interface GracefulShutdownOptions {
 function closeServer(server: ClosableServer): Promise<void> {
 	return new Promise((resolve, reject) => {
 		server.close((err?: Error) => {
-			if (err) reject(err);
-			else resolve();
+			if (err) {
+				reject(err);
+			} else {
+				resolve();
+			}
 		});
 	});
 }

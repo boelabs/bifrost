@@ -8,7 +8,7 @@
 	],
 	"files": {
 		"ignoreUnknown": false,
-		"includes": ["**", "!**/src/db/migrations", "!**/.source", "!**/*.svg"]
+		"includes": ["!**/src/db/migrations", "!**/.source", "!**/*.svg"]
 	},
 	"formatter": {
 		"indentStyle": "tab"

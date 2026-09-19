@@ -139,9 +139,12 @@ export function editForm(
 	const form = new FormData();
 	form.set("model", model);
 	form.set("prompt", prompt);
-	for (const file of files) form.append("image", file, file.name);
-	for (const [key, value] of Object.entries(parameters(settings, "edit")))
+	for (const file of files) {
+		form.append("image", file, file.name);
+	}
+	for (const [key, value] of Object.entries(parameters(settings, "edit"))) {
 		form.set(key, String(value));
+	}
 	return form;
 }
 

@@ -108,8 +108,9 @@ test("price-based never falsely compares token pricing with search-unit pricing"
 	c[0]!.meta.pricing = { inputCentsPerMTokens: 1 };
 	c[1]!.meta.pricing = { searchUnitCents: 10_000 };
 	const seen = new Set<string>();
-	for (let i = 0; i < 100; i++)
+	for (let i = 0; i < 100; i++) {
 		seen.add(pickDeployment("price-based", c, new Map()).row.id);
+	}
 	assert.deepEqual(seen, new Set(["tokens", "search"]));
 });
 

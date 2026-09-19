@@ -20,10 +20,14 @@ export const SAFE_METHODS: ReadonlySet<string> = new Set([
 
 /** The CSRF token as the browser sees it. Undefined off the browser, where there is no document. */
 export function csrfTokenFromDocument(): string | undefined {
-	if (typeof document === "undefined") return undefined;
+	if (typeof document === "undefined") {
+		return undefined;
+	}
 	for (const part of document.cookie.split(";")) {
 		const [key, ...rest] = part.trim().split("=");
-		if (key === CSRF_COOKIE) return decodeURIComponent(rest.join("="));
+		if (key === CSRF_COOKIE) {
+			return decodeURIComponent(rest.join("="));
+		}
 	}
 	return undefined;
 }

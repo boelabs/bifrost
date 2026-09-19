@@ -20,7 +20,9 @@ const start = "2035-01-01T00:00:00.000Z";
 const end = "2035-01-02T00:00:00.000Z";
 
 before(async () => {
-	if (skip) return;
+	if (skip) {
+		return;
+	}
 	await db.insert(gatewayOperations).values(
 		ids.map((id, index) => ({
 			id,
@@ -98,7 +100,9 @@ before(async () => {
 });
 
 after(async () => {
-	if (skip) return;
+	if (skip) {
+		return;
+	}
 	await db
 		.delete(upstreamAttempts)
 		.where(inArray(upstreamAttempts.operationId, ids));

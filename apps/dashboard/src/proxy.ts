@@ -40,8 +40,9 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 	const { pathname, search } = request.nextUrl;
 	if (
 		PUBLIC.some((path) => pathname === path || pathname.startsWith(`${path}/`))
-	)
+	) {
 		return NextResponse.next();
+	}
 
 	const cookie = request.headers.get("cookie");
 	const hasSessionCookie = request.cookies.has(SESSION_COOKIE);
@@ -56,18 +57,23 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
 	if (
 		hasSessionCookie &&
-		(!isDocument || !cookie || !(await sessionRejected(cookie)))
-	)
+		!(isDocument && cookie && (await sessionRejected(cookie)))
+	) {
 		return NextResponse.next();
+	}
 
 	const url = request.nextUrl.clone();
 	url.pathname = "/auth";
 	url.search = "";
-	if (pathname !== "/") url.searchParams.set("next", `${pathname}${search}`);
+	if (pathname !== "/") {
+		url.searchParams.set("next", `${pathname}${search}`);
+	}
 
 	const response = NextResponse.redirect(url);
 	// The gateway has stopped honouring this cookie; dropping it means the next request never asks.
-	if (hasSessionCookie) response.cookies.delete(SESSION_COOKIE);
+	if (hasSessionCookie) {
+		response.cookies.delete(SESSION_COOKIE);
+	}
 	return response;
 }
 

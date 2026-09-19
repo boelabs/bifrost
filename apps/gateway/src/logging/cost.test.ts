@@ -152,9 +152,9 @@ test("search-unit pricing is additive with token pricing", () => {
 			},
 		},
 		{
-			promptTokens: 1_000,
+			promptTokens: 1000,
 			completionTokens: 500,
-			totalTokens: 1_500,
+			totalTokens: 1500,
 			searchUnits: 2,
 			providerCostCents: 0.4,
 		},
@@ -180,8 +180,8 @@ test("provider-reported cost is the fallback only when pricing is absent", () =>
 });
 
 test("maximum cost reservation uses the highest tier and rejects unknown pricing", () => {
-	assert.equal(estimateMaximumCostCents({}, 1_000), null);
-	assert.equal(estimateMaximumCostCents({ pricing: {} }, 1_000), null);
+	assert.equal(estimateMaximumCostCents({}, 1000), null);
+	assert.equal(estimateMaximumCostCents({ pricing: {} }, 1000), null);
 	assert.equal(
 		estimateMaximumCostCents(
 			{
@@ -192,7 +192,7 @@ test("maximum cost reservation uses the highest tier and rejects unknown pricing
 					tiers: [{ aboveInputTokens: 10, outputCentsPerMTokens: 400 }],
 				},
 			},
-			1_000,
+			1000,
 			2,
 		),
 		1.4,

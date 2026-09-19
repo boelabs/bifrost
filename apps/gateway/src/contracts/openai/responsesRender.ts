@@ -101,7 +101,9 @@ const ENCRYPTED_REASONING_INCLUDE = "reasoning.encrypted_content";
 function stripEncryptedReasoningItem(
 	item: Record<string, unknown>,
 ): Record<string, unknown> {
-	if (item.type !== "reasoning" || !("encrypted_content" in item)) return item;
+	if (item.type !== "reasoning" || !("encrypted_content" in item)) {
+		return item;
+	}
 	const copy = structuredClone(item);
 	delete copy.encrypted_content;
 	return copy;
@@ -111,14 +113,17 @@ export function responseForClient(
 	response: Record<string, unknown>,
 	include: string[] | undefined,
 ): Record<string, unknown> {
-	if (include?.includes(ENCRYPTED_REASONING_INCLUDE)) return response;
+	if (include?.includes(ENCRYPTED_REASONING_INCLUDE)) {
+		return response;
+	}
 	const copy = structuredClone(response);
-	if (Array.isArray(copy.output))
+	if (Array.isArray(copy.output)) {
 		copy.output = copy.output.map((item) =>
 			item !== null && typeof item === "object" && !Array.isArray(item)
 				? stripEncryptedReasoningItem(item as Record<string, unknown>)
 				: item,
 		);
+	}
 	return copy;
 }
 
@@ -126,7 +131,9 @@ export function responseEventForClient(
 	event: SSEEvent,
 	include: string[] | undefined,
 ): SSEEvent {
-	if (include?.includes(ENCRYPTED_REASONING_INCLUDE)) return event;
+	if (include?.includes(ENCRYPTED_REASONING_INCLUDE)) {
+		return event;
+	}
 	let data: Record<string, unknown>;
 	try {
 		data = JSON.parse(event.data) as Record<string, unknown>;
@@ -137,19 +144,21 @@ export function responseEventForClient(
 		data.item !== null &&
 		typeof data.item === "object" &&
 		!Array.isArray(data.item)
-	)
+	) {
 		data.item = stripEncryptedReasoningItem(
 			data.item as Record<string, unknown>,
 		);
+	}
 	if (
 		data.response !== null &&
 		typeof data.response === "object" &&
 		!Array.isArray(data.response)
-	)
+	) {
 		data.response = responseForClient(
 			data.response as Record<string, unknown>,
 			include,
 		);
+	}
 	return { ...event, data: JSON.stringify(data) };
 }
 
@@ -167,29 +176,40 @@ function mapInputPart(
 		case "input_image": {
 			const url = part.image_url;
 			if (typeof url === "string") {
-				return part.detail !== undefined
-					? {
+				return part.detail === undefined
+					? { type: "image", url }
+					: {
 							type: "image",
 							url,
 							detail: part.detail as "auto" | "low" | "high",
-						}
-					: { type: "image", url };
+						};
 			}
-			if (typeof part.file_id === "string")
+			if (typeof part.file_id === "string") {
 				return { type: "file", fileId: part.file_id };
+			}
 			return null;
 		}
 		case "input_file": {
 			const f: CanonicalContentPart = { type: "file" };
-			if (typeof part.file_id === "string") f.fileId = part.file_id;
-			if (typeof part.file_url === "string") f.fileUrl = part.file_url;
-			if (typeof part.file_data === "string") {
-				if (/^https:\/\//i.test(part.file_data)) f.fileUrl = part.file_data;
-				else f.fileData = part.file_data;
+			if (typeof part.file_id === "string") {
+				f.fileId = part.file_id;
 			}
-			if (typeof part.filename === "string") f.filename = part.filename;
-			if (["auto", "low", "high"].includes(String(part.detail)))
+			if (typeof part.file_url === "string") {
+				f.fileUrl = part.file_url;
+			}
+			if (typeof part.file_data === "string") {
+				if (/^https:\/\//i.test(part.file_data)) {
+					f.fileUrl = part.file_data;
+				} else {
+					f.fileData = part.file_data;
+				}
+			}
+			if (typeof part.filename === "string") {
+				f.filename = part.filename;
+			}
+			if (["auto", "low", "high"].includes(String(part.detail))) {
 				f.detail = part.detail as "auto" | "low" | "high";
+			}
 			return f;
 		}
 		case "input_audio": {
@@ -199,8 +219,9 @@ function mapInputPart(
 			if (
 				typeof input?.data === "string" &&
 				(input.format === "wav" || input.format === "mp3")
-			)
+			) {
 				return { type: "audio", data: input.data, format: input.format };
+			}
 			return null;
 		}
 		default:
@@ -211,14 +232,20 @@ function mapInputPart(
 function mapMessageContent(
 	content: unknown,
 ): string | CanonicalContentPart[] | null {
-	if (content === null || content === undefined) return null;
-	if (typeof content === "string") return content;
+	if (content === null || content === undefined) {
+		return null;
+	}
+	if (typeof content === "string") {
+		return content;
+	}
 	if (Array.isArray(content)) {
 		const parts: CanonicalContentPart[] = [];
 		for (const p of content) {
 			const part = p as Record<string, unknown>;
 			const mapped = readCacheBreakpoint(part, mapInputPart(part));
-			if (mapped) parts.push(mapped);
+			if (mapped) {
+				parts.push(mapped);
+			}
 		}
 		return parts;
 	}
@@ -228,12 +255,16 @@ function mapMessageContent(
 function mapToolChoice(
 	tc: ResponsesRequest["tool_choice"],
 ): CanonicalToolChoice | undefined {
-	if (tc === undefined) return undefined;
+	if (tc === undefined) {
+		return undefined;
+	}
 	if (typeof tc === "string") {
 		return tc === "auto" || tc === "none" || tc === "required" ? tc : "auto";
 	}
 	const name = (tc as { name?: string }).name;
-	if (name) return { name };
+	if (name) {
+		return { name };
+	}
 	const allowed = tc as {
 		type?: string;
 		mode?: string;
@@ -255,8 +286,9 @@ function mapToolChoice(
 export type ResponseInputItem = Record<string, unknown>;
 
 function extraContent(value: unknown): Record<string, unknown> | undefined {
-	if (value === null || typeof value !== "object" || Array.isArray(value))
+	if (value === null || typeof value !== "object" || Array.isArray(value)) {
 		return undefined;
+	}
 	return value as Record<string, unknown>;
 }
 
@@ -271,7 +303,9 @@ function itemId(item: ResponseInputItem): string | null {
 export function normalizeResponseInput(
 	input: ResponsesRequest["input"],
 ): ResponseInputItem[] {
-	if (input === undefined) return [];
+	if (input === undefined) {
+		return [];
+	}
 	if (typeof input === "string") {
 		return [
 			{
@@ -291,7 +325,9 @@ export function resolveResponseInputReferences(
 	const byId = new Map<string, ResponseInputItem>();
 	for (const item of referenceItems) {
 		const id = itemId(item);
-		if (id) byId.set(id, item);
+		if (id) {
+			byId.set(id, item);
+		}
 	}
 
 	const resolved: ResponseInputItem[] = [];
@@ -316,7 +352,9 @@ export function resolveResponseInputReferences(
 		const item = cloneItem(raw);
 		resolved.push(item);
 		const id = itemId(item);
-		if (id) byId.set(id, item);
+		if (id) {
+			byId.set(id, item);
+		}
 	}
 	return resolved;
 }
@@ -336,19 +374,27 @@ export async function expandInputReferences(
 	const known = new Set<string>();
 	for (const item of referenceItems) {
 		const id = itemId(item);
-		if (id) known.add(id);
+		if (id) {
+			known.add(id);
+		}
 	}
 
 	const missing = new Set<string>();
 	for (const raw of input) {
-		if (raw.type !== "item_reference") continue;
+		if (raw.type !== "item_reference") {
+			continue;
+		}
 		const id = typeof raw.id === "string" ? raw.id : "";
-		if (id && !known.has(id)) missing.add(id);
+		if (id && !known.has(id)) {
+			missing.add(id);
+		}
 	}
 
 	for (const id of missing) {
 		const found = await lookup(id);
-		if (found) referenceItems.push(found);
+		if (found) {
+			referenceItems.push(found);
+		}
 	}
 	return resolveResponseInputReferences(input, referenceItems);
 }
@@ -360,8 +406,9 @@ export function responsesRequestToCanonical(
 	req = normalizePromptCacheRequest(req);
 	const messages: CanonicalMessage[] = [];
 	let requiresNativeInput = false;
-	if (req.instructions)
+	if (req.instructions) {
 		messages.push({ role: "system", content: req.instructions });
+	}
 
 	if (typeof req.input === "string") {
 		messages.push({ role: "user", content: req.input });
@@ -370,7 +417,9 @@ export function responsesRequestToCanonical(
 		// attach to the next assistant-derived message.
 		let pendingReasoning: OpenAIReasoningStateItem[] = [];
 		const attachPendingReasoning = (message: CanonicalMessage): void => {
-			if (pendingReasoning.length === 0) return;
+			if (pendingReasoning.length === 0) {
+				return;
+			}
 			const existing = openaiReasoningFromProviderFields(
 				message.providerFields,
 			);
@@ -394,20 +443,25 @@ export function responsesRequestToCanonical(
 						Array.isArray(item.content) &&
 						Array.isArray(message.content) &&
 						message.content.length !== item.content.length
-					)
+					) {
 						requiresNativeInput = true;
+					}
 					if (
 						role === "assistant" &&
 						(item.phase === "commentary" || item.phase === "final_answer")
-					)
+					) {
 						message.phase = item.phase;
+					}
 					const providerFields = mergeProviderFields(
 						message.providerFields,
 						extraContent(item.provider_specific_fields),
 					);
-					if (providerFields !== undefined)
+					if (providerFields !== undefined) {
 						message.providerFields = providerFields;
-					if (role === "assistant") attachPendingReasoning(message);
+					}
+					if (role === "assistant") {
+						attachPendingReasoning(message);
+					}
 					messages.push(message);
 					break;
 				}
@@ -417,7 +471,7 @@ export function responsesRequestToCanonical(
 					const fromCallId = decodeThoughtSignatureId(item.call_id ?? "");
 					const fromItemId = decodeThoughtSignatureId(item.id ?? "");
 					const decoded = {
-						id: item.call_id !== undefined ? fromCallId.id : fromItemId.id,
+						id: item.call_id === undefined ? fromItemId.id : fromCallId.id,
 						extraContent: fromCallId.extraContent ?? fromItemId.extraContent,
 					};
 					const extra = mergeProviderExtraContent(
@@ -435,7 +489,7 @@ export function responsesRequestToCanonical(
 								id: decoded.id,
 								name: String(item.name ?? ""),
 								arguments: String(item.arguments ?? ""),
-								...(extra !== undefined ? { extraContent: extra } : {}),
+								...(extra === undefined ? {} : { extraContent: extra }),
 							},
 						],
 					};
@@ -488,7 +542,9 @@ export function responsesRequestToCanonical(
 		// message if any (malformed orderings degrade gracefully instead of erroring).
 		if (pendingReasoning.length > 0) {
 			const last = [...messages].reverse().find((m) => m.role === "assistant");
-			if (last !== undefined) attachPendingReasoning(last);
+			if (last !== undefined) {
+				attachPendingReasoning(last);
+			}
 		}
 	}
 
@@ -500,17 +556,30 @@ export function responsesRequestToCanonical(
 		stream: req.stream,
 	};
 	const fileParser = fileParserOptionsFromPlugins(req.plugins);
-	if (fileParser !== undefined) u.fileParser = fileParser;
-	if (req.max_output_tokens !== undefined) u.maxTokens = req.max_output_tokens;
-	if (req.temperature !== undefined) u.temperature = req.temperature;
-	if (req.top_p !== undefined) u.topP = req.top_p;
-	if (req.presence_penalty !== undefined)
+	if (fileParser !== undefined) {
+		u.fileParser = fileParser;
+	}
+	if (req.max_output_tokens !== undefined) {
+		u.maxTokens = req.max_output_tokens;
+	}
+	if (req.temperature !== undefined) {
+		u.temperature = req.temperature;
+	}
+	if (req.top_p !== undefined) {
+		u.topP = req.top_p;
+	}
+	if (req.presence_penalty !== undefined) {
 		u.presencePenalty = req.presence_penalty;
-	if (req.frequency_penalty !== undefined)
+	}
+	if (req.frequency_penalty !== undefined) {
 		u.frequencyPenalty = req.frequency_penalty;
-	if (req.user !== undefined) u.user = req.user;
-	if (req.parallel_tool_calls !== undefined)
+	}
+	if (req.user !== undefined) {
+		u.user = req.user;
+	}
+	if (req.parallel_tool_calls !== undefined) {
 		u.parallelToolCalls = req.parallel_tool_calls;
+	}
 	const responseFormat = req.text?.format;
 	if (responseFormat !== undefined) {
 		if (responseFormat.type === "json_schema") {
@@ -519,9 +588,12 @@ export function responsesRequestToCanonical(
 				name: responseFormat.name,
 				schema: responseFormat.schema,
 			};
-			if (responseFormat.description !== undefined)
+			if (responseFormat.description !== undefined) {
 				format.description = responseFormat.description;
-			if (responseFormat.strict != null) format.strict = responseFormat.strict;
+			}
+			if (responseFormat.strict != null) {
+				format.strict = responseFormat.strict;
+			}
 			u.responseFormat = format;
 		} else {
 			u.responseFormat = { type: responseFormat.type };
@@ -530,14 +602,12 @@ export function responsesRequestToCanonical(
 	if (req.reasoning !== undefined) {
 		const effort = req.reasoning.effort;
 		const summary = req.reasoning.summary;
-		if (effort !== undefined) {
-			if (!isReasoningEffort(effort)) {
-				throw new GatewayError({
-					class: "bad_request",
-					message: `Unsupported reasoning effort: ${String(effort)}`,
-					param: "reasoning.effort",
-				});
-			}
+		if (effort !== undefined && !isReasoningEffort(effort)) {
+			throw new GatewayError({
+				class: "bad_request",
+				message: `Unsupported reasoning effort: ${String(effort)}`,
+				param: "reasoning.effort",
+			});
 		}
 		if (
 			summary !== undefined &&
@@ -556,9 +626,9 @@ export function responsesRequestToCanonical(
 		if (effort !== undefined || reasoningSummary !== undefined) {
 			u.reasoning = {
 				...(isReasoningEffort(effort) ? { effort } : {}),
-				...(reasoningSummary !== undefined
-					? { summary: reasoningSummary }
-					: {}),
+				...(reasoningSummary === undefined
+					? {}
+					: { summary: reasoningSummary }),
 			};
 		}
 	}
@@ -600,8 +670,8 @@ export function responsesRequestToCanonical(
 						),
 					);
 		u.responsesTransport = {
-			...(req.include !== undefined ? { include: req.include } : {}),
-			...(req.metadata !== undefined ? { metadata: req.metadata } : {}),
+			...(req.include === undefined ? {} : { include: req.include }),
+			...(req.metadata === undefined ? {} : { metadata: req.metadata }),
 			...(textTransport !== undefined && Object.keys(textTransport).length > 0
 				? { text: textTransport }
 				: {}),
@@ -609,36 +679,37 @@ export function responsesRequestToCanonical(
 			Object.keys(reasoningTransport).length > 0
 				? { reasoning: reasoningTransport }
 				: {}),
-			...(req.stream_options !== undefined
-				? { streamOptions: req.stream_options }
-				: {}),
-			...(req.service_tier !== undefined
-				? { serviceTier: req.service_tier }
-				: {}),
-			...(req.safety_identifier !== undefined
-				? { safetyIdentifier: req.safety_identifier }
-				: {}),
-			...(req.prompt_cache_key !== undefined
-				? { promptCacheKey: req.prompt_cache_key }
-				: {}),
-			...(req.top_logprobs !== undefined
-				? { topLogprobs: req.top_logprobs }
-				: {}),
-			...(req.max_tool_calls !== undefined
-				? { maxToolCalls: req.max_tool_calls }
-				: {}),
-			...(req.user !== undefined ? { user: req.user } : {}),
-			...(req.truncation !== undefined ? { truncation: req.truncation } : {}),
-			...(req.context_management !== undefined
-				? { contextManagement: req.context_management }
-				: {}),
+			...(req.stream_options === undefined
+				? {}
+				: { streamOptions: req.stream_options }),
+			...(req.service_tier === undefined
+				? {}
+				: { serviceTier: req.service_tier }),
+			...(req.safety_identifier === undefined
+				? {}
+				: { safetyIdentifier: req.safety_identifier }),
+			...(req.prompt_cache_key === undefined
+				? {}
+				: { promptCacheKey: req.prompt_cache_key }),
+			...(req.top_logprobs === undefined
+				? {}
+				: { topLogprobs: req.top_logprobs }),
+			...(req.max_tool_calls === undefined
+				? {}
+				: { maxToolCalls: req.max_tool_calls }),
+			...(req.user === undefined ? {} : { user: req.user }),
+			...(req.truncation === undefined ? {} : { truncation: req.truncation }),
+			...(req.context_management === undefined
+				? {}
+				: { contextManagement: req.context_management }),
 			...(requiresNativeInput && Array.isArray(req.input)
 				? { rawInput: structuredClone(req.input) }
 				: {}),
 		};
 	}
-	if (req.prompt_cache_key !== undefined)
+	if (req.prompt_cache_key !== undefined) {
 		u.promptCacheKey = req.prompt_cache_key;
+	}
 	readPromptCachePolicy(req, u);
 	if (
 		(req.service_tier !== undefined &&
@@ -648,8 +719,9 @@ export function responsesRequestToCanonical(
 		req.context_management !== undefined ||
 		(req.truncation !== undefined && req.truncation !== "disabled") ||
 		(textTransport !== undefined && Object.keys(textTransport).length > 0)
-	)
+	) {
 		u.requiresNativeWire = true;
+	}
 
 	if (Array.isArray(req.tools)) {
 		const tools = [];
@@ -660,16 +732,23 @@ export function responsesRequestToCanonical(
 				const entry: NonNullable<CanonicalChatRequest["tools"]>[number] = {
 					name: tool.name,
 				};
-				if (typeof tool.description === "string")
+				if (typeof tool.description === "string") {
 					entry.description = tool.description;
+				}
 				if (tool.parameters && typeof tool.parameters === "object") {
 					entry.parameters = tool.parameters as Record<string, unknown>;
 				}
-				if (typeof tool.strict === "boolean") entry.strict = tool.strict;
+				if (typeof tool.strict === "boolean") {
+					entry.strict = tool.strict;
+				}
 				tools.push(entry);
-			} else requiresNativeTools = true;
+			} else {
+				requiresNativeTools = true;
+			}
 		}
-		if (tools.length > 0) u.tools = tools;
+		if (tools.length > 0) {
+			u.tools = tools;
+		}
 		if (requiresNativeTools) {
 			u.requiresNativeWire = true;
 			u.responsesTransport = {
@@ -678,9 +757,13 @@ export function responsesRequestToCanonical(
 			};
 		}
 	}
-	if (requiresNativeInput) u.requiresNativeWire = true;
+	if (requiresNativeInput) {
+		u.requiresNativeWire = true;
+	}
 	const tc = mapToolChoice(req.tool_choice);
-	if (tc !== undefined) u.toolChoice = tc;
+	if (tc !== undefined) {
+		u.toolChoice = tc;
+	}
 
 	return u;
 }
@@ -699,14 +782,14 @@ export function toResponsesUsage(usage: Usage): Record<string, unknown> {
 		input_tokens: usage.promptTokens,
 		input_tokens_details: {
 			cached_tokens: usage.cacheReadTokens ?? 0,
-			...(usage.cacheWriteTokens !== undefined
-				? {
+			...(usage.cacheWriteTokens === undefined
+				? {}
+				: {
 						cache_write_tokens: usage.cacheWriteTokens,
-						...(usage.cacheWriteTokensByTtl !== undefined
-							? { cache_write_tokens_by_ttl: usage.cacheWriteTokensByTtl }
-							: {}),
-					}
-				: {}),
+						...(usage.cacheWriteTokensByTtl === undefined
+							? {}
+							: { cache_write_tokens_by_ttl: usage.cacheWriteTokensByTtl }),
+					}),
 		},
 		output_tokens: usage.completionTokens,
 		output_tokens_details: { reasoning_tokens: usage.reasoningTokens ?? 0 },
@@ -718,13 +801,15 @@ function statusFor(finish: CanonicalFinishReason | null): {
 	status: string;
 	incomplete: Record<string, unknown> | null;
 } {
-	if (finish === "length")
+	if (finish === "length") {
 		return {
 			status: "incomplete",
 			incomplete: { reason: "max_output_tokens" },
 		};
-	if (finish === "content_filter")
+	}
+	if (finish === "content_filter") {
 		return { status: "incomplete", incomplete: { reason: "content_filter" } };
+	}
 	return { status: "completed", incomplete: null };
 }
 
@@ -739,10 +824,10 @@ function messageItem(
 		id,
 		status: "completed",
 		role: "assistant",
-		...(phase !== undefined ? { phase } : {}),
-		...(providerFields !== undefined
-			? { provider_specific_fields: providerFields }
-			: {}),
+		...(phase === undefined ? {} : { phase }),
+		...(providerFields === undefined
+			? {}
+			: { provider_specific_fields: providerFields }),
 		content: [{ type: "output_text", text: content, annotations: [] }],
 	};
 }
@@ -771,14 +856,16 @@ function reasoningStateItems(
 			(Array.isArray(item.summary) && item.summary.length > 0) ||
 			(Array.isArray(item.content) && item.content.length > 0);
 		const useSummary = summaryLeft && !hasOwnSummary;
-		if (useSummary) summaryLeft = false;
+		if (useSummary) {
+			summaryLeft = false;
+		}
 		return mirrorReasoningItem({
 			type: "reasoning",
 			id: item.id ?? `rs_${randomUUID()}`,
 			summary: useSummary
 				? [{ type: "summary_text", text: summary }]
 				: (item.summary ?? []),
-			...(item.content !== undefined ? { content: item.content } : {}),
+			...(item.content === undefined ? {} : { content: item.content }),
 			encrypted_content: item.encrypted_content,
 		});
 	});
@@ -805,12 +892,12 @@ function functionCallItem(
 		name: tc.name,
 		arguments: tc.arguments,
 		status: "completed",
-		...(tc.extraContent !== undefined
-			? { extra_content: tc.extraContent }
-			: {}),
-		...(providerSpecificFields !== undefined
-			? { provider_specific_fields: providerSpecificFields }
-			: {}),
+		...(tc.extraContent === undefined
+			? {}
+			: { extra_content: tc.extraContent }),
+		...(providerSpecificFields === undefined
+			? {}
+			: { provider_specific_fields: providerSpecificFields }),
 	};
 }
 
@@ -820,11 +907,17 @@ function outputProviderSpecificFields(
 	const thoughtSignatures: string[] = [];
 	for (const item of output) {
 		const fields = item.provider_specific_fields;
-		if (fields === null || typeof fields !== "object" || Array.isArray(fields))
+		if (
+			fields === null ||
+			typeof fields !== "object" ||
+			Array.isArray(fields)
+		) {
 			continue;
+		}
 		const signature = (fields as Record<string, unknown>).thought_signature;
-		if (typeof signature === "string" && signature.length > 0)
+		if (typeof signature === "string" && signature.length > 0) {
 			thoughtSignatures.push(signature);
+		}
 	}
 	return thoughtSignatures.length > 0
 		? { thought_signatures: thoughtSignatures }
@@ -880,9 +973,9 @@ function buildResponse(
 		service_tier: req.service_tier ?? "default",
 		safety_identifier: req.safety_identifier ?? null,
 		prompt_cache_key: req.prompt_cache_key ?? null,
-		...(providerSpecificFields !== undefined
-			? { provider_specific_fields: providerSpecificFields }
-			: {}),
+		...(providerSpecificFields === undefined
+			? {}
+			: { provider_specific_fields: providerSpecificFields }),
 	};
 }
 
@@ -914,9 +1007,7 @@ export function canonicalToResponsesResponse(
 	const nativeOutput = responsesOutputFromProviderFields(
 		choice?.message.providerFields,
 	);
-	if (nativeOutput !== undefined)
-		output.push(...mirrorReasoningOutput(nativeOutput));
-	else {
+	if (nativeOutput === undefined) {
 		if (reasoningState !== undefined) {
 			output.push(
 				...reasoningStateItems(reasoningState, choice?.message.reasoning),
@@ -926,7 +1017,7 @@ export function canonicalToResponsesResponse(
 				reasoningItem(choice.message.reasoning, `rs_${randomUUID()}`),
 			);
 		}
-		if (content)
+		if (content) {
 			output.push(
 				messageItem(
 					content,
@@ -935,9 +1026,12 @@ export function canonicalToResponsesResponse(
 					withoutOpenAIResponsesReasoningState(choice?.message.providerFields),
 				),
 			);
+		}
 		for (const tc of choice?.message.toolCalls ?? []) {
 			output.push(functionCallItem(tc, `fc_${randomUUID()}`));
 		}
+	} else {
+		output.push(...mirrorReasoningOutput(nativeOutput));
 	}
 
 	return buildResponse(opts, {
@@ -1105,8 +1199,9 @@ export async function* canonicalChunksToResponsesEvents(
 			if (
 				item.id !== undefined &&
 				reasoningState.some((existing) => existing.id === item.id)
-			)
+			) {
 				continue;
+			}
 			reasoningState.push(item);
 			appended.push(item);
 		}
@@ -1139,7 +1234,9 @@ export async function* canonicalChunksToResponsesEvents(
 			matchingState === undefined
 				? reasoningItem(reasoning, rsId)
 				: reasoningStateItems([matchingState], reasoning)[0]!;
-		if (matchingState !== undefined) renderedReasoningState.add(matchingState);
+		if (matchingState !== undefined) {
+			renderedReasoningState.add(matchingState);
+		}
 		output.push(item);
 		return [
 			sse("response.reasoning_summary_text.done", next(), {
@@ -1186,17 +1283,24 @@ export async function* canonicalChunksToResponsesEvents(
 	});
 
 	for await (const chunk of chunks) {
-		if (chunk.usage) usage = chunk.usage;
+		if (chunk.usage) {
+			usage = chunk.usage;
+		}
 		const choice = chunk.choices[0];
-		if (!choice) continue;
-		if (choice.finishReason) finish = choice.finishReason;
+		if (!choice) {
+			continue;
+		}
+		if (choice.finishReason) {
+			finish = choice.finishReason;
+		}
 
 		const delta = choice.delta;
 		const streamOutput = openaiResponsesStreamOutputFromProviderFields(
 			delta.providerFields,
 		);
-		if (streamOutput !== undefined)
+		if (streamOutput !== undefined) {
 			nativeStreamOutput = mirrorReasoningOutput(streamOutput);
+		}
 		const streamEvent = openaiResponsesStreamEventFromProviderFields(
 			delta.providerFields,
 		);
@@ -1205,11 +1309,15 @@ export async function* canonicalChunksToResponsesEvents(
 			const streamData = mirrorReasoningEventData(streamEvent.data);
 			const partKey = summaryPartKey(streamData);
 			if (streamEvent.type === "response.reasoning_summary_part.added") {
-				if (nativeSummaryPartsOpen.has(partKey)) continue;
+				if (nativeSummaryPartsOpen.has(partKey)) {
+					continue;
+				}
 				nativeSummaryPartsOpen.add(partKey);
 			}
 			if (streamEvent.type === "response.reasoning_summary_part.done") {
-				if (nativeSummaryPartsDone.has(partKey)) continue;
+				if (nativeSummaryPartsDone.has(partKey)) {
+					continue;
+				}
 				nativeSummaryPartsDone.add(partKey);
 			}
 			const mirrors = reasoningTextMirrors(streamEvent.type, streamData);
@@ -1232,7 +1340,9 @@ export async function* canonicalChunksToResponsesEvents(
 				});
 			}
 			yield sse(streamEvent.type, next(), streamData);
-			for (const mirror of mirrors) yield sse(mirror.type, next(), mirror.data);
+			for (const mirror of mirrors) {
+				yield sse(mirror.type, next(), mirror.data);
+			}
 			if (
 				textEvents.some(
 					(event) => event.type === "response.reasoning_summary_text.done",
@@ -1262,21 +1372,28 @@ export async function* canonicalChunksToResponsesEvents(
 					item !== null &&
 					typeof item === "object" &&
 					!Array.isArray(item)
-				)
+				) {
 					nativeStreamOutputItems.set(
 						outputIndex,
 						structuredClone(item as Record<string, unknown>),
 					);
+				}
 			}
-			if (delta.content) content += delta.content;
-			if (delta.reasoning) reasoning += delta.reasoning;
+			if (delta.content) {
+				content += delta.content;
+			}
+			if (delta.reasoning) {
+				reasoning += delta.reasoning;
+			}
 			continue;
 		}
 		// A native Responses terminal chunk carries the authoritative output but is rendered with a
 		// gateway-owned response envelope below. Do not fall back to heuristic item synthesis.
-		if (nativeResponsesStream) continue;
+		if (nativeResponsesStream) {
+			continue;
+		}
 		if (delta.reasoning) {
-			if (!reasoningStreamed && !messageStarted) {
+			if (!(reasoningStreamed || messageStarted)) {
 				rsId =
 					openaiReasoningItemIdFromProviderFields(delta.providerFields) ?? rsId;
 				reasoningStreamed = true;
@@ -1313,7 +1430,9 @@ export async function* canonicalChunksToResponsesEvents(
 			for (const state of appendReasoningState(delta.providerFields)) {
 				const belongsToOpenSummary =
 					reasoningOpen && state.id !== undefined && state.id === rsId;
-				if (!belongsToOpenSummary) yield* reasoningStateEvents(state);
+				if (!belongsToOpenSummary) {
+					yield* reasoningStateEvents(state);
+				}
 			}
 			messageProviderFields = mergeProviderFields(
 				messageProviderFields,
@@ -1322,11 +1441,14 @@ export async function* canonicalChunksToResponsesEvents(
 		}
 		for (const item of mirrorReasoningOutput(
 			responsesOutputFromProviderFields(delta.providerFields) ?? [],
-		))
+		)) {
 			nativeOutput.push(item);
+		}
 		if (delta.content) {
 			if (!messageStarted) {
-				if (reasoningOpen) yield* reasoningSummaryDone();
+				if (reasoningOpen) {
+					yield* reasoningSummaryDone();
+				}
 				messageStarted = true;
 				msgIndex = nextOutputIndex++;
 				yield sse("response.output_item.added", next(), {
@@ -1361,10 +1483,18 @@ export async function* canonicalChunksToResponsesEvents(
 				name: "",
 				arguments: "",
 			};
-			if (tc.id) cur.id = tc.id;
-			if (tc.name) cur.name = tc.name;
-			if (tc.arguments) cur.arguments += tc.arguments;
-			if (tc.extraContent !== undefined) cur.extraContent = tc.extraContent;
+			if (tc.id) {
+				cur.id = tc.id;
+			}
+			if (tc.name) {
+				cur.name = tc.name;
+			}
+			if (tc.arguments) {
+				cur.arguments += tc.arguments;
+			}
+			if (tc.extraContent !== undefined) {
+				cur.extraContent = tc.extraContent;
+			}
 			toolCalls.set(tc.index, cur);
 		}
 	}
@@ -1377,7 +1507,9 @@ export async function* canonicalChunksToResponsesEvents(
 				.map(([, item]) => item);
 		let outputText = "";
 		for (const item of orderedOutput) {
-			if (item.type !== "message" || !Array.isArray(item.content)) continue;
+			if (item.type !== "message" || !Array.isArray(item.content)) {
+				continue;
+			}
 			for (const part of item.content) {
 				if (
 					part !== null &&
@@ -1385,8 +1517,9 @@ export async function* canonicalChunksToResponsesEvents(
 					!Array.isArray(part) &&
 					(part as Record<string, unknown>).type === "output_text" &&
 					typeof (part as Record<string, unknown>).text === "string"
-				)
+				) {
 					outputText += (part as Record<string, unknown>).text as string;
+				}
 			}
 		}
 		const { status, incomplete } = statusFor(finish);
@@ -1407,7 +1540,9 @@ export async function* canonicalChunksToResponsesEvents(
 		return;
 	}
 
-	if (reasoningOpen) yield* reasoningSummaryDone();
+	if (reasoningOpen) {
+		yield* reasoningSummaryDone();
+	}
 
 	if (messageStarted) {
 		yield sse("response.output_text.done", next(), {

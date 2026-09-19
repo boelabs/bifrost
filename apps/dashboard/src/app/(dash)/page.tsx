@@ -30,8 +30,8 @@ export default function OverviewPage(props: PageProps<"/">) {
 	return (
 		<>
 			<PageHeader
-				title="Overview"
 				description="Traffic, consumption and reliability for a window you choose."
+				title="Overview"
 			>
 				<div className="flex flex-wrap items-center gap-3">
 					<Suspense
@@ -55,7 +55,7 @@ export default function OverviewPage(props: PageProps<"/">) {
 				</div>
 			</PageHeader>
 
-			<RouteBoundary title="The overview could not be loaded" resetHref="/">
+			<RouteBoundary resetHref="/" title="The overview could not be loaded">
 				<Suspense fallback={<OverviewSkeleton />}>
 					<Usage searchParams={props.searchParams} />
 				</Suspense>
@@ -92,14 +92,14 @@ async function Usage({ searchParams }: { searchParams: Params }) {
 	]);
 	return (
 		<Overview
-			health={health}
-			byModel={byModel}
+			bucket={range.bucket}
 			byActor={byActor}
 			byInterval={byInterval}
-			start={start}
+			byModel={byModel}
 			end={end}
-			bucket={range.bucket}
+			health={health}
 			rangeLabel={rangeLabel(filters, DEFAULT_PERIOD)}
+			start={start}
 		/>
 	);
 }

@@ -31,7 +31,9 @@ export function findDeprecations(
 ): DeprecationCandidate[] {
 	const vercel = fetchResults.find((r) => r.source === "vercel-ai-gateway");
 	const openrouter = fetchResults.find((r) => r.source === "openrouter");
-	if (!vercel?.complete || !openrouter?.complete) return [];
+	if (!(vercel?.complete && openrouter?.complete)) {
+		return [];
+	}
 
 	// Normalized, not exact: a source can spell a model id differently than our catalog key (e.g.
 	// OpenRouter's "claude-opus-4.5" vs. our "claude-opus-4-5", matching Anthropic's own API convention).
@@ -48,10 +50,16 @@ export function findDeprecations(
 	const candidates: DeprecationCandidate[] = [];
 	for (const [adapterKey, models] of catalogsByAdapter) {
 		for (const [upstreamModel, entry] of Object.entries(models)) {
-			if (entry.deprecated) continue;
+			if (entry.deprecated) {
+				continue;
+			}
 			const key = confirmedKey(adapterKey, upstreamModel);
-			if (confirmedHistory[key] === undefined) continue;
-			if (presentThisRun.has(key)) continue;
+			if (confirmedHistory[key] === undefined) {
+				continue;
+			}
+			if (presentThisRun.has(key)) {
+				continue;
+			}
 
 			const patched: CatalogEntry = structuredClone(entry);
 			patched.deprecated = true;

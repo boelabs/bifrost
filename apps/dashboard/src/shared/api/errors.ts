@@ -41,11 +41,14 @@ export function unwrap<T>(result: {
 	error?: unknown;
 	response: Response;
 }): T {
-	if (result.error !== undefined) throw toError(result.error, result.response);
-	if (result.data === undefined)
+	if (result.error !== undefined) {
+		throw toError(result.error, result.response);
+	}
+	if (result.data === undefined) {
 		throw new ApiError("The gateway returned an empty response", {
 			status: result.response.status,
 		});
+	}
 	return result.data;
 }
 

@@ -107,7 +107,9 @@ test("GET /v1/models and /v1/models/{id} are public, but /v1/models/{id}/deploym
 			await invalidateVirtualKey(virtualKey.row.keyHash);
 			await deleteVirtualKey(virtualKey.row.id);
 		}
-		if (deploymentId) await deleteDeployment(deploymentId);
+		if (deploymentId) {
+			await deleteDeployment(deploymentId);
+		}
 	}
 });
 
@@ -162,7 +164,9 @@ test("rerank model discovery exposes operation, modality, search pricing, and re
 			await invalidateVirtualKey(virtualKey.row.keyHash);
 			await deleteVirtualKey(virtualKey.row.id);
 		}
-		if (deploymentId) await deleteDeployment(deploymentId);
+		if (deploymentId) {
+			await deleteDeployment(deploymentId);
+		}
 	}
 });
 
@@ -192,6 +196,8 @@ test("public model cache invalidates after deployment mutations", {
 		deploymentId = undefined;
 		assert.equal((await app.request(`/v1/models/${renamedModel}`)).status, 404);
 	} finally {
-		if (deploymentId) await deleteDeployment(deploymentId);
+		if (deploymentId) {
+			await deleteDeployment(deploymentId);
+		}
 	}
 });

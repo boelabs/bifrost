@@ -26,7 +26,7 @@ import {
 export type AuditKind = "admin" | "payload_access";
 
 /** How far the two tables are read before they are interleaved. See `listAuditPage`. */
-export const MAX_MERGE_DEPTH = 5_000;
+export const MAX_MERGE_DEPTH = 5000;
 
 export interface AuditEntry {
 	id: string;
@@ -57,12 +57,21 @@ export interface AuditFilter {
 
 function adminConditions(filter: AuditFilter): SQL[] {
 	const conds: SQL[] = [];
-	if (filter.actor) conds.push(ilike(adminAudit.actor, `%${filter.actor}%`));
-	if (filter.action) conds.push(ilike(adminAudit.action, `%${filter.action}%`));
-	if (filter.targetType)
+	if (filter.actor) {
+		conds.push(ilike(adminAudit.actor, `%${filter.actor}%`));
+	}
+	if (filter.action) {
+		conds.push(ilike(adminAudit.action, `%${filter.action}%`));
+	}
+	if (filter.targetType) {
 		conds.push(eq(adminAudit.targetType, filter.targetType));
-	if (filter.start) conds.push(gte(adminAudit.at, filter.start));
-	if (filter.end) conds.push(lte(adminAudit.at, filter.end));
+	}
+	if (filter.start) {
+		conds.push(gte(adminAudit.at, filter.start));
+	}
+	if (filter.end) {
+		conds.push(lte(adminAudit.at, filter.end));
+	}
 	return conds;
 }
 
@@ -73,14 +82,21 @@ function adminConditions(filter: AuditFilter): SQL[] {
  */
 function payloadConditions(filter: AuditFilter): SQL[] | null {
 	const conds: SQL[] = [];
-	if (filter.actor)
+	if (filter.actor) {
 		conds.push(ilike(payloadAccessAudit.actor, `%${filter.actor}%`));
-	if (filter.action && !"read payload".includes(filter.action.toLowerCase()))
+	}
+	if (filter.action && !"read payload".includes(filter.action.toLowerCase())) {
 		return null;
-	if (filter.targetType && filter.targetType !== "operation") return null;
-	if (filter.start)
+	}
+	if (filter.targetType && filter.targetType !== "operation") {
+		return null;
+	}
+	if (filter.start) {
 		conds.push(gte(payloadAccessAudit.accessedAt, filter.start));
-	if (filter.end) conds.push(lte(payloadAccessAudit.accessedAt, filter.end));
+	}
+	if (filter.end) {
+		conds.push(lte(payloadAccessAudit.accessedAt, filter.end));
+	}
 	return conds;
 }
 
@@ -99,7 +115,7 @@ export async function listAuditPage(
 	// Interleaving costs `depth` rows from each table, so an unbounded offset would let one request
 	// pull the whole trail into memory. Past this point the answer is a narrower filter or a date
 	// range, not another page — and saying so beats timing out.
-	if (depth > MAX_MERGE_DEPTH)
+	if (depth > MAX_MERGE_DEPTH) {
 		throw new GatewayError({
 			class: "bad_request",
 			code: "audit_offset_too_deep",
@@ -107,6 +123,7 @@ export async function listAuditPage(
 			publicMessage: `The audit trail can be paged to ${MAX_MERGE_DEPTH} entries. Narrow the range or the filters to reach older entries.`,
 			param: "offset",
 		});
+	}
 	const wantsAdmin = opts.kind !== "payload_access";
 	const wantsPayload = opts.kind !== "admin";
 	const payloadConds = wantsPayload ? payloadConditions(opts) : null;
