@@ -87,8 +87,11 @@ async function fetchExistenceResults(
 	sources: readonly CatalogSource[],
 ): Promise<SourceFetchResult[]> {
 	const settled = await Promise.allSettled(sources.map((s) => s.fetchModels()));
-	return settled.map((result, index) => {
-		const source = sources[index]!;
+	return settled.flatMap((result, index) => {
+		const source = sources[index];
+		if (source === undefined) {
+			return [];
+		}
 		if (result.status === "fulfilled") {
 			return result.value;
 		}
@@ -115,7 +118,7 @@ async function fetchEnrichmentModels(
 			models.push(...result.value.models);
 		} else {
 			console.error(
-				`enrichment source ${sources[index]!.key} failed entirely: ${String(result.reason)}`,
+				`enrichment source ${sources[index]?.key} failed entirely: ${String(result.reason)}`,
 			);
 		}
 	});
@@ -306,7 +309,10 @@ async function run(): Promise<void> {
 		}
 
 		if (existingKey) {
-			const existing = catalog.document.models[existingKey]!;
+			const existing = catalog.document.models[existingKey];
+			if (existing === undefined) {
+				continue;
+			}
 			const merged = mergeCatalogEntry(existing, candidate, modelsDevMatch);
 			const enriched = enrichCatalogEntry(
 				merged.entry,

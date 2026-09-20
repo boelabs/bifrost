@@ -112,7 +112,10 @@ export async function configureFallback(
 		),
 	);
 	for (const [index, operations] of targets.entries()) {
-		const publicModel = input.fallbackModels[index]!;
+		const publicModel = input.fallbackModels[index];
+		if (publicModel === undefined) {
+			continue;
+		}
 		if (!operations) {
 			invalid(
 				`Fallback public model "${publicModel}" has no deployments`,

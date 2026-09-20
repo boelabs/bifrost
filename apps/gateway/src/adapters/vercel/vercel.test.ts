@@ -1,5 +1,6 @@
 import { resolveModelMetadata, getCatalogEntry } from "#catalog/index.ts";
 import { type ReasoningSpec, reasoningLogInfo } from "#core/reasoning.ts";
+import { jsonBody, must } from "#test-support/adapters.ts";
 import type { AdapterContext } from "#adapters/types.ts";
 import { vercelAdapter } from "./index.ts";
 import assert from "node:assert/strict";
@@ -134,13 +135,13 @@ test("vercel owns creator/model metadata from its public catalog", () => {
 });
 
 test("vercel Responses preserves OpenAI max as distinct from xhigh", () => {
-	const request = vercelAdapter.chat!.buildRequest(
+	const request = must(vercelAdapter, "chat").buildRequest(
 		{ ...baseRequest, reasoning: { effort: "max" } },
 		ctx("openai/gpt-5.6-sol", "responses"),
 	);
 	assert.equal(request.url, "https://ai-gateway.vercel.sh/v1/responses");
 	assert.equal(request.headers.authorization, "Bearer vercel-test-key");
-	const body = JSON.parse(request.body!);
+	const body = jsonBody(request);
 	assert.equal(body.model, "openai/gpt-5.6-sol");
 	assert.equal(body.reasoning.effort, "max");
 	assert.equal(body.reasoning.summary, "auto");
@@ -148,7 +149,7 @@ test("vercel Responses preserves OpenAI max as distinct from xhigh", () => {
 });
 
 test("vercel Responses emits native Anthropic and Bedrock reasoning for fallbacks", () => {
-	const request = vercelAdapter.chat!.buildRequest(
+	const request = must(vercelAdapter, "chat").buildRequest(
 		{
 			...baseRequest,
 			reasoning: { effort: "max", display: "omitted" },
@@ -163,7 +164,7 @@ test("vercel Responses emits native Anthropic and Bedrock reasoning for fallback
 			levels: ["none", "low", "medium", "high", "xhigh", "max"],
 		}),
 	);
-	const body = JSON.parse(request.body!);
+	const body = jsonBody(request);
 	assert.equal(body.reasoning, undefined);
 	assert.deepEqual(body.providerOptions, {
 		gateway: { order: ["anthropic", "bedrock"] },
@@ -180,14 +181,14 @@ test("vercel Responses emits native Anthropic and Bedrock reasoning for fallback
 		},
 	});
 
-	const chatRequest = vercelAdapter.chat!.buildRequest(
+	const chatRequest = must(vercelAdapter, "chat").buildRequest(
 		{ ...baseRequest, reasoning: { effort: "max" } },
 		ctxWithReasoning("anthropic/claude-opus-5", "chat_completions", {
 			kind: "anthropic_adaptive",
 			levels: ["none", "low", "medium", "high", "xhigh", "max"],
 		}),
 	);
-	const chatBody = JSON.parse(chatRequest.body!);
+	const chatBody = jsonBody(chatRequest);
 	assert.equal(chatBody.reasoning, undefined);
 	assert.equal(chatBody.providerOptions.anthropic.effort, "max");
 	assert.equal(
@@ -197,7 +198,7 @@ test("vercel Responses emits native Anthropic and Bedrock reasoning for fallback
 });
 
 test("vercel Chat emits its normalized reasoning object without aliasing max", () => {
-	const request = vercelAdapter.chat!.buildRequest(
+	const request = must(vercelAdapter, "chat").buildRequest(
 		{
 			...baseRequest,
 			reasoning: { effort: "max", display: "omitted" },
@@ -210,7 +211,7 @@ test("vercel Chat emits its normalized reasoning object without aliasing max", (
 		ctx("openai/gpt-5.6-sol", "chat_completions"),
 	);
 	assert.equal(request.url, "https://ai-gateway.vercel.sh/v1/chat/completions");
-	const body = JSON.parse(request.body!);
+	const body = jsonBody(request);
 	assert.equal(body.reasoning_effort, undefined);
 	assert.deepEqual(body.reasoning, {
 		enabled: true,
@@ -221,22 +222,22 @@ test("vercel Chat emits its normalized reasoning object without aliasing max", (
 		gateway: { only: ["openai"], sort: "tps" },
 	});
 
-	const xhighRequest = vercelAdapter.chat!.buildRequest(
+	const xhighRequest = must(vercelAdapter, "chat").buildRequest(
 		{ ...baseRequest, reasoning: { effort: "xhigh" } },
 		ctx("openai/gpt-5.6-sol", "chat_completions"),
 	);
-	assert.equal(JSON.parse(xhighRequest.body!).reasoning.effort, "xhigh");
+	assert.equal(jsonBody(xhighRequest).reasoning.effort, "xhigh");
 });
 
 test("vercel maps Gemini levels and budgets into both Google execution namespaces", () => {
-	const levelRequest = vercelAdapter.chat!.buildRequest(
+	const levelRequest = must(vercelAdapter, "chat").buildRequest(
 		{ ...baseRequest, reasoning: { effort: "max" } },
 		ctxWithReasoning("google/gemini-3.1-pro-preview", "responses", {
 			kind: "gemini_level",
 			levels: ["low", "medium", "high"],
 		}),
 	);
-	const levelBody = JSON.parse(levelRequest.body!);
+	const levelBody = jsonBody(levelRequest);
 	assert.equal(levelBody.reasoning, undefined);
 	assert.deepEqual(levelBody.providerOptions, {
 		google: {
@@ -247,7 +248,7 @@ test("vercel maps Gemini levels and budgets into both Google execution namespace
 		},
 	});
 
-	const budgetRequest = vercelAdapter.chat!.buildRequest(
+	const budgetRequest = must(vercelAdapter, "chat").buildRequest(
 		{ ...baseRequest, reasoning: { effort: "none" } },
 		ctxWithReasoning("google/gemini-2.5-flash", "chat_completions", {
 			kind: "gemini_budget",
@@ -255,7 +256,7 @@ test("vercel maps Gemini levels and budgets into both Google execution namespace
 			budgets: { high: 24_576 },
 		}),
 	);
-	const budgetBody = JSON.parse(budgetRequest.body!);
+	const budgetBody = jsonBody(budgetRequest);
 	assert.equal(budgetBody.reasoning, undefined);
 	assert.deepEqual(budgetBody.providerOptions, {
 		google: {
@@ -268,7 +269,7 @@ test("vercel maps Gemini levels and budgets into both Google execution namespace
 });
 
 test("vercel preserves explicit Anthropic token budgets across provider fallbacks", () => {
-	const request = vercelAdapter.chat!.buildRequest(
+	const request = must(vercelAdapter, "chat").buildRequest(
 		{ ...baseRequest, reasoning: { effort: "high" } },
 		ctxWithReasoning("anthropic/claude-sonnet-4.5", "responses", {
 			kind: "anthropic_budget",
@@ -276,7 +277,7 @@ test("vercel preserves explicit Anthropic token budgets across provider fallback
 			budgets: { high: 16_000 },
 		}),
 	);
-	const body = JSON.parse(request.body!);
+	const body = jsonBody(request);
 	assert.equal(body.reasoning, undefined);
 	assert.deepEqual(body.providerOptions, {
 		anthropic: {
@@ -291,7 +292,7 @@ test("vercel preserves explicit Anthropic token budgets across provider fallback
 test("vercel rejects collisions with adapter-managed provider reasoning", () => {
 	assert.throws(
 		() =>
-			vercelAdapter.chat!.buildRequest(
+			must(vercelAdapter, "chat").buildRequest(
 				{
 					...baseRequest,
 					reasoning: { effort: "max" },
@@ -323,7 +324,7 @@ test("vercel Chat replays and parses provider-normalized reasoning details", () 
 			format: "anthropic-claude-v1",
 		},
 	];
-	const request = vercelAdapter.chat!.buildRequest(
+	const request = must(vercelAdapter, "chat").buildRequest(
 		{
 			...baseRequest,
 			messages: [
@@ -339,10 +340,10 @@ test("vercel Chat replays and parses provider-normalized reasoning details", () 
 		},
 		ctx("anthropic/claude-opus-5", "chat_completions"),
 	);
-	const body = JSON.parse(request.body!);
+	const body = jsonBody(request);
 	assert.deepEqual(body.messages[0].reasoning_details, details);
 
-	const response = vercelAdapter.chat!.parseResponse(
+	const response = must(vercelAdapter, "chat").parseResponse(
 		{
 			id: "chatcmpl_1",
 			created: 1,
@@ -399,7 +400,7 @@ test("vercel Chat preserves streamed reasoning details", async () => {
 		`data: ${JSON.stringify(raw)}\n\ndata: [DONE]\n\n`,
 	).body!;
 	const chunks: CanonicalChatStreamChunk[] = [];
-	for await (const chunk of vercelAdapter.chat!.parseStream(
+	for await (const chunk of must(vercelAdapter, "chat").parseStream(
 		stream,
 		ctx("openai/gpt-5.6-sol", "chat_completions"),
 	)) {
@@ -414,7 +415,7 @@ test("vercel Chat preserves streamed reasoning details", async () => {
 });
 
 test("vercel uses its OpenAI-compatible embeddings and images endpoints", async () => {
-	const embeddings = vercelAdapter.embeddings!.buildRequest(
+	const embeddings = must(vercelAdapter, "embeddings").buildRequest(
 		{
 			model: "public-embedding",
 			input: "hello",
@@ -424,14 +425,14 @@ test("vercel uses its OpenAI-compatible embeddings and images endpoints", async 
 		ctx("openai/text-embedding-3-small", "embeddings"),
 	);
 	assert.equal(embeddings.url, "https://ai-gateway.vercel.sh/v1/embeddings");
-	assert.deepEqual(JSON.parse(embeddings.body!), {
+	assert.deepEqual(jsonBody(embeddings), {
 		model: "openai/text-embedding-3-small",
 		input: "hello",
 		encoding_format: "float",
 		dimensions: 256,
 	});
 
-	const image = await vercelAdapter.imageGeneration!.buildRequest(
+	const image = await must(vercelAdapter, "imageGeneration").buildRequest(
 		{
 			operation: "generation",
 			model: "public-image",

@@ -1,5 +1,6 @@
 import { openaicompatibleAdapter } from "./openaicompatible/index.ts";
 import { googleAdapter } from "./google/index.ts";
+import { must } from "#test-support/adapters.ts";
 import type { AdapterContext } from "./types.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -58,11 +59,11 @@ test("agnosticism: OpenAI and Gemini -> identical output OpenAI contract", () =>
 	};
 
 	const fromOpenAI = toOpenAIChatResponse(
-		openaicompatibleAdapter.chat!.parseResponse(openaiRaw, ctx),
+		must(openaicompatibleAdapter, "chat").parseResponse(openaiRaw, ctx),
 		"public-model",
 	);
 	const fromGemini = toOpenAIChatResponse(
-		googleAdapter.chat!.parseResponse(geminiRaw, ctx),
+		must(googleAdapter, "chat").parseResponse(geminiRaw, ctx),
 		"public-model",
 	);
 

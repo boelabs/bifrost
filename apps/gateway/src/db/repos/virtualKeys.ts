@@ -1,6 +1,7 @@
 import type { Page, PageResult } from "./deployments.ts";
 import { createHash, randomBytes } from "node:crypto";
 import { nextResetAt } from "#ratelimit/period.ts";
+import { writtenRow } from "#db/returning.ts";
 import { virtualKeys } from "#db/schema.ts";
 import { db } from "#db/client.ts";
 
@@ -12,7 +13,6 @@ import {
 	and,
 	lte,
 	eq,
-	or,
 } from "drizzle-orm";
 
 export type VirtualKeyRow = typeof virtualKeys.$inferSelect;
@@ -41,7 +41,8 @@ export async function listVirtualKeysPage(
 	if (opts.q) {
 		const like = `%${opts.q}%`;
 		conds.push(
-			or(ilike(virtualKeys.name, like), ilike(virtualKeys.keyPrefix, like))!,
+			ilike(virtualKeys.name, like),
+			ilike(virtualKeys.keyPrefix, like),
 		);
 	}
 	const where = conds.length > 0 ? and(...conds) : undefined;
@@ -117,7 +118,7 @@ export async function createVirtualKey(
 			expiresAt: input.expiresAt ?? null,
 		})
 		.returning();
-	return { row: row!, rawKey };
+	return { row: writtenRow(row, "createVirtualKey"), rawKey };
 }
 
 export async function getVirtualKeyByHash(

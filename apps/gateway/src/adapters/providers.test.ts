@@ -2,6 +2,7 @@ import { assertTextRequestSupported } from "#gateway/textRequestValidation.ts";
 import { resolveModelMetadata, getCatalogEntry } from "#catalog/index.ts";
 import { openaicompatibleAdapter } from "./openaicompatible/index.ts";
 import type { CanonicalChatRequest } from "#core/canonical.ts";
+import { jsonBody, must } from "#test-support/adapters.ts";
 import type { Adapter, AdapterContext } from "./types.ts";
 import { deepseekAdapter } from "./deepseek/index.ts";
 import { moonshotAdapter } from "./moonshot/index.ts";
@@ -52,13 +53,13 @@ test("new providers: default base URL, max_tokens, and auth", () => {
 		],
 	];
 	for (const [adapter, model, expectedUrl] of cases) {
-		const r = adapter.chat!.buildRequest(
+		const r = must(adapter, "chat").buildRequest(
 			req,
 			ctx(model, adapter.key, { apiKey: "k" }),
 		);
 		assert.equal(r.url, expectedUrl, adapter.key);
 		assert.equal(r.headers.authorization, "Bearer k");
-		const body = JSON.parse(r.body!);
+		const body = jsonBody(r);
 		assert.equal(body.max_tokens, 64, adapter.key);
 		assert.equal(body.max_completion_tokens, undefined, adapter.key);
 		assert.equal(body.model, model);
@@ -73,7 +74,7 @@ test("compatible providers downgrade developer and forward catalog top_k", () =>
 		[minimaxAdapter, "MiniMax-M2"],
 		[openaicompatibleAdapter, "custom-model"],
 	] as const) {
-		const built = adapter.chat!.buildRequest(
+		const built = must(adapter, "chat").buildRequest(
 			{
 				...req,
 				topK: 32,
@@ -86,7 +87,7 @@ test("compatible providers downgrade developer and forward catalog top_k", () =>
 					: {}),
 			}),
 		);
-		const body = JSON.parse(built.body!);
+		const body = jsonBody(built);
 		assert.equal(body.messages[0].role, "system", adapter.key);
 		assert.equal(body.top_k, 32, adapter.key);
 	}
@@ -158,27 +159,27 @@ test("catalog: DeepSeek-V4 includes official pricing and native thinking/effort"
 	);
 
 	// "none" ∈ levels: omitting effort -> the gateway explicitly disables thinking.
-	const r = deepseekAdapter.chat!.buildRequest(
+	const r = must(deepseekAdapter, "chat").buildRequest(
 		req,
 		ctx("deepseek-v4-flash", "deepseek", { apiKey: "k" }),
 	);
-	let body = JSON.parse(r.body!);
+	let body = jsonBody(r);
 	assert.deepEqual(body.thinking, { type: "disabled" });
 	assert.equal(body.reasoning_effort, undefined);
 
-	const extended = deepseekAdapter.chat!.buildRequest(
+	const extended = must(deepseekAdapter, "chat").buildRequest(
 		{ ...req, reasoning: { effort: "xhigh" } },
 		ctx("deepseek-v4-flash", "deepseek", { apiKey: "k" }),
 	);
-	body = JSON.parse(extended.body!);
+	body = jsonBody(extended);
 	assert.deepEqual(body.thinking, { type: "enabled" });
 	assert.equal(body.reasoning_effort, "high");
 
-	const strongest = deepseekAdapter.chat!.buildRequest(
+	const strongest = must(deepseekAdapter, "chat").buildRequest(
 		{ ...req, reasoning: { effort: "max" } },
 		ctx("deepseek-v4-flash", "deepseek", { apiKey: "k" }),
 	);
-	body = JSON.parse(strongest.body!);
+	body = jsonBody(strongest);
 	assert.equal(body.reasoning_effort, "max");
 });
 
@@ -198,15 +199,15 @@ test("DeepSeek strict tools use the beta Chat endpoint and require all tools str
 			},
 		],
 	};
-	const built = deepseekAdapter.chat!.buildRequest(
+	const built = must(deepseekAdapter, "chat").buildRequest(
 		strictRequest,
 		ctx("deepseek-v4-flash", "deepseek", { apiKey: "k" }),
 	);
 	assert.equal(built.url, "https://api.deepseek.com/beta/chat/completions");
-	assert.equal(JSON.parse(built.body!).tools[0].function.strict, true);
+	assert.equal(jsonBody(built).tools[0].function.strict, true);
 
 	assert.throws(() =>
-		deepseekAdapter.chat!.buildRequest(
+		must(deepseekAdapter, "chat").buildRequest(
 			{
 				...strictRequest,
 				tools: [strictRequest.tools![0]!, { name: "other", strict: false }],
@@ -224,14 +225,14 @@ test("DeepSeek maps reasoning onto the Responses contract, not its Chat body fie
 		transport: "responses" as const,
 	};
 	const off = JSON.parse(
-		deepseekAdapter.chat!.buildRequest(req, responsesCtx).body!,
+		must(deepseekAdapter, "chat").buildRequest(req, responsesCtx).body!,
 	);
 	assert.deepEqual(off.reasoning, { effort: "none" });
 	assert.equal(off.thinking, undefined);
 	assert.equal(off.reasoning_effort, undefined);
 
 	const on = JSON.parse(
-		deepseekAdapter.chat!.buildRequest(
+		must(deepseekAdapter, "chat").buildRequest(
 			{ ...req, reasoning: { effort: "xhigh" } },
 			responsesCtx,
 		).body!,
@@ -242,7 +243,7 @@ test("DeepSeek maps reasoning onto the Responses contract, not its Chat body fie
 });
 
 test("DeepSeek strict output uses the native Responses schema", () => {
-	const built = deepseekAdapter.chat!.buildRequest(
+	const built = must(deepseekAdapter, "chat").buildRequest(
 		{
 			...req,
 			tools: [
@@ -260,7 +261,7 @@ test("DeepSeek strict output uses the native Responses schema", () => {
 			transport: "responses",
 		},
 	);
-	const body = JSON.parse(built.body!);
+	const body = jsonBody(built);
 	assert.equal(built.url, "https://api.deepseek.com/responses");
 	assert.deepEqual(body.text.format, {
 		type: "json_schema",
@@ -271,14 +272,14 @@ test("DeepSeek strict output uses the native Responses schema", () => {
 });
 
 test("Moonshot emits its native strict function-tool flag", () => {
-	const built = moonshotAdapter.chat!.buildRequest(
+	const built = must(moonshotAdapter, "chat").buildRequest(
 		{
 			...req,
 			tools: [{ name: "lookup", strict: true, parameters: { type: "object" } }],
 		},
 		ctx("kimi-k2.6", "moonshot", { apiKey: "k" }),
 	);
-	assert.equal(JSON.parse(built.body!).tools[0].function.strict, true);
+	assert.equal(jsonBody(built).tools[0].function.strict, true);
 });
 
 test("Z.AI does not claim strict JSON Schema support", () => {
@@ -304,19 +305,19 @@ test("catalog: GLM-5.2 keeps xhigh distinct from native max", () => {
 	assert.equal(glm.maxInputTokens, 1_000_000);
 	assert.equal(glm.capabilities.structuredOutputs, false);
 	assert.equal(glm.reasoning?.kind, "openai_body");
-	const r = zaiAdapter.chat!.buildRequest(
+	const r = must(zaiAdapter, "chat").buildRequest(
 		{ ...req, reasoning: { effort: "xhigh" } },
 		ctx("glm-5.2", "zai", { apiKey: "k" }),
 	);
-	const body = JSON.parse(r.body!);
+	const body = jsonBody(r);
 	assert.deepEqual(body.thinking, { type: "enabled" });
 	assert.equal(body.reasoning_effort, "high");
 
-	const maximum = zaiAdapter.chat!.buildRequest(
+	const maximum = must(zaiAdapter, "chat").buildRequest(
 		{ ...req, reasoning: { effort: "max" } },
 		ctx("glm-5.2", "zai", { apiKey: "k" }),
 	);
-	const maximumBody = JSON.parse(maximum.body!);
+	const maximumBody = jsonBody(maximum);
 	assert.deepEqual(maximumBody.thinking, { type: "enabled" });
 	assert.equal(maximumBody.reasoning_effort, "max");
 });
@@ -336,19 +337,19 @@ test("catalog: GLM-5.3 enforces its mandatory reasoning floor", () => {
 		effortField: "reasoning_effort",
 	});
 
-	const defaultRequest = zaiAdapter.chat!.buildRequest(
+	const defaultRequest = must(zaiAdapter, "chat").buildRequest(
 		req,
 		ctx("glm-5.3", "zai", { apiKey: "k" }),
 	);
-	const defaultBody = JSON.parse(defaultRequest.body!);
+	const defaultBody = jsonBody(defaultRequest);
 	assert.deepEqual(defaultBody.thinking, { type: "enabled" });
 	assert.equal(defaultBody.reasoning_effort, "low");
 
-	const extended = zaiAdapter.chat!.buildRequest(
+	const extended = must(zaiAdapter, "chat").buildRequest(
 		{ ...req, reasoning: { effort: "xhigh" } },
 		ctx("glm-5.3", "zai", { apiKey: "k" }),
 	);
-	const extendedBody = JSON.parse(extended.body!);
+	const extendedBody = jsonBody(extended);
 	assert.equal(extendedBody.reasoning_effort, "high");
 });
 
@@ -369,22 +370,22 @@ test("catalog: Kimi K3 and K2.x model-native thinking", () => {
 	assert.equal(k27.reasoning?.kind, "fixed");
 	assert.equal(k27.reasoning?.levels.includes("none"), false);
 
-	const off = moonshotAdapter.chat!.buildRequest(
+	const off = must(moonshotAdapter, "chat").buildRequest(
 		req,
 		ctx("kimi-k2.6", "moonshot", { apiKey: "k" }),
 	);
-	assert.deepEqual(JSON.parse(off.body!).thinking, { type: "disabled" });
-	const on = moonshotAdapter.chat!.buildRequest(
+	assert.deepEqual(jsonBody(off).thinking, { type: "disabled" });
+	const on = must(moonshotAdapter, "chat").buildRequest(
 		{ ...req, reasoning: { effort: "high" } },
 		ctx("kimi-k2.6", "moonshot", { apiKey: "k" }),
 	);
-	assert.deepEqual(JSON.parse(on.body!).thinking, { type: "enabled" });
+	assert.deepEqual(jsonBody(on).thinking, { type: "enabled" });
 
-	const k3Request = moonshotAdapter.chat!.buildRequest(
+	const k3Request = must(moonshotAdapter, "chat").buildRequest(
 		req,
 		ctx("kimi-k3", "moonshot", { apiKey: "k" }),
 	);
-	const k3Body = JSON.parse(k3Request.body!);
+	const k3Body = jsonBody(k3Request);
 	assert.equal(k3Body.thinking, undefined);
 	assert.equal(k3Body.reasoning_effort, "max");
 });
@@ -395,11 +396,11 @@ test("deprecated DeepSeek aliases preserve compatibility modes", () => {
 	assert.equal(reasoner.reasoning?.kind, "fixed");
 
 	// No explicit effort: no control is emitted; the alias selects the upstream thinking mode.
-	const r = deepseekAdapter.chat!.buildRequest(
+	const r = must(deepseekAdapter, "chat").buildRequest(
 		req,
 		ctx("deepseek-reasoner", "deepseek", { apiKey: "k" }),
 	);
-	assert.equal(JSON.parse(r.body!).reasoning_effort, undefined);
+	assert.equal(jsonBody(r).reasoning_effort, undefined);
 
 	// Clamp-don't-reject: a fixed reasoner accepts any effort (including "none"); it always reasons and
 	// emits no upstream control regardless.
@@ -425,7 +426,7 @@ test("new providers: context overflow 400 -> context_window (by message)", () =>
 		zaiAdapter,
 		minimaxAdapter,
 	]) {
-		const ge = adapter.chat!.mapError(
+		const ge = must(adapter, "chat").mapError(
 			err,
 			ctx("m", adapter.key, { apiKey: "k" }),
 		);

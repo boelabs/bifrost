@@ -160,7 +160,7 @@ function streamMessages(
 			for await (const ev of withSSEHeartbeats(events, () =>
 				writeSSEHeartbeat(stream, downstream),
 			)) {
-				await writeSSE(stream, { event: ev.event!, data: ev.data }, downstream);
+				await writeSSE(stream, ev, downstream);
 				if (
 					ev.event === "content_block_start" ||
 					ev.event === "content_block_delta"

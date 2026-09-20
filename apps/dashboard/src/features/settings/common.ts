@@ -210,11 +210,7 @@ export const ROUTER_NUMERIC_FIELDS: readonly {
 
 export type RouterNumericKey = (typeof ROUTER_NUMERIC_FIELDS)[number]["key"];
 
-export const ROUTER_GROUPS: readonly {
-	id: RouterGroup;
-	title: string;
-	description: string;
-}[] = [
+export const ROUTER_GROUPS = [
 	{
 		id: "opening",
 		title: "When a deployment is taken out",
@@ -233,7 +229,11 @@ export const ROUTER_GROUPS: readonly {
 		description:
 			"A pool-wide deadline has to accommodate its slowest member, so a fast deployment inherits a budget it never needs — and a stuck request waits it out before failing over.",
 	},
-];
+] as const satisfies readonly {
+	id: RouterGroup;
+	title: string;
+	description: string;
+}[];
 
 export type DashboardSettings = components["schemas"]["DashboardSettingsState"];
 export type DashboardSettingsPatch = components["schemas"]["DashboardSettings"];

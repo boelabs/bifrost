@@ -1,6 +1,7 @@
 import { openaicompatibleAdapter } from "#adapters/openaicompatible/index.ts";
 import type { DeploymentCandidate } from "#gateway/deploymentCandidates.ts";
 import { deepseekAdapter } from "#adapters/deepseek/index.ts";
+import { jsonBody, must } from "#test-support/adapters.ts";
 import { googleAdapter } from "#adapters/google/index.ts";
 import { openaiAdapter } from "#adapters/openai/index.ts";
 import type { Adapter } from "#adapters/types.ts";
@@ -90,14 +91,14 @@ test("file resolver materializes a PDF URL once for Gemini inlineData", async ()
 	});
 	assert.equal(second.metadata?.materializedFiles, 1);
 
-	const built = googleAdapter.chat!.buildRequest(first.request, {
+	const built = must(googleAdapter, "chat").buildRequest(first.request, {
 		upstreamModel: "upstream-model",
 		credentials: { apiKey: "test-key" },
 		meta: google.meta,
 		transport: "generate_content",
 		requestId: "test-request",
 	});
-	const body = JSON.parse(built.body!);
+	const body = jsonBody(built);
 	assert.equal(
 		body.contents[0].parts[0].inlineData.mimeType,
 		"application/pdf",
@@ -166,14 +167,14 @@ test("content resolver materializes Responses image URLs for Gemini and memoizes
 	});
 	assert.equal(second.metadata?.materializedImages, 6);
 
-	const built = googleAdapter.chat!.buildRequest(first.request, {
+	const built = must(googleAdapter, "chat").buildRequest(first.request, {
 		upstreamModel: "gemini-2.5-flash",
 		credentials: { apiKey: "test-key" },
 		meta: google.meta,
 		transport: "generate_content",
 		requestId: "test-request",
 	});
-	const { parts } = JSON.parse(built.body!).contents[0];
+	const { parts } = jsonBody(built).contents[0];
 	assert.equal(parts.length, 7);
 	assert.equal(parts[0].inlineData.mimeType, "text/plain");
 	for (const part of parts.slice(1)) {
@@ -233,14 +234,14 @@ test("file resolver materializes URLs before OpenAI Chat Completions", async () 
 		openai,
 		"chat_completions",
 	);
-	const built = openaiAdapter.chat!.buildRequest(resolved.request, {
+	const built = must(openaiAdapter, "chat").buildRequest(resolved.request, {
 		upstreamModel: "gpt-5.4",
 		credentials: { apiKey: "test-key" },
 		meta: openai.meta,
 		transport: "chat_completions",
 		requestId: "test-request",
 	});
-	const body = JSON.parse(built.body!);
+	const body = jsonBody(built);
 	assert.equal(fetches, 1);
 	assert.match(
 		body.messages[0].content[0].file.file_data,

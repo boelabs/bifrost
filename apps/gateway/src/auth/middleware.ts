@@ -26,9 +26,9 @@ function isMasterKey(value: string): boolean {
 function extractKey(c: Context): string | undefined {
 	const auth = c.req.header("authorization");
 	if (auth) {
-		const m = /^Bearer\s+(.+)$/i.exec(auth.trim());
-		if (m) {
-			return m[1]!.trim();
+		const bearer = /^Bearer\s+(.+)$/i.exec(auth.trim())?.[1];
+		if (bearer !== undefined) {
+			return bearer.trim();
 		}
 		return auth.trim();
 	}

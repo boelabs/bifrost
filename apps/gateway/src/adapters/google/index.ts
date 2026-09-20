@@ -146,11 +146,11 @@ function creds(ctx: AdapterContext): GoogleCreds & { apiKey: string } {
 function dataUrlToInline(
 	url: string,
 ): { mimeType: string; data: string } | null {
-	const m = /^data:([^;]+);base64,(.*)$/s.exec(url);
-	if (!m) {
+	const [, mimeType, data] = /^data:([^;]+);base64,(.*)$/s.exec(url) ?? [];
+	if (mimeType === undefined || data === undefined) {
 		return null;
 	}
-	return { mimeType: m[1]!, data: m[2]! };
+	return { mimeType, data };
 }
 
 function partToGemini(p: CanonicalContentPart): Record<string, unknown> {
@@ -287,8 +287,7 @@ function geminiThinkingConfig(
 	if (resolved === undefined) {
 		return undefined;
 	}
-	const { effort } = resolved;
-	const spec = ctx.meta.reasoning!;
+	const { effort, spec } = resolved;
 	const includeThoughts = summaryVisible(resolved.summary);
 	if (spec.kind === "gemini_level") {
 		const level =
@@ -798,10 +797,11 @@ function googleEmbeddingRequestBody(
 		...(embedContentConfig ? { embedContentConfig } : {}),
 	});
 
-	if (texts.length === 1) {
+	const [onlyText] = texts;
+	if (texts.length === 1 && onlyText !== undefined) {
 		return {
 			method: "embedContent",
-			body: mergeExtraBodyDeep(requestFor(texts[0]!), extraBody, [
+			body: mergeExtraBodyDeep(requestFor(onlyText), extraBody, [
 				"model",
 				"content",
 				"outputDimensionality",
@@ -1222,17 +1222,20 @@ const chat: ChatHandler = {
 						delta.reasoning = reasoning;
 					}
 					if (hasToolCall) {
+						// Pair each part with its call first: filtering alone leaves the type
+						// optional, and the index has to stay the one after filtering.
 						delta.toolCalls = parts
-							.filter((part) => part.functionCall)
-							.map((part, toolIndex) => {
+							.flatMap((part) =>
+								part.functionCall ? [{ part, call: part.functionCall }] : [],
+							)
+							.map(({ part, call }, toolIndex) => {
 								const extraContent = geminiToolCallExtra(part);
 								const canonicalIndex = firstToolCallIndex + toolIndex;
 								return {
 									index: canonicalIndex,
-									id:
-										part.functionCall!.id ?? `call_${index}_${canonicalIndex}`,
-									name: part.functionCall!.name ?? "",
-									arguments: JSON.stringify(part.functionCall!.args ?? {}),
+									id: call.id ?? `call_${index}_${canonicalIndex}`,
+									name: call.name ?? "",
+									arguments: JSON.stringify(call.args ?? {}),
 									...(extraContent === undefined ? {} : { extraContent }),
 								};
 							});
@@ -1442,17 +1445,14 @@ function googleVideoBody(
 		});
 	}
 	const [videoRef] = videoRefs;
+	const [imageRef] = imageRefs;
 	if (videoRef) {
 		instance.video = {
 			inlineData: googleVideoInline(videoRef.url, "input_references", "video"),
 		};
-	} else if (imageRefs.length === 1) {
+	} else if (imageRefs.length === 1 && imageRef) {
 		instance.image = {
-			inlineData: googleVideoInline(
-				imageRefs[0]!.url,
-				"input_references",
-				"image",
-			),
+			inlineData: googleVideoInline(imageRef.url, "input_references", "image"),
 		};
 	} else if (imageRefs.length > 1) {
 		instance.referenceImages = googleReferenceImages(imageRefs);

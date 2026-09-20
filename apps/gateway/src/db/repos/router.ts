@@ -1,4 +1,5 @@
 import { fallbackPolicies, routerSettings } from "#db/schema.ts";
+import { writtenRow } from "#db/returning.ts";
 import { and, eq } from "drizzle-orm";
 import { db } from "#db/client.ts";
 
@@ -67,7 +68,7 @@ export async function updateRouterSettings(
 		.set({ ...patch, updatedAt: new Date() })
 		.where(eq(routerSettings.id, 1))
 		.returning();
-	return row!;
+	return writtenRow(row, "updateRouterSettings");
 }
 
 export async function listFallbackPolicies(): Promise<FallbackPolicyRow[]> {
@@ -96,7 +97,7 @@ export async function upsertFallbackPolicy(
 			set: { fallbackModels: input.fallbackModels },
 		})
 		.returning();
-	return row!;
+	return writtenRow(row, "upsertFallbackPolicy");
 }
 
 export async function deleteFallbackPolicy(

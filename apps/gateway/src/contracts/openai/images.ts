@@ -118,6 +118,7 @@ function defined<T>(value: T | null | undefined): T | undefined {
 export function generationToCanonical(
 	req: ImageGenerationRequest,
 ): CanonicalImageRequest {
+	const quality = defined(req.quality);
 	return {
 		operation: "generation",
 		model: req.model,
@@ -139,9 +140,7 @@ export function generationToCanonical(
 		...(defined(req.partial_images) === undefined
 			? {}
 			: { partialImages: defined(req.partial_images) }),
-		...(defined(req.quality) === undefined
-			? {}
-			: { quality: normalizeQuality(defined(req.quality)!) }),
+		...(quality === undefined ? {} : { quality: normalizeQuality(quality) }),
 		responseFormat: "b64_json",
 		...(defined(req.size) === undefined ? {} : { size: defined(req.size) }),
 		...(defined(req.style) === undefined ? {} : { style: defined(req.style) }),
@@ -155,6 +154,7 @@ export function editToCanonical(
 	images: CanonicalImageRequest["images"],
 	mask?: CanonicalImageRequest["mask"],
 ): CanonicalImageRequest {
+	const quality = defined(req.quality);
 	return {
 		operation: "edit",
 		model: req.model,
@@ -178,9 +178,7 @@ export function editToCanonical(
 		...(defined(req.partial_images) === undefined
 			? {}
 			: { partialImages: defined(req.partial_images) }),
-		...(defined(req.quality) === undefined
-			? {}
-			: { quality: normalizeQuality(defined(req.quality)!) }),
+		...(quality === undefined ? {} : { quality: normalizeQuality(quality) }),
 		responseFormat: "b64_json",
 		...(defined(req.size) === undefined ? {} : { size: defined(req.size) }),
 		...(defined(req.user) === undefined ? {} : { user: defined(req.user) }),

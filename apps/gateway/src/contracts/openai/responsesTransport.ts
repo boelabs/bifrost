@@ -460,12 +460,12 @@ export function buildResponsesRequestBody(
 	) {
 		body.reasoning = {
 			...(req.responsesTransport?.reasoning ?? {}),
-			...(resolvedReasoning === undefined
+			...(resolvedReasoning === undefined || reasoningSpec === undefined
 				? {}
 				: {
 						effort: toUpstreamReasoningEffort(
 							resolvedReasoning.effort,
-							reasoningSpec!,
+							reasoningSpec,
 						),
 					}),
 			...(resolvedReasoning && summaryVisible(resolvedReasoning.summary)
@@ -838,10 +838,11 @@ export async function* responsesEventsToCanonicalChunks(
 			}
 			delta.reasoning = String(d.delta ?? "");
 			if (typeof d.item_id === "string" && d.item_id.length > 0) {
-				delta.providerFields = mergeProviderFields(
-					delta.providerFields,
-					providerFieldsWithOpenAIReasoningItemId(d.item_id),
-				)!;
+				delta.providerFields =
+					mergeProviderFields(
+						delta.providerFields,
+						providerFieldsWithOpenAIReasoningItemId(d.item_id),
+					) ?? {};
 			}
 			yield { ...base(), choices: [{ index: 0, delta, finishReason: null }] };
 			continue;
@@ -937,10 +938,11 @@ export async function* responsesEventsToCanonicalChunks(
 				if (state.id !== undefined) {
 					reasoningStateSeen.add(state.id);
 				}
-				providerFields = mergeProviderFields(
-					providerFields,
-					providerFieldsWithOpenAIReasoning([state]),
-				)!;
+				providerFields =
+					mergeProviderFields(
+						providerFields,
+						providerFieldsWithOpenAIReasoning([state]),
+					) ?? {};
 			}
 			if (
 				item !== undefined &&
@@ -948,12 +950,13 @@ export async function* responsesEventsToCanonicalChunks(
 				item.type !== "reasoning" &&
 				item.type !== "function_call"
 			) {
-				providerFields = mergeProviderFields(
-					providerFields,
-					providerFieldsWithResponsesOutput([
-						item as unknown as Record<string, unknown>,
-					]),
-				)!;
+				providerFields =
+					mergeProviderFields(
+						providerFields,
+						providerFieldsWithResponsesOutput([
+							item as unknown as Record<string, unknown>,
+						]),
+					) ?? {};
 			}
 			yield {
 				...base(),

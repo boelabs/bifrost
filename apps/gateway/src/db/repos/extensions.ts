@@ -1,5 +1,6 @@
 import { decryptString, encryptJson } from "#db/crypto.ts";
 import { and, desc, eq, sql } from "drizzle-orm";
+import { writtenRow } from "#db/returning.ts";
 import { db } from "#db/client.ts";
 
 import {
@@ -44,7 +45,7 @@ export async function bumpRegistryVersion(): Promise<number> {
 			},
 		})
 		.returning({ version: extensionRegistry.version });
-	return row!.version;
+	return writtenRow(row, "bumpRegistryVersion").version;
 }
 
 /* ------------------------------------------------------------- artifacts */
@@ -132,7 +133,7 @@ export async function insertActiveArtifact(
 				uploadedBy: input.uploadedBy,
 			})
 			.returning();
-		return toSummary(row!);
+		return toSummary(writtenRow(row, "insertActiveArtifact"));
 	});
 }
 
@@ -229,7 +230,7 @@ export async function insertInstance(
 			...(input.config === undefined ? {} : { config: input.config }),
 		})
 		.returning();
-	return row!;
+	return writtenRow(row, "insertInstance");
 }
 
 export interface PatchInstanceInput {

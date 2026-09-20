@@ -1,6 +1,7 @@
 import { makeOpenRouterRerankHandler } from "./openrouter/rerank.ts";
 import type { CanonicalRerankRequest } from "#core/rerank.ts";
 import { makeVercelRerankHandler } from "./vercel/rerank.ts";
+import { jsonBody } from "#test-support/adapters.ts";
 import type { AdapterContext } from "./types.ts";
 import { GatewayError } from "#core/errors.ts";
 import assert from "node:assert/strict";
@@ -47,7 +48,7 @@ test("OpenRouter rerank sends its native request and preserves provider routing"
 	assert.equal(built.url, "https://gateway.example/v1/rerank");
 	assert.equal(built.headers.authorization, "Bearer secret-key");
 	assert.equal(built.headers["x-client"], "test");
-	assert.deepEqual(JSON.parse(built.body!), {
+	assert.deepEqual(jsonBody(built), {
 		model: "cohere/rerank-v3.5",
 		query: "capital of France",
 		documents: ["Paris", "Berlin"],
@@ -62,7 +63,7 @@ test("Vercel rerank sends the Cohere-compatible request without inventing provid
 		context("cohere_rerank"),
 	);
 	assert.equal(built.url, "https://gateway.example/v1/rerank");
-	assert.deepEqual(JSON.parse(built.body!), {
+	assert.deepEqual(jsonBody(built), {
 		model: "cohere/rerank-v3.5",
 		query: "capital of France",
 		documents: ["Paris", "Berlin"],

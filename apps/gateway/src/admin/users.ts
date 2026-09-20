@@ -5,6 +5,7 @@ import { type AppEnv, actorOf } from "#auth/types.ts";
 import { DASHBOARD_ROLES } from "#auth/roles.ts";
 import { ok, paginated } from "#http/respond.ts";
 import { GatewayError } from "#core/errors.ts";
+import { writtenRow } from "#db/returning.ts";
 import { parseJsonBody } from "#http/body.ts";
 import { Hono } from "hono";
 import { z } from "zod/v4";
@@ -166,7 +167,7 @@ dashboardUsersApp.patch("/:id", async (c) => {
 	) {
 		await revokeAll(user.id);
 	}
-	return ok(c, publicUser(row!));
+	return ok(c, publicUser(writtenRow(row, "dashboard user update")));
 });
 
 dashboardUsersApp.post("/:id/password", async (c) => {

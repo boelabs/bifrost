@@ -2,6 +2,7 @@ import type { CanonicalEmbeddingsRequest } from "#core/embeddings.ts";
 import type { CanonicalChatRequest } from "#core/canonical.ts";
 import { azurefoundryAdapter } from "./azurefoundry/index.ts";
 import { azureopenaiAdapter } from "./azureopenai/index.ts";
+import { jsonBody, must } from "#test-support/adapters.ts";
 import { normalizeAzurev1BaseUrl } from "./azurev1.ts";
 import type { AdapterContext } from "./types.ts";
 import { GatewayError } from "#core/errors.ts";
@@ -48,7 +49,7 @@ function context(
 }
 
 test("azureopenai: uses /openai/v1/responses, api-key, and deployment=model", () => {
-	const built = azureopenaiAdapter.chat!.buildRequest(
+	const built = must(azureopenaiAdapter, "chat").buildRequest(
 		request,
 		context("responses", "gpt-5.4"),
 	);
@@ -58,7 +59,7 @@ test("azureopenai: uses /openai/v1/responses, api-key, and deployment=model", ()
 	);
 	assert.equal(built.headers["api-key"], "azure-secret");
 	assert.equal(built.headers.authorization, undefined);
-	const body = JSON.parse(built.body!);
+	const body = jsonBody(built);
 	assert.equal(body.model, "gpt-5.4");
 	assert.equal(body.max_output_tokens, 256);
 });
@@ -81,11 +82,11 @@ test("azureopenai: strict tools use native schemas and disable parallel calls", 
 	};
 
 	for (const transport of ["chat_completions", "responses"] as const) {
-		const built = azureopenaiAdapter.chat!.buildRequest(
+		const built = must(azureopenaiAdapter, "chat").buildRequest(
 			strictRequest,
 			context(transport, "gpt-5.4"),
 		);
-		const body = JSON.parse(built.body!);
+		const body = jsonBody(built);
 		assert.equal(body.parallel_tool_calls, false);
 		assert.equal(
 			transport === "responses"
@@ -97,7 +98,7 @@ test("azureopenai: strict tools use native schemas and disable parallel calls", 
 
 	assert.throws(
 		() =>
-			azureopenaiAdapter.chat!.buildRequest(
+			must(azureopenaiAdapter, "chat").buildRequest(
 				{ ...strictRequest, parallelToolCalls: true },
 				context("responses", "gpt-5.4"),
 			),
@@ -121,7 +122,7 @@ test("azureopenai: uses /openai/v1/embeddings, api-key, and OpenAI body", () => 
 	);
 	assert.equal(built.headers["api-key"], "azure-secret");
 	assert.equal(built.headers.authorization, undefined);
-	const body = JSON.parse(built.body!);
+	const body = jsonBody(built);
 	assert.deepEqual(body, {
 		model: "text-embedding-3-small",
 		input: ["hello", "world"],
@@ -131,7 +132,7 @@ test("azureopenai: uses /openai/v1/embeddings, api-key, and OpenAI body", () => 
 });
 
 test("azurefoundry: uses modern Chat Completions and max_completion_tokens", () => {
-	const built = azurefoundryAdapter.chat!.buildRequest(request, {
+	const built = must(azurefoundryAdapter, "chat").buildRequest(request, {
 		...context("chat_completions", "DeepSeek-V3.1"),
 		credentials: {
 			apiKey: "azure-secret",
@@ -143,21 +144,21 @@ test("azurefoundry: uses modern Chat Completions and max_completion_tokens", () 
 		"https://omni-resource.services.ai.azure.com/openai/v1/chat/completions",
 	);
 	assert.equal(built.headers["api-key"], "azure-secret");
-	const body = JSON.parse(built.body!);
+	const body = jsonBody(built);
 	assert.equal(body.model, "DeepSeek-V3.1");
 	assert.equal(body.max_completion_tokens, 256);
 	assert.equal(body.max_tokens, undefined);
 });
 
 test("azureopenai: preserves the OpenAI developer role", () => {
-	const built = azureopenaiAdapter.chat!.buildRequest(
+	const built = must(azureopenaiAdapter, "chat").buildRequest(
 		{
 			...request,
 			messages: [{ role: "developer", content: "instructions" }],
 		},
 		context("chat_completions", "gpt-5.4"),
 	);
-	assert.equal(JSON.parse(built.body!).messages[0].role, "developer");
+	assert.equal(jsonBody(built).messages[0].role, "developer");
 });
 
 test("azurefoundry: DeepSeek V4 keeps xhigh distinct from native max", () => {
@@ -172,7 +173,7 @@ test("azurefoundry: DeepSeek V4 keeps xhigh distinct from native max", () => {
 		["xhigh", "high"],
 		["max", "max"],
 	] as const) {
-		const built = azurefoundryAdapter.chat!.buildRequest(
+		const built = must(azurefoundryAdapter, "chat").buildRequest(
 			{ ...request, reasoning: { effort } },
 			{
 				...context("chat_completions", "DeepSeek-V4-Flash"),
@@ -188,7 +189,7 @@ test("azurefoundry: DeepSeek V4 keeps xhigh distinct from native max", () => {
 			},
 		);
 
-		assert.equal(JSON.parse(built.body!).reasoning_effort, upstream);
+		assert.equal(jsonBody(built).reasoning_effort, upstream);
 	}
 });
 
@@ -213,8 +214,8 @@ test("azurefoundry: Kimi is a fixed high reasoner without inventing an upstream 
 	for (const reasoning of [undefined, { effort: "high" as const }]) {
 		const req: CanonicalChatRequest =
 			reasoning === undefined ? request : { ...request, reasoning };
-		const built = azurefoundryAdapter.chat!.buildRequest(req, ctx);
-		const body = JSON.parse(built.body!);
+		const built = must(azurefoundryAdapter, "chat").buildRequest(req, ctx);
+		const body = jsonBody(built);
 		assert.equal(body.reasoning_effort, undefined);
 		assert.equal(body.thinking, undefined);
 	}
@@ -251,7 +252,7 @@ test("azure adapters: modular transports", () => {
 test("azurefoundry: rejects forced Responses upstream", () => {
 	assert.throws(
 		() =>
-			azurefoundryAdapter.chat!.buildRequest(
+			must(azurefoundryAdapter, "chat").buildRequest(
 				request,
 				context("responses", "DeepSeek-V3.1"),
 			),
@@ -295,10 +296,10 @@ test("azureopenai: images reach the v1 surface with an api-version selector", as
 		responseFormat: "b64_json" as const,
 	};
 	const base = context("images", "gpt-image-2.5-flare");
-	const generation = await azureopenaiAdapter.imageGeneration!.buildRequest(
-		imageRequest,
-		base,
-	);
+	const generation = await must(
+		azureopenaiAdapter,
+		"imageGeneration",
+	).buildRequest(imageRequest, base);
 	// Azure only reaches /images/* with the selector, and its baseUrl may not carry a query string.
 	assert.equal(
 		generation.url,
@@ -309,7 +310,7 @@ test("azureopenai: images reach the v1 surface with an api-version selector", as
 		"azure-secret",
 	);
 
-	const edit = await azureopenaiAdapter.imageEdit!.buildRequest(
+	const edit = await must(azureopenaiAdapter, "imageEdit").buildRequest(
 		{ ...imageRequest, operation: "edit", images: [] },
 		base,
 	);
@@ -319,7 +320,7 @@ test("azureopenai: images reach the v1 surface with an api-version selector", as
 	);
 
 	// An operator may pin a dated version instead of the preview default.
-	const pinned = await azureopenaiAdapter.imageGeneration!.buildRequest(
+	const pinned = await must(azureopenaiAdapter, "imageGeneration").buildRequest(
 		imageRequest,
 		{
 			...base,
@@ -332,7 +333,7 @@ test("azureopenai: images reach the v1 surface with an api-version selector", as
 	);
 
 	// Chat keeps the bare v1 path it has always used.
-	const chat = azureopenaiAdapter.chat!.buildRequest(
+	const chat = must(azureopenaiAdapter, "chat").buildRequest(
 		request,
 		context("responses", "public-model"),
 	);

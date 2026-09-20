@@ -17,6 +17,7 @@ import type {
 	ExtensionPublicAuth,
 	ExtensionHookName,
 	ExtensionLogger,
+	ExtensionHooks,
 	MaybePromise,
 } from "./sdk.ts";
 
@@ -714,24 +715,34 @@ class ExtensionRuntime {
 		};
 	}
 
-	private instancesFor(
-		hook: ExtensionHookName,
+	/**
+	 * The instances that implement one hook, each paired with the hook itself.
+	 *
+	 * Returning the function rather than the instance is what lets a caller invoke it: an instance
+	 * may have no definition loaded and a definition may not implement this hook, and only the
+	 * filtering here knows that neither is true of what comes back.
+	 */
+	private hooksFor<K extends ExtensionHookName>(
+		hook: K,
 		scope: ExtensionScope,
-	): LoadedInstance[] {
-		const selected: LoadedInstance[] = [];
+	): { instance: LoadedInstance; run: NonNullable<ExtensionHooks[K]> }[] {
+		const selected: {
+			instance: LoadedInstance;
+			run: NonNullable<ExtensionHooks[K]>;
+		}[] = [];
 		for (const instance of this.instances) {
 			if (!(instance.enabled && matchApplies(instance.match, scope))) {
 				continue;
 			}
-			const hasHook = instance.definition?.hooks[hook] !== undefined;
+			const run = instance.definition?.hooks[hook];
 			if (instance.status !== "active") {
 				if (instance.critical) {
 					throw disabledError(instance);
 				}
 				continue;
 			}
-			if (hasHook) {
-				selected.push(instance);
+			if (run !== undefined) {
+				selected.push({ instance, run });
 			}
 		}
 		return selected;
@@ -773,14 +784,14 @@ class ExtensionRuntime {
 		request: T,
 	): Promise<T> {
 		let current: ExtensionCanonicalRequest = request;
-		for (const instance of this.instancesFor("onCanonicalRequest", scope)) {
+		for (const { instance, run } of this.hooksFor(
+			"onCanonicalRequest",
+			scope,
+		)) {
 			const hookScope = { ...scope, publicModel: current.model };
 			try {
 				const out = await withHookGuard(scope.signal, (signal) =>
-					instance.definition!.hooks.onCanonicalRequest!(
-						this.contextFor({ ...hookScope, signal }, instance),
-						current,
-					),
+					run(this.contextFor({ ...hookScope, signal }, instance), current),
 				);
 				if (out !== undefined) {
 					if (!isRecord(out)) {
@@ -802,13 +813,13 @@ class ExtensionRuntime {
 		response: T,
 	): Promise<T> {
 		let current: ExtensionCanonicalResponse = response;
-		for (const instance of this.instancesFor("onCanonicalResponse", scope)) {
+		for (const { instance, run } of this.hooksFor(
+			"onCanonicalResponse",
+			scope,
+		)) {
 			try {
 				const out = await withHookGuard(scope.signal, (signal) =>
-					instance.definition!.hooks.onCanonicalResponse!(
-						this.contextFor({ ...scope, signal }, instance),
-						current,
-					),
+					run(this.contextFor({ ...scope, signal }, instance), current),
 				);
 				if (out !== undefined) {
 					if (!isRecord(out)) {
@@ -830,13 +841,10 @@ class ExtensionRuntime {
 		event: T,
 	): Promise<T> {
 		let current: ExtensionStreamEvent = event;
-		for (const instance of this.instancesFor("onStreamEvent", scope)) {
+		for (const { instance, run } of this.hooksFor("onStreamEvent", scope)) {
 			try {
 				const out = await withHookGuard(scope.signal, (signal) =>
-					instance.definition!.hooks.onStreamEvent!(
-						this.contextFor({ ...scope, signal }, instance),
-						current,
-					),
+					run(this.contextFor({ ...scope, signal }, instance), current),
 				);
 				if (out !== undefined) {
 					if (!isRecord(out)) {
@@ -858,13 +866,10 @@ class ExtensionRuntime {
 		output: ExtensionImageOutput,
 	): Promise<ExtensionImageOutput> {
 		let current = output;
-		for (const instance of this.instancesFor("onImageOutput", scope)) {
+		for (const { instance, run } of this.hooksFor("onImageOutput", scope)) {
 			try {
 				const out = await withHookGuard(scope.signal, (signal) =>
-					instance.definition!.hooks.onImageOutput!(
-						this.contextFor({ ...scope, signal }, instance),
-						current,
-					),
+					run(this.contextFor({ ...scope, signal }, instance), current),
 				);
 				if (out instanceof Uint8Array) {
 					current = { ...current, data: out };
@@ -881,13 +886,10 @@ class ExtensionRuntime {
 	}
 
 	async runErrorHooks(scope: ExtensionScope, error: unknown): Promise<void> {
-		for (const instance of this.instancesFor("onError", scope)) {
+		for (const { instance, run } of this.hooksFor("onError", scope)) {
 			try {
 				await withHookGuard(scope.signal, (signal) =>
-					instance.definition!.hooks.onError!(
-						this.contextFor({ ...scope, signal }, instance),
-						error,
-					),
+					run(this.contextFor({ ...scope, signal }, instance), error),
 				);
 			} catch (err) {
 				// onError is a fire-and-forget observability hook: a failure here is recorded for

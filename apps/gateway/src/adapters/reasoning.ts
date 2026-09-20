@@ -5,6 +5,7 @@ import { GatewayError } from "#core/errors.ts";
 import {
 	type ReasoningControlKind,
 	type ResolvedReasoning,
+	type ReasoningSpec,
 	resolveReasoning,
 } from "#core/reasoning.ts";
 
@@ -18,7 +19,7 @@ export function resolveAdapterReasoning(
 	req: CanonicalChatRequest,
 	ctx: AdapterContext,
 	allowedKinds: readonly ReasoningControlKind[],
-): ResolvedReasoning | undefined {
+): (ResolvedReasoning & { spec: ReasoningSpec }) | undefined {
 	const spec = ctx.meta.reasoning;
 	if (!spec) {
 		const effort = req.reasoning?.effort;
@@ -40,5 +41,5 @@ export function resolveAdapterReasoning(
 			param: "reasoning",
 		});
 	}
-	return resolveReasoning(req.reasoning, spec);
+	return { ...resolveReasoning(req.reasoning, spec), spec };
 }

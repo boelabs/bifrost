@@ -1,6 +1,7 @@
 import { isNull, desc, and, gt, eq, lt, or } from "drizzle-orm";
 import type { DashboardRole } from "#auth/roles.ts";
 import { dashboardSessions } from "#db/schema.ts";
+import { writtenRow } from "#db/returning.ts";
 import { createHash } from "node:crypto";
 import { db } from "#db/client.ts";
 
@@ -25,7 +26,7 @@ export async function createDashboardSession(
 	input: CreateDashboardSessionInput,
 ): Promise<DashboardSessionRow> {
 	const [row] = await db.insert(dashboardSessions).values(input).returning();
-	return row!;
+	return writtenRow(row, "createDashboardSession");
 }
 
 /** Returns the session only when it is live: not revoked and not past its absolute expiry. */

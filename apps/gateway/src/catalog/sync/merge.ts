@@ -40,8 +40,9 @@ function resolveNumeric(
 	if (entries.length === 0) {
 		return { value: undefined, conflict: undefined };
 	}
-	if (entries.length === 1) {
-		return { value: entries[0]![1], conflict: undefined };
+	const [only] = entries;
+	if (entries.length === 1 && only) {
+		return { value: only[1], conflict: undefined };
 	}
 
 	const vercel = values["vercel-ai-gateway"];
@@ -261,7 +262,9 @@ export function mergeCatalogEntry(
 		changes.push(`${label}: ${current ?? "unset"} -> ${value}`);
 	}
 
+	// Bound once so the loop below writes through a value the type already knows is there.
 	entry.pricing ??= {};
+	const { pricing } = entry;
 	for (const field of [
 		"inputCentsPerMTokens",
 		"outputCentsPerMTokens",
@@ -272,9 +275,9 @@ export function mergeCatalogEntry(
 			`pricing.${field}`,
 			pricingValues(candidate, modelsDevMatch, field),
 			PRICING_TOLERANCE,
-			entry.pricing[field],
+			pricing[field],
 			(value) => {
-				entry.pricing![field] = value;
+				pricing[field] = value;
 			},
 		);
 	}
