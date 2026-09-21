@@ -2,6 +2,7 @@ import { CodeBlock, Pre } from "fumadocs-ui/components/codeblock";
 import { localizedPath, type Locale } from "#/lib/i18n.ts";
 import { Cards, Card } from "fumadocs-ui/components/card";
 import { BookOpen, Network, Server } from "lucide-react";
+import { highlight } from "fumadocs-core/highlight";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
@@ -48,7 +49,23 @@ const REQUEST = `curl http://localhost:4000/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -d '{"model":"general","messages":[{"role":"user","content":"Hello"}]}'`;
 
-export default function HomePage({ locale }: { locale: Locale }) {
+export default async function HomePage({ locale }: { locale: Locale }) {
+	const request = await highlight(REQUEST, {
+		lang: "bash",
+		themes: { light: "github-light", dark: "github-dark" },
+		defaultColor: false,
+		components: {
+			pre: ({ children, ...props }) => (
+				<CodeBlock
+					{...props}
+					title={locale === "es" ? "Primera solicitud" : "First request"}
+				>
+					<Pre>{children}</Pre>
+				</CodeBlock>
+			),
+		},
+	});
+
 	return (
 		<main className="flex flex-1 flex-col">
 			<section className="dot-grid border-fd-border border-b">
@@ -116,15 +133,7 @@ export default function HomePage({ locale }: { locale: Locale }) {
 						? "se resuelve a los deployments que configures."
 						: "resolves to deployments you configure."}
 				</p>
-				<div className="mt-5">
-					<CodeBlock
-						title={locale === "es" ? "Primera solicitud" : "First request"}
-					>
-						<Pre>
-							<code>{REQUEST}</code>
-						</Pre>
-					</CodeBlock>
-				</div>
+				<div className="mt-5">{request}</div>
 				<p className="mt-6 text-sm">
 					<Link
 						className="text-fd-primary hover:underline"
