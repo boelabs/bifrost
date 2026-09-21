@@ -32,8 +32,8 @@ issue.
 
 ## Compose files and naming
 
-- `docker/composeLoad `docker/compose.local.yaml` explicitly for local development or a host reverse proxy.
-Do not add it to a production PaaS deployment: it publishes local service ports.
+- `docker/compose.yaml` is the production base. It exposes services to the private network without publishing host ports.
+- `docker/compose.local.yaml` adds loopback-only host mappings for local development or a host reverse proxy. Load it explicitly; do not add it to a production PaaS deployment.
 
 ## The Compose stack
 
