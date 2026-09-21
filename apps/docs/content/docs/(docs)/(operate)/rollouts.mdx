@@ -26,10 +26,14 @@ gateway therefore announces its departure before acting on it.
 | `DRAIN_DELAY_MS` | `15000` (`0` outside production) | Unready but still serving, so the proxy can deregister. A few health-check intervals. |
 | `SHUTDOWN_TIMEOUT_MS` | `120000` | Grace for in-flight requests. Must cover your longest streamed response. |
 
-> **Both are worthless unless the container runtime waits for them.** Docker's default `SIGKILL`
-> deadline is 10 seconds — shorter than the drain — so the process is killed mid-sequence. The
-> Compose files here set `stop_grace_period: 180s`; on a PaaS raise the equivalent (Coolify: **Stop
-> Grace Period**). Keep it above `DRAIN_DELAY_MS + SHUTDOWN_TIMEOUT_MS`.
+<Callout>
+
+**Both are worthless unless the container runtime waits for them.** Docker's default `SIGKILL`
+deadline is 10 seconds — shorter than the drain — so the process is killed mid-sequence. The
+Compose files here set `stop_grace_period: 180s`; on a PaaS raise the equivalent (Coolify: **Stop
+Grace Period**). Keep it above `DRAIN_DELAY_MS + SHUTDOWN_TIMEOUT_MS`.
+
+</Callout>
 
 Draining is only half of it. The other half is overlap — the replacement accepting traffic before
 the old instance stops — and that is the platform's job, not the application's.
@@ -129,7 +133,7 @@ of a resource's URL in Coolify.
 - Rolling updates do not guarantee zero downtime, in Coolify's own words. They remove the scheduled
   gap; draining, schema compatibility and client retries are still yours.
 
-## What to read next
+## Next steps
 
 - [Upgrades](/docs/upgrades) — migrations, breaking changes and rollback.
 - [Coolify](/docs/deploy-coolify) — setting the stack up in the first place.

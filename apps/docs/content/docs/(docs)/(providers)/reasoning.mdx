@@ -3,11 +3,9 @@ title: "Reasoning"
 description: "The canonical reasoning ladder, how it maps to each provider's native controls, and how the catalog declares it."
 ---
 
-Every provider that supports "thinking" controls it differently: OpenAI has a scalar
-`reasoning_effort`, Anthropic has an adaptive mode or a token budget, Gemini has discrete levels or a
-budget, and several OpenAI-compatible providers expose a plain on/off toggle. The gateway exposes a
-single public knob — an **effort** on a fixed ladder — and translates it to whatever the target model
-actually understands, per the catalog's declaration of *how* that model controls it.
+Set reasoning effort through a common scale, from `none` to `max`. Bifrost maps that effort
+to the selected model's native control: discrete levels, a token budget, or an on/off switch.
+The catalog defines which controls and levels each model supports.
 
 ## The canonical ladder
 
@@ -126,7 +124,7 @@ models.dev's own vocabulary, but it can never safely infer the wire mechanics (`
 `effortField`) — those are marked `needsHumanReview` and gate `catalog:validate` until a human verifies
 them against the provider's real API docs.
 
-## What to read next
+## Next steps
 
 - [Model catalog](/docs/model-catalog) — the full per-model entry shape, including `reasoning`.
 - [Chat completions](/docs/chat-completions) / [Responses](/docs/responses) / [Messages](/docs/messages) — where `reasoning.effort` is set on a request.

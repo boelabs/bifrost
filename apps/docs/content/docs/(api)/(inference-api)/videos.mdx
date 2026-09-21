@@ -3,6 +3,14 @@ title: "Videos"
 description: "POST /v1/videos, polling, content download, list, and delete."
 ---
 
+Create an asynchronous video generation job, poll its status, and retrieve the completed asset.
+Configure a video deployment and object storage before using this endpoint.
+
+## Example request
+
+Set `GATEWAY` to the gateway origin and `API_KEY` to your virtual key. Replace the example
+public model with one from [Model discovery](/docs/models-discovery).
+
 ```bash
 curl -X POST "$GATEWAY/v1/videos" \
   -H "Authorization: Bearer $API_KEY" \
@@ -104,7 +112,7 @@ A background poller advances unfinished jobs (`VIDEO_JOB_POLL_INTERVAL_MS`, batc
 `VIDEO_JOB_POLL_BATCH_SIZE`) and fails jobs that exceed `VIDEO_JOB_MAX_RUNTIME_MINUTES`. Jobs are
 claimed atomically, so multiple gateway instances can poll safely.
 
-## What to read next
+## Next steps
 
 - [Creating deployments](/docs/creating-deployments#custom-video) — custom video profiles.
 - [Providers → OpenAI-compatible](/docs/providers-openai-compatible) — compatible APIs and transport overrides.

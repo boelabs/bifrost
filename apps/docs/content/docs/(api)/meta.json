@@ -4,7 +4,6 @@
 	"root": true,
 	"pages": [
 		"api-overview",
-		"---Inference API---",
 		"...(inference-api)",
 		"---Reference---",
 		"...(reference)"

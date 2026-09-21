@@ -3,9 +3,9 @@ title: "Fallbacks"
 description: "Public-model fallback chains and routing behavior."
 ---
 
-Fallbacks keep a public model answering when its provider can't. When a pool is exhausted — an outage,
-a content-policy block, an oversized prompt — the router advances to another public model you nominated,
-carrying the same canonical request, so the client never sees the failure.
+Configure a fallback policy to try another public model after the current deployment pool is
+exhausted. The gateway reuses the canonical request. A fallback can recover from eligible failures;
+it does not guarantee success if every target fails.
 
 A fallback connects **public model names**, not individual deployments. Each public name represents a
 pool of one or more deployments. The router always exhausts the current pool before advancing to the

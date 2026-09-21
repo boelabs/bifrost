@@ -3,21 +3,34 @@ title: "Your first deployment"
 description: "The minimal path: one catalog model, one provider, verified and tested."
 ---
 
-The full [Creating deployments](/docs/creating-deployments) guide covers every provider, custom
-models, and every operation type. This page is the minimal path for your very first one: a known
-model from a first-class adapter, verified before you save it.
+Connect a provider to an existing gateway and check the resolved configuration before saving it.
+For local installation, follow [Quickstart](/docs/quickstart).
 
-## 1. Pick a catalog model
+## Before you start
+
+You need a running gateway, its master key, and a provider API key. Set the gateway address:
+
+```bash
+export GATEWAY=http://localhost:4000
+export MASTER_KEY=replace-with-your-master-key
+```
+
+<Steps>
+<Step>
+
+## Pick a catalog model
 
 Known models need no `catalogEntry` — their capabilities, limits, and pricing already live in the
-adapter's catalog. Browse `src/adapters/<provider>/catalog.json` in the repo, or just pick a model id
-you already know exists at the provider (e.g. `gpt-5.5` for OpenAI).
+adapter's catalog. Browse `src/adapters/<provider>/catalog.json` in the repo, and choose a model included in that catalog (e.g. `gpt-5.5` for OpenAI).
 
-## 2. Dry-run it
+</Step>
+<Step>
+
+## Dry-run it
 
 `POST /admin/deployments/resolve` validates and resolves the exact same body a real
 `POST /admin/deployments` would use, **without saving anything or touching credentials encryption** —
-safe to run repeatedly while you get the shape right:
+use it to check the request configuration. It does not contact the provider or verify the API key:
 
 ```bash
 curl -X POST "$GATEWAY/admin/deployments/resolve" \
@@ -36,9 +49,12 @@ plus the resolved operations and transports. If `source` comes back `"custom"` i
 in the catalog and you'll need to follow the custom-model path in
 [Creating deployments](/docs/creating-deployments#custom-models-openai-compatible) instead.
 
-## 3. Create it for real
+</Step>
+<Step>
 
-Same body, real endpoint:
+## Save the deployment
+
+Send the validated body to the create endpoint:
 
 ```bash
 curl -X POST "$GATEWAY/admin/deployments" \
@@ -52,9 +68,12 @@ curl -X POST "$GATEWAY/admin/deployments" \
   }'
 ```
 
-## 4. Test it
+</Step>
+<Step>
 
-With a virtual key (see [Virtual keys](/docs/virtual-keys)) or the master key:
+## Test the connection
+
+Create a [virtual key](/docs/virtual-keys) allowed to call `general`, then set `API_KEY` to its returned secret. This request verifies both the gateway configuration and the upstream connection:
 
 ```bash
 curl -X POST "$GATEWAY/v1/chat/completions" \
@@ -63,7 +82,13 @@ curl -X POST "$GATEWAY/v1/chat/completions" \
   -d '{ "model": "general", "messages": [{ "role": "user", "content": "Say hi" }] }'
 ```
 
-## What to read next
+Confirm that the response contains an assistant message. A successful resolve alone does not
+prove that the provider credentials or model access work.
+
+</Step>
+</Steps>
+
+## Next steps
 
 - [Creating deployments](/docs/creating-deployments) — every provider, custom models, images/embeddings/audio.
 - [Routing](/docs/routing) — what happens once `general` has more than one deployment.

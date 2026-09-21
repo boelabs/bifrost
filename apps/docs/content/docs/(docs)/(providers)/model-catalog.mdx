@@ -168,9 +168,13 @@ bun run --filter @boelabs/bifrost catalog:validate
 bun run --filter @boelabs/bifrost test
 ```
 
-> `adapterKey` must be identical in all three places: the adapter `key`, `provider.adapterKey` in the
-> catalog, and the `validate-catalog.ts` entry. The folder name usually matches too — the one exception
-> today is Google (folder `src/adapters/google`, adapter key `googleaistudio`).
+<Callout>
+
+`adapterKey` must be identical in all three places: the adapter `key`, `provider.adapterKey` in the
+catalog, and the `validate-catalog.ts` entry. The folder name usually matches too — the one exception
+today is Google (folder `src/adapters/google`, adapter key `googleaistudio`).
+
+</Callout>
 
 ## Per-model fields
 

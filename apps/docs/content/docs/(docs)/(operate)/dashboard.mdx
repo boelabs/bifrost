@@ -3,10 +3,10 @@ title: "Operator dashboard"
 description: "The optional web UI for operating the gateway: models, keys, logs, settings, audit, and a playground."
 ---
 
-Everything the gateway does is reachable through the [Admin API](/docs/reference-admin-api); the
-dashboard is a web interface over exactly that API, with no private protocol of its own. It is a
-separate deployment from the gateway — its own image, its own domain, its own process — shipped in
-the same repository, and it is **off unless you turn it on**.
+The optional dashboard lets operators configure models, manage access, and investigate requests
+through the [Admin API](/docs/reference-admin-api). It runs as a separate service with its own image
+and domain. Enable dashboard authentication on the gateway and configure the dashboard's
+`GATEWAY_URL` to connect them.
 
 ## Enabling it
 
@@ -163,7 +163,7 @@ deployment of a model, the instances still running a module. Creates carry an `I
 double-clicked button or a retry after a timeout cannot produce two keys where you asked for one
 (see [Idempotent creates](/docs/reference-admin-api#idempotent-creates)).
 
-## What to read next
+## Next steps
 
 - [Security](/docs/security) — the auth model behind the roles above.
 - [Admin API reference](/docs/reference-admin-api) — the same capabilities, without a browser.

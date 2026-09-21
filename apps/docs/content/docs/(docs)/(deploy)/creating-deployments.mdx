@@ -63,8 +63,12 @@ transports.
 - **Custom model** (not in the catalog, typical of `openaicompatible`): you **must** declare
   `catalogEntry` with `operations`. The presence of an operation implies the model supports it.
 
-> Tip: run `POST /admin/deployments/resolve` with the same body to see `source` (`catalog`/`custom`),
-> the resolved operations, and the transportOverrides before creating.
+<Callout>
+
+Tip: run `POST /admin/deployments/resolve` with the same body to see `source` (`catalog`/`custom`),
+the resolved operations, and the transportOverrides before creating.
+
+</Callout>
 
 ---
 
@@ -208,7 +212,11 @@ multipart `model` field:
 }
 ```
 
-> Since they share `publicModel: "transcribe"`, direct OpenAI and Azure end up in the same pool.
+<Callout>
+
+Since they share `publicModel: "transcribe"`, direct OpenAI and Azure end up in the same pool.
+
+</Callout>
 
 ### 5) Reranking — OpenRouter and Vercel pool
 
@@ -266,10 +274,14 @@ A custom model can declare **how** it controls reasoning with a `reasoning` bloc
 all eight `kind`s, clamping semantics, and a worked `chat_template_flag` example:
 [Reasoning](/docs/reasoning).
 
-> **Vision:** with `capabilities.vision: true` the client passes images in the `content` array as
-> `type: "image_url"` (URL or base64) and the adapter forwards them as-is. The canonical contract
-> covers images/audio/files, **not** `video_url`; video generation uses the dedicated `/v1/videos`
-> contract.
+<Callout>
+
+**Vision:** with `capabilities.vision: true` the client passes images in the `content` array as
+`type: "image_url"` (URL or base64) and the adapter forwards them as-is. The canonical contract
+covers images/audio/files, **not** `video_url`; video generation uses the dedicated `/v1/videos`
+contract.
+
+</Callout>
 
 ### Custom image
 
@@ -387,7 +399,7 @@ curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "
 - Edit with `PATCH /admin/deployments/:id` (same fields; `catalogEntry`/`pricing` accept `null` to clear).
 - The semantics of pool-wide retries, `reason`, and chain lifecycle are in [fallbacks](/docs/fallbacks).
 
-## What to read next
+## Next steps
 
 - [Providers](/docs/providers) — credentials and quirks for every built-in adapter.
 - [Routing](/docs/routing) — `weight`, `rpmLimit`, `tpmLimit` in effect once a pool has multiple deployments.

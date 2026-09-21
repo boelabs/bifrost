@@ -61,8 +61,12 @@ network:
 - Connect via the **internal** hostname with `postgres://…` and `redis://…` (no `sslmode`, not
   `rediss://`). On Coolify's private network the link is protected by network isolation, not TLS.
 
-> Postgres also offers an `allow` SSL mode if you prefer to keep TLS available for other clients;
-> disabling SSL is the simplest path for the gateway.
+<Callout>
+
+Postgres also offers an `allow` SSL mode if you prefer to keep TLS available for other clients;
+disabling SSL is the simplest path for the gateway.
+
+</Callout>
 
 Do not expose the database publicly in plaintext — see the
 [security note](/docs/troubleshooting#security-note). For an off-network database, prefer a

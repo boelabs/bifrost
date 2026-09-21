@@ -3,6 +3,7 @@
 	"pages": [
 		"model-catalog",
 		"reasoning",
+		"---Providers---",
 		"providers",
 		"providers-openai",
 		"providers-anthropic",

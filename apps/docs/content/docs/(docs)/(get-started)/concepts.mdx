@@ -1,83 +1,67 @@
 ---
-title: "Concepts"
-description: "The mental model: how a request flows through the gateway."
+title: Core concepts
+description: Understand public models, deployments, and the path from your application to a provider.
 ---
 
-Bifrost sits between your clients and many providers. Clients speak a stable, public contract;
-the gateway translates each request into one provider-agnostic internal shape, routes it to a real
-provider, and translates the answer back. This page is the mental model; the [Glossary](/docs/glossary)
-is the precise, canonical definition of each term.
+A Bifrost configuration connects the model names your application uses to the providers that
+serve them. Start with three concepts:
 
-## The one diagram
+| Concept | Purpose | Example |
+|---|---|---|
+| **Public Model** | The name your application sends in `model`. | `general` |
+| **Deployment** | One configured route to an upstream model, including credentials and limits. | `general` routed to OpenAI's `gpt-5.5` |
+| **Virtual Key** | An application credential with model access, rate limits, and a budget. | A key allowed to call only `general` |
+
+## Public models and deployment pools
+
+Deployments with the same `publicModel` form a **deployment pool**. You do not create a separate
+pool entity. Add another deployment with `publicModel: "general"` to give the router another
+candidate for that name.
+
+This lets you change upstream models or add providers without changing client code. The router
+selects an eligible deployment using its configured [strategy](/docs/routing), capabilities,
+limits, and health. [Fallback policies](/docs/fallbacks) can route to another public model when
+the original pool cannot serve the request.
+
+<Callout title="Check capabilities when mixing providers">
+
+Sharing a public name does not make providers interchangeable for every request. Each deployment
+must support the requested operation. Parameter support is governed by
+[parameter policy](/docs/parameter-policy).
+
+</Callout>
+
+## Endpoints, adapters, and transports
+
+A **Public Endpoint** defines the API your client uses, such as `/v1/chat/completions` or
+`/v1/messages`. An **Adapter** translates between Bifrost's provider-independent representation
+and an upstream provider. A **Transport** is the upstream protocol the adapter uses.
+
+For example, a client can call Chat Completions while the OpenAI adapter sends the upstream
+request through Responses. The client-facing endpoint and upstream transport are separate choices.
+Transports are inferred per operation; use `transportOverrides` only when needed.
+
+## Request flow
 
 ```text
-Client -> Public Endpoint -> Canonical request
-       -> Public Model -> deployment pool -> Deployment
-       -> Transport -> provider -> Canonical response
-       -> Public Endpoint contract -> client
+Application + virtual key + public model
+  → Public endpoint
+  → Canonical request
+  → Eligible deployment selected from the pool
+  → Adapter and upstream transport
+  → Provider
+  → Canonical response
+  → Response in the client's API format
 ```
 
-Everything below is just the pieces of that line.
+**Canonical** is the representation shared by adapters and extension hooks. It keeps provider
+protocols out of routing, access control, and other common logic.
 
-## The pieces
+For execution order, retries, caching, and quota accounting, see [Architecture](/docs/architecture).
+The [Glossary](/docs/glossary) defines the complete vocabulary used in code and API schemas.
 
-**Public Endpoint** — the route a client calls, with that API's exact contract:
-`/v1/chat/completions`, `/v1/responses`, `/v1/messages`, `/v1/embeddings`, `/v1/images/*`,
-`/v1/audio/transcriptions`, `/v1/rerank`. The endpoint decides the *client-facing* shape, not the provider protocol.
+## Next steps
 
-**Public Model** — the name a client puts in `model` (`general`, `image-default`). It is yours to
-choose, not a provider's model id. There is no separate "model group" entity: every deployment that
-shares a `publicModel` automatically forms its **deployment pool**.
-
-**Deployment** — one executable route to a provider: a `publicModel` + adapter + `upstreamModel` +
-encrypted credentials + weight and limits. Several deployments under the same public name give you
-load balancing and fallback for free.
-
-**Adapter** — the code that knows a provider. It translates the canonical request into one or more
-upstream protocols and maps provider errors back into the gateway's error classes.
-
-**Transport** — the actual protocol the adapter speaks to the provider: `chat_completions`,
-`responses`, `generate_content`, `messages`, `images`, `audio_transcriptions`,
-`azure_audio_transcriptions_legacy`, `embeddings`, `embed_content`, `openrouter_rerank`, or
-`cohere_rerank`. It is **inferred per operation** from the adapter; `transportOverrides` is the rare
-manual override.
-
-**Canonical** — the single provider-agnostic representation in the core. Every public wire format is
-converted *into* canonical on the way in, and rendered *from* canonical on the way out. This is why an
-extension hook or a fallback target written once works across `/v1/chat/completions`, `/v1/responses`,
-and `/v1/messages` alike — they are the same canonical request underneath.
-
-## Why public names, not provider ids
-
-Decoupling the client-facing name from the provider model is what makes the rest possible:
-
-- **Swap providers without touching clients** — repoint `general` from OpenAI to Anthropic by editing
-  deployments; the client keeps sending `model: "general"`.
-- **Pool and balance** — add a second deployment under `general` and the [router](/docs/fallbacks)
-  spreads load and retries across both.
-- **Fall back** — when a pool is exhausted, a [fallback chain](/docs/fallbacks) keyed by
-  `(publicModel, reason)` advances to another public model, same canonical request.
-- **One control plane** — auth, [virtual-key](/docs/virtual-keys) scopes, budgets, rate limits,
-  logging, and cost accounting all key off the public name, regardless of which provider served it.
-
-## How a request is served, briefly
-
-1. A client calls a **Public Endpoint** with a virtual or master key and a `model`.
-2. Auth resolves the key, checks the model is in scope, and applies rate limits.
-3. The endpoint parses the public contract into a **canonical** request.
-4. The router resolves the **Public Model** to its **deployment pool** and picks candidates by weight,
-   cooldown, and the request's operation profile.
-5. Each candidate runs over its **Transport**; retryable failures move to the next candidate, and an
-   exhausted pool may enter a **fallback chain**.
-6. The canonical response is rendered back into the calling endpoint's contract and returned, with
-   `x-request-id` and (for limited keys) `x-ratelimit-*` headers.
-
-This is the short version. For the exact execution order — including where the response cache,
-parameter policy, extension hooks, and cost accounting each fit in — see [Architecture](/docs/architecture).
-
-## Where to go next
-
-- [Architecture](/docs/architecture) — the same request, traced through every layer in precise order.
-- [Quickstart](/docs/quickstart) — do all of the above once, hands-on.
-- [Creating deployments](/docs/creating-deployments) — define public models over real providers.
-- [Glossary](/docs/glossary) — the exact, contract-level definition of every term here.
+- [Quickstart](/docs/quickstart): create a working local configuration.
+- [Your first deployment](/docs/first-deployment): validate and connect a provider on an existing gateway.
+- [Virtual keys](/docs/virtual-keys): scope access for each application.

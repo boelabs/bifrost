@@ -3,9 +3,9 @@ title: "Deployment"
 description: "Deploy Bifrost: topologies, the Docker Compose stack, and per-platform guides."
 ---
 
-Bifrost is a stateless Bun service that needs a Postgres and a Redis. The cleanest way to
-deploy it — and what this section is built around — is the repository's **Docker Compose** file, which
-is first-class on Coolify, Portainer, and Dokploy.
+Run the gateway with Postgres and Redis. The repository provides a Docker Compose stack
+for local hosts, Linux servers, Coolify, Portainer, and Dokploy. The dashboard and docs are
+separate services that can be deployed independently.
 
 ## Pick your platform
 
@@ -32,16 +32,8 @@ issue.
 
 ## Compose files and naming
 
-- `docker/compose.yaml` is the production/PaaS base. It uses `expose` for the gateway and docs, and
-  does not publish any service port on the host.
-- `docker/compose.local.yaml` is an explicit development/host override. It binds Postgres (`5432`), Redis
-  (`6379`), the gateway (`4000`), and docs (`3000`) to `127.0.0.1`.
-
-`.yaml` and `.yml` contain the same YAML syntax. [Modern Docker prefers
-`compose.yaml`](https://docs.docker.com/compose/intro/compose-application-model/), while
-`docker/compose.yaml` remains the most broadly auto-detected name across Coolify, Dokploy, Portainer,
-and older Compose tooling, so this repository keeps `docker/compose.yaml` for deployment portability.
-The local override is deliberately named `docker/compose.local.yaml` so a PaaS does not load it implicitly.
+- `docker/composeLoad `docker/compose.local.yaml` explicitly for local development or a host reverse proxy.
+Do not add it to a production PaaS deployment: it publishes local service ports.
 
 ## The Compose stack
 
@@ -75,6 +67,10 @@ Coolify/Portainer/Dokploy, set them in the UI. `DATABASE_URL` and `REDIS_URL` de
 `postgres`/`redis` services over plaintext and only need overriding if you point at managed instances
 — see [Setup](/docs/setup).
 
-> Only the **gateway** (and optionally **docs**) services are meant to receive a domain. Keep
-> Postgres, Redis, and the one-off `migrate` job internal. The production Compose base enforces this
-> by publishing no host ports.
+<Callout>
+
+Assign domains only to the **gateway**, **dashboard**, and **docs** services you want to expose. Keep
+Postgres, Redis, and the one-off `migrate` job internal. The production Compose base enforces this
+by publishing no host ports.
+
+</Callout>

@@ -3,6 +3,14 @@ title: "Chat completions"
 description: "POST /v1/chat/completions — the OpenAI Chat Completions contract."
 ---
 
+Generate text with the OpenAI Chat Completions contract. Use a public model configured for text
+generation and a virtual key allowed to call it.
+
+## Example request
+
+Set `GATEWAY` to the gateway origin and `API_KEY` to your virtual key. Replace the example
+public model with one from [Model discovery](/docs/models-discovery).
+
 ```bash
 curl -X POST "$GATEWAY/v1/chat/completions" \
   -H "Authorization: Bearer $API_KEY" \
@@ -92,7 +100,7 @@ them. An error sent inside an otherwise successful upstream stream terminates th
 instead of being mistaken for a clean end. See
 [Streaming](/docs/streaming) for the full SSE contract shared across endpoints.
 
-## What to read next
+## Next steps
 
 - [Streaming](/docs/streaming) — the SSE shape in depth.
 - [Reasoning](/docs/reasoning) and [Parameter policy](/docs/parameter-policy) — the two most commonly-tuned behaviors.

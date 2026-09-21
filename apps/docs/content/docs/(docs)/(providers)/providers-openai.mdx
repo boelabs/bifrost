@@ -1,11 +1,19 @@
 ---
 title: "OpenAI"
-description: "Adapter key openai. Credentials, transport, and quirks."
+description: "Configure openai deployments and understand provider-specific behavior."
 ---
+
+## Configure a deployment
+
+Send this body to `POST /admin/deployments` with an operator credential. Replace the example
+credentials and choose a model available to your provider account. See
+[Creating deployments](/docs/creating-deployments) for the shared configuration fields.
 
 ```json
 { "publicModel": "gpt-5.5", "adapterKey": "openai", "upstreamModel": "gpt-5.5", "credentials": { "apiKey": "sk-..." } }
 ```
+
+## Behavior and limitations
 
 - **Credentials**: `apiKey` only.
 - **Text transport**: Responses for every public text endpoint, including Chat Completions and
@@ -32,7 +40,7 @@ description: "Adapter key openai. Credentials, transport, and quirks."
   mark the Sora 2 Videos API deprecated with shutdown scheduled for September 24, 2026.
 - Catalog: `src/adapters/openai/catalog.json`.
 
-## What to read next
+## Next steps
 
 - [Creating deployments](/docs/creating-deployments) — the full request shape.
 - [Reasoning](/docs/reasoning) — the `openai_effort` kind in detail.

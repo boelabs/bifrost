@@ -3,6 +3,14 @@ title: "Responses"
 description: "POST /v1/responses and its persisted-state siblings — the OpenAI Responses contract."
 ---
 
+Generate responses, continue conversations, and use tools through the OpenAI Responses contract.
+Use a public model configured for text generation and a virtual key allowed to call it.
+
+## Example request
+
+Set `GATEWAY` to the gateway origin and `API_KEY` to your virtual key. Replace the example
+public model with one from [Model discovery](/docs/models-discovery).
+
 ```bash
 curl -X POST "$GATEWAY/v1/responses" \
   -H "Authorization: Bearer $API_KEY" \
@@ -148,7 +156,7 @@ the native transport, the gateway maintains a separate upstream socket and priva
 id. Public ids and events are still regenerated through the canonical core; provider traffic is
 never passed directly to the client.
 
-## What to read next
+## Next steps
 
 - [Chat completions](/docs/chat-completions) — the fields shared between both contracts.
 - [Reasoning](/docs/reasoning) — the `reasoning` object in full.

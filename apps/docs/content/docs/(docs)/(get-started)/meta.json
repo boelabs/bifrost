@@ -3,9 +3,9 @@
 	"defaultOpen": true,
 	"pages": [
 		"quickstart",
+		"first-deployment",
 		"concepts",
-		"architecture",
 		"setup",
-		"first-deployment"
+		"architecture"
 	]
 }

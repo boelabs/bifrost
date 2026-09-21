@@ -3,6 +3,14 @@ title: "Images"
 description: "POST /v1/images/generations and /v1/images/edits — the OpenAI Images contract."
 ---
 
+Generate or edit images with a public model configured for the requested image operation.
+Supported sizes, quality levels, and output formats depend on the selected deployment.
+
+## Example request
+
+Set `GATEWAY` to the gateway origin and `API_KEY` to your virtual key. Replace the example
+public model with one from [Model discovery](/docs/models-discovery).
+
 ```bash
 curl -X POST "$GATEWAY/v1/images/generations" \
   -H "Authorization: Bearer $API_KEY" \
@@ -65,7 +73,7 @@ See [Providers → Google AI Studio](/docs/providers-google).
 `stream: true` with `partial_images: N` returns progressively refined images via SSE before the final
 one — see [Streaming](/docs/streaming).
 
-## What to read next
+## Next steps
 
 - [Providers → Google AI Studio](/docs/providers-google) — the quality-to-thinking mapping in context.
 - [Extensions](/docs/extensions) — the `onImageOutput` hook, and the bundled watermark examples.
