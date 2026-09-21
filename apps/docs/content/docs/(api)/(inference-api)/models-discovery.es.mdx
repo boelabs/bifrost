@@ -1,0 +1,102 @@
+---
+title: "Consultar modelos"
+description: "Explora el catálogo público y los detalles autenticados de cada deployment."
+---
+Tres endpoints permiten a un cliente descubrir qué se puede servir, en dos niveles diferentes de detalle y dos requisitos de autenticación diferentes:
+
+| endpoint | Autenticación | Devoluciones |
+|---|---|---|
+| `GET /v1/models` | Ninguno | Cada public model habilitado, agregado en todo su grupo |
+| `GET /v1/models/{model}` | Ninguno | La misma forma agregada, para un public model |
+| `GET /v1/models/{model}/deployments` | **Requerido** (`Bearer`/`x-api-key`) | Detalle por deployment: peso, límites, métricas en vivo |
+
+Los dos primeros no están autenticados deliberadamente, de la misma manera que los catálogos de modelos de proveedores públicos son públicos: un cliente (o un humano) necesita ver lo que está disponible antes de tener un motivo para autenticarse. El endpoint por deployment es diferente: el peso del routing, los rate limits y el estado en vivo/latencia/rendimiento son **detalles de la infraestructura del operador**, no información del public model, por lo que se encuentran detrás de la misma autenticación como inferencia.
+
+Cada proceso almacena en cache el catálogo público agregado durante cinco segundos y lo invalida inmediatamente después de que el deployment cambia a través de la API de administración. El descubrimiento anónimo también tiene un generoso límite por IP de 600 solicitudes por minuto de forma predeterminada; una solicitud rechazada devuelve `429` con `Retry-After`. Configura `PUBLIC_MODELS_RPM` para ajustar el límite o `0` para desactivarlo. Configura `TRUSTED_PROXY_HOPS` para que el gateway utiliza la dirección real del cliente detrás de un proxy inverso controlado.
+
+## `GET /v1/models` y `GET /v1/models/{model}` [#get-v1models-and-get-v1modelsmodel]
+
+Una entrada por **public model** (no por deployment): un grupo de tres deployments detrás de `gpt-image` todavía produce una única entrada de lista, con campos agregados en todo el grupo:
+
+```json
+{
+  "id": "gpt-image",
+  "object": "model",
+  "created": 1735689600,
+  "owned_by": "Boelabs",
+  "architecture": {
+    "modality": "text->image",
+    "input_modalities": ["text"],
+    "output_modalities": ["image"]
+  },
+  "top_provider": {
+    "context_length": 128000,
+    "max_completion_tokens": 16384
+  },
+  "pricing": {
+    "prompt": "0.000005",
+    "completion": "0.00003"
+  },
+  "operations": [
+    { "id": "image.generate", "endpoints": ["/v1/images/generations"] }
+  ],
+  "supported_parameters": ["response_format", "size", "quality", ...],
+  "endpoint_count": 2
+}
+```
+
+Reglas de agregación:
+
+- **`architecture`**: la unión de modalidades de entrada/salida en cada operación que admite cada deployment en el grupo (los modelos de texto con capacidad de visión agregan `image` a la entrada; los modelos integrados agregan `embedding` a la salida; los modelos de reordenación agregan `rerank` a la salida y así sucesivamente).
+- **`top_provider`**: la longitud **máxima** del contexto y los tokens de salida máximos en todo el grupo (el deployment más capaz detrás de este nombre).
+- **`pricing`**: la tasa **mínima** (más barata) en todo el grupo, convertida a USD por token; el cambio de precio por unidad de búsqueda se expone como `search_unit` en USD por unidad.
+- **`operations`**: la unión de identificadores de operación que admite el grupo, cada uno con su(s) ruta(s) de endpoint público.
+- **`supported_parameters`**: la unión de nombres de parámetros que cualquier deployment en el grupo declara como compatible (consulta [Política de parámetros](/es/docs/parameter-policy) para saber qué significa "compatible").
+- **`endpoint_count`**: cuántas deployments respaldan este public model, sin exponer cuáles.
+- **`text_capabilities`**: para generación de texto, la intersección conservadora de perfiles de grupo efectivos: `contracts`, `supported_parameters`, `input_modalities`, canonical `reasoning_efforts` y `parameter_constraints` (`min`, `max`, `values`). Los límites numéricos se cruzan; se omiten los parámetros con límites o valores incompatibles. `max_output_tokens`, cuando se conoce, es el límite de salida declarado más pequeño. Los clientes pueden usar esta forma para los controles sin asumir la fijación de deployment. Las declaraciones de contrato faltantes significan los tres contratos de texto; las especificaciones de reasoning faltantes no exponen esfuerzos seleccionables. Los campos de traducción específicos del proveedor nunca se incluyen.
+
+Nada aquí revela etiquetas de deployment, credenciales, identificaciones de bases de datos o la identificación exacta del modelo upstream; solo lo que la persona que llama necesita para decidir si usar este modelo.
+
+## `GET /v1/models/{model}/deployments` [#get-v1modelsmodeldeployments]
+
+Una entrada por deployment detrás del grupo, cada una con sus propias métricas:
+
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "dep_a1b2c3d4e5f6",
+      "object": "model.deployment",
+      "model": "gpt-image",
+      "provider": "openai",
+      "status": "available",
+      "retry_after_ms": null,
+      "created": 1735689600,
+      "weight": 1,
+      "limits": { "rpm": null, "tpm": null },
+      "top_provider": { "context_length": 128000, "max_completion_tokens": 16384 },
+      "pricing": { "prompt": "0.000005", "completion": "0.00003" },
+      "operations": [{ "id": "image.generate", "endpoints": ["/v1/images/generations"] }],
+      "supported_parameters": ["response_format", "size", "quality"],
+      "transports": {},
+      "metrics": {
+        "inflight": 0,
+        "rpm": 3,
+        "tpm": 1024,
+        "health_score": 0.92,
+        "latency_ms": 842.3,
+        "throughput_tps": 41.7
+      }
+    }
+  ]
+}
+```
+
+`id` es un hash opaco y determinista (`dep_` + un SHA-256 truncado de la identificación de deployment interna): identifica el deployment entre llamadas sin exponer la identificación real de la base de datos. `metrics` refleja exactamente lo que [Routing](/es/docs/routing) utiliza para tomar decisiones, por lo que este endpoint funciona como un panel en vivo para "¿por qué el router eligió ese?". `status` es uno de `available`, `cooldown`, `half_open` o `rate_limited`; `retry_after_ms` es el TTL de circuito/sonda restante cuando corresponda.
+
+## Próximos pasos [#next-steps]
+
+- [Routing](/es/docs/routing): cómo estas mismas métricas por deployment impulsan la selección.
+- [Crear deployments](/es/docs/creating-deployments): pesos, límites y dominios de falla compartidos.
+- [Seguridad](/es/docs/security): las reglas generales de ocultación de secretos para cualquier cosa que el gateway exponga públicamente.

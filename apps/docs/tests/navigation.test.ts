@@ -32,6 +32,9 @@ async function folders(): Promise<string[]> {
 async function entries(dir: string, pattern: string): Promise<string[]> {
 	const found: string[] = [];
 	for await (const entry of new Bun.Glob(pattern).scan(resolve(root, dir))) {
+		if (entry.endsWith(".es.mdx")) {
+			continue;
+		}
 		found.push(entry.replaceAll("\\", "/"));
 	}
 	return found.sort();
@@ -84,6 +87,9 @@ describe("urls", () => {
 		// fails, the grouping has started leaking into addresses.
 		const urls = new Set<string>();
 		for await (const entry of new Bun.Glob("**/*.mdx").scan(root)) {
+			if (entry.endsWith(".es.mdx")) {
+				continue;
+			}
 			const parts = entry.replaceAll("\\", "/").split("/");
 			const name = parts.pop()?.replace(/\.mdx$/, "") as string;
 			const kept = parts.filter((part) => !/^\(.+\)$/.test(part));

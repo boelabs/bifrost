@@ -7,6 +7,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
 	experimental: {
+		globalNotFound: true,
 		// TypeScript 7 no longer exposes the compiler API Next's legacy worker expects. Delegate to
 		// the same CLI `typecheck` uses, so local, CI and build validation agree.
 		useTypeScriptCli: true,

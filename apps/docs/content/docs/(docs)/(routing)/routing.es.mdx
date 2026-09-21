@@ -1,0 +1,130 @@
+---
+title: "Routing"
+description: "Distribuye solicitudes entre deployments según capacidad, límites y estado."
+---
+El router selecciona un deployment elegible para cada intento. Los deployments con el mismo `publicModel` forman un grupo; la estrategia seleccionada determina cómo se distribuye el tráfico dentro de ella. Las reglas de reintento y las políticas de fallback controlan lo que sucede cuando falla un intento.
+
+## Estrategias [#strategies]
+
+Configurado con `PUT /admin/router-settings` (`routingStrategy`), efectivo para **cada** gateway de grupo; actualmente no hay anulación por deployment o por public model.
+
+| Estrategia | Elige el deployment con... | Bueno para |
+|---|---|---|
+| `simple-shuffle` (predeterminado) | Un sorteo aleatorio ponderado sobre `weight` | Carga uniforme en deployments idénticas |
+| `least-busy` | La menor cantidad de solicitudes a bordo en este momento | Tráfico intenso, duración de solicitud desigual |
+| `usage-based-rpm` | La menor cantidad de solicitudes en el minuto actual | Hacer cumplir la paridad suave de RPM en un grupo |
+| `usage-based-tpm` | La menor cantidad de tokens en el minuto actual | Aplicar la paridad suave de TPM en un grupo |
+| `latency-based` | La latencia de finalización de EWMA más baja | Minimizar el tiempo de respuesta entre proveedores de velocidad mixta |
+| `throughput-based` | Los tokens de salida EWMA más altos por segundo | Maximizar el rendimiento de la transmisión |
+| `price-based` | La tasa de token comparable más baja o `searchUnitCents` | Optimización de costos en modelos equivalentes con una única base de facturación |
+| `health-aware` | El más alto `successRate × weight` | Alejar el tráfico de un deployment inestable sin cortarlo por completo |
+
+Un grupo de exactamente un deployment omite la selección por completo: la estrategia nunca se ejecuta y las métricas aún se acumulan para la observabilidad. Todas las estrategias que se clasifican según una métrica activa (`latency-based`, `throughput-based`, `price-based`, `health-aware`) vuelven a ser aleatorias ponderadas cuando ningún candidato tiene un valor utilizable todavía (por ejemplo, una nuevo deployment sin solicitudes completadas).
+
+Para la reranking, los precios unitarios de búsqueda son exactos sólo cuando cada candidato declara esa misma base. Si un grupo combina facturación de token y unidad de búsqueda, combina ambas bases o contiene un precio desconocido, `price-based` recurre a la selección ponderada en lugar de presentar una comparación numérica falsa.
+
+### Cómo se mide cada métrica [#how-each-metric-is-measured]
+
+Las métricas por deployment se encuentran en Redis, codificadas por ID de deployment y se leen actualizadas en cada decisión de routing (sin caching del lado del cliente):
+
+- **En vuelo**: se incrementa cuando comienza un intento, se reduce cuando finaliza, falla o el cliente lo cancela. TTL para que un proceso bloqueado no pueda filtrar un deployment permanentemente "ocupada".
+- **RPM / TPM** — contadores por minuto. Las RPM aumentan en cada intento de inicio; el TPM aumenta en `totalTokens` en caso de éxito. Ambos expiran por sí solos cada minuto.
+- **Latencia**: un EWMA (α = 0,2) de duración del reloj de pared desde justo antes de la llamada upstream hasta el momento en que realmente terminó de responder. Para las solicitudes de transmisión, este es el tiempo hasta el **último fragmento upstream**, no cuando el cliente terminó de recibir la respuesta retransmitida, por lo que el routing basado en latencia refleja la velocidad upstream, no el tiempo que tomó su propia red hasta el cliente.
+- **Rendimiento**: un EWMA (α = 0,2) de `completionTokens / durationSeconds`, que utiliza el mismo tiempo de finalización upstream como latencia.
+- **Puntuación de salud**: `successes / (successes + failures)` durante un período continuo de 10 minutos. Un deployment sin **ningún intento registrado** en esa ventana tiene como valor predeterminado un **0.5** neutral, no un 1.0 perfecto; un valor predeterminado perfecto permitiría a `health-aware` reenviar inmediatamente todo el tráfico a un deployment que estaba fallando hace minutos, en el instante en que sus contadores expiran después de ser enrutados. Neutral lo mantiene clasificado detrás de cualquier cosa con un historial real, sin incluirlo permanentemente en la lista negra.
+
+Ninguna de estas métricas influye en la **elegibilidad** del deployment: todavía se intenta un deployment lenta o de bajo estado, solo que con menos frecuencia. La elegibilidad se decide por separado según el estado del circuito y los **límites** de RPM/TPM por deployment (consulta a continuación).
+
+## Grupos, pesos y límites por deployment [#pools-weights-and-per-deployment-limits]
+
+Los deployments creadas con el mismo `publicModel` forman un grupo automáticamente. Dos perillas le dan forma por deployment (configuradas en el deployment, no en la configuración del router):
+
+- **`weight`**: participación relativa del tráfico en `simple-shuffle` y el multiplicador aplicado a la puntuación de estado en `health-aware`. Un deployment con `weight: 0` nunca se elige por ponderación aleatoria, pero las otras estrategias aún lo consideran (clasificación según su propia métrica, ignorando el peso, excepto `health-aware`, que multiplica por peso y, por lo tanto, también omite un deployment de peso `0`).
+- **`rpmLimit` / `tpmLimit`**: límites estrictos por deployment. Un deployment que se encuentre actualmente en cualquiera de los límites o por encima de ellos queda excluido del grupo de candidatos para este intento (no enfriado, simplemente omitido esta ronda). Si **todos** los deployments en el grupo superan su límite, la solicitud falla con `rate_limit_exceeded` (`429`) antes de realizar cualquier llamada upstream.
+- **`failureDomain`**: identidad de cuota/cuenta de proveedor compartida opcional. Un proveedor `429` abre un circuito de capacidad para cada deployment con el mismo valor, por lo que duplicar filas respaldadas por una cuenta no multiplica los reintentos. Omitirlo cuando los deployments tengan cuotas realmente independientes.
+
+## Disyuntores y reintentos acotados [#circuit-breakers-and-bounded-retries]
+
+Configurado globalmente a través de `PUT /admin/router-settings`:
+
+Los controles de los circuitos siguen siendo globales. Los plazos de ejecución y los presupuestos de reintento se definen mediante la matriz exhaustiva `executionPolicies` en lugar de un tiempo de espera compartido por operaciones no relacionadas.
+
+| Campo | Predeterminado | Significado |
+|---|---|---|
+| `allowedFails` | `3` | Fallos transitorios de solicitudes lógicas: se permite un deployment antes de que la **siguiente** abre el cooldown. Un éxito reinicia la cuenta; `0` se abre ante el primer error. |
+| `cooldownSeconds` | `5` | Tiempo que un deployment permanece en cooldown después de exceder `allowedFails`. `0` desactiva los circuitos de enfriamiento automático. |
+| `retryAfterSeconds` | `0` | Espera mínima antes de un reintento transitorio; Se añade una fluctuación total exponencial por encima de este piso. |
+
+Los campos restantes son controles de seguridad avanzados:
+
+| Campo | Predeterminado | Significado |
+|---|---|---|
+| `failureWindowSeconds` | `60` | Ventana fija (no deslizante) de recuento de fallos |
+| `maxCooldownSeconds` | `300` | Enfriamiento exponencial máximo después de sondas de recuperación fallidas |
+| `halfOpenProbeSeconds` | `30` | Propiedad TTL para la sonda única de recuperación semiabierta |
+| `configurationCooldownSeconds` | `300` | Cuarentena inmediata para credenciales/acceso a modelos no válidos |
+| `throttleCooldownSeconds` | `5` | Tiempo de reutilización mínimo de capacidad compartida para las respuestas del proveedor `429` | Cada entrada `executionPolicies[operation].json|stream` define `firstOutputMs`, `idleMs` anulable, `reasoningOnlyMs` anulable, `preCommitMs`, `totalMs` y `maxAttempts`. Los valores predeterminados iniciales son:
+
+| Operación | Primera salida | Inactivo | Sólo reasoning | Compromiso previo | Totales | Intentos |
+|---|---:|---:|---:|---:|---:|---:|
+| Flujo de texto/WebSocket | 180 | 180 | — | 300 | 600 | 6 |
+| Texto JSON | 300 | — | — | 300 | 600 | 6 |
+| Imágenes | años 60 | Transmisión de los 60 | — | 180 | 600 | 3 |
+| Audio | años 60 | Transmisión de los 60 | — | 180 | 900 | 2 |
+| Embeddings | 30 años | — | — | años 60 | años 60 | 3 |
+| Enviar/actualizar/eliminar vídeo | años 60 | — | — | 120 | 120 | 3 |
+| Descarga de vídeo | 30 años | 30 años | — | años 60 | 900 | 2 |
+
+El router realiza una primera pasada por los deployments elegibles antes de reutilizar una. `Retry-After` se respeta solo cuando la espera se ajusta dentro de la fecha límite previa al compromiso. Los flujos de texto se validan y almacenan en búfer hasta el primer marco o terminal de reasoning/contenido/herramienta semántico. Es posible realizar un reintento o un fallback antes del compromiso, pero está prohibido después de que cualquier marco semántico se haya expuesto al cliente. Los metadatos, los keepalive, los roles y los marcos de uso exclusivo no confirman la respuesta.
+
+Los modelos de reasoning pueden pasar minutos computando antes de devolver texto, y los upstreams Chat Completions pueden retener incluso headers HTTP durante ese tiempo. Los valores predeterminados de texto lo permiten sin retrasar las respuestas que llegan antes. `reasoningOnlyMs` está deshabilitado por defecto: el reasoning activo permanece limitado al plazo total. Los operadores aún pueden establecer un límite de reasoning separado o límites más cortos de inactividad y de primera salida. La actualización actualiza sólo las políticas de texto que coinciden exactamente con los valores predeterminados anteriores; las políticas personalizadas permanecen sin cambios.
+
+Las fallas se clasifican por efecto en lugar de por un grupo amplio de "errores de proveedor":
+
+- **Solicitud** (fallas de entrada/contexto/contenido de clase `400`, incluidos estados de proveedor `4xx` desconocidos): prueba con un candidato diferente si es útil, pero nunca reduzca la salud ni abre un circuito.
+- **Acelerador** (`429`): no reduce el estado del deployment. Abre el circuito de capacidad compartido `failureDomain` inmediatamente y respete el valor `Retry-After` del proveedor cuando esté presente. Estas señales de capacidad no incrementan `allowedFails`.
+- **Transitorio** (tiempos de espera, fallas de red, proveedor `5xx`, protocolo mal formado, terminal faltante): reintente con fluctuación total exponencial y cuente como máximo una falla por solicitud lógica e deployment hacia el circuito.
+- **Configuración** (autenticación/acceso/modelo de proveedor no válido): ponga en cuarentena ese deployment inmediatamente en lugar de gastar repetidamente el presupuesto de la solicitud en ella.
+- Errores de **gateway/ámbito de solicitud**: no penalizan ninguna deployment.
+
+Las incompatibilidades de candidatos descubiertas por el preprocesamiento del gateway (por ejemplo, un origen de imagen o un tipo de archivo que un transport no puede consumir) son **neutrales** en cuanto a la salud. Pueden mover el routing a otro candidato o fallback, pero no incrementan los contadores de fallas del deployment, ni reducen su puntaje de salud ni activan el cooldown. Los errores de validación relacionados con la solicitud se detienen inmediatamente y también son neutrales.
+
+Las transiciones de circuitos son atómicas en Redis. Una vez que el umbral de falla fijo abre un circuito, las fallas tardías en vuelo no pueden extenderlo. Después del cooldown, se vuelve **medio abierto**: exactamente una solicitud posee la sonda de recuperación, mientras que las solicitudes simultáneas utilizan otros candidatos. Una investigación exitosa lo cierra; una sonda fallida lo vuelve a abrir con un enfriamiento y una fluctuación exponenciales, limitados por `maxCooldownSeconds`. Mientras está cerrado, cada llamada upstream exitosa borra el recuento acumulado de fallas transitorias de ese deployment.
+
+Si todos los circuitos de deployment están abiertos, el gateway devuelve `503 deployments_in_cooldown` con un header `Retry-After` preciso. Si la capacidad compartida es el bloqueador, devuelve `429 rate_limit_exceeded`. La vista autenticada `GET /v1/models/{model}/deployments` informa cada deployment como `available`, `cooldown`, `half_open` o `rate_limited`, además `retry_after_ms`.
+
+## Reservas [#fallbacks]
+
+Cuando falla cada deployment en el grupo primario (o está en enfriamiento o supera su límite de RPM/TPM), el router busca una **cadena alternativa** para ese public model y motivo de falla (`general`, `context_window` o `content_policy`) y vuelve a intentar todo el proceso de selección. cada public model alternativo en orden. Consulta [Fallbacks](/es/docs/fallbacks) para conocer la configuración de la cadena, la semántica de reintento por salto de reserva y las reglas del ciclo de vida.
+
+## Observando una decisión de routing [#observing-a-routing-decision]
+
+Envía `x-unified-routing-metadata: true` en cualquier solicitud de chat (`/v1/chat/completions`, `/v1/messages`, `/v1/responses`) para obtener un objeto `unified_routing` en el cuerpo de la respuesta: la estrategia vigente, qué deployment realmente atendió la solicitud, si se utilizó un fallback y un registro por intento (latencia, clase de error, estado HTTP). Consulta [Headers](/es/docs/headers) para conocer la forma exacta.
+
+## Configurándolo [#configuring-it]
+
+```bash
+curl -X PUT "$GATEWAY/admin/router-settings" \
+  -H "Authorization: Bearer $MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "routingStrategy": "latency-based",
+    "allowedFails": 3,
+    "cooldownSeconds": 10,
+    "failureWindowSeconds": 60,
+    "maxCooldownSeconds": 300,
+    "halfOpenProbeSeconds": 30,
+    "configurationCooldownSeconds": 300,
+    "throttleCooldownSeconds": 5,
+    "retryAfterSeconds": 1
+  }'
+```
+
+`GET /admin/router-settings` devuelve la configuración efectiva (valor predeterminado si nunca se establece). Todos los campos son opcionales en el cuerpo `PUT`; los campos omitidos mantienen su valor actual. Al cambiar `executionPolicies` enviar la matriz completa devuelta por `GET`; Es intencionalmente exhaustivo, por lo que no se puede realizar una nueva operación sin una política explícita.
+
+## Próximos pasos [#next-steps]
+
+- [Política de parámetros](/es/docs/parameter-policy): el otro comportamiento global del router, ortogonal a la estrategia.
+- [Fallbacks](/es/docs/fallbacks): qué sucede cuando falla todo un grupo.
+- [Headers](/es/docs/headers): la forma exacta de `x-unified-routing-metadata`.
+- [Crear deployments](/es/docs/creating-deployments) — `weight`, límites y `failureDomain`.

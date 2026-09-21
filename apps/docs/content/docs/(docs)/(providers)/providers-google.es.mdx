@@ -1,0 +1,31 @@
+---
+title: "Google AI Studio"
+description: "Configura deployments de Google AI Studio y conoce sus capacidades y restricciones."
+---
+## Configurar un deployment [#configura-a-deployment]
+
+Envía este cuerpo a `POST /admin/deployments` con credencial de operador. Reemplaza las credenciales de ejemplo y elige un modelo disponible para su cuenta de proveedor. Consulta [Crear deployments](/es/docs/creating-deployments) para conocer los campos de configuración compartidos.
+
+```json
+{ "publicModel": "gemini", "adapterKey": "googleaistudio", "upstreamModel": "gemini-3-pro", "credentials": { "apiKey": "..." } }
+```
+
+## Comportamiento y restricciones [#behavior-and-limitations]
+
+- **Credenciales**: `apiKey` únicamente.
+- **transport predeterminado**: `generateContent` para operaciones de texto e imagen, `generate_videos` para generación de video Veo y `embedContent`/`batchEmbedContents` para embeddings. Gemini Omni Flash debe anular `video.generate` a `interactions`.
+- **Los esquemas de herramientas se traducen, no se transmiten.** Las herramientas no estrictas y los modelos anteriores a Gemini-3 utilizan el campo `parameters` con forma de OpenAPI de Gemini y su traductor de esquemas más estrecho. Los modelos Gemini 3 y posteriores declaran `capabilities.strictTools: true`; una solicitud que contiene una función OpenAI `strict: true` utiliza `parametersJsonSchema` y el modo `VALIDATED` restringido por esquema de Gemini. Los modelos anteriores a Gemini-3 rechazan solicitudes estrictas en lugar de degradarlas silenciosamente. Esta es la aplicación de la ley durante generaciones; el gateway no fuerza argumentos ni vuelve a intentar una solicitud de reparación oculta. Es posible que las construcciones fuera del subconjunto de esquemas admitidos por Google aún requieran una definición de herramienta más simple.
+- **reasoning**: `gemini_level` (`thinkingLevel` discreto, con `xhigh` asignado a `high`) o `gemini_budget` (sin formato) tokens `thinkingBudget`), por modelo; consulta [Reasoning](/es/docs/reasoning).
+- **Las firmas de pensamiento viajan de ida y vuelta sin estado dentro del identificador de llamada de la herramienta.** Cuando Gemini devuelve un `thoughtSignature` en una llamada de función, el gateway lo integra en el identificador de llamada de la herramienta pública como `<id>__thought__<signature>` (compatible con LiteLLM) en las tres superficies. Cualquier cliente que haga eco de los identificadores de llamadas de herramientas palabra por palabra (todos los clientes OpenAI/Anthropic estándar, incluido el SDK de AI de Vercel) lo realiza sin cambios ni estado del lado del servidor. La firma también se refleja como `provider_specific_fields.thought_signature` y `extra_content.google.thought_signature` en la llamada de herramienta representada, y se aceptan los tres formularios entrantes. Consulta [Estado específico del proveedor](/es/docs/provider-specific-fields).
+- **Embeddings** acepta entrada de texto y vectores flotantes solo a través de este gateway (sin entrada tokenizada, sin codificación `base64`), independientemente de lo que el perfil del catálogo pueda permitir.
+- **La imagen `quality` se asigna al pensamiento nativo** en los modelos que exponen el control (Gemini 3.1 Flash Image e Flash Lite Image), que declaran los renglones `low` (`thinkingLevel: minimal`) y `high` (`thinkingLevel: high`); otros peldaños encajan en esos dos. `auto` o una cualidad omitida no envía ningún nivel de pensamiento y se aplica el propio valor predeterminado de Gemini. Los modelos sin control, como Gemini 3 Pro Image, no declaran ningún peldaño. Consulta [Imágenes](/es/docs/images).
+- **Veo** utiliza el flujo REST Gemini `:predictLongRunning`. Las referencias de imágenes/videos deben ser URL de datos porque la solicitud REST las envía como `inlineData`; varias referencias de imágenes se envían como `referenceImages`, mientras que `video_url` se utiliza para la extensión Veo en los modelos que lo declaran.
+- **Gemini Omni Flash 1.1** utiliza la API de Interacciones para texto a video, imagen a video, referencia a video, edición, extensión e interpolación de fotogramas. El gateway ejecuta interacciones en segundo plano, sondea por ID de interacción y recupera resultados en línea en el almacenamiento de objetos sin almacenar base64 en Postgres. Las entradas API de archivos, el `previous_interaction_id` de múltiples vueltas, las referencias de audio y la salida 1080p/4K solo de URI no son compatibles intencionalmente.
+- Catálogo: `src/adapters/google/catalog.json` (la carpeta es `google`; la clave del adapter es `googleaistudio`, el único lugar donde hoy esos dos nombres no coinciden).
+
+## Próximos pasos [#next-steps]
+
+- [Reasoning](/es/docs/reasoning) — `gemini_level` / `gemini_budget` en detalle.
+- [Embeddings](/es/docs/embeddings): el contrato de integración reducido de Google.
+- [Imágenes](/es/docs/images): el mapeo de calidad al pensamiento.
+- [Videos](/es/docs/videos): el ciclo de vida del video asíncrono y el almacenamiento de objetos.

@@ -1,0 +1,31 @@
+---
+title: "Embeddings"
+description: "Convierte texto en vectores con el contrato de OpenAI Embeddings."
+---
+Convierta texto en vectores con el contrato OpenAI Embeddings. El public model debe tener un deployment que admita la operación `embedding.create`.
+
+## Ejemplo de solicitud [#example-request]
+
+Configura `GATEWAY` en el origen del gateway y `API_KEY` en su virtual key. Reemplaza el public model de ejemplo por uno de [Consultar modelos](/es/docs/models-discovery).
+
+```bash
+curl -X POST "$GATEWAY/v1/embeddings" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "model": "embed", "input": ["red fox", "blue whale"], "encoding_format": "float" }'
+```
+
+## Campos [#fields]
+
+`model`, `input` (una cadena, un lote de cadenas, `number[]`/`number[][]` pre-tokenizado, según el perfil del modelo), `encoding_format` (`float` o `base64`), `dimensions`, `user`.
+
+Cada campo se valida con el perfil de catálogo `embedding.create` del modelo de destino antes de cualquier llamada upstream: `dimensions` solo se respeta cuando el modelo declara `supportsDimensions: true`; `encoding_format: "base64"` se rechaza a menos que el perfil lo incluye; la entrada pre-tokenizada se rechaza a menos que `supportsTokenInput: true`. Una combinación rechazada devuelve `400 unsupported_parameter`.
+
+## Routing hacia proveedores [#provider-routing]
+
+Los deployments de OpenAI, Azure OpenAI y compatibles con OpenAI se dirigen al endpoint nativo `/embeddings`. Google AI Studio enruta a `:embedContent` (entrada única) o `:batchEmbedContents` (por lotes) y, en este gateway, acepta **entrada de texto y vectores `float` únicamente**, independientemente de lo que un perfil personalizado podría permitir. Consulta [Google AI Studio](/es/docs/providers-google).
+
+## Próximos pasos [#next-steps]
+
+- [Catálogo de modelos → Embeddings](/es/docs/model-catalog#embeddings): el esquema completo `embedding.create`.
+- [Creando deployments](/es/docs/creating-deployments#3-embeddings--catalog-model): registro de un modelo de incorporación por proveedor.

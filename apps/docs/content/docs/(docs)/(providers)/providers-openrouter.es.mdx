@@ -1,0 +1,43 @@
+---
+title: "OpenRouter"
+description: "Configura deployments de OpenRouter y conoce sus capacidades y restricciones."
+---
+## Configurar un deployment [#configura-a-deployment]
+
+Envía este cuerpo a `POST /admin/deployments` con credencial de operador. Reemplaza las credenciales de ejemplo y elige un modelo disponible para su cuenta de proveedor. Consulta [Crear deployments](/es/docs/creating-deployments) para conocer los campos de configuración compartidos.
+
+```json
+{
+  "publicModel": "search-reranker",
+  "adapterKey": "openrouter",
+  "upstreamModel": "cohere/rerank-4-fast",
+  "credentials": { "apiKey": "sk-or-..." }
+}
+```
+
+## Comportamiento y restricciones [#behavior-and-limitations]
+
+- **Credenciales**: Se requiere `apiKey`. `baseUrl` y `headers` personalizado son opcionales. La URL base predeterminada es `https://openrouter.ai/api/v1`.
+- **Operación**: reranking solo en esta versión. El adapter envía `POST /rerank` a través del transport nativo `openrouter_rerank`.
+- **routing del proveedor**: el objeto público `provider` se conserva exactamente y hace que solo los deployments de OpenRouter sean elegibles para esa solicitud.
+- **ID de modelo**: utiliza los ID completos de OpenRouter, incluido el creador y los sufijos como `:free`.
+- **Catálogo**: el catálogo versionado se genera a partir del feed del modelo de OpenRouter filtrado por `output_modalities=rerank`. Ningún recuento de modelo esperado está codificado.
+- **Versión de solo texto**: la sincronización informa la capacidad de fuente multimodal, pero no se incluye en el perfil público. Por lo tanto, el reranker de visión de NVIDIA solo acepta documentos de texto por ahora.
+- **Precios**: los campos ambiguos de token cero no marcan a los rerankers pagados como gratuitos. Las anulaciones de unidades de búsqueda revisadas se utilizan cuando están disponibles; de lo contrario, el costo de respuesta de OpenRouter es el recurso contable.
+
+Flujo de trabajo del catálogo:
+
+```bash
+bun run --filter @boelabs/bifrost catalog:sync:openrouter
+bun run --filter @boelabs/bifrost catalog:sync:openrouter:verify
+# To update the committed snapshot after review:
+bun run --filter @boelabs/bifrost catalog:sync:openrouter:write
+```
+
+El informe señala la capacidad multimodal aún no habilitada, precios cero ambiguos, anulaciones revisadas huérfanas y modelos pagos sin un costo local representable.
+
+## Próximos pasos [#next-steps]
+
+- [Reranking](/es/docs/reranking): contrato público, routing, validación y ejemplos.
+- [Catálogo de modelos](/es/docs/model-catalog#openrouter-rerank-sync): sincronización de propiedad y esquema.
+- [Routing](/es/docs/routing): reintentos, respaldo, estado y estrategia de precios.

@@ -1,0 +1,128 @@
+---
+title: "Dashboard para operadores"
+description: "Configura el gateway e investiga solicitudes desde la interfaz de administración."
+---
+El panel opcional permite a los operadores configurar modelos, administrar el acceso e investigar solicitudes a través de la [Admin API](/es/docs/reference-admin-api). Se ejecuta como un servicio independiente con su propia imagen y dominio. Habilita la autenticación del panel en el gateway y configura el `GATEWAY_URL` del panel para conectarlos.
+
+## Habilitar el dashboard [#enabling-it]
+
+El panel se sirve solo cuando el gateway tiene habilitada la autenticación humana:
+
+```bash
+DASH_ENABLED=true
+DASH_ROOT_USER=root
+DASH_ROOT_PASSWORD=<a long random password>
+```
+
+El operador raíz vive en el entorno en lugar de en la base de datos, por lo que nadie puede quedar excluido de una nuevo deployment. Nunca aparece en la lista de usuarios y no se puede editar a través de la API; Úselo para crear cuentas reales y luego deje de usarlo. Todas las demás variables de entorno se encuentran en la [Variables de entorno](/es/docs/reference-environment).
+
+## Publicar el dashboard [#serving-it]
+
+El gateway y el panel son **dos deployments independientes**. Dos imágenes, dos contenedores y tantos dominios como quieras:
+
+| | Imagen | Puerto |
+|---|---|---|
+| gateway | `ghcr.io/boelabs/bifrost-gateway` | 4000 |
+| dashboard | `ghcr.io/boelabs/bifrost-dashboard` | 3001 |
+
+El panel necesita una configuración y el gateway no necesita nada en absoluto:
+
+```bash
+GATEWAY_URL=https://gateway.example.com   # or http://gateway:4000 on a private network
+```
+
+Ese es todo el contrato. Colóquelos en diferentes regiones, diferentes proveedores, diferentes continentes; el único requisito es que el panel pueda llegar al gateway.
+
+### El navegador nunca sale del dashboard [#the-browser-never-leaves-the-dashboard]
+
+Todo lo que la página necesita, lo recupera el propio servidor del panel. Las lecturas y escrituras son componentes del servidor y acciones del servidor; las tres cosas que deben ser la propia solicitud del navegador (iniciar sesión, cerrar sesión y el flujo de inferencia del playground) van a las rutas en el panel que se transmiten al gateway (`src/shared/api/relay.ts`).
+
+Tres consecuencias que vale la pena tener:
+
+- **Sin CORS, en ninguna parte.** El gateway no envía ninguno y no necesita ninguno.
+- **Sin política de cookies entre sitios.** La cookie de sesión es `SameSite=Lax` en el propio dominio del panel, que es una configuración estricta, no ampliada.
+- **El gateway no tiene que ser público.** Exponer el panel; Mantén el gateway en la red privada. Eso es una cosa menos en Internet.
+
+El panel es una aplicación Next.js simple en la raíz de su dominio, por lo que cualquier proxy inverso que reenvíe un nombre de host a un puerto es suficiente: no hay ningún prefijo de ruta que preservar ni nada que eliminar.
+
+### No hay nada integrado en la imagen [#nothing-is-baked-into-the-image]
+
+No hay ningún argumento de compilación para un nombre de host ni `NEXT_PUBLIC_*` en ninguna parte del panel, por lo que una etiqueta de imagen se promueve desde la etapa de prueba a producción sin cambios y un cambio de nombre de host es un reinicio, no una reconstrucción.
+
+### Compruébalo [#check-it]
+
+```bash
+# The dashboard is up and can reach the gateway:
+curl -si -X POST https://dash.example.com/api/auth/session   -H 'content-type: application/json' -d '{"username":"nobody","password":"wrong"}' | head -1
+```
+
+Un `401` significa que todo el camino funcionó: el dashboard llegó al gateway y transmitió su respuesta. Un `502` significa que el dashboard se está ejecutando pero `GATEWAY_URL` es incorrecto o inaccesible.
+
+## Cómo autentica [#how-it-authenticates]
+
+**El panel no tiene ninguna credencial.** Sin master key, sin clave API, sin cuenta de servicio. Es un renderizador sin autoridad propia y lo único que puede hacer es lo que puede hacer la persona que inició sesión.
+
+La persona se autentifica; el dashboard lleva la respuesta:
+
+```
+1.  operator types a username and password at dash.example.com
+2.  browser    ──POST /api/auth/session──►  dashboard
+3.  dashboard  ──POST /auth/session─────►  gateway        (passes them on, keeps nothing)
+4.  gateway verifies against DASH_ROOT_USER or the dashboard_users table
+                           ◄──Set-Cookie: bifrost_session=<opaque token>
+5.  dashboard re-emits that cookie to the browser, on its own domain
+6.  every later request carries it, and the dashboard forwards it upstream
+```
+
+El gateway nunca autentica "un panel". Autentica a **un operador**, razón por la cual el registro de auditoría registra `user:<uuid>` y por qué los roles significan cualquier cosa: un error en el panel no puede exceder el rol de quien haya iniciado sesión, porque el gateway verifica cada llamada.
+
+### Apuntando uno a cualquier gateway [#pointing-one-at-any-gateway]
+
+Puedes y será inútil. Aparece una pantalla de inicio de sesión que no puede pasar porque no tiene una cuenta en ese gateway. **Apuntar no es acceso.**
+
+Esta es la propiedad que un token compartido habría destruido. Si el panel se autenticara con la master key, tendría autoridad propia, cada solicitud llegaría como `master-key`, los roles serían de asesoramiento y cualquiera que pasara el inicio de sesión del panel tendría toda el gateway.
+
+### GATEWAY_URL es una decisión de confianza [#gateway_url-is-a-trust-decision]
+
+El riesgo corre en sentido contrario y vale la pena ser claro al respecto.
+
+El inicio de sesión viaja *a través* del panel, por lo que su servidor ve la contraseña en tránsito. No lo almacena ni lo registra, pero eso significa que quien pueda cambiar `GATEWAY_URL` puede apuntar el formulario de inicio de sesión de sus operadores a un servidor que ellos controlan y recopilar credenciales reales.
+
+Así que trátelo como una credencial, no como un nombre de host: restrinja quién puede editar el entorno de deployment y revíselo cuando cambie. Este es el costo de que el navegador nunca se comunique directamente con el gateway, que es lo que le permite comprar un gateway que no necesita dominio público.
+
+## Permisos por rol [#who-can-see-what]
+
+Las sesiones son tokens opacos en las cookies httpOnly y cada mutación hace eco de un token CSRF. Las funciones las aplica el gateway, no la interfaz; la navegación simplemente no ofrece una sección cuyas llamadas API devolverían 403. Consulta [Seguridad → Funciones](/es/docs/security#roles).
+
+| | visor | administrador | propietario |
+|---|---|---|---|
+| Modelos y deployments | leer | leer/escribir | leer/escribir |
+| Uso, métricas, descripción general | leer | leer | leer |
+| virtual keys | — | leer/escribir | leer/escribir |
+| Registros y muestras de carga útil | — | leer | leer |
+| Patio de recreo (inferencia real) | — | si | si |
+| Configuración del router, alternativas, cache | leer | leer/escribir | leer/escribir |
+| Extensiones | — | — | gestionar |
+| Usuarios y pista de auditoría | — | — | gestionar / leer |
+
+## Para qué sirve cada sección [#what-each-section-is-for]
+
+- **Descripción general**: tráfico, gasto, tokens y confiabilidad en un rango que usted elige, además de si Postgres, Redis y el runtime de la extensión están respondiendo. Se refresca por sí solo; el interruptor lo detiene.
+- **Métricas**: los mismos números con más detalle, filtrados por modelo, deployment u operación.
+- **Modelos**: public models y el deployment pool detrás de cada uno. La creación o edición de un deployment valida toda la configuración con respecto al adapter antes de escribirla.
+- **Claves API**: emisión, alcance, limitación y presupuestación de virtual keys. El secreto se muestra una vez, en el momento de la creación, porque sólo se almacena su hash.
+- **Playground**: inferencia real frente a un deployment real, facturada y registrada como cualquier otra solicitud, atribuida al operador que la envió.
+- **Registros**: una fila por operación con su resultado, tiempo y costo; abrir uno muestra cada intento upstream. Se ofrece una carga útil retenida solo cuando hay una para abrir y el deployment lo permite, y su lectura se registra en el registro de auditoría.
+- **Extensiones**: módulos cargados y las instancias que los ejecutan, con estado en vivo desde la réplica que responde a la página.
+- **Configuración**: comportamiento del router, cadenas de fallback y cache de respuesta.
+- **Auditoría**: quién cambió la configuración y quién leyó una muestra de carga útil. Solo propietario, solo anexo y no editable desde aquí ni en ningún otro lugar.
+
+## Protecciones [#safety-rails]
+
+Las acciones destructivas se preguntan primero, y la pregunta nombra lo que realmente se pierde: el último deployment habilitado de un modelo, las instancias que aún ejecutan un módulo. Las creaciones llevan un `Idempotency-Key`, por lo que hacer doble clic en un botón o un reintento después de un tiempo de espera no pueden producir dos claves donde usted solicitó una (consulta [Creaciones idempotentes](/es/docs/reference-admin-api#idempotent-creates)).
+
+## Próximos pasos [#next-steps]
+
+- [Seguridad](/es/docs/security): el modelo de autenticación detrás de los roles anteriores.
+- [Admin API](/es/docs/reference-admin-api): las mismas capacidades, sin navegador.
+- [Virtual keys](/es/docs/virtual-keys): qué hacen realmente los alcances, presupuestos y límites en runtime.

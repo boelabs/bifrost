@@ -1,0 +1,54 @@
+---
+title: "Messages"
+description: "Envía solicitudes con el contrato compatible con Anthropic Messages."
+---
+Envía mensajes con el formato de la API de Anthropic. El deployment seleccionado puede usar Anthropic u otro proveedor que admita las capacidades solicitadas.
+
+## Ejemplo de solicitud [#example-request]
+
+Configura `GATEWAY` en el origen del gateway y `API_KEY` en su virtual key. Reemplaza el public model de ejemplo por uno de [Consultar modelos](/es/docs/models-discovery).
+
+```bash
+curl -X POST "$GATEWAY/v1/messages" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude",
+    "max_tokens": 1024,
+    "messages": [{ "role": "user", "content": "Say hi" }]
+  }'
+```
+
+El formato nativo de Anthropic usa `stop_sequences` en lugar de `stop`, `system` como campo de nivel superior o mensaje, y `output_config.format` en lugar de `response_format`. Bifrost lo convierte a la misma solicitud canonical que [Chat completions](/es/docs/chat-completions) y [Responses](/es/docs/responses). Este contrato permite acceder a cualquier proveedor compatible, y los modelos de Anthropic también están disponibles mediante los otros dos contratos.
+
+Los bloques `document` de Messages admiten URL, base64 y archivos del proveedor. Se envían de forma nativa en el transport de Anthropic; los demás transports aplican la política compartida de entradas. Consulta [Entradas de contenido](/es/docs/file-inputs).
+
+El router prefiere el transport nativo de Messages cuando está disponible. `top_k` se convierte al formato canonical y se traduce para los proveedores que admiten ese control. Los metadatos de solicitud requieren un deployment compatible con Messages; no se descartan silenciosamente.
+
+## Breakpoints de prompt caching [#prompt-caching-breakpoints]
+
+`cache_control: { "type": "ephemeral" }` se conserva en bloques de sistema, contenido y herramientas como un valor opaco: el core no lo interpreta y solo lo emite el adapter de Anthropic. Como eliminar un breakpoint de cache altera la facturación y la latencia, estas solicitudes requieren un deployment nativo de Messages; no se degradan silenciosamente a otro protocolo.
+
+## Salida estructurada [#structured-output]
+
+`output_config.format` se asigna al mismo `responseFormat` canonical que `response_format` en otros lugares: `json_schema` es una salida estructurada estricta nativa y solicita una respuesta adherente al esquema en los modelos que declaran `structuredOutputs: true`. Las definiciones de herramientas de Anthropic conservan `strict: true` de extremo a extremo.
+
+## Reasoning [#reasoning]
+
+El bloque `thinking` de Anthropic se obtiene de los mismos campos canonical `reasoning.effort`/`summary` que usan los demás contratos. El catálogo distingue `anthropic_adaptive` (el modelo decide la profundidad según `output_config.effort`) y `anthropic_budget` (un `budget_tokens` explícito por nivel). Consulta [Reasoning](/es/docs/reasoning) para ver los formatos y modelos compatibles. En modelos adaptativos, `output_config.effort: "max"` se conserva como un nivel distinto de `"xhigh"`.
+
+Los bloques de thinking firmados y los bloques ocultos son estado opaco del proveedor. El gateway conserva y reenvía los bloques completos, incluidas las firmas y los datos ocultos. Si otro proveedor solo devuelve un resumen visible de reasoning, Bifrost no fabrica bloques firmados.
+
+## Formato de los errores [#error-shape]
+
+Los errores siguen el propio formato de Anthropic (`{"type": "error", "error": {"type": "...", "message": "..."}}`) específicamente en este endpoint, aunque la clasificación interna del gateway es idéntica en los tres contratos de texto; consulta [Solución de problemas](/es/docs/troubleshooting) para conocer la asignación de clase a tipo.
+
+## Streaming [#streaming]
+
+La misma mecánica de SSE que cualquier otro endpoint, representada en los nombres de eventos propios de Anthropic (`message_start`, `content_block_delta`, ...). Consulta [Streaming](/es/docs/streaming).
+
+## Próximos pasos [#next-steps]
+
+- [Reasoning](/es/docs/reasoning) — `anthropic_adaptive` vs. `anthropic_budget` en profundidad.
+- [Chat completions](/es/docs/chat-completions) y [Responses](/es/docs/responses): los otros dos contratos de texto.
+- [Anthropic](/es/docs/providers-anthropic): credenciales y detalles del adapter.

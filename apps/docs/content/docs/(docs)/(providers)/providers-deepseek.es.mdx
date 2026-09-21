@@ -1,0 +1,25 @@
+---
+title: "DeepSeek"
+description: "Configura deployments de DeepSeek y conoce sus capacidades y restricciones."
+---
+## Configurar un deployment [#configura-a-deployment]
+
+Envía este cuerpo a `POST /admin/deployments` con credencial de operador. Reemplaza las credenciales de ejemplo y elige un modelo disponible para su cuenta de proveedor. Consulta [Crear deployments](/es/docs/creating-deployments) para conocer los campos de configuración compartidos.
+
+```json
+{ "publicModel": "deepseek", "adapterKey": "deepseek", "upstreamModel": "deepseek-v4-flash", "credentials": { "apiKey": "..." } }
+```
+
+## Comportamiento y restricciones [#behavior-and-limitations]
+
+- **Credenciales**: `apiKey` únicamente. No se necesita `baseUrl`; el valor predeterminado es `https://api.deepseek.com/v1`.
+- **transport predeterminado**: Chat Completions. Las herramientas estrictas utilizan automáticamente el endpoint de chat `/beta` de DeepSeek y requieren que cada función declarada se configura `strict: true`: DeepSeek valida el esquema del lado del servidor y rechaza las construcciones no compatibles. La salida del esquema JSON en los modelos V4 requiere un `transportOverrides["text.generate"]: "responses"` explícito, donde se admite `text.format` y la herramienta `strict` no. Las solicitudes nunca cambian de transport automáticamente y los dos modos estrictos no se pueden combinar en una solicitud de DeepSeek.
+- **URL base por función**: el transport Responses está anclado a `https://api.deepseek.com` y las herramientas estrictas a `https://api.deepseek.com/beta`, porque DeepSeek documenta `/v1` solo como un alias de OpenAI-SDK para Chat Completions. Un `baseUrl` personalizado nunca se reescribe.
+- **reasoning**: `openai_body` (`thinking`/controles de esfuerzo nativos), según modelo del catálogo. En el transport Responses, esos controles se emiten como `reasoning.effort` anidados de OpenAI, que es lo que DeepSeek admite allí: ignora silenciosamente claves desconocidas de nivel superior, por lo que el campo `thinking` de chat no se envía deliberadamente.
+- `deepseek-chat` y `deepseek-reasoner` son alias de compatibilidad retirados. Las nuevos deployments deben usar `deepseek-v4-flash` o `deepseek-v4-pro`.
+- Catálogo: `src/adapters/deepseek/catalog.json`.
+
+## Próximos pasos [#next-steps]
+
+- [Reasoning](/es/docs/reasoning) — el tipo `openai_body` en detalle.
+- [Crear deployments](/es/docs/creating-deployments): la forma de solicitud completa.

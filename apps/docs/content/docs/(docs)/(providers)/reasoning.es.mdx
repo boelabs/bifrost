@@ -1,0 +1,88 @@
+---
+title: "Reasoning"
+description: "Configura el nivel de esfuerzo y su traducción a los controles de cada proveedor."
+---
+Establece el esfuerzo de reasoning a través de una escala común, desde `none` hasta `max`. Bifrost asigna ese esfuerzo al control nativo del modelo seleccionado: niveles discretos, un presupuesto de tokens o un interruptor de encendido/apagado. El catálogo define qué controles y niveles soporta cada modelo.
+
+## La escala canonical [#the-canonical-ladder]
+
+```
+none < minimal < low < medium < high < xhigh < max
+```
+
+Una solicitud establece `reasoning.effort` en uno de estos siete valores. `max` es un nivel de primera clase por encima de `xhigh`, no un alias: los proveedores, incluidos OpenAI y Anthropic, exponen modelos donde se aceptan ambos valores y tienen una semántica de costo/capacidad diferente.
+
+## Las solicitudes se ajustan, nunca se rechazan [#requests-are-clamped-never-rejected]
+
+Si un modelo no admite el esfuerzo solicitado exacto, el gateway lo **ajusta** al nivel más cercano que sí admite; nunca devuelve un error por un esfuerzo fuera de rango. El único error de reasoning genuino es solicitar `reasoning.effort` en un modelo cuya entrada de catálogo no declara ningún reasoning.
+
+Las reglas de ajuste:
+
+- **Solicitando `none`**: resuelve en `none` solo si el modelo tiene interruptor de apagado literal (`"none"` es uno de sus `levels` declarados). Si el modelo no tiene interruptor de apagado (*siempre* razona), la solicitud **sube** al nivel más bajo declarado del modelo (su "piso"). No hay una bandera `canDisable` separada: la presencia de `"none"` en `levels` **es** la bandera.
+- **Solicitando un esfuerzo positivo** (`minimal`..`max`): se resuelve al nivel más alto declarado que no excede la solicitud, o el piso si la solicitud está por debajo de cada nivel declarado. Una solicitud positiva **nunca** se redondea a `none`; pedir *algún* reasoning nunca la desactiva.
+- **Omitir `reasoning` por completo**: se trata como una solicitud de `none`, es decir, "no razonar" en un modelo que puede apagarlo, o el piso en uno que no puede. No existe ningún valor predeterminado opaco upstream que se herede silenciosamente.
+
+Esto significa que un modelo nuevo solo necesita declarar qué `levels` admite; el contrato público del gateway mantiene exactamente la misma forma independientemente de cuán escasa o granular sea la escalera real de ese modelo. Cada ajuste se registra en el registro de operaciones (`requested` frente a `effective`, más el indicador booleano `clamped`); la discrepancia siempre es observable, por lo que a un cliente nunca se le cobra silenciosamente por más o menos reasoning de lo que muestra el registro.
+
+## Declarar controles en el catálogo [#declaring-it-in-the-catalog]
+
+```json
+"reasoning": {
+  "kind": "openai_effort",
+  "levels": ["none", "low", "medium", "high", "xhigh", "max"]
+}
+```
+
+- **`levels`** — qué peldaños de la escalera canonical acepta este modelo, en cualquier orden (ordenados internamente al ajustarlos). Dos convenciones que vale la pena conocer: un interruptor binario de encendido/apagado es `["none", "high"]`; un modelo que razona siempre sin interruptor de apagado y con un solo modo real es `kind: "fixed"` con `levels: ["high"]`.
+- **`budgets`** — solo para los tipos `*_budget`: un mapa desde el nivel de esfuerzo hasta un presupuesto de tokens (`{ "low": 4096, "high": 16000 }`). Si se omite, vuelve a un valor predeterminado específico del proveedor por nivel. Una especificación basada en presupuesto que declara `max` debe proporcionar su presupuesto explícitamente; el gateway nunca inventa un umbral de token portátil para un nivel máximo definido por el proveedor.
+- **`upstreamEffortMap`**: solo para etiquetas de proveedores sinónimos cuya ortografía difiere del nombre canonical. Las claves son siempre canonical; los valores son la etiqueta nativa del proveedor. Nunca debe colapsar distintos niveles semánticos: la asignación de `xhigh` a `max` no es válida. Los niveles omitidos pasan sin cambios (nombre canonical == nombre upstream).
+
+## Los tipos de control de reasoning [#the-reasoning-control-kinds]
+
+`kind` le dice al adapter *qué mecanismo del protocolo* usar; debe ser uno que el adapter de destino realmente pueda emitir (`adapter.reasoningKinds`), verificado al inicio: una entrada de catálogo no puede declarar un tipo que su propio adapter no implemente.
+
+| `kind` | Formato del protocolo | Proveedores |
+|---|---|---|
+| `openai_effort` | `reasoning_effort: "<level>"` de nivel superior (o Responses API `reasoning.effort`) | Modelos de reasoning OpenAI |
+| `openai_body` | Campo de nivel superior específico del proveedor, normalmente `thinking: {"type": "enabled"\|"disabled"}`, opcionalmente emparejado con un escalar de esfuerzo (`effortField`, por ejemplo, `reasoning_effort`) | Z.AI, MiniMax y otras API compatibles con OpenAI con controles de pensamiento nativos |
+| `anthropic_adaptive` | `thinking: {"type": "adaptive", "display": ...}` + `output_config.effort: "<level>"` | Modelos de Anthropic de reasoning adaptativo |
+| `anthropic_budget` | `thinking: {"type": "enabled", "budget_tokens": N, "display": ...}` (o `{"type": "disabled"}` para `none`) | Modelos de Anthropic basados en presupuestos |
+| `gemini_level` | `thinkingConfig: {"thinkingLevel": "low"\|"high", "includeThoughts": true}` (`xhigh` se asigna a `high`) | Modelos Gemini con niveles discretos |
+| `gemini_budget` | `thinkingConfig: {"thinkingBudget": N, "includeThoughts": true}` (`0` para `none`) | Modelos Gemini con un presupuesto de tokens |
+| `chat_template_flag` | Un indicador booleano/cadena/número dentro de `chat_template_kwargs`, p. `{"enable_thinking": true}` (Qwen) o `{"thinking": true}` (Kimi) | deployments compatibles con OpenAI estilo vLLM |
+| `fixed` | Ningún parámetro upstream: el modelo siempre razona en su único nivel admitido | Razonadores siempre activos sin interruptor de apagado y sin granularidad |
+
+Para `openai_body` y `chat_template_flag`, un subobjeto `bodyField`/`chatTemplateFlag` configura el nombre exacto del parámetro y los valores de activación/desactivación:
+
+```json
+"reasoning": {
+  "kind": "openai_body",
+  "levels": ["none", "high"],
+  "bodyField": {
+    "param": "thinking",
+    "onValue": { "type": "enabled" },
+    "offValue": { "type": "disabled" }
+  }
+}
+```
+
+## Resúmenes visibles [#visible-summaries]
+
+Cuando el reasoning está activo, `reasoning.summary` controla si el proceso de pensamiento del modelo se muestra al cliente: `"auto"` (el valor predeterminado implícito del gateway siempre que el esfuerzo está activado y el resumen no está especificado), `"none"` (exclusión voluntaria explícita), `"concise"` o `"detailed"`. Cada contrato asigna esto a su forma nativa: `display: "summarized"|"omitted"` de Anthropic, `includeThoughts` de Gemini, etc.
+
+Para un Responses upstream, Chat Completions emite resúmenes en `delta.reasoning`, separando las distintas partes con líneas en blanco. `delta.provider_specific_fields.openai.responses.reasoning_part` lleva `id` (el elemento de reasoning), `index` (la parte de resumen) y `status` (`streaming` o `done`) para que los clientes puedan mostrar bloques separados. Un final de parte no termina la respuesta. El estado de continuación cifrado permanece en `provider_specific_fields.openai.reasoning`; los clientes deberán devolverlo con el correspondiente mensaje de asistente. El playground conserva ambos a través del AI SDK.
+
+## Expresión por contrato [#per-contract-expression]
+
+- `/v1/chat/completions` y `/v1/messages`: `reasoning_effort` (OpenAI) o los campos nativos del proveedor anteriores.
+- `/v1/responses`: `reasoning: { effort, summary }`.
+- Generación de imágenes: reasoning adyacente pero distinto; consulta el mapeo de calidad de pensamiento en [Imágenes](/es/docs/images).
+
+## Límites de la sincronización [#where-this-comes-from-in-the-sync]
+
+La [herramienta de sincronización del catálogo](/es/docs/model-catalog#catalog-sync) puede redactar una propuesta de `reasoning` a partir de models.dev. No puede determinar cómo funciona el protocolo (`kind`, `bodyField`, `effortField`). Estas propuestas llevan `needsHumanReview` y bloquean `catalog:validate` hasta que se contrastan con la documentación del proveedor.
+
+## Próximos pasos [#next-steps]
+
+- [Catálogo de modelos](/es/docs/model-catalog): el formulario de entrada completo por modelo, incluido `reasoning`.
+- [Chat completions](/es/docs/chat-completions) / [Responses](/es/docs/responses) / [Messages](/es/docs/messages) — donde `reasoning.effort` se configura en una solicitud.

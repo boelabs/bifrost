@@ -1,0 +1,97 @@
+---
+title: Desarrollo de la documentación
+description: Escribe, traduce, previsualiza y valida las páginas de este sitio.
+---
+
+La documentación utiliza Next.js App Router y [Fumadocs](https://fumadocs.dev), con Bun como runtime. Las páginas se
+prerenderizan desde los archivos MDX del repositorio. Los índices de búsqueda se generan por idioma
+en `/api/search/en` y `/api/search/es`; las consultas se resuelven en el navegador. Solo
+`/sitemap.xml` lee el dominio del entorno en runtime. El sitio está disponible en inglés y español.
+
+## Vista previa de cambios [#preview-changes]
+
+Desde la raíz del repositorio, instale las dependencias e inicie la aplicación de documentación:
+
+```bash
+bun install
+bun run --filter @boelabs/docs dev
+```
+
+Abre la dirección que imprime (puerto 3000 por defecto, o `DOCS_PORT`). Para comprobar el resultado de producción, incluida la búsqueda de texto completo, que se crea a partir del mismo árbol de páginas:
+
+```bash
+bun run --filter @boelabs/docs build
+bun run --filter @boelabs/docs start
+```
+
+`start` reproduce el contenedor en lugar de aproximarlo: copia los activos estáticos al lado del servidor independiente de Next y lo ejecuta bajo Bun, que es exactamente lo que hace la imagen.
+
+## Escribe una página [#write-a-page]
+
+Las páginas se encuentran en `apps/docs/content/docs`, debajo de una de las dos **raíces de cambio**: el menú desplegable en la parte superior de la barra lateral:
+
+| Raíz | Sostiene |
+|---|---|
+| `(docs)` | Introducción, deployment, routing, acceso, proveedores, funcionamiento, ampliación |
+| `(api)` | El formato de conexión, cada endpoint y cada valor que lee el gateway |
+
+Dentro de una raíz, cada carpeta `(group)` se extrae debajo de un header de sección visible usando `"---Section title---"` y `"...(group)"` en la raíz `meta.json`. Agrega un archivo MDX con un `title` descriptivo y un `description` corto en el frontmatter YAML, luego incluye su nombre de archivo en `meta.json` de esa carpeta. Standard Markdown es suficiente para la mayoría de las páginas.
+
+**Una carpeta entre paréntesis nunca aparece en la URL**; es un grupo de rutas, exactamente como en Siguiente, por lo que `(docs)/(routing)/routing.mdx` se sirve en `/docs/routing`. Eso es lo que permite reorganizar la navegación sin romper un solo enlace, y es por eso que se puede agregar todo el conmutador sin mover una página.
+
+Dos cosas que debe saber al agregar una sección, las cuales aplica una prueba:
+
+- cada archivo `.mdx` y cada `(group)` anidado deben aparecer en la carpeta `meta.json` de su carpeta, y no puede aparecer nada que no esté allí;
+- una raíz necesita al menos una página directamente dentro de ella. Fumadocs toma el enlace de la entrada del conmutador de la página de índice de la raíz y vuelve a su primera página secundaria secundaria: una raíz que solo contiene carpetas no produce ningún vínculo y se elimina del conmutador sin una palabra.
+
+Utiliza una página por tarea o área de referencia. Comienza con su propósito y requisitos previos, explique los pasos en el orden de ejecución y termine con la verificación o los siguientes pasos relevantes. Mantén las credenciales como marcadores de posición y distinga los nombres de los public models de los ID de los modelos anteriores.
+
+## Traducir una página [#translate-a-page]
+
+Las páginas inglesas conservan sus nombres y URLs. Añade la traducción española junto a cada
+archivo con el nombre `name.es.mdx`, y utiliza `meta.es.json` para los textos de navegación.
+El inglés utiliza `/docs` y el español `/es/docs`. No hay middleware de detección de idioma ni
+contenido inglés que sustituya silenciosamente una traducción ausente.
+
+Traduce los párrafos, títulos, descripciones y textos de navegación. Conserva en inglés los ejemplos
+de código, campos de API, comandos, nombres de archivo y términos técnicos. Mantén los IDs de los
+encabezados ingleses mediante el sufijo `[#original-id]` de Fumadocs para conservar la sección al
+cambiar de idioma. Localiza los enlaces internos y los destinos de las tarjetas; conserva las URLs externas.
+
+Utiliza tarjetas para los puntos de entrada, pasos para procedimientos, pestañas para ejemplos
+alternativos y callouts para restricciones que afecten a la siguiente acción del lector. Cada página
+debe tener un propósito concreto. Enlaza a las referencias compartidas para evitar duplicaciones.
+
+Las pruebas exigen una traducción de cada página y comprueban navegación, ejemplos y enlaces. El
+build valida ambos idiomas, el idioma del documento HTML, los anchors y los índices estáticos.
+Los textos de navegación y búsqueda se definen en `src/lib/i18n.ts`.
+
+## Validar los cambios [#validate]
+
+```bash
+bun run check
+bun run typecheck
+bun run test
+bun run --filter @boelabs/docs build
+```
+
+La compilación finaliza verificando cada enlace interno y `#anchor` en el HTML prerenderizado, por lo que una página cuyo nombre ha cambiado o un header que ya no existe falla en la compilación en lugar de enviarse. Verifica la apariencia clara y oscura, la navegación móvil y la búsqueda antes de publicar.
+
+## Implementar [#deploy]
+
+La imagen se publica en GHCR junto con el gateway y el panel, y los archivos de Compose la extraen. Para construirlo usted mismo:
+
+```bash
+docker build -f apps/docs/Dockerfile -t bifrost-docs .
+docker run --rm -p 3000:3000 bifrost-docs
+```
+
+No requiere configuración: la misma imagen se ejecuta en cualquier lugar y no se requiere ninguna base de datos, instancia de Redis, clave de proveedor o archivo de entorno de gateway para entregar la documentación.
+
+Configura `DOCS_SITE_URL` como origen público para publicar un mapa del sitio en `/sitemap.xml`:
+
+```bash
+docker run --rm -p 3000:3000 -e DOCS_SITE_URL=https://docs.example.com bifrost-docs
+```
+
+Se lee en runtime, no se integra, por lo que una imagen puede servir para staging y la producción. Sin él, el sitio funciona exactamente igual y no se genera ningún mapa del sitio.

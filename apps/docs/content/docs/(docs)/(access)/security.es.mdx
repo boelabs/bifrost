@@ -1,0 +1,105 @@
+---
+title: "Seguridad"
+description: "Autenticación, roles, cifrado de credenciales y protección de datos."
+---
+## Modelo de autenticación [#auth-model]
+
+Tres identidades. Dos son claves, verificadas mediante `Authorization: Bearer <key>` o `x-api-key: <key>`:
+
+- **`MASTER_KEY`** — acceso completo. Aceptado en todas las rutas `/admin/*`. También utilizable en `/v1/*` (tráfico de operador); las solicitudes de master key nunca pasan por la limitación de velocidad, los presupuestos o el cache de respuestas.
+- **virtual keys**: creadas a través de `POST /admin/keys`, con alcance para un conjunto de public models permitidos, con límites de RPM/TPM opcionales y un presupuesto de gasto. Se utiliza únicamente en `/v1/*`. Consulta [Virtual keys](/es/docs/virtual-keys).
+
+El tercero existe sólo cuando `DASH_ENABLED`:
+
+- **Sesiones de operador**: un humano inicia sesión en `POST /auth/session` y recibe un token de sesión opaco en una cookie httpOnly. Una sesión llega tanto a `/admin/*` (limitada por su función) como a `/v1/*`. Nunca es una clave: caduca, se puede revocar individualmente y cada acción que realiza es atribuible a una persona.
+
+Una solicitud que lleva una credencial de header nunca se trata como una sesión: una clave explícita siempre gana y la cookie se consulta solo en su ausencia. Eso es lo que mantiene a cada cliente SDK existente exactamente en la ruta que usaba antes.
+
+`/v1/models` y `/v1/models/{model}` son los únicos endpoints no autenticados, de forma deliberada, como la lista de public models de cualquier proveedor. Todo lo demás, incluido `/v1/models/{model}/deployments` (detalles operativos por deployment), requiere una clave. Consulta [Consultar modelos](/es/docs/models-discovery).
+
+## Autenticación del panel [#dashboard-authentication]
+
+Desactivado de forma predeterminada. Habilitarlo no cambia nada para los clientes existentes: solo agrega las rutas `/auth/*`, `/admin/users` y la capacidad de una sesión para satisfacer `/admin`.
+
+**El operador raíz vive en el entorno, no en la base de datos.** `DASH_ROOT_USER` (con `DASH_ROOT_PASSWORD` o `MASTER_KEY` como alternativa) siempre se autentica y siempre tiene el rol `owner`. No tiene fila, por lo que no se puede desactivar, degradar ni eliminar, y vaciar `dashboard_users` nunca bloqueará a un operador. Su contraseña no se puede configurar a través de la API, solo a través del entorno.
+
+Todos los demás operadores son una fila creada por un propietario existente a través de `POST /admin/users`. No hay **ninguna ruta de autorregistro ni OAuth** en ninguna parte del gateway; una cuenta existe porque un propietario la creó.
+
+**El panel no es una identidad.** No posee ninguna credencial propia ni autentica nada: transmite el inicio de sesión del operador y luego lleva su sesión. Un panel que apunta a un gateway donde no tiene cuenta es una pantalla de inicio de sesión que no puede pasar. Consulta [Panel del operador → Cómo se autentica](/es/docs/dashboard#how-it-authenticates), que también cubre el riesgo que se corre en sentido contrario: quien pueda cambiar el `GATEWAY_URL` del panel puede apuntar su formulario de inicio de sesión a otro lugar.
+
+**Las contraseñas** se codifican con Argon2id y nunca se almacenan ni se devuelven de ninguna forma. **Las sesiones** se almacenan como un hash SHA-256 del token, exactamente como las virtual keys, con una caducidad absoluta y una caducidad inactiva deslizante, ambas configuradas en **Configuración › Sesiones de operador**. Deshabilitar a un usuario, cambiar su función o restablecer su contraseña revoca cada sesión en vivo inmediatamente en lugar de esperar a que caduque.
+
+Los **inicios de sesión fallidos** se cuentan por nombre de usuario *y* por IP de cliente, por lo que ni una cuenta bajo un ataque distribuido ni una dirección que pruebe muchos nombres de usuario alcanza el límite de intentos sin ser detectado. Luego, ambos contadores se bloquean para la ventana configurada. Cada rechazo devuelve el mismo mensaje genérico, y un nombre de usuario desconocido aún se verifica contra un hash real, por lo que ni la redacción ni el momento revelan si existe una cuenta.
+
+### Roles [#roles]
+
+| | visor | administrador | propietario |
+|---|---|---|---|
+| deployments | leer | leer/escribir | leer/escribir |
+| virtual keys | — | leer/escribir | leer/escribir |
+| Uso y resúmenes | leer | leer | leer |
+| Registros de operaciones | — | leer | leer |
+| Muestras de carga útil retenidas | — | leer | leer |
+| Inferencia (`/v1/*`) | — | si | si |
+| Configuración del router, alternativas, cache | leer | leer/escribir | leer/escribir |
+| Extensiones de runtime | — | — | gestionar |
+| Usuarios del panel | — | — | gestionar |
+| Pista de auditoría | — | — | leer |
+
+Las tres capacidades reservadas para `owner` son las que son peligrosas en lugar de simplemente destructivas: **extensiones** ejecutan código cargado en proceso sin zona de pruebas (es ejecución remota de código por diseño), **muestras de carga útil** son prompts y respuestas reales, y **administración de usuarios** es la forma en que se puede otorgar cualquier otro permiso a cualquier persona. Leer el **registro de auditoría** les corresponde por la misma razón: es el registro de quién utilizó esos tres.
+
+### CSRF [#csrf]
+
+Un navegador adjunta cookies a las solicitudes entre sitios por sí solo, por lo que una solicitud autenticada por cookies que cambia de estado debe demostrar que proviene de nuestra propia página. El gateway aplica el envío doble: la respuesta de inicio de sesión establece una cookie `bifrost_csrf` legible junto con la cookie de sesión httpOnly, y cada solicitud que no sea `GET` autenticada por esa cookie debe repetirla en `X-CSRF-Token`.
+
+**La regla es por fuente de credenciales, no por ruta.** Se aplica en `/v1/*` así como en `/admin/*` (la inferencia cuesta dinero real) y nunca se aplica a las credenciales `Bearer`/`x-api-key`, que es un navegador. nunca se adjunta automáticamente.
+
+### Orígenes del navegador [#browser-origins]
+
+El gateway **no incluye middleware CORS** y la cookie de sesión es `SameSite=Lax`. Ninguna página de Internet puede hacer que un navegador pasa una sesión de operador aquí, y una API autenticada mediante una Bearer key no necesita el permiso de un navegador para ser llamada desde un servidor.
+
+Nada amplía esto. El panel no llama en absoluto al gateway desde el navegador; lo hace su propio servidor y transmite las tres llamadas que deben ser la propia solicitud del navegador. Consulta [Panel del operador → Servicio](/es/docs/dashboard#serving-it).
+
+### Registro de auditoría [#audit-trail]
+
+Cada llamada mutante `/admin` se agrega a `admin_audit` con la identidad de actuación (`master-key`, `root` o `user:<uuid>`), la ruta, el destino, la identificación de la solicitud y el estado resultante. Las lecturas no se auditan (constituyen la mayor parte del tráfico de un panel y enterrarían lo que importa), con una excepción deliberada en la otra dirección: leer una muestra de carga útil es un `GET` que revela contenido real, y `payload_access_audit` lo registra por separado.
+
+Ambos registros se pueden leer a través de `GET /admin/audit` (`audit:read`, es decir, master key o propietario), fusionados en una línea de tiempo y filtrables por actor, acción y tiempo. El recorrido se puede agregar únicamente: ninguna ruta actualiza ni elimina una entrada.
+
+Las operaciones de inferencia llevan la misma identidad en `gateway_operations.actor`, por lo que el tráfico del operador (un playground, una prueba manual) es atribuible y aparece en `GET /admin/usage?groupBy=actor` en lugar de aparecer como gasto no atribuido.
+
+## Virtual keys en reposo [#virtual-keys-at-rest]
+
+Una virtual key nunca se almacena en texto sin formato: solo se conserva su **hash SHA-256** y un prefijo de 10 caracteres (para visualización y búsqueda en `GET /admin/keys`). La clave sin formato se devuelve exactamente una vez, en el momento de la creación; no hay forma de recuperarla nuevamente después. Gire creando una nueva clave y deshabilitando o eliminando la anterior.
+
+## Credenciales de deployment en reposo [#deployment-credentials-at-rest]
+
+Cada credencial (`apiKey`, `baseUrl`, etc.) se cifra con **AES-256-GCM** antes de almacenarse. Cada sobre versionado registra una identificación de clave y un propósito autenticado como AAD, y obtiene su propio IV aleatorio. La etiqueta de autenticación de GCM significa que la manipulación del texto cifrado almacenado hace que no se pueda descifrar en lugar de devolver basura silenciosamente. **Ninguna respuesta de API de administrador (`GET`, `POST` o `PATCH` en `/admin/deployments`) incluye credenciales**, cifradas o no; se eliminan antes de que se construya la respuesta.
+
+La pérdida de cada copia de una entrada del keyring mientras los sobres todavía hacen referencia a ella hace que esos valores sean permanentemente irrecuperables. Mantén el keyring fuera de la base de datos que descifra y nunca lo añadas a Git. Para conocer el procedimiento de rotación en línea para `MASTER_KEY` y el conjunto de claves de cifrado, consulta [Operaciones → Secretos](/es/docs/operations#secrets).
+
+## Lo que el gateway oculta públicamente [#what-the-gateway-redacts-publicly]
+
+- **`/v1/models` y `/v1/models/{model}`** exponen datos agregados de capacidad/precios, pero nunca etiquetas de deployment, credenciales, identificadores de bases de datos ni el identificador exacto del modelo upstream.
+- **`/v1/models/{model}/deployments`** (autenticado) expone una identificación por deployment opaca y determinista (un hash truncado del real) y métricas en vivo, pero nunca las credenciales o la identificación del modelo upstream.
+- **Registros de operación** (`GET /admin/logs`) persisten resúmenes y huellas digitales HMAC, no cuerpos de solicitud o respuesta.
+
+## Cargas útiles de observabilidad [#observability-payloads]
+
+Cada operación finalizada conserva una muestra forense: sobres AEAD con un propósito específico debajo del keyring versionado, ocultos y con límites de tamaño, que caducan por sí solos y nunca vuelven a ser texto sin formato. Las huellas digitales HMAC utilizan una subclave derivada separada. OpenTelemetry nunca recibe cuerpos de carga útil.
+
+Dos diales limitan la exposición, y ninguno de ellos es casual: `OBSERVABILITY_PAYLOAD_RETENTION_DAYS` decide cuánto tiempo existe una muestra, y `OBSERVABILITY_PAYLOAD_ACCESS=sealed` decide que nadie la lee: no hay rol, ni la master key. El sellado es deliberadamente una variable de entorno: reabrir cargas útiles requiere un cambio de deployment, por lo que no es algo que una cuenta de operador comprometida pueda hacer. La clave de sellado aún se encuentra en el gateway, por lo tanto, trate `sealed` como una política de acceso en lugar de una garantía contra el gateway en sí. Los intentos rechazados se auditan como lecturas exitosas. Consulta [Variables de entorno](/es/docs/reference-environment) y [Observabilidad](/es/docs/observability).
+
+## Extensiones de runtime [#runtime-extensions]
+
+El código de extensión es un ESM confiable cargado por el operador: se ejecuta durante el proceso con el mismo acceso que el propio gateway. Carga únicamente el código que haya revisado; no hay espacio aislado más allá del tiempo de espera por hook y del disyuntor de falla consecutiva descrito en [Extensiones en runtime](/es/docs/extensions). Trate `POST /admin/extensions/artifacts` con el mismo cuidado que implementar un nuevo código de gateway, porque eso es efectivamente lo que es.
+
+## Informar de una vulnerabilidad [#reporting-a-vulnerability]
+
+Siga [SECURITY.md](https://github.com/boelabs/bifrost/blob/main/SECURITY.md) en la raíz del repositorio. No abre cuestiones públicas por problemas de seguridad.
+
+## Próximos pasos [#next-steps]
+
+- [Virtual keys](/es/docs/virtual-keys): alcances, presupuestos, rotación.
+- [Variables de entorno](/es/docs/reference-environment): cada secreto y su formato.
+- [Lista de verificación para producción](/es/docs/production-checklist): qué verificar antes de comenzar a funcionar.

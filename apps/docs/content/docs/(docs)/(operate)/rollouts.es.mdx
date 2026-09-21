@@ -1,0 +1,88 @@
+---
+title: "Rollouts"
+description: "Sustituye instancias respetando las solicitudes activas y la compatibilidad del esquema."
+---
+Un deployment reemplaza un proceso que está en medio de su trabajo. Para un gateway que transmite finalizaciones, eso significa que un cliente que observa cómo llegan los tokens obtiene un restablecimiento de la conexión en lugar del resto de su respuesta.
+
+## Drenaje en `SIGTERM` [#draining-on-sigterm]
+
+Cerrar el oyente en el instante en que llega la señal reduce el tráfico: todavía no se sabe nada en sentido upstream, por lo que el proxy todavía está enrutando aquí y su grupo de mantenimiento de conexión todavía contiene sockets para este contenedor. Por tanto, la pasarela anuncia su salida antes de actuar en consecuencia.
+
+1. `GET /health/ready` responde inmediatamente a `503 {"status":"draining"}`. `GET /health/live` sigue respondiendo `200`: una sonda de vida defectuosa *reiniciaría* el contenedor y cortaríal drenaje.
+2. Los trabajos en segundo plano se detienen; las sesiones inactivas de WebSocket se cierran con `1012 service restarting`.
+3. El proceso espera `DRAIN_DELAY_MS`, **aún funciona normalmente**, por lo que la verificación de estado del proxy observa el `503` y detiene el routing aquí. Responses en esta ventana lleva `Connection: close`.
+4. El oyente cierra; las solicitudes en vuelo hacen que `SHUTDOWN_TIMEOUT_MS` finalice.
+5. Lo que queda se fuerza, el registro de operaciones se vacía, las dependencias se cierran y el proceso sale.
+
+| Variables | Predeterminado | Qué es |
+|---|---|---|
+| `DRAIN_DELAY_MS` | `15000` (`0` fuera de producción) | No está listo pero aún está en servicio, por lo que el proxy puede cancelar su registro. Algunos intervalos de control de salud. |
+| `SHUTDOWN_TIMEOUT_MS` | `120000` | Gracia para solicitudes a bordo. Debe cubrir la respuesta transmitida más larga. |
+
+<Callout>
+
+**Ambos no tienen valor a menos que el runtime del contenedor los espera.** La fecha límite predeterminada de Docker para `SIGKILL` es de 10 segundos (más corta que el drenaje), por lo que el proceso finaliza a mitad de la secuencia. Los archivos de Compose aquí configuran `stop_grace_period: 180s`; en una PaaS aumente el equivalente (Coolify: **Detener período de gracia**). Manténgalo por encima de `DRAIN_DELAY_MS + SHUTDOWN_TIMEOUT_MS`.
+
+</Callout>
+
+El drenaje es sólo la mitad. La otra mitad es superposición (el reemplazo acepta tráfico antes de que se detenga la instancia anterior) y ese es el trabajo de la plataforma, no de la aplicación.
+
+## Dos topologías [#two-topologies]
+
+Coolify realiza [actualizaciones continuas](https://coolify.io/docs/knowledge-base/rolling-updates): inicia el reemplazo, espera su verificación de estado y luego detiene el contenedor anterior para los recursos de Docker Image. Explícitamente **no** para los recursos de Docker Compose, que en su lugar concilia `docker compose up`. Entonces la elección es:
+
+**Un recurso de Compose.** Toda el stack en un solo lugar, implementada como una unidad. Sin superposición: las solicitudes en curso se agotan limpiamente, pero las nuevas llegan a un vacío hasta que el reemplazo esté escuchando. Tómelo cuando sean aceptables unos segundos de errores por deployment.
+
+**Un recurso por aplicación.** El gateway, el panel y los documentos ya son tres imágenes en tres dominios; como tres recursos de **Docker Image**, Coolify puede implementar cada uno de forma independiente. Postgres y Redis viven fuera de ellos: ya sea una stack de Compose propia (`docker/compose.data.yaml`) o los propios servicios administrados de la plataforma, en Coolify, con **SSL deshabilitado**, porque el cliente TLS de Bun rechaza los certificados autofirmados con los que se publican (consulta [Solución de problemas](/es/docs/troubleshooting)).
+
+Para el segundo, por recurso:
+
+- **Comprobación de estado** → `GET /health/ready` para el gateway, `GET /api/config` para el panel, `GET /` para los documentos, cada uno en el propio puerto de contenedor de la aplicación. Sólo el gateway drena: los otros dos dejan de aceptar conexiones en `SIGTERM` y terminan lo que está en vuelo, que es lo que necesita una UI de operador y un sitio estático.
+- **`interval x retries` debe ser más corto que `DRAIN_DELAY_MS`.** El proxy de Coolify saca del routing los contenedores en mal estado, que es lo que hace que el `503` del drenaje haga cualquier cosa, pero un contenedor solo se marca en mal estado después de tantas fallas consecutivas. Deje los diez reintentos predeterminados en un intervalo de cinco segundos y el oyente cerrará cincuenta segundos antes de que el proxy se dé cuenta, que es la falla que el drenaje debe evitar. Dos reintentos en un intervalo de cinco segundos frente a un retraso de quince segundos dejan un margen cómodo.
+- El **período de inicio** cubre el arranque más lento, no el más rápido: el gateway se conecta a Postgres y Redis, aplica las migraciones pendientes y carga las extensiones antes de que esté lista.
+- **Detener período de gracia** → arriba de `DRAIN_DELAY_MS + SHUTDOWN_TIMEOUT_MS`, p. `180`.
+- **No hay puerto de host publicado.** Coolify recurre a detener y luego iniciar cuando un puerto de host está vinculado, cuando *Nombres de contenedores consistentes* está activado, con un nombre de contenedor personalizado o IP, y para vistas previas de relaciones públicas.
+- **Conectarse a una red predefinida** (Configuración → Avanzada). Una stack de Compose tiene su propia red y un proyecto o entorno compartido no crea conectividad. Una vez conectado, dirija sus servicios por su nombre completo: `postgres-<uuid>:5432`, no `postgres:5432`.
+- **Las migraciones no necesitan ningún paso.** El gateway las aplica en el arranque, detrás de un bloqueo de aviso, por lo que cada réplica puede intentarlo y solo una lo hace. No busca aquí un enlace de "preimplementación" de plataforma: se ejecutan en el contenedor *saliente*, que es la imagen anterior y no contiene los nuevos archivos de migración.
+
+## Los cambios de esquema deben sobrevivir a la superposición [#schema-changes-must-survive-the-overlap]
+
+En cualquier actualización continua, la versión antigua y la nueva hablan con la misma base de datos a la vez: la réplica entrante migra al arrancar mientras la saliente todavía está funcionando. Una migración que cambia el nombre o elimina una columna la rompe.
+
+Expanda primero, contraiga después: agrega la nueva columna y escriba en ambas, envía el código que la lee, elimina la anterior en una migración posterior. Tres deployments para cambiar el nombre, y la misma propiedad es lo que hace que revertir una imagen sea seguro.
+
+## Imágenes y versiones [#images-and-versions]
+
+Tres imágenes, una por aplicación: `ghcr.io/<owner>/bifrost-{gateway,dashboard,docs}`. Una etiqueta `v*` publica los tres en la misma versión, incluso cuando solo uno cambia: el cliente API del panel se genera a partir del `openapi.yaml` del gateway, por lo que un número compartido elimina una pregunta de compatibilidad en lugar de responderla. CI también publica `sha-<commit>`, que nunca se mueve y es a lo que se fija una reversión, y `<branch>`, que se mueve y es lo que sigue un entorno, para `main` y para las ramas que realmente están implementadas, no para todas las ramas.
+
+## Deployment desde CI [#deploying-from-ci]
+
+`.github/workflows/ci.yml` crea las imágenes para una confirmación y le pide a Coolify que las implemente, de modo que un entorno obtenga el artefacto con el que se ejecutaron las pruebas. No hay nada vinculado a `main`: una rama que no está en el mapa no se implementa.
+
+| Configuración | Amable |
+|---|---|
+| `COOLIFY_URL` | variable del repositorio |
+| `COOLIFY_TOKEN` | secreto del repositorio, un token API con permiso de deployment |
+| `COOLIFY_DEPLOY_MAP` | variable del repositorio |
+
+La forma de la entrada de una rama indica qué topología ejecuta: una cadena para un recurso de Compose, un objeto para un recurso por aplicación, donde solo se implementan las aplicaciones cuya imagen cambió:
+
+```json
+{
+  "main": { "gateway": "<uuid>", "dashboard": "<uuid>", "docs": "<uuid>" },
+  "staging": "<uuid>"
+}
+```
+
+Varias claves pueden apuntar al mismo recurso; se implementa una vez. El UUID es el último segmento de ruta de la URL de un recurso en Coolify.
+
+## Lo que esto no soluciona [#what-this-does-not-fix]
+
+- Se corta una respuesta aún en vuelo cuando expira la ventana de drenaje. Los clientes deben volver a intentarlo, lo que para cualquier cosa de larga duración significa solicitudes idempotentes.
+- Las sesiones de WebSocket de media generación se cierran con `1012` al final de la ventana. Un cliente que trate esto como algo fatal parecerá una interrupción.
+- Las actualizaciones continuas no garantizan un tiempo de inactividad cero, en palabras del propio Coolify. Quitan el hueco programado; el drenaje, la compatibilidad de esquemas y los reintentos del cliente siguen siendo suyos.
+
+## Próximos pasos [#next-steps]
+
+- [Actualizaciones](/es/docs/upgrades): migraciones, cambios importantes y reversiones.
+- [Coolify](/es/docs/deploy-coolify) — configurando el stack en primer lugar.

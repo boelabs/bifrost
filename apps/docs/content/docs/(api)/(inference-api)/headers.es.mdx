@@ -1,0 +1,51 @@
+---
+title: "Headers"
+description: "Headers de autenticación, correlación, cache y rate limits."
+---
+## Solicitar headers [#request-headers]
+
+| header | Dónde | Efecto |
+|---|---|---|
+| `Authorization: Bearer <key>` o `x-api-key: <key>` | Todos `/v1/*`, todos `/admin/*` | Autenticación. master key en `/admin/*`; master key o virtual en `/v1/*`. |
+| `x-request-id` | Cualquier solicitud | Se hizo eco de la respuesta si la envía; de lo contrario, el gateway genera uno. Registre siempre esto; consulta [Solución de problemas](/es/docs/troubleshooting). |
+| `x-unified-cache: true` (o `1`) | Solicitudes de chat e embeddings | Opte por el caching de respuestas para esta solicitud. Se ignora por completo para el tráfico de master key. |
+| `x-unified-cache-ttl: <seconds>` | Igual que arriba | TTL para una entrada de cache recién almacenada. Predeterminado `300`, máximo `86400`. Se ignora si `x-unified-cache` no está configurado también. |
+| `x-unified-routing-metadata: true` (o `1`/`yes`/`on`/`include`) | `/v1/chat/completions`, `/v1/messages`, `/v1/responses` | Agrega un objeto `unified_routing` al cuerpo de la respuesta (ver más abajo). |
+
+## Headers de respuesta [#response-headers]
+
+| header | Cuando | Significado |
+|---|---|---|
+| `x-request-id` | Siempre | Mismo valor que el de la solicitud (o recién generado). |
+| `x-ratelimit-limit-requests` / `-remaining-requests` / `-reset-requests` | Solicitudes de virtual key con límite de RPM | Presupuesto de solicitudes por minuto para esta clave. |
+| `x-ratelimit-limit-tokens` / `-remaining-tokens` / `-reset-tokens` | Solicitudes de virtual key con límite de TPM | Presupuesto de tokens por minuto para esta clave. |
+| `x-ratelimit-limit-budget-cents` / `-remaining-budget-cents` / `-reset-budget` | Solicitudes de virtual key con presupuesto de gasto | Presupuesto restante en centavos y segundos hasta que se restablezca el período presupuestario. |
+
+Los headers de rate limit son por **virtual key**, no por modelo o deployment; reflejan la propia configuración de RPM/TPM/presupuesto de la clave (consulta [Virtual keys](/es/docs/virtual-keys)). Las solicitudes de master key nunca las llevan (la master key no tiene límites). Un acierto de cache no se indica mediante ningún header de respuesta; solo es visible en el campo `cacheHit` del registro de operaciones a través de `GET /admin/logs`.
+
+## `unified_routing` (cuerpo de la respuesta, no header) [#unified_routing-response-body-not-a-header]
+
+Solicitado a través del header `x-unified-routing-metadata`, agregado al cuerpo JSON:
+
+```json
+{
+  "unified_routing": {
+    "served_model": "gpt-image",
+    "routing_strategy": "latency-based",
+    "unsupported_parameter_strategy": "drop",
+    "fallback_used": false,
+    "attempt_count": 1,
+    "attempts": [
+      { "index": 0, "ok": true, "latency_ms": 842 }
+    ]
+  }
+}
+```
+
+`attempts` incluye todos los deployments que el router intentó para esta solicitud (incluidas las que fallaron antes del intento ganador), cada una con su latencia y, en caso de falla, `error_class` y `http_status`. Un intento rechazado por incompatible con el candidato también incluye `health_impact: "neutral"`. Consulta [Routing](/es/docs/routing) para conocer lo que significan `routing_strategy` y `fallback_used`, y [Política de parámetros](/es/docs/parameter-policy) para `unsupported_parameter_strategy`.
+
+## Próximos pasos [#next-steps]
+
+- [Routing](/es/docs/routing) y [Política de parámetros](/es/docs/parameter-policy): qué impulsa `unified_routing`.
+- [Cache de respuestas](/es/docs/caching): semántica completa de los headers de la cache.
+- [Virtual keys](/es/docs/virtual-keys): cómo se configuran los límites de RPM/TPM/presupuesto.

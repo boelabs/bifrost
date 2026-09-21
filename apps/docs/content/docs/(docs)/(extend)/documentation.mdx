@@ -5,8 +5,8 @@ description: Write, preview, test, and deploy the documentation site with Bun.
 
 The documentation is a Next.js App Router site using [Fumadocs](https://fumadocs.dev), built and
 served on Bun. Every page is prerendered from MDX in this repository, so the running server only
-hands out what the build produced, including the search index at `/api/search`. Queries run in
-the browser. Only `/sitemap.xml` reads the deployment origin at runtime. The site has one language: English.
+hands out what the build produced, including a search index per language at `/api/search/en` and `/api/search/es`. Queries run in
+the browser. Only `/sitemap.xml` reads the deployment origin at runtime. The site supports English and Spanish.
 
 ## Preview changes
 
@@ -59,6 +59,25 @@ Two things to know when adding a section, both of which a test enforces:
 Use one page per task or reference area. Start with its purpose and prerequisites, explain steps
 in execution order, and finish with verification or relevant next steps. Keep credentials as
 placeholders and distinguish public model names from upstream model IDs.
+
+## Translate a page
+
+English pages keep their existing filenames and URLs. Add Spanish content beside each page as
+`name.es.mdx`, with a matching `meta.es.json` for navigation labels. English uses `/docs` and
+Spanish uses `/es/docs`. There is no language-detection middleware or silent English fallback.
+
+Translate the prose, page titles, descriptions, and navigation. Keep code examples, API fields,
+commands, filenames, and technical terms in English. Keep the English heading IDs with Fumadocs'
+`[#original-id]` suffix so links to a section survive a language switch. Localize internal links
+and card destinations; leave external URLs unchanged.
+
+Use cards for entry points, steps for procedures, tabs for alternative examples, and callouts for
+constraints that affect the reader's next action. Keep one purpose per page and link to shared
+reference material instead of duplicating it.
+
+The language tests require a translated sibling for every page and check navigation, code examples,
+and links. The build verifies both language trees, document languages, anchors, and static search
+indexes. Navigation and search labels live in `src/lib/i18n.ts`.
 
 ## Validate
 

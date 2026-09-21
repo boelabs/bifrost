@@ -1,0 +1,366 @@
+---
+title: "Crear deployments"
+description: "Configura modelos del catálogo y modelos personalizados para cada operación."
+---
+Un **deployment** vincula un **nombre público** (lo que usan los clientes), un **adapter**, un **modelo upstream** y un conjunto de **credenciales**. Varios deployments con el mismo `publicModel` forman un grupo con equilibrio de carga y fallback. ¿Nuevo en esto? [Tu primer deployment](/es/docs/first-deployment) es la ruta mínima; esta página es la referencia completa de cada proveedor y tipo de operación.
+
+Todo se hace a través de la API de administración con la **master key**:
+
+```
+Authorization: Bearer $MASTER_KEY
+```
+
+- Crear: `POST /admin/deployments`
+- Ejecución en seco (validar sin guardar ni cifrar credenciales): `POST /admin/deployments/resolve`
+- Listar/ver/editar/eliminar: `GET|GET/:id|PATCH/:id|DELETE/:id` en `/admin/deployments`
+- Inspeccionar adapters y su funcionamiento: `GET /admin/operations`
+
+## Campos del cuerpo [#body-fields]
+
+| Campo | Requerido | Descripción |
+|---|---|---|
+| `publicModel` | si | El nombre público del modelo; es lo que pone el cliente en `"model"`. |
+| `adapterKey` | si | El adapter de primera clase para ejecutar (`openai`, `googleaistudio`, `openaicompatible`, etc.). |
+| `upstreamModel` | si | La identificación real del proveedor (clave de catálogo o el nombre del deployment en Azure). |
+| `credentials` | si | `{ apiKey, baseUrl?, ... }` dependiendo del adapter (ver tabla). Cifrado en reposo. En `PATCH`, el objeto se **fusiona** con el almacenado: envía solo los campos que está cambiando y `null` para eliminar uno. |
+| `catalogEntry` | solo personalizado | Entrada de catálogo en línea para un modelo **no** presente en el catálogo. Utiliza la misma forma que `catalog.json`; para los modelos de catálogo **debe omitirse**. |
+| `pricing` | no | `{ inputCentsPerMTokens?, outputCentsPerMTokens?, cacheReadCentsPerMTokens?, cacheWriteCentsPerMTokens?, searchUnitCents? }`. |
+| `transportOverrides` | no | Anulación de transport por operación. El valor predeterminado del adapter se aplica a todos los endpoints públicos. |
+| `label` | no | Identificador humano para diferenciar los deployments del mismo `publicModel` (por ejemplo, qué clave API). Tomado una instantánea en cada registro de operación para que pueda ver *qué* deployment atendió una solicitud. `null` lo borra. |
+| `metadata` | no | Anotaciones de operador de forma libre (`team`, `environment`, alias de clave, fecha de rotación, notas…). Un objeto JSON de hasta 16 KiB; almacenados y devueltos palabra por palabra. |
+| `enabled`, `weight`, `tpmLimit`, `rpmLimit` | no | Estado de deployment y límites. |
+| `failureDomain` | no | Cuenta de proveedor compartida/identidad de cuota. Las filas con el mismo valor comparten el estado del circuito `429` upstream. |
+
+### Requisitos de credenciales del adapter [#adapter-credential-requirements]
+
+| `adapterKey` | credenciales requeridas |
+|---|---|
+| `openai` | `apiKey` |
+| `googleaistudio` | `apiKey` |
+| `anthropic` | `apiKey` (valores predeterminados de `version` en el adapter) |
+| `azureopenai` | `apiKey`, `baseUrl` |
+| `azurefoundry` | `apiKey`, `baseUrl` |
+| `deepseek` | `apiKey` |
+| `minimax` | `apiKey` |
+| `moonshot` | `apiKey` |
+| `zai` | `apiKey` |
+| `vercel` | `apiKey` |
+| `openrouter` | `apiKey` |
+| `openaicompatible` | `apiKey`, `baseUrl` |
+
+`GET /admin/operations` devuelve la lista de adapters en vivo, las credenciales requeridas, las operaciones y los transports.
+
+## Modelos del catálogo y modelos personalizados [#catalog-vs-custom]
+
+- **Modelo de catálogo** (conocido en código): `upstreamModel` coincide con una entrada en el catálogo del adapter. Sus capacidades (límites, reasoning, formatos de imagen/audio) provienen del JSON del proveedor → **no envía `catalogEntry`**.
+- **Modelo personalizado** (no en catálogo, típico de `openaicompatible`): **debes** declarar `catalogEntry` con `operations`. La presencia de una operación implica que el modelo la soporta.
+
+<Callout>
+
+Consejo: ejecuta `POST /admin/deployments/resolve` con el mismo cuerpo para ver `source` (`catalog`/`custom`), las operaciones resueltas y los transportOverrides antes de crear.
+
+</Callout>
+
+---
+
+## Ejemplos por tipo [#examples-by-type]
+
+### 1) Texto/chat: modelo de catálogo [#1-text--chat--catalog-model]
+
+```bash
+curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
+  "publicModel": "gpt-5.4",
+  "adapterKey": "openai",
+  "upstreamModel": "gpt-5.4",
+  "credentials": { "apiKey": "sk-..." },
+  "label": "OpenAI — billing team key",
+  "metadata": { "team": "billing", "environment": "prod" }
+}'
+```
+
+Luego, el cliente llama a `POST /v1/chat/completions` (o `/v1/responses`, `/v1/messages`) con `"model": "gpt-5.4"`. Los modelos opcionales `label` y `metadata` simplemente lo ayudan a identificar el deployment; `label` también aparece en cada registro de operación (`metadata.deploymentLabel` y por intento en `attempts[].label`) para que pueda ver qué clave sirvió (o falló) en una solicitud.
+
+### 2) Imagen — modelo de catálogo [#2-image--catalog-model]
+
+```bash
+curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
+  "publicModel": "image-default",
+  "adapterKey": "openai",
+  "upstreamModel": "gpt-image-1",
+  "credentials": { "apiKey": "sk-..." }
+}'
+```
+
+Cliente: `POST /v1/images/generations` o `/v1/images/edits` (multiparte) con `"model": "image-default"`.
+
+### 3) Embeddings — modelo de catálogo [#3-embeddings--catalog-model]
+
+Abierta AI:
+
+```bash
+curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
+  "publicModel": "embed",
+  "adapterKey": "openai",
+  "upstreamModel": "text-embedding-3-small",
+  "credentials": { "apiKey": "sk-..." }
+}'
+```
+
+Google AI Studio:
+
+```bash
+curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
+  "publicModel": "embed",
+  "adapterKey": "googleaistudio",
+  "upstreamModel": "gemini-embedding-001",
+  "credentials": { "apiKey": "AIza..." }
+}'
+```
+
+Azure OpenAI v1:
+
+```bash
+curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
+  "publicModel": "embed",
+  "adapterKey": "azureopenai",
+  "upstreamModel": "text-embedding-3-small",
+  "credentials": {
+    "apiKey": "...",
+    "baseUrl": "https://my-resource.openai.azure.com"
+  }
+}'
+```
+
+Cliente:
+
+```bash
+curl -X POST $BASE/v1/embeddings -H "Authorization: Bearer $API_KEY" -H "content-type: application/json" -d '{
+  "model": "embed",
+  "input": ["red fox", "blue whale"],
+  "encoding_format": "float",
+  "dimensions": 768
+}'
+```
+
+El contrato público es compatible con OpenAI. OpenAI, Azure OpenAI v1 y compatible con OpenAI utilizan `/embeddings`; Google AI Studio utiliza `:embedContent` para una sola entrada y `:batchEmbedContents` para un lote. Google acepta texto y `encoding_format: "float"` en este gateway; las entradas pre-tokenizadas y `base64` son rechazadas por el perfil.
+
+### 4) Transcripción de audio: modelo de catálogo [#4-audio-transcription--catalog-model]
+
+```bash
+curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
+  "publicModel": "transcribe",
+  "adapterKey": "openai",
+  "upstreamModel": "gpt-4o-transcribe",
+  "credentials": { "apiKey": "sk-..." }
+}'
+```
+
+Cliente: `POST /v1/audio/transcriptions` (multiparte, campo `file`) con `model=transcribe`.
+
+#### Audio clásico de Azure OpenAI [#azure-openai-classic-audio]
+
+La transcripción de Azure utiliza de forma predeterminada la API de audio clásica basada en deployment. La ruta de vista previa v1 de Azure puede devolver `DeploymentNotFound` para un deployment que funciona mediante la ruta clásica. `upstreamModel` es el **nombre de deployment de Azure** colocado en la dirección URL y `baseUrl` es el endpoint del recurso. Para la resolución del catálogo, asigna un nombre al deployment de Azure según su ID de modelo, como `gpt-transcribe`; un nombre de deployment de Azure personalizado requiere un `catalogEntry` en línea. `apiVersion` es opcional y el valor predeterminado es `2024-06-01`:
+
+```bash
+curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
+  "publicModel": "transcribe",
+  "adapterKey": "azureopenai",
+  "upstreamModel": "gpt-transcribe",
+  "credentials": {
+    "apiKey": "...",
+    "baseUrl": "https://my-resource.openai.azure.com"
+  }
+}'
+```
+
+Para optar por la [ruta de transcripción de vista previa v1](https://learn.microsoft.com/azure/foundry/openai/reference-preview-latest#create-transcription) de Microsoft, selecciona explícitamente el transport de audio compatible con OpenAI. Utiliza `/openai/v1/audio/transcriptions?api-version=preview` y envíal nombre de deployment de Azure en el campo multiparte `model`:
+
+```json
+{
+  "transportOverrides": {
+    "audio.transcribe": "audio_transcriptions"
+  },
+  "credentials": {
+    "apiKey": "...",
+    "baseUrl": "https://my-resource.openai.azure.com",
+    "apiVersion": "preview"
+  }
+}
+```
+
+<Callout>
+
+Dado que comparten `publicModel: "transcribe"`, OpenAI directo y Azure terminan en el mismo grupo.
+
+</Callout>
+
+### 5) Reranking — Grupo OpenRouter y Vercel [#5-reranking--openrouter-and-vercel-pool]
+
+```bash
+curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
+  "publicModel": "search-reranker",
+  "adapterKey": "openrouter",
+  "upstreamModel": "cohere/rerank-4-fast",
+  "credentials": { "apiKey": "sk-or-..." }
+}'
+
+curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
+  "publicModel": "search-reranker",
+  "adapterKey": "vercel",
+  "upstreamModel": "cohere/rerank-v4-fast",
+  "credentials": { "apiKey": "..." }
+}'
+```
+
+Ambas deployments participan en el routing normal para `POST /v1/rerank`. Una solicitud que contiene el campo OpenRouter `provider` filtra el grupo solo para deployments de OpenRouter. Consulta [Reranking](/es/docs/reranking).
+
+---
+
+## Modelos personalizados (compatibles con OpenAI) [#custom-models-openai-compatible]
+
+Cuando el `upstreamModel` no esté en el catálogo, declarar `catalogEntry`. Tiene la misma forma que una entrada interior `models` en cualquier `catalog.json`; Solo incluye las operaciones que admite el modelo.
+
+### Texto personalizado [#custom-text]
+
+```bash
+curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
+  "publicModel": "llama-local",
+  "adapterKey": "openaicompatible",
+  "upstreamModel": "llama-3.3-70b",
+  "credentials": { "apiKey": "x", "baseUrl": "http://localhost:8000/v1" },
+  "catalogEntry": {
+    "operations": {
+      "text.generate": {
+        "capabilities": { "tools": true, "strictTools": false, "vision": false, "reasoning": false, "structuredOutputs": false },
+        "maxInputTokens": 131072,
+        "maxOutputTokens": 8192
+      }
+    }
+  }
+}'
+```
+
+#### Reasoning en modelos personalizados [#reasoning-in-custom-models]
+
+Un modelo personalizado puede declarar **cómo** controla el reasoning con un bloque `reasoning` dentro de `catalogEntry.operations.text.generate` (requiere `capabilities.reasoning: true`). Referencia de campo completa, los ocho `kind`, semántica de sujeción y un ejemplo trabajado de `chat_template_flag`: [Reasoning](/es/docs/reasoning).
+
+<Callout>
+
+**Vision:** con `capabilities.vision: true` el cliente pasa imágenes en la matriz `content` como `type: "image_url"` (URL o base64) y el adapter las reenvía tal cual. El contrato canonical cubre imágenes/audio/archivos, **no** `video_url`; la generación de vídeo utiliza el contrato dedicado `/v1/videos`.
+
+</Callout>
+
+### Imagen personalizada [#custom-image]
+
+Las operaciones de imagen requieren `outputFormats`, `responseFormats` y uno de `sizes`, `arbitrarySize` o `autoSize` (nativo Soporte `size: "auto"` (el modelo elige sus propias dimensiones). La primera entrada `sizes` es la predeterminada del modelo: `size: "auto"` se resuelve cuando `autoSize` está ausente.
+
+```bash
+curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
+  "publicModel": "img-local",
+  "adapterKey": "openaicompatible",
+  "upstreamModel": "sdxl",
+  "credentials": { "apiKey": "x", "baseUrl": "http://localhost:8000/v1" },
+  "catalogEntry": {
+    "operations": {
+      "image.generate": {
+        "maxN": 1,
+        "outputFormats": ["png"],
+        "responseFormats": ["b64_json"],
+        "sizes": { "1024x1024": {} }
+      }
+    }
+  }
+}'
+```
+
+### Vídeo personalizado [#custom-video]
+
+La generación de video requiere `durations` y `sizes`. Los campos opcionales controlan el resto de la superficie de solicitud: `tasks`, `supportsAudioUrl`/`supportsVideoUrl` (referencias multimodales), `supportsFrameImages`, `supportsSeed`, `supportsGenerateAudio`, `maxInputReferences` y `qualities`. Los parámetros que un perfil no declara se rechazan con `unsupported_parameter` en lugar de reenviarse. Los objetivos compatibles con OpenAI con una API de videos de trabajo asíncrono deben configurar `transportOverrides.video.generate` en `videos_async`:
+
+```bash
+curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
+  "publicModel": "veo",
+  "adapterKey": "openaicompatible",
+  "upstreamModel": "vendor/video-model",
+  "credentials": { "apiKey": "sk-...", "baseUrl": "https://api.vendor.example/v1" },
+  "transportOverrides": { "video.generate": "videos_async" },
+  "catalogEntry": {
+    "operations": {
+      "video.generate": {
+        "maxPromptChars": 32000,
+        "durations": ["4", "6", "8"],
+        "supportsImageUrl": true,
+        "contentVariants": ["video"],
+        "sizes": {
+          "1280x720": { "aspectRatio": "16:9", "resolution": "720p" },
+          "720x1280": { "aspectRatio": "9:16", "resolution": "720p" }
+        }
+      }
+    }
+  }
+}'
+```
+
+### Transcripción personalizada [#custom-transcription]
+
+Se requiere `responseFormats`; el resto es opcional:
+
+```bash
+curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
+  "publicModel": "transcribe-local",
+  "adapterKey": "openaicompatible",
+  "upstreamModel": "custom-transcribe",
+  "credentials": { "apiKey": "x", "baseUrl": "http://localhost:8000/v1" },
+  "catalogEntry": {
+    "operations": {
+      "audio.transcribe": {
+        "responseFormats": ["json", "text", "verbose_json"],
+        "supportsStreaming": false,
+        "supportsTimestampGranularities": true,
+        "maxFileBytes": 26214400
+      }
+    }
+  }
+}'
+```
+
+### Embeddings personalizadas [#custom-embeddings]
+
+Para proveedores compatibles con OpenAI sin un catálogo integrado, declare `embedding.create`:
+
+```bash
+curl -X POST $BASE/admin/deployments -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
+  "publicModel": "embed-local",
+  "adapterKey": "openaicompatible",
+  "upstreamModel": "my-embedding-model",
+  "credentials": { "apiKey": "x", "baseUrl": "http://localhost:8000/v1" },
+  "catalogEntry": {
+    "operations": {
+      "embedding.create": {
+        "dimensions": 1024,
+        "supportsDimensions": false,
+        "encodingFormats": ["float"],
+        "maxInputTokens": 8192,
+        "supportsTokenInput": false
+      }
+    },
+    "pricing": { "inputCentsPerMTokens": 2 }
+  }
+}'
+```
+
+---
+
+## Notas [#notes]
+
+- El gateway valida cada solicitud contra el perfil de la operación (formatos, streaming, tamaños, límites). Al solicitar algo fuera del perfil, se devuelve `400` con `code: "unsupported_parameter"`.
+- Para varios proveedores detrás del mismo nombre público, crea varios deployments con el mismo `publicModel` (el router equilibra y aplica respaldo).
+- Editar con `PATCH /admin/deployments/:id` (mismos campos; `catalogEntry`/`pricing` acepta `null` para borrar).
+- La semántica de los reintentos de todo el grupo, `reason`, y el ciclo de vida de la cadena están en [Fallbacks](/es/docs/fallbacks).
+
+## Próximos pasos [#next-steps]
+
+- [Elegir un proveedor](/es/docs/providers): credenciales y peculiaridades de cada adapter integrado.
+- [Routing](/es/docs/routing): `weight`, `rpmLimit`, `tpmLimit` vigentes una vez que un grupo tiene varios deployments.
+- [Catálogo de modelos](/es/docs/model-catalog): el esquema completo `catalogEntry`/`operations`.
+- [Reasoning](/es/docs/reasoning) — cada `reasoning.kind` en profundidad.

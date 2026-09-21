@@ -2,6 +2,7 @@ import { BookOpen, Braces } from "lucide-react";
 import { docs } from "../../.source/server.ts";
 import { loader } from "fumadocs-core/source";
 import { createElement } from "react";
+import { i18n } from "#/lib/i18n.ts";
 
 /**
  * The page tree and every page's content, built from `content/docs` at compile time.
@@ -11,6 +12,7 @@ import { createElement } from "react";
  */
 export const source = loader({
 	baseUrl: "/docs",
+	i18n,
 	source: docs.toFumadocsSource(),
 	icon(name) {
 		if (name === "BookOpen") {

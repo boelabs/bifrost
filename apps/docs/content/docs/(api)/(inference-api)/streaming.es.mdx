@@ -1,0 +1,40 @@
+---
+title: "Streaming"
+description: "Eventos SSE, uso de tokens, cancelación y finalización de las respuestas."
+---
+Cada endpoint que acepta `"stream": true` devuelve **Eventos enviados por el servidor** (`Content-Type: text/event-stream`), cada uno de los cuales se representa en la forma de evento nativa de ese endpoint desde el mismo flujo canonical debajo:
+
+| endpoint | Forma de fragmento/evento |
+|---|---|
+| Chat Completions | Objetos `chat.completion.chunk`, una línea `data:` cada uno |
+| Responses | Tipos de eventos nativos Responses (`response.output_text.delta`, ...) |
+| Messages | Eventos nativos de Anthropic (`message_start`, `content_block_delta`, ...) |
+| Imágenes | Eventos de imagen parcial (recuento `partial_images`), luego la imagen final |
+| Transcripciones de audio | Eventos de transcripción incremental, si el perfil del modelo declara soporte de transmisión |
+
+La transmisión finaliza con `data: [DONE]` (chat/respuestas/imágenes) o el evento de terminal nativo del contrato (mensajes) y luego cierra la conexión.
+
+## Uso en el fragmento final [#usage-in-the-final-chunk]
+
+Para endpoints de chat, solicita `stream_options.include_usage: true` (o el equivalente Responses/Messages) para obtener un objeto de uso en el fragmento final; de lo contrario, los recuentos de tokens solo son visibles después del hecho a través de `GET /admin/logs`.
+
+## Reasoning durante la transmisión [#reasoning-while-streaming]
+
+Cuando el contrato y el modelo lo respaldan, el reasoning visible llega incrementalmente como su propio campo delta (`delta.reasoning` en Chat Completions) junto con el delta de contenido normal, regido por la misma resolución `reasoning.summary` descrita en [Reasoning](/es/docs/reasoning).
+
+## Sincronización [#timing]
+
+El gateway mide la latencia y el rendimiento **solo upstream** (el tiempo hasta el último fragmento upstream, no hasta que el cliente terminó de recibir la respuesta transmitida) específicamente para que no se culpe al modelo por una conexión lenta del cliente. Esto es lo que alimenta el [Routing](/es/docs/routing) `latency-based`/`throughput-based` y el tiempo `firstOutputMs` del intento ganador (ver [Observabilidad](/es/docs/observability)).
+
+## No almacenable en cache [#not-cacheable]
+
+Las solicitudes de transmisión nunca son elegibles para la [Cache de respuestas](/es/docs/caching): el caching solo se aplica a respuestas completas, sin transmisión, sin herramientas y sin estado. Cada solicitud transmitida llega al proveedor en vivo.
+
+## Cancelación [#cancellation]
+
+Si el cliente se desconecta a mitad de la transmisión, el gateway libera la ranura en tránsito del deployment sin penalizarla; una transmisión abandonada nunca cuenta para el recuento de fallas o el cooldown de ese deployment (consulta [Routing](/es/docs/routing)).
+
+## Próximos pasos [#next-steps]
+
+- [Chat completions](/es/docs/chat-completions), [Responses](/es/docs/responses), [Messages](/es/docs/messages), [Imágenes](/es/docs/images): las formas de fragmentos específicos del contrato.
+- [Routing](/es/docs/routing): cómo el tiempo de transmisión alimenta las decisiones de routing.

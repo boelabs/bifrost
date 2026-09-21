@@ -1,0 +1,92 @@
+---
+title: "Glosario"
+description: "Vocabulario compartido por el código, las APIs y la documentación."
+---
+Este vocabulario es parte del contrato del proyecto. Debe usarse de manera consistente en TypeScript, SQL, OpenAPI, documentación, registros y herramientas de administración.
+
+## Public Endpoint [#public-endpoint]
+
+La ruta que llama un cliente, con el contrato exacto de esa API. Ejemplos: `/v1/chat/completions`, `/v1/responses`, `/v1/messages` y `/v1/images/generations`. Un endpoint público no determina el protocolo utilizado contra el proveedor.
+
+## Operation [#operation]
+
+El producto semántico que ofrece un modelo: `text.generate`, `image.generate`, `image.edit`, `audio.transcribe`, `embedding.create`, etc. Es el vocabulario estable del catálogo y la API de administración. La presencia de una operación en `catalogEntry.operations` declara soporte.
+
+## Public Model [#public-model]
+
+El nombre que envía el cliente en `model`, por ejemplo `general` o `image-default`. Todos los deployments con el mismo `publicModel` forman automáticamente su grupo. No existe una tabla o entidad separada para ese grupo: el router lo deriva de `model_deployments.public_model`.
+
+Usa **public model**, no **Model Group**. Para referirte al conjunto de sus deployments, usa **deployment pool**.
+
+## Deployment [#deployment]
+
+Una ruta ejecutable a un proveedor. Una fila `model_deployments` contiene `publicModel`, adapter, `upstreamModel`, credenciales cifradas, `transportOverrides`, estado, peso y límites. Los reintentos y cooldowns pertenecen al deployment individual.
+
+## Routing Strategy [#routing-strategy]
+
+El algoritmo que utiliza el router para elegir un deployment de un grupo: `simple-shuffle`, `least-busy`, `usage-based-tpm`, `usage-based-rpm`, `latency-based`, `throughput-based`, `price-based` o `health-aware`. Configurado globalmente a través de `PUT /admin/router-settings`, no por deployment ni por solicitud. Consulta [Routing](/es/docs/routing).
+
+## Upstream Model [#upstream-model]
+
+El identificador exacto que el adapter envía al proveedor. Puede diferir de `publicModel` y varios modelos o proveedores ascendentes pueden ofrecer el mismo public model.
+
+## Adapter [#adapter]
+
+Código que implementa controladores canonical y sabe cómo traducirlos a uno o más transports ascendentes. Declara `supportedCallTypes`, `transports` y los controladores disponibles. El catálogo del proveedor se encuentra al lado del adapter; si falta, ese proveedor no está registrado.
+
+## Transport [#transport]
+
+El protocolo que utiliza un adapter contra el proveedor: `chat_completions`, `responses`, `generate_content`, `messages`, `images`, `audio_transcriptions`, `azure_audio_transcriptions_legacy`, `embeddings`, `embed_content`, `openrouter_rerank`, o `cohere_rerank`. El tipo es `UpstreamTransport`, en `src/core/transport.ts`, y el contexto de ejecución usa `ctx.transport`.
+
+`embeddings` es el transport `/embeddings` compatible con OpenAI; `embed_content` es el transport nativo de Google Gemini para `:embedContent` y `:batchEmbedContents`.
+
+`openrouter_rerank` es el contrato `/rerank` nativo de OpenRouter; `cohere_rerank` es el transport interno `/rerank` compatible con Cohere utilizado por Vercel AI Gateway. Ambos se normalizan en una operación canonical de reranking.
+
+`transportOverrides` le permite reemplazar el transport predeterminado del adapter por operación. Evita los nombres anteriores **wire** y **bindings**.
+
+## Catalog Entry [#catalog-entry]
+
+Una descripción declarativa 1:1 de un modelo upstream: operaciones, perfiles, reasoning, límites y precios. Un modelo conocido utiliza el `catalog.json` de su adapter. Un modelo personalizado debe enviar un `catalogEntry` completo al crear su deployment.
+
+## Reasoning Spec [#reasoning-spec]
+
+Declaración de una entrada de catálogo de *cómo* un modelo controla el reasoning: `kind` (uno de los ocho mecanismos del protocolo: `openai_effort`, `openai_body`, `anthropic_adaptive`, `anthropic_budget`, `gemini_level`, `gemini_budget`, `chat_template_flag`, `fixed`), `levels` (los niveles admitidos de la escala canonical `none < minimal < low < medium < high < xhigh < max` que acepta) y configuración específica del tipo (`bodyField`, `chatTemplateFlag`, `budgets`, `upstreamEffortMap`). Consulta [Reasoning](/es/docs/reasoning).
+
+## Parameter Policy [#parameter-policy]
+
+El comportamiento configurado por el operador (`unsupportedParameterStrategy`: `drop`, `error` o `allow`) para un parámetro de solicitud que la entrada del catálogo de un deployment de destino declara no compatible. Global, vía `PUT /admin/router-settings`; Se aplica solo a los endpoints con forma de chat. Consulta [Política de parámetros](/es/docs/parameter-policy).
+
+## Operation Profile [#operation-profile]
+
+La configuración de una operación específica dentro de `catalogEntry.operations`. Por ejemplo, un perfil de imagen declara formatos y tamaños; un perfil de transcripción declara formatos de respuesta; un perfil de reranking declara las modalidades de los documentos y los límites de las solicitudes.
+
+## Capabilities [#capabilities]
+
+El nombre reservado para los indicadores de características concretas de `text.generate`: `tools`, `strictTools`, `vision`, `reasoning` y `structuredOutputs`. `strictTools` significa específicamente que el proveedor garantiza que los argumentos de la función se ajusten a su esquema declarado. No significa "lista de operaciones" ni "controlador de adapters".
+
+## CallType [#calltype]
+
+La categoría interna que conecta las operaciones ejecutables con el router y los controladores. No es un contrato de administración ni un nombre de producto. El nuevo código debe comenzar desde `Operation`; el runtime puede derivar su `CallType` a través de `operations/registry.ts`.
+
+## Canonical [#canonical]
+
+La representación interna independiente del proveedor en `src/core/canonical.ts`, `images.ts`, `audio.ts`, `embeddings.ts` y `rerank.ts`. Los contratos públicos se convierten a tipos canonical; los adapters convierten entre esos tipos y su transport. Evita el término anterior **Unified**.
+
+## Fallback Policy [#fallback-policy]
+
+Una cadena ordenada de public models identificados por `(primaryModel, reason)`. `reason` es `general`, `context_window` o `content_policy`; no es una operación. Cada destino representa su deployment pool y recibe el mismo presupuesto de reintento en todo el grupo que el principal.
+
+No uses el antiguo campo **kind** para los fallbacks. `kind` sigue siendo válido en dominios donde sí discrimina una variante, como controles de reasoning o eventos canonical.
+
+## Virtual Key [#virtual-key]
+
+Una credencial de cliente con sus propios límites y presupuesto. `allowedModels` posee los public models permitidos; `[]` significa acceso a todos ellos.
+
+## Flujo [#flow]
+
+```text
+Client -> Public Endpoint -> Canonical request
+       -> Public Model -> deployment pool -> Deployment
+       -> Transport -> provider -> Canonical response
+       -> Public Endpoint contract -> client
+```

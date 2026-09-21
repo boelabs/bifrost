@@ -1,0 +1,63 @@
+---
+title: "Estado específico del proveedor"
+description: "Conserva las firmas y el estado opaco necesarios para continuar una conversación."
+---
+Algunos proveedores adjuntan un estado opaco a sus respuestas que deben enviarse palabra por palabra en el siguiente turno. El gateway realiza viajes de ida y vuelta que indican **a través del cliente, sin almacenamiento en el lado del servidor**. Hoy existen dos tipos:
+
+- **Estado vinculado a la llamada de herramienta**: firmas de pensamiento de Gemini. Gemini 3 rechaza una solicitud de seguimiento cuyas llamadas de función reproducidas carecen de su `thoughtSignature` (`400 INVALID_ARGUMENT`).
+- **Estado vinculado al mensaje**: reasoning cifrado OpenAI (elementos `reasoning` con `encrypted_content`), que mejora la calidad del uso de herramientas de múltiples turnos cuando se reproduce.
+
+## Firmas de pensamiento (vinculadas a llamadas de herramientas) [#thought-signatures-tool-call-bound]
+
+Cuando una llamada de herramienta upstream lleva una firma de pensamiento, el gateway la incorpora en el **id de llamada de herramienta pública**, compatible con LiteLLM:
+
+```
+<id>__thought__<signature>
+```
+
+La identificación con sufijo aparece como `tool_calls[].id` en `/v1/chat/completions`, como `function_call.call_id` en `/v1/responses` y como `tool_use.id` en `/v1/messages` (sin transmisión y transmisión). Debido a que cada cliente estándar repite los identificadores de llamadas de herramientas palabra por palabra (incluso los clientes que eliminan campos desconocidos, como Vercel AI SDK), la firma sobrevive al viaje de ida y vuelta sin que el cliente comprenda nada.
+
+La firma también se refleja en la llamada de herramienta renderizada para clientes enriquecidos:
+
+```json
+{
+  "id": "call_1__thought__EjQKMg...",
+  "type": "function",
+  "function": { "name": "get_weather", "arguments": "{}" },
+  "extra_content": { "google": { "thought_signature": "EjQKMg..." } },
+  "provider_specific_fields": { "thought_signature": "EjQKMg..." }
+}
+```
+
+El nivel de mensaje/respuesta agrega además `provider_specific_fields.thought_signatures: [...]`.
+
+### Prioridad de entrada [#inbound-precedence]
+
+En la reproducción, el gateway acepta la firma en cualquiera de las tres formas, combinadas en este orden (las fuentes posteriores ganan por clave):
+
+1. El sufijo de identificación `__thought__` (en `tool_calls[].id`, `function_call.call_id` o `function_call.id`, `tool_use.id`).
+2. `provider_specific_fields.thought_signature` en el bloque de llamada de herramienta / `tool_use`.
+3. `extra_content.google.thought_signature` (solo superficies con forma de OpenAI).
+
+El sufijo se elimina antes de que algo llegue a un flujo upstream: los adapters siempre ven identificadores limpios y las referencias de resultados de herramientas (`tool_call_id`, `function_call_output.call_id`, `tool_result.tool_use_id`) se eliminan simétricamente para que la coincidencia de llamada/resultado siga funcionando.
+
+### Notas [#notes]
+
+- Las firmas son base64 estándar (`A-Za-z0-9+/=`), que no pueden contener `_`; el separador no es ambiguo.
+- Los identificadores pueden exceder los 64 caracteres. El gateway nunca trunca este portador sin pérdidas; los clientes que trunquen los identificadores de llamadas de herramientas perderían la firma. LiteLLM utiliza el mismo esquema en producción.
+- Con llamadas a funciones paralelas, Gemini puede firmar sólo la primera llamada; sólo las llamadas firmadas obtienen un sufijo.
+- Para el historial de Gemini 3 migrado o ya persistente donde faltan todos los operadores, el adapter de Google aplica el centinela documentado `skip_thought_signature_validator` de Google a la primera llamada de función en ese paso. Siempre se prefieren las firmas exactas; el centinela es sólo una ruta de recuperación de compatibilidad en el límite del proveedor.
+
+## Reasoning cifrado OpenAI (vinculado a mensajes) [#openai-encrypted-reasoning-message-bound]
+
+Para los modelos OpenAI con capacidad de reasoning, el gateway solicita `include: ["reasoning.encrypted_content"]` en sentido upstream y siempre llama al nivel upstream con `store: false` (OpenAI solo devuelve reasoning cifrado para respuestas no almacenadas; el gateway nunca utiliza almacenamiento upstream persistente). Un WebSocket Responses en vivo puede usar el cache de respuesta anterior de conexión local de OpenAI, pero los identificadores de respuesta públicos y ascendentes permanecen separados.
+
+Por superficie:
+
+- **`/v1/responses`**: el reasoning cifrado se representa como elementos de salida nativos `reasoning` (`encrypted_content` incluido incluso sin un `include` explícito, por lo que la reproducción predeterminada es `store:false` flujos de trabajo). Los clientes que reproducen elementos de salida (lo hace el SDK de IA de Vercel) lo reproducen automáticamente; en la entrada, los elementos `reasoning` con `encrypted_content` se reproducen en sentido upstream antes de las llamadas a funciones que preceden.
+- **`/v1/chat/completions`**: transportado como `provider_specific_fields: { "openai": { "reasoning": [{ "id", "encrypted_content", "summary" }] } }` a nivel de mensaje en el mensaje del asistente (y delta de transmisión). Los clientes estándar eliminan este campo, por lo que el reasoning cifrado no los utiliza en esta superficie, la misma limitación que LiteLLM.
+- **`/v1/messages`**: no compatible: el formato del protocolo de Anthropic no tiene ningún campo de extensión a nivel de mensaje que los clientes hagan eco.
+
+## Almacenamiento [#storage]
+
+Nada de esto utiliza la base de datos. La tabla `response_states` solo persiste las respuestas que el cliente almacena explícitamente (`store: true` en `/v1/responses`) para el encadenamiento `previous_response_id`/`item_reference`.

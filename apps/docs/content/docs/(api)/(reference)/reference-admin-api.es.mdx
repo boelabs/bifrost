@@ -1,0 +1,131 @@
+---
+title: "Admin API"
+description: "Rutas de administración, permisos, paginación e idempotencia."
+---
+Todas las rutas `/admin/*` requieren una identidad de operador: `Authorization: Bearer $MASTER_KEY` o, cuando `DASH_ENABLED`, una cookie de sesión de operador cuya función conlleva el permiso que necesita esa ruta (la master key los incluye todos). Consulta [Seguridad → Roles](/es/docs/security#roles). Las respuestas exitosas utilizan `{ "data": ... }`; las listas paginadas utilizan `{ "data": [...], "pagination": { limit, offset, total, nextOffset } }`.
+
+Cualquier `POST /admin/*` acepta un header `Idempotency-Key` opcional; consulta [Creaciones de idempotentes](#idempotent-creates). Esta página es un mapa de lo que existe; para conocer los cuerpos exactos de solicitud/respuesta, consulta [`apps/gateway/openapi.yaml`](https://github.com/boelabs/bifrost/blob/main/apps/gateway/openapi.yaml) o la especificación interactiva (consulta la [Referencia de la API](/es/docs/api-overview)).
+
+## Clientes escritos [#typed-clients]
+
+Cada respuesta de administración lleva un esquema en [`apps/gateway/openapi.yaml`](https://github.com/boelabs/bifrost/blob/main/apps/gateway/openapi.yaml), por lo que se genera un cliente completamente escrito en lugar de escrito a mano:
+
+```bash
+bunx openapi-typescript apps/gateway/openapi.yaml -o src/api/schema.d.ts
+```
+
+Combínelo con un contenedor de recuperación escrito (`openapi-fetch` o equivalente) y las rutas, los parámetros de consulta, los cuerpos de la solicitud y las formas de respuesta se verifican en el momento de la compilación.
+
+La especificación se genera a partir de los mismos esquemas Zod con los que valida la API, y dos pruebas fallan en la compilación si se desvía: una cuando el YAML confirmado está obsoleto y otra cuando una respuesta de administración está documentada sin un esquema. No existe un segundo protocolo privado para que lo use nuestra propia interfaz de usuario: la API documentada es la API.
+
+## Deployments [#deployments]
+
+| Ruta | Propósito |
+|---|---|
+| `GET /admin/operations` | Operaciones disponibles, credenciales requeridas y transports por adapter. |
+| `POST /admin/deployments/resolve` | Dry-run: resolver capacidades/operaciones/transports efectivos para un cuerpo, sin guardar. |
+| `GET /admin/deployments` | Listar deployments. Consulta: `enabled`, `publicModel`, `q` (nombre/prefijo de búsqueda). |
+| `POST /admin/deployments` | Crea un deployment (consulta [Crear deployments](/es/docs/creating-deployments)). |
+| `GET /admin/deployments/:id` | Lee un deployment. |
+| `PATCH /admin/deployments/:id` | Actualizar un deployment. |
+| `DELETE /admin/deployments/:id` | Eliminar un deployment. |
+
+## Virtual keys [#virtual-keys]
+
+| Ruta | Propósito |
+|---|---|
+| `GET /admin/keys` | Lista de claves. Consulta: `limit`, `offset`, `enabled`, `publicModel`, `q` (nombre/prefijo de búsqueda). |
+| `POST /admin/keys` | Crea una virtual key (consulta [Virtual keys](/es/docs/virtual-keys)). |
+| `PATCH /admin/keys/:id` | Actualizar alcance, límites, presupuesto o estado habilitado; envía `null` para borrar un límite. |
+| `DELETE /admin/keys/:id` | Eliminar permanentemente una clave. |
+
+## Router y alternativas [#router-and-fallbacks]
+
+| Ruta | Propósito |
+|---|---|
+| `GET /admin/router-settings` | Configuración efectiva del router (valor predeterminado si nunca se establece). |
+| `PUT /admin/router-settings` | Parchee cualquier subconjunto de configuraciones de routing/política de parámetros/reintento; consulta [Routing](/es/docs/routing) y [Política de parámetros](/es/docs/parameter-policy). |
+| `GET /admin/fallbacks` | Enumere las cadenas de fallback. |
+| `PUT /admin/fallbacks` | Inserte una cadena (`primaryModel`, `fallbackModels`, opcional `reason`). |
+| `DELETE /admin/fallbacks/:primaryModel/:reason` | Quitar una cadena. Consulta [Fallbacks](/es/docs/fallbacks). |
+
+## Cache [#cache]
+
+| Ruta | Propósito |
+|---|---|
+| `DELETE /admin/cache` | Borrar entradas almacenadas en cache. Consulta: `callType`, `namespace` (una identificación de virtual key): omita ambas para borrar todo. Consulta [Cache de respuestas](/es/docs/caching). |
+
+## Registros y uso [#logs-and-usage]
+
+| Ruta | Propósito |
+|---|---|
+| `GET /admin/logs` | Resúmenes de operación paginados. Los filtros incluyen `outcome`, `degraded`, `active`, `terminalVerified`, `failureKind`, `failurePhase`, duración, modelo, clave, identificación de solicitud, cache y rango de tiempo. |
+| `GET /admin/logs/:operationId` | Registro de operación completo, cronograma de intentos ascendentes ordenados y si existe una muestra retenida y se puede leer (`payload.retained`, `payload.readable`, `payload.access`). |
+| `GET /admin/logs/:operationId/payload` | Descifre la muestra forense retenida para cada operación finalizada. Requiere `payloads:read` (maestro, propietario o administrador) y se registra la auditoría, incluido el resultado. 403 `payload_access_sealed` cuando el deployment ejecuta `OBSERVABILITY_PAYLOAD_ACCESS=sealed`, 404 una vez que la retención ha barrido la muestra, 409 cuando sobrevivió a su clave. |
+| `GET /admin/observability/summary` | Resultados, recuentos degradados/estancados/activos/abandonados, reintentos y percentiles de latencia. Toma un rango final de `window=5m|1h|24h` o un `start`/`end` explícito de como máximo 31 días; `active` siempre cuenta lo que está en vuelo ahora. |
+| `GET /admin/usage` | Uso/costo del consumidor y costo upstream estimado en cada intento; agrupar por `public_model`, `virtual_key`, `actor`, `hour`, `day` o `none`. Filtrable por `actor`. Consulta [Contabilidad de costos](/es/docs/cost-accounting). |
+
+## Registro de auditoría [#audit-trail]
+
+| Ruta | Propósito |
+|---|---|
+| `GET /admin/audit` | Paginado, lo más nuevo primero. Combina el registro de llamadas mutantes `/admin` con el registro de lecturas de carga útil retenida. Consulta: `kind` (`admin`, `payload_access`), `actor`, `action`, `targetType`, `start`, `end`. Requiere `audit:read` (master key o propietario). |
+
+Ambas tablas se leen y se intercalan, por lo que `offset + limit` tiene un límite de 5000 entradas: a las más antiguas se accede con un rango de fechas o un filtro más estrecho en lugar de una página más profunda. Las entradas de configuración se conservan para `ADMIN_AUDIT_RETENTION_DAYS` (365 de forma predeterminada) y las entradas de lectura de carga útil mientras duren los metadatos de operación a los que apuntan.
+
+Las lecturas no se auditan: constituyen la inmensa mayoría del tráfico del panel y enterrarían las entradas importantes. La excepción deliberada es `GET /admin/logs/:id/payload`: es una lectura, pero revela prompts y respuestas reales, por lo que llega aquí como una entrada `payload_access`. La ruta es sólo para agregar; no hay ninguna ruta de escritura o eliminación para ello.
+
+## Idempotente crea [#idempotent-creates]
+
+Envía `Idempotency-Key: <opaque string>` con un `POST` y el gateway recuerda lo que produjo esa clave. Al volver a intentarlo con la misma clave, se devuelve la respuesta original (mismo estado, mismo cuerpo, más `Idempotent-Replay: true`) en lugar de crear un segundo recurso. Es opt-in: una solicitud sin header se comporta exactamente como siempre.
+
+- Las claves están destinadas a la persona que llama y caducan después de 24 horas.
+- Reutilizar una clave con un cuerpo diferente es `409 idempotency_key_reuse`, porque se trata de un error del cliente en lugar de un reintento.
+- Un reintento que llega mientras la primera solicitud aún se está ejecutando es `409 idempotency_key_in_progress`.
+- Sólo se recuerdan las respuestas exitosas. Una llamada rechazada o fallida libera la clave, por lo que la solicitud corregida puede reutilizarla.
+
+## Operadores y sesiones [#operators-and-sessions]
+
+Presente solo cuando `DASH_ENABLED`. `/auth/*` se monta deliberadamente fuera de `/admin`: cada ruta `/admin` requiere una identidad de operador ya resuelta, por lo que la ruta que crea una no puede vivir bajo ella.
+
+| Ruta | Propósito |
+|---|---|
+| `GET /auth/config` | Sondeo no autenticado: si existe autenticación humana aquí. Siempre presente. |
+| `POST /auth/session` | Iniciar sesión. Establece la cookie de sesión httpOnly y la cookie CSRF legible. Tarifa limitada por nombre de usuario y por IP. |
+| `GET /auth/session` | Identidad actual y los permisos que otorga su rol. |
+| `DELETE /auth/session` | Finalizar la sesión; revoca la sesión del lado del servidor y borra ambas cookies. |
+| `POST /auth/password` | Cambie su propia contraseña. Revoca tus otras sesiones y vuelve a emitir la actual. No disponible para el operador raíz. |
+| `GET /admin/users` | Operadores de lista. Consulta: `limit`, `offset`, `role`, `q`. Sólo propietario. |
+| `POST /admin/users` | Crea un operador. La única forma en que surge una cuenta. Sólo propietario. |
+| `GET /admin/users/:id` | Leer un operador. Sólo propietario. |
+| `PATCH /admin/users/:id` | Cambiar rol o estado habilitado. Cualquiera de los dos revoca las sesiones en vivo de ese usuario. Sólo propietario. |
+| `POST /admin/users/:id/password` | Establecer la contraseña de un usuario y revocar sus sesiones. Sólo propietario. |
+| `DELETE /admin/users/:id` | Eliminar un operador y sus sesiones. Sólo propietario. |
+| `GET /admin/users/:id/sessions` | Las sesiones en vivo de ese usuario. Nunca incluye el hash del token almacenado. Sólo propietario. |
+
+No hay revocación por sesión: deshabilitar la cuenta, cambiar su función o establecer una nueva contraseña revoca cada sesión que ten.
+
+El operador raíz (`DASH_ROOT_USER`) nunca aparece en `GET /admin/users` y no se puede editar a través de la API: es una identidad de entorno, no una fila. Consulta [Seguridad → Autenticación del panel](/es/docs/security#dashboard-authentication).
+
+## Extensiones [#extensions]
+
+| Ruta | Propósito |
+|---|---|
+| `GET /admin/extensions` | Definiciones cargadas e instancias configuradas, con estado en vivo. |
+| `GET /admin/extensions/artifacts` | Listar los módulos de extensión cargados (por clave). |
+| `GET /admin/extensions/artifacts/:key/versions` | Historial de versiones de una clave de módulo. |
+| `POST /admin/extensions/artifacts` | Carga una nueva versión de un módulo (`key`, `code`). Activa una recarga en caliente en cada réplica. |
+| `POST /admin/extensions/artifacts/:key/activate` | Retroceder o avanzar a una versión específica cargada anteriormente. |
+| `DELETE /admin/extensions/artifacts/:key` | Eliminar un módulo y todas sus versiones. |
+| `GET /admin/extensions/instances` | Lista de instancias configuradas (enlaces de definición). |
+| `POST /admin/extensions/instances` | Crea una instancia (`id`, `definition`, más `enabled`/`critical`/`priority`/`match`/`config`). |
+| `PATCH /admin/extensions/instances/:id` | Actualizar una instancia. |
+| `DELETE /admin/extensions/instances/:id` | Eliminar una instancia. |
+| `POST /admin/extensions/:id/reset` | Borre un disyuntor disparado y vuelva a activar la instancia para el proceso actual. |
+
+Tutorial completo, semántica de enlaces y comportamiento de falla: [Extensiones en runtime](/es/docs/extensions).
+
+## Próximos pasos [#next-steps]
+
+- [Referencia de la API](/es/docs/api-overview): forma de autenticación y error compartida con `/v1/*`.
+- [Crear deployments](/es/docs/creating-deployments), [Virtual keys](/es/docs/virtual-keys), [Fallbacks](/es/docs/fallbacks), [Extensiones en runtime](/es/docs/extensions): las guías detrás de cada sección arriba.

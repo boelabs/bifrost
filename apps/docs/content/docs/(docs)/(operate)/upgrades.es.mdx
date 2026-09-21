@@ -1,0 +1,40 @@
+---
+title: "Actualizaciones"
+description: "Actualiza las imágenes, aplica migraciones y prepara un rollback compatible."
+---
+## Extrayendo una nueva imagen [#pulling-a-new-image]
+
+El gateway aplica las migraciones pendientes por sí misma, en el arranque, antes de comenzar a escuchar. Obtener una nueva imagen es toda la actualización: no hay ningún paso de migración que secuenciar ni nada que recordar, dondequiera que la ejecuta.
+
+Cada réplica hace esto detrás de un bloqueo de aviso de Postgres, por lo que un lanzamiento en varias de ellas se serializa en lugar de competir, y las que pierden la carrera no encuentran nada pendiente. Una migración que falla es fatal: el proceso sale en lugar de funcionar con un esquema que no comprende, lo que deja una actualización continua de la versión anterior.
+
+Configura `MIGRATE_ON_BOOT=false` si su deployment prefiere ser dueña del paso y ejecuta `bun src/db/migrate.ts` en la imagen del gateway usted mismo. No coloque eso en el enlace "pre-deployment" de una plataforma; generalmente se ejecutan en el contenedor *saliente*, que es la imagen anterior y no contiene los nuevos archivos de migración.
+
+## Las migraciones son solo hacia adelante [#migrations-are-forward-only]
+
+No hay ningún `db:migrate:down`. Las migraciones en `src/db/migrations/` nunca se editan después de aplicarse: una solución se envía como una nueva migración, nunca como una reescritura de una anterior. Esto significa:
+
+- **Revertir la imagen del gateway no revierte el esquema.** Si se envió una migración con la versión desde la que está revirtiendo, el código antiguo aún debe tolerar las nuevas columnas/enumeraciones (los cambios adicionales son la norma específicamente, por lo que esto se cumple).
+- Si se debe deshacer una migración, se trata de una nueva migración hacia adelante que la revierte; planifíquela de la misma manera que planearía cualquier otro cambio de esquema, no como una emergencia `DOWN`.
+
+## Antes de actualizar en producción [#before-upgrading-in-production]
+
+La superficie del adapter y la API de administración aún pueden cambiar de manera importante. Antes de poner una nueva imagen en producción:
+
+1. Comprueba si alguna solicitud de API de administrador o forma de respuesta de la que depende ha cambiado. La especificación OpenAPI (`apps/gateway/openapi.yaml`) es la fuente de la verdad: compárala con la versión desde la que estás actualizando si tienes automatización integrada.
+2. Si la actualización agrega una configuración de router o un campo de catálogo con un nuevo valor predeterminado, decida explícitamente si ese valor predeterminado es lo que desea en lugar de heredarlo silenciosamente; consulta [Routing](/es/docs/routing) y [Política de parámetros](/es/docs/parameter-policy).
+3. Realice una copia de seguridad de la base de datos. Las migraciones son sólo hacia adelante; una copia de seguridad es la única forma de regresar de una que cambia la semántica de los datos.
+
+## Revertir una imagen [#rolling-back-an-image]
+
+Volver a implementar una imagen anterior es seguro solo mientras las migraciones aplicadas desde entonces sigan siendo compatibles con ella; una migración que eliminó o reescribió datos no se revierte al cambiar la etiqueta de la imagen. Restaure una copia de seguridad previa a la actualización o envía una nueva migración directa.
+
+## Deployment sin abandonar solicitudes [#rolling-out-without-dropping-requests]
+
+Todo lo anterior trata sobre *qué* cambios. [Rollouts](/es/docs/rollouts) trata sobre *cómo* se reemplaza el proceso en ejecución: la secuencia de drenaje en `SIGTERM`, el período de gracia que su plataforma debe permitir y por qué una migración debe seguir siendo compatible con la versión que está reemplazando mientras ambas están activas brevemente.
+
+## Próximos pasos [#next-steps]
+
+- [Rollouts](/es/docs/rollouts): sustitución de un gateway en ejecución sin descartar solicitudes.
+- [Operación del gateway](/es/docs/operations): el runbook del día a día.
+- [Lista de verificación para producción](/es/docs/production-checklist) — verificación previa al lanzamiento.

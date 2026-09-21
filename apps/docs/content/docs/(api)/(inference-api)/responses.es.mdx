@@ -1,0 +1,105 @@
+---
+title: "Responses"
+description: "Genera respuestas, utiliza herramientas y continúa conversaciones con la API Responses."
+---
+Genere respuestas, continúe conversaciones y utiliza herramientas a través del contrato OpenAI Responses. Utiliza un public model configurado para la generación de texto y una virtual key permitida para llamarlo.
+
+## Ejemplo de solicitud [#example-request]
+
+Configura `GATEWAY` en el origen del gateway y `API_KEY` en su virtual key. Reemplaza el public model de ejemplo por uno de [Consultar modelos](/es/docs/models-discovery).
+
+```bash
+curl -X POST "$GATEWAY/v1/responses" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "model": "general", "input": "Say hi" }'
+```
+
+El mismo núcleo canonical que [Chat completions](/es/docs/chat-completions), renderizado a través de la forma Responses: `input` en lugar de `messages`, `text.format` en lugar de `response_format`, `reasoning: { effort, summary }` en lugar de `reasoning_effort`, además del estado de múltiples vueltas, el cliente no tiene que reenviar manualmente.
+
+`input_file` acepta ID de archivos de proveedores, URL HTTPS y datos base64. Los transports nativos reciben el formato del archivo original cuando es posible; las URL de Gemini se materializan en datos en línea y los deployments de solo texto reciben un fallback explícito del analizador. Consulta [Entradas de contenido](/es/docs/file-inputs).
+
+`input_image` también acepta URL de datos HTTPS o base64. El mismo solucionador compatible con candidatos conserva las URL nativas donde son compatibles y las materializa de forma segura para transports solo en línea, de modo que las imágenes históricas siguen siendo portátiles cuando una conversación Responses se reproduce a través de otro proveedor.
+
+El router prefiere el transport nativo Responses cuando un deployment lo admite. Las entradas que solo existen en este protocolo, como herramientas integradas o tipos de elementos nativos, se conservan palabra por palabra y requieren un deployment nativo; nunca se borran silenciosamente durante la conversión a otro protocolo de texto.
+
+## Estado persistente [#persisted-state]
+
+A diferencia de Chat Completions, una respuesta se puede **almacenar** y hacer referencia a ella más adelante:
+
+- **`store`** (booleano): si se debe conservar esta respuesta. El valor predeterminado es `RESPONSES_STORE_DEFAULT` (en todo el gateway, `true` de forma predeterminada; establece `false` en todo el gateway para un deployment que priorice la privacidad) cuando el cliente lo omite.
+- **`previous_response_id`**: encadena una nueva solicitud a una previamente almacenada: el gateway reconstruye la entrada completa (la entrada de la solicitud anterior + su salida) y la antepone, de modo que el cliente solo envíal nuevo turno. Devuelve `400 previous_response_not_found` si la identificación referenciada no existe **o pertenece a una virtual key diferente**; el estado almacenado tiene un alcance por clave, de la misma manera que lo son los rate limits y los presupuestos.
+- **`GET /v1/responses/:id`**: recupera una respuesta previamente almacenada.
+- **`GET /v1/responses/:id/input_items`**: enumera los elementos de entrada resueltos (incluido todo lo heredado a través de `previous_response_id`).
+- **`DELETE /v1/responses/:id`**: elimina el estado almacenado anticipadamente, antes de que su ventana de retención (`RESPONSES_STATE_RETENTION_DAYS`) caduque automáticamente.
+
+El estado almacenado se encuentra en Postgres (`response_states`), separado de las tablas de observabilidad; existe para reconstruir el estado de la conversación, no para la observabilidad. Consulta [Variables de entorno](/es/docs/reference-environment#requests-logging-and-limits) para conocer la variable de retención y [Operaciones → `response_states` GC](/es/docs/operations#response_states-gc) para conocer cómo se ejecuta realmente la caducidad.
+
+Cuando `store: false`, el cliente posee el estado completo de la conversación. Haga eco de los elementos de salida tal como fueron devueltos: el estado opaco del proveedor se encuentra dentro de las llamadas a funciones y los elementos de reasoning, por lo que los clientes que reproducen identificadores y elementos palabra por palabra no necesitan un manejo específico del proveedor. El contenido de reasoning cifrado se incluye en la respuesta pública solo cuando `include` lo solicita; el estado interno persistente lo retiene para su fiel continuación. Consulta [Estado específico del proveedor](/es/docs/provider-specific-fields).
+
+## Compactación [#compaction]
+
+`POST /v1/responses/compact` acepta `model` más `input`, `previous_response_id`, `instructions` y `prompt_cache_key`. Devuelve un recurso `response.compaction` cuyo elemento de salida opaco se puede devolver en una solicitud Responses posterior. La cápsula está cifrada localmente, contiene un resumen de continuación conciso en lugar de la transcripción completa y se expande únicamente mediante la misma instancia de gateway.
+
+## `text.format` [#textformat]
+
+Se asigna al mismo `responseFormat` canonical que Chat Completions' `response_format` — `text`, `json_object`, o `json_schema`. Consulta [Chat Completions → Salidas estructuradas](/es/docs/chat-completions#structured-outputs).
+
+## Reasoning [#reasoning]
+
+`reasoning: { "effort": "high", "summary": "auto" }`: la forma de objeto del mismo mando canonical descrito en [Reasoning](/es/docs/reasoning). `summary` controla si el reasoning del modelo vuelve a aparecer (`auto`, `none`, `concise`, `detailed`).
+
+Los proveedores pueden mostrar razonamientos visibles como `summary[].summary_text` o `content[].reasoning_text`. Cuando una representación está vacía o ausente, Bifrost refleja la otra en el mismo elemento de reasoning. Las transmisiones exponen juntos el resumen correspondiente y los eventos delta/hecho de contenido; esto se aplica igualmente a los giros WebSocket SSE y Responses.
+
+El reflejo da forma a lo que Bifrost **devuelve**. Un elemento `reasoning` reproducido en la entrada se envía en sentido upstream solo con lo que produjo el proveedor (su identificación, `encrypted_content` y un resumen) porque los esquemas de solicitud aceptan `content` en un elemento de reasoning únicamente como una matriz vacía. Los clientes pueden devolver el artículo reflejado sin tocar; la mitad extra se les cae.
+
+## `responsesTransport` paso a través [#responsestransport-passthrough]
+
+Campos específicos del contrato de transferencia Responses que no tienen un equivalente Chat Completions: `include`, `metadata`, `service_tier`, `safety_identifier`, `prompt_cache_key`, `top_logprobs`, `max_tool_calls`, `truncation`, `context_management`, y `user`: se conectan tal cual a proveedores que admiten el transport Responses de forma nativa. Los recursos de respuesta incluyen el conjunto completo de campos anulables y predeterminados requeridos por el esquema de recursos actual de OpenResponses.
+
+## Streaming [#streaming]
+
+La misma mecánica de SSE que cualquier otro endpoint. Los eventos de falla del terminal upstream aparecen como errores y se confirma una secuencia almacenada antes de que se emita el evento de éxito del terminal. Consulta [Streaming](/es/docs/streaming).
+
+## Modo WebSocket [#websocket-mode]
+
+Abre una conexión persistente a `wss://YOUR_GATEWAY/v1/responses` usando la misma Bearer key que HTTP. Cada turno comienza con un objeto `response.create` de nivel superior:
+
+```json
+{
+  "type": "response.create",
+  "model": "general",
+  "store": false,
+  "input": "Find the bug"
+}
+```
+
+No envía los campos solo HTTP `stream`, `stream_options` o `background`. Los mensajes del servidor son objetos de eventos de transmisión JSON `response.*` normales, sin marco SSE. Una conexión procesa un turno a la vez; los mensajes `response.create` adicionales se ponen en cola en orden de llegada. Abre otra conexión para ejecuciones paralelas.
+
+La conexión mantiene el estado de respuesta más reciente en la memoria. Continúe solo con elementos nuevos y su identificación pública:
+
+```json
+{
+  "type": "response.create",
+  "model": "general",
+  "store": false,
+  "previous_response_id": "resp_...",
+  "input": [
+    {
+      "type": "function_call_output",
+      "call_id": "call_...",
+      "output": "tool result"
+    }
+  ]
+}
+```
+
+Esto funciona con `store: false` mientras el enchufe permanece abierto. Después de volver a conectarse, solo se pueden hidratar las respuestas `store: true` desde Postgres; de lo contrario envía el contexto completo o una ventana compactada. Las conexiones se cierran después de 60 minutos con `websocket_connection_limit_reached`.
+
+`generate: false` realiza un calentamiento compatible con OpenAI. Los proveedores sin WebSockets nativos Responses reciben un calentamiento semántico local del gateway. Cuando el deployment de OpenAI seleccionada admite el transport nativo, el gateway mantiene un socket upstream independiente y una identificación de respuesta upstream privada. Los eventos e identificaciones públicos todavía se regeneran a través del núcleo canonical; el tráfico del proveedor nunca pasa directamente al cliente.
+
+## Próximos pasos [#next-steps]
+
+- [Chat completions](/es/docs/chat-completions): los campos compartidos entre ambos contratos.
+- [Reasoning](/es/docs/reasoning): el objeto `reasoning` en su totalidad.
+- [Seguridad](/es/docs/security): por qué las respuestas almacenadas tienen un alcance por virtual key.

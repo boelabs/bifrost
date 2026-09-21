@@ -8,7 +8,8 @@ Read this file top to bottom before your first change. The rules here override d
 ## 1. Ground rules
 
 - **Repository language: English only** — code, comments, identifiers, branches, commits, PRs, and
-  docs.
+  docs. Localized documentation may use its declared language; code examples and identifiers stay
+  in English.
 - **Conversation language follows the user.** Reply in the language the user is using unless they
   ask otherwise.
 - **Be concise.** Low verbosity everywhere: commit subjects, PR bodies, code comments, and your

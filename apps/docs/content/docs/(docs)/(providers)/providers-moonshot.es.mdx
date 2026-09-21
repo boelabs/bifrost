@@ -1,0 +1,23 @@
+---
+title: "Moonshot"
+description: "Configura deployments de Moonshot y conoce sus capacidades y restricciones."
+---
+## Configurar un deployment [#configura-a-deployment]
+
+Envía este cuerpo a `POST /admin/deployments` con credencial de operador. Reemplaza las credenciales de ejemplo y elige un modelo disponible para su cuenta de proveedor. Consulta [Crear deployments](/es/docs/creating-deployments) para conocer los campos de configuración compartidos.
+
+```json
+{ "publicModel": "kimi", "adapterKey": "moonshot", "upstreamModel": "kimi-k2.7-code", "credentials": { "apiKey": "..." } }
+```
+
+## Comportamiento y restricciones [#behavior-and-limitations]
+
+- **Credenciales**: `apiKey` únicamente. No se necesita `baseUrl`; el valor predeterminado es `https://api.moonshot.ai/v1`.
+- **transport predeterminado**: Chat Completions.
+- **reasoning**: pensamiento nativo de Kimi, tipo `openai_body` para la mayoría de los modelos; algunas variantes centradas en codificación (por ejemplo, `kimi-k2.7-code`) se declaran `fixed`: reasoning siempre activo sin interruptor de apagado, ya que esa variante no tiene una forma documentada de desactivarlo.
+- Catálogo: `src/adapters/moonshot/catalog.json`.
+
+## Próximos pasos [#next-steps]
+
+- [Reasoning](/es/docs/reasoning) — Tipos `openai_body` y `fixed` en detalle.
+- [Crear deployments](/es/docs/creating-deployments): la forma de solicitud completa.

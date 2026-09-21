@@ -1,0 +1,23 @@
+{
+	"title": "Documentación",
+	"description": "Conecta una aplicación, configura proveedores y opera Bifrost.",
+	"root": true,
+	"pages": [
+		"index",
+		"---Primeros pasos---",
+		"...(get-started)",
+		"---Modelos---",
+		"...(providers)",
+		"---Routing y resiliencia---",
+		"...(routing)",
+		"---Acceso y costos---",
+		"...(access)",
+		"---Instalación---",
+		"...(deploy)",
+		"---Operación---",
+		"...(operate)",
+		"---Extensiones y contribuciones---",
+		"...(extend)"
+	],
+	"icon": "BookOpen"
+}

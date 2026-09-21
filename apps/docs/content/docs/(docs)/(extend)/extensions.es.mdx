@@ -1,0 +1,167 @@
+---
+title: "Extensiones en runtime"
+description: "Añade comportamiento mediante módulos ESM de confianza y hooks sobre el formato canonical."
+---
+Las extensiones de runtime permiten a un operador adjuntar un comportamiento confiable a Bifrost sin bifurcar el repositorio ni reconstruir la imagen oficial. El código de extensión y la configuración se encuentran en **Postgres** y se administran completamente a través de la API de administración: no hay archivos, volúmenes ni manifiestos que montar. Carga un módulo una vez y cada réplica lo recogerá automáticamente.
+
+Las extensiones se dividen en dos conceptos:
+
+- **Definiciones** (artefactos): módulos ESM versionados y confiables cargados por un administrador.
+- **Instancias**: filas de la base de datos que configuran una definición con `match`, `config`, `priority` y política de fallas.
+
+<Callout>
+
+**Modelo de confianza.** El código de extensión se ejecuta **en proceso con privilegios completos**: puede leer y reescribir cada solicitud y respuesta. Por lo tanto, la carga está restringida a la **master key**, el código se cifra en reposo y se verifica la integridad de cada artefacto (sha256) antes de cargarlo. Trate la carga de una extensión con el mismo cuidado que un deployment.
+
+</Callout>
+
+## Cómo funciona [#how-it-works]
+
+1. Un administrador carga la fuente de un módulo a través de `POST /admin/extensions/artifacts`. El gateway **lo valida antes de almacenarlo** (importa el módulo y afirma que exporta una definición válida), por lo que una carga incorrecta se rechaza con un `400` y nunca llega a la flota en ejecución.
+2. La fuente se almacena cifrada (AES-256-GCM) como una **versión** nueva e inmutable. La versión más nueva es `active`; el anterior está archivado. Activar una versión anterior es una reversión.
+3. Se activa un contador de registro único. Cada réplica la sondea (`EXTENSIONS_RELOAD_INTERVAL_MS`, 15 segundos por defecto) y **recargas en caliente** al cambiar, sin reinicio.
+4. Al recargar, cada réplica materializa los módulos activos en una **cache en disco con dirección de contenido** (`<key>-<sha256>.mjs`). Un módulo se descarga y escribe una vez por versión; las recargas y reinicios posteriores lo reutilizan. Los enlaces se ejecutan completamente en la memoria, por lo que **no hay latencia por solicitud**.
+
+## Configuración [#configuration]
+
+```bash
+EXTENSIONS_MAX_FAILURES=3
+EXTENSIONS_HOOK_TIMEOUT_MS=5000
+EXTENSIONS_RELOAD_INTERVAL_MS=15000
+EXTENSIONS_MAX_CODE_BYTES=1000000
+```
+
+Las extensiones solo requieren Postgres, del que ya depende el gateway. No hay nada más que aprovisionar.
+
+## Administrar extensiones (API de administración) [#managing-extensions-admin-api]
+
+Todas las rutas requieren la master key. La envolvente de gestión es `{ "data": ... }`.
+
+| Método y ruta | Propósito |
+|---|---|
+| `GET /admin/extensions` | Estado de runtime en vivo de este proceso (definiciones cargadas, instancias, estado del interruptor). |
+| `GET /admin/extensions/artifacts` | Enumere los artefactos cargados (todas las claves y versiones, sin código). |
+| `GET /admin/extensions/artifacts/{key}/versions` | Historial de versiones para una definición. |
+| `POST /admin/extensions/artifacts` | Carga una nueva versión y actívela. |
+| `POST /admin/extensions/artifacts/{key}/activate` | Activar una versión específica (revertir). |
+| `DELETE /admin/extensions/artifacts/{key}` | Eliminar todas las versiones de una definición. |
+| `GET /admin/extensions/instances` | Listar instancias. |
+| `POST /admin/extensions/instances` | Crea una instancia. |
+| `PATCH /admin/extensions/instances/{id}` | Actualizar una instancia. |
+| `DELETE /admin/extensions/instances/{id}` | Eliminar una instancia. |
+| `POST /admin/extensions/{id}/reset` | Borre un disparo de disyuntor para una instancia. |
+
+### Sube una definición [#upload-a-definition]
+
+El cuerpo lleva la fuente del módulo como una cadena JSON. El `key` debe ser igual al `key` que exporta el módulo.
+
+```bash
+curl -X POST "$GATEWAY/admin/extensions/artifacts" \
+  -H "Authorization: Bearer $MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d "$(jq -n --arg code "$(cat chat-defaults.mjs)" \
+        '{ key: "chatdefaults", code: $code }')"
+```
+
+### Configurar una instancia [#configura-an-instance]
+
+```bash
+curl -X POST "$GATEWAY/admin/extensions/instances" \
+  -H "Authorization: Bearer $MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "chat-defaults-general",
+    "definition": "chatdefaults",
+    "enabled": true,
+    "priority": 50,
+    "critical": false,
+    "match": { "callTypes": ["chat"] },
+    "config": { "temperature": 0.2, "maxTokens": 1024 }
+  }'
+```
+
+Ambas llamadas surten efecto en toda la flota dentro de un intervalo de recarga.
+
+## Módulo API [#module-api]
+
+Los módulos de extensión exportan una definición e importan el SDK a través del mapa de importación de paquetes:
+
+```js
+import { defineExtension } from "#extensions/sdk.ts";
+
+export default defineExtension({
+  key: "chatdefaults",
+  version: "1.0.0",
+  label: "Chat defaults",
+  description: "Applies default generation parameters.",
+  hooks: {
+    onCanonicalRequest(ctx, request) {
+      if (request.callType !== "chat") return request;
+      return {
+        ...request,
+        temperature: request.temperature ?? ctx.config.temperature,
+        maxTokens: request.maxTokens ?? ctx.config.maxTokens
+      };
+    }
+  }
+});
+```
+
+El repositorio incluye ejemplos listos para cargar en `apps/gateway/examples/extensions` (consulta su archivo README). Cubren todos los hooks:
+
+- `prompt-firewall.mjs`: neutraliza o bloquea los intentos de inyección rápida en texto entrante (`onCanonicalRequest`).
+- `pii-vault.mjs`: tokeniza la PII antes de que llegue al modelo upstream y la restaura en la respuesta, incluso a través de los límites de los fragmentos de transmisión (`onCanonicalRequest` + `onCanonicalResponse` + `onStreamEvent` + `onError`).
+- `provenance-watermark.mjs`: incorpora un marcador de procedencia invisible de ancho cero en el texto asistente (`onCanonicalResponse` + `onStreamEvent`).
+- `tiered-image-watermark.mjs`: imprime una marca de agua de vista previa visible en imágenes para claves sin privilegios (`onImageOutput`).
+
+Debido a que los enlaces se ejecutan después de que cada formato del protocolo público se traduce a la solicitud canonical de Bifrost, una instancia de `callTypes: ["chat"]` puede afectar todos los protocolos de texto: `/v1/chat/completions`, `/v1/responses` y `/v1/messages`. Los autores de extensiones no necesitan ramas separadas para `messages` de estilo OpenAI, OpenAI Responses `input`/`instructions` o Anthropic `system`.
+
+hooks disponibles en v1:
+
+-`onCanonicalRequest(ctx, request)`
+-`onCanonicalResponse(ctx, response)`
+-`onStreamEvent(ctx, event)`
+- `onImageOutput(ctx, output)`
+- `onError(ctx, error)`
+
+Una definición también puede exportar devoluciones de llamadas del ciclo de vida:
+
+- `setup(ctx)`: se ejecuta una vez cuando la definición se carga por primera vez con al menos una instancia activa.
+- `teardown(ctx)`: se ejecuta cuando una recarga en caliente elimina la definición o la reemplaza con una versión de código diferente, por lo que las recargas liberan recursos adquiridos en `setup` (temporizadores, conexiones) sin fugas.
+
+El contexto del enlace incluye `requestId`, `callType`, `endpoint`, `publicModel`, datos de autenticación desinfectados, `extensionKey`, `instanceId`, `config`, `match`, `signal` y un registrador estructurado. Las credenciales de deployment nunca se exponen.
+
+Campos `match` integrados:
+
+- `models`: nombres de public models.
+- `callTypes`: tipos de llamadas internas como `chat`, `images.generations`, `images.edits`, `embeddings`, `rerank` y `audio.transcriptions`.
+- `endpoints`: rutas de endpoints públicos.
+
+## Versionado y reversión [#versioning-and-rollback]
+
+Cada carga crea una nueva versión inmutable y la activa. Para retroceder, active uno anterior:
+
+```bash
+curl -X POST "$GATEWAY/admin/extensions/artifacts/chatdefaults/activate" \
+  -H "Authorization: Bearer $MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "version": 2 }'
+```
+
+Las instancias no están ancladas a una versión; siempre se vinculan al artefacto actualmente activo para su `definition`, por lo que se aplica una reversión en toda la flota en la próxima recarga.
+
+## Fallas [#failures]
+
+Las exportaciones de módulos no válidos, una clave que no coincide o una fuente de gran tamaño se rechazan en el momento de la **carga** con un `400`; nunca llegan a la base de datos. **La carga nunca es fatal:** un artefacto defectuoso (importación fallida o verificación de integridad) se omite y una instancia que hace referencia a una definición faltante o tiene una configuración no válida se deshabilita y aparece en estado. Una instancia **crítica** deshabilitada hace que el informe `/health/ready` no esté en buen estado y falla en sus solicitudes coincidentes cerradas con `extension_disabled`, pero el gateway aún arranca y la API de administración permanece accesible, por lo que puede solucionar el problema (por ejemplo, cargar la definición que falta) y la próxima recarga la reactiva. El gateway nunca falla en una extensión mal configurada.
+
+En runtime, las fallas de enlace devuelven un error de gateway desinfectada para esa solicitud. Después de fallas consecutivas de `EXTENSIONS_MAX_FAILURES`, la instancia se deshabilita para el proceso actual. Si una instancia deshabilitada es crítica, las solicitudes afectadas fallan con `extension_disabled` y `/health/ready` devuelve un estado incorrecto. Las instancias deshabilitadas no críticas se omiten y se informan como degradadas.
+
+Cada hook funciona con un presupuesto de reloj de pared (`EXTENSIONS_HOOK_TIMEOUT_MS`, predeterminado 5000 ms; configura `0` para desactivarlo). Un hook que lo excede, o uno que ignora su `ctx.signal` mientras el cliente cancela, se cancela y cuenta como una falla, por lo que un hook que se comporta mal nunca puede bloquear el procesamiento de solicitudes indefinidamente. Los hooks con buen comportamiento deben respetar `ctx.signal`, que se activa tanto en el tiempo de espera como en la cancelación upstream.
+
+`onError` es un hook de observabilidad de disparo y olvido: una falla dentro de él se registra y aparece en estado, pero nunca activa el disyuntor, por lo que una falla de registro no puede deshabilitar una instancia crítica.
+
+Una instancia deshabilitada por el disyuntor se puede reactivar para el proceso actual sin reiniciar a través de `POST /admin/extensions/{id}/reset`. Las instancias deshabilitadas por configuración, validación de tiempo de carga o instalación no son elegibles (su problema subyacente persiste) y el endpoint devuelve `bad_request`.
+
+## Salidas de imagen [#image-outputs]
+
+Bifrost vuelve a codificar los archivos PNG, JPEG y WebP devueltos para eliminar los metadatos ascendentes de forma predeterminada. No estampa los metadatos del producto o del propietario en el núcleo. Los operadores que quieran posprocesamiento de imágenes pueden cargar una extensión privada que utiliza `onImageOutput`.

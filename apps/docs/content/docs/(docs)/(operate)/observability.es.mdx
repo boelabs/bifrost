@@ -1,0 +1,67 @@
+---
+title: "Observabilidad"
+description: "Logs, métricas y trazas para investigar el comportamiento del gateway."
+---
+Cada ejecución pública tiene dos claves de correlación: `x-request-id`, que puede provenir del cliente, y una `operationId` interna. Ninguno de los dos se utiliza como etiqueta métrica. Los registros de aplicaciones están estructurados en JSON en stdout/stderr e incluyen la identificación de la solicitud, el método, la ruta, el estado y la duración.
+
+## Ciclo de vida duradero [#durable-lifecycle]
+
+El modelo de observabilidad actual utiliza cuatro tablas:
+
+| Mesa | Propósito | Retención |
+|---|---|---|
+| `gateway_operations` | Una fila desde el inicio de la solicitud hasta el resultado del terminal verificado. | Objetivo operativo de 30 días. |
+| `upstream_attempts` | Una fila por interacción de deployment, insertada antes de la llamada upstream. | Objetivo operativo de 30 días. |
+| `payload_samples` | Muestras forenses redactadas y cifradas por la AEAD, una por operación finalizada. | 7 días por defecto. |
+| `payload_access_audit` | Una fila de auditoría inmutable para cada búsqueda de carga útil forense, incluidas las rechazadas y las vacías. | Política de auditoría del operador. |
+
+Una operación es `in_progress` o `finished`. Su resultado es `success`, `incomplete`, `blocked`, `error`, `cancelled`, `abandoned` o `unknown`. `degraded` es ortogonal: un reintento recuperado o un fallback aún tiene éxito pero permanece visible. Una restricción de base de datos rechaza nuevas filas `success`, `incomplete` o `blocked` a menos que sean `terminalVerified=true`.
+
+El supervisor de flujo registra headers/primer evento/primer reasoning/temporización de primera salida, último progreso, espacio máximo entre eventos, bytes ascendentes/descendentes, clases de trama, el terminador de transport físico y el terminal semántico normalizado. EOF sin terminal, JSON/SSE con formato incorrecto, terminales duplicados y respuestas vacías no válidas son errores de protocolo. Sólo una terminal verificada recompensa la salud del deployment.
+
+`GET /admin/logs` enumera resúmenes de operaciones. `GET /admin/logs/{operationId}` devuelve la operación y su cronograma de intento completo. `GET /admin/observability/summary` devuelve resultados, bloqueo, reintento, activo/abandonado y agregados de latencia, para un rango final de `window=5m|1h|24h`, o para un `start`/`end` explícito de como máximo 31 días, que es lo que muestra el panel. Envíos de control de rango propios.
+
+## Métricas del panel [#dashboard-metrics]
+
+La sección **Métricas** del panel filtra por public model, deployment, operación y rango de fechas. Las fechas de hoy y del calendario utilizan UTC; las fechas de finalización personalizadas son inclusivas. Los gráficos alternan entre tráfico, errores, latencia y uso de token de deployment. Las tablas muestran el consumo de public models, los intentos de deployment y las fallas agrupadas por deployment, tipo, fase y estado del proveedor.
+
+`GET /admin/observability/metrics` requiere `usage:read` y acepta `start`, `end`, `bucket=hour|day`, `publicModel`, `deploymentId` y `operation`. El rango es `[start, end)`, está limitado a 31 días y utiliza **hora de inicio de solicitud** para los agregados de solicitudes e intentos. Los cucharones están anclados en `start`. Cada solicitud cuenta una vez; los tokens y errores ascendentes cuentan cada intento, incluidos los reintentos recuperados. Con un filtro de deployment, las métricas de solicitud describen las solicitudes que utilizaron ese deployment, incluidas sus alternativas, mientras que las métricas de deployment incluyen solo sus propios intentos. Los costos de solicitud no se atribuyen a intentos individuales. Las tasas de error dividen los errores por solicitudes o intentos finalizados.
+
+Sólo contribuyen los registros retenidos. Los deployments eliminadas permanecen visibles a través de los metadatos de sus intentos registrados. Los totales de tokens faltantes se muestran como no disponibles; los totales informados incluyen solo el uso conocido. El reasoning y los recuentos de cache son subconjuntos de uso, no tokens adicionales para agregar al total.
+
+Los resúmenes de solicitudes de reordenación registran solo el public model, el recuento de documentos y los totales de bytes, `top_n` y los nombres de las opciones del proveedor. Los resúmenes de respuestas contienen solo recuento de resultados, índices, uso y costo. Los contenidos de consultas y documentos nunca se almacenan en filas normales. `searchUnits` persiste en operaciones e intentos y se incluye en los agregados `/admin/usage`.
+
+## Privacidad de la carga útil [#payload-privacy]
+
+Las filas ordinarias contienen resúmenes y huellas digitales HMAC, nunca cuerpos de solicitud o respuesta. Las direcciones IP y los agentes de usuario se toman mediante huellas digitales en lugar de almacenarse palabra por palabra. Cada operación finalizada mantiene una muestra bajo el keyring de cifrado versionado; las exitosas también, porque una solicitud que devolvió 200 y la respuesta incorrecta es un caso que no se puede reconstruir a partir de metadatos. El cifrado y la toma de huellas digitales utilizan subclaves derivadas separadas y vinculadas a un propósito; los componentes de solicitud, respuesta, error e intento tienen un límite de 32 KiB cada uno después de la ocultación recursiva de campos secretos. Lo que limita la exposición es la ventana de retención (`OBSERVABILITY_PAYLOAD_RETENTION_DAYS`), no el azar.
+
+### Leyendo uno [#reading-one]
+
+`GET /admin/logs/{operationId}/payload` necesita `payloads:read` (master key, propietario o administrador). Cada búsqueda escribe una fila de auditoría duradera y emite un registro de auditoría estructurado que contiene su resultado (`revealed`, `missing`, ​​`sealed` o `unreadable`) y una búsqueda exitosa también actualiza la marca de tiempo de acceso de la muestra. El gateway nunca vuelve al texto sin formato.
+
+`GET /admin/logs/{operationId}` ya informa si una muestra respalda la operación y si se puede leer, por lo que una persona que llama (y el dashboard) puede distinguir "barrido por retención" de "sellado" sin gastar una entrada de auditoría para averiguarlo.
+
+### Cargas útiles de sellado [#sealing-payloads]
+
+`OBSERVABILITY_PAYLOAD_ACCESS=sealed` mantiene la captura exactamente como está y cierra la lectura para todos: la ruta se niega antes de tocar el sobre, por lo que el texto sin formato nunca existe en el proceso y el intento se audita como cualquier otro. La reapertura es un cambio de deployment (la variable más un reinicio), que es el punto: ningún rol, sesión o master key robada puede levantarlo desde el exterior. La clave que selló la muestra aún reside en el gateway, por lo que se trata de una política de acceso, no de una garantía criptográfica contra el gateway en sí; para eso acorte la retención o ejecuta sellado y no exporte nada.
+
+## OpenTelemetría [#opentelemetry]
+
+OpenTelemetry está desactivado de forma predeterminada. Habilítelo solo después de que esté disponible un recopilador OTLP:
+
+```bash
+OTEL_ENABLED=true
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+```
+
+El gateway exporta el intervalo de operaciones desde el ingreso hasta el cierre con routing, intento upstream, flujo, renderizado y elementos secundarios de persistencia, además de contadores de baja cardinalidad, histogramas, indicadores activos, profundidad de cola y métricas de pérdida de persistencia. Los cuerpos de carga útil nunca se envían a OpenTelemetry. PostgreSQL, `/health/ready`, el resumen de observabilidad y los registros JSON estructurados siguen siendo suficientes para el modelo operativo inicial.
+
+El uso de reordenación también incrementa `bifrost_search_units_total`; permanece independiente de `bifrost_tokens_total`.
+
+## Alertas iniciales [#initial-alerts]
+
+- Cualquier operación exitosa/incompleta/bloqueada sin una terminal verificada, operación abandonada o pérdida de persistencia es crítica.
+- Las paradas superiores al 2 % durante cinco minutos (mínimo 20 solicitudes), los errores de protocolo superiores al 1 % o la primera salida p95 superior a 25 segundos requieren investigación.
+- Degradados/reintentos superiores al 5% y cancelaciones de clientes superiores al 5% son advertencias.
+
+Utiliza la identificación de solicitud proporcionada por el cliente para encontrar la operación, luego inspeccione sus intentos y el cronograma del terminal. Consulta [Admin API](/es/docs/reference-admin-api) y [Routing](/es/docs/routing).

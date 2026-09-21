@@ -1,0 +1,33 @@
+---
+title: "Azure OpenAI"
+description: "Configura deployments de Azure OpenAI y conoce sus capacidades y restricciones."
+---
+## Configurar un deployment [#configura-a-deployment]
+
+Envía este cuerpo a `POST /admin/deployments` con credencial de operador. Reemplaza las credenciales de ejemplo y elige un modelo disponible para su cuenta de proveedor. Consulta [Crear deployments](/es/docs/creating-deployments) para conocer los campos de configuración compartidos.
+
+```json
+{
+  "publicModel": "azure-gpt",
+  "adapterKey": "azureopenai",
+  "upstreamModel": "gpt-5.4",
+  "credentials": { "apiKey": "...", "baseUrl": "https://my-resource.openai.azure.com" }
+}
+```
+
+## Comportamiento y restricciones [#behavior-and-limitations]
+
+- **Credenciales**: `apiKey`, `baseUrl`.
+- **`baseUrl`** debe ser HTTPS y puede ser el endpoint de recurso básico (`https://my-resource.openai.azure.com`) o la base completa `/openai/v1`. **Se rechazan las URL heredadas `/openai/deployments/...` y los parámetros de consulta**. Los selectores de versión pertenecen a `credentials.apiVersion`, no a `baseUrl`.
+- **El nombre de su deployment de Azure debe ser igual al ID del modelo de catálogo** (`upstreamModel`): Azure resuelve el modelo por el nombre del deployment, no mediante un parámetro de modelo independiente.
+- Los identificadores de catálogo de transcripción de audio incluyen `gpt-transcribe`, `gpt-4o-transcribe` y `gpt-4o-mini-transcribe`. Usan la API de audio clásica basada en deployment de forma predeterminada porque algunos recursos de Azure devuelven `DeploymentNotFound` de la ruta de vista previa v1 para deployments que de otro modo serían válidas. La ruta clásica tiene como valor predeterminado la versión API `2024-06-01`, no admite transmisión y acepta `credentials.apiVersion` cuando el deployment requiere otra versión. Los nombres de deployment personalizados requieren un `catalogEntry` en línea.
+- Para optar por `/openai/v1/audio/transcriptions?api-version=preview`, configura `transportOverrides["audio.transcribe"]` en `audio_transcriptions`. El transport v1 envíal nombre del deployment de Azure como `model` de varias partes.
+- **transport predeterminado**: API Responses para cada endpoint de texto público, incluidos Chat Completions y Messages; `embeddings` para empotrar. Configura `transportOverrides["text.generate"]` en `chat_completions` para optar por Azure Chat Completions. El endpoint público no selecciona el transport upstream. Hoy no hay transport de imágenes nativas.
+- Se emiten herramientas de función estricta tanto en Chat Completions como en Responses. Azure requiere `parallel_tool_calls: false` para este modo, por lo que el adapter proporciona ese valor predeterminado y rechaza un `true` explícito en lugar de debilitar la garantía.
+- Azure OpenAI y [Azure Foundry](/es/docs/providers-azure-foundry) son dos adapters y catálogos independientes, aunque ambos se encuentran bajo el paraguas de Azure; use este para los modelos que implementa a través de recursos de Azure OpenAI específicamente.
+- Catálogo: `src/adapters/azureopenai/catalog.json`.
+
+## Próximos pasos [#next-steps]
+
+- [Azure Foundry](/es/docs/providers-azure-foundry): el otro adapter de Azure, para los modelos que vende Azure.
+- [Crear deployments](/es/docs/creating-deployments): la forma de solicitud completa.

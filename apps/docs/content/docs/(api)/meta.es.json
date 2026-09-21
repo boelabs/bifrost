@@ -1,0 +1,12 @@
+{
+	"title": "Referencia API",
+	"description": "Consulta endpoints, parámetros y contratos de la API.",
+	"root": true,
+	"pages": [
+		"api-overview",
+		"...(inference-api)",
+		"---Referencia---",
+		"...(reference)"
+	],
+	"icon": "Braces"
+}

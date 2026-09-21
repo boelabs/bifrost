@@ -1,0 +1,36 @@
+---
+title: "Vercel AI Gateway"
+description: "Configura deployments de Vercel AI Gateway y conoce sus capacidades y restricciones."
+---
+## Configurar un deployment [#configura-a-deployment]
+
+Envía este cuerpo a `POST /admin/deployments` con credencial de operador. Reemplaza las credenciales de ejemplo y elige un modelo disponible para su cuenta de proveedor. Consulta [Crear deployments](/es/docs/creating-deployments) para conocer los campos de configuración compartidos.
+
+```json
+{
+  "publicModel": "claude-through-vercel",
+  "adapterKey": "vercel",
+  "upstreamModel": "anthropic/claude-opus-5",
+  "credentials": { "apiKey": "..." }
+}
+```
+
+## Comportamiento y restricciones [#behavior-and-limitations]
+
+- **Credenciales**: `apiKey` únicamente. El adapter utiliza `https://ai-gateway.vercel.sh/v1` de forma predeterminada; `baseUrl` puede anularlo para un proxy compatible.
+- **Id. de modelo**: use la identificación `creator/model` completa de Vercel, como `openai/gpt-5.6-sol`, `anthropic/claude-opus-5` o `google/gemini-3.1-pro-preview`.
+- **transports de texto**: Responses y Chat Completions. Los endpoints públicos Responses y Chat prefieren su transport upstream coincidente; el endpoint público Anthropic Messages continúa a través del núcleo de texto canonical y utiliza el transport Responses predeterminado del adapter.
+- **Otras operaciones**: embeddings compatibles con OpenAI y generación/edición de imágenes, además del transport `POST /rerank` compatible con Cohere utilizado internamente por el endpoint público `/v1/rerank` con forma de OpenRouter. La transcripción de audio y la generación de video no se anuncian porque los protocolos actuales de Vercel no coinciden con los transports implementados por este gateway.
+- **Catálogo propio**: Vercel no toma prestada la entrada de un proveedor propio. Su catálogo versionado se genera a partir de la API `/v1/models` no autenticada de Vercel, codificada por la identificación `creator/model` completa. Por lo tanto, los límites, las modalidades, los parámetros, los controles de reasoning, el precio base de los tokens y los niveles de contexto describen la ruta de Vercel en lugar de la API directa del creador.
+- **Cobertura del catálogo**: la sincronización emite operaciones de texto, embeddings, imagen y reranking implementadas por este adapter. Informa sobre modelos de Vercel cuyas familias de operaciones no están implementadas (actualmente video, transcripción, tiempo real y voz) en lugar de publicar entradas de catálogo inutilizables. Los perfiles de reranking siguen siendo de solo texto y se informan precios cero ambiguos en lugar de tratarse como gratuitos.
+- **reasoning**: los valores de esfuerzo proporcionados por el origen de Vercel se conservan exactamente a través de su objeto de reasoning REST normalizado; `max` y `xhigh` nunca son alias. Un interruptor de fuente se convierte en el control canonical `none | high`. Los modelos con una etiqueta de reasoning o un presupuesto pero sin niveles de esfuerzo se describen como razonadores fijos; la sincronización los informa en lugar de inventar una escalera.
+- **Estado de reasoning**: Chat Completions `reasoning_details` se conservan en `provider_specific_fields.vercel.reasoning_details` y se reproducen cuando el cliente repite el mensaje del asistente, preservando las firmas y el reasoning cifrado en los bucles de herramientas.
+- **Extensiones de gateway**: las extensiones de solicitud de Vercel se pueden enviar a través del `extra_body` del gateway, incluidos `providerOptions` y `models`. Siguen siendo de transferencia en forma de proveedor; los operadores no deben permitir que clientes que no sean de confianza envíen credenciales BYOK con ámbito de solicitud.
+
+## Próximos pasos [#next-steps]
+
+- [Crear deployments](/es/docs/creating-deployments): campos de deployment y comportamiento del catálogo.
+- [Catálogo de modelos](/es/docs/model-catalog#vercel-owned-sync): regenera y verifica la instantánea de Vercel.
+- [Reasoning](/es/docs/reasoning): niveles de esfuerzo y sujeción normalizados.
+- [Estado específico del proveedor](/es/docs/provider-specific-fields): ida y vuelta en estado opaco.
+- [Reranking](/es/docs/reranking): solicita semántica y agrupación de Vercel/OpenRouter.

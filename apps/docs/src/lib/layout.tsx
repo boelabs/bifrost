@@ -1,4 +1,5 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
+import { localizedPath, type Locale } from "#/lib/i18n.ts";
 import Image from "next/image";
 
 /**
@@ -7,7 +8,7 @@ import Image from "next/image";
  * `githubUrl` is Fumadocs' own shortcut: it renders the icon link, the repository shortcut in the
  * mobile menu, and the "Edit on GitHub" affordance from one value.
  */
-export const baseOptions: BaseLayoutProps = {
+const baseOptions: BaseLayoutProps = {
 	githubUrl: "https://github.com/boelabs/bifrost",
 	nav: {
 		title: (
@@ -34,10 +35,27 @@ export const baseOptions: BaseLayoutProps = {
  * directly above the switcher that already moves between exactly these two sections — the same
  * choice offered twice, one of them without the section's contents.
  */
-export const homeOptions: BaseLayoutProps = {
-	...baseOptions,
-	links: [
-		{ text: "Docs", url: "/docs", active: "nested-url" },
-		{ text: "API", url: "/docs/api-overview", active: "nested-url" },
-	],
-};
+export function getBaseOptions(locale: Locale): BaseLayoutProps {
+	return {
+		...baseOptions,
+		nav: { ...baseOptions.nav, url: localizedPath("/", locale) },
+	};
+}
+
+export function getHomeOptions(locale: Locale): BaseLayoutProps {
+	return {
+		...getBaseOptions(locale),
+		links: [
+			{
+				text: locale === "es" ? "Documentación" : "Documentation",
+				url: localizedPath("/docs", locale),
+				active: "nested-url",
+			},
+			{
+				text: locale === "es" ? "Referencia API" : "API reference",
+				url: localizedPath("/docs/api-overview", locale),
+				active: "nested-url",
+			},
+		],
+	};
+}

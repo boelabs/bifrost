@@ -1,0 +1,50 @@
+---
+title: "Lista de verificación para producción"
+description: "Comprueba seguridad, salud, datos y observabilidad antes de publicar."
+---
+Comprueba estos puntos antes de poner Bifrost en producción. Los enlaces amplían cada procedimiento.
+
+## Secretos [#secrets]
+
+- [ ] `MASTER_KEY` y los valores de `ENCRYPTION_KEYRING` son aleatorios, únicos por entorno y están en un gestor de secretos. No se incluyen en la imagen ni en Git. Los secretos de `docker/compose.local.yaml` son solo para desarrollo; `docker/compose.yaml` los deja vacíos y el gateway exige configurarlos antes de arrancar. Consulta [Seguridad](/es/docs/security).
+- [ ] Tienes un plan de rotación y conoces el procedimiento ante una filtración: [Operación del gateway → Secretos](/es/docs/operations#secrets).
+
+## Red y TLS [#network-and-tls]
+
+- [ ] Postgres y Redis usan un certificado emitido por una CA pública o una red privada sin TLS. **El cliente TLS de Bun rechaza certificados autofirmados**, frecuentes al exponer directamente puertos de Coolify o Dokploy. Consulta [Solución de problemas](/es/docs/troubleshooting#bun-may-fail-to-connect-to-postgresredis-over-self-signed-tls).
+- [ ] El reverse proxy expone solo los servicios públicos necesarios; Postgres y Redis permanecen en la red interna. Consulta [Instalar Bifrost](/es/docs/deployment).
+
+## Salud y escalamiento [#health-and-scaling]
+
+- [ ] La sonda de liveness apunta a `GET /health/live`, sin comprobar dependencias. Una caída de Postgres o Redis no debe reiniciar todas las réplicas.
+- [ ] La sonda de readiness apunta a `GET /health/ready` y retira del balanceador las instancias no disponibles sin reiniciarlas.
+- [ ] El orquestador espera más de `DRAIN_DELAY_MS + SHUTDOWN_TIMEOUT_MS` antes de enviar `SIGKILL`. Configura `stop_grace_period` en Compose o **Stop Grace Period** en Coolify. Los 10 segundos predeterminados de Docker son insuficientes y pueden cortar solicitudes activas. Consulta [Rollouts](/es/docs/rollouts).
+- [ ] El proxy consulta `/health/ready` y retira del routing las instancias que están cerrando.
+- [ ] Las réplicas comparten cuotas y circuitos en Redis; las tareas de mantenimiento son idempotentes o se asignan mediante transacciones. Consulta [Operación del gateway](/es/docs/operations).
+
+## Ciclo de vida de los datos [#data-lifecycle]
+
+- [ ] Las migraciones se ejecutan al arrancar (`MIGRATE_ON_BOOT`, por defecto) o en un paso propio. Cada migración es compatible con la versión anterior, que seguirá activa durante el rollout. Consulta [Rollouts](/es/docs/rollouts).
+- [ ] `OBSERVABILITY_METADATA_RETENTION_DAYS`, `OBSERVABILITY_PAYLOAD_RETENTION_DAYS` y `RESPONSES_STATE_RETENTION_DAYS` reflejan los requisitos de retención y almacenamiento. Cada solicitud finalizada conserva una muestra cifrada; su retención determina el uso de disco y la ventana de exposición.
+- [ ] Has elegido explícitamente `OBSERVABILITY_PAYLOAD_ACCESS`. Con `sealed` se siguen capturando muestras, pero nadie puede leerlas.
+- [ ] Tienes backups programados de Postgres. Redis contiene estado efímero que se puede reconstruir y no necesita backups. Consulta [Operación del gateway → Backups](/es/docs/operations#backups).
+
+## Observabilidad [#observability]
+
+- [ ] Si necesitas trazas y métricas, configura `OTEL_ENABLED=true` y un `OTEL_EXPORTER_OTLP_ENDPOINT` válido. Están desactivadas por defecto.
+- [ ] El keyring de cifrado tiene backup y has probado su rotación. El gateway nunca envía payloads a OTel. Consulta [Seguridad](/es/docs/security#observability-payloads).
+- [ ] Los logs JSON de stdout llegan a un colector.
+
+## Routing y resiliencia [#routing-and-resilience]
+
+- [ ] Has revisado `PUT /admin/router-settings`, especialmente `unsupportedParameterStrategy`: `drop` descarta parámetros no admitidos; `error` puede ser preferible para clientes estrictos. Consulta [Routing](/es/docs/routing) y [Política de parámetros](/es/docs/parameter-policy).
+- [ ] Cada public model crítico tiene varios deployments, o has aceptado explícitamente la ausencia de redundancia. Consulta [Fallbacks](/es/docs/fallbacks) para conocer qué sucede al agotar un pool.
+
+## Dependencias [#dependencies]
+
+- [ ] `bun audit --production` no informa problemas. CI aplica `--audit-level=high`; repite la comprobación al añadir dependencias a las extensiones.
+
+## Próximos pasos [#next-steps]
+
+- [Actualizaciones](/es/docs/upgrades): cambios entre versiones y procedimiento de actualización.
+- [Operación del gateway](/es/docs/operations): procedimientos de operación de esta lista.

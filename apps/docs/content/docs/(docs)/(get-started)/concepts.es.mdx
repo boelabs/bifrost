@@ -1,0 +1,70 @@
+---
+title: Conceptos básicos
+description: Cómo se relacionan los public models, deployments, adapters y virtual keys.
+---
+
+Bifrost conecta los nombres de modelo que utiliza tu aplicación con los proveedores que atienden
+las solicitudes. Estos son los tres conceptos iniciales:
+
+| Concepto | Propósito | Ejemplo |
+|---|---|---|
+| **Public Model** | El nombre que envía tu aplicación en `model`. | `general` |
+| **Deployment** | Una conexión configurada a un modelo upstream, con credenciales y límites. | `general` conectado a `gpt-5.5` de OpenAI |
+| **Virtual Key** | Una credencial de aplicación con acceso a modelos, rate limits y presupuesto. | Una key que solo puede utilizar `general` |
+
+## Public models y deployment pools [#public-models-and-deployment-pools]
+
+Los deployments con el mismo `publicModel` forman un **deployment pool**. No necesitas crear otra
+entidad para agruparlos. Añade un deployment con `publicModel: "general"` para darle al router
+otro candidato que pueda atender ese nombre.
+
+Así puedes cambiar los modelos upstream o añadir proveedores sin modificar el cliente. El router
+selecciona un deployment elegible según la [Routing](/es/docs/routing), sus capacidades,
+sus límites y su estado. Las [Fallbacks](/es/docs/fallbacks) permiten probar otro public
+model cuando el pool original no puede atender la solicitud.
+
+<Callout title="Comprueba las capacidades al combinar proveedores">
+
+Compartir un nombre público no hace que los proveedores sean intercambiables para cualquier solicitud.
+Cada deployment debe admitir la operación solicitada. La
+[Política de parámetros](/es/docs/parameter-policy) determina cómo se gestionan los campos no admitidos.
+
+</Callout>
+
+## Endpoints, adapters y transports [#endpoints-adapters-and-transports]
+
+Un **Public Endpoint** define la API que utiliza el cliente, como `/v1/chat/completions` o
+`/v1/messages`. Un **Adapter** traduce entre la representación interna de Bifrost y el formato
+del proveedor. Un **Transport** es el protocolo que ese adapter utiliza para comunicarse con el proveedor.
+
+Por ejemplo, el cliente puede utilizar Chat Completions mientras el adapter de OpenAI envía la
+solicitud upstream mediante Responses. El endpoint del cliente y el transport upstream son
+decisiones independientes. El transport se infiere por operación; utiliza `transportOverrides`
+solo cuando sea necesario.
+
+## Recorrido de una solicitud [#request-flow]
+
+```text
+Application + virtual key + public model
+  → Public endpoint
+  → Canonical request
+  → Eligible deployment selected from the pool
+  → Adapter and upstream transport
+  → Provider
+  → Canonical response
+  → Response in the client's API format
+```
+
+**Canonical** es la representación que comparten los adapters y los hooks de las extensiones.
+Permite que el routing, el control de acceso y la lógica común funcionen sin depender del protocolo
+de cada proveedor.
+
+Consulta [Arquitectura](/es/docs/architecture) para conocer el orden de ejecución, los reintentos,
+el caching y las cuotas. El [Glosario](/es/docs/glossary) define todo el vocabulario del código y
+los esquemas de la API.
+
+## Próximos pasos [#next-steps]
+
+- [Inicio rápido](/es/docs/quickstart): crea una configuración local funcional.
+- [Tu primer deployment](/es/docs/first-deployment): valida y conecta un proveedor a un gateway existente.
+- [Virtual keys](/es/docs/virtual-keys): limita el acceso de cada aplicación.

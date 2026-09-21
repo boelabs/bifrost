@@ -1,0 +1,46 @@
+---
+title: "Desarrollo local"
+description: "Ejecuta el gateway con recarga automática y las dependencias en Docker."
+---
+Para el desarrollo, ejecuta Postgres y Redis en Docker y el gateway en el host con recarga en caliente.
+
+## Dependencias [#dependencies]
+
+```bash
+git clone https://github.com/boelabs/bifrost.git && cd bifrost
+bun install
+docker compose -f docker/compose.yaml -f docker/compose.local.yaml up -d postgres redis
+```
+
+Esto inicia solo Postgres y Redis localmente (texto sin formato en `localhost`), a los que llega el gateway sin TLS, por lo que no hay [Solución de problemas](/es/docs/troubleshooting).
+
+## Configurar y ejecutar [#configura-and-run]
+
+Crea `apps/gateway/.env` (consulta [Configuración inicial](/es/docs/setup)) con las cadenas de conexión local:
+
+```bash
+DATABASE_URL=postgres://gateway:gateway@localhost:5432/bifrost
+REDIS_URL=redis://localhost:6379
+```
+
+Aplique las migraciones e inícielo en Bun con recarga en caliente:
+
+```bash
+bun run --filter @boelabs/bifrost db:migrate
+bun run --filter @boelabs/bifrost dev
+curl http://localhost:4000/health/ready
+```
+
+`dev` ejecuta el gateway en Bun con `--watch` (reinicia al realizar el cambio). A continuación, el [Inicio rápido](/es/docs/quickstart) registra un proveedor y realiza su primera llamada.
+
+## Pila completa localmente [#full-stack-locally]
+
+Para ejecutar todo (gateway + documentos + dependencias) en contenedores en lugar de en el host:
+
+```bash
+docker compose -f docker/compose.yaml -f docker/compose.local.yaml up -d
+```
+
+La anulación vincula Postgres, Redis, el gateway y los documentos a `127.0.0.1`; intencionalmente no se carga mediante deployments de PaaS de producción.
+
+Consulta [deployment → La stack de Compose](/es/docs/deployment#the-compose-stack).

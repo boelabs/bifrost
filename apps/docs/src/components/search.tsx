@@ -19,7 +19,7 @@ import {
 export default function Search(props: SharedProps) {
 	const { locale } = useI18n();
 	const { search, setSearch, query } = useDocsSearch({
-		client: staticClient({ locale }),
+		client: staticClient({ from: `/api/search/${locale ?? "en"}` }),
 	});
 
 	return (

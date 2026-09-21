@@ -1,0 +1,24 @@
+---
+title: "Z.AI"
+description: "Configura deployments de Z.AI y conoce sus capacidades y restricciones."
+---
+## Configurar un deployment [#configura-a-deployment]
+
+Envía este cuerpo a `POST /admin/deployments` con credencial de operador. Reemplaza las credenciales de ejemplo y elige un modelo disponible para su cuenta de proveedor. Consulta [Crear deployments](/es/docs/creating-deployments) para conocer los campos de configuración compartidos.
+
+```json
+{ "publicModel": "glm", "adapterKey": "zai", "upstreamModel": "glm-4.7-flash", "credentials": { "apiKey": "..." } }
+```
+
+## Comportamiento y restricciones [#behavior-and-limitations]
+
+- **Credenciales**: `apiKey` únicamente. No se necesita `baseUrl`; el valor predeterminado es `https://api.z.ai/api/paas/v4`.
+- **transport predeterminado**: Chat Completions.
+- **Salidas estructuradas**: Z.AI documenta el modo JSON (`response_format: {"type": "json_object"}`) con validación del lado del cliente, no se garantiza la adherencia al esquema JSON, por lo que ningún modelo GLM declara `structuredOutputs` o `strictTools`. Se rechaza un formato de respuesta `json_schema` con `unsupported_model_capability` en lugar de degradarlo a JSON no validado.
+- **reasoning**: `openai_body`, con un interruptor de nivel superior `thinking: { type: "enabled" | "disabled" }`: el mismo mecanismo en todos los modelos GLM del catálogo, ya sea que exponga una escalera de esfuerzo completo o solo un interruptor de encendido/apagado (`levels: ["none", "high"]`). Consulta [Reasoning](/es/docs/reasoning).
+- Catálogo: `src/adapters/zai/catalog.json`.
+
+## Próximos pasos [#next-steps]
+
+- [Reasoning](/es/docs/reasoning): la alternancia `openai_body` / `thinking` en detalle.
+- [Crear deployments](/es/docs/creating-deployments): la forma de solicitud completa.
