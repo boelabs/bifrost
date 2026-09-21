@@ -48,8 +48,10 @@ export function CacheUsage({
 		},
 	];
 	const total = rows.reduce((sum, row) => sum + (row.value ?? 0), 0);
+	const segments = rows.filter((row) => (row.value ?? 0) > 0);
+	const visibleRows = rows.filter((row) => row.value !== 0 || total === 0);
 	return (
-		<Card aria-labelledby={id} className="min-w-0 p-7">
+		<Card aria-labelledby={id} className="@container min-w-0 p-7">
 			<div className="flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<h2 className="font-semibold" id={id}>
@@ -78,7 +80,7 @@ export function CacheUsage({
 					</p>
 				</div>
 			</div>
-			<div className="mt-6 grid items-center gap-8 sm:grid-cols-[14rem_1fr]">
+			<div className="mt-6 grid @min-[40rem]:grid-cols-[14rem_minmax(0,1fr)] items-center @min-[40rem]:gap-8 gap-6">
 				<div
 					aria-label="Reported input token distribution"
 					className="relative mx-auto h-56 w-56"
@@ -88,15 +90,13 @@ export function CacheUsage({
 						<ResponsiveContainer height="100%" width="100%">
 							<PieChart>
 								<Pie
-									data={rows.filter((row) => (row.value ?? 0) > 0)}
+									data={segments}
 									dataKey="value"
 									innerRadius={76}
 									isAnimationActive={false}
 									nameKey="label"
 									outerRadius={102}
-									paddingAngle={3}
-									stroke="var(--card)"
-									strokeWidth={3}
+									stroke="none"
 								/>
 								<Tooltip
 									contentStyle={chartTooltipStyle}
@@ -117,27 +117,29 @@ export function CacheUsage({
 					</div>
 				</div>
 				<dl className="min-w-0 divide-y divide-border/50">
-					{rows.map((row) => (
+					{visibleRows.map((row) => (
 						<div
-							className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 py-4 first:pt-0 last:pb-0"
+							className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-4 first:pt-0 last:pb-0"
 							key={row.label}
 						>
 							<dt className="flex items-center gap-2 text-sm">
-								<span
-									aria-hidden
-									className={`size-2.5 shrink-0 rounded-sm ${row.color}`}
-								/>
+								{(row.value ?? 0) > 0 && (
+									<span
+										aria-hidden
+										className={`size-2.5 shrink-0 rounded-sm ${row.color}`}
+									/>
+								)}
 								{row.label}
 							</dt>
-							<dd className="text-right font-semibold tabular-nums">
+							<dd className="flex flex-wrap items-baseline gap-x-3 font-semibold tabular-nums">
 								{tokenCount(row.value)}
-								<span className="ml-3 inline-block min-w-12 font-normal text-fg-muted text-xs">
+								<span className="font-normal text-fg-muted text-xs">
 									{row.value == null || total === 0
 										? "—"
 										: `${((row.value / total) * 100).toFixed(1)}%`}
 								</span>
 							</dd>
-							<dd className="col-span-2 text-fg-muted text-xs">{row.detail}</dd>
+							<dd className="w-full text-fg-muted text-xs">{row.detail}</dd>
 						</div>
 					))}
 				</dl>

@@ -76,7 +76,7 @@ export function CacheUsageSkeleton() {
 		<div
 			aria-busy="true"
 			aria-label="Loading input usage"
-			className="min-w-0 rounded-(--ui-radius-surface) border border-border/50 bg-card p-7"
+			className="@container min-w-0 rounded-(--ui-radius-surface) border border-border/50 bg-card p-7"
 			role="status"
 		>
 			<div className="flex justify-between gap-4">
@@ -86,7 +86,7 @@ export function CacheUsageSkeleton() {
 				</div>
 				<Skeleton className="h-8" width="4rem" />
 			</div>
-			<div className="mt-6 grid items-center gap-8 sm:grid-cols-[14rem_1fr]">
+			<div className="mt-6 grid @min-[40rem]:grid-cols-[14rem_minmax(0,1fr)] items-center @min-[40rem]:gap-8 gap-6">
 				<div
 					aria-hidden
 					className="mx-auto my-2 size-52 animate-pulse rounded-full border-[24px] border-fg/10 motion-reduce:animate-none"

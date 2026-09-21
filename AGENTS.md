@@ -138,6 +138,10 @@ bun test --preload ./tests/support/unitSetup.ts src/router/strategies.test.ts
   value, not a cumulative sum. Verify the rendered scale with strongly unequal series.
 - Use the shared chart components and distinct chart color tokens in both themes. Neutral surface
   colors are not a chart palette. Support keyboard access, narrow screens and reduced motion.
+- Chart layouts respond to their container width, not just the viewport. Verify narrow cards in a
+  wide window; labels, exact values and percentages must stay visible without horizontal overflow.
+- Donut segments form a continuous whole: no decorative gaps. Colored legend entries must have a
+  visible segment; omit zero categories from a nonzero distribution and keep missing values explicit.
 - Skeletons mirror the current component's count, breakpoints, padding, control heights and shape.
   Update them with layout changes. Audit keeps its server pagination and visible result count,
   including one-page results and empty pages with an offset that can be navigated back from.
