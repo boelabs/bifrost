@@ -39,12 +39,11 @@ export const chartTooltipStyle = {
 	fontSize: 12,
 };
 
-/** Same-unit series only. Missing measurements remain gaps, including in stacked charts. */
+/** Compare same-unit series from zero so each curve matches its tooltip value. */
 export function TimeSeriesChart({
 	rows,
 	series,
 	kind = "area",
-	stacked = false,
 	bucket,
 	label,
 	formatValue = (value) => count.format(value),
@@ -54,7 +53,6 @@ export function TimeSeriesChart({
 	rows: ChartPoint[];
 	series: readonly ChartSeries[];
 	kind?: "area" | "bar" | "line";
-	stacked?: boolean;
 	bucket: "hour" | "day";
 	label: string;
 	formatValue?: (value: number) => string;
@@ -164,7 +162,6 @@ export function TimeSeriesChart({
 										key={item.key}
 										maxBarSize={28}
 										radius={[3, 3, 0, 0]}
-										stackId={stacked ? "total" : undefined}
 									/>
 								);
 							}
@@ -187,7 +184,6 @@ export function TimeSeriesChart({
 									dot={rows.length === 1}
 									fill={`url(#${id}-${item.key})`}
 									key={item.key}
-									stackId={stacked ? "total" : undefined}
 									strokeWidth={2}
 									type="monotone"
 								/>
