@@ -1,5 +1,5 @@
 import { Google_Sans_Code, Google_Sans_Flex } from "next/font/google";
-import { RootProvider } from "fumadocs-ui/provider/next";
+import { Provider } from "#/components/provider.tsx";
 import type { Metadata, Viewport } from "next";
 
 import "./global.css";
@@ -55,7 +55,7 @@ export default function RootLayout({
 			suppressHydrationWarning
 		>
 			<body className="flex min-h-screen flex-col">
-				<RootProvider>{children}</RootProvider>
+				<Provider>{children}</Provider>
 			</body>
 		</html>
 	);

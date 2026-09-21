@@ -40,7 +40,10 @@ async function entries(dir: string, pattern: string): Promise<string[]> {
 describe("sidebar", () => {
 	it("lists exactly the pages and folders that exist beside it", async () => {
 		for (const dir of await folders()) {
-			const listed = [...((await meta(dir)).pages ?? [])].sort();
+			const listed = ((await meta(dir)).pages ?? [])
+				.filter((item) => !item.startsWith("---"))
+				.map((item) => item.replace(/^\.\.\./, ""))
+				.sort();
 			const present = [
 				...(await entries(dir, "*.mdx")).map((f) => f.replace(/\.mdx$/, "")),
 				// A nested group is listed by its folder name, parentheses included.

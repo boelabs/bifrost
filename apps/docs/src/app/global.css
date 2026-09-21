@@ -15,7 +15,7 @@
 }
 
 :root {
-	/* Starlight held the prose column at 49rem; anything wider makes the API tables hard to track. */
+	/* Bound the home header; the docs layout keeps its sidebar against the viewport edge. */
 	--fd-layout-width: 90rem;
 }
 
