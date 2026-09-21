@@ -1,0 +1,86 @@
+---
+title: "Tu primer deployment"
+description: "Valida la configuración de un proveedor, guarda el deployment y comprueba la conexión."
+---
+Conecta un proveedor a un gateway existente y comprueba la configuración resuelta antes de guardarla. Para la instalación local, sigue el [Inicio rápido](/es/docs/quickstart).
+
+## Antes de empezar [#before-you-start]
+
+Necesitas un gateway en funcionamiento, su master key y una clave API de proveedor. Configura la dirección del gateway:
+
+```bash
+export GATEWAY=http://localhost:4000
+export MASTER_KEY=replace-with-your-master-key
+```
+
+<Steps>
+<Step>
+
+## Elegir un modelo del catálogo [#pick-a-catalog-model]
+
+Los modelos conocidos no necesitan `catalogEntry`: sus capacidades, límites y precios ya se encuentran en el catálogo del adapter. Busca `src/adapters/<provider>/catalog.json` en el repositorio y elige un modelo incluido en ese catálogo (por ejemplo, `gpt-5.5` para OpenAI).
+
+</Step>
+<Step>
+
+## Validar la configuración [#dry-run-it]
+
+`POST /admin/deployments/resolve` valida y resuelve exactamente el mismo cuerpo que usaría un `POST /admin/deployments` real, **sin guardar nada ni tocar el cifrado de credenciales**; utilízalo para comprobar la configuración de la solicitud. No contacta con el proveedor ni verifica la clave API:
+
+```bash
+curl -X POST "$GATEWAY/admin/deployments/resolve" \
+  -H "Authorization: Bearer $MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "publicModel": "general",
+    "adapterKey": "openai",
+    "upstreamModel": "gpt-5.5",
+    "credentials": { "apiKey": "sk-..." }
+  }'
+```
+
+La respuesta muestra `source: "catalog"` (confirmando que reconoció el modelo; no se necesita `catalogEntry`), además de las operaciones y transports resueltos. Si `source` regresa `"custom"`, el modelo no está en el catálogo y debes seguir la ruta del modelo personalizado en [Creación de deployments](/es/docs/creating-deployments#custom-models-openai-compatible).
+
+</Step>
+<Step>
+
+## Guardar el deployment [#save-the-deployment]
+
+Envíal cuerpo validado al endpoint de creación:
+
+```bash
+curl -X POST "$GATEWAY/admin/deployments" \
+  -H "Authorization: Bearer $MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "publicModel": "general",
+    "adapterKey": "openai",
+    "upstreamModel": "gpt-5.5",
+    "credentials": { "apiKey": "sk-..." }
+  }'
+```
+
+</Step>
+<Step>
+
+## Comprobar la conexión [#test-the-connection]
+
+Crea una [Virtual keys](/es/docs/virtual-keys) con permiso para utilizar `general` y asigna el secreto devuelto a `API_KEY`. Esta solicitud verifica tanto la configuración del gateway como la conexión upstream:
+
+```bash
+curl -X POST "$GATEWAY/v1/chat/completions" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "model": "general", "messages": [{ "role": "user", "content": "Say hi" }] }'
+```
+
+Comprueba que la respuesta contiene un mensaje del asistente. Una resolución exitosa por sí sola no prueba que las credenciales del proveedor o el acceso al modelo funcionen.
+
+</Step>
+</Steps>
+
+## Próximos pasos [#next-steps]
+
+- [Crear deployments](/es/docs/creating-deployments): cada proveedor, modelos personalizados, imágenes/embeddings/audio.
+- [Routing](/es/docs/routing): qué sucede una vez que `general` tiene más de un deployment.
+- [Virtual keys](/es/docs/virtual-keys): credenciales de cliente con permisos y rate limits en lugar de la master key.

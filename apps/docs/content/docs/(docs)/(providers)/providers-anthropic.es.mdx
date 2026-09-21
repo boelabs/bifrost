@@ -1,0 +1,27 @@
+---
+title: "Anthropic"
+description: "Configura deployments de Anthropic y conoce sus capacidades y restricciones."
+---
+## Configurar un deployment [#configura-a-deployment]
+
+Envía este cuerpo a `POST /admin/deployments` con credencial de operador. Reemplaza las credenciales de ejemplo y elige un modelo disponible para su cuenta de proveedor. Consulta [Crear deployments](/es/docs/creating-deployments) para conocer los campos de configuración compartidos.
+
+```json
+{ "publicModel": "claude", "adapterKey": "anthropic", "upstreamModel": "claude-sonnet-5", "credentials": { "apiKey": "sk-ant-..." } }
+```
+
+## Comportamiento y restricciones [#behavior-and-limitations]
+
+- **Credenciales**: `apiKey`. `version` (el header `anthropic-version`) tiene como valor predeterminado `2023-06-01` y rara vez es necesario anularlo.
+- **transport predeterminado**: Messages API para texto.
+- **reasoning**: ya sea `anthropic_adaptive` (el modelo elige su propia profundidad; la solicitud solo lleva una etiqueta `output_config.effort`) o `anthropic_budget` (`thinking: { budget_tokens }`, con un presupuesto predeterminado del lado del proveedor por nivel canonical si el catálogo no anula it) — ver [Reasoning](/es/docs/reasoning). Los modelos que exponen tanto `xhigh` como `max` los conservan como niveles distintos; Modelos como Opus/Sonnet 4.6 declaran `max` sin inventar soporte para `xhigh`.
+- Claude Opus 5 permite el pensamiento adaptativo en sentido upstream cuando se omite `thinking`. El adapter envía `thinking: { "type": "disabled" }` cuando el reasoning canonical se resuelve en `none`, preservando la semántica off independiente del proveedor del gateway.
+- `claude-opus-5-fast` y `claude-opus-4-8-fast` son alias de gateway para el modo rápido de vista previa de investigación de Anthropic. El adapter selecciona el modelo base, envía `speed: "fast"` y agrega el header beta requerido. Aún se requiere acceso a la cuenta antrópica.
+- Las solicitudes nativas `/v1/messages` se transmiten con una traducción mínima; las solicitudes `/v1/chat/completions` y `/v1/responses` se procesan en la misma maquinaria canonical de reasoning/herramienta/formato que cualquier otro proveedor.
+- Los modelos que declaran `capabilities.strictTools: true` conservan el indicador de herramienta nativo de nivel superior `strict: true` de Anthropic. El `output_config.format` nativo se adhiere al esquema y el gateway lo trata como una salida estructurada estricta.
+- Catálogo: `src/adapters/anthropic/catalog.json`.
+
+## Próximos pasos [#next-steps]
+
+- [Messages](/es/docs/messages) — el contrato nativo compatible con Anthropic.
+- [Reasoning](/es/docs/reasoning) — `anthropic_adaptive` / `anthropic_budget` en detalle.

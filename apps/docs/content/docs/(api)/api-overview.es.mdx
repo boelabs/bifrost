@@ -1,0 +1,60 @@
+---
+title: "Referencia de la API"
+description: "Autenticación, endpoints, errores y ejemplos para integrar Bifrost."
+---
+Utiliza esta referencia para elegir un endpoint y conocer la autenticación, los errores y la correlación de solicitudes. La [especificación OpenAPI](https://github.com/boelabs/bifrost/blob/main/apps/gateway/openapi.yaml) contiene los esquemas exactos y se puede importar en Bruno, Postman o Insomnia.
+
+Los ejemplos utilizan `GATEWAY` para el origen (por ejemplo, `http://localhost:4000`) y `API_KEY` para una virtual key. El campo `model` siempre nombra un public model configurado en Bifrost.
+
+## Autenticación [#authentication]
+
+- **Inferencia** (`/v1/*`): master key o virtual key mediante `Authorization: Bearer <key>` o el header `x-api-key`. No se aceptan credenciales en los query parameters, porque las URL pueden aparecer en logs, historiales y referencias. `/v1/models` y `/v1/models/{model}` son las únicas excepciones sin autenticación; consulta [Consultar modelos](/es/docs/models-discovery).
+- **Admin** (`/admin/*`): utiliza la master key para la automatización API. Cuando la autenticación del panel está habilitada, las sesiones del operador también pueden acceder a las rutas permitidas por su rol.
+
+Modelo completo: [Seguridad](/es/docs/security).
+
+## Formato de los errores [#error-shape]
+
+La mayoría de los errores utilizan el formato compatible con OpenAI. `/v1/messages` usa la forma de Anthropic y `/v1/rerank` usa la forma `{ "error": { "code": <status>, "message": "..." } }` de OpenRouter:
+
+```json
+{ "error": { "message": "...", "type": "invalid_request_error", "param": "model", "code": "model_not_found" } }
+```
+
+Los errores de validación del gateway incluyen la ruta del campo y el motivo del rechazo. Los errores estructurados del proveedor conservan los campos útiles `message`, `param` y `code`, con límites de longitud y ocultando las credenciales y el modelo upstream configurado. El cuerpo original del proveedor nunca se copia en la respuesta. Los fallos operativos (autenticación, permisos, deployments ausentes y rate limits) y las respuestas 5xx usan mensajes estables del gateway para evitar exponer el routing interno. Consulta [Solución de problemas](/es/docs/troubleshooting) para relacionar clases de error, estados HTTP y códigos.
+
+## Correlación de solicitudes [#request-correlation]
+
+Cada respuesta incluye `x-request-id`; si envías uno, Bifrost lo conserva. **Inclúyelo al informar de un problema.** Consulta [Headers](/es/docs/headers) para conocer el header y [Observabilidad](/es/docs/observability) para buscar la solicitud en los logs.
+
+## Importar en Bruno [#importing-into-bruno]
+
+En Bruno, selecciona **Import Collection → OpenAPI V3** e importa `apps/gateway/openapi.yaml`. Configura la variable del servidor `baseUrl` (por ejemplo, `http://localhost:4000`) y el Bearer token en la sección de autenticación.
+
+## Pasos para habilitar un modelo [#typical-flow-to-serve-a-model]
+
+1. `POST /admin/deployments`: crea un deployment con `publicModel`, `adapterKey`, `upstreamModel` y las credenciales en el cuerpo.
+2. `POST /admin/keys`: crea una virtual key con `allowedModels`.
+3. Llama a un endpoint de inferencia con el nombre del public model en `model`.
+
+`POST /admin/deployments/resolve` valida el perfil/operaciones/transports sin guardar; consulta [Tu primer deployment](/es/docs/first-deployment).
+
+## Endpoints disponibles [#the-endpoints]
+
+| endpoint | Contrato | Página |
+|---|---|---|
+| `POST /v1/chat/completions` | OpenAI Chat Completions | [Chat completions](/es/docs/chat-completions) |
+| `POST /v1/responses`, `WS /v1/responses`, `GET/DELETE /v1/responses/:id`, `GET /v1/responses/:id/input_items` | OpenAI Responses | [Responses](/es/docs/responses) |
+| `POST /v1/messages` | Anthropic Messages | [Messages](/es/docs/messages) |
+| `POST /v1/images/generations`, `POST /v1/images/edits` | Imágenes de OpenAI | [Imágenes](/es/docs/images) |
+| `POST/GET/DELETE /v1/videos`, `GET /v1/videos/:id/content` | Vídeos con formato de OpenAI | [Videos](/es/docs/videos) |
+| `POST /v1/embeddings` | OpenAI Embeddings | [Embeddings](/es/docs/embeddings) |
+| `POST /v1/rerank` | OpenRouter Reranking | [Reranking](/es/docs/reranking) |
+| `POST /v1/audio/transcriptions` | OpenAI Audio | [Transcripción de audio](/es/docs/audio-transcriptions) |
+| `GET /v1/models`, `GET /v1/models/{model}`, `GET /v1/models/{model}/deployments` | Descubrimiento de modelos | [Consultar modelos](/es/docs/models-discovery) |
+
+## Próximos pasos [#next-steps]
+
+- [Streaming](/es/docs/streaming): formato SSE compartido por los endpoints que admiten streaming.
+- [Headers](/es/docs/headers): cada header de solicitud/respuesta en una tabla.
+- [Solución de problemas](/es/docs/troubleshooting): clases de error, códigos de estado y síntomas comunes.

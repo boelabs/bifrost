@@ -1,0 +1,100 @@
+---
+title: "Virtual keys"
+description: "Controla el acceso a modelos, los rate limits y el presupuesto de cada aplicación."
+---
+Una **virtual key** es la credencial que envían sus clientes. A diferencia de la master key, un único secreto de operador estático, las virtual keys residen en la base de datos, cada una con su propio alcance de modelo, presupuesto y límites de RPM/TPM. Emita uno por aplicación, tenant o entorno, y revocarlo o cambiar su alcance sin tocar nada más.
+
+Toda la administración de claves se realiza en la API de administración y requiere la **master key**:
+
+```
+Authorization: Bearer $MASTER_KEY
+```
+
+<Callout>
+
+Las claves se almacenan como un hash SHA-256. El valor de texto sin formato `sk-…` se devuelve **solo una vez**, en el momento de la creación. No hay forma de recuperarla más tarde; si se pierde, elimina la clave y emita una nueva.
+
+</Callout>
+
+## Crear una clave [#create-a-key]
+
+```bash
+curl -X POST $BASE/admin/keys \
+  -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
+    "name": "frontend-prod",
+    "allowedModels": ["general", "image-default"],
+    "maxBudgetCents": 50000,
+    "budgetReset": "monthly",
+    "rpm": 600,
+    "tpm": 200000
+  }'
+```
+
+La respuesta incluye la clave de texto plano una vez:
+
+```json
+{
+  "data": {
+    "id": "…",
+    "name": "frontend-prod",
+    "keyPrefix": "sk-abcdefg",
+    "key": "sk-…",
+    "allowedModels": ["general", "image-default"],
+    "maxBudgetCents": 50000,
+    "budgetReset": "monthly",
+    "rpm": 600,
+    "tpm": 200000,
+    "spendCents": "0",
+    "enabled": true
+  }
+}
+```
+
+## Campos [#fields]
+
+| Campo | Predeterminado | Significado |
+|---|---|---|
+| `name` | requerido | Etiqueta humana; También se puede buscar a través de `?q=`. |
+| `allowedModels` | `[]` (todos) | public models que esta clave puede llamar. `[]` u omitido otorga acceso a **todos** los modelos. |
+| `maxBudgetCents` | `null` (ninguno) | Límite de gasto en centavos de USD durante el período de presupuesto actual. |
+| `budgetReset` | `null` | `hourly`, `daily`, `weekly` o `monthly`. Cuando la ventana se da vuelta, `spendCents` se reinicia. |
+| `rpm` | `null` (ninguno) | Solicitudes máximas por minuto. |
+| `tpm` | `null` (ninguno) | Tokens máximos por minuto. |
+| `expiresAt` | `null` (nunca) | Marca de tiempo ISO después de la cual se rechaza la clave. |
+
+`null` siempre significa "sin límite". Los límites y el presupuesto se aplican en Redis y se reflejan en Postgres para una contabilidad duradera.
+
+## Visores [#scopes]
+
+`allowedModels` se compara con el nombre del **public model** de la solicitud. Una clave que llama a un modelo fuera de su alcance obtiene `403` con el código `model_not_allowed`. Una matriz vacía es un "todos los modelos" explícito; úsela solo para herramientas de operadores confiables, no para claves orientadas al cliente.
+
+## Presupuestos y límites [#budgets-and-limits]
+
+- **Presupuesto:** antes de ejecutar la solicitud upstream, Bifrost reserva de forma atómica una estimación conservadora del costo máximo, usando los precios del [Catálogo de modelos](/es/docs/model-catalog) o los precios específicos del deployment. Al finalizar, sustituye la reserva por el uso exacto informado por el proveedor. Una key con presupuesto limitado no puede usar deployments de precio desconocido, porque no sería posible garantizar el límite.
+- **RPM/TPM:** La admisión de RPM y las reservas de TPM conservadoras son atómicas en Redis en todas las réplicas. Los tokens exactos se concilian en el momento de la liquidación; exceder cualquiera de los dos devuelve `429` con el código `rate_limit_exceeded`. Las unidades de búsqueda de reranking contribuyen al gasto y los presupuestos, pero nunca sintetizan tokens para TPM; RPM todavía cuenta cada solicitud de cambio de clasificación.
+- **headers:** cuando una clave tiene algún límite, las respuestas incluyen los headers `x-ratelimit-limit-*` / `x-ratelimit-remaining-*` / `x-ratelimit-reset-*` coincidentes (solicitudes, tokens y centavos de presupuesto), para que los clientes puedan retroceder antes de ser limitados.
+
+## Administrar claves [#manage-keys]
+
+```bash
+# List (filter + paginate)
+GET /admin/keys?limit=50&offset=0&enabled=true&publicModel=general&q=frontend
+
+# Update scope, limits, or budget (same fields; send null to clear a limit)
+PATCH /admin/keys/:id   { "rpm": 1200, "allowedModels": ["general"] }
+
+# Re-enable or disable without deleting
+PATCH /admin/keys/:id   { "enabled": false }
+
+# Reset accumulated spend now (e.g. after a billing dispute)
+PATCH /admin/keys/:id   { "resetSpend": true }
+
+# Permanently delete
+DELETE /admin/keys/:id
+```
+
+La API de administración nunca devuelve el hash de clave o el valor de texto sin formato en las lecturas; solo `keyPrefix`, que es suficiente para identificar una clave en registros y paneles.
+
+## Rotación y fugas [#rotation-and-leaks]
+
+Las virtual keys son independientes de `MASTER_KEY`, por lo que rotar la master key **no** las invalida. Para rotar una clave de cliente, emita una nueva, migre el cliente y luego `DELETE` la anterior. Si se filtra una clave, `DELETE` inmediatamente (o `PATCH … {"enabled": false}` para cortar el acceso mientras investiga) y audite `gateway_operations` y los registros estructurados de acceso de administrador. Para fugas de master key y credenciales de proveedor, consulta [Operación del gateway](/es/docs/operations).

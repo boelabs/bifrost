@@ -1,0 +1,86 @@
+---
+title: "Entradas de contenido"
+description: "Formatos de imágenes y archivos, validación y compatibilidad entre proveedores."
+---
+Las entradas multimodales viajan a través del canal de texto canonical en lugar de estar vinculadas a un endpoint público o proveedor. El gateway acepta:
+
+- Partes de URL de imagen/URL de datos de Chat Completions, Responses y Messages.
+- Piezas Chat Completions `type: "file"` (`file_id` o un `file_data` base64; se acepta una URL HTTPS en `file_data` para compatibilidad con OpenRouter).
+- Piezas Responses `type: "input_file"` (`file_id`, `file_url`, o base64 `file_data`).
+- Bloques Messages `type: "document"` con fuentes `base64`, `url` o `file`.
+
+Para cada parte del archivo, se requiere exactamente una fuente. Un `file_id` pertenece al proveedor que lo creó; sin una API de archivos de gateway, no existe una forma segura de reproducir ese identificador opaco en otro proveedor.
+
+## Routing portátil [#portable-routing]
+
+El resolver tiene un alcance de solicitud y está memorizado. Cada transport de adapter declara una matriz de capacidades para cada tipo de contenido canonical (`image` y `file`) y fuente (`url`, `data_url`, o `provider_file_id`). Luego, el resolver elige la ruta menos destructiva para cada candidato de routing:
+
+1. Mantén una URL nativa, una URL de datos o una referencia de archivo de proveedor cuando el transport la acepte.
+2. Materialice una imagen HTTPS o una URL de archivo una vez como base64 cuando el proveedor acepte datos en línea pero no URL externas. Esta es la línea base de compatibilidad utilizada por Gemini `generateContent`.
+3. Convierta formatos de texto UTF-8 a una parte de contenido de texto cuando el candidato no ten entrada de archivo nativo.
+4. Extraiga texto de un PDF basado en texto para un candidato no nativo.
+
+Esto hace que se pueda utilizar un public model con deployments heterogéneos sin afirmar que todos los canales ascendentes tengan el mismo protocolo de documento. Los perfiles de modelo que declaran `modalities.input` restringen aún más el manejo nativo; la ruta de texto portátil permanece disponible cuando sea apropiado.
+
+## Complemento del analizador de archivos [#file-parser-plugin]
+
+Chat Completions y Responses aceptan la forma `plugins` compatible con OpenRouter:
+
+```json
+{
+  "plugins": [
+    {
+      "id": "file-parser",
+      "pdf": { "engine": "auto" }
+    }
+  ]
+}
+```
+
+| Motor | Comportamiento |
+|---|---|
+| `auto` | Por defecto. Prefiere el procesamiento de documentos nativo; utiliza la extracción de texto portátil cuando el candidato seleccionado sea solo texto. |
+| `native` | Requiere soporte para archivos nativos. Los deployments incompatibles se eliminan antes del equilibrio. La materialización de URL a base64 todavía está permitida porque cambia el transport, no la semántica del documento. |
+| `pdf-text` | Extraiga texto PDF localmente incluso cuando el candidato pueda procesar el PDF de forma nativa. Útil para entradas predecibles de solo texto. |
+
+El analizador local no realiza OCR y no conserva las imágenes de la página ni el diseño visual. Un PDF escaneado sin texto extraíble devuelve `file_parser_no_text`; utiliza `native` con un modelo compatible con documentos o un servicio de OCR externo. El nombre del motor describe deliberadamente ese comportamiento más limitado en lugar de pretender proporcionar la salida con reconocimiento de imágenes de los motores OCR alojados.
+
+## Ejemplo: Responses URL de PDF [#example-responses-pdf-url]
+
+```bash
+curl -X POST "$GATEWAY/v1/responses" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "general",
+    "input": [{
+      "role": "user",
+      "content": [
+        { "type": "input_file", "file_url": "https://assets.example/report.pdf" },
+        { "type": "input_text", "text": "Summarize the report." }
+      ]
+    }],
+    "plugins": [{ "id": "file-parser", "pdf": { "engine": "auto" } }]
+  }'
+```
+
+## Límites y manejo de URL [#limits-and-url-handling]
+
+La materialización portátil está intencionadamente delimitada:
+
+- 20 MB por materialización de URL de imagen/archivo o entrada del analizador local. Las entradas nativas en línea pueden ser mayores cuando el transport declarado lo permita (hasta el límite máximo del gateway de 50 MB).
+- 50 MB combinados por solicitud.
+- 200 páginas por PDF analizado localmente.
+- 2.000.000 de caracteres de texto extraído.
+- 15 segundos por búsqueda de URL y como máximo tres redirecciones.
+- Como máximo cuatro búsquedas de URL simultáneas por solicitud; el orden de salida siempre coincide con el orden de entrada.
+
+Solo se obtienen las URL HTTPS públicas. Se rechazan las credenciales y los fragmentos, y cada redirección y dirección resuelta se compara con rangos de loopback, privados, de enlace local, reservados, de documentación, de multidifusión y otros no públicos. Los deployments de producción aún deberían imponer una política de red saliente; las comprobaciones de aplicaciones complementan los controles de salida en lugar de reemplazarlos.
+
+Las solicitudes que contienen entradas de imágenes, audio o archivos omiten el cache de respuesta: el contenido de la URL puede cambiar mientras la URL permanece igual, y las cargas útiles base64 grandes son claves de cache deficientes. La actividad de resolución se registra en el campo `metadata.contentInputs` de la operación (recuentos nativos/analizados/materializados por tipo de contenido) sin registrar el contenido extraído.
+
+## Por qué todavía no existe una API de archivos de gateway [#why-there-is-no-gateway-files-api-yet]
+
+Los datos en línea y la resolución de URL con alcance de solicitud resuelven los archivos adjuntos portátiles de una sola vez sin agregar un ciclo de vida de almacenamiento. Una futura deployment de `/v1/files` debería utilizar metadatos de base de datos más almacenamiento de objetos, propiedad y retención explícitas de los tenants, hashes de contenido para la reutilización del analizador y cachés de carga del proveedor. Agregar solo una tabla de ID o almacenar archivos binarios grandes en Postgres haría que la ruta simple fuera más frágil en lugar de más compatible.
+
+El diseño sigue la división del analizador nativo primero/alternativo documentada por [entradas PDF de OpenRouter](https://openrouter.ai/docs/guides/overview/multimodal/pdfs), manteniendo los motores implementados locales y explícitos. Los detalles de la conexión nativa se basan en los contratos actuales de [entrada de archivo OpenAI](https://developers.openai.com/api/docs/guides/file-inputs), [documento Gemini](https://ai.google.dev/gemini-api/docs/document-processing) y [PDF de Anthropic](https://platform.claude.com/docs/en/build-with-claude/pdf-support).

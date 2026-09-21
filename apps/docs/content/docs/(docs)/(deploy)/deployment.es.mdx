@@ -1,0 +1,58 @@
+---
+title: "Instalar Bifrost"
+description: "Elige una plataforma y conoce los servicios del stack de Docker Compose."
+---
+Ejecuta el gateway con Postgres y Redis. El repositorio incluye un stack de Docker Compose para desarrollo local, servidores Linux, Coolify, Portainer y Dokploy. El dashboard y la documentación son servicios independientes.
+
+## Elige tu plataforma [#pick-your-platform]
+
+- [Desarrollo local](/es/docs/deploy-local): ejecútelo en su máquina para el desarrollo.
+- [Coolify](/es/docs/deploy-coolify): implementa la stack de Compose en Coolify.
+- [Portainer](/es/docs/deploy-portainer): implementa la stack de Compose en Portainer.
+- [Dokploy](/es/docs/deploy-dokploy): implementa la stack de Compose en Dokploy.
+- [Docker en un servidor Linux](/es/docs/deploy-docker-linux): `docker compose` simple en cualquier host.
+
+## Topologías [#topologies]
+
+La conexión del gateway con Postgres y Redis determina si necesitas TLS. Como el gateway se ejecuta en **Bun**, los certificados autofirmados pueden causar el [problema de TLS descrito aquí](/es/docs/troubleshooting).
+
+| Topología | Conexión | TLS | Funciona en Bun |
+|---|---|---|---|
+| **Compose (todo en uno)**: gateway + Postgres + Redis juntos | red interna de Docker | ninguno (texto sin formato) | ✅ recomendado |
+| **Base de datos administrada** (Neon / Aiven / Upstash…) | internet | CA pública | ✅ |
+| **Base de datos autofirmada expuesta públicamente** (puerto Coolify/Dokploy sin formato) | internet | autofirmado | ⚠️ puede fallar; consulta [Solución de problemas](/es/docs/troubleshooting) |
+
+Las guías usan por defecto la primera topología: el gateway se comunica con Postgres y Redis a través de la red privada de Compose, sin TLS. El aislamiento de red restringe el acceso y evita el problema de certificados de Bun.
+
+## Archivos de Compose [#compose-files-and-naming]
+
+- `docker/compose.yaml` es la base de producción. Expone servicios a la red privada sin publicar puertos de host.
+- `docker/compose.local.yaml` agrega asignaciones de host de solo loopback para desarrollo local o un proxy inverso de host. Cárguelo explícitamente; no lo agrega a un deployment de PaaS de producción.
+
+## Servicios del stack [#the-compose-stack]
+
+El repositorio incluye un `docker/compose.yaml` que muestra toda el stack:
+
+- **postgres** (`postgres:18-alpine`) y **redis** (`redis:8-alpine`), con comprobaciones de estado y volúmenes con nombre (`pgdata`, `redisdata`).
+- **migrate**: ejecuta las migraciones SQL y finaliza; el gateway espera a que termine. Si el panel de la PaaS ofrece asignarle un dominio, deja ese campo vacío.
+- **gateway** (`:4000` internamente): construido a partir de `apps/gateway/Dockerfile`.
+- **dashboard** (`:3001` internamente): interfaz opcional para operadores, desactivada salvo que `DASH_ENABLED` sea verdadero. Tiene su propio dominio y se conecta al gateway mediante `GATEWAY_URL`. El gateway no necesita configuración adicional ni tiene que ser público. Consulta [Dashboard → Servicio](/es/docs/dashboard#serving-it).
+- **docs** (`:3000` internamente): este sitio de documentación.
+
+Coolify y Dokploy usan solo `docker/compose.yaml` y conectan su proxy a la red privada. Para desarrollo local o un reverse proxy en el host, añade explícitamente el archivo de configuración local:
+
+```bash
+git clone https://github.com/boelabs/bifrost.git && cd bifrost
+
+MASTER_KEY=$(openssl rand -base64 48) \
+ENCRYPTION_KEY_HEX=$(openssl rand -hex 32) \
+docker compose -f docker/compose.yaml -f docker/compose.local.yaml up -d
+```
+
+`docker/compose.local.yaml` proporciona valores conocidos solo para desarrollo. La configuración de producción deja ambos secretos vacíos: el gateway no arranca hasta que los configures. En Coolify, Portainer o Dokploy, introdúcelos en la interfaz. Por defecto, `DATABASE_URL` y `REDIS_URL` apuntan a los servicios internos `postgres`/`redis` sin TLS; cámbialos si usas instancias administradas. Consulta [Configuración inicial](/es/docs/setup).
+
+<Callout>
+
+Asigna dominios solo a los servicios **gateway**, **dashboard** y **docs** que desee exponer. Mantén Postgres, Redis y el trabajo único `migrate` interno. La base de Compose de producción aplica esto al no publicar puertos de host.
+
+</Callout>

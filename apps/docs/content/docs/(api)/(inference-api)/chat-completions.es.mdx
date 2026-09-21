@@ -1,0 +1,64 @@
+---
+title: "Chat completions"
+description: "Genera texto con el contrato de OpenAI Chat Completions."
+---
+Genere texto con el contrato OpenAI Chat Completions. Utiliza un public model configurado para la generación de texto y una virtual key permitida para llamarlo.
+
+## Ejemplo de solicitud [#example-request]
+
+Configura `GATEWAY` en el origen del gateway y `API_KEY` en su virtual key. Reemplaza el public model de ejemplo por uno de [Consultar modelos](/es/docs/models-discovery).
+
+```bash
+curl -X POST "$GATEWAY/v1/chat/completions" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "general",
+    "messages": [{ "role": "user", "content": "Say hi" }],
+    "stream": false
+  }'
+```
+
+Forma de solicitud/respuesta compatible con OpenAI. Cada campo a continuación se normaliza en la misma solicitud canonical, independientemente de qué endpoint o proveedor lo atienda en última instancia; consulta [Arquitectura](/es/docs/architecture) para ver el proceso completo.
+
+## Campos admitidos [#supported-request-fields]
+
+`model`, `messages` (con `system`/`developer`/`user`/`assistant`/`tool` y contenido de varias partes (texto, imagen, audio, archivo), `stream`, `stream_options.include_usage`, `temperature`, `top_p`, `max_tokens`/`max_completion_tokens`, `stop`, `n`, `presence_penalty`, `frequency_penalty`, `seed`, `user`, `tools`, `tool_choice`, `parallel_tool_calls`, `response_format`, `reasoning_effort`, `prompt_cache_key`, `audio`, `logprobs`, `top_logprobs`, `logit_bias`, `metadata`, `modalities`, `prediction`, `service_tier`, `safety_identifier`, `store`, `verbosity`, `web_search_options`, y `extra_body` para campos específicos del proveedor, el gateway no se administra por sí sola.
+
+Si un deployment determinada realmente **admite** un campo que envía es una declaración de catálogo por modelo; consulta [Política de parámetros](/es/docs/parameter-policy) para saber qué sucede cuando no lo hace (`drop`, `error` o `allow`, configurado por el operador).
+
+## Tools y selección de herramientas [#tools-and-tool-choice]
+
+`tools` (esquema JSON `parameters`) y `tool_choice` (`"auto"`, `"none"`, `"required"` o `{"type": "function", "function": {"name": "..."}}`) siguen la forma OpenAI. El formulario `allowed_tools` también se acepta y conserva tanto el subconjunto permitido como su modo `auto` o `required`. La traducción del proveedor se realiza por adapter; en particular, Google AI Studio limita la herramienta `parameters` a su propio subconjunto OpenAPI; consulta [Google AI Studio](/es/docs/providers-google).
+
+Establece `tools[].function.strict` en `true` cuando los argumentos de la función deban ajustarse al esquema JSON proporcionado. El router selecciona solo deployments cuyo catálogo declara `capabilities.strictTools: true`; si nadie puede garantizarlo, la solicitud falla con `unsupported_model_capability` en lugar de recurrir silenciosamente a una llamada de herramienta no estricta.
+
+Algunos proveedores devuelven un estado de llamada de herramienta opaco que debe circular con la llamada de herramienta (por ejemplo, firmas de pensamiento de Gemini). El gateway lo incorpora en el identificador de llamada de la herramienta (`<id>__thought__<signature>`), por lo que repetir textualmente `tool_calls[].id`, lo que hace todo cliente estándar, es suficiente; no se necesita ningún manejo de campo adicional. El estado también se refleja en `extra_content` / `provider_specific_fields` para clientes que admiten esos campos, y se aceptan todos los formatos. Consulta [Estado específico del proveedor](/es/docs/provider-specific-fields).
+
+## Salidas estructuradas [#structured-outputs]
+
+`response_format: { "type": "json_schema", "json_schema": { ..., "strict": true } }` solicita resultados compatibles con el esquema en modelos que declaran `structuredOutputs: true`; la estricta bandera se conserva en los transports nativos que la exponen. `{"type": "json_object"}` permanece disponible como modo JSON heredado (JSON válido, pero sin garantía de cumplimiento del esquema) en cualquier modelo y no implica soporte de salida estructurada.
+
+## Reasoning [#reasoning]
+
+`reasoning_effort` (`none`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`) en los modelos que lo admiten. Las solicitudes se **ajustan, nunca se rechazan**; consulta [Reasoning](/es/docs/reasoning) para conocer la escalera completa, las reglas de ajuste y la traducción del protocolo por proveedor.
+
+## `extra_body` [#extra_body]
+
+Campos específicos del proveedor que el gateway no administra directamente (por ejemplo, `top_k`, `repetition_penalty`, `guided_json` de vLLM). Se fusionó en último lugar con el cuerpo upstream, sin sobrescribir ningún campo que administre el propio gateway; no puede usar `extra_body` para pasar de contrabando una anulación de `temperature` o `tools`, por ejemplo. El contenido está configurado por el proveedor y es responsabilidad del cliente.
+
+## Entrada de visión, audio y archivos [#vision-audio-and-file-input]
+
+`content` acepta matrices de varias partes: `{"type": "image_url", "image_url": {"url": "..."}}` (URL o URL de datos base64) en modelos `vision: true`, además de piezas de audio y archivos en modelos cuyo perfil de catálogo declara compatibilidad. La generación de video se expone a través de la API dedicada `/v1/videos`, no a través de una parte de chat `video_url`.
+
+Los formatos de origen de archivos e imágenes se resuelven por candidato de routing. Una URL nativa se conserva cuando el upstream la acepta; los transports que requieren datos inline reciben una URL de datos validada y limitada producida por el gateway. Consulta [Entradas de contenido](/es/docs/file-inputs).
+
+## Streaming [#streaming]
+
+`"stream": true` devuelve eventos enviados por el servidor con la forma estándar `chat.completion.chunk`, incluidas probabilidades de registro, audio, anotaciones, uso y `delta.reasoning` donde el modelo/contrato los admite. Un error enviado dentro de una secuencia upstream exitosa finaliza la solicitud como un error en lugar de confundirse con un final limpio. Consulta [Streaming](/es/docs/streaming) para ver el contrato SSE completo compartido entre terminales.
+
+## Próximos pasos [#next-steps]
+
+- [Streaming](/es/docs/streaming) — el formato SSE en profundidad.
+- [Reasoning](/es/docs/reasoning) y [Política de parámetros](/es/docs/parameter-policy): los dos comportamientos más comúnmente ajustados.
+- [Responses](/es/docs/responses) y [Messages](/es/docs/messages): los otros dos contratos de texto sobre el mismo núcleo canonical.

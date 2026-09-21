@@ -1,0 +1,10 @@
+{
+	"title": "Routing y resiliencia",
+	"pages": [
+		"routing",
+		"parameter-policy",
+		"fallbacks",
+		"caching",
+		"provider-prompt-caching"
+	]
+}

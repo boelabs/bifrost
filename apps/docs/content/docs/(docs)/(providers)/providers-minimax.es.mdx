@@ -1,0 +1,22 @@
+---
+title: "MiniMax"
+description: "Configura deployments de MiniMax y conoce sus capacidades y restricciones."
+---
+## Configurar un deployment [#configura-a-deployment]
+
+Envía este cuerpo a `POST /admin/deployments` con credencial de operador. Reemplaza las credenciales de ejemplo y elige un modelo disponible para su cuenta de proveedor. Consulta [Crear deployments](/es/docs/creating-deployments) para conocer los campos de configuración compartidos.
+
+```json
+{ "publicModel": "minimax", "adapterKey": "minimax", "upstreamModel": "MiniMax-M2", "credentials": { "apiKey": "..." } }
+```
+
+## Comportamiento y restricciones [#behavior-and-limitations]
+
+- **Credenciales**: `apiKey` únicamente. No se necesita `baseUrl`; el valor predeterminado es `https://api.minimax.io/v1`.
+- **transport predeterminado**: Chat Completions.
+- Catálogo: `src/adapters/minimax/catalog.json`.
+
+## Próximos pasos [#next-steps]
+
+- [Crear deployments](/es/docs/creating-deployments): la forma de solicitud completa.
+- [Elegir un proveedor](/es/docs/providers): la tabla de comparación de adapters completa.

@@ -1,0 +1,22 @@
+{
+	"title": "API de inferencia",
+	"pages": [
+		"---Generación de texto---",
+		"chat-completions",
+		"responses",
+		"messages",
+		"---Multimedia---",
+		"images",
+		"videos",
+		"audio-transcriptions",
+		"---Búsqueda y vectores---",
+		"embeddings",
+		"reranking",
+		"---Comportamiento compartido---",
+		"models-discovery",
+		"file-inputs",
+		"streaming",
+		"provider-specific-fields",
+		"headers"
+	]
+}

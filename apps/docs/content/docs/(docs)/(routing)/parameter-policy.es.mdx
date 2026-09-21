@@ -1,0 +1,72 @@
+---
+title: "Política de parámetros"
+description: "Decide qué hacer cuando un deployment no admite un parámetro solicitado."
+---
+La política de parámetros controla cómo Bifrost maneja un campo de solicitud que un deployment no admite. El catálogo declara soporte por modelo; la configuración del router elige si descartar el campo, rechazar la solicitud o pasarla.
+
+El siguiente mapa `parameters` se aplica a los endpoints **de chat**: `/v1/chat/completions`, `/v1/messages` y `/v1/responses`. Las imágenes, embeddings y transcripciones de audio validan incondicionalmente sus propios parámetros contra el perfil del catálogo (un `400 unsupported_parameter`), con una excepción: `quality` en generación de imágenes y videos, que sigue las mismas tres estrategias. Consulta [Calidad](/es/docs/parameter-policy#quality-on-image-and-video-generation).
+
+## Declarar compatibilidad en el catálogo [#declaring-support-in-the-catalog]
+
+El mapa `operations["text.generate"].parameters` de cada modelo marca cada parámetro que reconoce:
+
+```json
+"parameters": {
+  "seed": true,
+  "parallel_tool_calls": false,
+  "temperature": { "mode": "range", "min": 0, "max": 1.5 },
+  "response_format": { "mode": "mapped", "upstreamField": "text.format" }
+}
+```
+
+Un `true`/`false` desnudo significa compatible/no compatible. Un objeto lo refina: `mode` (`supported`, `unsupported`, `ignored`, `range`, `mapped`), con `min`/`max`/`values` como rango o enumeración aceptado, `upstreamField` cuando el nombre del campo upstream difiere del canonical, y `notes` para cualquier cosa específica del proveedor. Un parámetro ausente en el mapa se trata como **desconocido**, no no compatible: el gateway no rechaza los datos faltantes del catálogo, solo en un modo *explícito* `unsupported`/`ignored`.
+
+## Las tres estrategias [#the-three-strategies]
+
+Configurado globalmente con `PUT /admin/router-settings` (`unsupportedParameterStrategy`); no hay anulación por modelo o por solicitud.
+
+| Estrategia | Comportamiento |
+|---|---|
+| `drop` (predeterminado) | Elimina los parámetros no admitidos de la solicitud antes de enviarla al deployment **elegido**. La solicitud aún tiene éxito. |
+| `error` | Excluya cualquier deployment que no admita un parámetro solicitado de la candidatura **antes** del routing. Si el grupo tiene otro deployment que sí lo admite, esa es la que atiende la solicitud, de forma silenciosa y sin errores. Solo si **cada** deployment en el grupo carece del parámetro, el cliente obtiene un `400 unsupported_parameter`. |
+| `allow` | Reenvíe el parámetro tal como está. El proveedor upstream decide: puede ignorarlo, cometer un error o (en el peor de los casos) comportarse mal en silencio. |
+
+La exclusión por candidato de `error` significa que se comporta menos como "rechazar esta solicitud" y más como "enrutar solo esta solicitud donde realmente funcionará": un grupo con deployments de capacidad mixta (por ejemplo, un modelo que admite `seed` y otro que no) sigue atendiendo solicitudes que lo necesitan, siempre que al menos un deployment pueda hacerlo.
+
+## `quality` sobre generación de imágenes y videos [#quality-on-image-and-video-generation]
+
+Los niveles de calidad varían por modelo: GPT Image 2.5 admite de `low` a `max`; modelos anteriores de GPT Image llegan a `high`; DALL·E usa `standard`/`hd`. Algunos modelos de Gemini traducen la calidad a un nivel de thinking y otros no permiten ajustarla. Bifrost usa una escala común (`low` < `medium` < `high` < `xhigh` < `max`) y la adapta a los niveles declarados por el modelo elegido:
+
+| Estrategia | Comportamiento |
+|---|---|
+| `drop` (predeterminado) | **Ajuste** al peldaño más alto que el modelo declara que no excede la solicitud, o a su peldaño más bajo cuando la solicitud se encuentra por debajo de todos ellos. Un modelo sin ningún peldaño no obtiene ningún campo `quality`. |
+| `error` | Excluya cualquier deployment que no declare el escalón solicitado de la candidatura, exactamente como lo hace con un parámetro de chat. El cliente solo ve `400 unsupported_parameter` si **todos** los deployments del grupo carecen de él. |
+| `allow` | Reenvíe el escalón palabra por palabra y deje que el proveedor decida. |
+
+El ajuste permite continuar después de un fallback: una solicitud de `max` que llega a un deployment limitado a `high` se reduce a ese nivel en lugar de fallar. También cubre niveles intermedios: si el modelo solo declara `low` y `high`, `max` se resuelve a `high` y `medium` a `low`.
+
+`auto` **no** es un peldaño. Significa "no se expresa ninguna elección", por lo que se acepta para todos los modelos, nunca se captura y nunca se envía upstream; se aplica el valor predeterminado del modelo. `standard`, `hd` y el vocabulario de video `native` todavía se aceptan de los clientes y se normalizan en la escalera (`standard` → `medium`, `hd` → `high`, `native` → `max`); un modelo que habla de forma nativa uno de ellos declara la traducción nuevamente en su perfil, por lo que DALL·E aún recibe `hd` en el protocolo.
+
+Cuando `drop` cambia el nivel, el registro de operaciones registra un `qualityAdjustment` en sus metadatos con los valores solicitados y efectivos, por lo que una degradación silenciosa sigue siendo auditable; esto es importante porque los niveles conllevan diferencias de costos reales.
+
+## Comprobar el resultado [#seeing-what-happened]
+
+- **`drop`**: la respuesta incluye `unified_routing.unsupported_parameter_strategy` (cuando se solicita `x-unified-routing-metadata`; consulta [Headers](/es/docs/headers)); el campo `parameterPolicy` del registro de operaciones registra exactamente qué nombres de parámetros se eliminaron para esa solicitud, por lo que la eliminación silenciosa aún se puede auditar después del hecho.
+- **`error`**: el cliente recibe una respuesta del deployment compatible o un `400` que identifica el primer parámetro no admitido en `param`.
+- **`allow`**: lo que devuelva el proveedor upstream.
+
+## Configurar la política [#configuring-it]
+
+```bash
+curl -X PUT "$GATEWAY/admin/router-settings" \
+  -H "Authorization: Bearer $MASTER_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "unsupportedParameterStrategy": "error" }'
+```
+
+## Próximos pasos [#next-steps]
+
+- [Routing](/es/docs/routing): la otra configuración del router global, ortogonal a esta.
+- [Headers](/es/docs/headers) — Forma de respuesta `x-unified-routing-metadata`.
+- [Catálogo de modelos](/es/docs/model-catalog): el esquema de mapa completo `parameters`.
+- [Solución de problemas](/es/docs/troubleshooting): el código de error `unsupported_parameter`.

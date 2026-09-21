@@ -1,3 +1,4 @@
+import { localizedPath } from "#/lib/i18n.ts";
 import type { MetadataRoute } from "next";
 import { connection } from "next/server";
 import { source } from "#/lib/source.ts";
@@ -18,10 +19,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
 	return [
 		{ url: site, changeFrequency: "weekly", priority: 1 },
+		{ url: `${site}/es`, changeFrequency: "weekly", priority: 1 },
 		...source.getPages().map((page) => ({
 			url: `${site}${page.url}`,
 			changeFrequency: "weekly" as const,
 			priority: 0.8,
+			alternates: {
+				languages: {
+					en: `${site}${localizedPath(page.url, "en")}`,
+					es: `${site}${localizedPath(page.url, "es")}`,
+				},
+			},
 		})),
 	];
 }

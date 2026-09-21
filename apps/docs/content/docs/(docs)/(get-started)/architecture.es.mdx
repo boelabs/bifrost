@@ -1,0 +1,58 @@
+---
+title: "Arquitectura"
+description: "Recorrido de una solicitud y orden de las decisiones del gateway."
+---
+Este recorrido describe una solicitud de texto a través de `/v1/chat/completions`, `/v1/messages` o `/v1/responses`. Lee primero [Conceptos básicos](/es/docs/concepts) para conocer el vocabulario. Otras operaciones comparten los mismos helpers de runtime cuando corresponda, con validación y ciclo de vida específicos de la operación.
+
+## Orden de ejecución [#execution-order]
+
+```
+1.  requestContextMiddleware   — assigns/echoes x-request-id (before anything else, so every log line
+                                 and every error response can carry it)
+2.  logger()                   — structured request/response log line
+3.  authMiddleware()           — resolves Bearer/x-api-key to master or virtual key ("/v1/*" only;
+                                 "/admin/*" has its own master-key-only check)
+4.  body + contract -> canonical — bounded streaming read, schema validation, then conversion into
+                                   CanonicalChatRequest
+5.  preflight()                — original-model scope and virtual-key RPM/current-balance checks
+6.  onCanonicalRequest hook    — every enabled extension instance, in priority order
+7.  final-model scope check    — prevents an extension rewrite from escaping the key's scope
+8.  response cache lookup      — virtual-key only, only if eligible (no stream/tools/server-side
+                                 state) and x-unified-cache was sent; a HIT returns here, skipping
+                                 every step below
+9.  parameter-policy eligibility — "error" strategy only: excludes candidates lacking a requested
+                                 parameter before routing even starts
+10. routing                    — candidate choice, atomic deployment RPM/TPM admission, and atomic
+                                 virtual-key TPM/budget reservation; then retries/cooldowns/fallbacks;
+                                 "drop"/"allow" parameter policy applied to the request actually sent
+                                 to the CHOSEN deployment, not before
+11. adapter execution           — canonical -> upstream wire format -> canonical response
+12. onCanonicalResponse /       — per full response, or per chunk while streaming
+    onStreamEvent hooks
+13. onImageOutput hook          — image endpoints only, after upstream bytes are decoded
+14. quota reconciliation        — reserved TPM/budget becomes provider-reported usage and exact cost
+15. response cache store        — on a MISS, persists the now-complete response
+16. operation log write         — cacheHit, parameterPolicy (dropped params), reasoning
+                                 (requested vs. effective effort), routing attempts, cost — all in
+                                 one row
+17. onError hook                — only on failure, anywhere above; never replaces the original error
+```
+
+## Garantías de pedido [#ordering-guarantees]
+
+- **Autenticación antes que todo lo específico del modelo**: una solicitud sin una clave válida nunca llega a las verificaciones del alcance del modelo, la limitación de velocidad o el routing. Rechazar temprano es más barato y filtra menos información.
+- **La búsqueda de cache ocurre después de que la solicitud ya es canonical, pero antes del routing**: un acierto de cache nunca toca el router, nunca cuenta para el RPM/TPM de ninguna deployment y nunca ejecuta `onCanonicalResponse`/`onStreamEvent` (no hay nada nuevo que enganchar; la respuesta almacenada ya se enganchó una vez, en la solicitud que creó la entrada de cache). También **omite por completo la contabilidad de costos** (se registra con `cost: null`, no se registran gastos ni TPM), por lo que, desde la perspectiva del cliente, un acierto en la cache es una respuesta normal, simplemente rápida y gratuita.
+- **La elegibilidad de la política de parámetros se ejecuta antes de la selección de deployment, pero la reescritura "eliminar"/"permitir" se ejecuta después** — "error" necesita saber qué candidatos califican incluso antes de que el router elige uno; "soltar" solo tiene sentido una vez que sepa con qué mapa de parámetros de deployment específico eliminar. Consulta [Política de parámetros](/es/docs/parameter-policy).
+- **Las extensiones envuelven la capa canonical, no la capa del protocolo** — `onCanonicalRequest`/ `onCanonicalResponse` ven la misma forma independientemente del endpoint público o proveedor involucrado, que es lo que permite que un hook (un filtro PII, una marca de agua) funcione de manera idéntica en `/v1/chat/completions`. `/v1/responses` y `/v1/messages`. Consulta [Extensiones en runtime](/es/docs/extensions).
+- **La contabilidad de costos y el registro de operaciones se ejecutan después de que todo tuvo éxito (o en la ruta de error en caso de fallas)**: el registro es el único lugar donde todo lo anterior se vuelve observable después del hecho: qué se almacenó en cache, qué se eliminó, qué esfuerzo de reasoning se aplicó realmente, qué deployments se probaron y en qué orden.
+
+## Dónde vive esto en el código [#where-this-lives-in-code]
+
+`src/index.ts` conecta el middleware global (pasos 1 a 3); `src/endpoints/runtime/pipeline.ts` proporciona los asistentes compartidos de verificación previa, cache, extensión y cuota para cada llamada de terminal; `src/router/index.ts` posee admisión atómica y liquidación exacta; `src/extensions/runtime.ts` implementa el envío de hook.
+
+## Próximos pasos [#next-steps]
+
+- [Conceptos básicos](/es/docs/concepts): el vocabulario a partir del cual se construye este canal.
+- [Routing](/es/docs/routing) y [Política de parámetros](/es/docs/parameter-policy): selección de candidatos y validación de solicitudes.
+- [Extensiones en runtime](/es/docs/extensions): hooks de solicitud, respuesta, streaming y error.
+- [Cache de respuestas](/es/docs/caching): elegibilidad y comportamiento de acierto en cache.

@@ -1,0 +1,28 @@
+---
+title: "OpenAI"
+description: "Configura deployments de OpenAI y conoce sus capacidades y restricciones."
+---
+## Configurar un deployment [#configura-a-deployment]
+
+Envía este cuerpo a `POST /admin/deployments` con credencial de operador. Reemplaza las credenciales de ejemplo y elige un modelo disponible para su cuenta de proveedor. Consulta [Crear deployments](/es/docs/creating-deployments) para conocer los campos de configuración compartidos.
+
+```json
+{ "publicModel": "gpt-5.5", "adapterKey": "openai", "upstreamModel": "gpt-5.5", "credentials": { "apiKey": "sk-..." } }
+```
+
+## Comportamiento y restricciones [#behavior-and-limitations]
+
+- **Credenciales**: `apiKey` únicamente.
+- **transport de texto**: Responses para cada endpoint de texto público, incluidos Chat Completions y Messages. Configura `transportOverrides["text.generate"]` en `chat_completions` cuando un deployment necesite funciones de solo chat. Las funciones incompatibles se rechazan antes de contactar con el proveedor.
+- **reasoning**: `openai_effort` (`reasoning_effort`) en modelos de la familia de reasoning. Las variantes con sufijo `-chat` (por ejemplo, `gpt-5.2-chat`) no son razonables: la API real rechaza `reasoning_effort` y el catálogo las declara sin una especificación `reasoning` en consecuencia. En GPT-5.6, `xhigh` y `max` son niveles separados y se reenvían sin cambios.
+- **Viajes de ida y vuelta de reasoning cifrado a través del cliente.** En modelos con capacidad de reasoning, la llamada upstream establece `store: false` y solicita `include: ["reasoning.encrypted_content"]`; el estado cifrado se devuelve al cliente (elementos nativos `reasoning` en `/v1/responses`, nivel de mensaje `provider_specific_fields` en `/v1/chat/completions`) y se reproduce en sentido upstream cuando se repite. Por lo tanto, los Responses nunca se almacenan en su cuenta OpenAI. Consulta [Estado específico del proveedor](/es/docs/provider-specific-fields).
+- **Responses WebSocket:** las sesiones públicas de WebSocket terminan en el gateway. El adapter OpenAI abre un WebSocket upstream `/responses` independiente, asigna identificadores de respuesta públicos a identificadores ascendentes privados y utiliza la continuación incremental mientras la misma deployment permanece seleccionada. El routing a otro deployment reconstruye el contexto canonical completo en lugar de filtrar o reenviar eventos del proveedor directamente.
+- **Imágenes**: modelos `gpt-image-*`; siempre devuelve `b64_json` independientemente del `response_format` solicitado (ver [Imágenes](/es/docs/images)).
+- **Videos**: los perfiles de Sora se incluyen para compatibilidad con OpenAI, pero los documentos actuales de OpenAI marcan que la API de videos de Sora 2 está obsoleta y su cierre está programado para el 24 de septiembre de 2026.
+- Catálogo: `src/adapters/openai/catalog.json`.
+
+## Próximos pasos [#next-steps]
+
+- [Crear deployments](/es/docs/creating-deployments): la forma de solicitud completa.
+- [Reasoning](/es/docs/reasoning) — el tipo `openai_effort` en detalle.
+- [Videos](/es/docs/videos): el ciclo de vida del video asíncrono.

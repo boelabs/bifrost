@@ -19,10 +19,22 @@ function routeOf(entry: string): string {
 	return path === "index" ? "/" : `/${path}`;
 }
 
-const pages = new Map<string, { ids: Set<string>; links: string[] }>();
+const pages = new Map<
+	string,
+	{ ids: Set<string>; links: string[]; language: string | null }
+>();
 for await (const entry of new Bun.Glob("**/*.html").scan(app)) {
-	const page = { ids: new Set<string>(), links: [] as string[] };
+	const page = {
+		ids: new Set<string>(),
+		links: [] as string[],
+		language: null as string | null,
+	};
 	await new HTMLRewriter()
+		.on("html", {
+			element(element) {
+				page.language = element.getAttribute("lang");
+			},
+		})
 		.on("[id]", {
 			element(element) {
 				const id = element.getAttribute("id");
@@ -93,6 +105,29 @@ if (!pages.has("/")) {
 }
 if (!pages.has("/docs")) {
 	failures.add("Missing documentation overview");
+}
+for (const route of ["/es", "/es/docs"]) {
+	if (!pages.has(route)) {
+		failures.add(`Missing localized page: ${route}`);
+	}
+}
+for (const [route, page] of pages) {
+	const spanish = route === "/es" || route.startsWith("/es/");
+	// Next also emits internal error shells that do not use either locale layout.
+	if (!route.startsWith("/_") && page.language !== (spanish ? "es" : "en")) {
+		failures.add(`${route}: incorrect document language`);
+	}
+	if (
+		(route === "/docs" || route.startsWith("/docs/")) &&
+		!pages.has(`/es${route}`)
+	) {
+		failures.add(`${route}: missing prerendered translation`);
+	}
+}
+for (const locale of ["en", "es"]) {
+	if (!assets.has(`/api/search/${locale}`)) {
+		failures.add(`Missing static search index: ${locale}`);
+	}
 }
 if (failures.size) {
 	console.error([...failures].join("\n"));

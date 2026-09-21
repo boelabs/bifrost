@@ -1,0 +1,101 @@
+---
+title: "Variables de entorno"
+description: "Valores obligatorios, opciones y defaults de cada proceso."
+---
+El gateway valida su entorno al inicio y sale si falta una variable requerida o tiene un formato incorrecto. Configura los cinco valores requeridos a continuación y luego revisa las configuraciones opcionales para su deployment. Los procesos de gateway y panel leen archivos de entorno separados.
+
+## Requerido [#required]
+
+| Variables | Formato | Notas |
+|---|---|---|
+| `MASTER_KEY` | Cadena, más de 32 caracteres | Clave de operador de acceso completo. Generar con `openssl rand -base64 48`. |
+| `ENCRYPTION_KEYRING` | Objeto JSON | Asigna identificadores de claves a claves AES hexadecimales de 64 caracteres. Mantén las identificaciones antiguas durante la rotación. |
+| `ACTIVE_ENCRYPTION_KEY_ID` | Identificación de clave | Debe existir en `ENCRYPTION_KEYRING`; cifra cada sobre nuevo. |
+| `DATABASE_URL` | URL de conexión de Postgres | |
+| `REDIS_URL` | URL de conexión de Redis | |
+
+## Servidor [#server]
+
+| Variables | Predeterminado | Controles |
+|---|---|---|
+| `PORT` | `4000` | Puerto de escucha HTTP. |
+| `TRUSTED_PROXY_HOPS` | `0` | Número de saltos de proxy controlados por el operador situados más a la derecha y confiables en `X-Forwarded-For`. `0` ignora el header. |
+| `PUBLIC_MODELS_RPM` | `600` | Las solicitudes `/v1/models` anónimas por proceso se permiten cada minuto por IP de cliente resuelta. `0` desactiva el límite. |
+| `NODE_ENV` | `development` | `development` \| `test` \| `production`. |
+| `LOG_LEVEL` | `info` | `debug` \| `info` \| `warn` \| `error`. |
+| `MIGRATE_ON_BOOT` | `true` | Aplique las migraciones pendientes antes de que el servidor escuche. Cada réplica lo hace detrás de un bloqueo de aviso, por lo que se serializan; un fallo detiene el proceso. |
+| `DRAIN_DELAY_MS` | `15000` (`0` fuera de producción) | Cuánto tiempo responde `/health/ready` a `503` mientras el proceso sigue funcionando, para que el proxy pueda cancelar el registro antes de que se cierre el oyente. Consulta [Rollouts](/es/docs/rollouts). |
+| `SHUTDOWN_TIMEOUT_MS` | `120000` | Gracia para solicitudes en vuelo una vez que el oyente está cerrado. Debe cubrir la respuesta transmitida más larga. |
+
+## Solicitudes, registros y límites [#requests-logging-and-limits]
+
+| Variables | Predeterminado | Controles |
+|---|---|---|
+| `OBSERVABILITY_PAYLOAD_ACCESS` | `open` | Quién puede leer una muestra retenida. `open`: un rol con `payloads:read`, auditado. `sealed`: nadie, a través de ninguna credencial; las muestras aún se capturan y cifran, y el intento rechazado se audita. |
+| `OBSERVABILITY_PAYLOAD_RETENTION_DAYS` | `7` | Retención de carga útil forense cifrada. |
+| `OBSERVABILITY_METADATA_RETENTION_DAYS` | `30` | Retención de metadatos de operación completada y intentos ascendentes. |
+| `ADMIN_AUDIT_RETENTION_DAYS` | `365` | Retención del registro de auditoría `/admin`. Sobrevive a los metadatos de operación: una fila por cambio de configuración, consultado meses después. |
+| `OBSERVABILITY_PAYLOAD_MAX_BYTES` | `32768` | Tamaño máximo de cada componente de solicitud, respuesta, error e intento en una muestra cifrada después de ocultar los secretos. |
+| `IMAGES_MAX_MULTIPART_BYTES` | `805000000` (~805 MB) | Límite agregado en una carga de imágenes de varias partes (imágenes + máscara + campos), transmitida a un disco temporal. |
+| `AUDIO_MAX_MULTIPART_BYTES` | `30000000` (30MB) | Límite agregado en una carga de varias partes de una transcripción de audio. |
+| `RESPONSES_STORE_DEFAULT` | `true` | Valor predeterminado para `store` cuando una solicitud `/v1/responses` lo omite. Configura `false` para deployments que prioricen la privacidad. |
+| `RESPONSES_STATE_RETENTION_DAYS` | `14` | Cuánto tiempo una respuesta almacenada (con `store: true`) permanece recuperable a través de `GET /v1/responses/:id`. |
+| `RESPONSES_WEBSOCKET_MAX_CONNECTIONS` | `1000` | Conexiones WebSocket máximas en vivo Responses por proceso de gateway. |
+| `RESPONSES_WEBSOCKET_MAX_CONNECTIONS_PER_KEY` | `20` | Conexiones WebSocket máximas en vivo Responses para una virtual key (la master key tiene su propio alcance). |
+| `RESPONSES_WEBSOCKET_MAX_QUEUED_TURNS` | `64` | Giros máximos de `response.create` en cola por conexión; se procesa un turno a la vez. |
+| `RESPONSE_STATE_GC_INTERVAL_MS` | `3600000` (1h) | Con qué frecuencia el trabajo en proceso elimina el estado de respuesta caducado. |
+
+## Extensiones de runtime [#runtime-extensions]
+
+| Variables | Predeterminado | Controles |
+|---|---|---|
+| `EXTENSIONS_MAX_FAILURES` | `3` | Fallos de enlace consecutivos antes de que se deshabilita una instancia de extensión para ese proceso. |
+| `EXTENSIONS_RELOAD_INTERVAL_MS` | `15000` | Con qué frecuencia cada réplica busca un registro de extensión modificado para recargar en caliente. |
+| `EXTENSIONS_MAX_CODE_BYTES` | `1000000` (1MB) | Tamaño máximo de la fuente de un módulo de extensión cargado. |
+| `EXTENSIONS_HOOK_TIMEOUT_MS` | `5000` | Límite de tiempo transcurrido por hook. `0` desactiva el tiempo de espera. Un hook excedido se cancela y cuenta como un fallo. |
+
+## Autenticación del panel [#dashboard-authentication]
+
+Opcional y desactivado de forma predeterminada. Cuando está deshabilitada, el gateway nunca monta `/auth/*` o `/admin/users`, y `/admin` acepta solo la master key, exactamente como antes de que existiera esta superficie. Las tablas se crean de cualquier manera y simplemente permanecen vacías.
+
+| Variables | Predeterminado | Controles |
+|---|---|---|
+| `DASH_ENABLED` | `false` | Interruptor maestro. Para habilitarlo se requiere `DASH_ROOT_USER`; el proceso se niega a iniciarse de otra manera. |
+| `DASH_ROOT_USER` | — | Nombre de usuario del operador raíz. Se lee del entorno, nunca se almacena en la base de datos, por lo que no se puede deshabilitar, degradar ni eliminar. |
+| `DASH_ROOT_PASSWORD` | vuelve a `MASTER_KEY` | Contraseña del operador raíz. |
+
+La duración de la sesión, la ventana inactiva y el bloqueo de inicio de sesión **no** son variables de entorno: son políticas que un propietario edita desde **Configuración › Sesiones del operador** o mediante `PUT /admin/dashboard-settings`. Cambiarlos entra en vigor en cuestión de segundos, sin necesidad de volver a implementarlos, y el cambio se audita como cualquier otro.
+
+Configura `DASH_ROOT_PASSWORD` en producción en lugar de depender del fallback: `MASTER_KEY` y la contraseña del panel tienen diferentes ciclos de rotación, y compartir un valor significa que rotar la credencial API cierra la sesión de todos los operadores. Consulta [Seguridad](/es/docs/security#dashboard-authentication).
+
+## Proceso del panel [#dashboard-process]
+
+Leído por el contenedor del dashboard, no por el gateway. La lista completa es [`apps/dashboard/.env.example`](https://github.com/boelabs/bifrost/blob/main/apps/dashboard/.env.example); el sitio de documentación no necesita nada en absoluto. No se incluye nada en su imagen, por lo que todas entran en vigor al reiniciar y una etiqueta de imagen se puede promocionar entre entornos sin cambios.
+
+| Variables | Predeterminado | Controles |
+|---|---|---|
+| `GATEWAY_URL` | — | Donde está la gateway. Requerido. Sólo este contenedor necesita llegar a él: el navegador nunca abandona el origen del panel, por lo que el gateway no necesita dominio público. |
+| `PORT` | `3001` | Puerto de escucha (`DASH_PORT` en desarrollo). |
+
+El panel verifica la dirección antes de aceptar su primera solicitud, por lo que falta un contenedor que sale con el motivo impreso en lugar de uno que comienza y luego falla en cada página.
+
+`DASH_ENABLED` es leído por el **gateway**: allí conecta `/auth/*` y `/admin/users`. Los archivos Compose en este repositorio lo reutilizan como un único interruptor para el par, por lo que el contenedor del panel sale limpiamente cuando es falso.
+
+## Observabilidad (OpenTelemetry) [#observability-opentelemetry]
+
+| Variables | Predeterminado | Controles |
+|---|---|---|
+| `OTEL_ENABLED` | `false` | Interruptor maestro. De lo contrario, las métricas/seguimientos no se exportan en absoluto. |
+| `OTEL_SERVICE_NAME` | `bifrost` | Nombre del servicio adjunto a la telemetría exportada. |
+| `OTEL_METRIC_EXPORT_INTERVAL_MS` | `60000` | Con qué frecuencia se envían métricas al recopilador. |
+
+Estos son leídos por el propio esquema del gateway. Una vez `OTEL_ENABLED=true`, los exportadores (`OTLPMetricExporter`, `OTLPTraceExporter`) también leen directamente las variables de entorno **estándar** de OpenTelemetry SDK, en particular `OTEL_EXPORTER_OTLP_ENDPOINT` y `OTEL_EXPORTER_OTLP_HEADERS`: que no son específicos del gateway y, por lo tanto, no están validados por el esquema anterior. Consulta [Observabilidad](/es/docs/observability) para ver un ejemplo práctico.
+
+Se aceptan variables booleanas (`RESPONSES_STORE_DEFAULT`, `OTEL_ENABLED`, `DASH_ENABLED`) `1`/`true`/`yes`/`on` o `0`/`false`/`no`/`off`, sin distinguir entre mayúsculas y minúsculas.
+
+## Próximos pasos [#next-steps]
+
+- [Configuración inicial](/es/docs/setup): el conjunto mínimo para comenzar a funcionar.
+- [Seguridad](/es/docs/security): límites de cifrado de credenciales y observabilidad.
+- [Observabilidad](/es/docs/observability) — Configuración de OTEL de extremo a extremo.
+- [Lista de verificación para producción](/es/docs/production-checklist): qué verificar antes de comenzar a funcionar.

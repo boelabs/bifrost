@@ -1,0 +1,26 @@
+---
+title: "Docker en un servidor Linux"
+description: "Instala el stack con Docker Compose y configura el acceso desde un reverse proxy."
+---
+Cualquier host Linux con Docker y el complemento Compose puede ejecutar el stack completa directamente.
+
+## Abrir el stack [#bring-up-the-stack]
+
+```bash
+git clone https://github.com/boelabs/bifrost.git && cd bifrost
+
+MASTER_KEY=$(openssl rand -base64 48) \
+ENCRYPTION_KEY_HEX=$(openssl rand -hex 32) \
+docker compose -f docker/compose.yaml -f docker/compose.local.yaml up -d
+```
+
+Esto inicia Postgres, Redis, el trabajo de migración único, el gateway (`127.0.0.1:4000`) y los documentos (`127.0.0.1:3000`). El gateway se comunica con Postgres/Redis a través de la red interna de Compose en texto sin formato, por lo que no hay TLS ni [Solución de problemas](/es/docs/troubleshooting).
+
+## Notas de producción [#production-notes]
+
+- **Proxy inverso.** Coloque el gateway detrás de Caddy, nginx o Traefik para la terminación TLS en el borde **público**. El archivo de configuración local vincula los servicios al loopback, por lo que un proxy en el host puede acceder a ellos sin escuchar en cada interfaz. Si habilita el panel, asígnele un nombre de host propio y configura las dos variables que apuntan cada lado al otro, como se describe en [Panel del operador → Servirlo](/es/docs/dashboard#serving-it).
+- **Secretos.** Conjunto `MASTER_KEY`, `ENCRYPTION_KEYRING` y `ACTIVE_ENCRYPTION_KEY_ID`; la base de producción Compose los deja vacíos y el gateway se niega a comenzar sin ellos. Consulta [Configuración → Secretos](/es/docs/setup#secrets).
+- **Migraciones.** El servicio `migrate` las ejecuta automáticamente en `docker compose up`. Para una ejecución manual: `docker compose run --rm migrate`.
+- **Copias de seguridad.** Conserva los volúmenes con nombre `pgdata` y `redisdata`.
+
+Para apuntar a una base de datos administrada externa en lugar de la incluida, configura `DATABASE_URL`/`REDIS_URL` y prefiera un [proveedor administrado de CA pública](/es/docs/setup#managed-database-and-redis).

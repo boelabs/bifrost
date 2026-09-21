@@ -1,0 +1,249 @@
+---
+title: "Catálogo de modelos"
+description: "Declara operaciones, capacidades, límites y precios en el catálogo."
+---
+El catálogo de modelos vive como JSON por proveedor y se carga en la memoria al inicio:
+
+- `src/adapters/openai/catalog.json`
+- `src/adapters/google/catalog.json`
+-`src/adapters/anthropic/catalog.json`
+- `src/adapters/deepseek/catalog.json`
+- `src/adapters/moonshot/catalog.json`
+-`src/adapters/zai/catalog.json`
+- `src/adapters/minimax/catalog.json`
+-`src/adapters/azureopenai/catalog.json`
+- `src/adapters/azurefoundry/catalog.json`
+- `src/adapters/vercel/catalog.json`
+
+El catálogo de Vercel es una instantánea propia de la API del public model de Vercel AI Gateway. Deliberadamente no delega identificadores de `creator/model` a catálogos propios: Vercel puede exponer diferentes modelos, límites, controles de reasoning y niveles de precios desde la API directa del creador.
+
+Cada archivo declara `$schema: "../../../schemas/model-catalog.schema.json"` para autocompletado y validación en IDE que admiten el esquema JSON.
+
+Los modelos personalizados utilizan el mismo contrato en `model_deployments.catalog_entry`: la API de administración recibe `catalogEntry` con la forma de una única entrada `models` (por ejemplo, `{ "operations": { ... } }`). Si el modelo ya existe en el catálogo del adapter, se rechaza `catalogEntry` para evitar dos fuentes de verdad.
+
+Para fragmentos o cargas útiles personalizadas fuera del documento completo, utiliza `schemas/model-catalog-entry.schema.json`; hace referencia a la misma entrada del catálogo y agrega las reglas requeridas que aplica la API de administración.
+
+## Forma base [#base-shape]
+
+```json
+{
+  "$schema": "../../../schemas/model-catalog.schema.json",
+  "schemaVersion": 1,
+  "provider": {
+    "id": "openai",
+    "adapterKey": "openai",
+    "name": "OpenAI",
+    "docs": ["https://developers.openai.com/api/docs/models"]
+  },
+  "models": {
+    "gpt-5.5": {
+      "operations": {
+        "text.generate": {
+          "capabilities": {
+            "tools": true,
+            "strictTools": true,
+            "vision": true,
+            "reasoning": true,
+            "structuredOutputs": true
+          },
+          "maxInputTokens": 1050000,
+          "maxOutputTokens": 128000,
+          "reasoning": {
+            "kind": "openai_effort",
+            "levels": ["none", "low", "medium", "high", "xhigh", "max"]
+          }
+        }
+      },
+      "pricing": {
+        "inputCentsPerMTokens": 500,
+        "cacheReadCentsPerMTokens": 50,
+        "outputCentsPerMTokens": 3000
+      }
+    }
+  }
+}
+```
+
+## Reglas [#rules]
+
+- `models` es un objeto codificado por `upstreamModel`; no utiliza matrices para la ruta activa.
+- `operations` es la fuente declarativa: la presencia de una operación implica soporte.
+- Para modelos personalizados, se requiere `catalogEntry.operations` y el gateway valida los mínimos por operación: el texto requiere `capabilities.tools|vision|reasoning|structuredOutputs`; `strictTools` es opcional y solo debe configurarse cuando el nivel upstream garantiza argumentos de función compatibles con el esquema; la imagen requiere `outputFormats`, `responseFormats` y `sizes`, `arbitrarySize` o `autoSize`; la transcripción de audio requiere `responseFormats`.
+- Embeddings se declaran con `embedding.create`. El perfil puede indicar `dimensions`, `supportsDimensions`, `minDimensions`, `maxDimensions`, `encodingFormats`, límites de entrada y `supportsTokenInput`. La presencia de `embedding.create` habilita `/v1/embeddings`.
+- El token `pricing` utiliza centavos de dólar por cada millón de tokens; `searchUnitCents` utiliza centavos de USD por unidad de búsqueda de reranking.
+- `reasoning.kind` debe ser compatible con `adapter.reasoningKinds`; se valida al inicio.
+- `reasoning.levels` son puntos de la escalera canonical `none < minimal < low < medium < high < xhigh < max`. Incluyendo `"none"` declara un **interruptor de apagado literal** (el modelo puede omitir el reasoning); omitirlo significa que el modelo **siempre razona** y una solicitud `none` alcanza el nivel más bajo declarado (su piso). No existe una bandera `canDisable` separada: la escalera es la única fuente de verdad.
+- Las solicitudes se **ajustan, nunca se rechazan** por estar fuera de rango: un esfuerzo por encima/por debajo de los niveles declarados se ajusta al rango (por ejemplo, `max` → `xhigh`, `minimal` → el piso). Un esfuerzo positivo nunca se redondea a `none`. El único error grave es solicitar un reasoning sobre algo que no razona. Esto mantiene el catálogo compatible con versiones futuras: un modelo nuevo solo declara su `levels`.
+- `openai_effort` emite `reasoning_effort`; `openai_body` emite un campo de nivel superior específico del proveedor como `thinking: {"type":"enabled"}` y, cuando corresponda, un `effortField` como `reasoning_effort`.
+- `capabilities.strictTools` es independiente de `capabilities.tools`: significa que el upstream garantiza que los argumentos de llamada de función se ajusten al esquema JSON declarado. Una solicitud con una herramienta cuyo `strict` es `true` se enruta solo a deployments que declaran esta capacidad; `unsupportedParameterStrategy` nunca lo degrada ni lo elimina silenciosamente.
+- Las entradas son deliberadamente mínimas: solo `operations` y `pricing` (los datos que consume el runtime) más `deprecated`, `notes`, y `needsHumanReview`. El validador rechaza los metadatos descriptivos que el gateway nunca lee (nombres, fechas del ciclo de vida, listas de modalidades, procedencia).
+
+El cargador está en `src/catalog/jsonCatalog.ts`; `getCatalogEntry()` indexa por proveedor/modelo y resuelve instantáneas fechadas como `gpt-5.5-2026-04-23` con respecto a su modelo base.
+
+## Agregar entradas de catálogo [#adding-catalog-entries]
+
+### Un nuevo modelo en un proveedor existente [#a-new-model-on-an-existing-provider]
+
+La contribución más rápida: sin código, solo JSON:
+
+1. Abre el catálogo del proveedor, p. `src/adapters/deepseek/catalog.json`.
+2. Agrega una clave en `models`, ​​denominada **`upstreamModel`** (la identificación exacta que espera el proveedor). Complete su `operations` (consulta [Reglas](#rules)), `pricing` y cualquier metadato opcional.
+3. Validar: `bun run --filter @boelabs/bifrost catalog:validate`.
+
+Luego, el modelo se puede solicitar creando un deployment para él (consulta [Crear deployments](/es/docs/creating-deployments)).
+
+### Un nuevo proveedor (con catálogo propio) [#a-new-provider-with-its-own-catalog]
+
+Agregar un proveedor toca **cuatro** archivos. Omitir el último es el error habitual: sin él, CI nunca valida su catálogo.
+
+**1. adapter** — `src/adapters/<provider>/index.ts`. Para una API compatible con OpenAI, son unas pocas líneas; exporte tanto el adapter como un `ProviderModule`:
+
+```ts
+import type { ProviderModule } from "#adapters/types.ts";
+import { makeOpenAIStyleAdapter } from "#adapters/openaiStyle.ts";
+
+export const acmeAdapter = makeOpenAIStyleAdapter({
+  key: "acme", // must equal the catalog's provider.adapterKey
+  label: "Acme",
+  defaultBaseUrl: "https://api.acme.ai/v1",
+  defaultTransport: "chat_completions",
+  maxTokensField: "max_tokens",
+});
+export const acmeProvider: ProviderModule = { adapter: acmeAdapter };
+```
+
+**2. Catálogo** — `src/adapters/<provider>/catalog.json`. Comienza desde la [forma base](#base-shape); configura `provider.adapterKey` al adapter `key` y agrega su `models`.
+
+**3. Registre el proveedor** — `src/adapters/index.ts`: importa `acmeProvider` y agréguelo a `PROVIDER_REGISTRATIONS` con su URL de catálogo:
+
+```ts
+{ provider: acmeProvider, catalogUrl: new URL("./acme/catalog.json", import.meta.url) },
+```
+
+**4. Regístrelo para su validación** — `scripts/validate-catalog.ts`: agrega una entrada a la lista `catalogs`, o `catalog:validate` (y CI) la omitirá:
+
+```ts
+{ adapterKey: "acme", url: new URL("../src/adapters/acme/catalog.json", import.meta.url) },
+```
+
+Luego valide y ejecuta la suite:
+
+```bash
+bun run --filter @boelabs/bifrost catalog:validate
+bun run --filter @boelabs/bifrost test
+```
+
+<Callout>
+
+`adapterKey` debe ser idéntico en los tres lugares: el adapter `key`, `provider.adapterKey` en el catálogo y la entrada `validate-catalog.ts`. El nombre de la carpeta también suele coincidir; la única excepción hoy es Google (carpeta `src/adapters/google`, clave de adapter `googleaistudio`).
+
+</Callout>
+
+## Campos por modelo [#per-model-fields]
+
+Además de `operations` y `pricing`, cada entrada en `models` acepta:
+
+| Campo | Propósito |
+|---|---|
+| `deprecated` | Marca un modelo como no recomendado; informativo, nunca cambia el comportamiento. |
+| `notes` | Notas humanas de formato libre (por ejemplo, por qué un modelo está obsoleto). |
+| `needsHumanReview` | Rutas de puntos redactadas automáticamente por la sincronización del catálogo; `catalog:validate` falla cuando no está vacío. |
+
+Dentro de `operations["text.generate"]`, `contracts` declara los transports upstream por los que habla el modelo y `parameters` el manejo por parámetro (`supported` / `mapped` / `ignored`) con notas.
+
+Las instantáneas fechadas, como `gpt-5.5-2026-04-23`, se resuelven en su modelo base, por lo que normalmente se declara solo la identificación base.
+
+## Embeddings [#embeddings]
+
+Ejemplo mínimo de un modelo de embeddings personalizado compatible con OpenAI:
+
+```json
+{
+  "operations": {
+    "embedding.create": {
+      "dimensions": 3072,
+      "supportsDimensions": true,
+      "minDimensions": 128,
+      "maxDimensions": 3072,
+      "encodingFormats": ["float"],
+      "maxInputTokens": 8192,
+      "supportsTokenInput": false
+    }
+  },
+  "pricing": {
+    "inputCentsPerMTokens": 20
+  }
+}
+```
+
+Notas rápidas:
+
+- Controles `encodingFormats` `encoding_format`; si el modelo no declara `base64`, el gateway lo rechaza antes de llegar al upstream.
+- La solicitud `dimensions` solo se acepta cuando `supportsDimensions: true`.
+- `supportsTokenInput: false` rechaza entradas pre-tokenizadas (`number[]`/`number[][]`).
+- Google AI Studio declara `gemini-embedding-2` y `gemini-embedding-001` en el catálogo; el adapter traduce el contrato público a `:embedContent`/`:batchEmbedContents`.
+
+Para validar todos los catálogos:
+
+```bash
+bun run --filter @boelabs/bifrost catalog:validate
+```
+
+## Reranking [#reranking]
+
+Un modelo de reranking declara la operación independiente `rerank`:
+
+```json
+{
+  "operations": {
+    "rerank": {
+      "documentModalities": ["text"],
+      "maxDocuments": 1000,
+      "maxQueryBytes": 1048576,
+      "maxDocumentBytes": 1048576,
+      "maxTotalDocumentBytes": 16777216,
+      "maxTokensPerDocument": 32768,
+      "maxTotalTokens": 32768,
+      "documentsPerSearchUnit": 100
+    }
+  },
+  "pricing": { "searchUnitCents": 0.25 }
+}
+```
+
+Se requiere `documentModalities`. `imageSources` (`url` o `data_url`) está reservado en el esquema para futuros perfiles con capacidad de imagen, pero los catálogos actuales solo exponen `text`. Los límites de bytes y documentos se aplican antes de una llamada upstream. Los campos de token describen los límites documentados del proveedor y no activan la tokenización local aproximada.
+
+## Sincronización del catálogo [#catalog-sync]
+
+La sincronización entre proveedores (`catalog:sync` y `catalog:sync:verify`) compara Vercel AI Gateway, OpenRouter y models.dev. Es solo para informes: escribe en `apps/gateway/.source/catalog-sync/` y nunca modifica un catálogo de proveedores. Úselo para investigar nuevos modelos y conflictos antes de realizar ediciones revisadas y específicas del proveedor.
+
+### Sincronización propiedad de Vercel [#vercel-owned-sync]
+
+Vercel es la excepción porque su respuesta pública `/v1/models` no autenticada es la fuente autorizada para el propio adapter Vercel. Su sincronización dedicada es determinista y admite tres modos:
+
+```bash
+# Draft a candidate and machine-readable report under .source/vercel-catalog-sync/
+bun run --filter @boelabs/bifrost catalog:sync:vercel
+
+# Atomically replace src/adapters/vercel/catalog.json with the current snapshot
+bun run --filter @boelabs/bifrost catalog:sync:vercel:write
+
+# Fetch the live source and fail when the committed snapshot differs
+bun run --filter @boelabs/bifrost catalog:sync:vercel:verify
+```
+
+El escritor rechaza respuestas de fuentes sospechosamente pequeñas e identificaciones duplicadas/no válidas, por lo que una recuperación parcial o rota no puede borrar el catálogo versionado. El informe enumera familias de operaciones no admitidas, precios por imagen que el esquema de fijación de precios por token no puede representar, reranking de la ambigüedad del precio cero y capacidad multimodal retenida, y modelos de reasoning basados ​​únicamente en el presupuesto para los cuales no se inventó ninguna escalera de esfuerzo. También se informan etiquetas de reasoning futuro fuera de la escalera canonical en lugar de aceptarlas silenciosamente o asignarles un alias.
+
+El catálogo generado incluye solo operaciones que el adapter Vercel puede ejecutar. Los modelos de lenguaje utilizan los límites, las modalidades, los parámetros admitidos, las opciones de reasoning y el precio de los tokens exactos de la fuente. Las entradas de embeddings, imagen y reranking reciben perfiles conservadores a nivel de adapter; los modelos de lenguaje multimodal que generan imágenes también exponen la generación de imágenes (y la edición cuando sus modalidades de origen aceptan la entrada de imágenes). Los identificadores de modelo exclusivos de Vercel son entradas de primera clase y no requieren un adapter de proveedor directo coincidente.
+
+### Sincronización de reordenamiento de OpenRouter [#openrouter-rerank-sync]
+
+OpenRouter es la principal fuente funcional y de catálogo para la reranking. Su sincronización determinista dedicada filtra la fuente en vivo por `output_modalities=rerank`, conserva las identificaciones completas del modelo y tiene los mismos modos de informe/escritura/verificación:
+
+```bash
+bun run --filter @boelabs/bifrost catalog:sync:openrouter
+bun run --filter @boelabs/bifrost catalog:sync:openrouter:write
+bun run --filter @boelabs/bifrost catalog:sync:openrouter:verify
+```
+
+Ningún recuento de modelos está codificado. El informe muestra adiciones/eliminaciones a través de la deriva de instantáneas, capacidad multimodal retenida por la versión de solo texto, precios ambiguos de token cero, anulaciones de unidades de búsqueda revisadas huérfanas y modelos pagos sin un costo de catálogo representable.

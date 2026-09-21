@@ -1,0 +1,36 @@
+---
+title: "Elegir un proveedor"
+description: "Adapters disponibles, credenciales y protocolos para conectar cada proveedor."
+---
+Elige un adapter para el proveedor y la operación que necesita, luego crea un deployment con su `adapterKey`, modelo upstream y credenciales. El adapter maneja la traducción del protocolo; su catálogo ofrece capacidades y precios de modelos conocidos.
+
+## Elige un adapter [#choose-an-adapter]
+
+La columna de transport describe el protocolo upstream. Su aplicación todavía utiliza la API pública de Bifrost. OpenRouter actualmente solo admite la reranking.
+
+| Proveedor | Adapter key | Credenciales | transport predeterminado |
+|---|---|---|---|
+| [OpenAI](/es/docs/providers-openai) | `openai` | `apiKey` | API Responses |
+| [Azure OpenAI](/es/docs/providers-azure-openai) | `azureopenai` | `apiKey`, `baseUrl` | API Responses |
+| [Azure Foundry](/es/docs/providers-azure-foundry) | `azurefoundry` | `apiKey`, `baseUrl` | Chat Completions |
+| [Google AI Studio](/es/docs/providers-google) | `googleaistudio` | `apiKey` | `generateContent` |
+| [Anthropic](/es/docs/providers-anthropic) | `anthropic` | `apiKey` | Messages API |
+| [DeepSeek](/es/docs/providers-deepseek) | `deepseek` | `apiKey` | Chat Completions |
+| [MiniMax](/es/docs/providers-minimax) | `minimax` | `apiKey` | Chat Completions |
+| [Moonshot](/es/docs/providers-moonshot) | `moonshot` | `apiKey` | Chat Completions |
+| [Z.AI](/es/docs/providers-zai) | `zai` | `apiKey` | Chat Completions |
+| [Vercel AI Gateway](/es/docs/providers-vercel) | `vercel` | `apiKey` | API Responses |
+| [OpenRouter](/es/docs/providers-openrouter) | `openrouter` | `apiKey` | Reranking |
+| [OpenAI-compatible](/es/docs/providers-openai-compatible) | `openaicompatible` | `apiKey`, `baseUrl` | Chat Completions |
+
+## Configurar la conexión [#configura-the-connection]
+
+Los adapters con un host upstream integrado no requieren `baseUrl`. `openaicompatible`, Azure OpenAI y Azure Foundry requieren `baseUrl` porque el operador elige el endpoint de destino.
+
+`GET /admin/operations` devuelve esta misma lista de adapters en vivo, incluidas las claves de credenciales requeridas y qué operaciones/transports implementa realmente cada adapter.
+
+## Próximos pasos [#next-steps]
+
+- [Crear deployments](/es/docs/creating-deployments): la forma de solicitud compartida por cada proveedor.
+- [Catálogo de modelos](/es/docs/model-catalog): cómo se declaran los modelos de un proveedor.
+- [Tu primer deployment](/es/docs/first-deployment): el ejemplo mínimo de un extremo a otro.

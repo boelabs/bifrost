@@ -1,0 +1,20 @@
+---
+title: "Portainer"
+description: "Instala y configura Bifrost como un stack en Portainer."
+---
+[Portainer](https://www.portainer.io) implementa el `docker/compose.yaml` del repositorio como una **pila**.
+
+1. **Pilas → Agregar pila** y pega `docker/compose.yaml` o use la opción **Repositorio Git** que apunta a este repositorio.
+2. En **Variables de entorno**, establece:
+	- `MASTER_KEY` — `openssl rand -base64 48`
+	- `ENCRYPTION_KEYRING` — p.ej. `{"primary":"<openssl rand -hex 32>"}`
+	- `ACTIVE_ENCRYPTION_KEY_ID` — `primary`
+3. **Implemente el stack.** Postgres, Redis y el trabajo único `migrate` se ejecutan dentro del stack; el gateway escucha en el puerto interno `4000`, el dashboard opcional en `3001` y los documentos en `3000`.
+
+La base de Compose de producción no publica puertos de host. Conecta su proxy inverso a la red del stack. Si el proxy se ejecuta directamente en el mismo host Docker, agrega asignaciones de solo loopback para el gateway (`127.0.0.1:4000:4000`), el panel (`127.0.0.1:3001:3001`) y, opcionalmente, documentos (`127.0.0.1:3000:3000`) en el editor del stack de Portainer.
+
+Enrute el panel con su propio nombre de host: es una aplicación independiente en la raíz de su dominio, no una ruta en el del gateway. Necesita que `GATEWAY_URL` apunta al gateway en la red del stack; el gateway en sí no necesita dominio a menos que desee que se publique la API. Consulta [Panel del operador → Servicio](/es/docs/dashboard#serving-it). Nunca publique Postgres, Redis o `migrate`.
+
+El gateway llega a Postgres/Redis a través de la red del stack interna en texto sin formato, por lo que no hay protocolo de enlace TLS ni [Solución de problemas](/es/docs/troubleshooting).
+
+Si en su lugar apunta a instancias **externas**, configura `DATABASE_URL`/`REDIS_URL` en el entorno de pila y prefiera un [proveedor administrado con un certificado de CA pública](/es/docs/setup#managed-database-and-redis); una base de datos autofirmada a través de un puerto público no funcionará en Bun.

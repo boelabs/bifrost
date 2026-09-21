@@ -1,0 +1,39 @@
+---
+title: "Contabilidad de costos"
+description: "Precios, consumo, presupuestos y conciliación con el costo del proveedor."
+---
+## De dónde provienen los precios [#where-pricing-comes-from]
+
+La tarifa de cada modelo se declara en centavos por 1 millón de tokens en la entrada de su catálogo `pricing` (`inputCentsPerMTokens`, `outputCentsPerMTokens`, `cacheReadCentsPerMTokens`, `cacheWriteCentsPerMTokens`) y las unidades de búsqueda de reranking utilizan `searchUnitCents`. Los componentes del token y de la unidad de búsqueda se suman cuando ambos están configurados. El campo `pricing` propio de un deployment, si está configurado, **anula** la tarifa del catálogo por completo para ese deployment, lo que resulta útil para una tarifa negociada o un modelo personalizado sin ninguna entrada de catálogo. Un modelo sin precio en ninguna parte (sin tarifa de catálogo, sin anulación) normalmente se factura como **costo cero**, no como un error. Reranking tiene un fallback contable: cuando no existe una tasa configurada y OpenRouter informa `usage.cost`, ese valor se utiliza para que una solicitud paga no se registre falsamente como gratuita. Cuando ambos están presentes, el precio configurado es el costo para el consumidor y el valor upstream se retiene por separado para la conciliación.
+
+## Cómo se realiza el seguimiento del gasto [#how-spend-is-tracked]
+
+En cada solicitud con uso (tokens y/o unidades de búsqueda de reranking realmente consumidas), el gateway calcula el costo a partir del precio resuelto y:
+
+- **Redis** es el contador de rutas activas: las ventanas de TPM de virtual key y el presupuesto total en ejecución se verifican e incrementan aquí, en la ruta crítica de la solicitud, porque debe ser rápida y atómica.
+- **Postgres** (`spend_cents` en la virtual key, más el costo de consumo y el costo upstream estimado en `gateway_operations`) es la fuente duradera de verdad, actualizada en cada solicitud facturada.
+
+El tráfico de master key nunca se factura según ningún presupuesto (la master key no tiene límites); consulta [Seguridad](/es/docs/security) para conocer el modelo de autenticación completo.
+
+## Presupuestos y RPM/TPM (por virtual key) [#budgets-and-rpmtpm-per-virtual-key]
+
+Cubierto en su totalidad en [virtual keys](/es/docs/virtual-keys#budgets-and-limits): la ventana de un presupuesto se restablece en su cadencia configurada (`hourly`, `daily`, `weekly`, o `monthly`), y excederlo o un límite de RPM/TPM devuelve `429 rate_limit_exceeded` con los headers `x-ratelimit-*` coincidentes para que un cliente con buen comportamiento pueda retroceder antes de ser limitado.
+
+## Consultando uso [#querying-usage]
+
+`GET /admin/usage` agrega costos y recuentos de solicitudes, agrupados por `public_model`, `virtual_key`, `day`, o desagrupados (`none`): los mismos filtros que Se aplica `GET /admin/logs` (intervalo de fechas, virtual key, public model, deployment, adapter, tipo de llamada, estado, acierto de cache). Consulta [Referencia de API de administración](/es/docs/reference-admin-api#logs-and-usage).
+
+```bash
+curl "$GATEWAY/admin/usage?groupBy=public_model&start=2026-06-01&end=2026-07-01" \
+  -H "Authorization: Bearer $MASTER_KEY"
+```
+
+Para obtener detalles por solicitud, `GET /admin/logs` devuelve el costo del consumidor y el costo upstream estimado; la ruta detallada incluye cada intento de deployment. Un acierto de cache es la única excepción a "cada solicitud con uso se factura": regresa antes de que se ejecuta la contabilidad de costos, registra con `cost: null` y nunca toca los contadores de gasto o TPM de la virtual key; consulta [Cache de respuestas](/es/docs/caching).
+
+Reranking nunca se almacena en cache de respuestas. El costo unitario de búsqueda aún incrementa el gasto en virtual key y los presupuestos cuando `totalTokens` es cero. Las RPM se aplican normalmente; TPM no se sintetiza a partir de unidades de búsqueda.
+
+## Próximos pasos [#next-steps]
+
+- [Virtual keys](/es/docs/virtual-keys): presupuestos, límites de RPM/TPM y su cadencia de reinicio.
+- [Observabilidad](/es/docs/observability): registros de operación y telemetría más allá del costo.
+- [Catálogo de modelos](/es/docs/model-catalog): el esquema `pricing`.

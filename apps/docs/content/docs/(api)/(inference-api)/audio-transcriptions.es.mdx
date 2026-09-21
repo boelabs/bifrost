@@ -1,0 +1,35 @@
+---
+title: "Transcripción de audio"
+description: "Transcribe archivos de audio y configura formatos, timestamps y streaming."
+---
+Transcribe un archivo de audio cargado. El public model debe admitir `audio.transcribe`; los formatos disponibles, las marcas de tiempo y el streaming dependen de su perfil.
+
+## Ejemplo de solicitud [#example-request]
+
+Configura `GATEWAY` en el origen del gateway y `API_KEY` en su virtual key. Reemplaza el public model de ejemplo por uno de [Consultar modelos](/es/docs/models-discovery).
+
+```bash
+curl -X POST "$GATEWAY/v1/audio/transcriptions" \
+  -H "Authorization: Bearer $API_KEY" \
+  -F "model=transcribe" \
+  -F "file=@recording.mp3"
+```
+
+Solo multiparte (campo `file`). El archivo cargado se transmite a un disco temporal para su validación (nunca se almacena completamente en la memoria) y se elimina después de un éxito, un error, un tiempo de espera o una cancelación del cliente. `AUDIO_MAX_MULTIPART_BYTES` (predeterminado 30 MB) limita el tamaño de carga total.
+
+## Campos [#fields]
+
+`model`, `file`, `language`, `prompt`, `temperature`, `response_format` (`json`, `text`, `srt`, `verbose_json`, `vtt`), `timestamp_granularities` (`word`/`segment`, `verbose_json` solamente), `include`, `stream`. Los formatos de respuesta y si las granularidades de streaming/marca de tiempo están disponibles se declaran por modelo en su perfil de catálogo `audio.transcribe`.
+
+## Formato de respuesta [#response-format]
+
+Devuelto como JSON, texto sin formato o SSE según el `response_format` y `stream` solicitados; no siempre JSON como los otros endpoints.
+
+## Nota de Azure OpenAI [#azure-openai-note]
+
+Azure usa la API de transcripción basada en deployment clásica de forma predeterminada porque algunos recursos devuelven `DeploymentNotFound` desde la ruta de vista previa v1 para deployments que funcionan a través de la ruta clásica. El adapter construye la URL clásica a partir del nombre de deployment y el recurso `baseUrl`; v1 sigue siendo una anulación de transport explícita. Consulta [Azure OpenAI](/es/docs/providers-azure-openai) y el ejemplo específico de Azure en [Creación de deployments](/es/docs/creating-deployments#azure-openai-classic-audio).
+
+## Próximos pasos [#next-steps]
+
+- [Creando deployments](/es/docs/creating-deployments#4-audio-transcription--catalog-model): registro de un modelo de transcripción.
+- [Streaming](/es/docs/streaming): la variante SSE de este endpoint.

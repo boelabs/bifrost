@@ -1,0 +1,26 @@
+---
+title: "Dokploy"
+description: "Instala y configura Bifrost como una aplicación de Compose en Dokploy."
+---
+[Dokploy](https://dokploy.com) implementa el `docker/compose.yaml` del repositorio como una aplicación **Compose**.
+
+1. **Create → Compose** y apúntelo a este repositorio (o pega el `docker/compose.yaml`).
+2. Establece los secretos en la configuración del entorno de la aplicación:
+	- `MASTER_KEY` — `openssl rand -base64 48`
+	- `ENCRYPTION_KEYRING` — p.ej. `{"primary":"<openssl rand -hex 32>"}`
+	- `ACTIVE_ENCRYPTION_KEY_ID` — `primary`
+3. Implementar. El paquete Postgres/Redis y el trabajo `migrate` se ejecutan dentro de la red de la aplicación.
+4. En **Dominios**, agrega solo servicios HTTP de larga duración:
+   - **gateway**, puerto de contenedores `4000`
+   - **dashboard** (opcional), puerto de contenedores `3001`: su **propio** host, p. `dash.example.com`
+   - **docs** (opcional), puerto de contenedores `3000`
+
+El panel es un deployment independiente con su propio nombre de host: una aplicación simple en la raíz de su dominio, sin prefijo de ruta que Dokploy pueda conservar. Necesita una configuración, `GATEWAY_URL`, que dentro de la red de la aplicación es el nombre del servicio del gateway.
+
+Consulta [Panel del operador → Servir](/es/docs/dashboard#serving-it) para conocer ambas configuraciones y los dos comandos curl que le indican qué lado está mal configurado.
+
+No crea un dominio para `migrate`, Postgres o Redis. Dokploy inyecta las etiquetas de routing de Traefik para el servicio seleccionado y aplica cambios de dominio en la redistribución. El archivo Compose base no publica puertos de host sin formato.
+
+Se accede a Postgres/Redis a través de la red privada en texto sin formato: sin TLS, sin [Solución de problemas](/es/docs/troubleshooting).
+
+Al igual que con Coolify, si utiliza los servicios de base de datos **independientes** de Dokploy, estos presentan certificados autofirmados, que el TLS de Bun puede rechazar. La configuración más sencilla es **deshabilitar SSL en los servicios Postgres y Redis** y conectarse a través de la red interna con `postgres://…` y `redis://…` (no `sslmode`, no `rediss://`), o usar un [administrado proveedor](/es/docs/setup#managed-database-and-redis). Nunca exponga la base de datos públicamente en texto sin formato; consulta la [nota de seguridad](/es/docs/troubleshooting#security-note).

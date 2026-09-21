@@ -1,0 +1,11 @@
+{
+	"title": "Primeros pasos",
+	"defaultOpen": true,
+	"pages": [
+		"quickstart",
+		"first-deployment",
+		"concepts",
+		"setup",
+		"architecture"
+	]
+}

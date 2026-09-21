@@ -1,0 +1,117 @@
+---
+title: "Solución de problemas"
+description: "Relaciona síntomas y códigos de error con comprobaciones y soluciones concretas."
+---
+Bifrost devuelve errores en la **forma exacta del endpoint al que llamó**. Los endpoints de estilo OpenAI (`/v1/chat/completions`, `/v1/responses`, `/v1/images/*`, `/v1/embeddings`, `/v1/audio/transcriptions`) devuelven el cuerpo del error de OpenAI; `/v1/messages` devuelve el Anthropic y `/v1/rerank` devuelve el OpenRouter. El manejo de errores de su cliente existente funciona sin cambios.
+
+Forma de OpenAI:
+
+```json
+{
+  "error": {
+    "message": "max_output_tokens: Invalid input: expected number, received string",
+    "type": "invalid_request_error",
+    "param": "max_output_tokens",
+    "code": null
+  }
+}
+```
+
+Forma antrópica (`/v1/messages`):
+
+```json
+{ "type": "error", "error": { "type": "invalid_request_error", "message": "max_tokens: Invalid input: expected number, received string" } }
+```
+
+Forma de OpenRouter (`/v1/rerank`):
+
+```json
+{ "error": { "code": 400, "message": "query: Invalid input: expected string, received undefined" } }
+```
+
+Las respuestas 4xx de validación de solicitudes son deliberadamente procesables: la validación del gateway informa su ruta de campo y su causa, mientras que los rechazos de solicitudes estructuradas ascendentes preservan `message`, `param` y `code`. Los campos del proveedor están delimitados y eliminados del modelo upstream configurado y los valores de credenciales; el cuerpo crudo nunca pasa a través de él. Los mensajes de autenticación, permiso, deployment faltante, rate limit y 5xx siguen siendo genéricos porque pueden contener detalles del operador o de routing. El cuerpo completo del proveedor se conserva de forma privada en `gateway_operations` y `upstream_attempts`, correlacionado por `x-request-id` en cada respuesta.
+
+## Códigos de estado por clase [#status-codes-by-class]
+
+Cada error se asigna a una clase interna, que corrige su estado HTTP y OpenAI `type`:
+
+| Clase | HTTP | OpenAI `type` | Reintentable | Valor predeterminado típico `code` |
+|---|---|---|---|---|
+| `bad_request` | 400 | `invalid_request_error` | no | — |
+| `context_window` | 400 | `invalid_request_error` | no | `context_length_exceeded` |
+| `content_policy` | 400 | `invalid_request_error` | no | `content_policy_violation` |
+| `auth` | 401 | `authentication_error` | no | — |
+| `permission` | 403 | `invalid_request_error` | no | `model_not_allowed` |
+| `not_found` | 404 | `invalid_request_error` | no | `model_not_found` |
+| `rate_limit` | 429 | `rate_limit_error` | si | `rate_limit_exceeded` |
+| `server` | 502 | `server_error` | si | — |
+| `timeout` | 504 | `server_error` | si | `timeout` |
+
+"Reintentable" aquí significa que el **router** lo reintenta automáticamente con el siguiente candidato; consulta [Routing](/es/docs/routing). Un 503 con `Retry-After` y el código `service_unavailable` se devuelve por separado cuando una **dependencia** (Postgres/Redis) está inactiva, no una falla del proveedor; consulta a continuación.
+
+## Tabla de solución de problemas [#troubleshooting-table]
+
+| `code` | Estado | Lo que significa | Cómo solucionarlo |
+|---|---|---|---|
+| `model_not_found` | 404 | El public model no tiene ninguna deployment habilitado para la operación solicitada. | Crea un deployment para ese `publicModel`, habilítela o verifica la operación (por ejemplo, un modelo de imagen no puede servir chat). |
+| `model_not_allowed` | 403 | La llave virtual `allowedModels` no incluye este modelo. | Agrega el modelo al alcance de la clave o use una clave que ya lo ten. Consulta [Virtual keys](/es/docs/virtual-keys). |
+| `unsupported_parameter` | 400 | Un parámetro de imagen/audio/embeddings/reranking está fuera del perfil de operación del modelo, **o** (solo de chat) cada deployment en el grupo carece de un parámetro que usted envió bajo la estrategia de política de parámetros `error`. | Elimina o ajuste el parámetro, o verifica `unsupportedParameterStrategy`; consulta [Política de parámetros](/es/docs/parameter-policy). |
+| `unsupported_model_capability` | 400 | La solicitud utilizó una capacidad que el modelo no declara (herramientas, herramientas estrictas, visión, reasoning, resultados estructurados). | Utiliza un modelo cuya entrada de catálogo declare la capacidad o elimina la característica. |
+| `context_length_exceeded` | 400 | La entrada excede la ventana de contexto del modelo. | Acorte el mensaje o la ruta a un modelo de contexto más amplio. Configura un `context_window` [Fallbacks](/es/docs/fallbacks) para hacer esto automáticamente. |
+| `content_policy_violation` | 400 | El proveedor bloqueó la solicitud sobre política de contenido. | Ajuste el contenido o configura un `content_policy` [Fallbacks](/es/docs/fallbacks) a otro modelo. |
+| `rate_limit_exceeded` | 429 | Se superó el límite de RPM/TPM de la virtual key, el límite de RPM/TPM de un deployment o el límite upstream. | Deje de usar los headers `x-ratelimit-*`, aumente los límites de clave o deployment, o agrega deployments al grupo. Consulta [Routing](/es/docs/routing). |
+| `deployments_in_cooldown` | 503 | Cada circuito de deployment en el grupo está abierto temporalmente después de fallas transitorias/de configuración. | Respete `Retry-After`, inspeccione el estado de deployment y los intentos fallidos, corrija la configuración no válida o configura un `general` [Fallbacks](/es/docs/fallbacks). |
+| `no_deployments_available` | varía | El grupo (y cualquier cadena) se agotó sin un deployment utilizable. | Verificar las claves y la salud del proveedor; inspeccionar los intentos ascendentes de la operación (o `x-unified-routing-metadata`). |
+| `routing_budget_exhausted` | varía | Los deployments estaban disponibles y se probaron, pero la solicitud se quedó sin intentos o pasó primero su fecha límite previa a la salida. | Inspeccione los intentos: duraciones idénticas en todos ellos apuntan a una fecha límite en lugar de a una falla upstream. Aumente `maxAttempts` o `preCommitMs` para el tipo de llamada; consulta [Routing](/es/docs/routing). |
+| `previous_response_not_found` | 400 | `previous_response_id` no existe, ha caducado o pertenece a una virtual key diferente. | Verifica la identificación y que esté usando la misma clave que la creó. Consulta [Responses](/es/docs/responses). |
+| `extension_disabled` | 503 | Una [Extensiones en runtime](/es/docs/extensions) **crítica** activó su disyuntor de fallas. | Corrija la configuración de la extensión y `POST /admin/extensions/{id}/reset`, o reinicie. Las extensiones no críticas se omiten, no son fatales. |
+| `service_unavailable` | 503 | Postgres o Redis son inalcanzables; la solicitud devuelve `Retry-After` en lugar de un 500 opaco. | Transitorio: los clientes deben respetar `Retry-After` y volver a intentarlo. Si es persistente, verifica la dependencia. |
+
+## Cortes de dependencia [#dependency-outages]
+
+Cuando Postgres o Redis no funcionan, las solicitudes de inferencia en curso devuelven `503` con un header `Retry-After` (no un `500`), por lo que los clientes con buen comportamiento retroceden y vuelven a intentarlo. La sonda de preparación (`/health/ready`) también devuelve `503`, por lo que un equilibrador de carga extrae la instancia hasta que se recupera, sin reiniciarla. Consulta [Operación del gateway](/es/docs/operations) para saber cómo cablear las sondas.
+
+## Registre siempre el ID de solicitud [#always-log-the-request-id]
+
+Cada respuesta lleva `x-request-id` (y hace eco de una entrante si la envía). Es la clave de unión entre lo que vio el cliente y la muestra forense cifrada guardada para esa operación. Cuando un usuario informa un error, capture esa identificación primero: convierte un mensaje público genérico en la causa exacta. Consulta [Observabilidad](/es/docs/observability).
+
+## Problemas conocidos [#known-issues]
+
+Problemas reales y reproducibles con sus síntomas y soluciones exactos.
+
+### Es posible que Bun no pueda conectarse a Postgres/Redis a través de TLS autofirmado [#bun-may-fail-to-connect-to-postgresredis-over-self-signed-tls]
+
+Un problema **posible**, no garantizado: es posible que lo encuentre o no según el certificado y el endpoint TLS. Vale la pena conocerlo porque es fácil de diagnosticar erróneamente.
+
+**Síntoma.** El gateway (o `db:migrate`) no logra llegar a Postgres o Redis cuando la conexión usa TLS con un **certificado autofirmado**; por lo general, una base de datos o un cache expuesto por Coolify, Dokploy o una configuración de Docker realizada manualmente a través de un puerto público. Cuando sucede, el stack TLS de Bun informa:
+
+```
+error:1000009a:SSL routines:OPENSSL_internal:HANDSHAKE_FAILURE_ON_CLIENT_HELLO
+(ERR_SSL_HANDSHAKE_FAILURE_ON_CLIENT_HELLO)
+```
+
+Falla en **ClientHello**, antes de cualquier verificación de certificado, por lo que `sslmode=require`, `rejectUnauthorized: false` y `NODE_TLS_REJECT_UNAUTHORIZED=0` no hacen ninguna diferencia.
+
+**Causa.** Bifrost se ejecuta en el runtime **Bun**, cuya biblioteca TLS incluida (BoringSSL) **puede** rechazar el protocolo de enlace contra algunos endpoints autofirmados (reproducidos con los certificados autofirmados Postgres y Redis de Coolify; no necesariamente afecta cada configuración autofirmada). Las mismas URL se conectan bien en Node/OpenSSL y `openssl s_client`, y el TLS de Bun funciona contra endpoints **CA públicos** (OpenAI, bases de datos administradas), por lo que cuando ocurre, es específico de los certificados autofirmados, no de TLS en general.
+
+**Solución: mantén TLS fuera del camino de Bun. Elige uno:**
+
+- **Red privada, sin TLS (recomendado para autohospedaje).** Ejecuta el gateway en la misma red privada que Postgres/Redis y conéctese a través de texto sin formato: `postgres://…` (no `sslmode`) y `redis://…` (no `rediss://`). En una red aislada, el enlace está protegido por aislamiento de red, no por TLS. Esto es lo que cada [Instalar Bifrost](/es/docs/deployment) hace de forma inmediata.
+- **Base de datos administrada con un certificado de CA pública.** Proveedores como Neon, Aiven, Supabase (Postgres) y Upstash (Redis) presentan certificados de confianza pública, a los que Bun se conecta sin problemas. Consulta [Configuración → Base de datos administrada y Redis](/es/docs/setup#managed-database-and-redis).
+- **Proxy de terminación TLS (stunnel).** Si debe llegar a un endpoint autofirmado a través de una red que no es de confianza desde su propia máquina, ejecuta un `stunnel` local que hable TLS en sentido upstream y exponga texto sin formato en `localhost`, luego apunta el gateway a `localhost`.
+
+<Callout>
+
+**Nota de autohospedaje.** Coolify y Dokploy exponen bases de datos independientes con un certificado autofirmado. La solución más sencilla es **deshabilitar SSL en los servicios Postgres y Redis** (desmarque **Habilitar SSL**) y conectarse a través de la red privada con `postgres://…` y `redis://…` (sin `sslmode`, no `rediss://`). Dentro de la red privada de la plataforma, esto es más sencillo y rápido que TLS. Consulta las páginas de la plataforma en [Instalar Bifrost](/es/docs/deployment).
+
+</Callout>
+
+#### Nota de seguridad [#security-note]
+
+El texto sin formato es seguro **en una red privada**: el gateway y la base de datos comparten un puente aislado que nunca toca Internet. **No** es seguro en la Internet pública: las credenciales y los datos viajan sin cifrar y un atacante en el camino puede leerlos. Si solo se puede acceder a su base de datos a través de un puerto público, utiliza un proveedor administrado con un certificado de CA pública o un túnel Stunnel, en lugar de texto sin formato.
+
+## Próximos pasos [#next-steps]
+
+- [Observabilidad](/es/docs/observability): encontrar una solicitud por identificación y lo que realmente almacena el registro.
+- [Routing](/es/docs/routing) y [Fallbacks](/es/docs/fallbacks): qué sucede después de un error reintentable.
+- [Lista de verificación para producción](/es/docs/production-checklist): detectarlos antes de que sean incidentes.

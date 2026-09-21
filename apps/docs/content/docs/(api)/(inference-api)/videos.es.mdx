@@ -1,0 +1,81 @@
+---
+title: "Videos"
+description: "Crea trabajos de generación, consulta su estado y recupera los archivos resultantes."
+---
+Crea un trabajo de generación de video asincrónico, sondee su estado y recupere el recurso completo. Configura un deployment de video y almacenamiento de objetos antes de usar este endpoint.
+
+## Ejemplo de solicitud [#example-request]
+
+Configura `GATEWAY` en el origen del gateway y `API_KEY` en su virtual key. Reemplaza el public model de ejemplo por uno de [Consultar modelos](/es/docs/models-discovery).
+
+```bash
+curl -X POST "$GATEWAY/v1/videos" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "model": "video-default", "prompt": "a serene mountain landscape at sunset", "duration": 8, "aspect_ratio": "16:9", "resolution": "720p" }'
+```
+
+`POST /v1/videos` crea un trabajo de generación asíncrono y devuelve una identificación local `video_*`. Sondee esa identificación local con `GET /v1/videos/{video_id}`. Descargue los bytes generados con `GET /v1/videos/{video_id}/content`; el valor predeterminado `variant` es `video`.
+
+## Solicitar parámetros [#request-parameters]
+
+No existe un estándar industrial para la generación de video, por lo que el gateway define su propia superficie y sigue siendo compatible con la forma Sora de OpenAI:
+
+| Parámetro | Notas |
+| --- | --- |
+| `model`, `prompt` | Requerido. |
+| `task` | Flujo de trabajo explícito opcional: `text_to_video`, `image_to_video`, `reference_to_video`, `edit` o `extend`. Los modelos declaran qué tareas apoyan. |
+| `duration` | Duración en segundos (entero). `seconds` (cadena o int) es el alias de estilo OpenAI; enviar uno u otro. |
+| `size` | Exacto `WIDTHxHEIGHT`. Intercambiable con `aspect_ratio` + `resolution`; enviar un formulario. |
+| `aspect_ratio` / `resolution` | `16:9`, `9:16`, ... / `360p`–`4K`. Mapeo inverso a un tamaño exacto para los proveedores que lo necesitan. |
+| `input_references` | Conjunto de piezas `{type: "image_url"\|"audio_url"\|"video_url", ...}`. `input_reference` (único, `image_url` o `file_id`) es el alias de estilo OpenAI. |
+| `frame_images` | Acondicionamiento del primer/último cuadro (`frame_type: "first_frame"\|"last_frame"`) para modelos que lo soportan. |
+| `seed`, `generate_audio` | Reenviado solo cuando el perfil del modelo declara soporte. |
+| `quality` | Extensión de gateway en la escalera compartida: `auto`, `low`, `medium`, `high`, `xhigh`, o `max` (`native` todavía se acepta y está normalizado a `max`). Conciliado con el `qualities` declarado del modelo según la [política de parámetros](/es/docs/parameter-policy#quality-on-image-and-video-generation) y reenviado solo cuando el perfil declara niveles. |
+| `user` | Solo atribución del lado del gateway. Se almacena con el trabajo y **nunca** se reenvía en sentido upstream. |
+| `extra_body` | La transferencia específica del proveedor se fusionó con el cuerpo de la solicitud upstream. |
+
+Cada parámetro se valida con el perfil del modelo antes del routing, por lo que los parámetros no admitidos fallan rápidamente con `unsupported_parameter` en lugar de un error del proveedor en mitad del grupo.
+
+Las referencias de imágenes, audio y vídeo aceptan URL HTTPS públicas o URL base64 `data:`. Bifrost descarga cada referencia HTTPS con protección SSRF, valida su tipo MIME y límites binarios y envía una URL `data:` al canal upstream seleccionado; las URL remotas nunca se delegan a proveedores. El límite combinado de medios decodificados es de 50 MB. Las URL de datos grandes se ocultan antes de guardar el cuerpo de la solicitud. No se admiten cargas de varias partes (el archivo tipo `input_reference` del SDK de OpenAI); utiliza los formularios de referencia JSON.
+
+La generación de imágenes en sí no tiene campo adjunto. Las ediciones de imágenes aceptan archivos de imágenes de varias partes; Bifrost transmite esos archivos a un almacenamiento temporal con alcance de solicitud, los valida como PNG/JPEG/WebP y solo entonces invoca un adapter upstream.
+
+## Almacenamiento [#storage]
+
+Los vídeos utilizan la capa de almacenamiento de objetos en todo el gateway, configurada con una cadena de conexión: `OBJECT_STORAGE_URL=file:.source/object-storage` para desarrollo, o `OBJECT_STORAGE_URL=s3://key:secret@host/bucket?region=auto` para S3, R2 o MinIO. El gateway almacena bytes de vídeo generados durante 24 horas de forma predeterminada (`VIDEOS_ASSET_RETENTION_HOURS=24`) y mantiene los metadatos en Postgres.
+
+## Perfiles de modelo [#model-profiles]
+
+Los deployments con capacidad de video declaran `catalogEntry.operations["video.generate"]`. El perfil controla las tareas aceptadas, duraciones, tamaños (con asignaciones por proveedor `aspectRatio`/`resolution`), `quality`, soporte de referencia (`supportsImageUrl`, `supportsAudioUrl`, `supportsVideoUrl`, `supportsFileId`, `supportsFrameImages`, `maxInputReferences`), y `supportsSeed`/`supportsGenerateAudio`.
+
+Los adapters exponen la generación de video a través de transports: `videos` (API de videos con formato de OpenAI), `videos_async` (API de trabajo asíncrono: enviar `/videos`, consulta periódica `/videos/{jobId}`, descargar `/videos/{jobId}/content`, eliminar `/videos/{jobId}`), `generate_videos` (operaciones de larga duración de Google Veo) y `interactions` (API de interacciones de Google). Los valores predeterminados del adapter eligen la ruta común; utiliza `transportOverrides` cuando un modelo necesite otro transport.
+
+### Gemini Omni Flash [#gemini-omni-flash]
+
+`gemini-omni-1.1-flash` utiliza el transport `interactions` de Google. Configura su deployment con `transportOverrides: { "video.generate": "interactions" }`.
+
+- La conversión de texto a video puede omitir `task` o configurar `text_to_video`.
+- La interpolación de imagen a vídeo y del primer/último fotograma utiliza referencias de imagen o `frame_images`.
+- La referencia a vídeo utiliza `task: "reference_to_video"` y referencias de imagen/vídeo.
+- La edición y extensión requieren `task: "edit"` o `task: "extend"` más exactamente un `video_url`.
+
+La integración no utiliza intencionalmente la API de Archivos de Google. Las entradas se materializan como datos en línea validados y la salida completa se recupera en línea directamente en el almacenamiento de objetos Bifrost sin persistir en Postgres. En consecuencia, el perfil de acciones expone solo 360p y 720p, rechaza `file_id` y limita cada activo de entrada a 20 MB. Los videos subidos para edición/ampliación permanecen sujetos a las restricciones regionales y de 10 segundos de Google.
+
+La continuación con estado tampoco está disponible intencionalmente. `previous_interaction_id` está bloqueado en `extra_body`; Aceptar una identificación de proveedor sin procesar evitaría la propiedad de Bifrost y las comprobaciones de afinidad de deployment. En su lugar, una futura implementación debería exponer una identificación de video de fuente local.
+
+El perfil Omni estándar omite los precios hasta que el uso de video asíncrono del terminal pueda conciliarse con la operación y el ciclo de vida contable de la virtual key. El uso se conserva en el trabajo de vídeo, pero las virtual keys con límite de presupuesto no se cierran con `budget_pricing_unavailable` en lugar de aceptar una solicitud no reservada.
+
+## Ciclo de vida [#lifecycle]
+
+- `GET /v1/videos` enumera los videos visibles para la persona que llama (las virtual keys ven las suyas propias; la master key ve todos).
+- `GET /v1/videos/{video_id}` actualiza el estado upstream cuando es necesario.
+- `GET /v1/videos/{video_id}/content` transmite bytes desde el almacenamiento de objetos y admite rangos de bytes (incluidos rangos de sufijos).
+- `DELETE /v1/videos/{video_id}` elimina los recursos almacenados, marca los metadatos eliminados y, con el mejor esfuerzo, elimina el trabajo upstream donde el proveedor lo admite.
+
+Un sondeador en segundo plano avanza los trabajos sin terminar (`VIDEO_JOB_POLL_INTERVAL_MS`, tamaño de lote `VIDEO_JOB_POLL_BATCH_SIZE`) y falla los trabajos que exceden `VIDEO_JOB_MAX_RUNTIME_MINUTES`. Los trabajos se reclaman de forma atómica, por lo que varias instancias de gateway pueden sondear de forma segura.
+
+## Próximos pasos [#next-steps]
+
+- [Creación de deployments](/es/docs/creating-deployments#custom-video): perfiles de vídeo personalizados.
+- [OpenAI-compatible](/es/docs/providers-openai-compatible): API compatibles y anulaciones de transport.

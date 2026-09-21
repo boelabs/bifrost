@@ -1,0 +1,80 @@
+---
+title: "Fallbacks"
+description: "Prueba otro public model cuando el pool actual no puede atender una solicitud."
+---
+Configura un fallback para probar otro public model cuando se agote el pool de deployments actual. Bifrost reutiliza la solicitud canonical. Puede recuperarse de fallos compatibles con esta política, pero no garantiza una respuesta si todos los destinos fallan.
+
+Un fallback conecta **nombres de public models**, no deployments individuales. Cada nombre representa un pool de uno o más deployments. El router agota el pool actual antes de pasar al siguiente nombre de la cadena. Consulta [Conceptos básicos](/es/docs/concepts) para conocer esta relación.
+
+## Configuración [#configuration]
+
+La clave lógica de una cadena es `(primaryModel, reason)`:
+
+```http
+PUT /admin/fallbacks
+
+{
+  "primaryModel": "gpt",
+  "reason": "general",
+  "fallbackModels": ["gemini", "claude"]
+}
+```
+
+- `primaryModel`: el nombre público solicitado originalmente por el cliente.
+- `fallbackModels`: entre 1 y 5 nombres públicos, en orden. No hay duplicados ni el primario.
+- `reason`: la causa que activa esta cadena. Si se omite, el valor predeterminado es `general`.
+
+Al guardar, el gateway requiere que el destino principal y cada destino tengan al menos un deployment persistente. Cada destino debe compartir al menos una operación ejecutable con el principal. Los deployments deshabilitados también cuentan para esta validación, porque la deshabilitación es temporal.
+
+## Razones [#reasons]
+
+`reason` no es una operación ni un tipo de modelo. Es la causa agregada por la cual falló el grupo primario:
+
+| razón | Cuando se utiliza |
+|---|---|
+| `general` | Errores transitorios o mixtos, autenticación/solicitud incorrecta específica del proveedor, cooldown, límites de RPM/TPM o no hay candidatos elegibles para la solicitud. |
+| `context_window` | Todas las fallas observadas al agotar el pool fueron `context_window`. |
+| `content_policy` | Todas las fallas observadas al agotar el pool fueron `content_policy`. |
+
+La búsqueda es exacta. `general` no sustituye una cadena `context_window` o `content_policy` faltante. Si las causas del grupo son mixtas, se utiliza `general`.
+
+El `reason` se decide una vez, del grupo principal. Después de esto, la cadena elegida se recorre linealmente; los public models de fallback no abren recursivamente sus propias cadenas.
+
+## Presupuesto de reintentos [#retry-budgets]
+
+Se aplica un límite para toda la solicitud:
+
+```text
+max for primary + all fallbacks = executionPolicies[operation][mode].maxAttempts
+```
+
+El router recorre todos los deployments elegibles antes de iniciar una segunda pasada. Avanza al siguiente fallback cuando el pool actual no tiene candidatos disponibles y termina al verificar la finalización de una respuesta. El presupuesto compartido evita que una cadena larga multiplique los intentos durante una caída.
+
+Los errores que no se pueden reintentar, incluidos `context_window` y `content_policy`, agotan ese deployment después de un solo intento, pero no cortan el grupo: los demás aún se intentan. El estado del circuito, las RPM/TPM y la disponibilidad pueden reducir el número real de intentos por debajo del máximo.
+
+Ejemplo con un `maxAttempts` en toda la solicitud lo suficientemente grande para la secuencia:
+
+```text
+primary (deployments A, B): A1, B1, A2
+fallback-1 (deployment C): C1, C2, C3
+fallback-2 (deployment D): D1 → success
+```
+
+## Operaciones y disponibilidad [#operations-and-availability]
+
+La operación de la solicitud nunca cambia al ingresar al fallback. Para cada public model de la cadena, el router vuelve a filtrar deployments habilitados que admiten la misma operación y el perfil específico de la solicitud (por ejemplo, formato/tamaño de imagen).
+
+Una cadena puede cubrir solo una parte de las operaciones del primario: cada objetivo debe compartir al menos una y, en runtime, se omite para el resto. Las cadenas por operación requerirían agregar `operation` a la clave de configuración; ese nivel no existe actualmente.
+
+Si el primario no tiene un deployment habilitado compatible con la operación solicitada, la solicitud devuelve `model_not_found`: un fallback no convierte un nombre inexistente en un modelo.
+
+## Ciclo de vida [#lifecycle]
+
+- Deshabilitar deployments preserva las cadenas.
+- Eliminar un deployment conserva las cadenas mientras permanezca otro con el mismo nombre público.
+- Al eliminar el último deployment de un primario se eliminan todas sus cadenas.
+- Eliminar el último deployment de un objetivo lo elimina de todas las cadenas; se elimina una cadena vacía.
+- Se rechaza cambiar el nombre del último deployment de un nombre referenciado. Primero debe reconfigurar sus alternativas para evitar cambios implícitos o colisiones.
+- El runtime se mantiene a la defensiva: los objetivos faltantes o incompatibles se omiten si se produjeron cambios fuera de los servicios normales de la aplicación.
+
+Cada intento se guarda en `upstream_attempts` con su deployment, adapter, transport, duración, estado final y clasificación del fallo. `degraded` y la cronología de intentos permiten identificar las solicitudes recuperadas mediante fallback.

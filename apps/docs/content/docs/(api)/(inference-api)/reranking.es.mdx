@@ -1,0 +1,151 @@
+---
+title: "Reranking"
+description: "Ordena documentos por relevancia con el contrato compatible con OpenRouter."
+---
+Bifrost expone una superficie de reranking: `POST /v1/rerank`. El contrato sigue a OpenRouter, mientras que el núcleo canonical puede enrutar la solicitud a la API Rerank nativa de OpenRouter o a la API Rerank compatible con Cohere de Vercel AI Gateway.
+
+```bash
+curl -X POST "$GATEWAY/v1/rerank" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "search-reranker",
+    "query": "What is the capital of France?",
+    "documents": [
+      "Paris is the capital of France.",
+      { "text": "Berlin is the capital of Germany." }
+    ],
+    "top_n": 2
+  }'
+```
+
+## Solicitud [#request]
+
+El cuerpo JSON es estricto:
+
+| Campo | Requerido | Reglas |
+|---|---|---|
+| `model` | si | Nombre de public model que no esté en blanco. |
+| `query` | si | Texto que no esté en blanco. |
+| `documents` | si | 1-1000 cadenas u objetos estrictos `{ "text": string }`; las formas de lista pueden ser mixtas. |
+| `top_n` | no | Entero positivo. La omisión devuelve todo documento; un valor por encima de la longitud de la lista se sujeta naturalmente a la longitud de la lista. |
+| `provider` | no | Preferencias de routing del proveedor OpenRouter; vea abajo. |
+
+La primera versión es solo de texto. `{ "image": ... }`, un objeto sin `text`, texto en blanco o una propiedad de documento desconocida devuelve `400`. El cuerpo está limitado a 16 MiB antes del análisis JSON. El perfil `rerank` de un modelo puede imponer límites más pequeños de consultas, documentos, bytes agregados o recuento de documentos. Los límites de tokens de documentos en el catálogo son informativos: el gateway no se aproxima a la tokenización del proveedor localmente.
+
+El endpoint es solo JSON, nunca transmite y nunca utiliza la cache de respuestas. Su política de ejecución predeterminada es de 30 segundos hasta la primera respuesta, 60 segundos en total y como máximo tres intentos.
+
+## Routing hacia proveedores [#provider-routing]
+
+`provider` admite los campos OpenRouter `allow_fallbacks`, `data_collection`, `enforce_distillable_text`, `ignore`, `max_price`, `only`, `order`, `preferred_max_latency`, `preferred_min_throughput`, `quantizations`, `require_parameters`, `sort` y `zdr`. Los slugs del proveedor siguen siendo cadenas abiertas, pero el objeto y todos los campos anidados son estrictos.
+
+Cuando `provider` está presente, solo los deployments respaldados por OpenRouter son elegibles y el objeto se envía sin cambios a OpenRouter. Nunca se traduce a Vercel `providerOptions.gateway`. Sin `provider`, los deployments de OpenRouter y Vercel participan normalmente en ponderación, cooldowns, reintentos y fallback.
+
+```json
+{
+  "model": "search-reranker",
+  "query": "primary sources about retrieval",
+  "documents": ["...", "..."],
+  "provider": {
+    "only": ["cohere"],
+    "allow_fallbacks": false,
+    "zdr": true
+  }
+}
+```
+
+## Respuesta y errores [#response-and-errors]
+
+```json
+{
+  "id": "gen-rerank-123",
+  "model": "search-reranker",
+  "provider": "Cohere",
+  "results": [
+    {
+      "index": 0,
+      "relevance_score": 0.98,
+      "document": { "text": "Paris is the capital of France." }
+    }
+  ],
+  "usage": {
+    "total_tokens": 150,
+    "search_units": 1,
+    "cost": 0.0025
+  }
+}
+```
+
+`model` es siempre el nombre público solicitado. El gateway reconstruye cada `document` devuelto a partir de la solicitud original de `index`; nunca confía en el eco de un documento upstream. `id` y `provider` se incluyen solo con evidencia upstream confiable, por lo que las respuestas de Vercel no inventan el proveedor final. `usage.cost` es el costo al consumidor contabilizado de Bifrost en USD, no un valor upstream sin procesar.
+
+Antes de aceptar una respuesta, el gateway requiere exactamente la cantidad esperada de resultados, índices enteros únicos dentro del rango, puntuaciones finitas en orden descendente y un uso consistente no negativo. Las puntuaciones no se limitan a `[0,1]`. Una infracción se convierte en un `upstream_protocol_error` reintentable, penaliza ese deployment y permite otro intento o fallback.
+
+Los errores utilizan la forma OpenRouter para cada estado:
+
+```json
+{ "error": { "code": 400, "message": "The request is invalid." } }
+```
+
+Las credenciales, los organismos ascendentes, los detalles de deployment y el texto de error del proveedor nunca se devuelven.
+
+## Ejemplo de SDK [#sdk-example]
+
+El SDK de OpenRouter Python puede apuntar al gateway porque la solicitud y la respuesta públicas tienen forma de OpenRouter:
+
+```python
+import os
+from openrouter import OpenRouter
+
+client = OpenRouter(
+    base_url=os.environ["GATEWAY"],
+    api_key=os.environ["API_KEY"],
+)
+
+result = client.rerank.rerank(
+    model="search-reranker",
+    query="What is the capital of France?",
+    documents=["Paris is the capital of France.", "Berlin is in Germany."],
+    top_n=1,
+)
+```
+
+## Deployments [#deployments]
+
+OpenRouter utiliza su identificación de modelo completa y transport nativo:
+
+```json
+{
+  "publicModel": "search-reranker",
+  "adapterKey": "openrouter",
+  "upstreamModel": "cohere/rerank-4-fast",
+  "credentials": { "apiKey": "sk-or-..." }
+}
+```
+
+Vercel utiliza su identificación completa de creador/modelo y transport compatible con Cohere:
+
+```json
+{
+  "publicModel": "search-reranker",
+  "adapterKey": "vercel",
+  "upstreamModel": "cohere/rerank-v4-fast",
+  "credentials": { "apiKey": "..." }
+}
+```
+
+El registro de adapters y catálogos no envía tráfico. Aplique la migración de la base de datos primero, implemente el código en segundo lugar y, en último lugar, crea o habilita deployments de reordenación.
+
+## Precios y observabilidad [#pricing-and-observability]
+
+Los precios de catálogo o deployment pueden utilizar tarifas por token, `searchUnitCents`, o ambas; los componentes configurados son aditivos. Si no existe un precio configurado y OpenRouter informa `usage.cost`, el costo del proveedor es la alternativa contable. Cuando ambos existen, el valor configurado sigue siendo el costo del consumidor y el valor informado por el proveedor se conserva por separado para la conciliación.
+
+El routing basado en precios compara candidatos solo cuando cada candidato tiene un precio conocido sobre la misma base. Un grupo mixto de token/unidad de búsqueda, o un grupo con precios desconocidos, recurre a la selección ponderada. Las unidades de búsqueda cuentan para el gasto y los presupuestos incluso sin tokens, pero no incrementan el TPM. Las RPM todavía se aplican normalmente.
+
+Los registros normales solo conservan el modelo, el recuento de documentos y los bytes, `top_n`, los nombres de las opciones del proveedor, el recuento de resultados, los índices, el uso y el costo. Las consultas y el contenido de los documentos no persisten. Están disponibles las unidades de búsqueda en registros de operación e intento, `/admin/usage` y el contador OpenTelemetry `bifrost_search_units_total`.
+
+## Próximos pasos [#next-steps]
+
+- [OpenRouter](/es/docs/providers-openrouter): credenciales, sincronización de catálogo e identificadores de modelo.
+- [Vercel AI Gateway](/es/docs/providers-vercel): el transport interno compatible con Cohere.
+- [Contabilidad de costos](/es/docs/cost-accounting): costos del consumidor frente al proveedor y presupuestos de virtual key.
+- [Catálogo de modelos](/es/docs/model-catalog#reranking): el perfil `rerank` y el precio por unidad de búsqueda.

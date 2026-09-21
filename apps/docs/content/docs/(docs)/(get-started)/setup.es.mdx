@@ -1,0 +1,70 @@
+---
+title: "Configuración inicial"
+description: "Requisitos, variables de entorno, secretos y conexiones a Postgres y Redis."
+---
+Configura el proceso de gateway, los secretos y las conexiones de almacenamiento antes de implementarlo. Utiliza [Inicio rápido](/es/docs/quickstart) para un ejemplo local o [Instalar Bifrost](/es/docs/deployment) para elegir una plataforma de alojamiento.
+
+## Requisitos [#requirements]
+
+- **Bun 1.4+**: el runtime del gateway (ejecuta TypeScript directamente; sin paso de compilación) y el administrador de paquetes/ejecudor de tareas.
+- **Postgres 18+**
+- **Redis 8+**
+
+<Callout>
+
+Bifrost se ejecuta en **Bun**, no en Node. Si planea acceder a una base de datos o Redis a través de TLS con un certificado **autofirmado**, lee primero [Solución de problemas](/es/docs/troubleshooting): es posible que el TLS de Bun no los acepte, y la solución es una elección de configuración que usted realiza aquí.
+
+</Callout>
+
+## Entorno [#environment]
+
+Crea `apps/gateway/.env` (copia `apps/gateway/.env.example`). El mínimo:
+
+```bash
+PORT=4000
+NODE_ENV=production
+MASTER_KEY=replace-with-at-least-32-random-characters
+ENCRYPTION_KEYRING={"primary":"64_hex_chars_32_bytes"}
+ACTIVE_ENCRYPTION_KEY_ID=primary
+DATABASE_URL=postgres://user:pass@host:5432/bifrost
+REDIS_URL=redis://host:6379
+```
+
+El panel opcional tiene un archivo de entorno independiente:
+
+```bash
+# apps/dashboard/.env — copy apps/dashboard/.env.example
+GATEWAY_URL=http://localhost:4000
+```
+
+Para configuraciones, valores predeterminados y límites opcionales, utiliza la referencia [Variables de entorno](/es/docs/reference-environment). Revisa la configuración de confianza del proxy, tiempo de espera de apagado y observabilidad para su deployment.
+
+## Secretos [#secrets]
+
+Almacene la credencial raíz y el conjunto de claves de cifrado en su administrador secreto, nunca en git o la imagen:
+
+| Secreto | Propósito | Formato |
+|---|---|---|
+| `MASTER_KEY` | Credencial de operador; acceso completo a `/admin/*`. | Cadena aleatoria fuerte, al menos 32 caracteres. |
+| `ENCRYPTION_KEYRING` | Cifra credenciales, fuente de extensión, cápsulas de compactación y muestras forenses. | ID de clave JSON a mapa de claves hexadecimales de 64. |
+| `ACTIVE_ENCRYPTION_KEY_ID` | Selecciona la clave utilizada para sobres nuevos. | Una identificación presente en el keyring. |
+
+```bash
+openssl rand -base64 48   # MASTER_KEY
+openssl rand -hex 32      # one ENCRYPTION_KEYRING value
+```
+
+Los procedimientos de rotación se encuentran en [Operaciones → Secretos](/es/docs/operations#secrets).
+
+## Base de datos y Redis [#database-and-redis]
+
+El gateway necesita una base de datos Postgres 18+ y una instancia de Redis 8+. **Cómo** se conecta es importante debido a la restricción TLS Bun:
+
+- **Autohospedado en la misma red privada** (Compose / Coolify / Portainer / Dokploy): conéctese a través de **texto sin formato** — `postgres://…` y `redis://…`. Es seguro gracias al aislamiento de la red y evita el [Solución de problemas](/es/docs/troubleshooting). Este es el valor predeterminado en cada receta de [Instalar Bifrost](/es/docs/deployment).
+- **Proveedor administrado** (recomendado para desarrollo o cuando la base de datos se encuentra fuera de la red): elige uno que presente un certificado **CA pública**, al que Bun se conecta limpiamente.
+
+### Base de datos administrada y Redis [#managed-database-and-redis]
+
+Elige servicios que cumplan con las versiones requeridas de Postgres y Redis y presente un certificado confiable de Bun. Utiliza la cadena de conexión documentada del proveedor y conéctese por nombre de host. Verifica la compatibilidad de versiones, los límites de conexión y la persistencia antes de elegir un plan.
+
+Evita exponer una base de datos con un certificado autofirmado en un puerto público. Utiliza una red privada o un certificado de una CA pública; consulta [Solución de problemas](/es/docs/troubleshooting).

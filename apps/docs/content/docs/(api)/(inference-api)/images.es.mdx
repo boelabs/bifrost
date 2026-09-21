@@ -1,0 +1,50 @@
+---
+title: "Imágenes"
+description: "Generación y edición de imágenes: parámetros, formatos y restricciones por modelo."
+---
+Genere o edite imágenes con un public model configurado para la operación de imagen solicitada. Los tamaños, niveles de calidad y formatos de salida admitidos dependen del deployment seleccionado.
+
+## Ejemplo de solicitud [#example-request]
+
+Configura `GATEWAY` en el origen del gateway y `API_KEY` en su virtual key. Reemplaza el public model de ejemplo por uno de [Consultar modelos](/es/docs/models-discovery).
+
+```bash
+curl -X POST "$GATEWAY/v1/images/generations" \
+  -H "Authorization: Bearer $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "model": "image-default", "prompt": "a red fox in snow", "size": "1024x1024", "n": 1 }'
+```
+
+`POST /v1/images/generations` es JSON; `POST /v1/images/edits` es multiparte (imagen + `mask` opcional + los mismos campos que los campos del formulario). Ambos aceptan respuesta JSON o SSE (imágenes parciales progresivas vía `partial_images`).
+
+## Siempre `b64_json` [#always-b64_json]
+
+Cada imagen se devuelve como `b64_json` independientemente del `response_format` solicitado. Las respuestas de imágenes URL **no forman parte del contrato público**. `response_format` se puede omitir o establecer explícitamente en `b64_json`; cualquier otra cosa se rechaza por no estar respaldada por el perfil del modelo.
+
+## Campos [#fields]
+
+`prompt`, `size`, `quality`, `n`, `response_format`, `background`, `moderation`, `input_fidelity`, `output_format`, `output_compression`, `style`, `user`, `stream`, `partial_images` y (solo ediciones) `image`/`images` + `mask`. Los valores realmente aceptados para `size`/`quality`/`output_format` son por modelo, declarados en su catálogo `image.generate`/`image.edit` perfil: un `size` o `output_format` no admitidos devuelve `400 unsupported_parameter` antes de cualquier llamada upstream.
+
+`quality` usa la escala común `low` < `medium` < `high` < `xhigh` < `max`. Con la [política de parámetros](/es/docs/parameter-policy#quality-on-image-and-video-generation) predeterminada, `drop`, un nivel no admitido se ajusta al nivel inferior más cercano disponible. Así, una solicitud de `max` puede usar `high` si ese es el máximo del modelo. También se aceptan `standard` y `hd`, normalizados como `standard` → `medium` y `hd` → `high`; el adapter sigue enviando `hd` a DALL·E. `auto` no fija un nivel: omite el parámetro upstream para usar el valor predeterminado del modelo.
+
+## `size: "auto"` funciona en todas partes [#size-auto-works-everywhere]
+
+Se acepta `size: "auto"`, y un `size` omitido, que es equivalente, para **todos** los modelos de imagen. Los modelos cuyo perfil declara soporte automático nativo (`autoSize`, por ejemplo, las familias `gpt-image-*` y `gemini-*-image`) permiten que el modelo elige las dimensiones por sí mismo; para las ediciones, Gemini coincide con la relación de aspecto de las imágenes de entrada. Los modelos sin resolución automática nativa `auto` de forma determinista en la **primera entrada de la tabla `sizes`** del perfil, que es el tamaño predeterminado del modelo. La respuesta `size` siempre informa las dimensiones reales de la imagen devuelta, nunca el literal `auto`.
+
+## Manejo de salida [#output-handling]
+
+Todos los archivos PNG, JPEG y WebP devueltos se **recodifican para eliminar los metadatos anteriores**; de forma predeterminada, ninguna marca de agua del proveedor ni datos de identificación incrustados sobreviven para el cliente. Si en su lugar necesita la marca del producto/propietario, agréguela a través de una [Extensiones en runtime](/es/docs/extensions) administrada por el operador conectando `onImageOutput`.
+
+## Gemini: mapas de calidad para pensar [#gemini-quality-maps-to-thinking]
+
+Para Gemini 3.1 Flash Image y Gemini 3.1 Flash Lite Image, el parámetro `quality` no se asigna a un nivel de calidad de renderizado como lo hace para OpenAI: se asigna a un **nivel de pensamiento** nativo. Ambos declaran los niveles `low` (`thinkingLevel: minimal`) y `high` (`thinkingLevel: high`), por lo que `medium` se ajusta a `low` y `xhigh`/`max` se ajustan a `high`. Gemini 3 Pro Image y Gemini 2.5 Flash Image no exponen ningún control del pensamiento, por lo que no declaran ningún peldaño y `quality` simplemente no se envía para ellos. Consulta [Google AI Studio](/es/docs/providers-google).
+
+## Streaming [#streaming]
+
+`stream: true` con `partial_images: N` devuelve imágenes refinadas progresivamente a través de SSE antes de la final; consulta [Streaming](/es/docs/streaming).
+
+## Próximos pasos [#next-steps]
+
+- [Google AI Studio](/es/docs/providers-google): el mapeo de calidad a pensamiento en contexto.
+- [Extensiones en runtime](/es/docs/extensions): el hook `onImageOutput` y los ejemplos de marcas de agua incluidos.
+- [Creando deployments](/es/docs/creating-deployments#2-image--catalog-model): registro de un modelo de imagen.

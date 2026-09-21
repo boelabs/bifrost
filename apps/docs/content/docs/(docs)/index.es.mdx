@@ -1,0 +1,71 @@
+---
+title: Introducción
+description: Conecta tu aplicación a proveedores de IA mediante un solo gateway.
+---
+
+Bifrost ofrece APIs compatibles con OpenAI y Anthropic. Tu aplicación envía solicitudes con una
+**virtual key** y un nombre de **public model**. El gateway selecciona un deployment del proveedor,
+traduce la solicitud y registra el consumo y su costo.
+
+Tú configuras los proveedores, las reglas de routing y los límites de acceso. Las operaciones y
+los parámetros disponibles dependen de los deployments de cada public model.
+
+## Comienza aquí [#start-here]
+
+<Cards>
+  <Card title="Realiza tu primera solicitud" href="/es/docs/quickstart">
+    Ejecuta un gateway local, conecta OpenAI y realiza una solicitud con una virtual key.
+  </Card>
+  <Card title="Conoce los conceptos básicos" href="/es/docs/concepts">
+    Entiende cómo se relacionan los public models, deployments y adapters.
+  </Card>
+</Cards>
+
+## Conecta una aplicación existente [#connect-an-existing-application]
+
+Si un operador ya configuró Bifrost, solo necesitas su URL base, una virtual key y el nombre de
+un public model disponible. Por ejemplo, con el SDK de OpenAI para Python:
+
+```python title="app.py"
+from openai import OpenAI
+
+client = OpenAI(base_url="http://localhost:4000/v1", api_key="<virtual-key>")
+response = client.chat.completions.create(
+    model="general",
+    messages=[{"role": "user", "content": "Hello"}],
+)
+print(response.choices[0].message.content)
+```
+
+En este ejemplo, `general` es un nombre configurado en Bifrost. Puede dirigir solicitudes a uno
+o varios modelos upstream sin cambiar el código de la aplicación. Consulta la
+[Referencia de la API](/es/docs/api-overview) para conocer la autenticación, los endpoints y los errores.
+
+## Configura y opera [#configura-and-operate]
+
+<Cards>
+  <Card title="Conecta proveedores" href="/es/docs/providers">
+    Elige un adapter y configura las credenciales, los modelos y las operaciones disponibles.
+  </Card>
+  <Card title="Controla el routing" href="/es/docs/routing">
+    Distribuye el tráfico, establece límites por deployment y configura políticas de fallback.
+  </Card>
+  <Card title="Gestiona el acceso y los costos" href="/es/docs/virtual-keys">
+    Asigna a cada aplicación sus modelos permitidos, rate limits y presupuesto.
+  </Card>
+  <Card title="Instala Bifrost" href="/es/docs/deployment">
+    Elige una plataforma y prepara Postgres, Redis y los secretos.
+  </Card>
+  <Card title="Utiliza el dashboard" href="/es/docs/dashboard">
+    Administra el gateway e investiga solicitudes desde la interfaz para operadores.
+  </Card>
+  <Card title="Prepara el entorno de producción" href="/es/docs/production-checklist">
+    Comprueba la seguridad, los health checks, los backups y la observabilidad antes de publicar.
+  </Card>
+</Cards>
+
+## Contribuye [#contribute]
+
+Consulta [Arquitectura](/es/docs/architecture) para entender el recorrido de una solicitud,
+[Pruebas](/es/docs/testing) para validar los cambios y
+[Desarrollo de la documentación](/es/docs/documentation) para trabajar en este sitio.

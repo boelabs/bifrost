@@ -1,0 +1,37 @@
+---
+title: "Pruebas"
+description: "Ejecuta las pruebas, simula proveedores y valida las integraciones."
+---
+Las pruebas están diseñadas para ser **herméticas con respecto a los proveedores**:
+
+- No necesitan credenciales reales para OpenAI, Google, Azure, agregadores o cualquier otro proveedor.
+- `bun run --filter @boelabs/bifrost test`, `bun run --filter @boelabs/bifrost test:unit` y `bun run --filter @boelabs/bifrost test:integration` importan `apps/gateway/tests/support/noRealFetch.ts`, que bloquea cualquier `fetch` real.
+- Si una prueba necesita simular un upstream, debe utilizar `withStubbedFetch()` de `tests/support/fetch.ts`.
+
+## Capas [#layers]
+
+| Capa | Guión | Dependencias externas |
+|---|---|---|
+| Unidad/contrato | `bun run --filter @boelabs/bifrost test` o `bun run --filter @boelabs/bifrost test:unit` | Ninguna red real. Vive junto al código en `apps/gateway/src/**/*.test.ts`. |
+| Integración | `bun run --filter @boelabs/bifrost test:integration` | Postgres/Redis locales si la prueba los necesita; si no están disponibles, se omite. Vive en `apps/gateway/tests/integration/**/*.ts`. Nunca un verdadero proveedor. |
+| Todo | `bun run --filter @boelabs/bifrost test:all` | Unidad + integración. |
+| Validación de catálogo | `bun run --filter @boelabs/bifrost catalog:validate` | Ninguna red real; valida JSON local. |
+
+## Ayudantes comunes [#common-helpers]
+
+- `tests/support/fetch.ts`: stubs del proveedor upstream (`withStubbedFetch`, `jsonResponse`).
+- `tests/support/app.ts`: una mini aplicación Hono para endpoints `/v1/*` con errores de autenticación, ID de solicitud y compatibles con OpenAI.
+- `tests/support/infra.ts`: Detección/desmontaje de Postgres y Redis.
+- `tests/support/integrationCleanup.ts`: limpieza defensiva para filas de prueba de integración con sufijo UUID antes y después de cada archivo de integración.
+- `tests/support/wait.ts`: sondeo de efectos asíncronos de activar y olvidar (registros, cache, Redis).
+- `apps/gateway/tests/support/noRealFetch.ts`: protección global contra acceso real a la red.
+
+## Escotilla de escape [#escape-hatch]
+
+Para una prueba manual única en Internet:
+
+```bash
+ALLOW_TEST_NETWORK=1 bun run --filter @boelabs/bifrost test
+```
+
+No utilizarlo en CI ni en pruebas normales; Si el comportamiento de un proveedor es importante, capture la forma mínima y simulela con `withStubbedFetch()`.

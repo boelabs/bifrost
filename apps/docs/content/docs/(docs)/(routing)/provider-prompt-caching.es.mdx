@@ -1,0 +1,118 @@
+---
+title: "Prompt caching del proveedor"
+description: "Reutilización de prompts, métricas de tokens y costos del proveedor."
+---
+El caching del indicador del proveedor reutiliza el cálculo en el proveedor del modelo. Está separado del [Cache de respuestas](/es/docs/caching) de Bifrost. Una solicitud transmitida puede utilizar el caching del proveedor aunque no sea elegible para el cache de respuesta de Redis. `cacheHit` y los headers de cache de respuesta describen Redis; Utiliza contadores de tokens para medir el caching del proveedor.
+
+## Rutas admitidas [#supported-paths]
+
+El endpoint público y el transport upstream son independientes. Por ejemplo, un cliente que usa `/v1/chat/completions` puede llegar a Azure a través de `/responses`. Bifrost normaliza el uso del proveedor antes de representar eventos WebSocket JSON, SSE o Responses. Los alias de public models se reemplazan por el nombre del modelo upstream del deployment seleccionado.
+
+| adapter | transport de texto implementado | Manejo de cache |
+| --- | --- | --- |
+| `openai` | Responses, Chat Completions; nativo Responses WebSocket | Puntos de interrupción clave, de política, de retención y de contenido; contadores de lectura/escritura |
+| `azureopenai` | Responses, Chat Completions | Mismos controles; deployment determina el soporte de modelos y funciones |
+| `azurefoundry` | Chat Completions | Campos de cache con formato de OpenAI; el soporte depende del modelo implementado |
+| `openaicompatible` | Chat Completions | Campos estándar y alias de uso documentados; el soporte de backend varía |
+| `anthropic` | Messages | Automático y a nivel de bloque `cache_control`; uso disjunto y duración de escritura |
+| `googleaistudio` | generar contenido | `cachedContentTokenCount`; referencias externas `extra_body.cachedContent` |
+| `deepseek` | Chat Completions, Responses | Contadores de cache anidados; el chat también acepta `prompt_cache_hit_tokens` |
+| `moonshot` | Chat Completions | `usage.cached_tokens` de nivel superior asignado a lecturas de cache |
+| `minimax` | Chat Completions | Uso de tokens en cache anidados |
+| `zai` | Chat Completions | Uso de tokens en cache anidados |
+| `vercel` | Responses, Chat Completions | Normalización de uso y reenvío de `providerOptions`, incluidas opciones de caching |
+| `openrouter` | No hay controlador de texto en este gateway | Registrado para reranking; sin ruta de texto de cache de aviso |
+
+Esto enumera la compatibilidad con el gateway, no una garantía de que cada modelo exponga todas las funciones. Los controles de caching de texto no están adjuntos a embeddings, reclasificaciones, imágenes independientes, transcripciones o trabajos de video. El deployment de Google Interactions en este repositorio es para video, no una segunda ruta de texto.
+
+## OpenAI y Azure [#openai-and-azure]
+
+Bifrost conserva los marcadores `prompt_cache_key`, `prompt_cache_options`, `prompt_cache_retention` y el contenido elegible `prompt_cache_breakpoint`. Los bloques de instrucciones marcados siguen siendo bloques ordenados al traducir Chat a Responses. La materialización de archivos también conserva sus marcadores.
+
+Para GPT-5.6, `mode: "explicit"` sin puntos de interrupción deshabilita el caching. Los modelos más antiguos utilizan el campo de retención heredado y pueden rechazar la nueva política. Azure PTU-M no admite puntos de interrupción explícitos. El prefijo elegible mínimo documentado es 1024 tokens. Consulta [caching del mensaje de Azure](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/prompt-caching) y [caching del mensaje de OpenAI](https://developers.openai.com/api/docs/guides/prompt-caching).
+
+Con el proveedor OpenAI del SDK de AI estándar, mantén el espacio de nombres de opciones `openai` incluso cuando cambie `baseURL` y use un alias público:
+
+```ts
+import { createOpenAI } from "@ai-sdk/openai";
+import { streamText } from "ai";
+
+const gateway = createOpenAI({
+  baseURL: process.env.GATEWAY_BASE_URL,
+  apiKey: process.env.GATEWAY_API_KEY,
+});
+
+const result = streamText({
+  model: gateway("my-public-model"),
+  providerOptions: {
+    openai: {
+      promptCacheKey: "tenant:example:manual-v1",
+      promptCacheOptions: { mode: "explicit", ttl: "30m" },
+    },
+  },
+  messages: [{
+    role: "user",
+    content: [{
+      type: "text",
+      text: stableManual,
+      providerOptions: {
+        openai: { promptCacheBreakpoint: { mode: "explicit" } },
+      },
+    }, { type: "text", text: question }],
+  }],
+});
+
+const usage = await result.usage;
+console.log(usage.inputTokenDetails.cacheReadTokens);
+console.log(usage.inputTokenDetails.cacheWriteTokens);
+```
+
+Utiliza un prefijo estable lo suficientemente largo para el modelo seleccionado. Las versiones del SDK difieren: verifica que la versión en la aplicación emita estas opciones y exponga estos contadores. `generateText` usa las mismas opciones sin streaming. Con bucles de herramientas de varios pasos, inspeccione el uso total y cada paso; el cero de un solo paso no describe toda la interacción.
+
+La forma anterior `extra_body` de los dos campos de política de OpenAI sigue siendo aceptada. Se rechaza enviar el mismo control tanto directamente como dentro de `extra_body`. Una política nativa que no puede ser representada por Anthropic o Google se rechaza en lugar de eliminarse silenciosamente. Los puntos de interrupción de audio requieren Chat Completions; Responses no admite esa combinación.
+
+## Otros proveedores [#other-providers]
+
+Para Anthropic, `/v1/messages` acepta `cache_control` automático de nivel superior y marcadores explícitos en bloques de sistema/contenido/herramientas, incluidos `tool_use` y `tool_result`. Los marcadores nativos requieren un Messages en sentido upstream. Los clientes con forma de OpenAI dirigidos a Anthropic pueden solicitar el caching automático a través de `extra_body: { cache_control: { type: "ephemeral" } }`. Los TTL de `5m` y `1h` tienen diferentes precios de escritura. Bifrost fusiona el uso de flujo inicial/final acumulativo, agrega los tres depósitos de entrada separados y conserva los detalles nativos `cache_creation`. Consulta [prompt caching de Anthropic](https://platform.claude.com/docs/en/build-with-claude/prompt-caching).
+
+Para Vercel, se reenvían REST `providerOptions: { gateway: { caching: "auto" } }` de nivel superior y su equivalente `extra_body`. Bifrost no habilita silenciosamente una política de escritura paga. El adapter implementa Chat y Responses, no el endpoint Messages de Vercel. Consulta [caching automático de Vercel](https://vercel.com/docs/ai-gateway/models-and-providers/automatic-caching).
+
+Las referencias de recursos de Google ya deben existir en el proyecto del proveedor seleccionado. La creación, ampliación y eliminación de esos recursos está fuera de la API de inferencia del gateway. Consulta [generar contenido](https://ai.google.dev/api/generate-content). DeepSeek, Moonshot, MiniMax y Z.AI conservan su comportamiento de caching administrado por el proveedor; consulta [DeepSeek](https://api-docs.deepseek.com/guides/kv_cache/), [Uso de Moonshot](https://platform.kimi.ai/docs/api/chat), [MiniMax](https://platform.minimax.io/docs/api-reference/text-prompt-caching) y [Z.AI](https://docs.z.ai/guides/capabilities/cache).
+
+## Métricas y costo [#metrics-and-cost]
+
+| Protocolo público | Leer tokens | Escribir tokens |
+| --- | --- | --- |
+| Chat Completions | `usage.prompt_tokens_details.cached_tokens` | `usage.prompt_tokens_details.cache_write_tokens` |
+| Responses JSON/SSE/WebSocket | `usage.input_tokens_details.cached_tokens` | `usage.input_tokens_details.cache_write_tokens` |
+| Messages JSON/SSE | `usage.cache_read_input_tokens` | `usage.cache_creation_input_tokens` |
+
+Los clientes de chat deben solicitar `stream_options.include_usage: true` para recibir el uso del streaming. Bifrost siempre solicita el uso de Chat upstream para su propia contabilidad. La contabilidad de flujo Responses utiliza los fragmentos canonical directamente, por lo que la representación no puede borrar contadores ni convertir una métrica de proveedor ausente en un cero observado. Messages puede llevar los totales finales de entrada/cache en `message_delta`; los consumidores deben aplicar esa instantánea acumulativa.
+
+Internamente, las lecturas y escrituras son subconjuntos separados de la entrada total. La entrada ordinaria es igual a la entrada menos las lecturas menos las escrituras. En cambio, `input_tokens` de Anthropic excluye ambos depósitos de cache; el adapter los suma al normalizar y el renderizador Messages los resta nuevamente.
+
+Los registros `cacheWriteTokensByTtl` escriben subconjuntos por duración en segundos. Messages expone el objeto nativo `cache_creation`; las respuestas con formato de OpenAI utilizan la extensión Bifrost opcional `cache_write_tokens_by_ttl` dentro de los detalles de entrada. Los metadatos de la operación conservan estos depósitos. Configura `cacheWriteCentsPerMTokensByTtl` en el catálogo o en los precios de deployment para obtener distintas tarifas por TTL, p. `{"300": 625, "3600": 1000}`. Los niveles de contexto pueden anular estas tarifas. Los precios por TTL desconocidos vuelven a la tasa de escritura agregada configurada. Las anulaciones de precios de deployment reemplazan todo el objeto de precios del catálogo, por lo que se deben incluir todas las tarifas necesarias. El catálogo Anthropic incluye ambos TTL.
+
+## Investigando la cache cero lee [#investigating-zero-cache-reads]
+
+1. Capture el protocolo público de una solicitud lógica, el proveedor/deployment seleccionado, el uso upstream, el uso público y el uso del SDK. No registre credenciales ni prompts privados completos.
+2. Repita un prefijo estable largo en la misma deployment con la misma clave y un sufijo cambiante corto. Espera a que finalice la primera solicitud antes de comprobar la reutilización. Prueba JSON y transmita de forma independiente.
+3. Distinga un proveedor explícito cero de un uso faltante o un campo del SDK cuyo valor predeterminado es cero. Responses y Messages pueden emitir cero valores predeterminados compatibles con el protocolo; los contadores opcionales internos preservan si el proveedor informó un valor.
+4. Si upstream informa un resultado pero la respuesta pública no, investigue la traducción. Si ambos tienen un resultado pero la aplicación muestra cero, investigue la versión del SDK y el campo de uso que se está leyendo.
+5. Si el flujo upstream informa cero, verifica la identidad del prefijo, la elegibilidad, la vida útil, la política de escritura, el proyecto/región del proveedor, los cambios de deployment, el fallback y la carga. Más contexto por sí solo no garantiza la reutilización.
+
+El router HTTP de Bifrost no fija una clave de cache de solicitud a un deployment. Por lo tanto, diferentes alcances o alternativas de cache pueden reducir la reutilización. Utiliza un deployment compatible durante el diagnóstico; no deshabilita el fallback de estado simplemente para aumentar una métrica de cache. Una clave estable no es una solicitud para que Bifrost almacene el estado KV del proveedor, y ni la preservación del transport ni un conjunto de pruebas garantizan un porcentaje de acierto en la producción.
+
+
+## Uso del panel [#dashboard-usage]
+
+La descripción general muestra el total de tokens registrados (entrada más salida) y el gráfico de actividad predeterminado es tokens. Las tablas de uso y las exportaciones CSV incluyen lecturas y escrituras de cache, entradas no almacenadas en cache y entradas sin clasificar para modelos y actores. Estos detalles de entrada son subconjuntos, nunca adiciones al total.
+
+- **Entrada en cache**: tokens de entrada leídos desde la cache del proveedor.
+- **Entrada sin cache**: entrada menos lecturas de cache, calculadas por registro solo cuando existen ambos recuentos. Esto incluye escrituras en cache; no es el segmento de facturación de entradas ordinarias descrito anteriormente.
+- **Entrada no clasificada**: entrada conocida cuyo recuento de lecturas de cache no se informó.
+- **Escrituras en cache**: tokens notificados por separado escritos en cache. Las escrituras faltantes siguen siendo desconocidas.
+
+El porcentaje de reutilización utiliza únicamente insumos clasificados. Los recuentos de cobertura muestran cuántas solicitudes o intentos informaron cada contador. Un guión significa no reportado; un cero reportado sigue siendo cero. El uso faltante nunca se estima y los gateways más antiguas sin estos campos adicionales muestran detalles de cache no disponibles.
+
+Las métricas muestran el uso de la cache del proveedor en todos los intentos de deployment, incluidos los reintentos y las alternativas, con controles de series de tiempo independientes y cobertura de informes y reutilización por deployment. Los totales de solicitudes cuentan cada solicitud una vez. Los aciertos de la cache de respuestas se refieren a la propia cache de respuestas de Bifrost, no a los aciertos de la cache de solicitudes del proveedor. Estas superficies utilizan los registros de operación e intento retenidos; los cambios no reponen el uso histórico de proveedores faltante.

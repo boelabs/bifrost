@@ -1,0 +1,113 @@
+---
+title: "Operación del gateway"
+description: "Health checks, secretos, retención de datos, backups y apagado ordenado."
+---
+Runbook operativo para ejecutar Bifrost en producción: sondeos de estado, secretos rotativos, gestión de retención de operaciones, copias de seguridad y cierre ordenado. Si aún está ejecutando el gateway localmente, comienza con el [Inicio rápido](/es/docs/quickstart); esta página asume un deployment real. Para conocer la observabilidad (registros, telemetría, consultas de solicitud/uso), consulta [Observabilidad](/es/docs/observability); para conocer precios y gastos, consulta [Contabilidad de costos](/es/docs/cost-accounting).
+
+## Salud y ciclo de vida [#health-and-lifecycle]
+
+Para **cómo** implementar (Docker Compose, Coolify, Portainer, Dokploy o un VPS de Linux), consulta [Instalar Bifrost](/es/docs/deployment). Esta sección cubre el comportamiento en runtime que usted conecta a su orquestador.
+
+La aplicación ejecuta TypeScript directamente en **Bun**; no hay ningún paso de compilación. Ejecuta `bun run --filter @boelabs/bifrost db:migrate` de forma única **antes** de implementar nuevas instancias; las migraciones se generan desde `schema.ts` con drizzle-kit y son solo hacia adelante; nunca edite una migración ya aplicada. Consulta [Actualizaciones](/es/docs/upgrades) para conocer la historia completa de deployment/reversión.
+
+**Sondas de salud**: dos sondas con trabajos diferentes; conecta cada uno a la sonda del orquestador correspondiente:
+
+- `GET /health/live` — **vivacidad**. Siempre `200` mientras el proceso responde; **no** toca Postgres/Redis. Úselo para la prueba de vida y la verificación del estado del contenedor. Nunca apunta una sonda de actividad a un endpoint consciente de la dependencia: de lo contrario, una señal de Postgres/Redis reiniciaría todas las réplicas a la vez (un reinicio no puede solucionar la dependencia) y convertiría una señal en una interrupción.
+- `GET /health/ready` — **preparación**. `200` cuando Postgres, Redis y el runtime de la extensión están en buen estado; en caso contrario `503` con `Retry-After`. Úselo para la prueba de preparación, de modo que una instancia en mal estado se extraiga del balanceador de carga **sin** reiniciarse y se vuelva a unir automáticamente una vez que se recuperen las dependencias.
+- Durante una interrupción de dependencia, las solicitudes de inferencia en curso devuelven `503` + `Retry-After` (no un `500` opaco), por lo que los clientes con buen comportamiento retroceden y vuelven a intentarlo.
+
+**Apagado**: el proceso maneja `SIGTERM`/`SIGINT`, deja de aceptar tráfico, drena HTTP en tránsito, vacía la cola de finalización de operaciones limitada, luego cierra Redis/Postgres y finalmente OpenTelemetry. Deje que el recipiente se escurra al menos `SHUTDOWN_TIMEOUT_MS`.
+
+**Escalado**: es seguro ejecutar réplicas al mismo tiempo. Las eliminaciones de mantenimiento son idempotentes, el trabajo debido se reclama de forma transaccional y el estado de rate limit/router compartido reside en Redis en lugar de en la memoria de proceso.
+
+## Secretos [#secrets]
+
+Guarda la credencial raíz y el conjunto de claves de cifrado en su administrador secreto (no en la imagen ni en git):
+
+| Secreto | Propósito | Formato |
+|---|---|---|
+| `MASTER_KEY` | Credencial de administrador raíz; otorga acceso completo a `/admin/*`. | Cadena aleatoria fuerte, al menos 32 caracteres. |
+| `ENCRYPTION_KEYRING` | Claves aceptadas para sobres AES-256-GCM encuadernados expresamente. | Objeto JSON que asigna identificadores de claves estables a claves hexadecimales de 64 caracteres. |
+| `ACTIVE_ENCRYPTION_KEY_ID` | ID de clave utilizada para cada nuevo valor cifrado. | Una clave presente en `ENCRYPTION_KEYRING`. |
+
+Generar valores:
+
+```bash
+# MASTER_KEY
+openssl rand -base64 48
+
+# Generate one value for each ENCRYPTION_KEYRING entry
+openssl rand -hex 32
+```
+
+Consulta [Seguridad](/es/docs/security) para conocer lo que cada uno realmente protege y las garantías de ocultación de secretos que lo rodean.
+
+### Giratorio `MASTER_KEY` [#rotating-master_key]
+
+La master key es un único secreto estático leído del entorno. No se almacena en la base de datos, por lo que la rotación es una operación en el momento del deployment:
+
+1. Generar un nuevo valor fuerte.
+2. Actualiza `MASTER_KEY` en su administrador secreto.
+3. Realice el deployment para que cada instancia adopte el nuevo valor.
+4. Actualiza cualquier herramienta de administración/CI que se haya autenticado con la clave anterior.
+
+Las virtual keys no se ven afectadas: residen en la base de datos y no se derivan de la master key.
+
+### Rotación del keyring de cifrado [#rotating-the-encryption-keyring]
+
+Cada sobre registra su identificación clave y su propósito; las nuevas escrituras siempre usan `ACTIVE_ENCRYPTION_KEY_ID`, mientras que las lecturas aceptan todas las identificaciones en `ENCRYPTION_KEYRING`. Por lo tanto, la rotación no requiere exportación de credenciales en texto plano ni tiempo de inactividad:
+
+1. Agrega una nueva identificación/valor aleatorio a `ENCRYPTION_KEYRING`, dejando la identificación activa actual en su lugar y ejecuta cada réplica para que todos puedan leer ambas claves.
+2. Configura `ACTIVE_ENCRYPTION_KEY_ID` con la nueva identificación y vuelva a ejecutar las réplicas.
+3. Ejecuta `bun run --filter @boelabs/bifrost encryption:rotate`. Vuelve a cifrar deployments, artefactos de extensión y muestras de carga útil retenida en lotes limitados e informa el recuento de filas.
+4. Ejecútelo nuevamente; cada recuento reportado debe ser cero.
+5. Guarda la llave antigua durante al menos 14 días para que las cápsulas de compactación sin estado Responses emitidas antes de la rotación sigan siendo legibles, luego retírela y enróllela una vez más.
+
+### Respuesta secreta filtrada [#leaked-secret-response]
+
+Si `MASTER_KEY` tiene fugas: gírelo inmediatamente (arriba) y audite `gateway_operations`, los registros de auditoría de acceso a la carga útil y el acceso de administrador. Si se filtra una clave API de **proveedor**, revoquela en el proveedor y `PATCH` en los deployments afectados con una nueva clave.
+
+## Retención de operación [#operation-retention]
+
+`gateway_operations` y `upstream_attempts` son la fuente operativa actual y caducan después de `OBSERVABILITY_METADATA_RETENTION_DAYS`. El `payload_samples` cifrado caduca después de `OBSERVABILITY_PAYLOAD_RETENTION_DAYS`; un trabajo de mantenimiento en proceso también concilia operaciones obsoletas en progreso e intentos como `abandoned`. Los metadatos de operación nunca almacenan los cuerpos completos de solicitud o respuesta; las muestras forenses limitadas se cifran y caducan por separado.
+
+## `response_states` GC [#response_states-gc]
+
+Las filas de estado `/v1/responses` caducadas (escritas cuando `store=true`) se eliminan automáticamente mediante un trabajo en la aplicación cada `RESPONSE_STATE_GC_INTERVAL_MS`; una poda oportunista del tráfico de escritura cubre los espacios entre ticks. La retención es `RESPONSES_STATE_RETENTION_DAYS`. Consulta [Responses](/es/docs/responses) para saber qué se almacena y cómo recuperarlo o eliminarlo anticipadamente.
+
+## Copias de seguridad [#backups]
+
+**Haga una copia de seguridad de Postgres; Redis es desechable.** Postgres es la fuente de la verdad: deployments, virtual keys, registros de operaciones, estados de respuesta, artefactos de extensión y configuraciones de router. Redis solo mantiene un estado de runtime efímero (cooldowns, contadores en vuelo, ventanas de rate limit, cache de respuesta), que se reconstruye a sí mismo, por lo que no necesita respaldo.
+
+El Postgres incluido utiliza la imagen estándar `postgres` y un volumen con nombre (`pgdata`), exactamente lo que respaldan las plataformas de autohospedaje:
+
+- **Coolify** reconoce el servicio `postgres` y puede programar copias de seguridad lógicas (`pg_dump`) en almacenamiento compatible con S3 con retención. La restauración a través de la interfaz de usuario de Coolify solo está disponible para sus bases de datos administradas *independientes*, no para los servicios de Compose: restaure una copia de seguridad de Compose manualmente con `pg_restore` / `psql`. Para realizar una copia de seguridad **y** restaurar con un solo clic, implemente Postgres como una base de datos administrada por Coolify y apunta `DATABASE_URL` a través de la red privada.
+- **Dokploy** programa copias de seguridad de `pg_dump` (a S3) para bases de datos dentro de una aplicación Compose, así como para bases de datos independientes, con restauración.
+- **Portainer** no tiene una copia de seguridad con reconocimiento de base de datos: utiliza un cron `pg_dump`, un sidecar de copia de seguridad de volumen (por ejemplo, `offen/docker-volume-backup`), o haga una copia de seguridad del volumen `pgdata` en el host.
+
+Copia de seguridad/restauración lógica manual (funciona en cualquier lugar):
+
+```bash
+# Backup
+docker compose exec -T postgres pg_dump -U gateway -d bifrost --no-owner | gzip > backup.sql.gz
+
+# Restore into an empty database
+gunzip -c backup.sql.gz | docker compose exec -T postgres psql -U gateway -d bifrost
+```
+
+<Callout>
+
+Prefiera las copias de seguridad (lógicas) `pg_dump`: son consistentes sin detener el gateway. Una instantánea de volumen `pgdata` sin procesar solo es consistente si Postgres está detenido o la plataforma utiliza un método de instantánea consistente.
+
+</Callout>
+
+## Auditoría de dependencia [#dependency-audit]
+
+Se espera que `bun audit --production` esté limpio para el árbol de dependencias de producción, y CI lo aplica en `--audit-level=high`.
+
+## Próximos pasos [#next-steps]
+
+- [Observabilidad](/es/docs/observability): registros, telemetría y consultas `/admin/logs` y `/admin/usage`.
+- [Contabilidad de costos](/es/docs/cost-accounting): cómo funcionan realmente los precios y el gasto.
+- [Lista de verificación para producción](/es/docs/production-checklist): una lista de verificación condensada previa al lanzamiento.
+- [Actualizaciones](/es/docs/upgrades): deployment de una nueva versión de forma segura.

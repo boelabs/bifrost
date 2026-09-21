@@ -1,0 +1,33 @@
+---
+title: "OpenAI-compatible"
+description: "Configura deployments de OpenAI-compatible y conoce sus capacidades y restricciones."
+---
+Utiliza este adapter para una API que implemente el contrato Chat Completions de OpenAI (o Images/Embeddings compatible) pero que no sea uno de los proveedores nombrados: deployments vLLM/SGLang autohospedadas, agregadores o un proveedor para el que Bifrost aún no tiene un adapter dedicado.
+
+## Configurar un deployment [#configura-a-deployment]
+
+Envía este cuerpo a `POST /admin/deployments` con credencial de operador. Reemplaza las credenciales de ejemplo y elige un modelo disponible para su cuenta de proveedor. Consulta [Crear deployments](/es/docs/creating-deployments) para conocer los campos de configuración compartidos.
+
+```json
+{
+  "publicModel": "my-model",
+  "adapterKey": "openaicompatible",
+  "upstreamModel": "some-vendor/some-model",
+  "credentials": { "apiKey": "...", "baseUrl": "https://api.vendor.example/v1" }
+}
+```
+
+## Comportamiento y restricciones [#behavior-and-limitations]
+
+- **Credenciales**: `apiKey`, `baseUrl` (ambos necesarios; no hay un host predeterminado integrado).
+- **transport predeterminado**: Chat Completions para texto, `images` para generación/edición de imágenes, `videos` para API de video con formato de OpenAI y `embeddings` para embeddings.
+- **Objetivo de compatibilidad**: este adapter cubre la superficie común con forma de OpenAI y sigue siendo extensible a través de `catalogEntry`, `transportOverrides` y `credentials.headers`. No promete un comportamiento perfecto para cada peculiaridad del agregador o característica patentada de OpenAI.
+- **Herramientas estrictas**: declara `capabilities.strictTools: true` solo cuando el objetivo en sí garantiza argumentos de función compatibles con el esquema. El adapter reenvíal indicador `strict` de cada herramienta de forma nativa y rechaza solicitudes estrictas cuando el catálogo no ofrece esa garantía.
+- Dado que el gateway no puede conocer las capacidades reales de este modelo, **se requiere `catalogEntry`**: declare `operations`, `capabilities` y `parameters` a mano. Consulta [Catálogo de modelos](/es/docs/model-catalog) y el ejemplo de modelo personalizado en [Crear deployments](/es/docs/creating-deployments).
+- **Agregadores y API compatibles alojadas** usan este mismo adapter con un `baseUrl` explícito. Si una operación necesita una forma de transport específica del proveedor, establece `transportOverrides` explícitamente, como `image.generate: "chat_completions"` o `video.generate: "videos_async"`.
+- Si el objetivo habla controles de pensamiento de estilo vLLM/SGLang (`chat_template_kwargs`), declare `reasoning.kind: "chat_template_flag"` en la entrada del catálogo personalizado; consulta [Reasoning](/es/docs/reasoning).
+
+## Próximos pasos [#next-steps]
+
+- [Crear deployments](/es/docs/creating-deployments): el ejemplo completo del modelo personalizado.
+- [Catálogo de modelos](/es/docs/model-catalog): la entrada del catálogo que debe declarar un modelo personalizado.
