@@ -4,8 +4,9 @@ The operator dashboard. A **separate product** from the gateway — its own imag
 own process — in the same repository. Next.js App Router, Base UI, React 19, Tailwind CSS 4 — all of
 it on Bun, including the production server.
 
-Deployment forms show model selection and required credentials first. Advanced options contain
+Deployment forms start with an explicit adapter choice, model selection and inline required credentials. Advanced options contain
 optional credentials, routing limits and overrides, and retain their values when collapsed.
+Virtual keys use the same disclosure for budgets, rate limits and expiration.
 Custom models are inferred from the selected adapter's catalog, including dated model aliases;
 OpenAI-compatible has no catalog and always uses an upstream ID input. Their guided editor exposes
 operations, capabilities, limits and adapter-supported transports. Technical configuration retains
@@ -140,7 +141,7 @@ default and follows OS changes live; explicit choices persist in local storage a
 The saved theme is applied before paint. Native date pickers, select controls and scrollbars inherit
 the resolved color scheme, including portalled components.
 
-- Field controls share `size="xs | sm | md | lg"` (28/36/44/52px minimum heights),
+- Field controls share `size="xs | sm | md | lg"` (32/40/48/56px minimum heights),
   `variant="outlined | filled | ghost"`, and the same default control radius.
 - `borderRadius` accepts `none`, `sm`, `md`, `lg`, `xl`, `full`, any CSS radius, or a pixel number.
   `width` accepts `auto`, `full`, any CSS width, or a pixel number. `null`/omission leaves the
@@ -170,6 +171,11 @@ the resolved color scheme, including portalled components.
 Base UI has no table/data-grid primitive: `Table` and `DataTable` intentionally use semantic HTML.
 Badge, Card, Status, Textarea and page furniture extend the same appearance system. Do not add
 pretend grid keyboard semantics or a second styling vocabulary.
+
+Charts use Recharts with shared tooltips and distinct theme colors: areas for activity, lines for
+latency, grouped bars for interval usage, and a donut for the mutually exclusive input categories.
+Cache writes remain a separate count within uncached input. Chart data is also available as a table.
+Toolbar filters and actions share pill corners. Audit shows its result count even on a single page.
 
 ### Component coverage
 

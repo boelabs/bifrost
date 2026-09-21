@@ -18,6 +18,7 @@ export function Pagination({
 	total,
 	onOffsetChange,
 	label,
+	alwaysVisible = false,
 }: {
 	limit: number;
 	offset: number;
@@ -25,12 +26,13 @@ export function Pagination({
 	onOffsetChange: (offset: number) => void;
 	/** Plural noun for the rows being paged, e.g. "keys". */
 	label: string;
+	alwaysVisible?: boolean;
 }) {
-	if (total <= limit && offset === 0) {
+	if (!alwaysVisible && total <= limit && offset === 0) {
 		return null;
 	}
-	const first = total === 0 ? 0 : offset + 1;
-	const last = Math.min(offset + limit, total);
+	const first = total === 0 || offset >= total ? 0 : offset + 1;
+	const last = offset >= total ? 0 : Math.min(offset + limit, total);
 	return (
 		<nav
 			aria-label={`${label} pages`}
@@ -51,7 +53,7 @@ export function Pagination({
 					Previous
 				</Button>
 				<Button
-					disabled={last >= total}
+					disabled={offset + limit >= total}
 					onClick={() => onOffsetChange(offset + limit)}
 					size="sm"
 					variant="secondary"

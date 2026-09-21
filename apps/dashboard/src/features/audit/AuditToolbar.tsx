@@ -25,6 +25,7 @@ export function AuditToolbar({ filters }: { filters: AuditFilters }) {
 			/>
 			<Select
 				aria-label="Filter by kind"
+				borderRadius="full"
 				onValueChange={(key) =>
 					filter({ kind: !key || key === ALL ? undefined : key })
 				}

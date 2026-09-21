@@ -69,11 +69,11 @@
 	--card-foreground: oklch(32.11% 0 0);
 	--popover: oklch(97.02% 0 0);
 	--popover-foreground: oklch(32.11% 0 0);
-	--chart-1: oklch(48.91% 0 0);
-	--chart-2: oklch(48.63% 0.0361 196.0278);
-	--chart-3: oklch(65.34% 0 0);
-	--chart-4: oklch(73.16% 0 0);
-	--chart-5: oklch(80.78% 0 0);
+	--chart-1: oklch(52% 0.2 260);
+	--chart-2: oklch(53% 0.13 175);
+	--chart-3: oklch(60% 0.16 65);
+	--chart-4: oklch(54% 0.2 305);
+	--chart-5: oklch(54% 0.2 350);
 	--sidebar: oklch(93.7% 0 0);
 	--sidebar-border: oklch(85.76% 0 0);
 	/**
@@ -152,11 +152,11 @@
 	--card-foreground: oklch(88.53% 0 0);
 	--popover: oklch(24.35% 0 0);
 	--popover-foreground: oklch(88.53% 0 0);
-	--chart-1: oklch(70.58% 0 0);
-	--chart-2: oklch(67.14% 0.0339 206.3482);
-	--chart-3: oklch(54.52% 0 0);
-	--chart-4: oklch(46.04% 0 0);
-	--chart-5: oklch(37.15% 0 0);
+	--chart-1: oklch(72% 0.15 255);
+	--chart-2: oklch(76% 0.14 175);
+	--chart-3: oklch(80% 0.15 75);
+	--chart-4: oklch(76% 0.15 305);
+	--chart-5: oklch(75% 0.16 350);
 	--sidebar: oklch(23.93% 0 0);
 	--sidebar-border: oklch(32.9% 0 0);
 	--surface: oklch(21.78% 0 0);

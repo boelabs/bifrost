@@ -2,14 +2,15 @@
 
 import type { UsageBucket, UsagePoint } from "./overview-data";
 import { ToggleGroup } from "#/components/ui/toggle-group";
+import { TimeSeriesChart } from "#/components/ui/chart";
 import { Toggle } from "#/components/ui/toggle";
 import { Card } from "#/components/ui/card";
 import { useId, useState } from "react";
 
 const metrics = {
-	requests: { label: "Requests", color: "bg-chart-1" },
-	totalTokens: { label: "Tokens", color: "bg-chart-2" },
-	consumerCostCents: { label: "Cost", color: "bg-chart-3" },
+	requests: { label: "Requests" },
+	totalTokens: { label: "Tokens" },
+	consumerCostCents: { label: "Cost" },
 } as const;
 
 type Metric = keyof typeof metrics;
@@ -54,11 +55,6 @@ function intervalLabel(row: UsagePoint, bucket: UsageBucket) {
 	return `${startDay}, ${hour.format(row.intervalStart)}–${startDay === endDay ? "" : `${endDay}, `}${hour.format(row.intervalEnd)} UTC`;
 }
 
-/**
- * `bucket` is the range's decision, not this component's: an hour per bar reads well across a day
- * and turns into noise across a month, so a wide range arrives already grouped by day and only the
- * labels have to follow.
- */
 export function ActivityChart({
 	rows,
 	bucket = "hour",
@@ -68,20 +64,26 @@ export function ActivityChart({
 }) {
 	const titleId = useId();
 	const [metric, setMetric] = useState<Metric>("totalTokens");
-	const [selectedHour, setSelectedHour] = useState<number | null>(null);
-	const selected = rows.find((row) => row.timestamp === selectedHour);
+	const series =
+		metric === "totalTokens"
+			? [
+					{ key: "promptTokens", label: "Input", color: "var(--chart-1)" },
+					{ key: "completionTokens", label: "Output", color: "var(--chart-2)" },
+				]
+			: [
+					{
+						key: metric,
+						label: metrics[metric].label,
+						color: metric === "requests" ? "var(--chart-1)" : "var(--chart-3)",
+					},
+				];
 	const total = rows.reduce((sum, row) => sum + row[metric], 0);
-	const maximum = Math.max(0, ...rows.map((row) => row[metric]));
-	const ticks = [
-		...new Set([0, Math.floor((rows.length - 1) / 2), rows.length - 1]),
-	]
-		.map((index) => rows[index])
-		.filter((row): row is UsagePoint => Boolean(row));
-	const metricInfo = metrics[metric];
-
 	return (
-		<Card aria-labelledby={titleId} className="flex min-w-0 flex-col p-7">
-			<div className="flex flex-wrap items-center justify-between gap-3">
+		<Card
+			aria-labelledby={titleId}
+			className="flex min-w-0 flex-col overflow-hidden p-0"
+		>
+			<div className="flex flex-wrap items-center justify-between gap-4 border-border/50 border-b px-7 py-5">
 				<div>
 					<h2 className="font-semibold" id={titleId}>
 						Activity
@@ -92,10 +94,9 @@ export function ActivityChart({
 				</div>
 				<ToggleGroup
 					aria-label="Activity metric"
-					className="max-w-full border-border/50"
-					onValueChange={(value) => {
-						if (value[0]) {
-							setMetric(value[0]);
+					onValueChange={(values) => {
+						if (values[0]) {
+							setMetric(values[0]);
 						}
 					}}
 					value={[metric]}
@@ -107,99 +108,33 @@ export function ActivityChart({
 					))}
 				</ToggleGroup>
 			</div>
-			{maximum > 0 ? (
-				<figure
-					aria-label={`${bucket === "day" ? "Daily" : "Hourly"} ${metricInfo.label.toLowerCase()}`}
-					className="mt-7 flex flex-1 flex-col"
-					onPointerLeave={() => setSelectedHour(null)}
-				>
-					{/* The plot takes the height the card is given, so the chart fills whatever the
-					    column beside it sets rather than leaving a void under the bars. */}
-					<div className="grid flex-1 grid-cols-[2.75rem_minmax(0,1fr)] grid-rows-[minmax(11rem,1fr)_auto] gap-x-3 gap-y-3">
-						<div
-							aria-hidden="true"
-							className="relative h-full text-right text-[11px] text-fg-muted tabular-nums"
-						>
-							{[1, 0.5, 0].map((fraction) => (
-								<span
-									className="absolute right-0 -translate-y-1/2"
-									key={fraction}
-									style={{ top: `${(1 - fraction) * 100}%` }}
-								>
-									{formatValue(maximum * fraction, metric, true)}
-								</span>
-							))}
-						</div>
-						<div className="relative h-full min-w-0">
-							<div
-								aria-hidden="true"
-								className="pointer-events-none absolute inset-0 flex flex-col justify-between"
-							>
-								{[0, 1, 2].map((line) => (
-									<div
-										className="border-border/50 border-t border-dashed"
-										key={line}
-									/>
-								))}
-							</div>
-							<div className="relative flex h-full gap-0.5 sm:gap-1">
-								{rows.map((row) => {
-									const active = row.timestamp === selectedHour;
-									return (
-										<button
-											aria-label={`${intervalLabel(row, bucket)}: ${formatValue(row[metric], metric)} ${metricInfo.label.toLowerCase()}`}
-											className={`flex h-full min-w-0 flex-1 cursor-pointer items-end rounded-sm focus-visible:outline-2 focus-visible:outline-focus ${active ? "bg-chart-1/10" : ""}`}
-											key={row.timestamp}
-											onBlur={() => setSelectedHour(null)}
-											onClick={() => setSelectedHour(row.timestamp)}
-											onFocus={() => setSelectedHour(row.timestamp)}
-											onPointerEnter={() => setSelectedHour(row.timestamp)}
-											type="button"
-										>
-											<span
-												className={`w-full rounded-t-[0.3rem] ${metricInfo.color} ${active ? "opacity-100" : "opacity-65"}`}
-												style={{ height: `${(row[metric] / maximum) * 100}%` }}
-											/>
-										</button>
-									);
-								})}
-							</div>
-						</div>
-						<div />
-						<div
-							aria-hidden="true"
-							className="flex justify-between text-[11px] text-fg-muted tabular-nums"
-						>
-							{ticks.map((row) => (
-								<span key={row.timestamp}>
-									{(bucket === "day" ? date : hour).format(row.timestamp)}
-								</span>
-							))}
-						</div>
-					</div>
-					<figcaption className="mt-4 flex min-h-8 flex-wrap items-start justify-between gap-x-3 gap-y-1 border-border/50 border-t pt-3 text-xs">
-						<span className="text-fg-muted">
-							{selected
-								? intervalLabel(selected, bucket)
-								: `Total ${metricInfo.label.toLowerCase()}`}
-						</span>
-						<span className="font-medium tabular-nums">
-							{formatValue(selected?.[metric] ?? total, metric)}
-						</span>
-					</figcaption>
-				</figure>
-			) : (
-				<div className="flex min-h-64 flex-col items-center justify-center px-3 text-center">
-					<p className="font-medium text-sm">
-						No {metricInfo.label.toLowerCase()} recorded
-					</p>
-					<p className="mt-2 max-w-64 text-fg-muted text-xs leading-relaxed">
-						{metric === "requests"
-							? "Usage will appear here as the gateway receives traffic."
-							: `There is no ${metric === "totalTokens" ? "token usage" : "billed cost"} in the selected period.`}
-					</p>
-				</div>
-			)}
+			<div className="flex flex-1 flex-col px-4 pt-7 pb-5 sm:px-7">
+				<p className="mb-6 font-semibold text-2xl tabular-nums">
+					{formatValue(total, metric, true)}{" "}
+					<span className="font-normal text-fg-muted text-xs">
+						{metrics[metric].label.toLowerCase()} in this period
+					</span>
+				</p>
+				<TimeSeriesChart
+					bucket={bucket}
+					formatTick={(value) => formatValue(value, metric, true)}
+					formatValue={(value) => formatValue(value, metric)}
+					intervalLabel={(timestamp) => {
+						const row = rows.find((point) => point.timestamp === timestamp);
+						return row ? intervalLabel(row, bucket) : "";
+					}}
+					label={`${metrics[metric].label} over time`}
+					rows={rows.map((row) => ({
+						timestamp: row.timestamp,
+						promptTokens: row.promptTokens,
+						completionTokens: row.completionTokens,
+						requests: row.requests,
+						consumerCostCents: row.consumerCostCents,
+					}))}
+					series={series}
+					stacked={metric === "totalTokens"}
+				/>
+			</div>
 		</Card>
 	);
 }

@@ -25,7 +25,7 @@ export function Skeleton({
 		<span
 			aria-hidden
 			className={cn(
-				"block h-4 animate-pulse rounded-(--ui-radius-control) bg-fg/10 motion-reduce:animate-none",
+				"block h-4 max-w-full animate-pulse rounded-(--ui-radius-control) bg-fg/10 motion-reduce:animate-none",
 				className,
 			)}
 			style={width ? { width, ...style } : style}
@@ -163,9 +163,13 @@ const CARD = "rounded-(--ui-radius-surface) border border-border/50 bg-card";
 export function StatGridSkeleton({
 	count,
 	className,
+	icon = true,
+	note = true,
 }: {
 	count: number;
 	className?: string;
+	icon?: boolean;
+	note?: boolean;
 }) {
 	return (
 		<div
@@ -178,12 +182,16 @@ export function StatGridSkeleton({
 				// biome-ignore lint/suspicious/noArrayIndexKey: placeholder tiles have no identity
 				<div className={cn(CARD, "flex min-w-0 flex-col p-7")} key={index}>
 					<div className="flex items-center gap-2.5">
-						<Skeleton className="size-4.5 shrink-0 rounded-md" />
+						{icon ? (
+							<Skeleton className="size-4.5 shrink-0 rounded-md" />
+						) : null}
 						<Skeleton className="h-4" width="45%" />
 					</div>
 					<Skeleton className="mt-6 h-8" width="55%" />
-					<Skeleton className="mt-3.5 h-7 rounded-4xl" width="45%" />
-					<Skeleton className="mt-6 h-3" width="70%" />
+					{note ? (
+						<Skeleton className="mt-3.5 h-7 rounded-full" width="45%" />
+					) : null}
+					<Skeleton className="mt-5 h-3" width="70%" />
 				</div>
 			))}
 		</div>
@@ -235,7 +243,7 @@ export function ToolbarSkeleton({
 		>
 			{widths.map((width, index) => (
 				<Skeleton
-					className="h-10 rounded-(--ui-radius-control)"
+					className="h-10 rounded-full"
 					// Keyed by position, not by width: a toolbar can legitimately hold two controls of
 					// the same size, and the list never reorders.
 					// biome-ignore lint/suspicious/noArrayIndexKey: placeholder bars have no identity

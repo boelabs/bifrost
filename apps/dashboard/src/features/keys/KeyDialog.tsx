@@ -4,6 +4,8 @@ import { type KeyDraft, draftFromKey, EMPTY_DRAFT } from "./draft.ts";
 import { ModelListInput } from "#/shared/components/ModelPicker.tsx";
 import { Select, SelectItem } from "#/components/ui/select";
 import { type VirtualKey, formatCents } from "./common.ts";
+import { Collapsible } from "#/components/ui/collapsible";
+import { IconChevronDown } from "@tabler/icons-react";
 import { ErrorNote } from "#/components/ui/page";
 import { Switch } from "#/components/ui/switch";
 import { Button } from "#/components/ui/button";
@@ -58,6 +60,7 @@ export function KeyDialog({
 	);
 	const [error, setError] = useState<string | null>(null);
 	const editing = existing !== undefined;
+	const [advancedOpen, setAdvancedOpen] = useState(false);
 	const submitLabel = submitLabelFor(pending, editing);
 
 	function set<K extends keyof KeyDraft>(field: K, value: KeyDraft[K]) {
@@ -93,7 +96,13 @@ export function KeyDialog({
 							: "Scope the key to the models a client may call, and give it limits it cannot exceed."}
 					</p>
 				</DialogHeader>
-				<Form className="flex min-h-0 flex-1 flex-col" onSubmit={submit}>
+				<Form
+					className="flex min-h-0 flex-1 flex-col"
+					onSubmit={submit}
+					onSubmitCapture={(event) => {
+						event.currentTarget.checkValidity();
+					}}
+				>
 					<DialogBody>
 						<Input
 							autoFocus={!editing}
@@ -112,93 +121,112 @@ export function KeyDialog({
 							value={draft.allowedModels}
 						/>
 
-						<div className="grid gap-4 sm:grid-cols-2">
-							<Input
-								description="Empty means no ceiling."
-								label="Budget (USD)"
-								min={0}
-								onValueChange={(value) => set("budget", value)}
-								step="0.01"
-								type="number"
-								value={draft.budget}
-							/>
-							<Select
-								description="Without a period the budget is a lifetime total."
-								label="Budget resets"
-								onValueChange={(value) =>
-									set(
-										"budgetReset",
-										value === NO_RESET
-											? ""
-											: (value as (typeof RESET_PERIODS)[number]),
-									)
-								}
-								value={draft.budgetReset === "" ? NO_RESET : draft.budgetReset}
+						<Collapsible.Root
+							onOpenChange={setAdvancedOpen}
+							open={advancedOpen}
+						>
+							<Collapsible.Trigger className="w-full transition-none [&>svg]:transition-none">
+								Advanced options
+								<IconChevronDown aria-hidden className="size-4" />
+							</Collapsible.Trigger>
+							<Collapsible.Panel
+								className="h-auto overflow-visible transition-none data-closed:hidden"
+								keepMounted
+								onInvalidCapture={() => setAdvancedOpen(true)}
 							>
-								<SelectItem value={NO_RESET}>never</SelectItem>
-								{RESET_PERIODS.map((period) => (
-									<SelectItem key={period} value={period}>
-										{period}
-									</SelectItem>
-								))}
-							</Select>
-						</div>
-
-						<div className="grid gap-4 sm:grid-cols-2">
-							<Input
-								label="Requests / minute"
-								min={0}
-								onValueChange={(value) => set("rpm", value)}
-								type="number"
-								value={draft.rpm}
-							/>
-							<Input
-								label="Tokens / minute"
-								min={0}
-								onValueChange={(value) => set("tpm", value)}
-								type="number"
-								value={draft.tpm}
-							/>
-						</div>
-
-						<Input
-							description="In your timezone. Empty means the key never expires on its own."
-							label="Expires"
-							onValueChange={(value) => set("expiresAt", value)}
-							type="datetime-local"
-							value={draft.expiresAt}
-						/>
-
-						{editing ? (
-							<div className="flex flex-col gap-4 rounded-xl border border-border/50 p-4">
-								<Switch
-									checked={draft.enabled}
-									onCheckedChange={(checked) => set("enabled", checked)}
-								>
-									Enabled
-								</Switch>
-								<p className="text-fg-muted text-xs">
-									A disabled key is refused at the door; its spend and history
-									are kept.
-								</p>
-								{onResetSpend ? (
-									<div className="flex flex-wrap items-center justify-between gap-3 border-border/50 border-t pt-3">
-										<span className="text-fg-muted text-xs">
-											Spent {formatCents(existing.spendCents)} in the current
-											period.
-										</span>
-										<Button
-											onClick={onResetSpend}
-											size="sm"
-											type="button"
-											variant="secondary"
+								<div className="flex flex-col gap-5 pt-5">
+									<div className="grid gap-4 sm:grid-cols-2">
+										<Input
+											description="Empty means no ceiling."
+											label="Budget (USD)"
+											min={0}
+											onValueChange={(value) => set("budget", value)}
+											step="0.01"
+											type="number"
+											value={draft.budget}
+										/>
+										<Select
+											description="Without a period the budget is a lifetime total."
+											label="Budget resets"
+											onValueChange={(value) =>
+												set(
+													"budgetReset",
+													value === NO_RESET
+														? ""
+														: (value as (typeof RESET_PERIODS)[number]),
+												)
+											}
+											value={
+												draft.budgetReset === "" ? NO_RESET : draft.budgetReset
+											}
 										>
-											Reset spend
-										</Button>
+											<SelectItem value={NO_RESET}>never</SelectItem>
+											{RESET_PERIODS.map((period) => (
+												<SelectItem key={period} value={period}>
+													{period}
+												</SelectItem>
+											))}
+										</Select>
 									</div>
-								) : null}
-							</div>
-						) : null}
+
+									<div className="grid gap-4 sm:grid-cols-2">
+										<Input
+											label="Requests / minute"
+											min={0}
+											onValueChange={(value) => set("rpm", value)}
+											type="number"
+											value={draft.rpm}
+										/>
+										<Input
+											label="Tokens / minute"
+											min={0}
+											onValueChange={(value) => set("tpm", value)}
+											type="number"
+											value={draft.tpm}
+										/>
+									</div>
+
+									<Input
+										description="In your timezone. Empty means the key never expires on its own."
+										label="Expires"
+										onValueChange={(value) => set("expiresAt", value)}
+										type="datetime-local"
+										value={draft.expiresAt}
+									/>
+
+									{editing ? (
+										<div className="flex flex-col gap-4 rounded-xl border border-border/50 p-4">
+											<Switch
+												checked={draft.enabled}
+												onCheckedChange={(checked) => set("enabled", checked)}
+											>
+												Enabled
+											</Switch>
+											<p className="text-fg-muted text-xs">
+												A disabled key is refused at the door; its spend and
+												history are kept.
+											</p>
+											{onResetSpend ? (
+												<div className="flex flex-wrap items-center justify-between gap-3 border-border/50 border-t pt-3">
+													<span className="text-fg-muted text-xs">
+														Spent {formatCents(existing.spendCents)} in the
+														current period.
+													</span>
+													<Button
+														onClick={onResetSpend}
+														size="sm"
+														type="button"
+														variant="secondary"
+													>
+														Reset spend
+													</Button>
+												</div>
+											) : null}
+										</div>
+									) : null}
+								</div>
+							</Collapsible.Panel>
+						</Collapsible.Root>
 
 						{error ? <ErrorNote>{error}</ErrorNote> : null}
 					</DialogBody>

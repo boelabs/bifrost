@@ -1,7 +1,7 @@
 import { PAGE_SIZE, parseUsersFilters } from "#/features/users/filters.ts";
-import { RoleLegend, UsersTable } from "#/features/users/UsersView.tsx";
 import { RouteBoundary } from "#/shared/components/RouteBoundary.tsx";
 import { UsersToolbar } from "#/features/users/UsersToolbar.tsx";
+import { UsersTable } from "#/features/users/UsersView.tsx";
 import { USER_HEADERS } from "#/features/users/common.ts";
 import { listUsers } from "#/features/users/api.ts";
 import { PageHeader } from "#/components/ui/page";
@@ -14,12 +14,7 @@ import {
 
 type Params = PageProps<"/users">["searchParams"];
 
-/**
- * Dashboard operators.
- *
- * The role legend is static text, so it renders with the header rather than behind a boundary — an
- * owner deciding what to grant can read it while the account list is still arriving.
- */
+/** Dashboard operators. */
 export default function UsersPage(props: PageProps<"/users">) {
 	return (
 		<>
@@ -31,8 +26,6 @@ export default function UsersPage(props: PageProps<"/users">) {
 					<Filters searchParams={props.searchParams} />
 				</Suspense>
 			</PageHeader>
-
-			<RoleLegend />
 
 			<RouteBoundary title="Users could not be loaded">
 				<Suspense fallback={<TableSkeleton headers={USER_HEADERS} rows={8} />}>

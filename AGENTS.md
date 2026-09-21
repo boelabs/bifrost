@@ -118,6 +118,28 @@ bun test --preload ./tests/support/unitSetup.ts src/router/strategies.test.ts
 - **Tests are colocated** as `*.test.ts` and must not hit the network —
   `tests/support/noRealFetch.ts` blocks real `fetch`; stub upstreams with `withStubbedFetch()`.
 
+### Dashboard UI
+
+- Compact toolbar actions and filters use `size="sm"` and `borderRadius="full"`.
+  Match adjacent controls; form fields keep the shared control radius.
+- Creation selects for providers, models and roles start with a placeholder and require an explicit
+  choice. Do not select the first available item. Editing preserves the stored selection; filters
+  and optional settings may use meaningful defaults such as "All" or "Never".
+- Put required credentials directly in the form flow. Avoid decorative fieldsets and copy about
+  encryption, validation or adapter internals. Keep help that changes a decision, such as leaving
+  a credential blank to preserve it. Explain permissions next to the role selector, not in a page banner.
+- Put optional creation fields under "Advanced options", using the deployment dialog pattern.
+  Collapsing must retain values, include them on submit and reveal fields with validation errors.
+- Choose charts by the question: areas for activity over time, lines for latency, bars for interval
+  volumes or category comparisons, and donuts for mutually exclusive parts of one total. Never
+  stack overlapping subsets (cache writes, reasoning) or mix units on one axis. Missing measurements
+  stay missing, never zero; show units, UTC intervals, exact values and readable legends.
+- Use the shared chart components and distinct chart color tokens in both themes. Neutral surface
+  colors are not a chart palette. Support keyboard access, narrow screens and reduced motion.
+- Skeletons mirror the current component's count, breakpoints, padding, control heights and shape.
+  Update them with layout changes. Audit keeps its server pagination and visible result count,
+  including one-page results and empty pages with an offset that can be navigated back from.
+
 ## 5. Architecture — keep the layering intact
 
 ```

@@ -40,9 +40,9 @@ const operations = [
 function Breakdown({ data }: { data: DetailedMetrics }) {
 	const { requests } = data;
 	const outcomes = [
-		{ label: "Success", value: requests.success, color: "bg-chart-2" },
+		{ label: "Success", value: requests.success, color: "bg-success" },
 		{ label: "Error", value: requests.errors, color: "bg-danger" },
-		{ label: "Incomplete", value: requests.incomplete, color: "bg-chart-3" },
+		{ label: "Incomplete", value: requests.incomplete, color: "bg-warning" },
 		{ label: "Blocked", value: requests.blocked, color: "bg-chart-3" },
 		{ label: "Cancelled", value: requests.cancelled, color: "bg-chart-4" },
 		{
@@ -62,27 +62,32 @@ function Breakdown({ data }: { data: DetailedMetrics }) {
 			<Card className="p-7">
 				<h2 className="font-semibold">Request outcomes</h2>
 				<p className="mt-1 text-fg-muted text-xs">
-					Final result after all attempts. In-progress requests are excluded
-					from rates.
+					Share of all requests by their latest outcome.
 				</p>
-				<div className="mt-5 space-y-3">
+				<div className="mt-6 space-y-4">
 					{outcomes.map((row) => (
-						<div
-							className="grid grid-cols-[9rem_1fr_3.5rem] items-center gap-3 text-xs"
-							key={row.label}
-						>
-							<span>{row.label}</span>
-							<div className="h-1.5 overflow-hidden rounded-full bg-secondary">
+						<div key={row.label}>
+							<div className="mb-2 flex items-center justify-between gap-3 text-xs">
+								<span>{row.label}</span>
+								<span className="tabular-nums">
+									{count.format(row.value)}{" "}
+									<span className="ml-2 inline-block min-w-12 text-right text-fg-muted">
+										{rate(row.value, requests.requests)}
+									</span>
+								</span>
+							</div>
+							<div aria-hidden className="h-4 border-border/50 border-l">
 								<div
-									className={`h-full rounded-full ${row.color}`}
+									className={`h-full rounded-r ${row.color}`}
 									style={{
-										width: `${requests.requests ? (row.value / requests.requests) * 100 : 0}%`,
+										width: `${
+											requests.requests
+												? (row.value / requests.requests) * 100
+												: 0
+										}%`,
 									}}
 								/>
 							</div>
-							<span className="text-right tabular-nums">
-								{count.format(row.value)}
-							</span>
 						</div>
 					))}
 				</div>
@@ -93,11 +98,36 @@ function Breakdown({ data }: { data: DetailedMetrics }) {
 					Reported upstream usage, including retries. Reasoning and cache are
 					subsets, not additional totals.
 				</p>
-				<dl className="mt-4 divide-y divide-border/50 text-sm">
+				<div className="mt-6 space-y-4">
 					{(
 						[
-							["Input", tokens.promptTokens],
-							["Output", tokens.completionTokens],
+							["Input", tokens.promptTokens, "bg-chart-1"],
+							["Output", tokens.completionTokens, "bg-chart-2"],
+						] as const
+					).map(([label, value, color]) => (
+						<div key={label}>
+							<div className="mb-2 flex justify-between gap-3 text-sm">
+								<span>{label}</span>
+								<span className="tabular-nums">{tokenCount(value)}</span>
+							</div>
+							<div aria-hidden className="h-6 border-border/50 border-l">
+								<div
+									className={`h-full rounded-r ${color}`}
+									style={{
+										width: `${
+											tokens.totalTokens
+												? ((value ?? 0) / tokens.totalTokens) * 100
+												: 0
+										}%`,
+									}}
+								/>
+							</div>
+						</div>
+					))}
+				</div>
+				<dl className="mt-5 divide-y divide-border/50 text-sm">
+					{(
+						[
 							["Reasoning", tokens.reasoningTokens],
 							["Cache read", tokens.cacheReadTokens],
 							["Cache write", tokens.cacheWriteTokens],
@@ -356,6 +386,7 @@ export function Metrics({
 			<Card className="p-5">
 				<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 					<Select
+						borderRadius="full"
 						label="Period · UTC"
 						onValueChange={(period) => {
 							if (period) {
@@ -381,6 +412,7 @@ export function Metrics({
 						))}
 					</Select>
 					<Select
+						borderRadius="full"
 						label="Operation"
 						onValueChange={(value) =>
 							onChange({
@@ -403,6 +435,7 @@ export function Metrics({
 						))}
 					</Select>
 					<SearchableSelect
+						borderRadius="full"
 						items={modelOptions}
 						label="Public model"
 						onValueChange={(value) =>
@@ -416,6 +449,7 @@ export function Metrics({
 						value={search.publicModel ?? null}
 					/>
 					<SearchableSelect
+						borderRadius="full"
 						items={deploymentOptions}
 						label="Deployment"
 						onValueChange={(value) =>

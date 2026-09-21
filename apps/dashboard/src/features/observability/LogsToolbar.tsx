@@ -52,6 +52,7 @@ export function LogsToolbar({
 			/>
 			<Select
 				aria-label="Filter by outcome"
+				borderRadius="full"
 				onValueChange={(key) =>
 					filter({ outcome: !key || key === ALL ? undefined : key })
 				}
@@ -68,6 +69,7 @@ export function LogsToolbar({
 			{models.length > 0 ? (
 				<Select
 					aria-label="Filter by public model"
+					borderRadius="full"
 					onValueChange={(key) =>
 						filter({ publicModel: !key || key === ALL ? undefined : key })
 					}

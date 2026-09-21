@@ -44,7 +44,14 @@ export default function AuditPage(props: PageProps<"/audit">) {
 
 			<RouteBoundary title="The audit trail could not be loaded">
 				<Suspense
-					fallback={<TableSkeleton headers={AUDIT_HEADERS} rows={10} toolbar />}
+					fallback={
+						<TableSkeleton
+							headers={AUDIT_HEADERS}
+							pagination
+							rows={10}
+							toolbar
+						/>
+					}
 				>
 					<Trail searchParams={props.searchParams} />
 				</Suspense>
