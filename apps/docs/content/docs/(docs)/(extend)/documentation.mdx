@@ -5,8 +5,8 @@ description: Write, preview, test, and deploy the documentation site with Bun.
 
 The documentation is a Next.js App Router site using [Fumadocs](https://fumadocs.dev), built and
 served on Bun. Every page is prerendered from MDX in this repository, so the running server only
-hands out what the build produced — the one exception is `/api/search`, which answers search
-queries in process. The site has one language: English.
+hands out what the build produced, including the search index at `/api/search`. Queries run in
+the browser. Only `/sitemap.xml` reads the deployment origin at runtime. The site has one language: English.
 
 ## Preview changes
 
@@ -38,7 +38,8 @@ top of the sidebar:
 | `(docs)` | Getting started, deploying, routing, access, providers, operating, extending |
 | `(api)` | The wire format, every endpoint, and every value the gateway reads |
 
-Inside a root, each `(group)` folder is one collapsible sidebar section. Add an MDX file with a
+Inside a root, each `(group)` folder is extracted below a visible section heading using
+`"---Section title---"` and `"...(group)"` in the root `meta.json`. Add an MDX file with a
 descriptive `title` and a short `description` in YAML frontmatter, then list its filename in that
 folder's `meta.json`. Standard Markdown is enough for most pages.
 

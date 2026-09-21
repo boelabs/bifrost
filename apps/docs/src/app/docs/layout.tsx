@@ -8,7 +8,13 @@ import { source } from "#/lib/source.ts";
  */
 export default function Layout({ children }: { children: React.ReactNode }) {
 	return (
-		<DocsLayout {...baseOptions} tree={source.pageTree}>
+		<DocsLayout
+			{...baseOptions}
+			containerProps={{
+				style: { "--fd-layout-width": "100%" } as React.CSSProperties,
+			}}
+			tree={source.pageTree}
+		>
 			{children}
 		</DocsLayout>
 	);

@@ -1,4 +1,6 @@
-import { DynamicCodeBlock } from "fumadocs-ui/components/dynamic-codeblock";
+import { CodeBlock, Pre } from "fumadocs-ui/components/codeblock";
+import { Cards, Card } from "fumadocs-ui/components/card";
+import { BookOpen, Network, Server } from "lucide-react";
 import { ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -10,16 +12,10 @@ export const metadata: Metadata = {
 		"An AI gateway by Boelabs. Connect your providers through familiar APIs while you control routing, access, and costs.",
 };
 
-/**
- * The landing page.
- *
- * It was a Starlight `template: splash` page with a `hero:` frontmatter block and a slab of raw
- * HTML; as a real component the three paths below can share the type scale and colour tokens with
- * the rest of the site instead of carrying their own stylesheet.
- */
 const PATHS = [
 	{
 		title: "Connect your application",
+		icon: BookOpen,
 		description:
 			"Use a virtual key and a public model name with OpenAI or Anthropic-compatible endpoints.",
 		action: "Make your first request",
@@ -27,6 +23,7 @@ const PATHS = [
 	},
 	{
 		title: "Choose your providers",
+		icon: Network,
 		description:
 			"Route requests across deployments, with explicit model capabilities and fallback policies.",
 		action: "Browse provider guides",
@@ -34,6 +31,7 @@ const PATHS = [
 	},
 	{
 		title: "Run it yourself",
+		icon: Server,
 		description:
 			"Deploy the Bun gateway with Postgres and Redis. Keep credentials and policies under your control.",
 		action: "Deploy Bifrost",
@@ -78,22 +76,22 @@ export default function HomePage() {
 				</div>
 			</section>
 
-			<section className="mx-auto grid w-full max-w-5xl gap-8 border-fd-border border-b px-4 py-12 sm:grid-cols-3">
-				{PATHS.map((path) => (
-					<div className="flex min-w-0 flex-col" key={path.href}>
-						<h2 className="font-medium text-lg">{path.title}</h2>
-						<p className="mt-2 text-fd-muted-foreground text-sm">
-							{path.description}
-						</p>
-						<Link
-							className="mt-4 inline-flex items-center gap-1.5 font-medium text-fd-primary text-sm hover:underline"
+			<section
+				aria-label="Explore the documentation"
+				className="mx-auto w-full max-w-5xl px-4 py-12"
+			>
+				<Cards className="sm:grid-cols-3">
+					{PATHS.map((path) => (
+						<Card
 							href={path.href}
+							icon={<path.icon aria-hidden />}
+							key={path.href}
+							title={path.title}
 						>
-							{path.action}
-							<ArrowRight aria-hidden className="size-3.5" />
-						</Link>
-					</div>
-				))}
+							{path.description}
+						</Card>
+					))}
+				</Cards>
 			</section>
 
 			<section className="mx-auto w-full max-w-5xl px-4 py-12">
@@ -106,7 +104,11 @@ export default function HomePage() {
 					resolves to deployments you configure.
 				</p>
 				<div className="mt-5">
-					<DynamicCodeBlock code={REQUEST} lang="bash" />
+					<CodeBlock title="First request">
+						<Pre>
+							<code>{REQUEST}</code>
+						</Pre>
+					</CodeBlock>
 				</div>
 				<p className="mt-6 text-sm">
 					<Link className="text-fd-primary hover:underline" href="/docs">

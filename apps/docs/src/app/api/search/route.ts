@@ -1,11 +1,6 @@
 import { createFromSource } from "fumadocs-core/search/server";
 import { source } from "#/lib/source.ts";
 
-/**
- * The search index, queried in process.
- *
- * This is the only route the running server actually computes — everything else is prerendered. The
- * index is built from the same page tree the sidebar uses, so a page cannot be searchable and
- * missing from the navigation, or the reverse.
- */
-export const { GET } = createFromSource(source);
+// Export the index at build time; queries run in the browser when search is opened.
+export const dynamic = "force-static";
+export const { staticGET: GET } = createFromSource(source);

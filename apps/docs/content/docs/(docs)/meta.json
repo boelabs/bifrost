@@ -4,12 +4,20 @@
 	"root": true,
 	"pages": [
 		"index",
-		"(get-started)",
-		"(deploy)",
-		"(routing)",
-		"(access)",
-		"(providers)",
-		"(operate)",
-		"(extend)"
-	]
+		"---Get started---",
+		"...(get-started)",
+		"---Deploy---",
+		"...(deploy)",
+		"---Routing and resilience---",
+		"...(routing)",
+		"---Access and costs---",
+		"...(access)",
+		"---Models and providers---",
+		"...(providers)",
+		"---Operate---",
+		"...(operate)",
+		"---Extend and contribute---",
+		"...(extend)"
+	],
+	"icon": "BookOpen"
 }
