@@ -58,7 +58,7 @@ export default function HomePage({ locale }: { locale: Locale }) {
 					</h1>
 					<p className="mt-5 max-w-2xl text-balance text-fd-muted-foreground text-lg">
 						{locale === "es"
-							? "Un gateway de IA de Boelabs. Conecta tus proveedores mediante APIs conocidas y controla el routing, el acceso y los costos."
+							? "Un gateway de inteligencia artificial de Boelabs. Conecta tus proveedores mediante APIs conocidas y controla el routing, el acceso y los costos."
 							: "An AI gateway by Boelabs. Connect your providers through familiar APIs while you control routing, access, and costs."}
 					</p>
 					<div className="mt-8 flex flex-wrap items-center gap-3">

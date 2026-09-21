@@ -13,7 +13,7 @@ function manifest(): MetadataRoute.Manifest {
 		name: "Bifrost",
 		short_name: "Bifrost",
 		description:
-			"Bifrost de Boelabs: un gateway de IA con APIs compatibles con OpenAI y Anthropic.",
+			"Bifrost de Boelabs: un gateway de inteligencia artificial con APIs compatibles con OpenAI y Anthropic.",
 		start_url: "/es",
 		display: "standalone",
 		// The mark is black ink, so its ground is white in both themes; an installed icon has no
