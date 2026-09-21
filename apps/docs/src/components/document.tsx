@@ -35,7 +35,7 @@ export const metadata: Metadata = {
 		template: "%s · Bifrost",
 	},
 	description:
-		"Bifrost by Boelabs: a provider-agnostic AI gateway with OpenAI and Anthropic-compatible APIs.",
+		"Bifrost by Boelabs: a provider-agnostic artificial intelligence gateway with OpenAI and Anthropic-compatible APIs.",
 };
 
 export const viewport: Viewport = {

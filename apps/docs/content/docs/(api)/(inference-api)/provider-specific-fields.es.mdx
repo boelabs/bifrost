@@ -54,7 +54,7 @@ Para los modelos OpenAI con capacidad de reasoning, el gateway solicita `include
 
 Por superficie:
 
-- **`/v1/responses`**: el reasoning cifrado se representa como elementos de salida nativos `reasoning` (`encrypted_content` incluido incluso sin un `include` explícito, por lo que la reproducción predeterminada es `store:false` flujos de trabajo). Los clientes que reproducen elementos de salida (lo hace el SDK de IA de Vercel) lo reproducen automáticamente; en la entrada, los elementos `reasoning` con `encrypted_content` se reproducen en sentido upstream antes de las llamadas a funciones que preceden.
+- **`/v1/responses`**: el reasoning cifrado se representa como elementos de salida nativos `reasoning` (`encrypted_content` incluido incluso sin un `include` explícito, por lo que la reproducción predeterminada es `store:false` flujos de trabajo). Los clientes que reproducen elementos de salida (lo hace el Vercel AI SDK) lo reproducen automáticamente; en la entrada, los elementos `reasoning` con `encrypted_content` se reproducen en sentido upstream antes de las llamadas a funciones que preceden.
 - **`/v1/chat/completions`**: transportado como `provider_specific_fields: { "openai": { "reasoning": [{ "id", "encrypted_content", "summary" }] } }` a nivel de mensaje en el mensaje del asistente (y delta de streaming). Los clientes estándar eliminan este campo, por lo que el reasoning cifrado no los utiliza en esta superficie, la misma limitación que LiteLLM.
 - **`/v1/messages`**: no compatible: el formato del protocolo de Anthropic no tiene ningún campo de extensión a nivel de mensaje que los clientes hagan eco.
 

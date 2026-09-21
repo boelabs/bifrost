@@ -13,7 +13,7 @@ export default function manifest(): MetadataRoute.Manifest {
 		name: "Bifrost",
 		short_name: "Bifrost",
 		description:
-			"Bifrost by Boelabs: a provider-agnostic AI gateway with OpenAI and Anthropic-compatible APIs.",
+			"Bifrost by Boelabs: a provider-agnostic artificial intelligence gateway with OpenAI and Anthropic-compatible APIs.",
 		start_url: "/",
 		display: "standalone",
 		// The mark is black ink, so its ground is white in both themes; an installed icon has no

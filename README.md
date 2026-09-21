@@ -9,7 +9,7 @@
 
 **One contract. Every model provider.**
 
-A backend-only, provider-agnostic AI gateway — built and operated by [Boelabs](https://boelabs.com).
+A backend-only, provider-agnostic artificial intelligence gateway — built and operated by [Boelabs](https://boelabs.com).
 
 [Documentation](apps/docs/content/docs/(docs)/index.mdx) ·
 [Quickstart](apps/docs/content/docs/(docs)/(get-started)/quickstart.mdx) ·
@@ -178,7 +178,7 @@ for preview commands, page conventions, and deployment.
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, conventions, and the checks CI runs. AI coding
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, conventions, and the checks CI runs. Coding
 agents start with [AGENTS.md](AGENTS.md). All code, comments, and documentation are in English.
 
 Report vulnerabilities through [SECURITY.md](SECURITY.md) — never in a public issue.

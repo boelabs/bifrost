@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 	manifest: "/es/manifest.webmanifest",
 	title: { default: "Bifrost", template: "%s · Bifrost" },
 	description:
-		"Conecta tu aplicación a proveedores de IA mediante un solo gateway.",
+		"Conecta tu aplicación a proveedores de inteligencia artificial mediante un solo gateway.",
 };
 export default function Layout({ children }: { children: React.ReactNode }) {
 	return <Document locale="es">{children}</Document>;
