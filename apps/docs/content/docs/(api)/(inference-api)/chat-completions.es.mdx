@@ -33,7 +33,7 @@ Si un deployment determinada realmente **admite** un campo que envía es una dec
 
 Establece `tools[].function.strict` en `true` cuando los argumentos de la función deban ajustarse al esquema JSON proporcionado. El router selecciona solo deployments cuyo catálogo declara `capabilities.strictTools: true`; si nadie puede garantizarlo, la solicitud falla con `unsupported_model_capability` en lugar de recurrir silenciosamente a una llamada de herramienta no estricta.
 
-Algunos proveedores devuelven un estado de llamada de herramienta opaco que debe circular con la llamada de herramienta (por ejemplo, firmas de pensamiento de Gemini). El gateway lo incorpora en el identificador de llamada de la herramienta (`<id>__thought__<signature>`), por lo que repetir textualmente `tool_calls[].id`, lo que hace todo cliente estándar, es suficiente; no se necesita ningún manejo de campo adicional. El estado también se refleja en `extra_content` / `provider_specific_fields` para clientes ricos, y se aceptan todos los formularios. Consulta [Estado específico del proveedor](/es/docs/provider-specific-fields).
+Algunos proveedores devuelven un estado de llamada de herramienta opaco que debe circular con la llamada de herramienta (por ejemplo, firmas de pensamiento de Gemini). El gateway lo incorpora en el identificador de llamada de la herramienta (`<id>__thought__<signature>`), por lo que repetir textualmente `tool_calls[].id`, lo que hace todo cliente estándar, es suficiente; no se necesita ningún manejo de campo adicional. El estado también se refleja en `extra_content` / `provider_specific_fields` para clientes que admiten esos campos, y se aceptan todos los formatos. Consulta [Estado específico del proveedor](/es/docs/provider-specific-fields).
 
 ## Salidas estructuradas [#structured-outputs]
 
@@ -51,7 +51,7 @@ Campos específicos del proveedor que el gateway no administra directamente (por
 
 `content` acepta matrices de varias partes: `{"type": "image_url", "image_url": {"url": "..."}}` (URL o URL de datos base64) en modelos `vision: true`, además de piezas de audio y archivos en modelos cuyo perfil de catálogo declara compatibilidad. La generación de video se expone a través de la API dedicada `/v1/videos`, no a través de una parte de chat `video_url`.
 
-Los formularios de origen de archivos e imágenes se resuelven por candidato de routing. Una URL nativa se conserva cuando el upstream la acepta; los transports solo en línea reciben una URL de datos validada y limitada producida por el gateway. Consulta [Entradas de contenido](/es/docs/file-inputs).
+Los formatos de origen de archivos e imágenes se resuelven por candidato de routing. Una URL nativa se conserva cuando el upstream la acepta; los transports que requieren datos inline reciben una URL de datos validada y limitada producida por el gateway. Consulta [Entradas de contenido](/es/docs/file-inputs).
 
 ## Streaming [#streaming]
 

@@ -49,7 +49,7 @@ Para el segundo, por recurso:
 
 En cualquier actualización continua, la versión antigua y la nueva hablan con la misma base de datos a la vez: la réplica entrante migra al arrancar mientras la saliente todavía está funcionando. Una migración que cambia el nombre o elimina una columna la rompe.
 
-Expanda primero, contraiga después: agrega la nueva columna y escriba en ambas, envía el código que la lee, elimina la anterior en una migración posterior. Tres deployments para cambiar el nombre, y la misma propiedad es lo que hace que revertir una imagen sea seguro.
+Expanda primero, contraiga después: agrega la nueva columna y escriba en ambas, envíal código que la lee, elimina la anterior en una migración posterior. Tres deployments para cambiar el nombre, y la misma propiedad es lo que hace que revertir una imagen sea seguro.
 
 ## Imágenes y versiones [#images-and-versions]
 

@@ -2,7 +2,7 @@
 title: "Transcripción de audio"
 description: "Transcribe archivos de audio y configura formatos, timestamps y streaming."
 ---
-Transcribe un archivo de audio cargado. El public model debe admitir `audio.transcribe`; los formatos disponibles, las marcas de tiempo y la transmisión dependen de su perfil.
+Transcribe un archivo de audio cargado. El public model debe admitir `audio.transcribe`; los formatos disponibles, las marcas de tiempo y el streaming dependen de su perfil.
 
 ## Ejemplo de solicitud [#example-request]
 
@@ -19,7 +19,7 @@ Solo multiparte (campo `file`). El archivo cargado se transmite a un disco tempo
 
 ## Campos [#fields]
 
-`model`, `file`, `language`, `prompt`, `temperature`, `response_format` (`json`, `text`, `srt`, `verbose_json`, `vtt`), `timestamp_granularities` (`word`/`segment`, `verbose_json` solamente), `include`, `stream`. Los formatos de respuesta y si las granularidades de transmisión/marca de tiempo están disponibles se declaran por modelo en su perfil de catálogo `audio.transcribe`.
+`model`, `file`, `language`, `prompt`, `temperature`, `response_format` (`json`, `text`, `srt`, `verbose_json`, `vtt`), `timestamp_granularities` (`word`/`segment`, `verbose_json` solamente), `include`, `stream`. Los formatos de respuesta y si las granularidades de streaming/marca de tiempo están disponibles se declaran por modelo en su perfil de catálogo `audio.transcribe`.
 
 ## Formato de respuesta [#response-format]
 

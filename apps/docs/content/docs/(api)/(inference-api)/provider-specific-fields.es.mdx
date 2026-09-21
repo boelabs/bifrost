@@ -2,7 +2,7 @@
 title: "Estado específico del proveedor"
 description: "Conserva las firmas y el estado opaco necesarios para continuar una conversación."
 ---
-Algunos proveedores adjuntan un estado opaco a sus respuestas que deben enviarse palabra por palabra en el siguiente turno. El gateway realiza viajes de ida y vuelta que indican **a través del cliente, sin almacenamiento en el lado del servidor**. Hoy existen dos tipos:
+Algunos proveedores devuelven estado opaco que debe reenviarse sin cambios en el siguiente turno. Bifrost lo conserva **a través del cliente, sin almacenarlo en el servidor**. Hay dos tipos:
 
 - **Estado vinculado a la llamada de herramienta**: firmas de pensamiento de Gemini. Gemini 3 rechaza una solicitud de seguimiento cuyas llamadas de función reproducidas carecen de su `thoughtSignature` (`400 INVALID_ARGUMENT`).
 - **Estado vinculado al mensaje**: reasoning cifrado OpenAI (elementos `reasoning` con `encrypted_content`), que mejora la calidad del uso de herramientas de múltiples turnos cuando se reproduce.
@@ -15,7 +15,7 @@ Cuando una llamada de herramienta upstream lleva una firma de pensamiento, el ga
 <id>__thought__<signature>
 ```
 
-La identificación con sufijo aparece como `tool_calls[].id` en `/v1/chat/completions`, como `function_call.call_id` en `/v1/responses` y como `tool_use.id` en `/v1/messages` (sin transmisión y transmisión). Debido a que cada cliente estándar repite los identificadores de llamadas de herramientas palabra por palabra (incluso los clientes que eliminan campos desconocidos, como Vercel AI SDK), la firma sobrevive al viaje de ida y vuelta sin que el cliente comprenda nada.
+La identificación con sufijo aparece como `tool_calls[].id` en `/v1/chat/completions`, como `function_call.call_id` en `/v1/responses` y como `tool_use.id` en `/v1/messages` (sin streaming y streaming). Debido a que cada cliente estándar repite los identificadores de llamadas de herramientas palabra por palabra (incluso los clientes que eliminan campos desconocidos, como Vercel AI SDK), la firma sobrevive al viaje de ida y vuelta sin que el cliente comprenda nada.
 
 La firma también se refleja en la llamada de herramienta renderizada para clientes enriquecidos:
 
@@ -55,7 +55,7 @@ Para los modelos OpenAI con capacidad de reasoning, el gateway solicita `include
 Por superficie:
 
 - **`/v1/responses`**: el reasoning cifrado se representa como elementos de salida nativos `reasoning` (`encrypted_content` incluido incluso sin un `include` explícito, por lo que la reproducción predeterminada es `store:false` flujos de trabajo). Los clientes que reproducen elementos de salida (lo hace el SDK de IA de Vercel) lo reproducen automáticamente; en la entrada, los elementos `reasoning` con `encrypted_content` se reproducen en sentido upstream antes de las llamadas a funciones que preceden.
-- **`/v1/chat/completions`**: transportado como `provider_specific_fields: { "openai": { "reasoning": [{ "id", "encrypted_content", "summary" }] } }` a nivel de mensaje en el mensaje del asistente (y delta de transmisión). Los clientes estándar eliminan este campo, por lo que el reasoning cifrado no los utiliza en esta superficie, la misma limitación que LiteLLM.
+- **`/v1/chat/completions`**: transportado como `provider_specific_fields: { "openai": { "reasoning": [{ "id", "encrypted_content", "summary" }] } }` a nivel de mensaje en el mensaje del asistente (y delta de streaming). Los clientes estándar eliminan este campo, por lo que el reasoning cifrado no los utiliza en esta superficie, la misma limitación que LiteLLM.
 - **`/v1/messages`**: no compatible: el formato del protocolo de Anthropic no tiene ningún campo de extensión a nivel de mensaje que los clientes hagan eco.
 
 ## Almacenamiento [#storage]

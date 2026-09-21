@@ -67,7 +67,7 @@ console.log(usage.inputTokenDetails.cacheReadTokens);
 console.log(usage.inputTokenDetails.cacheWriteTokens);
 ```
 
-Utiliza un prefijo estable lo suficientemente largo para el modelo seleccionado. Las versiones del SDK difieren: verifica que la versión en la aplicación emita estas opciones y exponga estos contadores. `generateText` usa las mismas opciones sin transmisión. Con bucles de herramientas de varios pasos, inspeccione el uso total y cada paso; el cero de un solo paso no describe toda la interacción.
+Utiliza un prefijo estable lo suficientemente largo para el modelo seleccionado. Las versiones del SDK difieren: verifica que la versión en la aplicación emita estas opciones y exponga estos contadores. `generateText` usa las mismas opciones sin streaming. Con bucles de herramientas de varios pasos, inspeccione el uso total y cada paso; el cero de un solo paso no describe toda la interacción.
 
 La forma anterior `extra_body` de los dos campos de política de OpenAI sigue siendo aceptada. Se rechaza enviar el mismo control tanto directamente como dentro de `extra_body`. Una política nativa que no puede ser representada por Anthropic o Google se rechaza en lugar de eliminarse silenciosamente. Los puntos de interrupción de audio requieren Chat Completions; Responses no admite esa combinación.
 
@@ -87,7 +87,7 @@ Las referencias de recursos de Google ya deben existir en el proyecto del provee
 | Responses JSON/SSE/WebSocket | `usage.input_tokens_details.cached_tokens` | `usage.input_tokens_details.cache_write_tokens` |
 | Messages JSON/SSE | `usage.cache_read_input_tokens` | `usage.cache_creation_input_tokens` |
 
-Los clientes de chat deben solicitar `stream_options.include_usage: true` para recibir el uso de la transmisión. Bifrost siempre solicita el uso de Chat upstream para su propia contabilidad. La contabilidad de flujo Responses utiliza los fragmentos canonical directamente, por lo que la representación no puede borrar contadores ni convertir una métrica de proveedor ausente en un cero observado. Messages puede llevar los totales finales de entrada/cache en `message_delta`; los consumidores deben aplicar esa instantánea acumulativa.
+Los clientes de chat deben solicitar `stream_options.include_usage: true` para recibir el uso del streaming. Bifrost siempre solicita el uso de Chat upstream para su propia contabilidad. La contabilidad de flujo Responses utiliza los fragmentos canonical directamente, por lo que la representación no puede borrar contadores ni convertir una métrica de proveedor ausente en un cero observado. Messages puede llevar los totales finales de entrada/cache en `message_delta`; los consumidores deben aplicar esa instantánea acumulativa.
 
 Internamente, las lecturas y escrituras son subconjuntos separados de la entrada total. La entrada ordinaria es igual a la entrada menos las lecturas menos las escrituras. En cambio, `input_tokens` de Anthropic excluye ambos depósitos de cache; el adapter los suma al normalizar y el renderizador Messages los resta nuevamente.
 

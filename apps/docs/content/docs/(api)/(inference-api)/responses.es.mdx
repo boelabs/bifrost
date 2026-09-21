@@ -19,7 +19,7 @@ El mismo núcleo canonical que [Chat completions](/es/docs/chat-completions), re
 
 `input_file` acepta ID de archivos de proveedores, URL HTTPS y datos base64. Los transports nativos reciben el formato del archivo original cuando es posible; las URL de Gemini se materializan en datos en línea y los deployments de solo texto reciben un fallback explícito del analizador. Consulta [Entradas de contenido](/es/docs/file-inputs).
 
-`input_image` también acepta URL de datos HTTPS o base64. El mismo solucionador compatible con candidatos conserva las URL nativas donde son compatibles y las materializa de forma segura para transports solo en línea, de modo que las imágenes históricas siguen siendo portátiles cuando una conversación Responses se reproduce a través de otro proveedor.
+`input_image` también acepta URL de datos HTTPS o base64. El mismo solucionador compatible con candidatos conserva las URL nativas donde son compatibles y las materializa de forma segura para transports que requieren datos inline, de modo que las imágenes históricas siguen siendo portátiles cuando una conversación Responses se reproduce a través de otro proveedor.
 
 El router prefiere el transport nativo Responses cuando un deployment lo admite. Las entradas que solo existen en este protocolo, como herramientas integradas o tipos de elementos nativos, se conservan palabra por palabra y requieren un deployment nativo; nunca se borran silenciosamente durante la conversión a otro protocolo de texto.
 
@@ -74,7 +74,7 @@ Abre una conexión persistente a `wss://YOUR_GATEWAY/v1/responses` usando la mis
 }
 ```
 
-No envía los campos solo HTTP `stream`, `stream_options` o `background`. Los mensajes del servidor son objetos de eventos de transmisión JSON `response.*` normales, sin marco SSE. Una conexión procesa un turno a la vez; los mensajes `response.create` adicionales se ponen en cola en orden de llegada. Abre otra conexión para ejecuciones paralelas.
+No envía los campos solo HTTP `stream`, `stream_options` o `background`. Los mensajes del servidor son objetos de eventos de streaming JSON `response.*` normales, sin marco SSE. Una conexión procesa un turno a la vez; los mensajes `response.create` adicionales se ponen en cola en orden de llegada. Abre otra conexión para ejecuciones paralelas.
 
 La conexión mantiene el estado de respuesta más reciente en la memoria. Continúe solo con elementos nuevos y su identificación pública:
 
@@ -94,7 +94,7 @@ La conexión mantiene el estado de respuesta más reciente en la memoria. Contin
 }
 ```
 
-Esto funciona con `store: false` mientras el enchufe permanece abierto. Después de volver a conectarse, solo se pueden hidratar las respuestas `store: true` desde Postgres; de lo contrario envía el contexto completo o una ventana compactada. Las conexiones se cierran después de 60 minutos con `websocket_connection_limit_reached`.
+Esto funciona con `store: false` mientras la conexión WebSocket permanece abierta. Después de volver a conectarse, solo se pueden hidratar las respuestas `store: true` desde Postgres; de lo contrario envíal contexto completo o una ventana compactada. Las conexiones se cierran después de 60 minutos con `websocket_connection_limit_reached`.
 
 `generate: false` realiza un calentamiento compatible con OpenAI. Los proveedores sin WebSockets nativos Responses reciben un calentamiento semántico local del gateway. Cuando el deployment de OpenAI seleccionada admite el transport nativo, el gateway mantiene un socket upstream independiente y una identificación de respuesta upstream privada. Los eventos e identificaciones públicos todavía se regeneran a través del núcleo canonical; el tráfico del proveedor nunca pasa directamente al cliente.
 

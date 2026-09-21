@@ -31,13 +31,13 @@ No existe un estándar industrial para la generación de video, por lo que el ga
 | `input_references` | Conjunto de piezas `{type: "image_url"\|"audio_url"\|"video_url", ...}`. `input_reference` (único, `image_url` o `file_id`) es el alias de estilo OpenAI. |
 | `frame_images` | Acondicionamiento del primer/último cuadro (`frame_type: "first_frame"\|"last_frame"`) para modelos que lo soportan. |
 | `seed`, `generate_audio` | Reenviado solo cuando el perfil del modelo declara soporte. |
-| `quality` | Extensión de gateway en la escalera compartida: `auto`, `low`, `medium`, `high`, `xhigh`, o `max` (`native` todavía se acepta y está normalizado a `max`). Conciliado con el `qualities` declarado del modelo según la [política de parámetros](/es/docs/parameter-policy#quality-on-image-and-video-generation) y reenviado solo cuando el perfil declara renglones. |
+| `quality` | Extensión de gateway en la escalera compartida: `auto`, `low`, `medium`, `high`, `xhigh`, o `max` (`native` todavía se acepta y está normalizado a `max`). Conciliado con el `qualities` declarado del modelo según la [política de parámetros](/es/docs/parameter-policy#quality-on-image-and-video-generation) y reenviado solo cuando el perfil declara niveles. |
 | `user` | Solo atribución del lado del gateway. Se almacena con el trabajo y **nunca** se reenvía en sentido upstream. |
 | `extra_body` | La transferencia específica del proveedor se fusionó con el cuerpo de la solicitud upstream. |
 
 Cada parámetro se valida con el perfil del modelo antes del routing, por lo que los parámetros no admitidos fallan rápidamente con `unsupported_parameter` en lugar de un error del proveedor en mitad del grupo.
 
-Las referencias de imágenes, audio y vídeo aceptan URL HTTPS públicas o URL base64 `data:`. Bifrost descarga cada referencia HTTPS con protección SSRF, valida su tipo MIME y límites binarios y envía una URL `data:` al canal upstream seleccionado; las URL remotas nunca se delegan a proveedores. El límite combinado de medios decodificados es de 50 MB. Las URL de datos grandes se redactan antes de que persista el cuerpo de la solicitud. No se admiten cargas de varias partes (el archivo tipo `input_reference` del SDK de OpenAI); utiliza los formularios de referencia JSON.
+Las referencias de imágenes, audio y vídeo aceptan URL HTTPS públicas o URL base64 `data:`. Bifrost descarga cada referencia HTTPS con protección SSRF, valida su tipo MIME y límites binarios y envía una URL `data:` al canal upstream seleccionado; las URL remotas nunca se delegan a proveedores. El límite combinado de medios decodificados es de 50 MB. Las URL de datos grandes se ocultan antes de guardar el cuerpo de la solicitud. No se admiten cargas de varias partes (el archivo tipo `input_reference` del SDK de OpenAI); utiliza los formularios de referencia JSON.
 
 La generación de imágenes en sí no tiene campo adjunto. Las ediciones de imágenes aceptan archivos de imágenes de varias partes; Bifrost transmite esos archivos a un almacenamiento temporal con alcance de solicitud, los valida como PNG/JPEG/WebP y solo entonces invoca un adapter upstream.
 
@@ -49,7 +49,7 @@ Los vídeos utilizan la capa de almacenamiento de objetos en todo el gateway, co
 
 Los deployments con capacidad de video declaran `catalogEntry.operations["video.generate"]`. El perfil controla las tareas aceptadas, duraciones, tamaños (con asignaciones por proveedor `aspectRatio`/`resolution`), `quality`, soporte de referencia (`supportsImageUrl`, `supportsAudioUrl`, `supportsVideoUrl`, `supportsFileId`, `supportsFrameImages`, `maxInputReferences`), y `supportsSeed`/`supportsGenerateAudio`.
 
-Los adapters exponen la generación de video a través de transports: `videos` (API de videos con formato de OpenAI), `videos_async` (API de trabajo asíncrono: enviar `/videos`, encuesta `/videos/{jobId}`, descargar `/videos/{jobId}/content`, eliminar `/videos/{jobId}`), `generate_videos` (operaciones de larga duración de Google Veo) y `interactions` (API de interacciones de Google). Los valores predeterminados del adapter eligen la ruta común; utiliza `transportOverrides` cuando un modelo necesite otro transport.
+Los adapters exponen la generación de video a través de transports: `videos` (API de videos con formato de OpenAI), `videos_async` (API de trabajo asíncrono: enviar `/videos`, consulta periódica `/videos/{jobId}`, descargar `/videos/{jobId}/content`, eliminar `/videos/{jobId}`), `generate_videos` (operaciones de larga duración de Google Veo) y `interactions` (API de interacciones de Google). Los valores predeterminados del adapter eligen la ruta común; utiliza `transportOverrides` cuando un modelo necesite otro transport.
 
 ### Gemini Omni Flash [#gemini-omni-flash]
 

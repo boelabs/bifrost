@@ -15,7 +15,7 @@ Configurado con `PUT /admin/router-settings` (`routingStrategy`), efectivo para 
 | `usage-based-rpm` | La menor cantidad de solicitudes en el minuto actual | Hacer cumplir la paridad suave de RPM en un grupo |
 | `usage-based-tpm` | La menor cantidad de tokens en el minuto actual | Aplicar la paridad suave de TPM en un grupo |
 | `latency-based` | La latencia de finalización de EWMA más baja | Minimizar el tiempo de respuesta entre proveedores de velocidad mixta |
-| `throughput-based` | Los tokens de salida EWMA más altos por segundo | Maximizar el rendimiento de la transmisión |
+| `throughput-based` | Los tokens de salida EWMA más altos por segundo | Maximizar el rendimiento del streaming |
 | `price-based` | La tasa de token comparable más baja o `searchUnitCents` | Optimización de costos en modelos equivalentes con una única base de facturación |
 | `health-aware` | El más alto `successRate × weight` | Alejar el tráfico de un deployment inestable sin cortarlo por completo |
 
@@ -29,7 +29,7 @@ Las métricas por deployment se encuentran en Redis, codificadas por ID de deplo
 
 - **En vuelo**: se incrementa cuando comienza un intento, se reduce cuando finaliza, falla o el cliente lo cancela. TTL para que un proceso bloqueado no pueda filtrar un deployment permanentemente "ocupada".
 - **RPM / TPM** — contadores por minuto. Las RPM aumentan en cada intento de inicio; el TPM aumenta en `totalTokens` en caso de éxito. Ambos expiran por sí solos cada minuto.
-- **Latencia**: un EWMA (α = 0,2) de duración del reloj de pared desde justo antes de la llamada upstream hasta el momento en que realmente terminó de responder. Para las solicitudes de transmisión, este es el tiempo hasta el **último fragmento upstream**, no cuando el cliente terminó de recibir la respuesta retransmitida, por lo que el routing basado en latencia refleja la velocidad upstream, no el tiempo que tomó su propia red hasta el cliente.
+- **Latencia**: un EWMA (α = 0,2) de tiempo transcurrido desde justo antes de la llamada upstream hasta el momento en que realmente terminó de responder. Para las solicitudes de streaming, este es el tiempo hasta el **último fragmento upstream**, no cuando el cliente terminó de recibir la respuesta retransmitida, por lo que el routing basado en latencia refleja la velocidad upstream, no el tiempo que tomó su propia red hasta el cliente.
 - **Rendimiento**: un EWMA (α = 0,2) de `completionTokens / durationSeconds`, que utiliza el mismo tiempo de finalización upstream como latencia.
 - **Puntuación de salud**: `successes / (successes + failures)` durante un período continuo de 10 minutos. Un deployment sin **ningún intento registrado** en esa ventana tiene como valor predeterminado un **0.5** neutral, no un 1.0 perfecto; un valor predeterminado perfecto permitiría a `health-aware` reenviar inmediatamente todo el tráfico a un deployment que estaba fallando hace minutos, en el instante en que sus contadores expiran después de ser enrutados. Neutral lo mantiene clasificado detrás de cualquier cosa con un historial real, sin incluirlo permanentemente en la lista negra.
 
@@ -37,7 +37,7 @@ Ninguna de estas métricas influye en la **elegibilidad** del deployment: todav�
 
 ## Grupos, pesos y límites por deployment [#pools-weights-and-per-deployment-limits]
 
-Los deployments creadas con el mismo `publicModel` forman un grupo automáticamente. Dos perillas le dan forma por deployment (configuradas en el deployment, no en la configuración del router):
+Los deployments creados con el mismo `publicModel` forman un grupo automáticamente. Dos opciones controlan el pool por deployment (configuradas en el deployment, no en la configuración del router):
 
 - **`weight`**: participación relativa del tráfico en `simple-shuffle` y el multiplicador aplicado a la puntuación de estado en `health-aware`. Un deployment con `weight: 0` nunca se elige por ponderación aleatoria, pero las otras estrategias aún lo consideran (clasificación según su propia métrica, ignorando el peso, excepto `health-aware`, que multiplica por peso y, por lo tanto, también omite un deployment de peso `0`).
 - **`rpmLimit` / `tpmLimit`**: límites estrictos por deployment. Un deployment que se encuentre actualmente en cualquiera de los límites o por encima de ellos queda excluido del grupo de candidatos para este intento (no enfriado, simplemente omitido esta ronda). Si **todos** los deployments en el grupo superan su límite, la solicitud falla con `rate_limit_exceeded` (`429`) antes de realizar cualquier llamada upstream.

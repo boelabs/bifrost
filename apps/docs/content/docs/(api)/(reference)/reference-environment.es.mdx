@@ -52,7 +52,7 @@ El gateway valida su entorno al inicio y sale si falta una variable requerida o 
 | `EXTENSIONS_MAX_FAILURES` | `3` | Fallos de enlace consecutivos antes de que se deshabilita una instancia de extensión para ese proceso. |
 | `EXTENSIONS_RELOAD_INTERVAL_MS` | `15000` | Con qué frecuencia cada réplica busca un registro de extensión modificado para recargar en caliente. |
 | `EXTENSIONS_MAX_CODE_BYTES` | `1000000` (1MB) | Tamaño máximo de la fuente de un módulo de extensión cargado. |
-| `EXTENSIONS_HOOK_TIMEOUT_MS` | `5000` | Presupuesto de reloj de pared por hook. `0` desactiva el tiempo de espera. Un hook excedido se cancela y cuenta como un fallo. |
+| `EXTENSIONS_HOOK_TIMEOUT_MS` | `5000` | Límite de tiempo transcurrido por hook. `0` desactiva el tiempo de espera. Un hook excedido se cancela y cuenta como un fallo. |
 
 ## Autenticación del panel [#dashboard-authentication]
 

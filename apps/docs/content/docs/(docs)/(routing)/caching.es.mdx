@@ -2,18 +2,18 @@
 title: "Cache de respuestas"
 description: "Reutiliza respuestas completas en Redis mediante una opción por solicitud."
 ---
-Bifrost puede almacenar en cache las respuestas completas en Redis y atender solicitudes repetidas idénticas sin contactar a un proveedor. Está **optado por solicitud** y **desactivado de forma predeterminada**: nada se almacena en cache a menos que el cliente lo solicita.
+Bifrost puede guardar respuestas completas en Redis y reutilizarlas para solicitudes idénticas, sin contactar al proveedor. Está **desactivado por defecto** y el cliente debe habilitarlo **en cada solicitud**.
 
 Para conocer la reutilización de solicitudes del proveedor y los contadores de tokens, consulta [Prompt caching del proveedor](/es/docs/provider-prompt-caching).
 
-## Habilítelo por solicitud [#enable-it-per-request]
+## Habilitar por solicitud [#enable-it-per-request]
 
 Envía los headers de cache en la solicitud de inferencia:
 
 | header | Valores | Efecto |
 |---|---|---|
 | `x-unified-cache` | `true` o `1` | Habilita el caching para esta solicitud. Cualquier otro valor (o ausente) = sin cache. |
-| `x-unified-cache-ttl` | segundos | Es hora de vivir de una entrada almacenada. Predeterminado `300` (5 min), máximo `86400` (24 h). |
+| `x-unified-cache-ttl` | segundos | Tiempo de retención de una entrada. Por defecto `300` (5 min), máximo `86400` (24 h). |
 
 ```bash
 curl -X POST $BASE/v1/chat/completions \
@@ -25,15 +25,15 @@ curl -X POST $BASE/v1/chat/completions \
   }'
 ```
 
-La primera llamada es perdida (entregada por el proveedor y almacenada); llamadas idénticas dentro del TTL son visitas realizadas desde Redis. Un acierto de cache se registra en `gateway_operations` con `cache_hit = true` y se factura como costo cero.
+La primera llamada es un cache miss: el proveedor genera la respuesta y Bifrost la almacena. Las llamadas idénticas dentro del TTL son cache hits atendidos desde Redis. Cada hit se registra en `gateway_operations` con `cache_hit = true` y costo cero.
 
 ## Cómo se define el alcance de las entradas [#how-entries-are-scoped]
 
 - **Por virtual key.** El espacio de nombres de la cache es la identificación de la virtual key, por lo que una clave nunca ve las respuestas almacenadas en cache de otra clave.
 - **La master key nunca se almacena en cache.** El tráfico del operador siempre va al proveedor, incluso con el header configurado; esto evita que las llamadas administrativas y de prueba contaminen las cachés de los clientes.
 - **Por solicitud exacta.** La clave se deriva del tipo de llamada, el espacio de nombres y un hash de la solicitud canonical, por lo que cualquier cambio en el mensaje, el modelo o los parámetros es una entrada diferente.
-- **Límite de tamaño.** Los Responses de más de 512 KB (normalmente grandes lotes de incrustación) se publican normalmente pero **no** se almacenan; el ahorro por visita no justifica la memoria de Redis y rara vez se repiten de forma idéntica.
-- **No para transmisión, llamadas de herramientas ni solicitudes con estado.** La elegibilidad requiere una solicitud no transmitida, sin herramientas y sin estado del lado del servidor (por ejemplo, una llamada `/v1/responses` con `store: true`): una solicitud de transmisión siempre se activa. Las entradas de contenido multimodal también evitan el caching porque una URL remota puede cambiar sin cambiar la solicitud y los archivos base64 son claves de cache deficientes. Consulta [Streaming](/es/docs/streaming) y [Entradas de contenido](/es/docs/file-inputs).
+- **Límite de tamaño.** Las respuestas de más de 512 KB, como lotes grandes de embeddings, se entregan normalmente pero **no** se guardan en cache. Su reutilización no compensa el uso de memoria de Redis.
+- **Sin streaming, herramientas ni estado persistido.** Una solicitud solo es elegible si no usa streaming, herramientas ni estado del servidor. Por ejemplo, una llamada a `/v1/responses` con `store: true` queda excluida. Tampoco se guardan respuestas a entradas multimodales: el contenido de una URL puede cambiar y los archivos base64 producen claves de cache demasiado grandes. Consulta [Streaming](/es/docs/streaming) y [Entradas de contenido](/es/docs/file-inputs).
 - **Un hit es gratis.** Se registra con `cost: null` y nunca toca los contadores de gasto o TPM de la virtual key; consulta [Contabilidad de costos](/es/docs/cost-accounting).
 
 ## Invalidar [#invalidate]
@@ -48,8 +48,8 @@ DELETE /admin/cache
 DELETE /admin/cache?callType=chat&namespace=<virtual-key-id>
 ```
 
-Ambos filtros son opcionales; omitirlos amplía la coincidencia. La respuesta informa cuántas entradas se eliminaron. Las inscripciones también caducan por sí solas una vez transcurrido el TTL.
+Ambos filtros son opcionales; omitirlos amplíal alcance del borrado. La respuesta indica cuántas entradas se eliminaron. Las entradas también caducan al cumplirse su TTL.
 
 ## Cuándo usarlo [#when-to-use-it]
 
-Buenos ajustes: prompts deterministas o de baja temperatura, consultas de embeddings repetidas, reintentos idempotentes y endpoints de lectura intensa detrás de un cliente compatible con cache. Evítelo para generaciones personalizadas o de alta temperatura donde cada llamada debe ser nueva: deje el header apagado y nunca tocarán el cache.
+Úsalo para prompts deterministas o de baja temperatura, consultas repetidas de embeddings, reintentos idempotentes y endpoints con muchas lecturas repetidas. Para contenido personalizado o cuando cada generación deba ser nueva, omite el header de cache.

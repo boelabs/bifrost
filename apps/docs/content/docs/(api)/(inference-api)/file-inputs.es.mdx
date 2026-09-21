@@ -13,7 +13,7 @@ Para cada parte del archivo, se requiere exactamente una fuente. Un `file_id` pe
 
 ## Routing portátil [#portable-routing]
 
-El solucionador tiene un alcance de solicitud y está memorizado. Cada transport de adapter declara una matriz de capacidades para cada tipo de contenido canonical (`image` y `file`) y fuente (`url`, `data_url`, o `provider_file_id`). Luego, el solucionador elige la ruta menos destructiva para cada candidato de routing:
+El resolver tiene un alcance de solicitud y está memorizado. Cada transport de adapter declara una matriz de capacidades para cada tipo de contenido canonical (`image` y `file`) y fuente (`url`, `data_url`, o `provider_file_id`). Luego, el resolver elige la ruta menos destructiva para cada candidato de routing:
 
 1. Mantén una URL nativa, una URL de datos o una referencia de archivo de proveedor cuando el transport la acepte.
 2. Materialice una imagen HTTPS o una URL de archivo una vez como base64 cuando el proveedor acepte datos en línea pero no URL externas. Esta es la línea base de compatibilidad utilizada por Gemini `generateContent`.

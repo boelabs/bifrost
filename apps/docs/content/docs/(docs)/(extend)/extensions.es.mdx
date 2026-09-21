@@ -20,7 +20,7 @@ Las extensiones se dividen en dos conceptos:
 1. Un administrador carga la fuente de un módulo a través de `POST /admin/extensions/artifacts`. El gateway **lo valida antes de almacenarlo** (importa el módulo y afirma que exporta una definición válida), por lo que una carga incorrecta se rechaza con un `400` y nunca llega a la flota en ejecución.
 2. La fuente se almacena cifrada (AES-256-GCM) como una **versión** nueva e inmutable. La versión más nueva es `active`; el anterior está archivado. Activar una versión anterior es una reversión.
 3. Se activa un contador de registro único. Cada réplica la sondea (`EXTENSIONS_RELOAD_INTERVAL_MS`, 15 segundos por defecto) y **recargas en caliente** al cambiar, sin reinicio.
-4. Al recargar, cada réplica materializa los módulos activos en una **cache en disco con dirección de contenido** (`<key>-<sha256>.mjs`). Un módulo se descarga y escribe una vez por versión; las recargas y reinicios posteriores lo reutilizan. Los enlaces se ejecutan completamente en la memoria, por lo que **no hay latencia por solicitud**.
+4. Al recargar, cada réplica materializa los módulos activos en una **cache en disco con dirección de contenido** (`<key>-<sha256>.mjs`). Un módulo se descarga y escribe una vez por versión; las recargas y reinicios posteriores lo reutilizan. Los hooks se ejecutan completamente en la memoria, por lo que **no hay latencia por solicitud**.
 
 ## Configuración [#configuration]
 
@@ -110,11 +110,11 @@ export default defineExtension({
 El repositorio incluye ejemplos listos para cargar en `apps/gateway/examples/extensions` (consulta su archivo README). Cubren todos los hooks:
 
 - `prompt-firewall.mjs`: neutraliza o bloquea los intentos de inyección rápida en texto entrante (`onCanonicalRequest`).
-- `pii-vault.mjs`: tokeniza la PII antes de que llegue al modelo upstream y la restaura en la respuesta, incluso a través de los límites de los fragmentos de transmisión (`onCanonicalRequest` + `onCanonicalResponse` + `onStreamEvent` + `onError`).
+- `pii-vault.mjs`: tokeniza la PII antes de que llegue al modelo upstream y la restaura en la respuesta, incluso a través de los límites de los fragmentos de streaming (`onCanonicalRequest` + `onCanonicalResponse` + `onStreamEvent` + `onError`).
 - `provenance-watermark.mjs`: incorpora un marcador de procedencia invisible de ancho cero en el texto asistente (`onCanonicalResponse` + `onStreamEvent`).
 - `tiered-image-watermark.mjs`: imprime una marca de agua de vista previa visible en imágenes para claves sin privilegios (`onImageOutput`).
 
-Debido a que los enlaces se ejecutan después de que cada formato del protocolo público se traduce a la solicitud canonical de Bifrost, una instancia de `callTypes: ["chat"]` puede afectar todos los protocolos de texto: `/v1/chat/completions`, `/v1/responses` y `/v1/messages`. Los autores de extensiones no necesitan ramas separadas para `messages` de estilo OpenAI, OpenAI Responses `input`/`instructions` o Anthropic `system`.
+Debido a que los hooks se ejecutan después de que cada formato del protocolo público se traduce a la solicitud canonical de Bifrost, una instancia de `callTypes: ["chat"]` puede afectar todos los protocolos de texto: `/v1/chat/completions`, `/v1/responses` y `/v1/messages`. Los autores de extensiones no necesitan ramas separadas para `messages` de estilo OpenAI, OpenAI Responses `input`/`instructions` o Anthropic `system`.
 
 hooks disponibles en v1:
 
@@ -156,7 +156,7 @@ Las exportaciones de módulos no válidos, una clave que no coincide o una fuent
 
 En runtime, las fallas de enlace devuelven un error de gateway desinfectada para esa solicitud. Después de fallas consecutivas de `EXTENSIONS_MAX_FAILURES`, la instancia se deshabilita para el proceso actual. Si una instancia deshabilitada es crítica, las solicitudes afectadas fallan con `extension_disabled` y `/health/ready` devuelve un estado incorrecto. Las instancias deshabilitadas no críticas se omiten y se informan como degradadas.
 
-Cada hook funciona con un presupuesto de reloj de pared (`EXTENSIONS_HOOK_TIMEOUT_MS`, predeterminado 5000 ms; configura `0` para desactivarlo). Un hook que lo excede, o uno que ignora su `ctx.signal` mientras el cliente cancela, se cancela y cuenta como una falla, por lo que un hook que se comporta mal nunca puede bloquear el procesamiento de solicitudes indefinidamente. Los hooks con buen comportamiento deben respetar `ctx.signal`, que se activa tanto en el tiempo de espera como en la cancelación upstream.
+Cada hook funciona con un límite de tiempo transcurrido (`EXTENSIONS_HOOK_TIMEOUT_MS`, predeterminado 5000 ms; configura `0` para desactivarlo). Un hook que lo excede, o uno que ignora su `ctx.signal` mientras el cliente cancela, se cancela y cuenta como una falla, por lo que un hook que se comporta mal nunca puede bloquear el procesamiento de solicitudes indefinidamente. Los hooks con buen comportamiento deben respetar `ctx.signal`, que se activa tanto en el tiempo de espera como en la cancelación upstream.
 
 `onError` es un hook de observabilidad de disparo y olvido: una falla dentro de él se registra y aparece en estado, pero nunca activa el disyuntor, por lo que una falla de registro no puede deshabilitar una instancia crítica.
 

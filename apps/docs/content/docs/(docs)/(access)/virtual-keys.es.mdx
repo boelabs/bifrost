@@ -70,7 +70,7 @@ La respuesta incluye la clave de texto plano una vez:
 
 ## Presupuestos y límites [#budgets-and-limits]
 
-- **Presupuesto:** antes de la ejecución upstream, el gateway reserva atómicamente un costo máximo conservador del [Catálogo de modelos](/es/docs/model-catalog) del catálogo o la anulación del deployment. El acuerdo reemplaza la reserva con el uso exacto informado por el proveedor. Una clave con un presupuesto limitado no puede utilizar un deployment cuyo precio se desconoce, porque de otro modo sería imposible garantizar un límite estricto.
+- **Presupuesto:** antes de ejecutar la solicitud upstream, Bifrost reserva de forma atómica una estimación conservadora del costo máximo, usando los precios del [Catálogo de modelos](/es/docs/model-catalog) o los precios específicos del deployment. Al finalizar, sustituye la reserva por el uso exacto informado por el proveedor. Una key con presupuesto limitado no puede usar deployments de precio desconocido, porque no sería posible garantizar el límite.
 - **RPM/TPM:** La admisión de RPM y las reservas de TPM conservadoras son atómicas en Redis en todas las réplicas. Los tokens exactos se concilian en el momento de la liquidación; exceder cualquiera de los dos devuelve `429` con el código `rate_limit_exceeded`. Las unidades de búsqueda de reranking contribuyen al gasto y los presupuestos, pero nunca sintetizan tokens para TPM; RPM todavía cuenta cada solicitud de cambio de clasificación.
 - **headers:** cuando una clave tiene algún límite, las respuestas incluyen los headers `x-ratelimit-limit-*` / `x-ratelimit-remaining-*` / `x-ratelimit-reset-*` coincidentes (solicitudes, tokens y centavos de presupuesto), para que los clientes puedan retroceder antes de ser limitados.
 

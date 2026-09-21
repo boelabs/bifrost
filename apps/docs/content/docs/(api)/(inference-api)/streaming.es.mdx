@@ -10,15 +10,15 @@ Cada endpoint que acepta `"stream": true` devuelve **Eventos enviados por el ser
 | Responses | Tipos de eventos nativos Responses (`response.output_text.delta`, ...) |
 | Messages | Eventos nativos de Anthropic (`message_start`, `content_block_delta`, ...) |
 | Imágenes | Eventos de imagen parcial (recuento `partial_images`), luego la imagen final |
-| Transcripciones de audio | Eventos de transcripción incremental, si el perfil del modelo declara soporte de transmisión |
+| Transcripciones de audio | Eventos de transcripción incremental, si el perfil del modelo declara soporte de streaming |
 
-La transmisión finaliza con `data: [DONE]` (chat/respuestas/imágenes) o el evento de terminal nativo del contrato (mensajes) y luego cierra la conexión.
+La streaming finaliza con `data: [DONE]` (chat/respuestas/imágenes) o el evento de terminal nativo del contrato (mensajes) y luego cierra la conexión.
 
 ## Uso en el fragmento final [#usage-in-the-final-chunk]
 
 Para endpoints de chat, solicita `stream_options.include_usage: true` (o el equivalente Responses/Messages) para obtener un objeto de uso en el fragmento final; de lo contrario, los recuentos de tokens solo son visibles después del hecho a través de `GET /admin/logs`.
 
-## Reasoning durante la transmisión [#reasoning-while-streaming]
+## Reasoning durante el streaming [#reasoning-while-streaming]
 
 Cuando el contrato y el modelo lo respaldan, el reasoning visible llega incrementalmente como su propio campo delta (`delta.reasoning` en Chat Completions) junto con el delta de contenido normal, regido por la misma resolución `reasoning.summary` descrita en [Reasoning](/es/docs/reasoning).
 
@@ -28,13 +28,13 @@ El gateway mide la latencia y el rendimiento **solo upstream** (el tiempo hasta 
 
 ## No almacenable en cache [#not-cacheable]
 
-Las solicitudes de transmisión nunca son elegibles para la [Cache de respuestas](/es/docs/caching): el caching solo se aplica a respuestas completas, sin transmisión, sin herramientas y sin estado. Cada solicitud transmitida llega al proveedor en vivo.
+Las solicitudes de streaming nunca son elegibles para la [Cache de respuestas](/es/docs/caching): el caching solo se aplica a respuestas completas, sin streaming, sin herramientas y sin estado. Cada solicitud transmitida llega al proveedor en vivo.
 
 ## Cancelación [#cancellation]
 
-Si el cliente se desconecta a mitad de la transmisión, el gateway libera la ranura en tránsito del deployment sin penalizarla; una transmisión abandonada nunca cuenta para el recuento de fallas o el cooldown de ese deployment (consulta [Routing](/es/docs/routing)).
+Si el cliente se desconecta a mitad del streaming, el gateway libera la ranura en tránsito del deployment sin penalizarla; un streaming abandonado nunca cuenta para el recuento de fallas o el cooldown de ese deployment (consulta [Routing](/es/docs/routing)).
 
 ## Próximos pasos [#next-steps]
 
 - [Chat completions](/es/docs/chat-completions), [Responses](/es/docs/responses), [Messages](/es/docs/messages), [Imágenes](/es/docs/images): las formas de fragmentos específicos del contrato.
-- [Routing](/es/docs/routing): cómo el tiempo de transmisión alimenta las decisiones de routing.
+- [Routing](/es/docs/routing): cómo el tiempo de streaming alimenta las decisiones de routing.
