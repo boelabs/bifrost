@@ -1,7 +1,13 @@
 ---
 title: "OpenRouter"
-description: "Adapter key openrouter. Native reranking and the primary rerank model catalog."
+description: "Configure openrouter deployments and understand provider-specific behavior."
 ---
+
+## Configure a deployment
+
+Send this body to `POST /admin/deployments` with an operator credential. Replace the example
+credentials and choose a model available to your provider account. See
+[Creating deployments](/docs/creating-deployments) for the shared configuration fields.
 
 ```json
 {
@@ -11,6 +17,8 @@ description: "Adapter key openrouter. Native reranking and the primary rerank mo
   "credentials": { "apiKey": "sk-or-..." }
 }
 ```
+
+## Behavior and limitations
 
 - **Credentials**: `apiKey` is required. `baseUrl` and custom `headers` are optional. The default base
   URL is `https://openrouter.ai/api/v1`.
@@ -38,7 +46,7 @@ bun run --filter @boelabs/bifrost catalog:sync:openrouter:write
 The report calls out multimodal capability not yet enabled, ambiguous zero pricing, orphaned reviewed
 overrides, and paid models without a representable local cost.
 
-## What to read next
+## Next steps
 
 - [Reranking](/docs/reranking) — public contract, routing, validation, and examples.
 - [Model catalog](/docs/model-catalog#openrouter-rerank-sync) — sync ownership and schema.

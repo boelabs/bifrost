@@ -14,10 +14,14 @@ Extensions are split into two concepts:
 - **Instances**: database rows that configure a definition with `match`, `config`, `priority`, and
   failure policy.
 
-> **Trust model.** Extension code runs **in-process with full privileges**: it can read and rewrite
-> every request and response. Uploading is therefore restricted to the **master key**, code is
-> encrypted at rest, and every artifact is integrity-checked (sha256) before it is loaded. Treat an
-> extension upload with the same care as a deploy.
+<Callout>
+
+**Trust model.** Extension code runs **in-process with full privileges**: it can read and rewrite
+every request and response. Uploading is therefore restricted to the **master key**, code is
+encrypted at rest, and every artifact is integrity-checked (sha256) before it is loaded. Treat an
+extension upload with the same care as a deploy.
+
+</Callout>
 
 ## How it works
 

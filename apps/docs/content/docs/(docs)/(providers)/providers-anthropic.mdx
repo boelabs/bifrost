@@ -1,11 +1,19 @@
 ---
 title: "Anthropic"
-description: "Adapter key anthropic. Credentials, transport, and reasoning kinds."
+description: "Configure anthropic deployments and understand provider-specific behavior."
 ---
+
+## Configure a deployment
+
+Send this body to `POST /admin/deployments` with an operator credential. Replace the example
+credentials and choose a model available to your provider account. See
+[Creating deployments](/docs/creating-deployments) for the shared configuration fields.
 
 ```json
 { "publicModel": "claude", "adapterKey": "anthropic", "upstreamModel": "claude-sonnet-5", "credentials": { "apiKey": "sk-ant-..." } }
 ```
+
+## Behavior and limitations
 
 - **Credentials**: `apiKey`. `version` (the `anthropic-version` header) defaults to `2023-06-01` and
   rarely needs overriding.
@@ -29,7 +37,7 @@ description: "Adapter key anthropic. Credentials, transport, and reasoning kinds
   structured output by the gateway.
 - Catalog: `src/adapters/anthropic/catalog.json`.
 
-## What to read next
+## Next steps
 
 - [Messages](/docs/messages) — the native Anthropic-compatible contract.
 - [Reasoning](/docs/reasoning) — `anthropic_adaptive` / `anthropic_budget` in detail.

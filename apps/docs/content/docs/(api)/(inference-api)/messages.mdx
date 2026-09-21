@@ -3,6 +3,14 @@ title: "Messages"
 description: "POST /v1/messages — the Anthropic Messages contract, over the same canonical core."
 ---
 
+Send messages using the Anthropic API format. The selected deployment can use Anthropic or another
+provider that supports the requested capabilities.
+
+## Example request
+
+Set `GATEWAY` to the gateway origin and `API_KEY` to your virtual key. Replace the example
+public model with one from [Model discovery](/docs/models-discovery).
+
 ```bash
 curl -X POST "$GATEWAY/v1/messages" \
   -H "Authorization: Bearer $API_KEY" \
@@ -64,7 +72,7 @@ all three text contracts — see [Troubleshooting](/docs/troubleshooting) for th
 Same SSE mechanics as every other endpoint, rendered into Anthropic's own event names
 (`message_start`, `content_block_delta`, ...). See [Streaming](/docs/streaming).
 
-## What to read next
+## Next steps
 
 - [Reasoning](/docs/reasoning) — `anthropic_adaptive` vs. `anthropic_budget` in depth.
 - [Chat completions](/docs/chat-completions) and [Responses](/docs/responses) — the other two text contracts.

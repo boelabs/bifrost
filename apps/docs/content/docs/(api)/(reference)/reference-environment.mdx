@@ -3,10 +3,9 @@ title: "Environment variables"
 description: "Every variable the gateway reads, with its default and what it controls."
 ---
 
-Validated once at startup with a strict schema — a missing or malformed required variable fails the
-process immediately with a clear message, rather than surfacing as a confusing runtime error later.
-Only `MASTER_KEY`, `ENCRYPTION_KEYRING`, `ACTIVE_ENCRYPTION_KEY_ID`, `DATABASE_URL`, and `REDIS_URL` have no default and
-must be set; everything else ships with a production-ready value.
+The gateway validates its environment at startup and exits if a required variable is missing or
+malformed. Configure the five required values below, then review optional settings for your
+deployment. Gateway and dashboard processes read separate environment files.
 
 ## Required
 
@@ -115,7 +114,7 @@ example.
 Boolean variables (`RESPONSES_STORE_DEFAULT`, `OTEL_ENABLED`, `DASH_ENABLED`) accept
 `1`/`true`/`yes`/`on` or `0`/`false`/`no`/`off`, case-insensitively.
 
-## What to read next
+## Next steps
 
 - [Setup](/docs/setup) — the minimal set to get running.
 - [Security](/docs/security) — credential and observability encryption boundaries.

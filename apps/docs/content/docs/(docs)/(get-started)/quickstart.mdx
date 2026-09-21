@@ -1,20 +1,29 @@
 ---
 title: "Quickstart"
-description: "From clone to your first response, end to end."
+description: "Start a local gateway, connect a provider, and make an authenticated request."
 ---
 
-This walks through the full path once: start the gateway, register a real provider behind a public
-model, issue a client key, and make a call. It assumes one OpenAI key, but every step works the same
-for Anthropic, Google, Azure, or an OpenAI-compatible endpoint — see [Creating
-deployments](/docs/creating-deployments) for the per-provider bodies.
+This guide creates a local gateway with an OpenAI deployment named `general` and a virtual key
+for your application. If the gateway is already running, start with
+[Your first deployment](/docs/first-deployment).
 
-> You need two kinds of credentials and they are not the same thing:
-> the **master key** (`MASTER_KEY`, operator-only) administers the gateway, and **virtual keys**
-> (`sk-…`) are what your clients send. Never hand the master key to a client.
+## Before you start
 
-## 1. Run the gateway
+Install Bun 1.4+ and Docker Compose. You also need an OpenAI API key with access to the model
+used below. The Compose commands start Postgres 18 and Redis 8 locally.
 
-Requirements: Bun 1.4+, Postgres 18+, Redis 8+ (full configuration in [Setup](/docs/setup)).
+<Callout type="warn" title="Keep operator credentials private">
+
+The **master key** administers Bifrost. A **provider API key** authenticates Bifrost with the
+upstream provider. Your application receives a separate **virtual key**; do not give it either
+operator credential.
+
+</Callout>
+
+<Steps>
+<Step>
+
+## Run the gateway
 
 ```bash
 git clone https://github.com/boelabs/bifrost.git && cd bifrost
@@ -54,7 +63,10 @@ export BASE=http://localhost:4000
 export MASTER_KEY=replace-with-at-least-32-random-characters
 ```
 
-## 2. Register a deployment
+</Step>
+<Step>
+
+## Register a deployment
 
 A **deployment** binds a public model name to an adapter, an upstream model, and credentials. Create
 one with the master key — the provider API key goes inline and is encrypted at rest:
@@ -64,15 +76,17 @@ curl -X POST $BASE/admin/deployments \
   -H "Authorization: Bearer $MASTER_KEY" -H "content-type: application/json" -d '{
     "publicModel": "general",
     "adapterKey": "openai",
-    "upstreamModel": "gpt-5.4",
+    "upstreamModel": "gpt-5.5",
     "credentials": { "apiKey": "sk-..." }
   }'
 ```
 
-`general` is now a public model. Want to preview what the gateway resolved (capabilities, operations,
-transports) **without saving**? Send the same body to `POST /admin/deployments/resolve`.
+`general` is now a public model. To inspect the resolved operations and transports **before saving**, send the same body to `POST /admin/deployments/resolve`.
 
-## 3. Issue a virtual key
+</Step>
+<Step>
+
+## Issue a virtual key
 
 Clients never use the master key. Mint a scoped virtual key instead — `allowedModels` limits which
 public models it may call (`[]` or omitted = all):
@@ -93,9 +107,15 @@ The response contains the plaintext key **once** — store it now, it is never s
 
 See [Virtual keys](/docs/virtual-keys) for budgets, RPM/TPM limits, and rotation.
 
-## 4. Make a call
+</Step>
+<Step>
 
-Use the virtual key exactly as you would an OpenAI key, with `model` set to your public name:
+## Make a call
+
+Set `model` to the public name and use the virtual key returned by the previous step.
+
+<Tabs items={["curl", "Python"]}>
+<Tab value="curl">
 
 ```bash
 curl -X POST $BASE/v1/chat/completions \
@@ -105,7 +125,10 @@ curl -X POST $BASE/v1/chat/completions \
   }'
 ```
 
-Or with the official OpenAI SDK — this is the whole integration:
+</Tab>
+<Tab value="Python">
+
+Install the SDK with `pip install openai`.
 
 ```python
 from openai import OpenAI
@@ -118,11 +141,20 @@ resp = client.chat.completions.create(
 print(resp.choices[0].message.content)
 ```
 
+</Tab>
+</Tabs>
+
+A successful response contains an assistant message in `choices[0].message.content`.
+If the request fails, check the model name, virtual key scope, and provider credentials.
+
 The same key and base URL also serve `/v1/responses`, `/v1/messages` (Anthropic shape),
 `/v1/embeddings`, `/v1/images/*`, and `/v1/audio/transcriptions`. Every response carries an
 `x-request-id`; virtual-key requests with limits also return `x-ratelimit-*` headers.
 
-## What to read next
+</Step>
+</Steps>
+
+## Next steps
 
 - [Concepts](/docs/concepts) — the mental model behind public models, pools, adapters, and transports.
 - [Architecture](/docs/architecture) — the same request, traced through every layer in precise order.

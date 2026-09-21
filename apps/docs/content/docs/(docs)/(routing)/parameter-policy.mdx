@@ -3,10 +3,9 @@ title: "Parameter policy"
 description: "How the gateway handles a request parameter the selected model doesn't support."
 ---
 
-Different models support different request parameters — one provider accepts `seed`, another doesn't;
-one accepts `parallel_tool_calls`, another ignores it silently upstream (which is worse than an error).
-The catalog declares, per model, which parameters are supported, and a global router setting decides
-what happens when a client sends one that isn't.
+Parameter policy controls how Bifrost handles a request field that a deployment does not support.
+The catalog declares support per model; the router setting chooses whether to drop the field,
+reject the request, or pass it through.
 
 The `parameters` map below applies to the **chat-shaped** endpoints — `/v1/chat/completions`,
 `/v1/messages`, and `/v1/responses`. Images, embeddings, and audio transcriptions validate their own
@@ -96,7 +95,7 @@ curl -X PUT "$GATEWAY/admin/router-settings" \
   -d '{ "unsupportedParameterStrategy": "error" }'
 ```
 
-## What to read next
+## Next steps
 
 - [Routing](/docs/routing) — the other global router setting, orthogonal to this one.
 - [Headers](/docs/headers) — `x-unified-routing-metadata` response shape.

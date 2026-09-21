@@ -3,11 +3,11 @@ title: "Architecture"
 description: "The full request pipeline, in execution order, with where each decision lives in the code."
 ---
 
-[Concepts](/docs/concepts) defines the vocabulary (Public Endpoint, Public Model, Deployment, Adapter,
-Transport, Canonical). This page is the same request, traced through every layer in the exact order it
-actually executes, for a chat-shaped call (`/v1/chat/completions`, `/v1/messages`, `/v1/responses`) —
-the richest path. Images, embeddings, and audio transcriptions follow the same shape minus the pieces
-that don't apply to them (parameter policy, response caching).
+This pipeline describes a text request through `/v1/chat/completions`, `/v1/messages`, or
+`/v1/responses`. Read [Core concepts](/docs/concepts) first for the vocabulary. Other operations
+share the same runtime helpers where applicable, with operation-specific validation and lifecycle.
+
+## Execution order
 
 ```
 1.  requestContextMiddleware   — assigns/echoes x-request-id (before anything else, so every log line
@@ -41,7 +41,7 @@ that don't apply to them (parameter policy, response caching).
 17. onError hook                — only on failure, anywhere above; never replaces the original error
 ```
 
-## Why this order, specifically
+## Ordering guarantees
 
 - **Auth before everything model-specific** — a request with no valid key never reaches model-scope
   checks, rate limiting, or routing. Rejecting early is cheaper and leaks less information.
@@ -70,9 +70,9 @@ that don't apply to them (parameter policy, response caching).
 the shared preflight/cache/extension/quota helpers every endpoint calls; `src/router/index.ts` owns
 atomic admission and exact settlement; `src/extensions/runtime.ts` implements hook dispatch.
 
-## What to read next
+## Next steps
 
 - [Concepts](/docs/concepts) — the vocabulary this pipeline is built from.
-- [Routing](/docs/routing) and [Parameter policy](/docs/parameter-policy) — steps 8–9 in depth.
-- [Extensions](/docs/extensions) — steps 6, 11, 12, 16 in depth.
-- [Caching](/docs/caching) — step 7 in depth.
+- [Routing](/docs/routing) and [Parameter policy](/docs/parameter-policy) — candidate selection and request validation.
+- [Extensions](/docs/extensions) — request, response, stream, and error hooks.
+- [Caching](/docs/caching) — eligibility and cache-hit behavior.

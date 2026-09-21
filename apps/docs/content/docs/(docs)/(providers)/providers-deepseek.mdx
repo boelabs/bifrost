@@ -1,11 +1,19 @@
 ---
 title: "DeepSeek"
-description: "Adapter key deepseek. Built-in base URL."
+description: "Configure deepseek deployments and understand provider-specific behavior."
 ---
+
+## Configure a deployment
+
+Send this body to `POST /admin/deployments` with an operator credential. Replace the example
+credentials and choose a model available to your provider account. See
+[Creating deployments](/docs/creating-deployments) for the shared configuration fields.
 
 ```json
 { "publicModel": "deepseek", "adapterKey": "deepseek", "upstreamModel": "deepseek-v4-flash", "credentials": { "apiKey": "..." } }
 ```
+
+## Behavior and limitations
 
 - **Credentials**: `apiKey` only. No `baseUrl` needed — defaults to `https://api.deepseek.com/v1`.
 - **Default transport**: Chat Completions. Strict tools automatically use DeepSeek's `/beta` Chat
@@ -25,7 +33,7 @@ description: "Adapter key deepseek. Built-in base URL."
   use `deepseek-v4-flash` or `deepseek-v4-pro`.
 - Catalog: `src/adapters/deepseek/catalog.json`.
 
-## What to read next
+## Next steps
 
 - [Reasoning](/docs/reasoning) — the `openai_body` kind in detail.
 - [Creating deployments](/docs/creating-deployments) — the full request shape.

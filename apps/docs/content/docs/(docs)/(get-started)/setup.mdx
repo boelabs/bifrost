@@ -3,9 +3,9 @@ title: "Setup"
 description: "Configure the gateway: requirements, environment, secrets, and choosing a database and Redis."
 ---
 
-Everything the gateway needs before you deploy. To just see it running, the
-[Quickstart](/docs/quickstart) is faster; come here to configure a real environment, then pick a
-target under [Deployment](/docs/deployment).
+Configure the gateway process, secrets, and storage connections before deploying it.
+Use [Quickstart](/docs/quickstart) for a local example or [Deployment](/docs/deployment)
+to choose a hosting platform.
 
 ## Requirements
 
@@ -14,9 +14,13 @@ target under [Deployment](/docs/deployment).
 - **Postgres 18+**
 - **Redis 8+**
 
-> Bifrost runs on **Bun**, not Node. If you plan to reach a database or Redis over TLS with a
-> **self-signed** certificate, read [Troubleshooting](/docs/troubleshooting) first — Bun's TLS may not
-> accept those, and the fix is a configuration choice you make here.
+<Callout>
+
+Bifrost runs on **Bun**, not Node. If you plan to reach a database or Redis over TLS with a
+**self-signed** certificate, read [Troubleshooting](/docs/troubleshooting) first — Bun's TLS may not
+accept those, and the fix is a configuration choice you make here.
+
+</Callout>
 
 ## Environment
 
@@ -32,25 +36,15 @@ DATABASE_URL=postgres://user:pass@host:5432/bifrost
 REDIS_URL=redis://host:6379
 ```
 
-Running the dashboard too? It has its own, and it is one line:
+The optional dashboard has a separate environment file:
 
 ```bash
 # apps/dashboard/.env — copy apps/dashboard/.env.example
 GATEWAY_URL=http://localhost:4000
 ```
 
-Everything else ships with production-ready defaults — override only what you need. The most common:
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `SHUTDOWN_TIMEOUT_MS` | `10000` | Drain budget on `SIGTERM`/`SIGINT`. |
-| `TRUSTED_PROXY_HOPS` | `0` | Trusted rightmost proxy hops used to resolve the client IP. |
-| `OTEL_ENABLED` | `false` | Set with `OTEL_EXPORTER_OTLP_ENDPOINT` to export traces/metrics. |
-| `EXTENSIONS_RELOAD_INTERVAL_MS` | `15000` | How often each replica polls for [extension](/docs/extensions) changes to hot-reload. |
-| `EXTENSIONS_MAX_CODE_BYTES` | `1000000` | Maximum size of an uploaded [extension](/docs/extensions) module (bytes). |
-
-Full list of every variable, including OpenTelemetry and response-state retention:
-[Environment variables](/docs/reference-environment).
+For optional settings, defaults, and limits, use the [Environment variables](/docs/reference-environment)
+reference. Review proxy trust, shutdown timeout, and observability settings for your deployment.
 
 ## Secrets
 
@@ -83,14 +77,9 @@ of the Bun TLS constraint:
 
 ### Managed database and Redis
 
-Good free-tier options that work with Bun's TLS out of the box:
+Choose services that meet the required Postgres and Redis versions and present a certificate
+trusted by Bun. Use the provider's documented connection string and connect by hostname.
+Check version support, connection limits, and persistence before choosing a plan.
 
-| Service | Type | Notes |
-|---|---|---|
-| [Neon](https://neon.tech) | Postgres | Serverless, generous free tier, public-CA TLS, connect by hostname. |
-| [Supabase](https://supabase.com) | Postgres | Free tier; use the connection string or the pooler. |
-| [Aiven](https://aiven.io) | Postgres / Redis | Free tier; public-CA TLS. |
-| [Upstash](https://upstash.com) | Redis | Free tier; `rediss://` over public-CA TLS. |
-
-Avoid pointing the gateway at a **self-signed** database over a public port (the default for a raw
-Coolify/Dokploy database exposed publicly) — see [Troubleshooting](/docs/troubleshooting).
+Avoid exposing a database with a self-signed certificate on a public port. Use a private network
+or a certificate from a public CA; see [Troubleshooting](/docs/troubleshooting).

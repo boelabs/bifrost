@@ -3,11 +3,9 @@ title: "Routing"
 description: "How the router balances a pool of deployments, and how to configure it."
 ---
 
-Every request targets a **Public Model**, which can resolve to a **pool** of one or more deployments
-(same `publicModel`, possibly different providers or credentials). The router picks one deployment per
-attempt, retries the pool on failure, and falls back to another Public Model when the whole pool is
-exhausted. This page covers pool selection; retries, cooldowns, and fallback chains are the mechanics
-around it.
+The router selects an eligible deployment for each attempt. Deployments with the same `publicModel`
+form a pool; the selected strategy determines how traffic is distributed within it. Retry rules and
+fallback policies control what happens when an attempt fails.
 
 ## Strategies
 
@@ -194,7 +192,7 @@ are optional in the `PUT` body — omitted fields keep their current value. When
 `executionPolicies`, send the complete matrix returned by `GET`; it is intentionally exhaustive so a
 new operation cannot ship without an explicit policy.
 
-## What to read next
+## Next steps
 
 - [Parameter policy](/docs/parameter-policy) — the other global router behavior, orthogonal to strategy.
 - [Fallbacks](/docs/fallbacks) — what happens when a whole pool fails.

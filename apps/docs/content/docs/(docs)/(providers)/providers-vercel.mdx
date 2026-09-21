@@ -1,7 +1,13 @@
 ---
 title: "Vercel AI Gateway"
-description: "Adapter key vercel. Responses, Chat Completions, embeddings, images, and reranking through Vercel AI Gateway."
+description: "Configure vercel deployments and understand provider-specific behavior."
 ---
+
+## Configure a deployment
+
+Send this body to `POST /admin/deployments` with an operator credential. Replace the example
+credentials and choose a model available to your provider account. See
+[Creating deployments](/docs/creating-deployments) for the shared configuration fields.
 
 ```json
 {
@@ -11,6 +17,8 @@ description: "Adapter key vercel. Responses, Chat Completions, embeddings, image
   "credentials": { "apiKey": "..." }
 }
 ```
+
+## Behavior and limitations
 
 - **Credentials**: `apiKey` only. The adapter uses
   `https://ai-gateway.vercel.sh/v1` by default; `baseUrl` can override it for a compatible proxy.
@@ -43,7 +51,7 @@ description: "Adapter key vercel. Responses, Chat Completions, embeddings, image
   `extra_body`, including `providerOptions` and `models`. They remain provider-shaped passthrough;
   operators should not allow untrusted clients to submit request-scoped BYOK credentials.
 
-## What to read next
+## Next steps
 
 - [Creating deployments](/docs/creating-deployments) — deployment fields and catalog behavior.
 - [Model catalog](/docs/model-catalog#vercel-owned-sync) — regenerate and verify the Vercel snapshot.

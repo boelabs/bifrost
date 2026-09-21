@@ -1,102 +1,71 @@
 ---
-title: "Overview"
-description: "Connect an application, configure providers, and operate Bifrost."
+title: Overview
+description: Connect your application to AI providers through one gateway.
 ---
 
-Bifrost is a backend-only, provider-agnostic AI gateway. Your clients keep talking the
-OpenAI (and Anthropic) wire format they already know; the gateway routes each request to the right
-upstream — OpenAI, Anthropic, Google, Azure, Vercel AI Gateway, OpenAI-compatible providers, or your own custom models —
-behind a single public model catalog with one auth, rate-limit, routing, logging, and cost layer.
+Bifrost exposes OpenAI-compatible and Anthropic-compatible APIs. Your application sends requests
+to Bifrost with a **virtual key** and a **public model** name. Bifrost selects a provider deployment,
+translates the request, and tracks usage and cost.
 
-Start by changing your client's base URL and API key. Use a public model name configured in
-Bifrost; available operations and parameters depend on its deployments.
+You control the providers, routing rules, and access limits. Supported operations and parameters
+depend on the deployments configured for each public model.
 
-```python
+## Start here
+
+<Cards>
+  <Card title="Make your first request" href="/docs/quickstart">
+    Start a local gateway, connect OpenAI, and call it with a virtual key.
+  </Card>
+  <Card title="Understand the model" href="/docs/concepts">
+    Learn how public models, deployments, and adapters fit together.
+  </Card>
+</Cards>
+
+## Connect an existing application
+
+If an operator has already configured Bifrost, use its base URL, a virtual key, and an available
+public model name. For example, with the OpenAI Python SDK:
+
+```python title="app.py"
 from openai import OpenAI
 
 client = OpenAI(base_url="http://localhost:4000/v1", api_key="<virtual-key>")
-client.chat.completions.create(model="general", messages=[{"role": "user", "content": "Hi"}])
+response = client.chat.completions.create(
+    model="general",
+    messages=[{"role": "user", "content": "Hello"}],
+)
+print(response.choices[0].message.content)
 ```
 
-`model` is a **public name** you define (`general`, `image-default`, …), not a provider model id. Behind
-it sits a pool of one or more deployments that the gateway load-balances, retries, and falls back across.
+Here, `general` is a name configured in Bifrost. It can route to one or more upstream models
+without changing the application's request. See the [API reference](/docs/api-overview) for
+authentication, supported endpoints, and errors.
 
-## Your first request
+## Configure and operate
 
-New to the project? Read these in order:
+<Cards>
+  <Card title="Connect providers" href="/docs/providers">
+    Choose an adapter and configure credentials, models, and supported operations.
+  </Card>
+  <Card title="Control routing" href="/docs/routing">
+    Balance traffic, set deployment limits, and configure fallback policies.
+  </Card>
+  <Card title="Manage access and costs" href="/docs/virtual-keys">
+    Give each application its own model scope, rate limits, and budget.
+  </Card>
+  <Card title="Deploy Bifrost" href="/docs/deployment">
+    Choose a deployment platform and prepare Postgres, Redis, and secrets.
+  </Card>
+  <Card title="Use the dashboard" href="/docs/dashboard">
+    Manage the gateway and investigate requests from the operator UI.
+  </Card>
+  <Card title="Prepare for production" href="/docs/production-checklist">
+    Check security, health probes, backups, and observability before launch.
+  </Card>
+</Cards>
 
-1. [Quickstart](/docs/quickstart) — from `git clone` to your first successful response in a few minutes.
-2. [Concepts](/docs/concepts) — the mental model: public models, deployments, adapters, transports.
-3. [Architecture](/docs/architecture) — the same request, traced through every layer in precise order.
-4. [First deployment](/docs/first-deployment) — wire up one real provider, verified before you save it.
+## Contribute
 
-## Configure the gateway
-
-- [Setup](/docs/setup) — requirements, environment, secrets, and choosing a database and Redis.
-- [First deployment](/docs/first-deployment) / [Creating deployments](/docs/creating-deployments) — the minimal path, and the full reference across every provider and operation type.
-- [Environment variables](/docs/reference-environment) — every variable, its default, and what it controls.
-
-## Deploy
-
-- [Deployment](/docs/deployment) — the Docker Compose stack and per-platform guides
-  ([Coolify](/docs/deploy-coolify), [Portainer](/docs/deploy-portainer),
-  [Dokploy](/docs/deploy-dokploy), [Linux](/docs/deploy-docker-linux)).
-
-## Inference API
-
-- [API overview](/docs/api-overview) — auth, error shape, and OpenAPI import, shared across every endpoint.
-- [Chat completions](/docs/chat-completions), [Responses](/docs/responses), [Messages](/docs/messages) — the three text contracts over one canonical core.
-- [Images](/docs/images), [Embeddings](/docs/embeddings), [Reranking](/docs/reranking), [Audio transcriptions](/docs/audio-transcriptions) — the other operations.
-- [Streaming](/docs/streaming) — the SSE shape shared across every streamable endpoint.
-- [Videos](/docs/videos) — asynchronous generation, polling, and asset retrieval.
-- [Model discovery](/docs/models-discovery) — public model listings and authenticated deployment details.
-- [Headers](/docs/headers) — every request/response header in one table.
-
-## Routing & resilience
-
-- [Routing](/docs/routing) — the eight balancing strategies and how each is measured.
-- [Parameter policy](/docs/parameter-policy) — what happens when a request asks for something a model doesn't support.
-- [Fallbacks](/docs/fallbacks) — fallback chains per public model: reasons, retries, lifecycle.
-- [Caching](/docs/caching) — the opt-in response cache and its headers.
-
-## Access & governance
-
-- [Virtual keys](/docs/virtual-keys) — client keys, scopes, budgets, and rate limits.
-- [Security](/docs/security) — the auth model, credential encryption, and what's redacted by default.
-- [Cost accounting](/docs/cost-accounting) — where pricing comes from and how spend is tracked.
-
-## Model catalog
-
-- [Model catalog](/docs/model-catalog) — the shape of `catalog.json`, per-operation profiles, pricing, and custom models.
-- [Reasoning](/docs/reasoning) — the canonical effort ladder and every provider's native reasoning mechanism.
-
-## Providers
-
-- [Providers](/docs/providers) — every built-in adapter: credentials, default transport, and quirks, from [OpenAI](/docs/providers-openai) to [Vercel AI Gateway](/docs/providers-vercel) to [any OpenAI-compatible API](/docs/providers-openai-compatible).
-
-## Extend
-
-- [Runtime extensions](/docs/extensions) — admin-uploaded ESM extensions, hooks, versioning, and failure handling.
-
-## Operate
-
-- [Operator dashboard](/docs/dashboard) — the optional web UI over the Admin API: models, keys, logs,
-  settings, audit trail, and a playground.
-- [Operations](/docs/operations) — the runbook: health probes, secrets, data lifecycle, backups, shutdown.
-- [Observability](/docs/observability) — structured logs, durable operation logs, and OpenTelemetry.
-- [Production checklist](/docs/production-checklist) — a condensed pre-launch checklist.
-- [Upgrades](/docs/upgrades) — migrations, breaking changes, and safe rollback.
-- [Troubleshooting](/docs/troubleshooting) — error shape, status codes, and known issues with exact fixes.
-
-## Reference
-
-- [Admin API reference](/docs/reference-admin-api) — every admin route, grouped by area.
-- [Testing](/docs/testing) — test layers, common helpers, and the no-real-providers guarantee.
-- [Glossary](/docs/glossary) — the project's canonical names. The source of truth for code, SQL,
-  OpenAPI, logs, and docs.
-
-## Source and specifications
-
-- [OpenAPI specification](https://github.com/boelabs/bifrost/blob/main/apps/gateway/openapi.yaml) — importable endpoint schemas.
-- [Catalog JSON Schemas](https://github.com/boelabs/bifrost/tree/main/apps/gateway/schemas) — validation for provider catalog entries.
-- [Documentation development](/docs/documentation) — write, preview, validate, and deploy this site with Bun.
+Read [Architecture](/docs/architecture) for the request pipeline,
+[Testing](/docs/testing) for the test workflow, and
+[Documentation development](/docs/documentation) to work on this site.

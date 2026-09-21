@@ -3,6 +3,14 @@ title: "Embeddings"
 description: "POST /v1/embeddings — the OpenAI Embeddings contract."
 ---
 
+Convert text into vectors with the OpenAI Embeddings contract. The public model must have a
+deployment that supports the `embedding.create` operation.
+
+## Example request
+
+Set `GATEWAY` to the gateway origin and `API_KEY` to your virtual key. Replace the example
+public model with one from [Model discovery](/docs/models-discovery).
+
 ```bash
 curl -X POST "$GATEWAY/v1/embeddings" \
   -H "Authorization: Bearer $API_KEY" \
@@ -27,7 +35,7 @@ Google AI Studio routes to `:embedContent` (single input) or `:batchEmbedContent
 this gateway, accepts **text input and `float` vectors only**, regardless of what a custom profile might
 otherwise allow. See [Providers → Google AI Studio](/docs/providers-google).
 
-## What to read next
+## Next steps
 
 - [Model catalog → Embeddings](/docs/model-catalog#embeddings) — the full `embedding.create` schema.
 - [Creating deployments](/docs/creating-deployments#3-embeddings--catalog-model) — registering an embeddings model per provider.

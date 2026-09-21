@@ -3,6 +3,14 @@ title: "Audio transcriptions"
 description: "POST /v1/audio/transcriptions — the OpenAI Audio contract."
 ---
 
+Transcribe an uploaded audio file. The public model must support `audio.transcribe`; available
+formats, timestamps, and streaming depend on its profile.
+
+## Example request
+
+Set `GATEWAY` to the gateway origin and `API_KEY` to your virtual key. Replace the example
+public model with one from [Model discovery](/docs/models-discovery).
+
 ```bash
 curl -X POST "$GATEWAY/v1/audio/transcriptions" \
   -H "Authorization: Bearer $API_KEY" \
@@ -34,7 +42,7 @@ The adapter constructs the classic URL from your deployment name and resource `b
 explicit transport override. See [Providers → Azure OpenAI](/docs/providers-azure-openai) and the
 Azure-specific example in [Creating deployments](/docs/creating-deployments#azure-openai-classic-audio).
 
-## What to read next
+## Next steps
 
 - [Creating deployments](/docs/creating-deployments#4-audio-transcription--catalog-model) — registering a transcription model.
 - [Streaming](/docs/streaming) — the SSE variant of this endpoint.

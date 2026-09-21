@@ -135,11 +135,15 @@ certificates, not TLS in general.
   network from your own machine, run a local `stunnel` that speaks TLS upstream and exposes plaintext
   on `localhost`, then point the gateway at `localhost`.
 
-> **Self-host note.** Coolify and Dokploy expose standalone databases with a self-signed certificate.
-> The simplest fix is to **disable SSL on both the Postgres and Redis services** (uncheck **Enable
-> SSL**) and connect over the private network with `postgres://…` and `redis://…` (no `sslmode`, not
-> `rediss://`). Inside the platform's private network this is both simpler and faster than TLS. See the
-> platform pages under [Deployment](/docs/deployment).
+<Callout>
+
+**Self-host note.** Coolify and Dokploy expose standalone databases with a self-signed certificate.
+The simplest fix is to **disable SSL on both the Postgres and Redis services** (uncheck **Enable
+SSL**) and connect over the private network with `postgres://…` and `redis://…` (no `sslmode`, not
+`rediss://`). Inside the platform's private network this is both simpler and faster than TLS. See the
+platform pages under [Deployment](/docs/deployment).
+
+</Callout>
 
 #### Security note
 
@@ -149,7 +153,7 @@ credentials and data travel unencrypted and an on-path attacker can read them. I
 reachable over a public port, use a managed provider with a public-CA certificate, or an stunnel
 tunnel, instead of plaintext.
 
-## What to read next
+## Next steps
 
 - [Observability](/docs/observability) — finding a request by id, and what the log actually stores.
 - [Routing](/docs/routing) and [Fallbacks](/docs/fallbacks) — what happens after a retryable failure.

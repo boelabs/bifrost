@@ -141,16 +141,20 @@ docker compose exec -T postgres pg_dump -U gateway -d bifrost --no-owner | gzip 
 gunzip -c backup.sql.gz | docker compose exec -T postgres psql -U gateway -d bifrost
 ```
 
-> Prefer `pg_dump` (logical) backups: they are consistent without stopping the gateway. A raw `pgdata`
-> volume snapshot is only consistent if Postgres is stopped or the platform uses a consistent-snapshot
-> method.
+<Callout>
+
+Prefer `pg_dump` (logical) backups: they are consistent without stopping the gateway. A raw `pgdata`
+volume snapshot is only consistent if Postgres is stopped or the platform uses a consistent-snapshot
+method.
+
+</Callout>
 
 ## Dependency audit
 
 `bun audit --production` is expected to be clean for the production dependency tree, and CI enforces it
 at `--audit-level=high`.
 
-## What to read next
+## Next steps
 
 - [Observability](/docs/observability) — logs, telemetry, and the `/admin/logs` and `/admin/usage` queries.
 - [Cost accounting](/docs/cost-accounting) — how pricing and spend actually work.

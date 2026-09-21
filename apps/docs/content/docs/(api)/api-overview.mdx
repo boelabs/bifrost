@@ -3,13 +3,12 @@ title: "API overview"
 description: "Auth, error shape, and how to import the spec — shared across every /v1/* endpoint."
 ---
 
-The OpenAPI document is the source of truth for the exact request/response schema of every endpoint,
-public and admin:
+Use this reference to choose an endpoint and understand authentication, errors, and request
+correlation. The [OpenAPI specification](https://github.com/boelabs/bifrost/blob/main/apps/gateway/openapi.yaml)
+contains the exact schemas and can be imported into Bruno, Postman, or Insomnia.
 
-- [`apps/gateway/openapi.yaml`](https://github.com/boelabs/bifrost/blob/main/apps/gateway/openapi.yaml) — OpenAPI 3.1. Importable into Bruno, Postman, Insomnia, and similar tools.
-
-This page covers what's shared across every `/v1/*` endpoint; each endpoint's own page covers its
-specific contract.
+Examples use `GATEWAY` for the origin (for example, `http://localhost:4000`) and `API_KEY` for a
+virtual key. The `model` field always names a public model configured in Bifrost.
 
 ## Authentication
 
@@ -17,7 +16,7 @@ specific contract.
   `x-api-key` header. Query-string credentials are rejected because URLs leak through logs, history,
   and referrers. `/v1/models` and `/v1/models/{model}` are the only unauthenticated exceptions — see
   [Model discovery](/docs/models-discovery).
-- **Admin** (`/admin/*`): requires the master key.
+- **Admin** (`/admin/*`): use the master key for API automation. When dashboard authentication is enabled, operator sessions can also access routes permitted by their role.
 
 Full model: [Security](/docs/security).
 
@@ -71,7 +70,7 @@ variable (e.g. `http://localhost:4000`) and the bearer token in Bruno's auth UI.
 | `POST /v1/audio/transcriptions` | OpenAI Audio | [Audio transcriptions](/docs/audio-transcriptions) |
 | `GET /v1/models`, `GET /v1/models/{model}`, `GET /v1/models/{model}/deployments` | Model discovery | [Model discovery](/docs/models-discovery) |
 
-## What to read next
+## Next steps
 
 - [Streaming](/docs/streaming) — SSE shape, shared across every streamable endpoint.
 - [Headers](/docs/headers) — every request/response header in one table.

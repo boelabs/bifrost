@@ -1,11 +1,19 @@
 ---
 title: "Google AI Studio"
-description: "Adapter key googleaistudio. Strict tools, embeddings routes, and image thinking."
+description: "Configure googleaistudio deployments and understand provider-specific behavior."
 ---
+
+## Configure a deployment
+
+Send this body to `POST /admin/deployments` with an operator credential. Replace the example
+credentials and choose a model available to your provider account. See
+[Creating deployments](/docs/creating-deployments) for the shared configuration fields.
 
 ```json
 { "publicModel": "gemini", "adapterKey": "googleaistudio", "upstreamModel": "gemini-3-pro", "credentials": { "apiKey": "..." } }
 ```
+
+## Behavior and limitations
 
 - **Credentials**: `apiKey` only.
 - **Default transport**: `generateContent` for text and image operations, `generate_videos` for Veo
@@ -46,7 +54,7 @@ description: "Adapter key googleaistudio. Strict tools, embeddings routes, and i
 - Catalog: `src/adapters/google/catalog.json` (folder is `google`; adapter key is `googleaistudio` —
   the one place today those two names don't match).
 
-## What to read next
+## Next steps
 
 - [Reasoning](/docs/reasoning) — `gemini_level` / `gemini_budget` in detail.
 - [Embeddings](/docs/embeddings) — the reduced Google embedding contract.
