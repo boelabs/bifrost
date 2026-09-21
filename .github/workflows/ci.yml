@@ -8,9 +8,10 @@ on:
 permissions:
   contents: read
 
-# Cancel superseded runs on the same ref to save CI minutes.
+# Keep PR checks separate from branch builds, even when a delayed PR event resolves to main.
+# Cancel superseded runs only within the same event and PR or ref.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
