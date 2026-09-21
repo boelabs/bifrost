@@ -31,14 +31,14 @@ export function OverviewSkeleton() {
 			<StatGridSkeleton count={4} />
 
 			<div className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-				<ChartSkeleton height="14rem" />
+				<ChartSkeleton height="31rem" />
 				<div className="grid content-start gap-5">
-					<ChartSkeleton height="8.5rem" />
-					<ChartSkeleton height="7rem" />
+					<ChartSkeleton height="12rem" />
+					<ChartSkeleton height="10rem" />
 				</div>
 			</div>
 
-			<ChartSkeleton height="17rem" />
+			<CacheUsageSkeleton />
 			<div className="grid items-start gap-5">
 				{[
 					{ headers: BY_MODEL, title: "9rem", caption: "16rem" },
@@ -67,6 +67,46 @@ export function OverviewSkeleton() {
 			</div>
 
 			<Skeleton className="mx-1 h-3" width="24rem" />
+		</div>
+	);
+}
+
+export function CacheUsageSkeleton() {
+	return (
+		<div
+			aria-busy="true"
+			aria-label="Loading input usage"
+			className="min-w-0 rounded-(--ui-radius-surface) border border-border/50 bg-card p-7"
+			role="status"
+		>
+			<div className="flex justify-between gap-4">
+				<div>
+					<Skeleton className="h-5" width="10rem" />
+					<Skeleton className="mt-2 h-3" width="min(100%, 18rem)" />
+				</div>
+				<Skeleton className="h-8" width="4rem" />
+			</div>
+			<div className="mt-6 grid items-center gap-8 sm:grid-cols-[14rem_1fr]">
+				<div
+					aria-hidden
+					className="mx-auto my-2 size-52 animate-pulse rounded-full border-[24px] border-fg/10 motion-reduce:animate-none"
+				/>
+				<div className="space-y-7">
+					{[0, 1, 2].map((row) => (
+						<div key={row}>
+							<div className="flex justify-between gap-4">
+								<Skeleton width="8rem" />
+								<Skeleton width="5rem" />
+							</div>
+							<Skeleton className="mt-2 h-3" width="65%" />
+						</div>
+					))}
+				</div>
+			</div>
+			<div className="mt-6 border-border/50 border-t pt-4">
+				<Skeleton className="h-3" width="70%" />
+				<Skeleton className="mt-3 h-3" width="85%" />
+			</div>
 		</div>
 	);
 }

@@ -75,6 +75,7 @@ export function RangeFilter({
 		<>
 			<Select
 				aria-label={label ? undefined : "Time range"}
+				borderRadius="full"
 				{...(label ? { label } : {})}
 				onValueChange={(key) => {
 					if (!key) {

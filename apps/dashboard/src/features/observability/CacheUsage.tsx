@@ -1,6 +1,9 @@
 "use client";
 
+import { Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { chartTooltipStyle } from "#/components/ui/chart";
 import { Card } from "#/components/ui/card";
+import { compact } from "./metrics-data";
 import { useId } from "react";
 
 import {
@@ -27,18 +30,21 @@ export function CacheUsage({
 			value: usage.cacheReadTokens,
 			detail: "Read from the provider's prompt cache",
 			color: "bg-chart-2",
+			fill: "var(--chart-2)",
 		},
 		{
 			label: "Uncached input",
 			value: usage.uncachedInputTokens,
 			detail: "Not read from cache; includes cache writes",
 			color: "bg-chart-1",
+			fill: "var(--chart-1)",
 		},
 		{
 			label: "Unclassified input",
 			value: usage.cacheUnreportedInputTokens,
 			detail: "Input reported without a cache read count",
 			color: "bg-chart-3",
+			fill: "var(--chart-3)",
 		},
 	];
 	const total = rows.reduce((sum, row) => sum + (row.value ?? 0), 0);
@@ -67,40 +73,76 @@ export function CacheUsage({
 									maximumFractionDigits: 1,
 								}).format(reuse)}
 					</p>
-					<p className="text-fg-muted text-xs">Reuse of classified input</p>
+					<p className="text-fg-muted text-xs">
+						Cache reuse · classified input
+					</p>
 				</div>
 			</div>
-			<div
-				aria-hidden
-				className="mt-6 flex h-2 overflow-hidden rounded-full bg-secondary"
-			>
-				{rows.map((row) => (
-					<div
-						className={row.color}
-						key={row.label}
-						style={{
-							width: `${total ? ((row.value ?? 0) / total) * 100 : 0}%`,
-						}}
-					/>
-				))}
-			</div>
-			<dl className="mt-5 grid gap-5 sm:grid-cols-3">
-				{rows.map((row) => (
-					<div key={row.label}>
-						<dt className="flex items-center gap-2 text-sm">
-							<span
-								aria-hidden
-								className={`size-2 rounded-full ${row.color}`}
-							/>
-							{row.label}
-						</dt>
-						<dd className="mt-2 font-semibold text-xl tabular-nums">
-							{tokenCount(row.value)}
-						</dd>
-						<dd className="mt-1 text-fg-muted text-xs">{row.detail}</dd>
+			<div className="mt-6 grid items-center gap-8 sm:grid-cols-[14rem_1fr]">
+				<div
+					aria-label="Reported input token distribution"
+					className="relative mx-auto h-56 w-56"
+					role="img"
+				>
+					{total > 0 ? (
+						<ResponsiveContainer height="100%" width="100%">
+							<PieChart>
+								<Pie
+									data={rows.filter((row) => (row.value ?? 0) > 0)}
+									dataKey="value"
+									innerRadius={76}
+									isAnimationActive={false}
+									nameKey="label"
+									outerRadius={102}
+									paddingAngle={3}
+									stroke="var(--card)"
+									strokeWidth={3}
+								/>
+								<Tooltip
+									contentStyle={chartTooltipStyle}
+									formatter={(value) => tokenCount(Number(value))}
+								/>
+							</PieChart>
+						</ResponsiveContainer>
+					) : (
+						<div className="absolute inset-2 rounded-full border-[24px] border-secondary" />
+					)}
+					<div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+						<span className="font-semibold text-2xl tabular-nums">
+							{rows.some((row) => row.value != null)
+								? compact.format(total)
+								: "—"}
+						</span>
+						<span className="mt-1 text-fg-muted text-xs">input tokens</span>
 					</div>
-				))}
-			</dl>
+				</div>
+				<dl className="min-w-0 divide-y divide-border/50">
+					{rows.map((row) => (
+						<div
+							className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 py-4 first:pt-0 last:pb-0"
+							key={row.label}
+						>
+							<dt className="flex items-center gap-2 text-sm">
+								<span
+									aria-hidden
+									className={`size-2.5 shrink-0 rounded-sm ${row.color}`}
+								/>
+								{row.label}
+							</dt>
+							<dd className="text-right font-semibold tabular-nums">
+								{tokenCount(row.value)}
+								<span className="ml-3 inline-block min-w-12 font-normal text-fg-muted text-xs">
+									{row.value == null || total === 0
+										? "—"
+										: `${((row.value / total) * 100).toFixed(1)}%`}
+								</span>
+							</dd>
+							<dd className="col-span-2 text-fg-muted text-xs">{row.detail}</dd>
+						</div>
+					))}
+				</dl>
+			</div>
+
 			<div className="mt-6 flex flex-wrap justify-between gap-3 border-border/50 border-t pt-4 text-fg-muted text-xs">
 				<p>
 					Cache writes:{" "}

@@ -56,12 +56,16 @@ function CreateUserDialog({
 }) {
 	const { pending, run } = useMutation();
 	const created = useIdempotencyKey();
-	const [role, setRole] = useState<Role>("viewer");
+	const [role, setRole] = useState<Role | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
 	async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
 		setError(null);
+		if (!role) {
+			setError("Choose a role.");
+			return;
+		}
 		const form = new FormData(event.currentTarget);
 		const username = String(form.get("username"));
 		const result = await run(
@@ -111,9 +115,12 @@ function CreateUserDialog({
 							type="password"
 						/>
 						<Select
-							description={ROLE_SUMMARY[role]}
+							description={role ? ROLE_SUMMARY[role] : undefined}
 							label="Role"
+							name="role"
 							onValueChange={(key) => setRole(key as Role)}
+							placeholder="Choose a role"
+							required
 							value={role}
 						>
 							{ROLES.map((value) => (

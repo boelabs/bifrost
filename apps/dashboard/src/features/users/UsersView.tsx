@@ -2,6 +2,7 @@
 
 import { type Column, DataTable, Dash, Mono } from "#/components/ui/datatable";
 import { useMutation, useRowActions } from "#/shared/lib/mutation.ts";
+import { type DashboardUser, type Role, ROLES } from "./common.ts";
 import { useSearchWriter } from "#/shared/lib/useSearchWriter.ts";
 import { RowActions } from "#/shared/components/RowActions.tsx";
 import { Pagination } from "#/shared/components/Pagination.tsx";
@@ -28,44 +29,6 @@ import {
 	deleteUserAction,
 	updateUserAction,
 } from "./actions.ts";
-
-import {
-	type DashboardUser,
-	ROLE_SUMMARY,
-	type Role,
-	ROLES,
-} from "./common.ts";
-
-const ROLE_TONES: Record<Role, "warning" | "neutral" | "muted"> = {
-	owner: "warning",
-	admin: "neutral",
-	viewer: "muted",
-};
-
-function roleTone(role: Role) {
-	return ROLE_TONES[role];
-}
-
-/** The role legend, which needs no data and so belongs to the route's App Shell. */
-export function RoleLegend() {
-	return (
-		<div className="mb-6 rounded-2xl border border-border/50 bg-surface-2/40 px-5 py-4">
-			<p className="pb-2 font-medium text-fg text-sm">
-				What each role can reach
-			</p>
-			<dl className="grid gap-2 text-sm sm:grid-cols-3">
-				{ROLES.map((role) => (
-					<div key={role}>
-						<dt className="pb-1">
-							<Status tone={roleTone(role)}>{role}</Status>
-						</dt>
-						<dd className="text-fg-muted text-xs">{ROLE_SUMMARY[role]}</dd>
-					</div>
-				))}
-			</dl>
-		</div>
-	);
-}
 
 export function UsersTable({
 	users: loaded,

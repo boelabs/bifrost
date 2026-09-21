@@ -58,6 +58,11 @@ function optionalNumber(raw: FormDataEntryValue | null): number | undefined {
 	return text ? Number(text) : undefined;
 }
 
+const CREDENTIAL_LABELS: Record<string, string> = {
+	apiKey: "API key",
+	baseUrl: "Base URL",
+};
+
 export function DeploymentDialog({
 	isOpen,
 	onClose,
@@ -73,9 +78,7 @@ export function DeploymentDialog({
 	existing?: Deployment;
 }) {
 	const editing = existing !== undefined;
-	const [adapterKey, setAdapterKey] = useState(
-		existing?.adapterKey ?? adapters[0]?.id ?? "",
-	);
+	const [adapterKey, setAdapterKey] = useState(existing?.adapterKey ?? "");
 	const [upstreamModel, setUpstreamModel] = useState(
 		existing?.upstreamModel ?? "",
 	);
@@ -118,6 +121,9 @@ export function DeploymentDialog({
 
 	/** Capture one snapshot for validation and saving, including collapsed advanced fields. */
 	function readForm(form: FormData): CreateDeploymentInput {
+		if (!adapter) {
+			throw new Error("Choose an adapter.");
+		}
 		const credentials: Record<string, unknown> = {};
 		for (const field of required) {
 			const value = optionalText(form.get(`cred_${field}`));
@@ -214,8 +220,7 @@ export function DeploymentDialog({
 						{editing ? "Edit deployment" : "New deployment"}
 					</h2>
 					<p className="text-fg-muted text-sm">
-						Connect a public model to a provider. Configuration is validated
-						automatically before saving.
+						Connect a public model to a provider.
 					</p>
 				</DialogHeader>
 
@@ -239,12 +244,11 @@ export function DeploymentDialog({
 							/>
 							<Select
 								description={
-									editing
-										? "Fixed for an existing deployment."
-										: "The provider protocol this deployment speaks."
+									editing ? "Fixed for an existing deployment." : undefined
 								}
 								disabled={editing}
 								label="Adapter"
+								name="adapterKey"
 								onValueChange={(key) => {
 									if (!key || key === adapterKey) {
 										return;
@@ -262,7 +266,9 @@ export function DeploymentDialog({
 									setTechnical(null);
 									setTransports({});
 								}}
-								value={adapterKey}
+								placeholder="Choose an adapter"
+								required
+								value={adapterKey || null}
 							>
 								{adapters.map((entry) => (
 									<SelectItem key={entry.id} value={entry.id}>
@@ -318,47 +324,34 @@ export function DeploymentDialog({
 										</Combobox.Positioner>
 									</Combobox.Portal>
 								</Combobox.Root>
-								<Field.Description>
-									Choose a catalog model or enter a custom model ID.
-								</Field.Description>
 								<Field.Error />
 							</Field.Root>
 						) : (
 							<Input
-								description="Enter the model ID used by your provider."
+								disabled={!adapter}
 								label="Upstream model"
 								onValueChange={setUpstreamModel}
+								placeholder={
+									adapter ? "Enter a model ID" : "Choose an adapter first"
+								}
 								required
 								value={upstreamModel}
 							/>
 						)}
 
-						{known ? (
-							<p className="text-fg-muted text-sm">
-								Catalog model: capabilities and transports are managed by the
-								adapter. Pricing can be customized below.
-							</p>
-						) : null}
-						<fieldset className="flex flex-col gap-4 rounded-xl border border-border/50 p-4">
-							<legend className="px-1 font-medium text-fg text-sm">
-								Credentials
-							</legend>
-							<p className="text-fg-muted text-xs">
-								{editing
-									? "Leave blank to keep stored credentials. Values are encrypted and never returned."
-									: "Encrypted before storage and never returned."}
-							</p>
-							{required.map((field) => (
-								<Input
-									autoComplete="off"
-									key={`${adapterKey}:${field}`}
-									label={field}
-									name={`cred_${field}`}
-									required={!editing}
-									type={field === "baseUrl" ? "url" : "password"}
-								/>
-							))}
-						</fieldset>
+						{required.map((field) => (
+							<Input
+								autoComplete="off"
+								description={
+									editing ? "Leave blank to keep the stored value." : undefined
+								}
+								key={`${adapterKey}:${field}`}
+								label={CREDENTIAL_LABELS[field] ?? field}
+								name={`cred_${field}`}
+								required={!editing}
+								type={field === "baseUrl" ? "url" : "password"}
+							/>
+						))}
 
 						{custom && upstreamModel.trim() ? (
 							<CustomModelEditor

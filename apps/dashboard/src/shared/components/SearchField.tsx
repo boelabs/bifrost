@@ -37,6 +37,7 @@ export function SearchField({
 		>
 			<Input
 				aria-label={label}
+				borderRadius="full"
 				className="w-56"
 				onValueChange={setDraft}
 				placeholder={placeholder}

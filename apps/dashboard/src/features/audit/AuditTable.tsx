@@ -120,19 +120,36 @@ export function AuditTable({
 	const { set } = useSearchWriter(filters);
 	const filtered = isFiltered(filters);
 	const offset = filters.offset ?? 0;
+	const emptyTitle = filtered
+		? "Nothing matches those filters"
+		: "Nothing recorded yet";
+	const emptyDescription = filtered
+		? "Reads are not audited — only changes and payload access — so a quiet trail can also mean nobody has changed anything."
+		: "Every mutating admin call and every payload read lands here as it happens.";
 
+	const pagination = (
+		<Pagination
+			alwaysVisible
+			label="entries"
+			limit={PAGE_SIZE}
+			offset={offset}
+			onOffsetChange={(next) => set({ offset: next === 0 ? undefined : next })}
+			total={total}
+		/>
+	);
 	if (rows.length === 0) {
 		return (
-			<EmptyState
-				description={
-					filtered
-						? "Reads are not audited — only changes and payload access — so a quiet trail can also mean nobody has changed anything."
-						: "Every mutating admin call and every payload read lands here as it happens."
-				}
-				title={
-					filtered ? "Nothing matches those filters" : "Nothing recorded yet"
-				}
-			/>
+			<>
+				<EmptyState
+					description={
+						offset > 0
+							? "Use Previous to return to earlier entries."
+							: emptyDescription
+					}
+					title={offset > 0 ? "No entries on this page" : emptyTitle}
+				/>
+				{pagination}
+			</>
 		);
 	}
 
@@ -170,15 +187,7 @@ export function AuditTable({
 					</Button>
 				}
 			/>
-			<Pagination
-				label="entries"
-				limit={PAGE_SIZE}
-				offset={offset}
-				onOffsetChange={(next) =>
-					set({ offset: next === 0 ? undefined : next })
-				}
-				total={total}
-			/>
+			{pagination}
 		</>
 	);
 }
