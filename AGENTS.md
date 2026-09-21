@@ -134,6 +134,8 @@ bun test --preload ./tests/support/unitSetup.ts src/router/strategies.test.ts
   volumes or category comparisons, and donuts for mutually exclusive parts of one total. Never
   stack overlapping subsets (cache writes, reasoning) or mix units on one axis. Missing measurements
   stay missing, never zero; show units, UTC intervals, exact values and readable legends.
+- Compare time series from a shared zero baseline: each curve's height must match its own tooltip
+  value, not a cumulative sum. Verify the rendered scale with strongly unequal series.
 - Use the shared chart components and distinct chart color tokens in both themes. Neutral surface
   colors are not a chart palette. Support keyboard access, narrow screens and reduced motion.
 - Skeletons mirror the current component's count, breakpoints, padding, control heights and shape.

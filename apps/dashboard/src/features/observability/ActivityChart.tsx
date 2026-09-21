@@ -132,7 +132,6 @@ export function ActivityChart({
 						consumerCostCents: row.consumerCostCents,
 					}))}
 					series={series}
-					stacked={metric === "totalTokens"}
 				/>
 			</div>
 		</Card>
