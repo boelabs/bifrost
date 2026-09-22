@@ -1,5 +1,4 @@
 import { makeOpenAIResponsesWebSocketHandler } from "./openaiResponsesWebSocket.ts";
-import { imageProfileFor, videoProfileFor } from "#catalog/types.ts";
 import { observeResponsesProgress } from "./responsesProgress.ts";
 import { upstreamFetch } from "#gateway/instrumentedTransport.ts";
 import { looksLikeContextWindowError } from "#core/httpError.ts";
@@ -74,6 +73,12 @@ import {
 	parseEmbeddingsResponse,
 	buildEmbeddingsBody,
 } from "#contracts/openai/embeddingsTransport.ts";
+
+import {
+	transcriptionProfileFor,
+	imageProfileFor,
+	videoProfileFor,
+} from "#catalog/types.ts";
 
 /**
  * Factory for OpenAI Chat Completions-style adapters. Serves both the real OpenAI API and any
@@ -979,7 +984,9 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 				url: `${c.base}/audio/transcriptions`,
 				// No content-type: FormData sets the multipart boundary.
 				headers: buildAuthHeaders(c),
-				body: await buildTranscriptionForm(req, ctx.upstreamModel),
+				body: await buildTranscriptionForm(req, ctx.upstreamModel, {
+					profile: transcriptionProfileFor(ctx.meta),
+				}),
 			};
 		},
 		parseResponse(raw) {

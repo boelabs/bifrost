@@ -32,7 +32,12 @@ const AUDIO_MIME: Record<string, string> = {
 };
 
 /** Multipart fields that arrive as a list (`name[]`). */
-const ARRAY_FIELDS = new Set(["timestamp_granularities", "include"]);
+const ARRAY_FIELDS = new Set([
+	"timestamp_granularities",
+	"include",
+	"keywords",
+	"languages",
+]);
 
 export interface ParsedTranscriptionMultipart {
 	fields: TranscriptionFields;
@@ -137,9 +142,9 @@ export async function parseTranscriptionMultipart(
 			limits: {
 				files: 1,
 				fileSize: MAX_AUDIO_BYTES,
-				fields: 24,
+				fields: 1024,
 				fieldSize: 65_536,
-				parts: 32,
+				parts: 1025,
 			},
 		});
 

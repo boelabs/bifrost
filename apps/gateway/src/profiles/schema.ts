@@ -315,6 +315,8 @@ const transcriptionOperationProfileSchema = z
 			.min(1),
 		supportsStreaming: z.boolean().optional(),
 		supportsTimestampGranularities: z.boolean().optional(),
+		supportsKeywords: z.boolean().optional(),
+		supportsLanguageHints: z.boolean().optional(),
 		maxFileBytes: z.int().positive().optional(),
 	})
 	.strict();

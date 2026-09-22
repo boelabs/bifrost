@@ -6,6 +6,7 @@ import type {
 	CanonicalTranscriptionStreamEvent,
 	CanonicalTranscriptionResponse,
 	CanonicalTranscriptionRequest,
+	TranscriptionProfile,
 	TranscriptionUsage,
 } from "#core/audio.ts";
 
@@ -14,6 +15,10 @@ const FORM_MANAGED = new Set([
 	"file",
 	"model",
 	"language",
+	"languages",
+	"languages[]",
+	"keywords",
+	"keywords[]",
 	"prompt",
 	"temperature",
 	"response_format",
@@ -41,7 +46,10 @@ function formValue(value: unknown): string {
 export async function buildTranscriptionForm(
 	req: CanonicalTranscriptionRequest,
 	upstreamModel: string,
-	options?: { includeModel?: boolean },
+	options?: {
+		includeModel?: boolean;
+		profile?: TranscriptionProfile | undefined;
+	},
 ): Promise<FormData> {
 	const form = new FormData();
 	const blob = await openAsBlob(req.file.path, { type: req.file.mimeType });
@@ -53,8 +61,19 @@ export async function buildTranscriptionForm(
 		form.append("model", upstreamModel);
 	}
 	form.append("response_format", req.responseFormat);
-	if (req.language !== undefined) {
+	if (options?.profile?.supportsLanguageHints) {
+		const languages =
+			req.languages ?? (req.language === undefined ? [] : [req.language]);
+		for (const language of languages) {
+			form.append("languages[]", language);
+		}
+	} else if (req.language !== undefined) {
 		form.append("language", req.language);
+	}
+	if (options?.profile?.supportsKeywords) {
+		for (const keyword of req.keywords ?? []) {
+			form.append("keywords[]", keyword);
+		}
 	}
 	if (req.prompt !== undefined) {
 		form.append("prompt", req.prompt);
@@ -83,6 +102,20 @@ export async function buildTranscriptionForm(
 		form.append(key, formValue(value));
 	}
 	return form;
+}
+
+function parseLanguages(raw: unknown): string[] | undefined {
+	if (!Array.isArray(raw)) {
+		return undefined;
+	}
+	return raw.flatMap((language: unknown) =>
+		language !== null &&
+		typeof language === "object" &&
+		"code" in language &&
+		typeof language.code === "string"
+			? [language.code]
+			: [],
+	);
 }
 
 function parseUsage(raw: unknown): TranscriptionUsage | undefined {
@@ -136,6 +169,10 @@ export function parseTranscriptionResponse(
 	};
 	if (typeof body.language === "string") {
 		resp.language = body.language;
+	}
+	const languages = parseLanguages(body.languages);
+	if (languages !== undefined) {
+		resp.languages = languages;
 	}
 	if (typeof body.duration === "number") {
 		resp.duration = body.duration;
@@ -197,9 +234,11 @@ export async function* parseTranscriptionStream(
 			};
 		} else if (type === "transcript.text.done") {
 			const usage = parseUsage(raw.usage);
+			const languages = parseLanguages(raw.languages);
 			yield {
 				kind: "done",
 				text: typeof raw.text === "string" ? raw.text : "",
+				...(languages === undefined ? {} : { languages }),
 				...(usage ? { usage } : {}),
 				...(raw.logprobs === undefined ? {} : { logprobs: raw.logprobs }),
 			};

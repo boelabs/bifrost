@@ -1,6 +1,7 @@
 import { openaicompatibleAdapter } from "./openaicompatible/index.ts";
 import type { CanonicalTranscriptionRequest } from "#core/audio.ts";
 import { must, streamOf } from "#test-support/adapters.ts";
+import { resolveModelMetadata } from "#catalog/index.ts";
 import { openaiAdapter } from "./openai/index.ts";
 import type { AdapterContext } from "./types.ts";
 import { writeFileSync, rmSync } from "node:fs";
@@ -9,6 +10,11 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+
+import {
+	toOpenAITranscriptionResponse,
+	toOpenAITranscriptionEvent,
+} from "#contracts/openai/audio.ts";
 
 function ctx(): AdapterContext {
 	return {
@@ -98,6 +104,99 @@ test("audio.buildRequest: extra_body cannot overwrite managed fields", async () 
 		}, /extra_body\.model/);
 	} finally {
 		cleanup();
+	}
+});
+
+test("audio: hints follow candidate capabilities without mutating the request", async () => {
+	const { req, cleanup } = withAudioFile();
+	req.model = "public-alias";
+	req.keywords = ["Bifrost", "AC-42"];
+	req.languages = ["es", "en"];
+	try {
+		for (const model of [
+			"gpt-transcribe",
+			"gpt-4o-transcribe",
+			"gpt-transcribe",
+		]) {
+			const context = {
+				...ctx(),
+				upstreamModel: model,
+				meta: resolveModelMetadata("openai", model),
+			};
+			const r = await must(openaiAdapter, "audioTranscription").buildRequest(
+				req,
+				context,
+			);
+			const form = r.body as FormData;
+			const supported = model === "gpt-transcribe";
+			assert.deepEqual(
+				form.getAll("keywords[]"),
+				supported ? req.keywords : [],
+			);
+			assert.deepEqual(
+				form.getAll("languages[]"),
+				supported ? req.languages : [],
+			);
+			assert.equal(form.has("language"), false);
+			assert.equal(form.has("prompt"), false);
+		}
+		assert.deepEqual(req.keywords, ["Bifrost", "AC-42"]);
+		assert.deepEqual(req.languages, ["es", "en"]);
+		const context = {
+			...ctx(),
+			meta: resolveModelMetadata("openaicompatible", "custom", {
+				operations: {
+					"audio.transcribe": {
+						responseFormats: ["json"],
+						supportsKeywords: true,
+						supportsLanguageHints: true,
+					},
+				},
+			}),
+		};
+		const r = await must(
+			openaicompatibleAdapter,
+			"audioTranscription",
+		).buildRequest(req, context);
+		assert.deepEqual((r.body as FormData).getAll("keywords[]"), req.keywords);
+	} finally {
+		cleanup();
+	}
+});
+
+test("audio: extra_body cannot inject hints, with or without brackets", async () => {
+	const { req, cleanup } = withAudioFile();
+	try {
+		for (const key of ["keywords", "keywords[]", "languages", "languages[]"]) {
+			await assert.rejects(
+				async () =>
+					await must(openaiAdapter, "audioTranscription").buildRequest(
+						{ ...req, extraBody: { [key]: ["x"] } },
+						ctx(),
+					),
+				/collides with a managed transcription field/,
+			);
+		}
+	} finally {
+		cleanup();
+	}
+});
+
+test("audio: detected languages survive JSON and final SSE responses, including empty detection", async () => {
+	const handler = must(openaiAdapter, "audioTranscription");
+	for (const languages of [[{ code: "es" }, { code: "en" }], []]) {
+		const body = { text: "Hola", languages };
+		assert.deepEqual(
+			toOpenAITranscriptionResponse(handler.parseResponse(body, ctx()), "json"),
+			body,
+		);
+		const event = { type: "transcript.text.done", ...body };
+		const stream = streamOf(`data: ${JSON.stringify(event)}\n\n`);
+		const rendered: Record<string, unknown>[] = [];
+		for await (const item of handler.parseStream!(stream, ctx())) {
+			rendered.push(toOpenAITranscriptionEvent(item));
+		}
+		assert.deepEqual(rendered, [event]);
 	}
 });
 

@@ -602,6 +602,8 @@
 				"audio.transcribe": {
 					"responseFormats": ["json", "text"],
 					"supportsStreaming": true,
+					"supportsKeywords": true,
+					"supportsLanguageHints": true,
 					"maxFileBytes": 26214400
 				}
 			}

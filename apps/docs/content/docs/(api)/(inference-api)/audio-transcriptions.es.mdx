@@ -19,7 +19,36 @@ Solo multiparte (campo `file`). El archivo cargado se transmite a un disco tempo
 
 ## Campos [#fields]
 
-`model`, `file`, `language`, `prompt`, `temperature`, `response_format` (`json`, `text`, `srt`, `verbose_json`, `vtt`), `timestamp_granularities` (`word`/`segment`, `verbose_json` solamente), `include`, `stream`. Los formatos de respuesta y si las granularidades de streaming/marca de tiempo están disponibles se declaran por modelo en su perfil de catálogo `audio.transcribe`.
+`model`, `file`, `language`, `languages`, `keywords`, `prompt`, `temperature`, `response_format` (`json`, `text`, `srt`, `verbose_json`, `vtt`), `timestamp_granularities` (`word`/`segment`, `verbose_json` solamente), `include`, `stream`. Los formatos de respuesta y si las granularidades de streaming/marca de tiempo están disponibles se declaran por modelo en su perfil de catálogo `audio.transcribe`.
+
+### Vocabulario e idiomas [#vocabulary-and-language-hints]
+
+`keywords[]` indica palabras o frases que ayudan a reconocer nombres y términos específicos;
+`languages[]` indica los posibles idiomas del audio. Son independientes de `prompt`, que aporta
+contexto libre. Por ejemplo:
+
+```bash
+  -F 'keywords[]=Bifrost' \
+  -F 'keywords[]=AC-42' \
+  -F 'languages[]=es' \
+  -F 'languages[]=en'
+```
+
+También se aceptan nombres repetidos sin corchetes (`keywords`, `languages`). El límite es de 1.024
+campos de texto por petición, incluyendo las pistas repetidas. Las palabras no pueden contener
+`<`, `>`, retornos de carro ni saltos de línea. Envía `language` o `languages`, nunca ambos.
+
+Las entradas de `gpt-transcribe` para OpenAI y Azure OpenAI habilitan ambas opciones. Los modelos
+compatibles personalizados pueden habilitarlas con `supportsKeywords` y `supportsLanguageHints`
+en su perfil `audio.transcribe`. Las pistas sin soporte declarado se descartan para cada deployment
+seleccionado, incluidos los fallbacks; las palabras no se convierten en un prompt. Cuando el modelo
+declara `supportsLanguageHints`, `language` se envía como una lista `languages[]` de un elemento.
+
+Consulta la [guía de contexto de transcripción de OpenAI](https://developers.openai.com/api/docs/guides/speech-to-text#add-transcription-context).
+
+Si el proveedor informa idiomas detectados, la respuesta JSON y el evento SSE final
+`transcript.text.done` conservan `languages: [{ "code": "es" }]`. Una lista vacía significa que no se
+detectó un idioma con suficiente confianza; un campo ausente permanece ausente.
 
 ## Formato de respuesta [#response-format]
 

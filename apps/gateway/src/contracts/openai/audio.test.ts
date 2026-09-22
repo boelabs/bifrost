@@ -98,3 +98,16 @@ test("render: stream events", () => {
 		},
 	);
 });
+
+test("toCanonical: preserves keyword and multilingual hints separately from prompt", () => {
+	const fields = transcriptionFieldsSchema.parse({
+		model: "transcribe",
+		keywords: ["Bifrost", "AC-42"],
+		languages: ["es", "en"],
+		prompt: "A support call",
+	});
+	const req = transcriptionToCanonical(fields, file);
+	assert.deepEqual(req.keywords, fields.keywords);
+	assert.deepEqual(req.languages, fields.languages);
+	assert.equal(req.prompt, fields.prompt);
+});

@@ -24,15 +24,44 @@ buffered fully in memory — and removed after success, failure, timeout, or cli
 
 ## Fields
 
-`model`, `file`, `language`, `prompt`, `temperature`, `response_format` (`json`, `text`, `srt`,
+`model`, `file`, `language`, `languages`, `keywords`, `prompt`, `temperature`, `response_format` (`json`, `text`, `srt`,
 `verbose_json`, `vtt`), `timestamp_granularities` (`word`/`segment`, `verbose_json` only), `include`,
 `stream`. Which response formats and whether streaming/timestamp granularities are available is
 declared per model in its `audio.transcribe` catalog profile.
+
+### Vocabulary and language hints
+
+`keywords[]` supplies literal words or phrases to help recognize names and domain terms;
+`languages[]` supplies possible input languages. They are independent of `prompt`, which carries
+free-form context. For example, add these fields to the request above:
+
+```bash
+  -F 'keywords[]=Bifrost' \
+  -F 'keywords[]=AC-42' \
+  -F 'languages[]=es' \
+  -F 'languages[]=en'
+```
+
+Repeated bare names (`keywords`, `languages`) are also accepted. A request may contain up to 1,024
+text fields, including repeated hints. Keywords cannot contain `<`, `>`, carriage returns, or line
+feeds. Send either `language` or `languages`, not both.
+
+The `gpt-transcribe` catalog entries for OpenAI and Azure OpenAI enable both hints. Custom compatible
+models can opt in through `supportsKeywords` and `supportsLanguageHints` in their `audio.transcribe`
+profile. Hints without declared support are dropped for each selected deployment, including
+fallbacks; keywords are never rewritten into a prompt. For models with `supportsLanguageHints`, a
+singular `language` is sent upstream as a one-element `languages[]` list.
+
+See OpenAI's [transcription context guide](https://developers.openai.com/api/docs/guides/speech-to-text#add-transcription-context).
 
 ## Response format
 
 Returned as JSON, plain text, or SSE depending on the requested `response_format` and `stream` — not
 always JSON like the other endpoints.
+
+When the provider reports detected languages, JSON responses and the final `transcript.text.done`
+SSE event preserve `languages: [{ "code": "es" }]`. An empty list means no language was reliably
+detected; an absent field stays absent.
 
 ## Azure OpenAI note
 

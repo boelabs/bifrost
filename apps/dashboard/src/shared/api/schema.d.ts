@@ -2764,6 +2764,8 @@ export interface components {
 		AudioTranscriptionRequest: {
 			model: string;
 			language?: string;
+			languages?: string[];
+			keywords?: string[];
 			prompt?: string;
 			temperature?: number;
 			/**
@@ -3502,6 +3504,9 @@ export interface components {
 		AudioTranscriptionResponse: {
 			text: string;
 			language?: string;
+			languages?: {
+				code: string;
+			}[];
 			duration?: number;
 			words?: {
 				[key: string]: unknown;

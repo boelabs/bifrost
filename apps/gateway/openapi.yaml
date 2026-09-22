@@ -2777,6 +2777,15 @@ components:
           minLength: 1
         language:
           type: string
+        languages:
+          type: array
+          items:
+            type: string
+        keywords:
+          type: array
+          items:
+            type: string
+            pattern: ^[^<>\r\n]*$
         prompt:
           type: string
         temperature:
@@ -4993,6 +5002,16 @@ components:
           type: string
         language:
           type: string
+        languages:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+            required:
+              - code
+            additionalProperties: false
         duration:
           type: number
         words:
