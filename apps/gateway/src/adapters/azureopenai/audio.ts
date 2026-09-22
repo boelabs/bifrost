@@ -2,6 +2,7 @@ import type { AdapterContext, TranscriptionHandler } from "#adapters/types.ts";
 import { type BaseCreds, requireApiKeyCreds } from "#adapters/creds.ts";
 import { adapterContextDiagnostics } from "#adapters/diagnostics.ts";
 import { mapUpstreamHttpError } from "#adapters/upstreamError.ts";
+import { transcriptionProfileFor } from "#catalog/types.ts";
 import { GatewayError } from "#core/errors.ts";
 
 import {
@@ -98,6 +99,7 @@ export function makeAzureTranscriptionHandler(
 				body: await buildTranscriptionForm(req, ctx.upstreamModel, {
 					// Azure v1 resolves the deployment from `model`; legacy carries it in the URL.
 					includeModel: !legacy,
+					profile: transcriptionProfileFor(ctx.meta),
 				}),
 			};
 		},

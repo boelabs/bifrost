@@ -46,13 +46,14 @@ const reasoningConfig = loose(
 );
 
 export const AudioTranscriptionRequest = transcriptionFieldsSchema
-	.extend({ file: z.file() })
+	.safeExtend({ file: z.file() })
 	.meta({ id: "AudioTranscriptionRequest" });
 
 export const AudioTranscriptionResponse = loose(
 	{
 		text: z.string(),
 		language: z.string().optional(),
+		languages: z.array(z.object({ code: z.string() })).optional(),
 		duration: z.number().optional(),
 		words: z.array(z.record(z.string(), z.unknown())).optional(),
 		segments: z.array(z.record(z.string(), z.unknown())).optional(),

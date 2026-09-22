@@ -30,6 +30,8 @@ export interface CanonicalTranscriptionRequest {
 	model: string;
 	file: CanonicalAudioInput;
 	language?: string;
+	languages?: string[];
+	keywords?: string[];
 	prompt?: string;
 	temperature?: number;
 	responseFormat: TranscriptionResponseFormat;
@@ -63,6 +65,7 @@ export interface TranscriptionUsage {
 export interface CanonicalTranscriptionResponse {
 	text: string;
 	language?: string;
+	languages?: string[];
 	duration?: number;
 	segments?: Record<string, unknown>[];
 	words?: Record<string, unknown>[];
@@ -75,6 +78,7 @@ export type CanonicalTranscriptionStreamEvent =
 	| {
 			kind: "done";
 			text: string;
+			languages?: string[];
 			usage?: TranscriptionUsage;
 			logprobs?: unknown;
 	  };
@@ -90,6 +94,10 @@ export interface TranscriptionProfile {
 	supportsStreaming?: boolean;
 	/** Accepts `timestamp_granularities[]` (only with verbose_json). */
 	supportsTimestampGranularities?: boolean;
+	/** Accepts literal vocabulary hints; otherwise the gateway drops them. */
+	supportsKeywords?: boolean;
+	/** Accepts multiple language hints instead of the singular language field. */
+	supportsLanguageHints?: boolean;
 	/** Maximum audio file size. */
 	maxFileBytes?: number;
 }

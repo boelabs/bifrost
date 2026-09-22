@@ -157,3 +157,43 @@ test("azure audio.buildRequest: classic transport rejects streaming", async () =
 		cleanup();
 	}
 });
+
+test("azure audio: keyword and language hints reach both transcription transports", async () => {
+	const { req, cleanup } = audioFile();
+	try {
+		for (const transport of [
+			"azure_audio_transcriptions_legacy",
+			"audio_transcriptions",
+		] as const) {
+			const context = ctx(
+				{ apiKey: "k", baseUrl: "https://r.openai.azure.com" },
+				transport,
+			);
+			context.upstreamModel = "custom-deployment-name";
+			context.meta = resolveModelMetadata("azureopenai", "gpt-transcribe");
+			const r = await must(
+				azureopenaiAdapter,
+				"audioTranscription",
+			).buildRequest(
+				{ ...req, keywords: ["Bifrost", "AC-42"], language: "es" },
+				context,
+			);
+			const form = r.body as FormData;
+			assert.deepEqual(form.getAll("keywords[]"), ["Bifrost", "AC-42"]);
+			assert.deepEqual(form.getAll("languages[]"), ["es"]);
+			assert.equal(form.has("language"), false);
+			context.meta = resolveModelMetadata("azureopenai", "gpt-4o-transcribe");
+			const older = await must(
+				azureopenaiAdapter,
+				"audioTranscription",
+			).buildRequest(
+				{ ...req, keywords: ["Bifrost"], languages: ["es", "en"] },
+				context,
+			);
+			assert.equal((older.body as FormData).has("keywords[]"), false);
+			assert.equal((older.body as FormData).has("languages[]"), false);
+		}
+	} finally {
+		cleanup();
+	}
+});
