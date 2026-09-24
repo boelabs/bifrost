@@ -34,6 +34,16 @@ import {
 } from "./runtime/pipeline.ts";
 
 import {
+	finishDownstreamWriteObservation,
+	type DownstreamWriteObservation,
+	newDownstreamWriteObservation,
+	awaitWithSSEHeartbeats,
+	withSSEHeartbeats,
+	writeSSEHeartbeat,
+	writeSSE,
+} from "./runtime/sse.ts";
+
+import {
 	imageGenerationRequestSchema,
 	toOpenAIImagesResponse,
 	generationToCanonical,
@@ -41,16 +51,9 @@ import {
 	editToCanonical,
 } from "#contracts/openai/images.ts";
 
-import {
-	type DownstreamWriteObservation,
-	newDownstreamWriteObservation,
-	withSSEHeartbeats,
-	writeSSEHeartbeat,
-	writeSSE,
-} from "./runtime/sse.ts";
-
 import type {
 	CanonicalImageStreamEvent,
+	CanonicalImageResponse,
 	CanonicalImageRequest,
 } from "#core/images.ts";
 
@@ -113,47 +116,6 @@ async function handleImageRequest(
 				imageProfileFor(candidate.meta, req.operation)?.qualities,
 				unsupportedParameterStrategy,
 			);
-
-		routing = await route(
-			req.model,
-			callType,
-			{
-				clientSignal: log.clientSignal,
-				requestId: log.requestId,
-				operationId: log.operationId,
-				executionMode: req.stream ? "stream" : "json",
-				candidateEligibility: (candidate) =>
-					assertImageRequestSupported(
-						req,
-						candidate.meta,
-						unsupportedParameterStrategy,
-					),
-				tokenReservation: (candidate) =>
-					estimateTokenReservation(req, {
-						maxOutputTokens: candidate.meta.maxOutputTokens ?? 0,
-					}),
-				usageQuota: usageQuotaForRequest(c),
-			},
-			(candidate, ctx) => {
-				const { request, resolved } = forCandidate(candidate);
-				qualityAdjustment =
-					resolved.adjustedFrom === undefined
-						? undefined
-						: { from: resolved.adjustedFrom, to: resolved.quality ?? null };
-				return executeImage(candidate.adapter, request, ctx);
-			},
-		);
-		log.applyRouting(routing);
-		if (routing.value.kind === "json") {
-			fallbackUsage = imageUsageToCore(routing.value.response.usage);
-		}
-		const metadata: Record<string, unknown> = {
-			...candidateMetadata(routing.candidate),
-			...(qualityAdjustment === undefined ? {} : { qualityAdjustment }),
-			...(routing.value.kind === "stream"
-				? { streamLifecycle: routing.value.observation }
-				: { terminal: routing.value.terminal }),
-		};
 		const imageScope = extensionScope(c, callType, req.model);
 		const imageHooks = {
 			applyImageOutput: (
@@ -161,59 +123,125 @@ async function handleImageRequest(
 			) => applyImageOutputExtensions(imageScope, output),
 		};
 
-		if (routing.value.kind === "json") {
-			log.upstreamTtftMs = Date.now() - routing.upstreamStartedAt;
-			const transformedResponse = await transformImageResponse(
+		const routeImage = async (): Promise<RouteResult<ImageExecResult>> => {
+			const routed = await route(
+				req.model,
+				callType,
+				{
+					clientSignal: log.clientSignal,
+					requestId: log.requestId,
+					operationId: log.operationId,
+					executionMode: req.stream ? "stream" : "json",
+					candidateEligibility: (candidate) =>
+						assertImageRequestSupported(
+							req,
+							candidate.meta,
+							unsupportedParameterStrategy,
+						),
+					tokenReservation: (candidate) =>
+						estimateTokenReservation(req, {
+							maxOutputTokens: candidate.meta.maxOutputTokens ?? 0,
+						}),
+					usageQuota: usageQuotaForRequest(c),
+				},
+				(candidate, ctx) => {
+					const { request, resolved } = forCandidate(candidate);
+					qualityAdjustment =
+						resolved.adjustedFrom === undefined
+							? undefined
+							: { from: resolved.adjustedFrom, to: resolved.quality ?? null };
+					return executeImage(candidate.adapter, request, ctx);
+				},
+			);
+			routing = routed;
+			log.applyRouting(routed);
+			if (routed.value.kind === "json") {
+				fallbackUsage = imageUsageToCore(routed.value.response.usage);
+			}
+			return routed;
+		};
+		const routeMetadata = (
+			routed: RouteResult<ImageExecResult>,
+		): Record<string, unknown> => ({
+			...candidateMetadata(routed.candidate),
+			...(qualityAdjustment === undefined ? {} : { qualityAdjustment }),
+			...(routed.value.kind === "stream"
+				? { streamLifecycle: routed.value.observation }
+				: { terminal: routed.value.terminal }),
+		});
+		const jsonResponse = async (
+			routed: RouteResult<ImageExecResult>,
+			response: CanonicalImageResponse,
+		) => {
+			log.upstreamTtftMs = Date.now() - routed.upstreamStartedAt;
+			return transformImageResponse(
 				await applyCanonicalResponseExtensions(
 					c,
 					callType,
 					req.model,
-					routing.value.response,
+					response,
 				),
 				req,
-				imageProfileFor(routing.candidate.meta, req.operation),
+				imageProfileFor(routed.candidate.meta, req.operation),
 				imageHooks,
 			);
-			const response = transformedResponse;
+		};
+
+		if (!req.stream) {
+			const routed = await routeImage();
+			if (routed.value.kind !== "json") {
+				throw new GatewayError({
+					class: "server",
+					message: "Non-streaming image request unexpectedly returned a stream",
+				});
+			}
+			const response = await jsonResponse(routed, routed.value.response);
 			const usage = imageUsageToCore(response.usage);
-			const cost = computeUsageCost(routing.candidate.meta, usage);
+			await finish(usage);
+			await cleanup?.();
+			log.write({
+				status: "success",
+				httpStatus: 200,
+				usage,
+				cost: computeUsageCost(routed.candidate.meta, usage),
+				firstOutputMs: null,
+				responseBody: imageResponseLog(response),
+				metadata: routeMetadata(routed),
+				error: null,
+			});
+			return c.json(toOpenAIImagesResponse(response));
+		}
 
-			if (!req.stream) {
-				await finish(usage);
-				await cleanup?.();
-				log.write({
-					status: "success",
-					httpStatus: 200,
-					usage,
-					cost,
-					firstOutputMs: null,
-					responseBody: imageResponseLog(response),
-					metadata,
-					error: null,
-				});
-				return c.json(toOpenAIImagesResponse(response));
-			}
+		cleanupDeferred = true;
+		return streamSSE(c, async (stream) => {
+			stream.onAbort(() => log.abortClient());
+			const downstream = newDownstreamWriteObservation(log.operationId);
+			const metadata: Record<string, unknown> = { downstream };
+			let usage: ReturnType<typeof imageUsageToCore> = null;
+			let responseBody: Record<string, unknown> | null = null;
+			let count = 0;
+			let firstAt: number | null = null;
+			let streamError: GatewayError | null = null;
+			try {
+				// Force headers onto the wire before upstream routing can stall: a JSON upstream serving
+				// a streaming request generates the whole image inside routing.
+				await writeSSEHeartbeat(stream, downstream);
+				const routed = await awaitWithSSEHeartbeats(routeImage(), () =>
+					writeSSEHeartbeat(stream, downstream),
+				);
+				Object.assign(metadata, routeMetadata(routed));
 
-			if (response.data.length !== 1) {
-				throw new GatewayError({
-					class: "server",
-					message: `Non-streaming image upstream returned ${response.data.length} outputs for a streaming request; expected exactly one`,
-				});
-			}
-			const [completedImage] = response.data;
-			if (!completedImage) {
-				throw new GatewayError({
-					class: "server",
-					message: "Image upstream returned no output",
-				});
-			}
-			cleanupDeferred = true;
-			return streamSSE(c, async (stream) => {
-				stream.onAbort(() => log.abortClient());
-				const downstream = newDownstreamWriteObservation(log.operationId);
-				metadata.downstream = downstream;
-				let streamError: GatewayError | null = null;
-				try {
+				if (routed.value.kind === "json") {
+					const response = await jsonResponse(routed, routed.value.response);
+					usage = imageUsageToCore(response.usage);
+					responseBody = imageResponseLog(response);
+					const [completedImage] = response.data;
+					if (response.data.length !== 1 || !completedImage) {
+						throw new GatewayError({
+							class: "server",
+							message: `Non-streaming image upstream returned ${response.data.length} outputs for a streaming request; expected exactly one`,
+						});
+					}
 					const event: CanonicalImageStreamEvent = {
 						kind: "completed",
 						operation: req.operation,
@@ -240,16 +268,48 @@ async function handleImageRequest(
 						},
 						downstream,
 					);
-				} catch (error) {
-					streamError = GatewayError.is(error)
-						? error
-						: new GatewayError({
-								class: "server",
-								message: "Image stream failed",
-								cause: error,
-							});
-					await notifyExtensionError(c, callType, req.model, streamError);
-					if (streamError.code !== "downstream_backpressure") {
+				} else {
+					const profile = imageProfileFor(routed.candidate.meta, req.operation);
+					for await (const rawEvent of withSSEHeartbeats(
+						routed.value.events,
+						() => writeSSEHeartbeat(stream, downstream),
+					)) {
+						log.progress();
+						const canonicalEvent = await applyStreamEventExtensions(
+							c,
+							callType,
+							req.model,
+							rawEvent,
+						);
+						const event = await transformImageEvent(
+							canonicalEvent,
+							req,
+							profile,
+							imageHooks,
+						);
+						if (firstAt === null) {
+							firstAt = Date.now();
+							log.upstreamTtftMs = firstAt - routed.upstreamStartedAt;
+						}
+						if (event.kind === "completed" && event.usage) {
+							usage = imageUsageToCore(event.usage);
+						}
+						count += 1;
+						await writeSSE(
+							stream,
+							{
+								data: JSON.stringify(toOpenAIImageEvent(event)),
+							},
+							downstream,
+						);
+					}
+				}
+			} catch (error) {
+				streamError = toGatewayError(error, "Image stream failed");
+				log.applyFailedAttempts(streamError.attempts);
+				await notifyExtensionError(c, callType, req.model, streamError);
+				if (streamError.code !== "downstream_backpressure") {
+					try {
 						await writeSSE(
 							stream,
 							{
@@ -257,103 +317,26 @@ async function handleImageRequest(
 							},
 							downstream,
 						);
+					} catch {
+						// The original stream failure remains authoritative.
 					}
-				} finally {
-					await finish(usage, streamError, downstream);
-					await cleanup?.();
-					log.write({
-						status: streamError ? "error" : "success",
-						httpStatus: 200,
-						usage,
-						cost,
-						firstOutputMs: null,
-						responseBody: imageResponseLog(response),
-						metadata,
-						error: streamError?.toLog() ?? null,
-					});
-				}
-			});
-		}
-
-		const streamRouting = routing;
-		const nativeValue = streamRouting.value;
-		if (nativeValue.kind !== "stream") {
-			throw new GatewayError({
-				class: "server",
-				message: "Invalid native image stream result",
-			});
-		}
-		const nativeEvents = nativeValue.events;
-		cleanupDeferred = true;
-		return streamSSE(c, async (stream) => {
-			stream.onAbort(() => log.abortClient());
-			const downstream = newDownstreamWriteObservation(log.operationId);
-			let usage: ReturnType<typeof imageUsageToCore> = null;
-			let count = 0;
-			let firstAt: number | null = null;
-			let streamError: GatewayError | null = null;
-			try {
-				for await (const rawEvent of withSSEHeartbeats(nativeEvents, () =>
-					writeSSEHeartbeat(stream, downstream),
-				)) {
-					log.progress();
-					const canonicalEvent = await applyStreamEventExtensions(
-						c,
-						callType,
-						req.model,
-						rawEvent,
-					);
-					const event = await transformImageEvent(
-						canonicalEvent,
-						req,
-						imageProfileFor(streamRouting.candidate.meta, req.operation),
-						imageHooks,
-					);
-					if (firstAt === null) {
-						firstAt = Date.now();
-						log.upstreamTtftMs = firstAt - streamRouting.upstreamStartedAt;
-					}
-					if (event.kind === "completed" && event.usage) {
-						usage = imageUsageToCore(event.usage);
-					}
-					count += 1;
-					await writeSSE(
-						stream,
-						{
-							data: JSON.stringify(toOpenAIImageEvent(event)),
-						},
-						downstream,
-					);
-				}
-			} catch (error) {
-				streamError = GatewayError.is(error)
-					? error
-					: new GatewayError({
-							class: "server",
-							message: "Image stream failed",
-							cause: error,
-						});
-				await notifyExtensionError(c, callType, req.model, streamError);
-				if (streamError.code !== "downstream_backpressure") {
-					await writeSSE(
-						stream,
-						{
-							data: JSON.stringify(streamError.toOpenAI()),
-						},
-						downstream,
-					);
 				}
 			} finally {
-				await finish(usage, streamError, downstream);
-				const cost = computeUsageCost(streamRouting.candidate.meta, usage);
+				if (routing) {
+					await finish(usage, streamError, downstream);
+				} else {
+					finishDownstreamWriteObservation(downstream, streamError?.code);
+				}
 				await cleanup?.();
 				log.write({
 					status: streamError ? "error" : "success",
 					httpStatus: 200,
 					usage,
-					cost,
+					cost: routing
+						? computeUsageCost(routing.candidate.meta, usage)
+						: null,
 					firstOutputMs: firstAt ? firstAt - log.startedAt : null,
-					responseBody: { streamed: true, events: count },
+					responseBody: responseBody ?? { streamed: true, events: count },
 					metadata,
 					error: streamError?.toLog() ?? null,
 				});
