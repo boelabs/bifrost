@@ -91,9 +91,12 @@ rules the admin API enforces.
   Including `"none"` declares a **literal off switch** (the model can skip reasoning); omitting it means
   the model **always reasons** and a `none` request snaps up to the lowest declared level (its floor).
   There is no separate `canDisable` flag — the ladder is the single source of truth.
-- Requests are **clamped, never rejected** for being out of range: an effort above/below the declared
-  levels snaps into range (e.g. `max` → `xhigh`, `minimal` → the floor). A positive effort never
-  rounds down into `none`. The only hard error is requesting reasoning on a non-reasoner. This keeps
+- Requests are **clamped, never rejected** for being out of range: an effort the model does not declare
+  goes to the nearest declared level on the ladder, in either direction, the lower one on a tie (e.g.
+  `max` → `xhigh`, `minimal` → the floor, `medium` → `high` on a `minimal`/`high` model). A positive
+  effort never rounds down into `none`. Adapters send the snapped level as is, so `levels` must list
+  only values the provider accepts; `gemini_level` ladders are rejected at load if they declare
+  anything outside `minimal`/`low`/`medium`/`high` without an `upstreamEffortMap` entry. The only hard error is requesting reasoning on a non-reasoner. This keeps
   the catalog forward-compatible: a new model only declares its `levels`.
 - `openai_effort` emits `reasoning_effort`; `openai_body` emits a provider-specific top-level field
   such as `thinking: {"type":"enabled"}` and, where applicable, an `effortField` like `reasoning_effort`.

@@ -158,49 +158,44 @@ export function toUpstreamReasoningEffort(
 }
 
 /**
- * Snaps the requested effort to the nearest level the model supports. Two rules, with "none" (OFF)
- * treated as special because it is a state, not a degree of reasoning:
+ * Snaps the requested effort to the nearest level the model supports, so a request never carries a
+ * level the model does not declare. "none" (OFF) is special because it is a state, not a degree:
  *  - request "none": returns "none" if the model has an off switch (`"none" ∈ levels`); otherwise the
  *    model always reasons, so it snaps UP to the lowest available level (its "floor").
- *  - request of a real effort (minimal..max): chosen among the POSITIVE levels only — the highest one
- *    that does not exceed the request, or the floor if the request is below all of them. A positive
- *    request NEVER rounds DOWN into "none": asking for some reasoning never turns it off.
+ *  - request of a real effort (minimal..max): the closest POSITIVE level on the canonical ladder, in
+ *    either direction; on a tie, the lower one (the cheaper choice). A positive request NEVER turns
+ *    reasoning off.
  * This makes `levels` the single source of truth for "can this model disable reasoning, and what does
- * it fall back to" — no separate flag. Returns a level guaranteed ∈ `levels`. Handles non-contiguous
- * support (e.g. low/high/max, without medium or xhigh) by choosing the nearest one downward.
+ * it fall back to" — no separate flag and no per-provider remapping. Returns a level ∈ `levels`.
  */
 export function snapEffort(
 	requested: ReasoningEffort,
 	spec: ReasoningSpec,
 ): ReasoningEffort {
-	const sorted = [...spec.levels].sort(
-		(a, b) => effortIndex(a) - effortIndex(b),
-	);
-	if (sorted.length === 0) {
+	if (spec.levels.length === 0) {
 		return requested;
 	}
-	// Explicit OFF, honored only if the model actually exposes it (lowest rung is "none").
-	if (requested === "none" && sorted[0] === "none") {
+	if (requested === "none" && spec.levels.includes("none")) {
 		return "none";
 	}
-
-	// Positive request (or "none" on a mandatory reasoner): pick among the reasoning levels, never "none".
-	const positives = sorted.filter((lvl) => lvl !== "none");
-	if (positives.length === 0) {
-		return "none"; // degenerate: the model only declares "none"
-	}
-
+	const positives = [...spec.levels]
+		.filter((lvl) => lvl !== "none")
+		.sort((a, b) => effortIndex(a) - effortIndex(b));
 	const [floor] = positives;
 	if (floor === undefined) {
-		return "none";
+		return "none"; // degenerate: the model only declares "none"
+	}
+	if (requested === "none") {
+		return floor;
 	}
 	const reqIdx = effortIndex(requested);
-	let chosen = floor; // floor if the request is below all of them
+	let chosen = floor;
 	for (const lvl of positives) {
-		if (effortIndex(lvl) <= reqIdx) {
+		if (
+			Math.abs(effortIndex(lvl) - reqIdx) <
+			Math.abs(effortIndex(chosen) - reqIdx)
+		) {
 			chosen = lvl;
-		} else {
-			break;
 		}
 	}
 	return chosen;

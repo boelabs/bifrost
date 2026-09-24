@@ -1,6 +1,10 @@
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { loadCatalogDocument } from "./jsonCatalog.ts";
 import { MODEL_CATALOG } from "#adapters/index.ts";
+import { pathToFileURL } from "node:url";
 import assert from "node:assert/strict";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 
 const catalogs = [
@@ -74,5 +78,35 @@ test("JSON provider catalogs keep model ids as object keys", () => {
 			assert.ok(model.operations, `${catalog.adapterKey}/${modelId}`);
 			assert.equal((model as { id?: string }).id ?? modelId, modelId);
 		}
+	}
+});
+
+test("a Gemini thinkingLevel ladder only declares levels Gemini accepts", () => {
+	const source = new URL("../adapters/google/catalog.json", import.meta.url);
+	const doc = JSON.parse(readFileSync(source, "utf8"));
+	const dir = mkdtempSync(join(tmpdir(), "catalog-"));
+	const url = pathToFileURL(join(dir, "catalog.json"));
+	const withLevels = (reasoning: Record<string, unknown>) => {
+		doc.models["gemini-3.8-flash"].operations["text.generate"].reasoning = {
+			kind: "gemini_level",
+			...reasoning,
+		};
+		writeFileSync(url, JSON.stringify(doc));
+	};
+	try {
+		for (const level of ["none", "xhigh", "max"]) {
+			withLevels({ levels: ["low", "high", level] });
+			assert.throws(
+				() => loadCatalogDocument(url),
+				/not a Gemini thinkingLevel/,
+			);
+		}
+		withLevels({
+			levels: ["low", "high", "xhigh"],
+			upstreamEffortMap: { xhigh: "high" },
+		});
+		assert.doesNotThrow(() => loadCatalogDocument(url));
+	} finally {
+		rmSync(dir, { recursive: true, force: true });
 	}
 });
