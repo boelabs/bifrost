@@ -1109,7 +1109,7 @@
 					"maxOutputTokens": 128000,
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["minimal", "low", "medium", "high"]
+						"levels": ["low", "medium", "high"]
 					},
 					"parameters": {
 						"max_tokens": true,

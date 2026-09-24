@@ -26,7 +26,7 @@
 					"maxOutputTokens": 384000,
 					"reasoning": {
 						"kind": "openai_body",
-						"levels": ["none", "high", "max"],
+						"levels": ["none", "low", "high", "max"],
 						"bodyField": {
 							"param": "thinking",
 							"onValue": {
@@ -93,7 +93,7 @@
 					"maxOutputTokens": 384000,
 					"reasoning": {
 						"kind": "openai_body",
-						"levels": ["none", "high", "max"],
+						"levels": ["none", "low", "high", "max"],
 						"bodyField": {
 							"param": "thinking",
 							"onValue": {

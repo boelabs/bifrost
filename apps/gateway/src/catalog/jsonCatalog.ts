@@ -198,6 +198,13 @@ function validateCapabilities(value: unknown, path: string): void {
 	}
 }
 
+const GEMINI_THINKING_LEVELS: ReadonlySet<string> = new Set([
+	"minimal",
+	"low",
+	"medium",
+	"high",
+]);
+
 function validateReasoning(value: unknown, path: string): void {
 	if (value === undefined) {
 		return;
@@ -235,6 +242,19 @@ function validateReasoning(value: unknown, path: string): void {
 				fail(`${path}.upstreamEffortMap`, `unknown effort "${level}"`);
 			}
 			assertString(upstream, `${path}.upstreamEffortMap.${level}`);
+		}
+	}
+	if (value.kind === "gemini_level") {
+		const mapped = isRecord(value.upstreamEffortMap)
+			? value.upstreamEffortMap
+			: {};
+		for (const level of value.levels) {
+			if (!(GEMINI_THINKING_LEVELS.has(level) || level in mapped)) {
+				fail(
+					`${path}.levels`,
+					`"${level}" is not a Gemini thinkingLevel; declare only levels the model accepts`,
+				);
+			}
 		}
 	}
 	if (value.effortField !== undefined) {

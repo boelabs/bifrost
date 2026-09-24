@@ -31,7 +31,7 @@
 					"maxOutputTokens": 131072,
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["max"]
+						"levels": ["low", "high", "max"]
 					},
 					"contracts": ["chat.completions"],
 					"parameters": {

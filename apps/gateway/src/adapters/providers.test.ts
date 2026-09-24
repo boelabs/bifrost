@@ -362,7 +362,7 @@ test("catalog: Kimi K3 and K2.x model-native thinking", () => {
 	assert.equal(k3.pricing?.inputCentsPerMTokens, 300);
 	assert.deepEqual(k3.reasoning, {
 		kind: "openai_effort",
-		levels: ["max"],
+		levels: ["low", "high", "max"],
 	});
 	assert.equal(k26.capabilities.structuredOutputs, true);
 	assert.equal(k26.maxOutputTokens, 262_144);
@@ -387,7 +387,13 @@ test("catalog: Kimi K3 and K2.x model-native thinking", () => {
 	);
 	const k3Body = jsonBody(k3Request);
 	assert.equal(k3Body.thinking, undefined);
-	assert.equal(k3Body.reasoning_effort, "max");
+	// K3 always thinks: an omitted effort is its floor, like every mandatory reasoner.
+	assert.equal(k3Body.reasoning_effort, "low");
+	const k3Max = must(moonshotAdapter, "chat").buildRequest(
+		{ ...req, reasoning: { effort: "max" } },
+		ctx("kimi-k3", "moonshot", { apiKey: "k" }),
+	);
+	assert.equal(jsonBody(k3Max).reasoning_effort, "max");
 });
 
 test("deprecated DeepSeek aliases preserve compatibility modes", () => {

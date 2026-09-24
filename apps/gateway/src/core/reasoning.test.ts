@@ -39,6 +39,31 @@ test("snapEffort: lowers to the nearest supported level", () => {
 	assert.equal(snapEffort("minimal", spec), "low");
 });
 
+test("snapEffort: picks the closest level in either direction, lower on a tie", () => {
+	const gaps: ReasoningSpec = {
+		kind: "gemini_level",
+		levels: ["minimal", "high"],
+	};
+	assert.equal(snapEffort("low", gaps), "minimal");
+	assert.equal(snapEffort("medium", gaps), "high");
+	assert.equal(snapEffort("max", gaps), "high");
+
+	const kimi: ReasoningSpec = {
+		kind: "openai_effort",
+		levels: ["low", "high", "max"],
+	};
+	assert.equal(snapEffort("none", kimi), "low");
+	assert.equal(snapEffort("medium", kimi), "low");
+	assert.equal(snapEffort("xhigh", kimi), "high");
+
+	const lowOrMax: ReasoningSpec = {
+		kind: "openai_effort",
+		levels: ["none", "low", "max"],
+	};
+	assert.equal(snapEffort("xhigh", lowOrMax), "max");
+	assert.equal(snapEffort("high", lowOrMax), "low");
+});
+
 test("snapEffort: preserves max as a distinct tier above xhigh", () => {
 	const full: ReasoningSpec = {
 		kind: "openai_effort",

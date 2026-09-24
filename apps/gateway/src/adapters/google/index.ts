@@ -290,10 +290,8 @@ function geminiThinkingConfig(
 	const { effort, spec } = resolved;
 	const includeThoughts = summaryVisible(resolved.summary);
 	if (spec.kind === "gemini_level") {
-		const level =
-			effort === "none" ? "minimal" : toUpstreamReasoningEffort(effort, spec);
 		return {
-			thinkingLevel: level === "xhigh" ? "high" : level,
+			thinkingLevel: toUpstreamReasoningEffort(effort, spec),
 			...(includeThoughts ? { includeThoughts: true } : {}),
 		};
 	}
