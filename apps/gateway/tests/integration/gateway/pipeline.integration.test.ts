@@ -203,6 +203,7 @@ test("integration: one Gemini upstream feeds all 3 public contracts (json)", asy
 			const resp = canonicalToResponsesResponse(u, {
 				req: { model: "grp" } as never,
 				publicModel: "grp",
+				reasoningEffort: null,
 			}) as TestJsonObject;
 			assert.equal(resp.object, "response");
 			assert.equal(resp.model, "grp");
@@ -235,6 +236,7 @@ test("integration: /v1/responses request served by Google (non-OpenAI) and rende
 			const out = canonicalToResponsesResponse(result.response, {
 				req: responsesRequestSchema.parse({ model: "grp", input: "hello" }),
 				publicModel: "grp",
+				reasoningEffort: null,
 			}) as TestJsonObject;
 			assert.equal(out.output_text, "Hello from Gemini");
 			assert.equal(out.usage.input_tokens, 4);
@@ -319,6 +321,7 @@ test("integration: streaming Gemini -> /v1/responses events and /v1/chat chunks"
 			for await (const ev of canonicalChunksToResponsesEvents(replay(), {
 				req: { model: "grp" } as never,
 				publicModel: "grp",
+				reasoningEffort: null,
 			})) {
 				if (ev.event) {
 					types.push(ev.event);

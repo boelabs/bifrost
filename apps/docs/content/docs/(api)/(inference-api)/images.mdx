@@ -44,6 +44,8 @@ tie, so a request for `max` that falls back onto a model whose ladder stops at `
 of failing, and `low` on a model that starts at `high` is raised to it. `standard` and `hd` are still
 accepted and normalized (`standard` → `medium`, `hd` → `high`); DALL·E still receives `hd` upstream.
 `auto` is not a rung — it is accepted everywhere and sends nothing, leaving the model's own default.
+The response's `quality` is the rung the provider reports, or, when it reports none, the rung the
+gateway sent after snapping; it is absent when nothing was sent.
 
 ## `size: "auto"` works everywhere
 

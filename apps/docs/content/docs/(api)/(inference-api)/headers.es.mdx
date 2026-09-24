@@ -30,7 +30,8 @@ Solicitado a través del header `x-unified-routing-metadata`, agregado al cuerpo
 ```json
 {
   "unified_routing": {
-    "served_model": "gpt-image",
+    "served_model": "gpt-5.6",
+    "reasoning_effort": "low",
     "routing_strategy": "latency-based",
     "unsupported_parameter_strategy": "drop",
     "fallback_used": false,
@@ -41,6 +42,8 @@ Solicitado a través del header `x-unified-routing-metadata`, agregado al cuerpo
   }
 }
 ```
+
+`reasoning_effort` es el esfuerzo con el que se ejecutó el modelo servido tras el [ajuste](/es/docs/reasoning), o `null` si no razona. Lo devuelven `/v1/chat/completions`, `/v1/responses` y `/v1/messages`.
 
 `attempts` incluye todos los deployments que el router intentó para esta solicitud (incluidas las que fallaron antes del intento ganador), cada una con su latencia y, en caso de falla, `error_class` y `http_status`. Un intento rechazado por incompatible con el candidato también incluye `health_impact: "neutral"`. Consulta [Routing](/es/docs/routing) para conocer lo que significan `routing_strategy` y `fallback_used`, y [Política de parámetros](/es/docs/parameter-policy) para `unsupported_parameter_strategy`.
 

@@ -177,6 +177,7 @@ for (const key of [
 					for await (const event of canonicalChunksToResponsesEvents(replay(), {
 						req: responseRequest(),
 						publicModel: "public-model",
+						reasoningEffort: null,
 					})) {
 						rendered.push(JSON.parse(event.data));
 					}
@@ -215,6 +216,7 @@ for (const key of [
 					const response = canonicalToResponsesResponse(parsed, {
 						req: responseRequest(),
 						publicModel: "public-model",
+						reasoningEffort: null,
 					});
 					assert.deepEqual(response.usage, {
 						...responsesUsage,
@@ -680,6 +682,7 @@ test("Anthropic lifetime usage survives JSON and all public renderers", () => {
 	const response = canonicalToResponsesResponse(parsed, {
 		req: responseRequest(),
 		publicModel: "public-model",
+		reasoningEffort: null,
 	});
 	assert.deepEqual(
 		parseResponsesUsage(

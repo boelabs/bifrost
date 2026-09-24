@@ -127,7 +127,7 @@ function streamMessages(
 				metadata.contentInputs = contentInputMetadata;
 			}
 			const routingMetadata = routingMetadataRequested(c)
-				? publicRoutingMetadata(routing, settings)
+				? publicRoutingMetadata(routing, settings, reasoning)
 				: null;
 			const tapped = tapFirstToken(
 				routing.value.chunks,
@@ -328,7 +328,7 @@ export async function messagesHandler(c: Context<AppEnv>): Promise<Response> {
 			metadata.contentInputs = contentInputMetadata;
 		}
 		const routingMetadata = routingMetadataRequested(c)
-			? publicRoutingMetadata(routing, settings)
+			? publicRoutingMetadata(routing, settings, reasoning)
 			: null;
 
 		if (routing.value.kind === "json") {

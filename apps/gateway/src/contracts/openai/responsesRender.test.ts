@@ -663,6 +663,41 @@ test("request->canonical: an ingested reasoning item keeps only what the client 
 const renderOpts = (): RenderOptions => ({
 	req: parse({ model: "gpt", input: "hi" }),
 	publicModel: "public-gpt",
+	reasoningEffort: null,
+});
+
+test("canonical->response: reasoning reports the effort the model ran at", () => {
+	const resp: CanonicalChatResponse = {
+		id: "x",
+		created: 1_700_000_000,
+		model: "gpt-x",
+		choices: [
+			{
+				index: 0,
+				finishReason: "stop",
+				message: { role: "assistant", content: "OK" },
+			},
+		],
+		usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 },
+	};
+	const req = parse({
+		model: "gpt",
+		input: "hi",
+		reasoning: { effort: "none" },
+	});
+	const snapped = canonicalToResponsesResponse(resp, {
+		req,
+		publicModel: "public-gpt",
+		reasoningEffort: "low",
+	}) as TestJsonObject;
+	assert.deepEqual(snapped.reasoning, { effort: "low", summary: "auto" });
+
+	const nonReasoner = canonicalToResponsesResponse(resp, {
+		req,
+		publicModel: "public-gpt",
+		reasoningEffort: null,
+	}) as TestJsonObject;
+	assert.deepEqual(nonReasoner.reasoning, { effort: null, summary: null });
 });
 
 test("canonical->response: message item, usage, and output_text", () => {
@@ -814,6 +849,7 @@ test("canonical->response: echoes previous_response_id and store", () => {
 			store: true,
 		}),
 		publicModel: "public-gpt",
+		reasoningEffort: null,
 	}) as TestJsonObject;
 	assert.equal(out.previous_response_id, "resp_prev");
 	assert.equal(out.store, true);
@@ -1919,6 +1955,7 @@ test("response object: every OpenResponses 2.3 required field is present", () =>
 		{
 			req: parse({ model: "response-model", input: "hi" }),
 			publicModel: "response-model",
+			reasoningEffort: null,
 		},
 	);
 	for (const field of [
