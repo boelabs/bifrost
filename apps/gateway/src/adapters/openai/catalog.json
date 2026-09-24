@@ -2919,7 +2919,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+						"levels": ["low", "medium", "high", "xhigh", "max"]
 					}
 				}
 			},

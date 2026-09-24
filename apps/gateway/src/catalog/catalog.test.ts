@@ -1,4 +1,5 @@
 import { resolveModelMetadata, getCatalogEntry } from "./index.ts";
+import { reasoningLogInfo } from "../core/reasoning.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -193,6 +194,14 @@ test("catalog does not match deprecated sibling variants by loose prefix", () =>
 test("catalog still matches dated snapshots of active base models", () => {
 	assert.ok(getCatalogEntry("openai", "gpt-5.5-2026-04-23"));
 	assert.ok(getCatalogEntry("openai", "gpt-5.4-mini-2026-03-17"));
+});
+
+test("GPT-6 Astra has no reasoning off switch, so none snaps to low", () => {
+	for (const provider of ["openai", "azureopenai"] as const) {
+		const spec = resolveModelMetadata(provider, "gpt-6-astra").reasoning;
+		assert.deepEqual(spec?.levels, ["low", "medium", "high", "xhigh", "max"]);
+		assert.equal(reasoningLogInfo({ effort: "none" }, spec)?.effective, "low");
+	}
 });
 
 test("Anthropic catalog exposes Opus 5.5 always-on reasoning and fast mode", () => {
