@@ -11,6 +11,47 @@
 		]
 	},
 	"models": {
+		"claude-opus-5-5": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true,
+						"strictTools": true
+					},
+					"reasoning": {
+						"kind": "anthropic_adaptive",
+						"levels": ["low", "medium", "high", "xhigh", "max"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"verbosity": true,
+						"reasoning_effort": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 128000
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 400,
+				"outputCentsPerMTokens": 2000,
+				"cacheReadCentsPerMTokens": 20,
+				"cacheWriteCentsPerMTokens": 500,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 500,
+					"3600": 800
+				}
+			}
+		},
 		"claude-opus-5": {
 			"operations": {
 				"text.generate": {
@@ -421,6 +462,48 @@
 					"3600": 2000
 				}
 			}
+		},
+		"claude-opus-5-5-fast": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true,
+						"strictTools": true
+					},
+					"reasoning": {
+						"kind": "anthropic_adaptive",
+						"levels": ["low", "medium", "high", "xhigh", "max"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"verbosity": true,
+						"reasoning_effort": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 128000
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 800,
+				"outputCentsPerMTokens": 4000,
+				"cacheReadCentsPerMTokens": 40,
+				"cacheWriteCentsPerMTokens": 1000,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 1000,
+					"3600": 1600
+				}
+			},
+			"notes": "Gateway fast-mode alias for claude-opus-5-5. The adapter sends speed=\"fast\" with the required beta header; Anthropic access is required."
 		},
 		"claude-opus-5-fast": {
 			"operations": {

@@ -195,6 +195,24 @@ test("catalog still matches dated snapshots of active base models", () => {
 	assert.ok(getCatalogEntry("openai", "gpt-5.4-mini-2026-03-17"));
 });
 
+test("Anthropic catalog exposes Opus 5.5 always-on reasoning and fast mode", () => {
+	const opus55 = getCatalogEntry("anthropic", "claude-opus-5-5");
+	assert.deepEqual(opus55?.operations["text.generate"]?.reasoning, {
+		kind: "anthropic_adaptive",
+		levels: ["low", "medium", "high", "xhigh", "max"],
+	});
+	assert.equal(opus55?.pricing?.inputCentsPerMTokens, 400);
+	assert.equal(opus55?.pricing?.cacheReadCentsPerMTokens, 20);
+
+	const opus55Fast = getCatalogEntry("anthropic", "claude-opus-5-5-fast");
+	assert.deepEqual(
+		opus55Fast?.operations["text.generate"]?.reasoning,
+		opus55?.operations["text.generate"]?.reasoning,
+	);
+	assert.equal(opus55Fast?.pricing?.inputCentsPerMTokens, 800);
+	assert.equal(opus55Fast?.pricing?.outputCentsPerMTokens, 4000);
+});
+
 test("Anthropic catalog exposes Opus 5 reasoning, fast mode, and model-specific tiers", () => {
 	const opus5Entry = getCatalogEntry("anthropic", "claude-opus-5");
 	const opus5 = opus5Entry?.operations["text.generate"];

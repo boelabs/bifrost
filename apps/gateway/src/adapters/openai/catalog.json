@@ -2938,6 +2938,96 @@
 					}
 				]
 			}
+		},
+		"gpt-6-sol": {
+			"operations": {
+				"text.generate": {
+					"maxInputTokens": 1050000,
+					"maxOutputTokens": 128000,
+					"parameters": {
+						"max_tokens": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true,
+						"seed": true,
+						"response_format": true,
+						"structured_outputs": true,
+						"reasoning_effort": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"structuredOutputs": true,
+						"reasoning": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 20,
+				"cacheWriteCentsPerMTokens": 250,
+				"tiers": [
+					{
+						"aboveInputTokens": 272000,
+						"inputCentsPerMTokens": 400,
+						"outputCentsPerMTokens": 1500,
+						"cacheReadCentsPerMTokens": 40,
+						"cacheWriteCentsPerMTokens": 500
+					}
+				]
+			}
+		},
+		"gpt-6-luna": {
+			"operations": {
+				"text.generate": {
+					"maxInputTokens": 1050000,
+					"maxOutputTokens": 128000,
+					"parameters": {
+						"max_tokens": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true,
+						"seed": true,
+						"response_format": true,
+						"structured_outputs": true,
+						"reasoning_effort": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"structuredOutputs": true,
+						"reasoning": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 10,
+				"outputCentsPerMTokens": 50,
+				"cacheReadCentsPerMTokens": 1,
+				"cacheWriteCentsPerMTokens": 12.5,
+				"tiers": [
+					{
+						"aboveInputTokens": 272000,
+						"inputCentsPerMTokens": 20,
+						"outputCentsPerMTokens": 75,
+						"cacheReadCentsPerMTokens": 2,
+						"cacheWriteCentsPerMTokens": 25
+					}
+				]
+			}
 		}
 	}
 }

@@ -18,7 +18,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 40960,
 					"maxOutputTokens": 16384,
@@ -32,7 +32,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -55,7 +57,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 16384,
@@ -68,14 +70,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -91,7 +96,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 40960,
 					"maxOutputTokens": 16384,
@@ -105,7 +110,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -128,7 +135,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 8192,
@@ -142,7 +149,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -213,7 +222,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 131072,
 					"maxOutputTokens": 32768,
@@ -227,7 +236,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -250,7 +261,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 65536,
@@ -261,7 +272,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -295,7 +308,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 8192,
@@ -306,7 +319,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -325,7 +340,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 256000,
 					"maxOutputTokens": 256000,
@@ -336,7 +351,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -441,8 +458,8 @@
 					"capabilities": {
 						"tools": true,
 						"vision": false,
-						"reasoning": false,
-						"structuredOutputs": false
+						"reasoning": true,
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 32768,
@@ -452,11 +469,28 @@
 					},
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
+						"include_reasoning": true,
 						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": [
+							"none",
+							"minimal",
+							"low",
+							"medium",
+							"high",
+							"xhigh",
+							"max"
+						]
 					}
 				}
 			},
@@ -487,7 +521,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 32768,
@@ -498,7 +532,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -532,7 +568,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 256000,
 					"maxOutputTokens": 65536,
@@ -546,7 +582,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -584,7 +622,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262114,
 					"maxOutputTokens": 262114,
@@ -595,7 +633,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -614,7 +654,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 262144,
@@ -628,7 +668,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -681,7 +723,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 131072,
 					"maxOutputTokens": 129024,
@@ -692,7 +734,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -769,7 +813,15 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": [
+							"none",
+							"minimal",
+							"low",
+							"medium",
+							"high",
+							"xhigh",
+							"max"
+						]
 					}
 				}
 			},
@@ -808,7 +860,15 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": [
+							"none",
+							"minimal",
+							"low",
+							"medium",
+							"high",
+							"xhigh",
+							"max"
+						]
 					}
 				}
 			},
@@ -893,7 +953,15 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": [
+							"none",
+							"minimal",
+							"low",
+							"medium",
+							"high",
+							"xhigh",
+							"max"
+						]
 					}
 				}
 			},
@@ -920,7 +988,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 991000,
 					"maxOutputTokens": 64000,
@@ -933,14 +1001,25 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": [
+							"none",
+							"minimal",
+							"low",
+							"medium",
+							"high",
+							"xhigh",
+							"max"
+						]
 					}
 				}
 			},
@@ -974,7 +1053,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 991000,
 					"maxOutputTokens": 64000,
@@ -988,14 +1067,24 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": [
+							"none",
+							"minimal",
+							"low",
+							"medium",
+							"high",
+							"xhigh",
+							"max"
+						]
 					}
 				}
 			},
@@ -1034,7 +1123,15 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": [
+							"none",
+							"minimal",
+							"low",
+							"medium",
+							"high",
+							"xhigh",
+							"max"
+						]
 					}
 				}
 			},
@@ -1061,7 +1158,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 128000,
@@ -1075,7 +1172,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -1099,7 +1198,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 131072,
@@ -1113,7 +1212,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -1138,7 +1239,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 991000,
 					"maxOutputTokens": 128000,
@@ -1152,14 +1253,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "low", "medium", "xhigh"]
 					}
 				}
 			},
@@ -1177,7 +1280,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 128000,
@@ -1191,14 +1294,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["low", "medium", "xhigh"]
+						"levels": ["none", "low", "medium", "xhigh"]
 					}
 				}
 			},
@@ -1215,7 +1320,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 991000,
 					"maxOutputTokens": 128000,
@@ -1228,14 +1333,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "xhigh"]
 					}
 				}
 			},
@@ -1244,6 +1352,46 @@
 				"outputCentsPerMTokens": 600,
 				"cacheReadCentsPerMTokens": 25,
 				"cacheWriteCentsPerMTokens": 250
+			}
+		},
+		"alibaba/qwen3.8-max-prime": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 131072,
+					"modalities": {
+						"input": ["image", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 400,
+				"outputCentsPerMTokens": 1200,
+				"cacheReadCentsPerMTokens": 50
 			}
 		},
 		"alibaba/qwen3.8-omni-flash": {
@@ -1266,6 +1414,7 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
 						"response_format": true,
 						"stop": true,
 						"structured_outputs": true,
@@ -1274,8 +1423,8 @@
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "xhigh"]
 					}
 				}
 			},
@@ -1292,7 +1441,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 1000000,
@@ -1306,7 +1455,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -1330,7 +1481,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 300000,
 					"maxOutputTokens": 8192,
@@ -1341,7 +1492,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -1360,7 +1513,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 8192,
@@ -1371,7 +1524,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -1390,7 +1545,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 300000,
 					"maxOutputTokens": 8192,
@@ -1401,7 +1556,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -1431,7 +1588,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 4096,
@@ -1442,7 +1599,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -1463,7 +1622,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 128000,
@@ -1477,7 +1636,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
@@ -1501,7 +1662,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 128000,
@@ -1515,7 +1676,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -1540,7 +1703,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 64000,
@@ -1554,7 +1717,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -1582,45 +1747,7 @@
 						"structuredOutputs": false
 					},
 					"maxInputTokens": 200000,
-					"maxOutputTokens": 8192,
-					"modalities": {
-						"input": ["image", "pdf", "text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"include_reasoning": true,
-						"max_tokens": true,
-						"reasoning": true,
-						"stop": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					},
-					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 1500,
-				"outputCentsPerMTokens": 7500,
-				"cacheReadCentsPerMTokens": 150,
-				"cacheWriteCentsPerMTokens": 1875
-			}
-		},
-		"anthropic/claude-opus-4.5": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": true,
-						"reasoning": true,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 200000,
-					"maxOutputTokens": 64000,
+					"maxOutputTokens": 32000,
 					"modalities": {
 						"input": ["image", "pdf", "text"],
 						"output": ["text"]
@@ -1643,23 +1770,23 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 500,
-				"outputCentsPerMTokens": 2500,
-				"cacheReadCentsPerMTokens": 50,
-				"cacheWriteCentsPerMTokens": 625
+				"inputCentsPerMTokens": 1500,
+				"outputCentsPerMTokens": 7500,
+				"cacheReadCentsPerMTokens": 150,
+				"cacheWriteCentsPerMTokens": 1875
 			}
 		},
-		"anthropic/claude-opus-4.6": {
+		"anthropic/claude-opus-4.5": {
 			"operations": {
 				"text.generate": {
 					"capabilities": {
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
-					"maxInputTokens": 1000000,
-					"maxOutputTokens": 128000,
+					"maxInputTokens": 200000,
+					"maxOutputTokens": 64000,
 					"modalities": {
 						"input": ["image", "pdf", "text"],
 						"output": ["text"]
@@ -1670,7 +1797,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -1688,14 +1817,14 @@
 				"cacheWriteCentsPerMTokens": 625
 			}
 		},
-		"anthropic/claude-opus-4.7": {
+		"anthropic/claude-opus-4.6": {
 			"operations": {
 				"text.generate": {
 					"capabilities": {
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 128000,
@@ -1709,7 +1838,50 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "max"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 500,
+				"outputCentsPerMTokens": 2500,
+				"cacheReadCentsPerMTokens": 50,
+				"cacheWriteCentsPerMTokens": 625
+			}
+		},
+		"anthropic/claude-opus-4.7": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 128000,
+					"modalities": {
+						"input": ["image", "pdf", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -1734,7 +1906,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 128000,
@@ -1748,7 +1920,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -1773,7 +1947,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 128000,
@@ -1787,7 +1961,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -1812,7 +1988,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 128000,
@@ -1826,13 +2002,15 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["low", "medium", "high", "xhigh", "max"]
+						"levels": ["none", "low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -1850,6 +2028,46 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 128000,
+					"modalities": {
+						"input": ["image", "pdf", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "xhigh"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 1000,
+				"outputCentsPerMTokens": 5000,
+				"cacheReadCentsPerMTokens": 100,
+				"cacheWriteCentsPerMTokens": 1250
+			}
+		},
+		"anthropic/claude-opus-5.5": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
 						"structuredOutputs": false
 					},
 					"maxInputTokens": 1000000,
@@ -1875,13 +2093,13 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 1000,
-				"outputCentsPerMTokens": 5000,
-				"cacheReadCentsPerMTokens": 100,
-				"cacheWriteCentsPerMTokens": 1250
+				"inputCentsPerMTokens": 400,
+				"outputCentsPerMTokens": 2000,
+				"cacheReadCentsPerMTokens": 20,
+				"cacheWriteCentsPerMTokens": 500
 			}
 		},
-		"anthropic/claude-sonnet-4": {
+		"anthropic/claude-opus-5.5-fast": {
 			"operations": {
 				"text.generate": {
 					"capabilities": {
@@ -1891,7 +2109,7 @@
 						"structuredOutputs": false
 					},
 					"maxInputTokens": 1000000,
-					"maxOutputTokens": 8192,
+					"maxOutputTokens": 128000,
 					"modalities": {
 						"input": ["image", "pdf", "text"],
 						"output": ["text"]
@@ -1901,14 +2119,55 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
 						"stop": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high", "xhigh", "max"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 800,
+				"outputCentsPerMTokens": 4000,
+				"cacheReadCentsPerMTokens": 40,
+				"cacheWriteCentsPerMTokens": 1000
+			}
+		},
+		"anthropic/claude-sonnet-4": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 64000,
+					"modalities": {
+						"input": ["image", "pdf", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "high"]
 					}
 				}
 			},
@@ -1935,7 +2194,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 64000,
@@ -1949,14 +2208,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "high"]
 					}
 				}
 			},
@@ -1983,7 +2244,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 128000,
@@ -1997,14 +2258,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high"]
+						"levels": ["none", "low", "medium", "high", "max"]
 					}
 				}
 			},
@@ -2022,7 +2285,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 128000,
@@ -2036,7 +2299,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
@@ -2060,7 +2325,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262100,
 					"maxOutputTokens": 80000,
@@ -2073,14 +2338,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -2296,7 +2564,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": true
+						"structuredOutputs": false
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 262144,
@@ -2309,16 +2577,15 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
-						"response_format": true,
+						"reasoning_effort": true,
 						"stop": true,
-						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -2382,7 +2649,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 256000,
 					"maxOutputTokens": 8000,
@@ -2393,7 +2660,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -2476,14 +2745,15 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
 						"stop": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -2499,7 +2769,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 163840,
 					"maxOutputTokens": 128000,
@@ -2513,14 +2783,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -2537,7 +2809,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 131072,
 					"maxOutputTokens": 65536,
@@ -2551,14 +2823,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -2574,71 +2848,11 @@
 					"capabilities": {
 						"tools": true,
 						"vision": false,
-						"reasoning": false,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 128000,
-					"maxOutputTokens": 8000,
-					"modalities": {
-						"input": ["text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"max_tokens": true,
-						"stop": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 62,
-				"outputCentsPerMTokens": 185
-			}
-		},
-		"deepseek/deepseek-v3.2-thinking": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": false,
-						"reasoning": false,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 128000,
-					"maxOutputTokens": 8000,
-					"modalities": {
-						"input": ["text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"max_tokens": true,
-						"stop": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 62,
-				"outputCentsPerMTokens": 185
-			}
-		},
-		"deepseek/deepseek-v4-flash": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": false,
 						"reasoning": true,
 						"structuredOutputs": false
 					},
-					"maxInputTokens": 1000000,
-					"maxOutputTokens": 384000,
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 8000,
 					"modalities": {
 						"input": ["text"],
 						"output": ["text"]
@@ -2656,7 +2870,83 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high", "xhigh"]
+						"levels": ["none", "low", "medium", "high"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 62,
+				"outputCentsPerMTokens": 185
+			}
+		},
+		"deepseek/deepseek-v3.2-thinking": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 8000,
+					"modalities": {
+						"input": ["text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"stop": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 62,
+				"outputCentsPerMTokens": 185
+			}
+		},
+		"deepseek/deepseek-v4-flash": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 384000,
+					"modalities": {
+						"input": ["text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -2673,7 +2963,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 384000,
@@ -2686,14 +2976,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -2710,7 +3003,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1048576,
 					"maxOutputTokens": 1048576,
@@ -2724,14 +3017,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high", "xhigh"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -2748,7 +3043,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 384000,
@@ -2762,14 +3057,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high", "xhigh"]
+						"levels": ["none", "high", "max"]
 					}
 				}
 			},
@@ -2786,7 +3083,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 384000,
@@ -2800,14 +3097,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high", "xhigh"]
+						"levels": ["none", "high", "max"]
 					}
 				}
 			},
@@ -2824,7 +3123,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1048576,
 					"maxOutputTokens": 32768,
@@ -2837,21 +3136,24 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "high", "max"]
 					}
 				}
 			},
 			"pricing": {
 				"inputCentsPerMTokens": 30,
 				"outputCentsPerMTokens": 120,
-				"cacheReadCentsPerMTokens": 3
+				"cacheReadCentsPerMTokens": 0.7
 			}
 		},
 		"google/gemini-2.5-flash": {
@@ -2861,10 +3163,10 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
-					"maxOutputTokens": 65536,
+					"maxOutputTokens": 65535,
 					"modalities": {
 						"input": ["image", "pdf", "text"],
 						"output": ["text"]
@@ -2875,14 +3177,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -2898,20 +3202,27 @@
 					"capabilities": {
 						"tools": false,
 						"vision": true,
-						"reasoning": false,
+						"reasoning": true,
 						"structuredOutputs": false
 					},
 					"maxInputTokens": 32768,
-					"maxOutputTokens": 65536,
+					"maxOutputTokens": 65535,
 					"modalities": {
 						"input": ["image", "text"],
 						"output": ["image", "text"]
 					},
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
+						"include_reasoning": true,
 						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
 						"stop": true,
 						"temperature": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				},
 				"image.generate": {
@@ -3016,10 +3327,10 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1048576,
-					"maxOutputTokens": 65536,
+					"maxOutputTokens": 65535,
 					"modalities": {
 						"input": ["image", "pdf", "text"],
 						"output": ["text"]
@@ -3030,14 +3341,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -3054,10 +3367,10 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1048576,
-					"maxOutputTokens": 65536,
+					"maxOutputTokens": 65535,
 					"modalities": {
 						"input": ["image", "pdf", "text"],
 						"output": ["text"]
@@ -3068,14 +3381,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -3100,7 +3415,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 65000,
@@ -3114,14 +3429,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["minimal", "low", "medium", "high"]
+						"levels": ["low", "high"]
 					}
 				}
 			},
@@ -3145,8 +3462,8 @@
 					"capabilities": {
 						"tools": false,
 						"vision": true,
-						"reasoning": false,
-						"structuredOutputs": false
+						"reasoning": true,
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 65536,
 					"maxOutputTokens": 32768,
@@ -3156,9 +3473,18 @@
 					},
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
+						"include_reasoning": true,
 						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "high"]
 					}
 				},
 				"image.generate": {
@@ -3443,7 +3769,7 @@
 						"tools": false,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 131072,
 					"maxOutputTokens": 32768,
@@ -3457,12 +3783,14 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["minimal", "high"]
+						"levels": ["low", "high"]
 					}
 				},
 				"image.generate": {
@@ -3949,7 +4277,7 @@
 						"tools": false,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 131072,
 					"maxOutputTokens": 32768,
@@ -3963,12 +4291,14 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["minimal", "high"]
+						"levels": ["low", "high"]
 					}
 				},
 				"image.generate": {
@@ -4455,7 +4785,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 65000,
@@ -4469,14 +4799,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["minimal", "low", "medium", "high"]
+						"levels": ["low", "high"]
 					}
 				}
 			},
@@ -4506,12 +4838,13 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
 						"stop": true,
 						"temperature": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["low", "high"]
 					}
 				},
 				"image.generate": {
@@ -4638,7 +4971,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 64000,
@@ -4652,14 +4985,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["low", "medium", "high"]
+						"levels": ["low", "high"]
 					}
 				}
 			},
@@ -4684,7 +5019,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 64000,
@@ -4698,14 +5033,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["minimal", "low", "medium", "high"]
+						"levels": ["low", "high"]
 					}
 				}
 			},
@@ -4722,7 +5059,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 65000,
@@ -4736,14 +5073,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["minimal", "low", "medium", "high"]
+						"levels": ["low", "high"]
 					}
 				}
 			},
@@ -4760,7 +5099,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 64000,
@@ -4774,14 +5113,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["minimal", "low", "medium", "high"]
+						"levels": ["low", "high"]
 					}
 				}
 			},
@@ -4798,10 +5139,10 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
-					"maxOutputTokens": 65536,
+					"maxOutputTokens": 65535,
 					"modalities": {
 						"input": ["image", "pdf", "text", "video"],
 						"output": ["text"]
@@ -4812,14 +5153,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["low", "medium", "high"]
+						"levels": ["low", "high"]
 					}
 				}
 			},
@@ -4836,10 +5179,10 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
-					"maxOutputTokens": 65536,
+					"maxOutputTokens": 65535,
 					"modalities": {
 						"input": ["image", "pdf", "text", "video"],
 						"output": ["text"]
@@ -4850,14 +5193,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["low", "medium", "high"]
+						"levels": ["low", "high"]
 					}
 				}
 			},
@@ -4896,7 +5241,7 @@
 						"tools": false,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 57920,
@@ -4909,12 +5254,15 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -4930,7 +5278,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 131072,
@@ -4943,7 +5291,9 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -4967,7 +5317,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 131072,
@@ -4980,7 +5330,9 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -5025,7 +5377,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 128000,
@@ -5039,7 +5391,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -5063,7 +5417,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 260000,
 					"maxOutputTokens": 65536,
@@ -5076,14 +5430,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high"]
 					}
 				}
 			},
@@ -5100,7 +5457,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 32000,
 					"maxOutputTokens": 16384,
@@ -5111,7 +5468,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -5143,14 +5502,15 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
 						"stop": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "high"]
 					}
 				}
 			},
@@ -5167,7 +5527,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 256000,
 					"maxOutputTokens": 32000,
@@ -5181,7 +5541,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -5254,14 +5616,15 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
 						"stop": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -5290,14 +5653,15 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
 						"stop": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -5326,56 +5690,22 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
 						"stop": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "high"]
 					}
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 0,
-				"outputCentsPerMTokens": 0
-			}
-		},
-		"inclusionai/ling-3.0-flash-vl-free": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": true,
-						"reasoning": true,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 256000,
-					"maxOutputTokens": 32000,
-					"modalities": {
-						"input": ["image", "text", "video"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"include_reasoning": true,
-						"max_tokens": true,
-						"reasoning": true,
-						"stop": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					},
-					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 0,
-				"outputCentsPerMTokens": 0
+				"inputCentsPerMTokens": 7.5,
+				"outputCentsPerMTokens": 22,
+				"cacheReadCentsPerMTokens": 1.5
 			}
 		},
 		"inference-net/schematron-v2-small": {
@@ -5447,7 +5777,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 32000,
@@ -5461,7 +5791,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -5483,8 +5815,8 @@
 					"capabilities": {
 						"tools": true,
 						"vision": false,
-						"reasoning": false,
-						"structuredOutputs": false
+						"reasoning": true,
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 8192,
@@ -5494,11 +5826,20 @@
 					},
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
+						"include_reasoning": true,
 						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -5513,8 +5854,8 @@
 					"capabilities": {
 						"tools": true,
 						"vision": false,
-						"reasoning": false,
-						"structuredOutputs": false
+						"reasoning": true,
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 8192,
@@ -5524,11 +5865,20 @@
 					},
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
+						"include_reasoning": true,
 						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -5543,103 +5893,13 @@
 					"capabilities": {
 						"tools": true,
 						"vision": false,
-						"reasoning": false,
+						"reasoning": true,
 						"structuredOutputs": false
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 8192,
 					"modalities": {
 						"input": ["text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"max_tokens": true,
-						"stop": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 72,
-				"outputCentsPerMTokens": 72
-			}
-		},
-		"meta/llama-4-maverick": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": true,
-						"reasoning": false,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 128000,
-					"maxOutputTokens": 8192,
-					"modalities": {
-						"input": ["image", "text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"max_tokens": true,
-						"stop": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 24,
-				"outputCentsPerMTokens": 97
-			}
-		},
-		"meta/llama-4-scout": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": true,
-						"reasoning": false,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 128000,
-					"maxOutputTokens": 8192,
-					"modalities": {
-						"input": ["image", "text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"max_tokens": true,
-						"stop": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 17,
-				"outputCentsPerMTokens": 66
-			}
-		},
-		"meta/muse-glimmer-30b": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": true,
-						"reasoning": true,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 131072,
-					"maxOutputTokens": 131072,
-					"modalities": {
-						"input": ["image", "text"],
 						"output": ["text"]
 					},
 					"contracts": ["chat.completions", "responses"],
@@ -5655,7 +5915,124 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["low", "medium", "high", "xhigh"]
+						"levels": ["none", "low", "medium", "high"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 72,
+				"outputCentsPerMTokens": 72
+			}
+		},
+		"meta/llama-4-maverick": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 8192,
+					"modalities": {
+						"input": ["image", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 24,
+				"outputCentsPerMTokens": 97
+			}
+		},
+		"meta/llama-4-scout": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 8192,
+					"modalities": {
+						"input": ["image", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 17,
+				"outputCentsPerMTokens": 66
+			}
+		},
+		"meta/muse-glimmer-30b": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 131072,
+					"maxOutputTokens": 131072,
+					"modalities": {
+						"input": ["image", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -5683,7 +6060,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1048576,
 					"maxOutputTokens": 1048576,
@@ -5697,7 +6074,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -5721,7 +6100,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1048576,
 					"maxOutputTokens": 1048576,
@@ -5734,14 +6113,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["minimal", "low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -5758,7 +6140,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1048576,
 					"maxOutputTokens": 1048576,
@@ -5771,14 +6153,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["minimal", "low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -5795,7 +6180,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1048576,
 					"maxOutputTokens": 1048576,
@@ -5808,14 +6193,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["minimal", "low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -5832,7 +6220,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1048576,
 					"maxOutputTokens": 1048576,
@@ -5845,14 +6233,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["minimal", "low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -5869,7 +6260,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 205000,
 					"maxOutputTokens": 205000,
@@ -5882,7 +6273,10 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -5907,7 +6301,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 204800,
 					"maxOutputTokens": 131072,
@@ -5920,7 +6314,10 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -5945,7 +6342,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 204800,
 					"maxOutputTokens": 131072,
@@ -5958,7 +6355,10 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -5983,7 +6383,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 204800,
 					"maxOutputTokens": 131000,
@@ -5996,7 +6396,10 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -6021,7 +6424,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 204800,
 					"maxOutputTokens": 131000,
@@ -6034,7 +6437,10 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -6059,7 +6465,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 204800,
 					"maxOutputTokens": 131000,
@@ -6072,7 +6478,10 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -6097,7 +6506,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 204800,
 					"maxOutputTokens": 131100,
@@ -6110,7 +6519,10 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -6135,7 +6547,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 512000,
 					"maxOutputTokens": 512000,
@@ -6149,14 +6561,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"kind": "fixed",
+						"levels": ["high"]
 					}
 				}
 			},
@@ -6173,7 +6587,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 4000,
@@ -6184,7 +6598,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -6216,7 +6632,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 256000,
@@ -6227,7 +6643,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -6278,7 +6696,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 4000,
@@ -6289,7 +6707,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -6320,7 +6740,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 256000,
@@ -6331,7 +6751,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -6351,7 +6773,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 256000,
@@ -6365,7 +6787,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -6389,7 +6813,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 60288,
 					"maxOutputTokens": 16000,
@@ -6400,7 +6824,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -6419,7 +6845,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 4000,
@@ -6430,7 +6856,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -6441,6 +6869,39 @@
 				"inputCentsPerMTokens": 15,
 				"outputCentsPerMTokens": 60,
 				"cacheReadCentsPerMTokens": 1.5
+			}
+		},
+		"mixedbread/toast-1": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 131000,
+					"maxOutputTokens": 4000,
+					"modalities": {
+						"input": ["text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"max_tokens": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 30,
+				"outputCentsPerMTokens": 72,
+				"cacheReadCentsPerMTokens": 3.6
 			}
 		},
 		"moonshotai/kimi-k2": {
@@ -6480,7 +6941,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 216144,
 					"maxOutputTokens": 216144,
@@ -6493,14 +6954,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -6517,7 +6981,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 256000,
 					"maxOutputTokens": 256000,
@@ -6531,7 +6995,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -6554,7 +7020,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262000,
 					"maxOutputTokens": 262000,
@@ -6568,7 +7034,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -6592,7 +7060,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 256000,
 					"maxOutputTokens": 32768,
@@ -6605,14 +7073,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -6629,7 +7100,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 32768,
@@ -6642,14 +7113,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -6688,7 +7162,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["low", "high", "max"]
+						"levels": ["none", "low", "high", "max"]
 					}
 				}
 			},
@@ -6705,7 +7179,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 131072,
@@ -6719,13 +7193,15 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["low", "high", "max"]
+						"levels": ["none", "low", "medium", "high", "max"]
 					}
 				}
 			},
@@ -6742,7 +7218,7 @@
 						"tools": false,
 						"vision": false,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 81920,
 					"maxOutputTokens": 16384,
@@ -6753,7 +7229,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
-						"stop": true
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true
 					}
 				}
 			},
@@ -6769,7 +7247,7 @@
 						"tools": false,
 						"vision": false,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 81920,
 					"maxOutputTokens": 16384,
@@ -6780,7 +7258,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
-						"stop": true
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true
 					}
 				}
 			},
@@ -6834,7 +7314,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 256000,
 					"maxOutputTokens": 32000,
@@ -6848,14 +7328,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "low", "high"]
 					}
 				}
 			},
@@ -6871,7 +7353,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 65000,
@@ -6885,14 +7367,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "medium", "high"]
 					}
 				}
 			},
@@ -6909,7 +7393,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 131072,
@@ -6923,7 +7407,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -6947,7 +7433,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 131072,
 					"maxOutputTokens": 131072,
@@ -6961,7 +7447,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -7081,7 +7569,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1047576,
 					"maxOutputTokens": 32768,
@@ -7092,7 +7580,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -7112,7 +7602,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1047576,
 					"maxOutputTokens": 32768,
@@ -7123,7 +7613,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -7143,7 +7635,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1047576,
 					"maxOutputTokens": 32768,
@@ -7154,7 +7646,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -7174,7 +7668,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1047576,
 					"maxOutputTokens": 32768,
@@ -7185,7 +7679,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -7205,7 +7701,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1047576,
 					"maxOutputTokens": 32768,
@@ -7216,7 +7712,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -7236,7 +7734,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1047576,
 					"maxOutputTokens": 32768,
@@ -7247,7 +7745,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -7267,7 +7767,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 16384,
@@ -7278,7 +7778,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -7298,7 +7800,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 16384,
@@ -7309,7 +7811,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -7329,7 +7833,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 16384,
@@ -7340,7 +7844,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -7360,7 +7866,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 16384,
@@ -7371,7 +7877,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -7391,7 +7899,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -7405,7 +7913,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
@@ -7428,7 +7938,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -7442,7 +7952,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
@@ -7465,7 +7977,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -7479,7 +7991,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
@@ -7502,7 +8016,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -7516,7 +8030,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
@@ -7539,7 +8055,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -7553,7 +8069,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
@@ -7576,7 +8094,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -7590,7 +8108,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
@@ -7650,7 +8170,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -7664,14 +8184,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["low", "medium", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -7688,7 +8210,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -7702,14 +8224,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["low", "medium", "high", "xhigh"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -7726,7 +8250,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -7740,14 +8264,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["low", "medium", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -7764,7 +8290,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -7778,14 +8304,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high"]
+						"levels": ["none", "minimal", "low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -7802,7 +8330,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -7816,14 +8344,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high"]
+						"levels": ["none", "minimal", "low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -7840,7 +8370,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -7854,14 +8384,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high", "xhigh"]
+						"levels": ["none", "minimal", "low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -7878,7 +8410,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -7892,14 +8424,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["low", "medium", "high", "xhigh"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -7916,7 +8450,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -7930,14 +8464,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high", "xhigh"]
+						"levels": ["none", "minimal", "low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -7954,7 +8490,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -7968,7 +8504,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -7991,7 +8529,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -8005,14 +8543,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["low", "medium", "high", "xhigh"]
+						"levels": ["none", "minimal", "low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -8029,7 +8569,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -8043,14 +8583,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["low", "medium", "high", "xhigh"]
+						"levels": ["none", "minimal", "low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -8067,7 +8609,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1050000,
 					"maxOutputTokens": 128000,
@@ -8081,14 +8623,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high", "xhigh"]
+						"levels": ["none", "minimal", "low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -8113,7 +8657,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1050000,
 					"maxOutputTokens": 128000,
@@ -8127,14 +8671,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high", "xhigh"]
+						"levels": ["none", "minimal", "low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -8151,7 +8697,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -8165,14 +8711,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high", "xhigh"]
+						"levels": ["none", "minimal", "low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -8189,7 +8737,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -8203,14 +8751,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high", "xhigh"]
+						"levels": ["none", "minimal", "low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -8227,7 +8777,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 400000,
 					"maxOutputTokens": 128000,
@@ -8241,14 +8791,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high", "xhigh"]
+						"levels": ["none", "minimal", "low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -8265,7 +8817,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1050000,
 					"maxOutputTokens": 128000,
@@ -8279,14 +8831,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["medium", "high", "xhigh"]
+						"levels": ["none", "minimal", "low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -8309,7 +8863,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 128000,
@@ -8323,14 +8877,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high", "xhigh"]
+						"levels": ["none", "minimal", "low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -8355,7 +8911,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 128000,
@@ -8369,13 +8925,15 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high", "xhigh"]
+						"levels": ["none", "minimal", "low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -8392,7 +8950,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 128000,
@@ -8406,7 +8964,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -8436,7 +8996,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1050000,
 					"maxOutputTokens": 128000,
@@ -8450,7 +9010,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -8484,7 +9046,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1050000,
 					"maxOutputTokens": 128000,
@@ -8498,7 +9060,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
@@ -8531,7 +9095,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1050000,
 					"maxOutputTokens": 128000,
@@ -8545,61 +9109,24 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 200,
-				"outputCentsPerMTokens": 1000,
-				"cacheReadCentsPerMTokens": 20,
-				"cacheWriteCentsPerMTokens": 250,
-				"tiers": [
-					{
-						"aboveInputTokens": 272000,
-						"inputCentsPerMTokens": 400,
-						"outputCentsPerMTokens": 1500,
-						"cacheReadCentsPerMTokens": 40,
-						"cacheWriteCentsPerMTokens": 500
-					}
-				]
-			}
-		},
-		"openai/gpt-5.6-sol-fast": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": true,
-						"reasoning": true,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 1050000,
-					"maxOutputTokens": 128000,
-					"modalities": {
-						"input": ["image", "pdf", "text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"include_reasoning": true,
-						"max_tokens": true,
-						"reasoning": true,
-						"reasoning_effort": true,
-						"stop": true,
-						"tool_choice": true,
-						"tools": true
-					},
-					"reasoning": {
-						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+						"levels": [
+							"none",
+							"minimal",
+							"low",
+							"medium",
+							"high",
+							"xhigh",
+							"max"
+						]
 					}
 				}
 			},
@@ -8619,14 +9146,14 @@
 				]
 			}
 		},
-		"openai/gpt-5.6-terra": {
+		"openai/gpt-5.6-sol-fast": {
 			"operations": {
 				"text.generate": {
 					"capabilities": {
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1050000,
 					"maxOutputTokens": 128000,
@@ -8640,14 +9167,81 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": [
+							"none",
+							"minimal",
+							"low",
+							"medium",
+							"high",
+							"xhigh",
+							"max"
+						]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 800,
+				"outputCentsPerMTokens": 4000,
+				"cacheReadCentsPerMTokens": 80,
+				"cacheWriteCentsPerMTokens": 1000,
+				"tiers": [
+					{
+						"aboveInputTokens": 272000,
+						"inputCentsPerMTokens": 1600,
+						"outputCentsPerMTokens": 6000,
+						"cacheReadCentsPerMTokens": 160,
+						"cacheWriteCentsPerMTokens": 2000
+					}
+				]
+			}
+		},
+		"openai/gpt-5.6-terra": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1050000,
+					"maxOutputTokens": 128000,
+					"modalities": {
+						"input": ["image", "pdf", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+						"levels": [
+							"none",
+							"minimal",
+							"low",
+							"medium",
+							"high",
+							"xhigh",
+							"max"
+						]
 					}
 				}
 			},
@@ -8674,7 +9268,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1050000,
 					"maxOutputTokens": 128000,
@@ -8688,13 +9282,23 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+						"levels": [
+							"none",
+							"minimal",
+							"low",
+							"medium",
+							"high",
+							"xhigh",
+							"max"
+						]
 					}
 				}
 			},
@@ -8721,7 +9325,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1050000,
 					"maxOutputTokens": 128000,
@@ -8735,7 +9339,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
@@ -8768,7 +9374,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1050000,
 					"maxOutputTokens": 128000,
@@ -8782,7 +9388,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
@@ -8804,6 +9412,206 @@
 						"outputCentsPerMTokens": 15000,
 						"cacheReadCentsPerMTokens": 400,
 						"cacheWriteCentsPerMTokens": 5000
+					}
+				]
+			}
+		},
+		"openai/gpt-6-luna": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1050000,
+					"maxOutputTokens": 128000,
+					"modalities": {
+						"input": ["image", "pdf", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 10,
+				"outputCentsPerMTokens": 50,
+				"cacheReadCentsPerMTokens": 1,
+				"cacheWriteCentsPerMTokens": 12.5,
+				"tiers": [
+					{
+						"aboveInputTokens": 272001,
+						"inputCentsPerMTokens": 20,
+						"outputCentsPerMTokens": 75,
+						"cacheReadCentsPerMTokens": 2,
+						"cacheWriteCentsPerMTokens": 25
+					}
+				]
+			}
+		},
+		"openai/gpt-6-luna-fast": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1050000,
+					"maxOutputTokens": 128000,
+					"modalities": {
+						"input": ["image", "pdf", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 20,
+				"outputCentsPerMTokens": 100,
+				"cacheReadCentsPerMTokens": 2,
+				"cacheWriteCentsPerMTokens": 25,
+				"tiers": [
+					{
+						"aboveInputTokens": 272001,
+						"inputCentsPerMTokens": 40,
+						"outputCentsPerMTokens": 150,
+						"cacheReadCentsPerMTokens": 4,
+						"cacheWriteCentsPerMTokens": 50
+					}
+				]
+			}
+		},
+		"openai/gpt-6-sol": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1050000,
+					"maxOutputTokens": 128000,
+					"modalities": {
+						"input": ["image", "pdf", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 20,
+				"cacheWriteCentsPerMTokens": 250,
+				"tiers": [
+					{
+						"aboveInputTokens": 272001,
+						"inputCentsPerMTokens": 400,
+						"outputCentsPerMTokens": 1500,
+						"cacheReadCentsPerMTokens": 40,
+						"cacheWriteCentsPerMTokens": 500
+					}
+				]
+			}
+		},
+		"openai/gpt-6-sol-fast": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1050000,
+					"maxOutputTokens": 128000,
+					"modalities": {
+						"input": ["image", "pdf", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 400,
+				"outputCentsPerMTokens": 2000,
+				"cacheReadCentsPerMTokens": 40,
+				"cacheWriteCentsPerMTokens": 500,
+				"tiers": [
+					{
+						"aboveInputTokens": 272001,
+						"inputCentsPerMTokens": 800,
+						"outputCentsPerMTokens": 3000,
+						"cacheReadCentsPerMTokens": 80,
+						"cacheWriteCentsPerMTokens": 1000
 					}
 				]
 			}
@@ -9018,7 +9826,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 131072,
 					"maxOutputTokens": 131072,
@@ -9032,7 +9840,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -9045,7 +9855,8 @@
 			},
 			"pricing": {
 				"inputCentsPerMTokens": 10,
-				"outputCentsPerMTokens": 50
+				"outputCentsPerMTokens": 50,
+				"cacheReadCentsPerMTokens": 10
 			}
 		},
 		"openai/gpt-oss-20b": {
@@ -9055,7 +9866,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 131072,
 					"maxOutputTokens": 8192,
@@ -9069,7 +9880,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -9092,7 +9905,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 16000,
@@ -9106,7 +9919,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -9129,7 +9944,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 16000,
@@ -9143,7 +9958,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -9166,7 +9983,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 100000,
@@ -9180,7 +9997,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
@@ -9203,7 +10022,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 100000,
@@ -9217,7 +10036,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
@@ -9240,7 +10061,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 100000,
@@ -9254,7 +10075,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
@@ -9277,7 +10100,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 100000,
@@ -9291,7 +10114,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
@@ -9314,7 +10139,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 100000,
@@ -9328,7 +10153,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -9351,7 +10178,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 100000,
@@ -9365,7 +10192,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
@@ -9388,7 +10217,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 100000,
@@ -9402,7 +10231,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true
 					},
@@ -9482,7 +10313,7 @@
 						"tools": false,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 127000,
 					"maxOutputTokens": 8000,
@@ -9493,7 +10324,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true
 					}
 				}
@@ -9506,7 +10339,7 @@
 						"tools": false,
 						"vision": true,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 8000,
@@ -9517,7 +10350,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true
 					}
 				}
@@ -9530,7 +10365,7 @@
 						"tools": false,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 127000,
 					"maxOutputTokens": 8000,
@@ -9544,7 +10379,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true
 					},
 					"reasoning": {
@@ -9651,6 +10488,112 @@
 				}
 			}
 		},
+		"quiverai/arrow-2": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 131072,
+					"maxOutputTokens": 131072,
+					"modalities": {
+						"input": ["image", "text"],
+						"output": ["image", "text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"stop": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high", "xhigh"]
+					}
+				},
+				"image.generate": {
+					"outputFormats": ["png", "jpeg", "webp"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false
+				},
+				"image.edit": {
+					"outputFormats": ["png", "jpeg", "webp"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 400,
+				"outputCentsPerMTokens": 2000,
+				"cacheReadCentsPerMTokens": 40,
+				"cacheWriteCentsPerMTokens": 500
+			}
+		},
+		"quiverai/arrow-2-telos": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 131072,
+					"maxOutputTokens": 131072,
+					"modalities": {
+						"input": ["image", "text"],
+						"output": ["image", "text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"stop": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high", "xhigh"]
+					}
+				},
+				"image.generate": {
+					"outputFormats": ["png", "jpeg", "webp"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false
+				},
+				"image.edit": {
+					"outputFormats": ["png", "jpeg", "webp"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 600,
+				"outputCentsPerMTokens": 3000,
+				"cacheReadCentsPerMTokens": 60,
+				"cacheWriteCentsPerMTokens": 750
+			}
+		},
 		"recraft/recraft-v2": {
 			"operations": {
 				"image.generate": {
@@ -9696,6 +10639,17 @@
 			}
 		},
 		"recraft/recraft-v4.1": {
+			"operations": {
+				"image.generate": {
+					"outputFormats": ["png", "jpeg", "webp"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false
+				}
+			}
+		},
+		"recraft/recraft-v4.1-flash": {
 			"operations": {
 				"image.generate": {
 					"outputFormats": ["png", "jpeg", "webp"],
@@ -9759,6 +10713,7 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
 						"response_format": true,
 						"stop": true,
 						"structured_outputs": true,
@@ -9767,8 +10722,8 @@
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["high", "xhigh"]
 					}
 				}
 			},
@@ -9785,7 +10740,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 1000000,
@@ -9798,14 +10753,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["high", "xhigh"]
 					}
 				}
 			},
@@ -9843,6 +10801,7 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
 						"response_format": true,
 						"stop": true,
 						"structured_outputs": true,
@@ -9851,8 +10810,8 @@
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["high", "xhigh"]
 					}
 				}
 			},
@@ -9890,6 +10849,7 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
 						"response_format": true,
 						"stop": true,
 						"structured_outputs": true,
@@ -9898,8 +10858,8 @@
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -9915,8 +10875,8 @@
 					"capabilities": {
 						"tools": true,
 						"vision": true,
-						"reasoning": false,
-						"structuredOutputs": false
+						"reasoning": true,
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 1000000,
@@ -9926,11 +10886,20 @@
 					},
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
+						"include_reasoning": true,
 						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -9947,7 +10916,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 1000000,
@@ -9960,14 +10929,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -9984,7 +10956,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 2000000,
 					"maxOutputTokens": 2000000,
@@ -9997,14 +10969,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -10029,7 +11004,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 2000000,
 					"maxOutputTokens": 2000000,
@@ -10042,14 +11017,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -10073,8 +11051,8 @@
 					"capabilities": {
 						"tools": true,
 						"vision": true,
-						"reasoning": false,
-						"structuredOutputs": false
+						"reasoning": true,
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 2000000,
 					"maxOutputTokens": 2000000,
@@ -10084,11 +11062,20 @@
 					},
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
+						"include_reasoning": true,
 						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -10112,8 +11099,8 @@
 					"capabilities": {
 						"tools": true,
 						"vision": true,
-						"reasoning": false,
-						"structuredOutputs": false
+						"reasoning": true,
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 2000000,
 					"maxOutputTokens": 2000000,
@@ -10123,11 +11110,20 @@
 					},
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
+						"include_reasoning": true,
 						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -10152,7 +11148,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 2000000,
 					"maxOutputTokens": 2000000,
@@ -10165,14 +11161,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -10197,7 +11196,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 2000000,
 					"maxOutputTokens": 2000000,
@@ -10210,14 +11209,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -10242,7 +11244,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 1000000,
@@ -10255,14 +11257,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high"]
 					}
 				}
 			},
@@ -10287,7 +11292,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 500000,
 					"maxOutputTokens": 500000,
@@ -10300,14 +11305,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high"]
 					}
 				}
 			},
@@ -10332,7 +11340,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 500000,
 					"maxOutputTokens": 500000,
@@ -10345,14 +11353,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high", "xhigh"]
 					}
 				}
 			},
@@ -10370,6 +11381,54 @@
 				]
 			}
 		},
+		"spacexai/grok-4.7": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 500000,
+					"maxOutputTokens": 500000,
+					"modalities": {
+						"input": ["image", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high", "xhigh"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 120,
+				"outputCentsPerMTokens": 360,
+				"cacheReadCentsPerMTokens": 30,
+				"tiers": [
+					{
+						"aboveInputTokens": 200001,
+						"inputCentsPerMTokens": 240,
+						"outputCentsPerMTokens": 720,
+						"cacheReadCentsPerMTokens": 60
+					}
+				]
+			}
+		},
 		"spacexai/grok-build-0.1": {
 			"operations": {
 				"text.generate": {
@@ -10377,7 +11436,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 256000,
 					"maxOutputTokens": 256000,
@@ -10390,14 +11449,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -10482,7 +11544,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 256000,
 					"maxOutputTokens": 256000,
@@ -10496,7 +11558,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -10511,6 +11575,44 @@
 				"inputCentsPerMTokens": 20,
 				"outputCentsPerMTokens": 115,
 				"cacheReadCentsPerMTokens": 4
+			}
+		},
+		"stepfun/step-5-preview": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 1000000,
+					"modalities": {
+						"input": ["image", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 100,
+				"outputCentsPerMTokens": 270,
+				"cacheReadCentsPerMTokens": 5
 			}
 		},
 		"tencent/hy-mt2-lite": {
@@ -10548,7 +11650,7 @@
 						"tools": false,
 						"vision": false,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 8000,
 					"maxOutputTokens": 4000,
@@ -10559,7 +11661,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true
 					}
 				}
@@ -10576,7 +11680,7 @@
 						"tools": false,
 						"vision": false,
 						"reasoning": false,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 8000,
 					"maxOutputTokens": 4000,
@@ -10587,7 +11691,9 @@
 					"contracts": ["chat.completions", "responses"],
 					"parameters": {
 						"max_tokens": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true
 					}
 				}
@@ -10604,7 +11710,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 262144,
@@ -10618,7 +11724,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -10680,7 +11788,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 256000,
 					"maxOutputTokens": 256000,
@@ -10694,7 +11802,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -10726,7 +11836,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 1000000,
@@ -10740,7 +11850,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -10909,7 +12021,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1050000,
 					"maxOutputTokens": 131100,
@@ -10923,7 +12035,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -10947,7 +12061,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1050000,
 					"maxOutputTokens": 131000,
@@ -10961,7 +12075,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -10978,6 +12094,126 @@
 				"cacheReadCentsPerMTokens": 0.36
 			}
 		},
+		"xiaomi/mimo-v2.6-flash": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 131072,
+					"modalities": {
+						"input": ["audio", "image", "text", "video"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "minimal", "low", "medium", "high"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 14,
+				"outputCentsPerMTokens": 28,
+				"cacheReadCentsPerMTokens": 0.28
+			}
+		},
+		"xiaomi/mimo-v2.6-pro": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 131072,
+					"modalities": {
+						"input": ["audio", "image", "text", "video"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "minimal", "low", "medium", "high"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 43.5,
+				"outputCentsPerMTokens": 87,
+				"cacheReadCentsPerMTokens": 0.36
+			}
+		},
+		"xiaomi/mimo-v2.6-pro-ultraspeed": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 131072,
+					"modalities": {
+						"input": ["audio", "image", "text", "video"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "minimal", "low", "medium", "high"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 435,
+				"outputCentsPerMTokens": 870,
+				"cacheReadCentsPerMTokens": 3.6
+			}
+		},
 		"zai/glm-4.5": {
 			"operations": {
 				"text.generate": {
@@ -10985,7 +12221,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 96000,
@@ -10999,7 +12235,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -11023,7 +12261,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 96000,
@@ -11037,7 +12275,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -11061,7 +12301,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 66000,
 					"maxOutputTokens": 16000,
@@ -11075,7 +12315,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -11099,7 +12341,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 96000,
@@ -11113,7 +12355,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -11137,7 +12381,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 120000,
@@ -11151,7 +12395,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -11175,7 +12421,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 131000,
@@ -11189,7 +12435,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -11250,7 +12498,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 202800,
 					"maxOutputTokens": 131100,
@@ -11264,7 +12512,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -11325,7 +12575,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 202800,
 					"maxOutputTokens": 64000,
@@ -11339,7 +12589,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -11363,7 +12615,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 128000,
@@ -11377,14 +12629,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high", "xhigh"]
+						"levels": ["none", "high", "max"]
 					}
 				}
 			},
@@ -11401,7 +12655,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 128000,
@@ -11415,14 +12669,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high", "xhigh"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -11439,7 +12695,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 1000000,
@@ -11453,7 +12709,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -11477,7 +12735,7 @@
 						"tools": true,
 						"vision": false,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1048576,
 					"maxOutputTokens": 262144,
@@ -11491,14 +12749,16 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["low", "high", "max"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -11515,7 +12775,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 131000,
@@ -11529,7 +12789,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
@@ -11553,7 +12815,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 131072,
@@ -11566,14 +12828,17 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true
 					},
 					"reasoning": {
-						"kind": "fixed",
-						"levels": ["high"]
+						"kind": "openai_effort",
+						"levels": ["low", "high", "max"]
 					}
 				}
 			},
@@ -11590,7 +12855,7 @@
 						"tools": true,
 						"vision": true,
 						"reasoning": true,
-						"structuredOutputs": false
+						"structuredOutputs": true
 					},
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 128000,
@@ -11604,7 +12869,9 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"reasoning_effort": true,
+						"response_format": true,
 						"stop": true,
+						"structured_outputs": true,
 						"temperature": true,
 						"tool_choice": true,
 						"tools": true

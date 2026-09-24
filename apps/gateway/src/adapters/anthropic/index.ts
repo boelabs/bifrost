@@ -101,6 +101,7 @@ const DEFAULT_VERSION = "2023-06-01";
 const DEFAULT_MAX_TOKENS = 4096;
 const FAST_MODE_BETA = "fast-mode-2026-02-01";
 const FAST_MODE_ALIASES: ReadonlyMap<string, string> = new Map([
+	["claude-opus-5-5-fast", "claude-opus-5-5"],
 	["claude-opus-5-fast", "claude-opus-5"],
 	["claude-opus-4-8-fast", "claude-opus-4-8"],
 	["claude-opus-4-7-fast", "claude-opus-4-7"],
