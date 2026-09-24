@@ -400,6 +400,13 @@ test("anthropic.buildRequest: fast aliases select the native model and required 
 	assert.deepEqual(body.thinking, { type: "adaptive", display: "summarized" });
 	assert.deepEqual(body.output_config, { effort: "max" });
 	assert.equal(built.headers["anthropic-beta"], "fast-mode-2026-02-01");
+
+	const opus55 = must(anthropicAdapter, "chat").buildRequest(req, {
+		...adaptiveCtx,
+		upstreamModel: "claude-opus-5-5-fast",
+	});
+	assert.equal(jsonBody(opus55).model, "claude-opus-5-5");
+	assert.equal(jsonBody(opus55).speed, "fast");
 });
 
 test("anthropic.buildRequest: structured output merges with output_config.effort", () => {

@@ -103,10 +103,7 @@ test("vercel owns creator/model metadata from its public catalog", () => {
 
 	const minimax = resolveModelMetadata("vercel", "minimax/minimax-m3");
 	assert.ok((minimax.maxOutputTokens ?? 0) > 0);
-	assert.deepEqual(minimax.reasoning, {
-		kind: "openai_effort",
-		levels: ["none", "high"],
-	});
+	assert.deepEqual(minimax.reasoning, { kind: "fixed", levels: ["high"] });
 
 	/**
 	 * Input-token tiers survive the sync as tiers, rather than being flattened to the first rate —

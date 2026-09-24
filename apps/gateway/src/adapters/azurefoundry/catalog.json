@@ -22,6 +22,10 @@
 					"maxInputTokens": 131072,
 					"maxOutputTokens": 8182
 				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 250,
+				"outputCentsPerMTokens": 1000
 			}
 		},
 		"DeepSeek-V4-Pro": {
@@ -58,6 +62,11 @@
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 384000
 				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 19,
+				"outputCentsPerMTokens": 51,
+				"cacheReadCentsPerMTokens": 2.8
 			}
 		},
 		"DeepSeek-V3.2-Speciale": {
@@ -100,6 +109,10 @@
 					"maxInputTokens": 131072,
 					"maxOutputTokens": 131072
 				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 123,
+				"outputCentsPerMTokens": 494
 			}
 		},
 		"DeepSeek-R1-0528": {
@@ -142,6 +155,10 @@
 					"maxInputTokens": 163840,
 					"maxOutputTokens": 163840
 				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 135,
+				"outputCentsPerMTokens": 540
 			}
 		},
 		"Llama-4-Maverick-17B-128E-Instruct-FP8": {
@@ -156,6 +173,10 @@
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 1000000
 				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 25,
+				"outputCentsPerMTokens": 100
 			}
 		},
 		"Llama-3.3-70B-Instruct": {
@@ -170,6 +191,10 @@
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 8192
 				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 71,
+				"outputCentsPerMTokens": 71
 			}
 		},
 		"Mistral-Large-3": {
@@ -274,6 +299,10 @@
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 128000
 				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 20,
+				"outputCentsPerMTokens": 50
 			}
 		},
 		"grok-4.1-fast-non-reasoning": {
@@ -288,6 +317,10 @@
 					"maxInputTokens": 128000,
 					"maxOutputTokens": 128000
 				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 20,
+				"outputCentsPerMTokens": 50
 			}
 		},
 		"grok-4": {
@@ -302,6 +335,10 @@
 					"maxInputTokens": 262000,
 					"maxOutputTokens": 8192
 				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 300,
+				"outputCentsPerMTokens": 1500
 			}
 		},
 		"grok-code-fast-1": {
