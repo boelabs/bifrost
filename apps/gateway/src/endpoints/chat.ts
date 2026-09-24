@@ -126,7 +126,7 @@ function streamChatCompletion(
 				metadata.contentInputs = contentInputMetadata;
 			}
 			const routingMetadata = routingMetadataRequested(c)
-				? publicRoutingMetadata(routing, settings)
+				? publicRoutingMetadata(routing, settings, reasoning)
 				: null;
 			const chunks = tapFirstToken(
 				routing.value.chunks,
@@ -348,7 +348,7 @@ export async function chatCompletionsHandler(
 			metadata.contentInputs = contentInputMetadata;
 		}
 		const routingMetadata = routingMetadataRequested(c)
-			? publicRoutingMetadata(routing, settings)
+			? publicRoutingMetadata(routing, settings, reasoning)
 			: null;
 
 		if (routing.value.kind === "json") {

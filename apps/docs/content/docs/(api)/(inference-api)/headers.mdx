@@ -34,7 +34,8 @@ Requested via the `x-unified-routing-metadata` header, added to the JSON body:
 ```json
 {
   "unified_routing": {
-    "served_model": "gpt-image",
+    "served_model": "gpt-5.6",
+    "reasoning_effort": "low",
     "routing_strategy": "latency-based",
     "unsupported_parameter_strategy": "drop",
     "fallback_used": false,
@@ -45,6 +46,10 @@ Requested via the `x-unified-routing-metadata` header, added to the JSON body:
   }
 }
 ```
+
+`reasoning_effort` is the effort the served model ran at after [snapping](/docs/reasoning), or `null`
+when it does not reason. The block is returned by `/v1/chat/completions`, `/v1/responses` and
+`/v1/messages`.
 
 `attempts` includes every deployment the router tried for this request (including ones that failed
 before the winning attempt), each with its latency and, on failure, `error_class` and `http_status`.

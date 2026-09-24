@@ -109,6 +109,8 @@ async function handleImageRequest(
 		const { unsupportedParameterStrategy } = await getEffectiveSettings();
 		/** Set when the served model's ladder could not honor the rung the client asked for. */
 		let qualityAdjustment: { from: string; to: string | null } | undefined;
+		/** The rung sent to the served model, reported when the provider does not echo one. */
+		let sentQuality: CanonicalImageResponse["quality"];
 		/** The rung this model will actually be asked for, reconciled per candidate. */
 		const forCandidate = (candidate: { meta: ResolvedModelMetadata }) =>
 			withResolvedQuality(
@@ -146,6 +148,7 @@ async function handleImageRequest(
 				},
 				(candidate, ctx) => {
 					const { request, resolved } = forCandidate(candidate);
+					sentQuality = resolved.quality;
 					qualityAdjustment =
 						resolved.adjustedFrom === undefined
 							? undefined
@@ -174,12 +177,16 @@ async function handleImageRequest(
 			response: CanonicalImageResponse,
 		) => {
 			log.upstreamTtftMs = Date.now() - routed.upstreamStartedAt;
+			const reported =
+				response.quality === undefined && sentQuality !== undefined
+					? { ...response, quality: sentQuality }
+					: response;
 			return transformImageResponse(
 				await applyCanonicalResponseExtensions(
 					c,
 					callType,
 					req.model,
-					response,
+					reported,
 				),
 				req,
 				imageProfileFor(routed.candidate.meta, req.operation),

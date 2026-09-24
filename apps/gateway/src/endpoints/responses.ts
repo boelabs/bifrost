@@ -388,19 +388,20 @@ function streamResponses(
 			}
 			const { upstreamStartedAt } = routing;
 			const { meta } = routing.candidate;
+			const reasoning = reasoningLogInfo(
+				canonical.reasoning,
+				meta.capabilities.reasoning ? meta.reasoning : undefined,
+			);
 			const renderOpts: RenderOptions = {
 				req: pipelineReq,
 				publicModel: routing.candidate.row.publicModel,
+				reasoningEffort: reasoning?.effective ?? null,
 			};
 			metadata = {
 				...candidateMetadata(routing.candidate),
 				streamLifecycle: routing.value.observation,
 				downstream,
 			};
-			const reasoning = reasoningLogInfo(
-				canonical.reasoning,
-				meta.capabilities.reasoning ? meta.reasoning : undefined,
-			);
 			if (reasoning) {
 				metadata.reasoning = reasoning;
 			}
@@ -418,7 +419,7 @@ function streamResponses(
 				metadata.contentInputs = contentInputMetadata;
 			}
 			const routingMetadata = routingMetadataRequested(c)
-				? publicRoutingMetadata(routing, settings)
+				? publicRoutingMetadata(routing, settings, reasoning)
 				: null;
 			const tapped = tapFirstToken(
 				routing.value.chunks,
@@ -694,9 +695,14 @@ export async function responsesHandler(c: Context<AppEnv>): Promise<Response> {
 		}
 		const { upstreamStartedAt } = routing;
 		const { meta } = routing.candidate;
+		const reasoning = reasoningLogInfo(
+			canonical.reasoning,
+			meta.capabilities.reasoning ? meta.reasoning : undefined,
+		);
 		const renderOpts: RenderOptions = {
 			req: pipelineReq,
 			publicModel: routing.candidate.row.publicModel,
+			reasoningEffort: reasoning?.effective ?? null,
 		};
 		const metadata: Record<string, unknown> = {
 			...candidateMetadata(routing.candidate),
@@ -704,10 +710,6 @@ export async function responsesHandler(c: Context<AppEnv>): Promise<Response> {
 				? { streamLifecycle: routing.value.observation }
 				: { terminal: routing.value.terminal }),
 		};
-		const reasoning = reasoningLogInfo(
-			canonical.reasoning,
-			meta.capabilities.reasoning ? meta.reasoning : undefined,
-		);
 		if (reasoning) {
 			metadata.reasoning = reasoning;
 		}
@@ -725,7 +727,7 @@ export async function responsesHandler(c: Context<AppEnv>): Promise<Response> {
 			metadata.contentInputs = contentInputMetadata;
 		}
 		const routingMetadata = routingMetadataRequested(c)
-			? publicRoutingMetadata(routing, settings)
+			? publicRoutingMetadata(routing, settings, reasoning)
 			: null;
 
 		if (routing.value.kind === "json") {
@@ -1054,9 +1056,14 @@ async function executeResponsesWebSocketTurn(
 		}
 		const { upstreamStartedAt } = routing;
 		const { meta } = routing.candidate;
+		const reasoning = reasoningLogInfo(
+			canonical.reasoning,
+			meta.capabilities.reasoning ? meta.reasoning : undefined,
+		);
 		const renderOpts: RenderOptions = {
 			req: pipelineReq,
 			publicModel: routing.candidate.row.publicModel,
+			reasoningEffort: reasoning?.effective ?? null,
 		};
 		const metadata: Record<string, unknown> = {
 			...candidateMetadata(routing.candidate),
@@ -1064,10 +1071,6 @@ async function executeResponsesWebSocketTurn(
 				? { streamLifecycle: routing.value.observation }
 				: { terminal: routing.value.terminal }),
 		};
-		const reasoning = reasoningLogInfo(
-			canonical.reasoning,
-			meta.capabilities.reasoning ? meta.reasoning : undefined,
-		);
 		if (reasoning) {
 			metadata.reasoning = reasoning;
 		}

@@ -29,9 +29,9 @@ The snapping rules:
   of its declared `levels`). If the model has no off switch — it *always* reasons — the request snaps
   **up** to the model's lowest declared level (its "floor"). There's no separate `canDisable` flag: the
   presence of `"none"` in `levels` **is** the flag.
-- **Requesting a positive effort** (`minimal`..`max`): resolves to the highest declared level that
-  doesn't exceed the request, or the floor if the request is below every declared level. A positive
-  request **never** rounds down into `none` — asking for *some* reasoning never turns it off.
+- **Requesting a positive effort** (`minimal`..`max`): resolves to the declared positive level nearest
+  the request, in either direction, the lower one on a tie. A positive request **never** rounds down
+  into `none` — asking for *some* reasoning never turns it off.
 - **Omitting `reasoning` entirely**: treated as requesting `none` — i.e., "don't reason" on a model that
   can turn it off, or the floor on one that can't. There is no opaque upstream default silently inherited.
 
@@ -39,7 +39,7 @@ This means a new model only ever needs to declare which `levels` it supports; th
 contract stays exactly the same shape regardless of how sparse or how granular that model's real ladder
 is. Every clamp is recorded in the operation log (`requested` vs. `effective` effort, plus a `clamped`
 boolean) — the discrepancy is always observable, so a client is never silently charged for more or less
-reasoning than the log shows.
+reasoning than the log shows. The response reports the effective effort too; see below.
 
 ## Declaring it in the catalog
 
@@ -114,6 +114,12 @@ assistant message. The playground preserves both through the AI SDK.
 - `/v1/chat/completions` and `/v1/messages`: `reasoning_effort` (OpenAI) or the provider-native fields
   above.
 - `/v1/responses`: `reasoning: { effort, summary }`.
+
+The effort the served model **ran at** comes back where each contract has room for it: in
+`/v1/responses` the response's own `reasoning.effort` (the effective value, not the one requested;
+`null` when the model does not reason). Chat Completions and Messages have no such field, so it is
+`reasoning_effort` inside the opt-in [`unified_routing`](/docs/headers#unified_routing-response-body-not-a-header)
+block, which every text contract returns.
 - Image generation: reasoning-adjacent but distinct — see quality-to-thinking mapping in
   [Images](/docs/images).
 

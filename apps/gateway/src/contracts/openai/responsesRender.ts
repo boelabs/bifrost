@@ -37,6 +37,13 @@ import type {
 } from "#core/canonical.ts";
 
 import {
+	type ReasoningSummary,
+	type ReasoningEffort,
+	isReasoningEffort,
+	summaryForEffort,
+} from "#core/reasoning.ts";
+
+import {
 	mirrorReasoningEventData,
 	mirrorReasoningOutput,
 	mirrorReasoningItem,
@@ -47,12 +54,6 @@ import {
 	readPromptCachePolicy,
 	readCacheBreakpoint,
 } from "./promptCache.ts";
-
-import {
-	type ReasoningSummary,
-	isReasoningEffort,
-	summaryForEffort,
-} from "#core/reasoning.ts";
 
 /* =====================================================================
  * OpenResponses ⟷ canonical types (provider-agnostic render).
@@ -775,6 +776,11 @@ export interface RenderOptions {
 	req: ResponsesRequest;
 	/** Public model selected by the router. */
 	publicModel: string;
+	/**
+	 * Effort the served model actually ran at, after snapping onto its ladder; null when it does not
+	 * reason. Reported in `reasoning.effort` instead of the requested value.
+	 */
+	reasoningEffort: ReasoningEffort | null;
 }
 
 export function toResponsesUsage(usage: Usage): Record<string, unknown> {
@@ -957,7 +963,7 @@ function buildResponse(
 		output_text: parts.outputText,
 		parallel_tool_calls: req.parallel_tool_calls ?? true,
 		previous_response_id: req.previous_response_id ?? null,
-		reasoning: reasoningEcho(req),
+		reasoning: reasoningEcho(req, opts.reasoningEffort),
 		store: req.store === true,
 		temperature: req.temperature ?? 1,
 		text: req.text ?? { format: { type: "text" } },
@@ -979,14 +985,19 @@ function buildResponse(
 	};
 }
 
-function reasoningEcho(req: ResponsesRequest): Record<string, unknown> {
-	const effort = req.reasoning?.effort;
-	const summary = summaryForEffort(
-		isReasoningEffort(effort) ? effort : undefined,
-		req.reasoning?.summary as ReasoningSummary | undefined,
-	);
+function reasoningEcho(
+	req: ResponsesRequest,
+	effort: ReasoningEffort | null,
+): Record<string, unknown> {
+	const summary =
+		effort === null || effort === "none"
+			? undefined
+			: summaryForEffort(
+					effort,
+					req.reasoning?.summary as ReasoningSummary | undefined,
+				);
 	return {
-		effort: effort ?? null,
+		effort,
 		summary: summary ?? null,
 	};
 }

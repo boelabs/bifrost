@@ -1,4 +1,5 @@
 import type { EffectiveSettings } from "#router/settings.ts";
+import type { ReasoningLogInfo } from "#core/reasoning.ts";
 import type { RouteResult } from "#router/index.ts";
 import type { Context } from "hono";
 
@@ -9,12 +10,18 @@ export function routingMetadataRequested(c: Context): boolean {
 	return value !== undefined && ENABLED_VALUES.has(value.toLowerCase());
 }
 
+/**
+ * `reasoning_effort` is the effort the served model ran at after snapping, or null when it does not
+ * reason: Chat Completions and Messages have no native field for it.
+ */
 export function publicRoutingMetadata<T>(
 	routing: RouteResult<T>,
 	settings: EffectiveSettings,
+	reasoning: ReasoningLogInfo | undefined,
 ): Record<string, unknown> {
 	return {
 		served_model: routing.candidate.row.publicModel,
+		reasoning_effort: reasoning?.effective ?? null,
 		routing_strategy: settings.routingStrategy,
 		unsupported_parameter_strategy: settings.unsupportedParameterStrategy,
 		fallback_used: routing.fallbackUsed,

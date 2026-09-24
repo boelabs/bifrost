@@ -19,10 +19,10 @@ Si un modelo no admite el esfuerzo solicitado exacto, el gateway lo **ajusta** a
 Las reglas de ajuste:
 
 - **Solicitando `none`**: resuelve en `none` solo si el modelo tiene interruptor de apagado literal (`"none"` es uno de sus `levels` declarados). Si el modelo no tiene interruptor de apagado (*siempre* razona), la solicitud **sube** al nivel más bajo declarado del modelo (su "piso"). No hay una bandera `canDisable` separada: la presencia de `"none"` en `levels` **es** la bandera.
-- **Solicitando un esfuerzo positivo** (`minimal`..`max`): se resuelve al nivel más alto declarado que no excede la solicitud, o el piso si la solicitud está por debajo de cada nivel declarado. Una solicitud positiva **nunca** se redondea a `none`; pedir *algún* reasoning nunca la desactiva.
+- **Solicitando un esfuerzo positivo** (`minimal`..`max`): se resuelve al nivel positivo declarado más cercano a la solicitud, en cualquier dirección y al inferior en caso de empate. Una solicitud positiva **nunca** se redondea a `none`; pedir *algún* reasoning nunca la desactiva.
 - **Omitir `reasoning` por completo**: se trata como una solicitud de `none`, es decir, "no razonar" en un modelo que puede apagarlo, o el piso en uno que no puede. No existe ningún valor predeterminado opaco upstream que se herede silenciosamente.
 
-Esto significa que un modelo nuevo solo necesita declarar qué `levels` admite; el contrato público del gateway mantiene exactamente la misma forma independientemente de cuán escasa o granular sea la escalera real de ese modelo. Cada ajuste se registra en el registro de operaciones (`requested` frente a `effective`, más el indicador booleano `clamped`); la discrepancia siempre es observable, por lo que a un cliente nunca se le cobra silenciosamente por más o menos reasoning de lo que muestra el registro.
+Esto significa que un modelo nuevo solo necesita declarar qué `levels` admite; el contrato público del gateway mantiene exactamente la misma forma independientemente de cuán escasa o granular sea la escalera real de ese modelo. Cada ajuste se registra en el registro de operaciones (`requested` frente a `effective`, más el indicador booleano `clamped`); la discrepancia siempre es observable, por lo que a un cliente nunca se le cobra silenciosamente por más o menos reasoning de lo que muestra el registro. La respuesta también informa el esfuerzo efectivo; consulta más abajo.
 
 ## Declarar controles en el catálogo [#declaring-it-in-the-catalog]
 
@@ -76,6 +76,8 @@ Para un Responses upstream, Chat Completions emite resúmenes en `delta.reasonin
 
 - `/v1/chat/completions` y `/v1/messages`: `reasoning_effort` (OpenAI) o los campos nativos del proveedor anteriores.
 - `/v1/responses`: `reasoning: { effort, summary }`.
+
+El esfuerzo con el que **se ejecutó** el modelo servido vuelve donde cada contrato tiene sitio para ello: en `/v1/responses`, el propio `reasoning.effort` de la respuesta (el valor efectivo, no el solicitado; `null` si el modelo no razona). Chat Completions y Messages no tienen ese campo, así que va como `reasoning_effort` dentro del bloque opcional [`unified_routing`](/es/docs/headers#unified_routing-response-body-not-a-header), que devuelven todos los contratos de texto.
 - Generación de imágenes: reasoning adyacente pero distinto; consulta el mapeo de calidad de pensamiento en [Imágenes](/es/docs/images).
 
 ## Límites de la sincronización [#where-this-comes-from-in-the-sync]
