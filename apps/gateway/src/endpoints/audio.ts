@@ -22,19 +22,22 @@ import {
 } from "./runtime/pipeline.ts";
 
 import {
+	finishDownstreamWriteObservation,
+	type DownstreamWriteObservation,
+	newDownstreamWriteObservation,
+	awaitWithSSEHeartbeats,
+	withSSEHeartbeats,
+	writeSSEHeartbeat,
+	writeSSE,
+} from "./runtime/sse.ts";
+
+import {
+	type CanonicalTranscriptionStreamEvent,
 	type CanonicalTranscriptionRequest,
 	TEXT_TRANSCRIPTION_FORMATS,
 	transcriptionUsageToCore,
 	type TranscriptionUsage,
 } from "#core/audio.ts";
-
-import {
-	type DownstreamWriteObservation,
-	newDownstreamWriteObservation,
-	withSSEHeartbeats,
-	writeSSEHeartbeat,
-	writeSSE,
-} from "./runtime/sse.ts";
 
 import {
 	toOpenAITranscriptionResponse,
@@ -99,46 +102,60 @@ async function handleTranscription(
 		log.publicModel = req.model;
 		assertFinalModelAllowed(c, req.model);
 
-		routing = await route(
-			req.model,
-			"audio.transcriptions",
-			{
-				clientSignal: log.clientSignal,
-				requestId: log.requestId,
-				operationId: log.operationId,
-				executionMode: req.stream ? "stream" : "json",
-				candidateEligibility: (candidate) =>
-					assertTranscriptionRequestSupported(req, candidate.meta),
-				tokenReservation: (candidate) =>
-					estimateTokenReservation(req, {
-						maxOutputTokens: candidate.meta.maxOutputTokens ?? 0,
-					}),
-				usageQuota: usageQuotaForRequest(c),
-			},
-			(candidate, ctx) => executeTranscription(candidate.adapter, req, ctx),
-		);
-		log.applyRouting(routing);
-		if (routing.value.kind === "json") {
-			fallbackUsage = transcriptionUsageToCore(routing.value.response.usage);
-		}
-		const { meta } = routing.candidate;
-		const metadata: Record<string, unknown> = {
-			...candidateMetadata(routing.candidate),
-			...(routing.value.kind === "stream"
-				? { streamLifecycle: routing.value.observation }
-				: { terminal: routing.value.terminal }),
+		const routeTranscription = async (): Promise<
+			RouteResult<TranscriptionExecResult>
+		> => {
+			const routed = await route(
+				req.model,
+				"audio.transcriptions",
+				{
+					clientSignal: log.clientSignal,
+					requestId: log.requestId,
+					operationId: log.operationId,
+					executionMode: req.stream ? "stream" : "json",
+					candidateEligibility: (candidate) =>
+						assertTranscriptionRequestSupported(req, candidate.meta),
+					tokenReservation: (candidate) =>
+						estimateTokenReservation(req, {
+							maxOutputTokens: candidate.meta.maxOutputTokens ?? 0,
+						}),
+					usageQuota: usageQuotaForRequest(c),
+				},
+				(candidate, ctx) => executeTranscription(candidate.adapter, req, ctx),
+			);
+			routing = routed;
+			log.applyRouting(routed);
+			if (routed.value.kind === "json") {
+				fallbackUsage = transcriptionUsageToCore(routed.value.response.usage);
+			}
+			return routed;
 		};
+		const routeMetadata = (
+			routed: RouteResult<TranscriptionExecResult>,
+		): Record<string, unknown> => ({
+			...candidateMetadata(routed.candidate),
+			...(routed.value.kind === "stream"
+				? { streamLifecycle: routed.value.observation }
+				: { terminal: routed.value.terminal }),
+		});
 
-		if (routing.value.kind === "json") {
-			log.upstreamTtftMs = Date.now() - routing.upstreamStartedAt;
+		if (!req.stream) {
+			const routed = await routeTranscription();
+			if (routed.value.kind !== "json") {
+				throw new GatewayError({
+					class: "server",
+					message: "Non-streaming transcription unexpectedly returned a stream",
+				});
+			}
+			log.upstreamTtftMs = Date.now() - routed.upstreamStartedAt;
 			const response = await applyCanonicalResponseExtensions(
 				c,
 				"audio.transcriptions",
 				req.model,
-				routing.value.response,
+				routed.value.response,
 			);
 			const core = transcriptionUsageToCore(response.usage);
-			const cost = computeUsageCost(meta, core);
+			const cost = computeUsageCost(routed.candidate.meta, core);
 			await finish(core);
 			await cleanup();
 			log.write({
@@ -148,7 +165,7 @@ async function handleTranscription(
 				cost,
 				firstOutputMs: null,
 				responseBody: responseLog(req.responseFormat, response.text),
-				metadata,
+				metadata: routeMetadata(routed),
 				error: null,
 			});
 			const rendered = toOpenAITranscriptionResponse(
@@ -158,16 +175,40 @@ async function handleTranscription(
 			return typeof rendered === "string" ? c.text(rendered) : c.json(rendered);
 		}
 
-		const streamRouting = routing;
-		const { events } = routing.value;
 		cleanupDeferred = true;
 		return streamSSE(c, async (stream) => {
 			stream.onAbort(() => log.abortClient());
 			const downstream = newDownstreamWriteObservation(log.operationId);
+			const metadata: Record<string, unknown> = {};
 			let usage: TranscriptionUsage | undefined;
 			let firstAt: number | null = null;
 			let streamError: GatewayError | null = null;
 			try {
+				// Force headers onto the wire before upstream routing can stall.
+				await writeSSEHeartbeat(stream, downstream);
+				const routed = await awaitWithSSEHeartbeats(routeTranscription(), () =>
+					writeSSEHeartbeat(stream, downstream),
+				);
+				Object.assign(metadata, routeMetadata(routed));
+				const { value } = routed;
+				const events: AsyncIterable<CanonicalTranscriptionStreamEvent> =
+					value.kind === "stream"
+						? value.events
+						: (async function* () {
+								// A JSON upstream serving a streaming request: its result is the terminal event.
+								const { response } = value;
+								yield {
+									kind: "done",
+									text: response.text,
+									...(response.languages
+										? { languages: response.languages }
+										: {}),
+									...(response.usage ? { usage: response.usage } : {}),
+									...(response.logprobs === undefined
+										? {}
+										: { logprobs: response.logprobs }),
+								};
+							})();
 				for await (const event of withSSEHeartbeats(events, () =>
 					writeSSEHeartbeat(stream, downstream),
 				)) {
@@ -180,7 +221,7 @@ async function handleTranscription(
 					);
 					if (firstAt === null) {
 						firstAt = Date.now();
-						log.upstreamTtftMs = firstAt - streamRouting.upstreamStartedAt;
+						log.upstreamTtftMs = firstAt - routed.upstreamStartedAt;
 					}
 					if (transformed.kind === "done" && transformed.usage) {
 						({ usage } = transformed);
@@ -194,13 +235,8 @@ async function handleTranscription(
 					);
 				}
 			} catch (error) {
-				streamError = GatewayError.is(error)
-					? error
-					: new GatewayError({
-							class: "server",
-							message: "Transcription stream failed",
-							cause: error,
-						});
+				streamError = toGatewayError(error, "Transcription stream failed");
+				log.applyFailedAttempts(streamError.attempts);
 				await notifyExtensionError(
 					c,
 					"audio.transcriptions",
@@ -208,24 +244,31 @@ async function handleTranscription(
 					streamError,
 				);
 				if (streamError.code !== "downstream_backpressure") {
-					await writeSSE(
-						stream,
-						{
-							data: JSON.stringify(streamError.toOpenAI()),
-						},
-						downstream,
-					);
+					try {
+						await writeSSE(
+							stream,
+							{
+								data: JSON.stringify(streamError.toOpenAI()),
+							},
+							downstream,
+						);
+					} catch {
+						// The original stream failure remains authoritative.
+					}
 				}
 			} finally {
 				const core = transcriptionUsageToCore(usage);
-				const cost = computeUsageCost(streamRouting.candidate.meta, core);
-				await finish(core, streamError, downstream);
+				if (routing) {
+					await finish(core, streamError, downstream);
+				} else {
+					finishDownstreamWriteObservation(downstream, streamError?.code);
+				}
 				await cleanup();
 				log.write({
 					status: streamError ? "error" : "success",
 					httpStatus: 200,
 					usage: core,
-					cost,
+					cost: routing ? computeUsageCost(routing.candidate.meta, core) : null,
 					firstOutputMs: firstAt ? firstAt - log.startedAt : null,
 					responseBody: { streamed: true },
 					metadata,
