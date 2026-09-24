@@ -95,10 +95,6 @@ rules the admin API enforces.
   levels snaps into range (e.g. `max` → `xhigh`, `minimal` → the floor). A positive effort never
   rounds down into `none`. The only hard error is requesting reasoning on a non-reasoner. This keeps
   the catalog forward-compatible: a new model only declares its `levels`.
-- A stale ladder degrades the same way. If the upstream rejects the effort the gateway sent with a
-  400 that names it or lists the accepted values, the executor narrows the ladder to that list (or
-  drops the rejected level), re-snaps, and retries the same deployment — at most twice. The operation
-  log records it under `reasoningRecovery`; fix the catalog entry when you see one.
 - `openai_effort` emits `reasoning_effort`; `openai_body` emits a provider-specific top-level field
   such as `thinking: {"type":"enabled"}` and, where applicable, an `effortField` like `reasoning_effort`.
 - `capabilities.strictTools` is separate from `capabilities.tools`: it means the upstream guarantees

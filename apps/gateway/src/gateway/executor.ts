@@ -21,7 +21,6 @@ import type {
 	MessageTokenCountRequest,
 	UpstreamHttpRequest,
 	AdapterContext,
-	ChatHandler,
 	Adapter,
 } from "#adapters/types.ts";
 
@@ -62,11 +61,6 @@ import type {
 	CanonicalRerankResponse,
 	CanonicalRerankRequest,
 } from "#core/rerank.ts";
-
-import {
-	MAX_REASONING_RECOVERIES,
-	recoverReasoning,
-} from "./reasoningRecovery.ts";
 
 export type ChatExecResult =
 	| {
@@ -318,45 +312,6 @@ function requireStreamBody(
 }
 
 /**
- * Dispatches a chat request, re-snapping the reasoning effort when the upstream rejects the one the
- * catalog allowed: a stale ladder must degrade to the nearest supported level, never to a 400. The
- * narrowed ladder replaces `ctx.meta` for this attempt only.
- */
-async function dispatchChat(
-	handler: ChatHandler,
-	req: CanonicalChatRequest,
-	ctx: AdapterContext,
-): Promise<Response> {
-	for (let recoveries = 0; ; recoveries++) {
-		try {
-			return await dispatch(
-				handler.buildRequest(req, ctx),
-				ctx,
-				handler.mapError,
-			);
-		} catch (error) {
-			const recovery =
-				recoveries < MAX_REASONING_RECOVERIES
-					? recoverReasoning(error, req.reasoning, ctx.meta)
-					: undefined;
-			if (!recovery) {
-				throw error;
-			}
-			ctx.meta = { ...ctx.meta, reasoning: recovery.spec };
-			const diagnostics = adapterContextDiagnostics(ctx);
-			diagnostics.metadata = {
-				...diagnostics.metadata,
-				reasoningRecovery: {
-					rejected: recovery.rejected,
-					effective: recovery.effective,
-					levels: recovery.spec.levels,
-				},
-			};
-		}
-	}
-}
-
-/**
  * Executes a chat call against the adapter's upstream: builds the request, performs the fetch and
  * normalizes the response (json or stream). Any failure is translated to GatewayError via
  * adapter.chat.mapError (network, timeout, or non-2xx status).
@@ -374,7 +329,11 @@ export async function executeChat(
 
 	// buildRequest can throw GatewayError (missing creds, unsupported content).
 	assertTextRequestSupported(req, ctx.meta);
-	const res = await dispatchChat(handler, req, ctx);
+	const res = await dispatch(
+		handler.buildRequest(req, ctx),
+		ctx,
+		handler.mapError,
+	);
 
 	if (req.stream) {
 		const body = requireStreamBody(res, ctx, handler.mapError);
