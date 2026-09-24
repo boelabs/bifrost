@@ -39,7 +39,7 @@ Los niveles de calidad varían por modelo: GPT Image 2.5 admite de `low` a `max`
 
 | Estrategia | Comportamiento |
 |---|---|
-| `drop` (predeterminado) | **Ajuste** al peldaño más alto que el modelo declara que no excede la solicitud, o a su peldaño más bajo cuando la solicitud se encuentra por debajo de todos ellos. Un modelo sin ningún peldaño no obtiene ningún campo `quality`. |
+| `drop` (predeterminado) | **Ajuste** al peldaño declarado más cercano a la solicitud, en cualquier dirección y al inferior en caso de empate. Un modelo sin ningún peldaño no obtiene ningún campo `quality`. |
 | `error` | Excluya cualquier deployment que no declare el escalón solicitado de la candidatura, exactamente como lo hace con un parámetro de chat. El cliente solo ve `400 unsupported_parameter` si **todos** los deployments del grupo carecen de él. |
 | `allow` | Reenvíe el escalón palabra por palabra y deje que el proveedor decida. |
 

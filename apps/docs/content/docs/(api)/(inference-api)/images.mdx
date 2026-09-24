@@ -39,8 +39,9 @@ per-model, declared in its catalog `image.generate`/`image.edit` profile — an 
 `quality` is the exception: it rides one canonical ladder, `low` < `medium` < `high` < `xhigh` <
 `max`, and is reconciled with the chosen model rather than rejected outright. Under the default
 `drop` [parameter policy](/docs/parameter-policy#quality-on-image-and-video-generation) a rung the
-model does not declare snaps to the nearest one below it, so a request for `max` that falls back onto
-a model whose ladder stops at `high` degrades instead of failing. `standard` and `hd` are still
+model does not declare snaps to the nearest declared one, in either direction and the lower one on a
+tie, so a request for `max` that falls back onto a model whose ladder stops at `high` degrades instead
+of failing, and `low` on a model that starts at `high` is raised to it. `standard` and `hd` are still
 accepted and normalized (`standard` → `medium`, `hd` → `high`); DALL·E still receives `hd` upstream.
 `auto` is not a rung — it is accepted everywhere and sends nothing, leaving the model's own default.
 
@@ -63,8 +64,8 @@ instead, add it via an operator-managed [runtime extension](/docs/extensions) ho
 
 For Gemini 3.1 Flash Image and Gemini 3.1 Flash Lite Image, the `quality` parameter doesn't map to a
 rendering quality tier the way it does for OpenAI — it maps to native **thinking level**. Both declare
-the rungs `low` (`thinkingLevel: minimal`) and `high` (`thinkingLevel: high`), so `medium` snaps down
-to `low` and `xhigh`/`max` snap to `high`. Gemini 3 Pro Image and Gemini 2.5 Flash Image expose no
+the rungs `low` (`thinkingLevel: minimal`) and `high` (`thinkingLevel: high`), so `medium` (equidistant) snaps
+to the lower `low` and `xhigh`/`max` snap to `high`. Gemini 3 Pro Image and Gemini 2.5 Flash Image expose no
 thinking control at all, so they declare no rungs and `quality` is simply not sent for them.
 See [Providers → Google AI Studio](/docs/providers-google).
 

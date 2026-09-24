@@ -58,7 +58,7 @@ rung with whatever the chosen model declares:
 
 | Strategy | Behavior |
 |---|---|
-| `drop` (default) | **Snap** to the highest rung the model declares that does not exceed the request, or to its lowest rung when the request sits below all of them. A model with no rungs at all gets no `quality` field. |
+| `drop` (default) | **Snap** to the declared rung nearest the request, in either direction, the lower one on a tie. A model with no rungs at all gets no `quality` field. |
 | `error` | Exclude any deployment that does not declare the requested rung from candidacy, exactly as it does for a chat parameter. The client only sees `400 unsupported_parameter` if **every** deployment in the pool lacks it. |
 | `allow` | Forward the rung verbatim and let the provider decide. |
 
