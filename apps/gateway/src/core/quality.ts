@@ -64,10 +64,9 @@ function levelIndex(level: QualityLevel): number {
 }
 
 /**
- * Snaps a requested rung onto the ones a model actually declares: the highest rung that does not
- * exceed the request, or the model's floor when the request sits below all of them. Handles
- * non-contiguous ladders (e.g. low/high, without medium) by choosing the nearest one downward, so
- * `max` on a low/high model resolves to `high` and `medium` resolves to `low`.
+ * Snaps a requested rung onto the ones a model actually declares: the closest rung on the ladder, in
+ * either direction, the lower one on a tie (the cheaper choice). So `max` on a low/high model resolves
+ * to `high`, `medium` to `low`, and `low` on a high-only model to `high`.
  *
  * Returns undefined only when the model declares no rungs at all, which means it has no quality knob
  * and the caller should send nothing.
@@ -76,23 +75,20 @@ export function snapQuality(
 	requested: QualityLevel,
 	levels: readonly QualityLevel[] | undefined,
 ): QualityLevel | undefined {
-	if (!levels || levels.length === 0) {
-		return undefined;
-	}
-	const [floor, ...rest] = [...levels].sort(
+	const [first, ...rest] = [...(levels ?? [])].sort(
 		(a, b) => levelIndex(a) - levelIndex(b),
 	);
-	if (floor === undefined) {
+	if (first === undefined) {
 		return undefined;
 	}
-	const sorted = [floor, ...rest];
 	const requestedIndex = levelIndex(requested);
-	let chosen = floor; // the floor, if the request is below every rung
-	for (const level of sorted) {
-		if (levelIndex(level) <= requestedIndex) {
+	let chosen = first;
+	for (const level of rest) {
+		if (
+			Math.abs(levelIndex(level) - requestedIndex) <
+			Math.abs(levelIndex(chosen) - requestedIndex)
+		) {
 			chosen = level;
-		} else {
-			break;
 		}
 	}
 	return chosen;

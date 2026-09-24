@@ -25,7 +25,7 @@ Cada imagen se devuelve como `b64_json` independientemente del `response_format`
 
 `prompt`, `size`, `quality`, `n`, `response_format`, `background`, `moderation`, `input_fidelity`, `output_format`, `output_compression`, `style`, `user`, `stream`, `partial_images` y (solo ediciones) `image`/`images` + `mask`. Los valores realmente aceptados para `size`/`quality`/`output_format` son por modelo, declarados en su catálogo `image.generate`/`image.edit` perfil: un `size` o `output_format` no admitidos devuelve `400 unsupported_parameter` antes de cualquier llamada upstream.
 
-`quality` usa la escala común `low` < `medium` < `high` < `xhigh` < `max`. Con la [política de parámetros](/es/docs/parameter-policy#quality-on-image-and-video-generation) predeterminada, `drop`, un nivel no admitido se ajusta al nivel inferior más cercano disponible. Así, una solicitud de `max` puede usar `high` si ese es el máximo del modelo. También se aceptan `standard` y `hd`, normalizados como `standard` → `medium` y `hd` → `high`; el adapter sigue enviando `hd` a DALL·E. `auto` no fija un nivel: omite el parámetro upstream para usar el valor predeterminado del modelo.
+`quality` usa la escala común `low` < `medium` < `high` < `xhigh` < `max`. Con la [política de parámetros](/es/docs/parameter-policy#quality-on-image-and-video-generation) predeterminada, `drop`, un nivel no admitido se ajusta al nivel declarado más cercano, en cualquier dirección y al inferior en caso de empate. Así, una solicitud de `max` puede usar `high` si ese es el máximo del modelo, y `low` sube al primer nivel en un modelo que empieza en `high`. También se aceptan `standard` y `hd`, normalizados como `standard` → `medium` y `hd` → `high`; el adapter sigue enviando `hd` a DALL·E. `auto` no fija un nivel: omite el parámetro upstream para usar el valor predeterminado del modelo.
 
 ## `size: "auto"` funciona en todas partes [#size-auto-works-everywhere]
 
@@ -37,7 +37,7 @@ Todos los archivos PNG, JPEG y WebP devueltos se **recodifican para eliminar los
 
 ## Gemini: mapas de calidad para pensar [#gemini-quality-maps-to-thinking]
 
-Para Gemini 3.1 Flash Image y Gemini 3.1 Flash Lite Image, el parámetro `quality` no se asigna a un nivel de calidad de renderizado como lo hace para OpenAI: se asigna a un **nivel de pensamiento** nativo. Ambos declaran los niveles `low` (`thinkingLevel: minimal`) y `high` (`thinkingLevel: high`), por lo que `medium` se ajusta a `low` y `xhigh`/`max` se ajustan a `high`. Gemini 3 Pro Image y Gemini 2.5 Flash Image no exponen ningún control del pensamiento, por lo que no declaran ningún peldaño y `quality` simplemente no se envía para ellos. Consulta [Google AI Studio](/es/docs/providers-google).
+Para Gemini 3.1 Flash Image y Gemini 3.1 Flash Lite Image, el parámetro `quality` no se asigna a un nivel de calidad de renderizado como lo hace para OpenAI: se asigna a un **nivel de pensamiento** nativo. Ambos declaran los niveles `low` (`thinkingLevel: minimal`) y `high` (`thinkingLevel: high`), por lo que `medium` (equidistante) se ajusta al inferior, `low`, y `xhigh`/`max` se ajustan a `high`. Gemini 3 Pro Image y Gemini 2.5 Flash Image no exponen ningún control del pensamiento, por lo que no declaran ningún peldaño y `quality` simplemente no se envía para ellos. Consulta [Google AI Studio](/es/docs/providers-google).
 
 ## Streaming [#streaming]
 
