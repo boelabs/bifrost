@@ -220,6 +220,48 @@
 				}
 			}
 		},
+		"claude-sonnet-5-5": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true,
+						"strictTools": true
+					},
+					"reasoning": {
+						"kind": "anthropic_adaptive",
+						"levels": ["low", "medium", "high", "xhigh", "max"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"tool_choice": true,
+						"tools": true,
+						"verbosity": true,
+						"reasoning_effort": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 128000
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 20,
+				"cacheWriteCentsPerMTokens": 250,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 250,
+					"3600": 400
+				}
+			},
+			"notes": "Anthropic rejects forced tool use (tool_choice any/tool) and thinking: disabled on this model; only auto and none are accepted for tool_choice."
+		},
 		"claude-sonnet-5": {
 			"operations": {
 				"text.generate": {
