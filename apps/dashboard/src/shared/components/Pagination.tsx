@@ -1,7 +1,11 @@
 "use client";
 
-import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { Button } from "#/components/ui/button";
+
+import {
+	ChevronRight as IconChevronRight,
+	ChevronLeft as IconChevronLeft,
+} from "lucide-react";
 
 const count = new Intl.NumberFormat("en-US");
 
@@ -49,7 +53,7 @@ export function Pagination({
 					size="sm"
 					variant="secondary"
 				>
-					<IconChevronLeft aria-hidden className="mr-1" size={15} />
+					<IconChevronLeft aria-hidden className="mr-1 size-4" />
 					Previous
 				</Button>
 				<Button
@@ -59,7 +63,7 @@ export function Pagination({
 					variant="secondary"
 				>
 					Next
-					<IconChevronRight aria-hidden className="ml-1" size={15} />
+					<IconChevronRight aria-hidden className="ml-1 size-4" />
 				</Button>
 			</div>
 		</nav>

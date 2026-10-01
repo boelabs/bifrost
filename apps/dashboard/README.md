@@ -126,9 +126,10 @@ cannot produce two of anything. The key rotates only once something was created.
 
 ## UI
 
-The visual language comes from [BaseLayer](https://baselayer.dev); behavior comes from
+The visual language matches Billete, using vendored coss UI primitives; behavior comes from
 [@base-ui/react](https://base-ui.com/react/overview/quick-start), not React Aria or Radix.
-Components and theme live in `src/components/ui`. Import them as `#/components/ui/button`,
+Follow [DESIGN.md](DESIGN.md) for visual rules, skeletons, and choosing or adding coss UI components.
+Components and theme live in `src/components/ui`, with vendored primitives in `primitives/`. Import them as `#/components/ui/button`,
 `#/components/ui/input`, and so on; `app/globals.css` imports Tailwind first and the kit's
 stylesheet after. The kit still has no dashboard dependencies — it must not import from `features/`
 — but it is the app's own code rather than a package, so changing a component means changing it
@@ -141,41 +142,35 @@ default and follows OS changes live; explicit choices persist in local storage a
 The saved theme is applied before paint. Native date pickers, select controls and scrollbars inherit
 the resolved color scheme, including portalled components.
 
-- Field controls share `size="xs | sm | md | lg"` (32/40/48/56px minimum heights),
-  `variant="outlined | filled | ghost"`, and the same default control radius.
+- Field controls share `size="xs | sm | md | lg"` and `variant="outlined | filled | ghost"`.
+  [DESIGN.md](DESIGN.md#controls-and-forms) defines their geometry and visual defaults.
 - `borderRadius` accepts `none`, `sm`, `md`, `lg`, `xl`, `full`, any CSS radius, or a pixel number.
   `width` accepts `auto`, `full`, any CSS width, or a pixel number. `null`/omission leaves the
   component's stylesheet default intact. Explicit `style` wins; `className` remains available.
 - Convenience fields apply `width` to their outer field layout, so percentage widths are not
   applied twice. Their `style`/`className` customize the control; compose `Field.Root` and the
   primitive parts when the label, description and control need independent layout overrides.
-- Customize `--ui-radius-control`, `--ui-radius-surface`, `--ui-radius-dialog` (overlays: dialog,
-  drawer, toast) and `--ui-radius-item` globally, or set an
-  override on the specific trigger, popup, card, thumb, or other visual part.
-- Buttons retain the pill shape and primary/secondary/ghost/danger variants, adding soft, success,
-  warning, link, extra-small and loading states. An icon-only action takes `mode="icon"` — square at
-  whatever `size` it carries, with no label padding — and still needs an accessible label.
+- Radius overrides remain available for compositions that need them; follow DESIGN.md when using
+  them. The shared defaults live in `src/components/ui/styles.css`.
+- Buttons expose primary/secondary/ghost/danger/link variants, extra-small and loading states.
+  An icon-only action takes `mode="icon"` and requires an accessible label.
 - Use Base UI's native `disabled`, `required`, `onClick`, `value`/`onValueChange` and
   `checked`/`onCheckedChange` conventions. Composable primitive wrappers retain `render`, refs,
   and state callbacks for `className`/`style` where the underlying primitive supports them.
-- All colors use semantic tokens (`surface`, `fg`, `border`, `primary`, `danger`, `success`,
-  `warning`, etc.). Light/dark modes share the same components; reduced motion is respected.
-  Put `.dark` on the document root so portalled menus, dialogs and toasts inherit the theme too.
+- Put `.dark` on the document root so portalled menus, dialogs and toasts inherit the theme too.
 
 ```tsx
-<Input label="Name" name="name" required size="md" borderRadius="lg" width="full" />
-<Button variant="secondary" borderRadius="0.75rem" width="auto">Cancel</Button>
-<Card borderRadius={20} width="min(100%, 40rem)">...</Card>
+<Input label="Name" name="name" required size="md" width="full" />
+<Button variant="secondary" width="auto">Cancel</Button>
+<Card width="min(100%, 40rem)">...</Card>
 ```
 
 Base UI has no table/data-grid primitive: `Table` and `DataTable` intentionally use semantic HTML.
 Badge, Card, Status, Textarea and page furniture extend the same appearance system. Do not add
 pretend grid keyboard semantics or a second styling vocabulary.
 
-Charts use Recharts with shared tooltips and distinct theme colors: areas for activity, lines for
-latency, grouped bars for interval usage, and a donut for the mutually exclusive input categories.
-Cache writes remain a separate count within uncached input. Chart data is also available as a table.
-Toolbar filters and actions share pill corners. Audit shows its result count even on a single page.
+Charts use Recharts with shared tooltips and accessible data tables. Follow
+[DESIGN.md](DESIGN.md#charts-and-verification) for chart types, colors, and measurement rules.
 
 ### Component coverage
 

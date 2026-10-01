@@ -1,8 +1,8 @@
 "use client";
 
 import { Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { ContentPanel as Card } from "#/components/ui/card";
 import { chartTooltipStyle } from "#/components/ui/chart";
-import { Card } from "#/components/ui/card";
 import { compact } from "./metrics-data";
 import { useId } from "react";
 
@@ -51,7 +51,7 @@ export function CacheUsage({
 	const segments = rows.filter((row) => (row.value ?? 0) > 0);
 	const visibleRows = rows.filter((row) => row.value !== 0 || total === 0);
 	return (
-		<Card aria-labelledby={id} className="@container min-w-0 p-7">
+		<Card aria-labelledby={id} className="@container min-w-0 p-5">
 			<div className="flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<h2 className="font-semibold" id={id}>

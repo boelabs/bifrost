@@ -92,7 +92,7 @@ export function FallbackDialog({
 		<Modal isOpen={reason !== null} onOpenChange={(open) => !open && close()}>
 			<Dialog aria-label="Fallback chain" layout="sectioned">
 				<DialogHeader>
-					<h2 className="font-semibold text-fg text-lg">
+					<h2 className="font-semibold text-foreground text-xl">
 						{kind?.title ?? "Fallback chain"}
 					</h2>
 					<p className="pt-2 text-fg-muted text-sm">

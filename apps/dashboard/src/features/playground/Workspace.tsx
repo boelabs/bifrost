@@ -62,7 +62,7 @@ export function Workspace({
 						</h2>
 					</div>
 				) : (
-					<div className="mx-auto w-full space-y-10 pb-8 sm:max-w-2xl xl:max-w-3xl">
+					<div className="mx-auto flex w-full flex-col gap-10 pb-8 sm:max-w-2xl xl:max-w-3xl">
 						{transcript}
 					</div>
 				)}

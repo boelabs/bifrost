@@ -1,12 +1,12 @@
 "use client";
 
 import { useIdempotencyKey } from "#/shared/lib/useIdempotencyKey.ts";
-import { Select, SelectItem } from "#/components/ui/select";
+import { ModelInput } from "#/shared/components/ModelPicker.tsx";
+import { ChevronDown as IconChevronDown } from "lucide-react";
+import { SearchableSelect } from "#/components/ui/select";
 import { Collapsible } from "#/components/ui/collapsible";
 import { CustomModelEditor } from "./CustomModelEditor";
 import { parsePricing, type Pricing } from "./pricing";
-import { IconChevronDown } from "@tabler/icons-react";
-import { Combobox } from "#/components/ui/combobox";
 import { Textarea } from "#/components/ui/textarea";
 import { saveDeploymentAction } from "./actions.ts";
 import { useMemo, useRef, useState } from "react";
@@ -16,7 +16,6 @@ import { Button } from "#/components/ui/button";
 import { Status } from "#/components/ui/status";
 import { Switch } from "#/components/ui/switch";
 import { Input } from "#/components/ui/input";
-import { Field } from "#/components/ui/field";
 import { Form } from "#/components/ui/form";
 
 import {
@@ -216,7 +215,7 @@ export function DeploymentDialog({
 				layout="sectioned"
 			>
 				<DialogHeader>
-					<h2 className="font-semibold text-fg text-lg">
+					<h2 className="font-semibold text-foreground text-xl">
 						{editing ? "Edit deployment" : "New deployment"}
 					</h2>
 					<p className="text-fg-muted text-sm">
@@ -242,11 +241,15 @@ export function DeploymentDialog({
 								name="publicModel"
 								required
 							/>
-							<Select
+							<SearchableSelect
 								description={
 									editing ? "Fixed for an existing deployment." : undefined
 								}
 								disabled={editing}
+								items={adapters.map((entry) => ({
+									value: entry.id,
+									label: entry.id,
+								}))}
 								label="Adapter"
 								name="adapterKey"
 								onValueChange={(key) => {
@@ -268,14 +271,9 @@ export function DeploymentDialog({
 								}}
 								placeholder="Choose an adapter"
 								required
+								searchPlaceholder="Search adapters"
 								value={adapterKey || null}
-							>
-								{adapters.map((entry) => (
-									<SelectItem key={entry.id} value={entry.id}>
-										{entry.id}
-									</SelectItem>
-								))}
-							</Select>
+							/>
 						</div>
 
 						{catalog.length > 0 ? (
@@ -285,47 +283,23 @@ export function DeploymentDialog({
 							 * and a genuinely new model can be deployed as custom on an adapter that has a
 							 * catalog — a select would make both impossible.
 							 */
-							<Field.Root>
-								<Field.Label>Upstream model</Field.Label>
-								<Combobox.Root
-									inputValue={upstreamModel}
-									items={catalog.map((model) => model.id)}
-									onInputValueChange={setUpstreamModel}
-									onValueChange={(next: string | null) =>
-										setUpstreamModel(next ?? "")
-									}
-									openOnInputClick
-									value={upstreamModel}
-								>
-									<Combobox.InputField
-										placeholder="Pick a catalog model or type an id"
-										required
-										showClear={upstreamModel !== ""}
-									/>
-									<Combobox.Portal>
-										<Combobox.Positioner className="z-50" sideOffset={6}>
-											<Combobox.Popup>
-												<Combobox.Empty>
-													No catalog match. You can use this custom model id.
-												</Combobox.Empty>
-												<Combobox.List>
-													{(id: string) => (
-														<Combobox.Item key={id} value={id}>
-															{id}
-															{catalog.find((model) => model.id === id)
-																?.deprecated ? (
-																<Status tone="warning">deprecated</Status>
-															) : null}
-															<Combobox.ItemIndicator />
-														</Combobox.Item>
-													)}
-												</Combobox.List>
-											</Combobox.Popup>
-										</Combobox.Positioner>
-									</Combobox.Portal>
-								</Combobox.Root>
-								<Field.Error />
-							</Field.Root>
+							<ModelInput
+								emptyHint="No catalog match. You can use this custom model id."
+								label="Upstream model"
+								models={catalog.map((model) => model.id)}
+								onChange={setUpstreamModel}
+								placeholder="Pick a catalog model or type an id"
+								renderItem={(id) => (
+									<>
+										{id}
+										{catalog.find((model) => model.id === id)?.deprecated ? (
+											<Status tone="warning">deprecated</Status>
+										) : null}
+									</>
+								)}
+								required
+								value={upstreamModel}
+							/>
 						) : (
 							<Input
 								disabled={!adapter}
@@ -379,7 +353,7 @@ export function DeploymentDialog({
 								keepMounted
 								onInvalidCapture={() => setAdvancedOpen(true)}
 							>
-								<div className="flex flex-col gap-5 pt-5">
+								<div className="flex flex-col gap-4 pt-5">
 									<JsonField
 										description='Adapter-specific extras such as {"baseUrl": "https://…"}.'
 										label="Extra credentials (JSON)"

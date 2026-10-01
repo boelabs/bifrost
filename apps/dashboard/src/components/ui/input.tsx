@@ -1,15 +1,12 @@
 "use client";
 
+import { type ControlProps, mergeClassName, mergeStyle } from "./appearance";
 import { Input as BaseInput } from "@base-ui/react/input";
+import { inputControlVariants } from "./primitives/input";
+import { appearanceStyle } from "./appearance";
 import { Field, useFieldScope } from "./field";
+import { cn } from "#/shared/lib/classes";
 import type { ReactNode } from "react";
-
-import {
-	type ControlProps,
-	mergeClassName,
-	controlStyles,
-	mergeStyle,
-} from "./appearance";
 
 export interface InputProps
 	extends Omit<BaseInput.Props, "size" | "width">,
@@ -35,20 +32,42 @@ export function Input({
 	const hasSupportingContent = Boolean(label || description || errorMessage);
 	const ownsLayout = !hasFieldScope && hasSupportingContent;
 	const control = (
-		<BaseInput
-			{...props}
-			className={mergeClassName(
-				controlStyles({ size, variant, className: "w-full" }),
-				className,
-			)}
-			style={mergeStyle(
-				{
-					borderRadius,
-					width: ownsLayout ? undefined : width,
-				},
-				style,
-			)}
-		/>
+		<span
+			className={inputControlVariants({
+				className:
+					variant === "ghost"
+						? "border-transparent bg-transparent shadow-none"
+						: undefined,
+			})}
+			data-slot="input-control"
+			style={appearanceStyle({
+				borderRadius,
+				width: ownsLayout || typeof style === "function" ? undefined : width,
+			})}
+		>
+			<BaseInput
+				{...props}
+				className={mergeClassName(
+					cn(
+						"h-8.5 w-full min-w-0 rounded-[inherit] bg-transparent px-[calc(--spacing(3)-1px)] leading-8.5 outline-none placeholder:text-muted-foreground/72 sm:h-7.5 sm:leading-7.5",
+						{
+							xs: "h-6.5 sm:h-5.5",
+							sm: "h-7.5 px-[calc(--spacing(2.5)-1px)] sm:h-6.5",
+							md: "",
+							lg: "h-9.5 sm:h-8.5",
+						}[size ?? "md"],
+					),
+					className,
+				)}
+				style={mergeStyle(
+					{
+						borderRadius,
+						width: undefined,
+					},
+					style,
+				)}
+			/>
+		</span>
 	);
 	const content = (
 		<>

@@ -2,6 +2,7 @@
 
 import { Combobox } from "#/components/ui/combobox";
 import { Field } from "#/components/ui/field";
+import { ChevronsUpDown } from "lucide-react";
 import { useMemo, useState } from "react";
 
 /**
@@ -31,6 +32,10 @@ export function ModelInput({
 	required,
 	autoFocus,
 	name,
+	placeholder = "Pick or type a model",
+	searchPlaceholder = "Search or type a model",
+	emptyHint = "No deployed model matches. The name is still accepted.",
+	renderItem = (model) => model,
 }: {
 	value: string;
 	onChange: (value: string) => void;
@@ -40,35 +45,60 @@ export function ModelInput({
 	required?: boolean;
 	autoFocus?: boolean;
 	name?: string;
+	placeholder?: string;
+	searchPlaceholder?: string;
+	emptyHint?: string;
+	renderItem?: (model: string) => React.ReactNode;
 }) {
 	const items = useMemo(() => suggestions(models, []), [models]);
+	const [query, setQuery] = useState("");
 	return (
 		<Field.Root name={name}>
 			<Field.Label>{label}</Field.Label>
 			<Combobox.Root
-				inputValue={value}
+				inputValue={query}
 				items={items}
-				onInputValueChange={onChange}
+				onInputValueChange={(next, details) => {
+					setQuery(next);
+					if (
+						details.reason === "input-change" ||
+						details.reason === "input-clear"
+					) {
+						onChange(next);
+					}
+				}}
+				onOpenChange={(open) => {
+					if (!open) {
+						setQuery("");
+					}
+				}}
 				onValueChange={(next: string | null) => onChange(next ?? "")}
-				openOnInputClick
+				required={required}
 				value={value}
 			>
-				<Combobox.InputField
+				<Combobox.Trigger
+					aria-label={label}
 					autoFocus={autoFocus}
-					placeholder="Pick or type a model"
-					required={required}
-					showClear={value !== ""}
-				/>
+					className="w-full justify-between font-normal"
+				>
+					<span className="truncate">{value || placeholder}</span>
+					<ChevronsUpDown
+						aria-hidden
+						className="size-4 shrink-0 text-fg-muted"
+					/>
+				</Combobox.Trigger>
 				<Combobox.Portal>
 					<Combobox.Positioner className="z-50" sideOffset={6}>
-						<Combobox.Popup>
-							<Combobox.Empty>
-								No deployed model matches. The name is still accepted.
-							</Combobox.Empty>
-							<Combobox.List>
+						<Combobox.Popup
+							aria-label={label}
+							className="max-w-[calc(100vw-2rem)] p-0"
+						>
+							<Combobox.SearchInput placeholder={searchPlaceholder} />
+							<Combobox.Empty>{emptyHint}</Combobox.Empty>
+							<Combobox.List className="p-1">
 								{(id: string) => (
 									<Combobox.Item key={id} value={id}>
-										{id}
+										{renderItem(id)}
 										<Combobox.ItemIndicator />
 									</Combobox.Item>
 								)}
@@ -95,7 +125,7 @@ export function ModelListInput({
 	models,
 	label,
 	description,
-	placeholder = "Type a model name",
+	placeholder = "Select models",
 	emptyHint = "Type a model name and press Enter to add it.",
 }: {
 	value: readonly string[];
@@ -127,6 +157,8 @@ export function ModelListInput({
 					// Picking an item would close the popup; several names usually go in at once.
 					if (!open && details.reason === "item-press") {
 						details.cancel();
+					} else if (!open) {
+						setQuery("");
 					}
 				}}
 				onValueChange={(next: string[]) => {
@@ -153,18 +185,28 @@ export function ModelListInput({
 									<Combobox.ChipRemove aria-label={`Remove ${model}`} />
 								</Combobox.Chip>
 							))}
-							<Combobox.ChipsInput
-								placeholder={selected.length > 0 ? "" : placeholder}
-							/>
-							<Combobox.InlineTrigger aria-label={`Show models for ${label}`} />
+							<Combobox.InlineTrigger
+								aria-label={`Show models for ${label}`}
+								className="h-auto min-w-0 flex-1 justify-between gap-2 px-1 font-normal text-sm"
+							>
+								<span className="truncate">
+									{selected.length > 0 ? "Add a model" : null}
+									{selected.length === 0 ? placeholder : null}
+								</span>
+								<ChevronsUpDown aria-hidden className="size-4 shrink-0" />
+							</Combobox.InlineTrigger>
 						</Combobox.Chips>
 					)}
 				</Combobox.Value>
 				<Combobox.Portal>
 					<Combobox.Positioner className="z-50" sideOffset={6}>
-						<Combobox.Popup>
+						<Combobox.Popup
+							aria-label={label}
+							className="max-w-[calc(100vw-2rem)] p-0"
+						>
+							<Combobox.SearchInput placeholder="Search or type a model" />
 							<Combobox.Empty>{emptyHint}</Combobox.Empty>
-							<Combobox.List>
+							<Combobox.List className="p-1">
 								{(model: string) => (
 									<Combobox.Item key={model} value={model}>
 										{model}

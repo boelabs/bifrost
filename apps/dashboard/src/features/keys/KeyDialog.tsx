@@ -2,10 +2,10 @@
 
 import { type KeyDraft, draftFromKey, EMPTY_DRAFT } from "./draft.ts";
 import { ModelListInput } from "#/shared/components/ModelPicker.tsx";
+import { ChevronDown as IconChevronDown } from "lucide-react";
 import { Select, SelectItem } from "#/components/ui/select";
 import { type VirtualKey, formatCents } from "./common.ts";
 import { Collapsible } from "#/components/ui/collapsible";
-import { IconChevronDown } from "@tabler/icons-react";
 import { ErrorNote } from "#/components/ui/page";
 import { Switch } from "#/components/ui/switch";
 import { Button } from "#/components/ui/button";
@@ -87,7 +87,7 @@ export function KeyDialog({
 				width="min(100%, 34rem)"
 			>
 				<DialogHeader>
-					<h2 className="font-semibold text-fg text-lg">
+					<h2 className="font-semibold text-foreground text-xl">
 						{editing ? `Edit ${existing.name}` : "New virtual key"}
 					</h2>
 					<p className="pt-2 text-fg-muted text-sm">
@@ -134,7 +134,7 @@ export function KeyDialog({
 								keepMounted
 								onInvalidCapture={() => setAdvancedOpen(true)}
 							>
-								<div className="flex flex-col gap-5 pt-5">
+								<div className="flex flex-col gap-4 pt-5">
 									<div className="grid gap-4 sm:grid-cols-2">
 										<Input
 											description="Empty means no ceiling."

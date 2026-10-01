@@ -1,6 +1,6 @@
+import { Select, SelectItem, SearchableSelect } from "./select";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Button, buttonStyles } from "./button";
-import { Select, SelectItem } from "./select";
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { Checkbox } from "./checkbox";
@@ -11,6 +11,23 @@ import { Field } from "./field";
 import { Form } from "./form";
 
 describe("styled control composition", () => {
+	test("searchable choices preserve required form values while the popup is closed", () => {
+		const html = renderToStaticMarkup(
+			<Form>
+				<SearchableSelect
+					defaultValue="openai"
+					items={[{ value: "openai", label: "OpenAI" }]}
+					label="Adapter"
+					name="adapterKey"
+					required
+				/>
+			</Form>,
+		);
+		assert.match(html, /name="adapterKey"/);
+		assert.match(html, /value="openai"/);
+		assert.match(html, /required=""/);
+		assert.match(html, /OpenAI/);
+	});
 	test("standalone labelled toggles do not require a field context", () => {
 		const html = renderToStaticMarkup(
 			<>
@@ -89,8 +106,11 @@ describe("styled control composition", () => {
 			assert.match(control, /required=""/);
 			assert.match(control, /aria-invalid="true"/);
 			assert.match(control, /custom-control/);
-			assert.match(control, /width:50%/);
-			assert.match(control, /border-radius:3px/);
+			assert.match(html, /data-slot="input-control"[^>]*style="[^"]*width:50%/);
+			assert.match(
+				html,
+				/data-slot="input-control"[^>]*style="[^"]*border-radius:3px/,
+			);
 			assert.match(control, /margin-left:4px/);
 			assert.equal(html.match(/width:50%/g)?.length, 1);
 		}
@@ -114,7 +134,8 @@ describe("styled control composition", () => {
 					</Form>,
 				);
 				assert.equal(
-					html.match(/<div[^>]*class="[^"]*flex-col gap-1\.5[^"]*"/g)?.length,
+					html.match(/<div[^>]*class="[^"]*flex-col items-start gap-2[^"]*"/g)
+						?.length,
 					1,
 				);
 				const control = html.match(/<(?:input|textarea)\b[^>]*>/)?.[0] ?? "";
@@ -125,7 +146,10 @@ describe("styled control composition", () => {
 				} else {
 					assert.match(control, /disabled=""/);
 				}
-				assert.match(control, /width:50%/);
+				assert.match(
+					html,
+					/data-slot="input-control"[^>]*style="[^"]*width:50%/,
+				);
 				const labelId = html.match(/<label[^>]*for="([^"]+)"/)?.[1];
 				assert.ok(labelId);
 				assert.ok(control.includes(`id="${labelId}"`));
@@ -180,10 +204,10 @@ describe("styled control composition", () => {
 
 	test("icon mode squares the button at its size and drops label padding", () => {
 		for (const [size, square] of [
-			["xs", "size-8"],
-			["sm", "size-10"],
-			["md", "size-12"],
-			["lg", "size-14"],
+			["xs", "size-7"],
+			["sm", "size-8"],
+			["md", "size-9"],
+			["lg", "size-10"],
 		] as const) {
 			const styles = buttonStyles({ size, mode: "icon" });
 			assert.match(styles, new RegExp(`\\b${square}\\b`));
@@ -191,6 +215,6 @@ describe("styled control composition", () => {
 			// The padding that sizes a labelled button is exactly what makes an icon-only one wide.
 			assert.doesNotMatch(styles, /\bpx-\d/);
 		}
-		assert.match(buttonStyles({ size: "sm" }), /\bpx-4\b/);
+		assert.match(buttonStyles({ size: "sm" }), /px-\[calc/);
 	});
 });

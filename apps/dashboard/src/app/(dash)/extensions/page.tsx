@@ -1,3 +1,4 @@
+import { ExtensionsSkeleton } from "#/features/extensions/ExtensionsSkeleton";
 import { RouteBoundary } from "#/shared/components/RouteBoundary.tsx";
 import { runtimeTone } from "#/features/extensions/common.ts";
 import { Skeleton } from "#/shared/components/Skeleton.tsx";
@@ -32,7 +33,7 @@ export default function ExtensionsPage() {
 			>
 				<div className="flex items-center gap-2">
 					<Suspense
-						fallback={<Skeleton className="h-7 rounded-full" width="7.5rem" />}
+						fallback={<Skeleton className="h-5 rounded-sm" width="7.5rem" />}
 					>
 						<RuntimeBadge />
 					</Suspense>
@@ -68,36 +69,5 @@ async function Runtime() {
 			instances={instances}
 			status={status}
 		/>
-	);
-}
-
-/** The two cards — instances, then code — at the heights the real ones settle at. */
-function ExtensionsSkeleton() {
-	return (
-		<div className="flex flex-col gap-6">
-			{["15.5rem", "13.5rem"].map((height, index) => (
-				<div
-					className="rounded-(--ui-radius-surface) border border-border/50 bg-card p-6"
-					// biome-ignore lint/suspicious/noArrayIndexKey: placeholder cards have no identity
-					key={index}
-				>
-					<div className="flex flex-wrap items-start justify-between gap-3 pb-4">
-						<div>
-							<Skeleton className="h-5" width="7rem" />
-							<Skeleton className="mt-2 h-3.5" width="30rem" />
-						</div>
-						<Skeleton
-							className="h-10 rounded-(--ui-radius-control)"
-							width="8rem"
-						/>
-					</div>
-					<Skeleton
-						className="rounded-(--ui-radius-surface)"
-						style={{ height }}
-						width="100%"
-					/>
-				</div>
-			))}
-		</div>
 	);
 }

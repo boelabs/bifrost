@@ -176,7 +176,7 @@ export function LogDetail({
 		>
 			<Dialog aria-label="Operation detail" layout="sectioned">
 				<DialogHeader>
-					<h2 className="font-semibold text-fg text-lg">Operation</h2>
+					<h2 className="font-semibold text-foreground text-xl">Operation</h2>
 					<p className="pt-2 text-fg-muted text-sm">
 						{detail ? (
 							<>

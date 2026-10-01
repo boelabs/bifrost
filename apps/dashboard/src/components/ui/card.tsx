@@ -1,110 +1,89 @@
 "use client";
 
-import { tv, type VariantProps } from "tailwind-variants";
+import { Frame, FramePanel } from "./primitives/frame";
 import type { HTMLAttributes } from "react";
+import { cn } from "#/shared/lib/classes";
+
+import {
+	CardHeader as PrimitiveHeader,
+	CardFooter as PrimitiveFooter,
+	Card as PrimitiveCard,
+	CardPanel,
+} from "./primitives/card";
 
 import {
 	type AppearanceProps,
 	type EffectProps,
-	effectClassName,
 	appearanceStyle,
-} from "./appearance.ts";
+} from "./appearance";
 
-const card = tv({
-	slots: {
-		root: "rounded-(--ui-radius-surface) border bg-card text-card-foreground",
-		header: "flex flex-col space-y-1.5 p-7",
-		title: "font-semibold text-2xl leading-none tracking-tight",
-		description: "text-fg-muted text-sm",
-		content: "p-7 pt-0",
-		footer: "flex items-center p-7 pt-0",
-	},
-	variants: {
-		variant: {
-			outlined: {
-				root: "border border-border/50",
-			},
-			filled: {
-				root: "border-surface-2 bg-surface-2",
-			},
-			elevated: { root: "border-border/40 shadow-sm" },
-			ghost: { root: "border-transparent bg-transparent" },
-		},
-	},
-	defaultVariants: {
-		variant: "outlined",
-	},
-});
-
-const styles = card();
-
-type CardVariantProps = VariantProps<typeof card>;
-
-interface CardProps
+export interface CardProps
 	extends HTMLAttributes<HTMLDivElement>,
-		CardVariantProps,
 		AppearanceProps,
 		EffectProps {
-	className?: string;
+	variant?: "outlined" | "filled" | "elevated" | "ghost";
 	title?: string;
 	description?: string;
 }
-
-interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {
-	className?: string;
-}
-
-interface CardContentProps extends HTMLAttributes<HTMLDivElement> {
-	className?: string;
-}
-
-interface CardFooterProps extends HTMLAttributes<HTMLDivElement> {
-	className?: string;
-}
-
-const Card = ({
-	className,
-	variant,
-	effect = null,
-	title,
-	description,
-	children,
+export type CardHeaderProps = HTMLAttributes<HTMLDivElement>;
+export type CardContentProps = HTMLAttributes<HTMLDivElement>;
+export type CardFooterProps = HTMLAttributes<HTMLDivElement>;
+export function Card({
 	borderRadius,
 	width,
 	style,
+	effect: _effect,
+	variant: _variant,
+	title,
+	description,
+	children,
 	...props
-}: CardProps) => (
-	<div
-		className={styles.root({
-			variant,
-			className: [effectClassName(effect), className],
-		})}
-		style={appearanceStyle({ borderRadius, width }, style)}
-		{...props}
-	>
-		{title || description ? (
-			<div className={styles.header()}>
-				{title ? <h3 className={styles.title()}>{title}</h3> : null}
-				{description ? (
-					<p className={styles.description()}>{description}</p>
+}: CardProps) {
+	return (
+		<PrimitiveCard
+			{...props}
+			style={appearanceStyle({ borderRadius, width }, style)}
+		>
+			{title || description ? (
+				<PrimitiveHeader>
+					{title ? <h3 className="font-semibold text-sm">{title}</h3> : null}
+					{description ? (
+						<p className="text-muted-foreground text-sm">{description}</p>
+					) : null}
+				</PrimitiveHeader>
+			) : null}
+			{children}
+		</PrimitiveCard>
+	);
+}
+export function ContentPanel({
+	className,
+	borderRadius,
+	width,
+	style,
+	effect: _effect,
+	variant: _variant,
+	title,
+	description,
+	children,
+	...props
+}: CardProps) {
+	return (
+		<Frame className="min-w-0" style={appearanceStyle({ borderRadius, width })}>
+			<FramePanel {...props} className={cn("flex-1", className)} style={style}>
+				{title || description ? (
+					<div className="mb-4 flex flex-col gap-1">
+						{title ? <h3 className="font-semibold text-sm">{title}</h3> : null}
+						{description ? (
+							<p className="text-muted-foreground text-sm">{description}</p>
+						) : null}
+					</div>
 				) : null}
-			</div>
-		) : null}
-		{children}
-	</div>
-);
-
-const CardHeader = ({ className, ...props }: CardHeaderProps) => (
-	<div className={styles.header({ className })} {...props} />
-);
-
-const CardContent = ({ className, ...props }: CardContentProps) => (
-	<div className={styles.content({ className })} {...props} />
-);
-
-const CardFooter = ({ className, ...props }: CardFooterProps) => (
-	<div className={styles.footer({ className })} {...props} />
-);
-
-export { Card, CardHeader, CardContent, CardFooter };
-export type { CardProps, CardHeaderProps, CardContentProps, CardFooterProps };
+				{children}
+			</FramePanel>
+		</Frame>
+	);
+}
+export const CardHeader = PrimitiveHeader;
+export const CardContent = CardPanel;
+export const CardFooter = PrimitiveFooter;

@@ -1,9 +1,9 @@
 "use client";
 
 import { type Column, DataTable, Dash, Mono } from "#/components/ui/datatable";
+import { Download as IconDownload, Search as IconSearch } from "lucide-react";
 import { useSearchWriter } from "#/shared/lib/useSearchWriter.ts";
 import { Pagination } from "#/shared/components/Pagination.tsx";
-import { IconDownload, IconSearch } from "@tabler/icons-react";
 import { Status, outcomeTone } from "#/components/ui/status";
 import { EmptyState } from "#/components/ui/page";
 import { downloadCsv } from "#/shared/lib/csv.ts";
@@ -142,7 +142,7 @@ export function LogsTable({
 					size="sm"
 					variant="ghost"
 				>
-					<IconSearch aria-hidden size={15} />
+					<IconSearch aria-hidden className="size-4" />
 				</Button>
 			),
 		},
@@ -189,7 +189,7 @@ export function LogsTable({
 								size="sm"
 								variant="secondary"
 							>
-								<IconDownload aria-hidden className="mr-1" size={15} />
+								<IconDownload aria-hidden className="size-4" />
 								CSV
 							</Button>
 						}

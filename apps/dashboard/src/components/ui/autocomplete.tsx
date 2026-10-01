@@ -1,7 +1,7 @@
 "use client";
 
 import { Autocomplete as BaseAutocomplete } from "@base-ui/react/autocomplete";
-import { IconSelector, IconX } from "@tabler/icons-react";
+import { ChevronsUpDown as IconSelector, X as IconX } from "lucide-react";
 
 import {
 	type AppearanceProps,

@@ -1,15 +1,18 @@
 "use client";
 
-import { NavSkeleton, UserMenuSkeleton } from "./ShellSkeletons.tsx";
-import type { OperatorIdentity } from "#/features/auth/common.ts";
-import { BifrostMark } from "#/shared/components/BifrostMark.tsx";
-import { SessionProvider } from "#/features/auth/session.tsx";
+import { NavSkeleton, UserMenuSkeleton } from "./ShellSkeletons";
+import type { OperatorIdentity } from "#/features/auth/common";
+import { BifrostMark } from "#/shared/components/BifrostMark";
+import { SessionProvider } from "#/features/auth/session";
+import { ThemeSelect } from "#/shared/theme/ThemeSelect";
 import { Button } from "#/components/ui/button";
-import { SidebarNav } from "./SidebarNav.tsx";
-import { useSidebar } from "./useSidebar.ts";
-import { UserMenu } from "./UserMenu.tsx";
+import { usePathname } from "next/navigation";
+import { cn } from "#/shared/lib/classes";
+import { SidebarNav } from "./SidebarNav";
+import { useSidebar } from "./useSidebar";
+import { UserMenu } from "./UserMenu";
 import { Suspense } from "react";
-import { cn } from "cn";
+import Link from "next/link";
 
 import {
 	DialogBackdrop,
@@ -21,86 +24,80 @@ import {
 } from "#/components/ui/dialog";
 
 import {
-	IconLayoutSidebarLeftCollapse,
-	IconLayoutSidebarLeftExpand,
-	IconX,
-} from "@tabler/icons-react";
-
-/**
- * The chrome every authenticated page hangs off.
- *
- * Everything drawn here is static — no data, no session — so Next puts it in the route's App Shell
- * and the browser paints it the instant a sidebar link is clicked. The two parts that *do* need the
- * operator (which sections their role can see, and who they are) sit behind their own `<Suspense>`
- * boundaries and stream into skeletons of exactly their own size, so nothing below them moves when
- * the answer lands.
- */
-/** The sidebar button's icon and label, which have to agree on what pressing it does. */
-function sidebarToggle(mobile: boolean, collapsed: boolean) {
-	if (mobile) {
-		return { Icon: IconX, label: "Close sidebar" };
-	}
-	return collapsed
-		? { Icon: IconLayoutSidebarLeftExpand, label: "Expand sidebar" }
-		: { Icon: IconLayoutSidebarLeftCollapse, label: "Collapse sidebar" };
-}
+	PanelLeftCloseIcon,
+	PanelLeftOpenIcon,
+	MenuIcon,
+	XIcon,
+} from "lucide-react";
 
 export function AppShell({
 	identity,
 	children,
 }: {
-	/** Unawaited on purpose — see `features/auth/session.tsx`. */
 	identity: Promise<OperatorIdentity>;
 	children: React.ReactNode;
 }) {
+	const playground = usePathname() === "/playground";
 	const { collapsed, mobileOpen, setMobileOpen, toggle } = useSidebar();
 	return (
 		<SessionProvider identity={identity}>
-			<div className="flex h-dvh overflow-hidden bg-surface">
+			<div className="flex h-dvh overflow-hidden bg-background">
 				<a
-					className="sr-only fixed top-2 left-2 z-50 rounded-lg bg-primary p-3 text-primary-fg focus:not-sr-only"
+					className="sr-only fixed top-2 left-2 z-50 rounded-lg bg-primary p-3 text-primary-foreground focus:not-sr-only"
 					href="#main-content"
 				>
 					Skip to content
 				</a>
 				<aside
 					className={cn(
-						"hidden h-full shrink-0 flex-col border-sidebar-border border-r bg-sidebar transition-[width] duration-200 motion-reduce:transition-none md:flex",
-						collapsed ? "w-16" : "w-64",
+						"hidden h-full shrink-0 flex-col border-r bg-background transition-[width] duration-200 motion-reduce:transition-none md:flex",
+						collapsed ? "w-16" : "w-56",
 					)}
 				>
 					<SidebarContent collapsed={collapsed} onToggle={toggle} />
 				</aside>
 				<div className="flex min-w-0 flex-1 flex-col">
-					<header className="flex h-14 shrink-0 items-center gap-3 border-border/40 border-b px-4 md:hidden">
+					<header className="flex h-12 shrink-0 items-center justify-between gap-2 border-b px-4">
 						<Button
 							aria-expanded={mobileOpen}
 							aria-label="Open sidebar"
+							className="md:hidden"
 							mode="icon"
 							onClick={() => setMobileOpen(true)}
-							size="sm"
 							variant="ghost"
 						>
-							<IconLayoutSidebarLeftExpand aria-hidden className="size-5" />
+							<MenuIcon aria-hidden="true" />
 						</Button>
-						<BifrostMark size={18} />
+						<div className="ms-auto flex items-center gap-1">
+							<ThemeSelect compact />
+							<Suspense fallback={<UserMenuSkeleton collapsed />}>
+								<UserMenu collapsed />
+							</Suspense>
+						</div>
 					</header>
 					<main
-						className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 md:p-8"
+						className="min-h-0 min-w-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]"
 						id="main-content"
 						tabIndex={-1}
 					>
-						{children}
+						<div
+							className={cn(
+								"mx-auto flex w-full max-w-6xl flex-col gap-6 p-4 sm:p-6",
+								playground ? "h-full min-h-0" : "min-h-full",
+							)}
+						>
+							{children}
+						</div>
 					</main>
 				</div>
 				<DialogRoot onOpenChange={setMobileOpen} open={mobileOpen}>
 					<DialogPortal>
 						<DialogBackdrop />
-						<DialogViewport className="justify-start p-0">
+						<DialogViewport className="flex items-stretch justify-start p-0 max-sm:pt-0">
 							<DialogPopup
 								borderRadius={0}
-								className="h-dvh max-h-dvh max-w-[calc(100vw-3rem)] gap-0 bg-sidebar p-0"
-								width="18rem"
+								className="h-dvh max-h-dvh max-w-[calc(100vw-3rem)] gap-0 bg-background p-0"
+								width="16rem"
 							>
 								<DialogTitle className="sr-only">Navigation</DialogTitle>
 								<SidebarContent
@@ -117,7 +114,6 @@ export function AppShell({
 		</SessionProvider>
 	);
 }
-
 function SidebarContent({
 	collapsed,
 	mobile = false,
@@ -129,60 +125,47 @@ function SidebarContent({
 	onToggle: () => void;
 	onNavigate?: () => void;
 }) {
-	// One value for the icon and the label, so the button cannot describe an action it does not do.
-	const toggle = sidebarToggle(mobile === true, collapsed);
-	const ToggleIcon = toggle.Icon;
+	const desktopIcon = collapsed ? PanelLeftOpenIcon : PanelLeftCloseIcon;
+	const ToggleIcon = mobile ? XIcon : desktopIcon;
+	const desktopLabel = collapsed ? "Expand sidebar" : "Collapse sidebar";
 	return (
-		<>
-			<div
-				className={cn(
-					"flex h-16 shrink-0 items-center gap-2 px-3",
-					collapsed ? "justify-center" : "justify-between",
-				)}
-			>
-				{/* The mark alone: it spells the name, and setting the word beside it says the same
-				    thing twice. Collapsed, the 64px rail is the toggle's. */}
+		<div className="flex h-full flex-col gap-3 px-2 py-3">
+			<div className="flex shrink-0 items-center justify-between gap-2 border-b pb-3">
 				{!collapsed && (
-					// The inset goes on a wrapper, never on the image: Tailwind's preflight sets
-					// `height: auto`, so padding inside the declared width shrinks the mark's height
-					// with it and the bridge comes out flattened.
-					<span className="px-2">
-						<BifrostMark size={20} />
-					</span>
+					<Link
+						className="flex min-w-0 items-center gap-2 rounded-md px-2 py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+						href="/"
+						onClick={onNavigate}
+					>
+						<BifrostMark decorative size={24} />
+						<span className="font-semibold text-base">Bifrost</span>
+					</Link>
 				)}
 				<Button
 					aria-expanded={!collapsed}
-					aria-label={toggle.label}
+					aria-label={mobile ? "Close sidebar" : desktopLabel}
 					mode="icon"
 					onClick={onToggle}
 					size="sm"
 					title={mobile ? "Close sidebar" : "Toggle sidebar (Ctrl/⌘ B)"}
 					variant="ghost"
 				>
-					<ToggleIcon aria-hidden className="size-5 text-fg-muted" />
+					<ToggleIcon aria-hidden="true" />
 				</Button>
 			</div>
 			<nav
 				aria-label="Main navigation"
-				className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2 py-2"
+				className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto"
 			>
-				{!collapsed && (
-					<p className="px-3 pb-2 font-medium text-fg-muted text-xs">
-						Workspace
-					</p>
-				)}
 				<Suspense fallback={<NavSkeleton collapsed={collapsed} />}>
-					<SidebarNav
-						collapsed={collapsed}
-						{...(onNavigate ? { onNavigate } : {})}
-					/>
+					<SidebarNav collapsed={collapsed} onNavigate={onNavigate} />
 				</Suspense>
 			</nav>
-			<div className="shrink-0 border-sidebar-border border-t p-2">
-				<Suspense fallback={<UserMenuSkeleton collapsed={collapsed} />}>
-					<UserMenu collapsed={collapsed} />
+			<div className="border-t pt-3">
+				<Suspense fallback={<NavSkeleton collapsed={collapsed} footer />}>
+					<SidebarNav collapsed={collapsed} footer onNavigate={onNavigate} />
 				</Suspense>
 			</div>
-		</>
+		</div>
 	);
 }

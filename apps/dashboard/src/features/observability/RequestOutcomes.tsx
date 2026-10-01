@@ -1,7 +1,7 @@
 "use client";
 
+import { ContentPanel as Card } from "#/components/ui/card";
 import type { getOverviewMetrics } from "./overview-data";
-import { Card } from "#/components/ui/card";
 
 type Metrics = ReturnType<typeof getOverviewMetrics>;
 
@@ -53,7 +53,7 @@ export function RequestOutcomes({ metrics }: { metrics: Metrics }) {
 	);
 
 	return (
-		<Card className="flex min-w-0 flex-col p-7">
+		<Card className="flex min-w-0 flex-col p-5">
 			<h2 className="font-semibold">Request outcomes</h2>
 			<p className="mt-1 text-fg-muted text-xs">
 				Reliability across finished requests
@@ -133,7 +133,7 @@ export function Reliability({ metrics }: { metrics: Metrics }) {
 		{ label: "Protocol errors", value: count.format(metrics.protocolErrors) },
 	];
 	return (
-		<Card className="flex min-w-0 flex-col p-7">
+		<Card className="flex min-w-0 flex-col p-5">
 			<h2 className="font-semibold">Delivery</h2>
 			<p className="mt-1 text-fg-muted text-xs">
 				What it took to finish them, across all attempts

@@ -41,7 +41,7 @@ See [Model discovery](apps/docs/content/docs/(api)/(inference-api)/models-discov
 Monorepo — Turborepo on Bun workspaces:
 
 - `apps/gateway` — the service, **runs on Bun**. Package `@boelabs/bifrost`.
-- `apps/dashboard` — operator dashboard (Next.js App Router + Base UI with BaseLayer styling),
+- `apps/dashboard` — operator dashboard (Next.js App Router + Base UI with coss UI styling),
   **runs on Bun**. Package `@boelabs/dashboard`. Optional at deployment (`DASH_ENABLED`). Its own
   component kit lives at `src/components/ui`. See [its README](apps/dashboard/README.md).
 
@@ -120,7 +120,12 @@ bun test --preload ./tests/support/unitSetup.ts src/router/strategies.test.ts
 
 ### Dashboard UI
 
-- Compact toolbar actions and filters use `size="sm"` and `borderRadius="full"`.
+- **coss UI is the component and design reference.** Reuse the local kit first. Before adding a
+  missing component, consult [coss UI's official components and examples](https://coss.com/ui/docs)
+  and adapt its source into the kit. Custom components must compose existing primitives and follow
+  coss UI's design and interaction patterns, using the dashboard's shared tokens and sizes.
+- Follow [the dashboard design guidelines](apps/dashboard/DESIGN.md), shared with Billete.
+  Compact toolbar actions and filters use `size="sm"` and the primitive's default radius.
   Match adjacent controls; form fields keep the shared control radius.
 - Creation selects for providers, models and roles start with a placeholder and require an explicit
   choice. Do not select the first available item. Editing preserves the stored selection; filters

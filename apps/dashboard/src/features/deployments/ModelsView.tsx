@@ -3,12 +3,12 @@
 import { type Column, DataTable, Dash, Mono } from "#/components/ui/datatable";
 import { deleteDeploymentAction, toggleDeploymentAction } from "./actions.ts";
 import { createContext, Suspense, use, useMemo, useState } from "react";
+import { ButtonSkeleton } from "#/shared/components/Skeleton.tsx";
 import { RowActions } from "#/shared/components/RowActions.tsx";
 import { Can, useSession } from "#/features/auth/session.tsx";
-import { Skeleton } from "#/shared/components/Skeleton.tsx";
+import { ContentPanel as Card } from "#/components/ui/card";
 import { useConfirm } from "#/shared/feedback/confirm.tsx";
 import { DeploymentDialog } from "./DeploymentDialog.tsx";
-import { Card, CardContent } from "#/components/ui/card";
 import { useRowActions } from "#/shared/lib/mutation.ts";
 import { useRefresh } from "#/shared/lib/useRefresh.ts";
 import { EmptyState } from "#/components/ui/page";
@@ -16,12 +16,12 @@ import { Button } from "#/components/ui/button";
 import { Status } from "#/components/ui/status";
 
 import {
-	IconPencil,
-	IconCheck,
-	IconTrash,
-	IconPlus,
-	IconBan,
-} from "@tabler/icons-react";
+	Pencil as IconPencil,
+	Trash2 as IconTrash,
+	Check as IconCheck,
+	Plus as IconPlus,
+	Ban as IconBan,
+} from "lucide-react";
 
 import {
 	type AdapterSummary,
@@ -116,7 +116,7 @@ function NewDeployment() {
 	return (
 		<Can permissions={["deployments:write"]}>
 			<Button onClick={openNew} size="sm">
-				<IconPlus aria-hidden className="mr-2" size={15} />
+				<IconPlus aria-hidden className="size-4" />
 				New deployment
 			</Button>
 		</Can>
@@ -129,14 +129,7 @@ function NewDeployment() {
  */
 export function NewDeploymentButton() {
 	return (
-		<Suspense
-			fallback={
-				<Skeleton
-					className="h-10 rounded-(--ui-radius-control)"
-					width="9.5rem"
-				/>
-			}
-		>
+		<Suspense fallback={<ButtonSkeleton label={14} />}>
 			<NewDeployment />
 		</Suspense>
 	);
@@ -298,20 +291,20 @@ function PublicModelCard({
 							{
 								label: row.enabled ? "Disable" : "Enable",
 								icon: row.enabled ? (
-									<IconBan aria-hidden size={15} />
+									<IconBan aria-hidden className="size-4" />
 								) : (
-									<IconCheck aria-hidden size={15} />
+									<IconCheck aria-hidden className="size-4" />
 								),
 								onSelect: () => onToggle(row),
 							},
 							{
 								label: "Edit",
-								icon: <IconPencil aria-hidden size={15} />,
+								icon: <IconPencil aria-hidden className="size-4" />,
 								onSelect: () => onEdit(row),
 							},
 							{
 								label: "Delete",
-								icon: <IconTrash aria-hidden size={15} />,
+								icon: <IconTrash aria-hidden className="size-4" />,
 								danger: true,
 								onSelect: () => onDelete(row),
 							},
@@ -323,10 +316,10 @@ function PublicModelCard({
 	];
 
 	return (
-		<Card className="effect-3d p-0">
-			<div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+		<Card className="p-0">
+			<div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
 				<div>
-					<h2 className="font-semibold text-fg text-lg">{name}</h2>
+					<h2 className="font-semibold text-foreground text-sm">{name}</h2>
 					<p className="mt-0.5 text-fg-muted text-xs">
 						{deployments.length} deployment{deployments.length === 1 ? "" : "s"}{" "}
 						· {enabledCount} enabled · {adapters.join(", ")}
@@ -336,15 +329,16 @@ function PublicModelCard({
 					{enabledCount > 0 ? "routable" : "no enabled deployment"}
 				</Status>
 			</div>
-			<CardContent className="p-0">
+			<div>
 				<DataTable
 					caption={`Deployments for ${name}`}
 					columns={columns}
 					pagination={{ pageSize: 10 }}
 					rowKey={(row) => row.id}
 					rows={deployments}
+					variant="plain"
 				/>
-			</CardContent>
+			</div>
 		</Card>
 	);
 }

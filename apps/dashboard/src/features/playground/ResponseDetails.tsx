@@ -1,6 +1,6 @@
 import { MESSAGE_ACTION, MESSAGE_ACTION_ICON } from "./MessageParts";
 import { buttonStyles } from "#/components/ui/button";
-import { IconInfoCircle } from "@tabler/icons-react";
+import { Info as IconInfoCircle } from "lucide-react";
 import type { ResponseMetrics } from "./transport";
 import { cn } from "cn";
 
@@ -82,7 +82,7 @@ function Metric({
 
 export function Metrics({ metrics }: { metrics: ResponseMetrics }) {
 	return (
-		<div className="space-y-4">
+		<div className="flex flex-col gap-4">
 			<dl className="grid grid-cols-2 gap-x-5 gap-y-2 text-sm sm:grid-cols-3">
 				<Metric label="TTFT" unit=" ms" value={metrics.ttftMs} />
 				<Metric label="First text" unit=" ms" value={metrics.firstTextMs} />

@@ -1,36 +1,332 @@
-/*
- * The Tailwind sources are declared once in `src/app/globals.css` (`@source "../"`), which covers
- * this directory along with the rest of the app.
- */
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
 @custom-variant dark (&:where(.dark, .dark *));
 
-@utility effect-3d {
-	position: relative;
-	background-clip: padding-box;
+:root {
+	color-scheme: light;
+	--accent: --alpha(var(--color-black) / 4%);
+	--accent-foreground: var(--color-neutral-800);
+	--background: var(--color-white);
+	--border: --alpha(var(--color-black) / 8%);
+	--card: var(--color-white);
+	--card-foreground: var(--color-neutral-800);
+	--destructive: var(--color-red-500);
+	--destructive-foreground: var(--color-red-700);
+	--foreground: var(--color-neutral-800);
+	--info: var(--color-blue-500);
+	--info-foreground: var(--color-blue-700);
+	--input: --alpha(var(--color-black) / 10%);
+	--muted: --alpha(var(--color-black) / 4%);
+	--muted-foreground: color-mix(
+		in srgb,
+		var(--color-neutral-500) 90%,
+		var(--color-black)
+	);
+	--popover: var(--color-white);
+	--popover-foreground: var(--color-neutral-800);
+	--primary: var(--color-neutral-800);
+	--primary-foreground: var(--color-neutral-50);
+	--ring: var(--color-neutral-400);
+	--secondary: --alpha(var(--color-black) / 4%);
+	--secondary-foreground: var(--color-neutral-800);
+	--success: var(--color-emerald-500);
+	/* Always dark on light: every payer app scans it. */
+	--qr: var(--color-black);
+	--qr-background: var(--color-white);
+	--success-foreground: var(--color-emerald-700);
+	--warning: var(--color-amber-500);
+	--warning-foreground: var(--color-amber-700);
+	--chart-1: oklch(0.646 0.222 41.116);
+	--chart-2: oklch(0.6 0.118 184.704);
+	--chart-3: oklch(0.398 0.07 227.392);
+	--chart-4: oklch(0.828 0.189 84.429);
+	--chart-5: oklch(0.769 0.188 70.08);
+}
 
-	&::before {
-		content: "";
-		pointer-events: none;
-		position: absolute;
-		inset: 0;
-		border-radius: inherit;
-		box-shadow: var(--ui-effect-edge);
+.dark {
+	color-scheme: dark;
+	--accent: lab(15.204% 0 0);
+	--accent-foreground: lab(98.26% 0 0);
+	--background: color-mix(
+		in srgb,
+		var(--color-neutral-950) 95%,
+		var(--color-white)
+	);
+	--border: --alpha(var(--color-white) / 6%);
+	--card: color-mix(in srgb, var(--background) 98%, var(--color-white));
+	--card-foreground: var(--color-neutral-100);
+	--destructive: color-mix(
+		in srgb,
+		var(--color-red-500) 90%,
+		var(--color-white)
+	);
+	--destructive-foreground: var(--color-red-400);
+	--foreground: var(--color-neutral-100);
+	--info: var(--color-blue-500);
+	--info-foreground: var(--color-blue-400);
+	--input: --alpha(var(--color-white) / 8%);
+	--muted: --alpha(var(--color-white) / 4%);
+	--muted-foreground: color-mix(
+		in srgb,
+		var(--color-neutral-500) 90%,
+		var(--color-white)
+	);
+	--popover: color-mix(in srgb, var(--background) 98%, var(--color-white));
+	--popover-foreground: var(--color-neutral-100);
+	--primary: lab(84.92% 0 0);
+	--primary-foreground: lab(7.78201% -0.0000149012 0);
+	--ring: var(--color-neutral-500);
+	--secondary: --alpha(var(--color-white) / 4%);
+	--secondary-foreground: var(--color-neutral-100);
+	--success: var(--color-emerald-500);
+	/* Always dark on light: every payer app scans it. */
+	--qr: var(--color-black);
+	--qr-background: var(--color-white);
+	--success-foreground: var(--color-emerald-400);
+	--warning: var(--color-amber-500);
+	--warning-foreground: var(--color-amber-400);
+	--chart-1: oklch(0.488 0.243 264.376);
+	--chart-2: oklch(0.696 0.17 162.48);
+	--chart-3: oklch(0.769 0.188 70.08);
+	--chart-4: oklch(0.627 0.265 303.9);
+	--chart-5: oklch(0.645 0.246 16.439);
+}
+
+body {
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+@theme inline {
+	--font-heading: var(--font-sans);
+
+	--color-sidebar-ring: var(--sidebar-ring);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar: var(--sidebar);
+	--color-chart-5: var(--chart-5);
+	--color-chart-4: var(--chart-4);
+	--color-chart-3: var(--chart-3);
+	--color-chart-2: var(--chart-2);
+	--color-chart-1: var(--chart-1);
+	--color-ring: var(--ring);
+	--color-input: var(--input);
+	--color-border: var(--border);
+	--color-destructive: var(--destructive);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-accent: var(--accent);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-muted: var(--muted);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-secondary: var(--secondary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-primary: var(--primary);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-popover: var(--popover);
+	--color-card-foreground: var(--card-foreground);
+	--color-card: var(--card);
+	--color-foreground: var(--foreground);
+	--color-background: var(--background);
+	--animate-skeleton: skeleton 2s -1s infinite linear;
+	--animate-caret-blink: 1s ease-out infinite caret-blink;
+	--animate-toast-success-odd: toast-success-odd 0.32s
+		cubic-bezier(0.5, 1, 0.89, 1);
+	--animate-toast-success-even: toast-success-even 0.32s
+		cubic-bezier(0.5, 1, 0.89, 1);
+	--animate-toast-error-odd: toast-error-odd 0.28s cubic-bezier(0.5, 1, 0.89, 1);
+	--animate-toast-error-even: toast-error-even 0.28s
+		cubic-bezier(0.5, 1, 0.89, 1);
+	--color-warning-foreground: var(--warning-foreground);
+	--color-warning: var(--warning);
+	--color-success-foreground: var(--success-foreground);
+	--color-success: var(--success);
+	--color-qr: var(--qr);
+	--color-qr-background: var(--qr-background);
+	--color-info-foreground: var(--info-foreground);
+	--color-info: var(--info);
+	--color-destructive-foreground: var(--destructive-foreground);
+
+	@keyframes skeleton {
+		to {
+			background-position: -200% 0;
+		}
+	}
+	@keyframes caret-blink {
+		0%,
+		70%,
+		to {
+			opacity: 1;
+		}
+		20%,
+		50% {
+			opacity: 0;
+		}
+	}
+	@keyframes toast-success-odd {
+		0% {
+			scale: 1;
+		}
+		30% {
+			scale: 1.025;
+		}
+		60% {
+			scale: 0.99;
+		}
+		100% {
+			scale: 1;
+		}
+	}
+	@keyframes toast-error-odd {
+		0% {
+			translate: 0 0;
+		}
+		25% {
+			translate: -3px 0;
+		}
+		50% {
+			translate: 3px 0;
+		}
+		75% {
+			translate: -3px 0;
+		}
+		100% {
+			translate: 0 0;
+		}
+	}
+	@keyframes toast-success-even {
+		0% {
+			scale: 1;
+		}
+		30% {
+			scale: 1.025;
+		}
+		60% {
+			scale: 0.99;
+		}
+		100% {
+			scale: 1;
+		}
+	}
+	@keyframes toast-error-even {
+		0% {
+			translate: 0 0;
+		}
+		25% {
+			translate: -3px 0;
+		}
+		50% {
+			translate: 3px 0;
+		}
+		75% {
+			translate: -3px 0;
+		}
+		100% {
+			translate: 0 0;
+		}
 	}
 }
 
-/* Neutral gray palette with understated accents. */
+@layer base {
+	* {
+		@apply border-border;
+	}
+	body {
+		@apply bg-background text-foreground;
+	}
+	html {
+		@apply font-sans;
+	}
+	/* The checkout grows as its steps open: keep the scrollbar's room so nothing shifts sideways. */
+}
+
+/**
+ * Neutralize hover/selected highlight on empty-state rows in card tables.
+ * Apply `data-empty` on the <tr> wrapping the placeholder cell.
+ *
+ * Placed outside @layer base so it wins over Tailwind utility classes applied
+ * by TableBody (which hover/select the descendant cells).
+ */
+[data-slot="table-body"] [data-empty] > [data-slot="table-cell"] {
+	background-color: transparent !important;
+}
+
+/**
+ * Shiny edge: inner highlight with light/dark-aware hairlines.
+ *
+ * Replicates the "shiny" effect used by inputs, selects, tables, and frame panels:
+ * a 1px inner shadow that reads as a subtle highlight in light mode and an
+ * inverted hairline in dark mode.
+ *
+ * Usage:
+ *   <div class="shiny-edge rounded-xl border bg-background" />
+ *
+ * The ::before pseudo inherits the parent radius minus 1px. Override via CSS var:
+ *   style={{ "--shiny-radius": "calc(var(--radius-2xl) - 1px)" }}
+ */
+@utility shiny-edge {
+	position: relative;
+	background-clip: padding-box;
+	box-shadow: 0 1px 2px 0 --theme(--color-black / 5%);
+
+	&::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		border-radius: var(--shiny-radius, calc(var(--radius-xl) - 1px));
+		box-shadow: inset 0 1px 0 --theme(--color-white / 12%);
+	}
+
+	&:is(.dark *)::before {
+		box-shadow: inset 0 1px 0 --theme(--color-white / 6%);
+	}
+}
+
+:root {
+	--surface: var(--background);
+	--surface-2: var(--muted);
+	--sidebar: var(--background);
+	--sidebar-border: var(--border);
+	--sidebar-foreground: var(--foreground);
+	--sidebar-accent: var(--accent);
+	--sidebar-accent-foreground: var(--accent-foreground);
+	--sidebar-primary: var(--primary);
+	--sidebar-primary-foreground: var(--primary-foreground);
+	--sidebar-ring: var(--ring);
+	--field: var(--background);
+	--field-hover: var(--accent);
+	--field-muted: var(--muted-foreground);
+	--fg: var(--foreground);
+	--fg-muted: var(--muted-foreground);
+	--fg-disabled: var(--muted-foreground);
+	--fg-inverse: var(--primary-foreground);
+	--focus: var(--ring);
+	--primary-fg: var(--primary-foreground);
+	--secondary-fg: var(--secondary-foreground);
+	--danger: var(--destructive);
+	--danger-fg: var(--destructive-foreground);
+	--success-fg: var(--success-foreground);
+	--warning-fg: var(--warning-foreground);
+	--ui-radius-sm: var(--radius-sm);
+	--ui-radius-md: var(--radius-md);
+	--ui-radius-lg: var(--radius-lg);
+	--ui-radius-xl: var(--radius-xl);
+	--ui-radius-2xl: var(--radius-2xl);
+	--ui-radius-control: var(--radius-lg);
+	--ui-radius-surface: var(--radius-2xl);
+	--ui-radius-dialog: var(--radius-2xl);
+	--ui-radius-item: var(--radius-sm);
+}
 @theme inline {
-	--color-card: var(--card);
-	--color-card-foreground: var(--card-foreground);
-	--color-popover: var(--popover);
-	--color-popover-foreground: var(--popover-foreground);
-	--color-chart-1: var(--chart-1);
-	--color-chart-2: var(--chart-2);
-	--color-chart-3: var(--chart-3);
-	--color-chart-4: var(--chart-4);
-	--color-chart-5: var(--chart-5);
-	--color-sidebar: var(--sidebar);
-	--color-sidebar-border: var(--sidebar-border);
 	--color-surface: var(--surface);
 	--color-surface-2: var(--surface-2);
 	--color-field: var(--field);
@@ -40,180 +336,18 @@
 	--color-fg-muted: var(--fg-muted);
 	--color-fg-disabled: var(--fg-disabled);
 	--color-fg-inverse: var(--fg-inverse);
-	--color-border: var(--border);
 	--color-focus: var(--focus);
-	--color-primary: var(--primary);
-	--color-primary-hover: var(--primary-hover);
 	--color-primary-fg: var(--primary-fg);
-	--color-secondary: var(--secondary);
+	--color-primary-hover: var(--primary);
 	--color-secondary-fg: var(--secondary-fg);
 	--color-danger: var(--danger);
 	--color-danger-fg: var(--danger-fg);
-	--color-success: var(--success);
 	--color-success-fg: var(--success-fg);
-	--color-warning: var(--warning);
 	--color-warning-fg: var(--warning-fg);
-
-	--font-sans:
-		ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-		"Helvetica Neue", Arial, sans-serif;
-	--font-mono:
-		ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
-		monospace;
 }
-
-:root {
-	color-scheme: light;
-	--ui-effect-edge: 0 1px rgb(0 0 0 / 4%);
-	--card: oklch(97.02% 0 0);
-	--card-foreground: oklch(32.11% 0 0);
-	--popover: oklch(97.02% 0 0);
-	--popover-foreground: oklch(32.11% 0 0);
-	--chart-1: oklch(52% 0.2 260);
-	--chart-2: oklch(53% 0.13 175);
-	--chart-3: oklch(60% 0.16 65);
-	--chart-4: oklch(54% 0.2 305);
-	--chart-5: oklch(54% 0.2 350);
-	--sidebar: oklch(93.7% 0 0);
-	--sidebar-border: oklch(85.76% 0 0);
-	/**
-	 * Deliberately rounder than the 6/8/12 scale most component kits ship.
-	 *
-	 * The corner is the cheapest thing on screen that says which house a product belongs to, and at
-	 * 8px it says "a component library". A control at 16px and a surface at 20px read as one soft
-	 * plane each, which is what the rest of the chrome — the pill buttons, the pill status badges —
-	 * was already doing on its own.
-	 */
-	--ui-radius-sm: 0.5rem;
-	--ui-radius-md: 0.75rem;
-	--ui-radius-lg: 1rem;
-	--ui-radius-xl: 1.25rem;
-	--ui-radius-2xl: 1.75rem;
-	--ui-radius-control: var(--ui-radius-lg);
-	--ui-radius-surface: var(--ui-radius-xl);
-	/**
-	 * Overlays sit above everything and are read as one object, so they carry more radius than a card:
-	 * next to the pill buttons inside them, a 1rem corner reads as a mismatch rather than as restraint.
-	 */
-	--ui-radius-dialog: var(--ui-radius-2xl);
-	--ui-radius-item: var(--ui-radius-md);
-	--surface: oklch(95.51% 0 0);
-	--surface-2: oklch(88.53% 0 0);
-	/**
-	 * The ground a control stands on, instead of a line drawn around it.
-	 *
-	 * Derived rather than picked, and deliberately not symmetrical between the themes. Dark sits at
-	 * 1.40:1 from the page, roughly where the border it replaces already sat. Light sits at 1.25:1,
-	 * because a fill DARKER than its page reads heavier than one lighter than it: matched by the
-	 * numbers, the light fields came out looking disabled. Either way the hover steps AWAY from the
-	 * page — the old `filled` variant stepped toward it, so a control faded as the pointer arrived.
-	 *
-	 * `--field-muted` exists because `--fg-muted` only clears 3.9:1 here. A placeholder is still text.
-	 */
-	--field: oklch(88.24% 0 0);
-	--field-hover: oklch(83.24% 0 0);
-	--field-muted: oklch(48.46% 0 0);
-	--fg: oklch(32.11% 0 0);
-	--fg-muted: oklch(48.5% 0 0);
-	--fg-inverse: oklch(100% 0 0);
-	--fg-disabled: oklch(68% 0 0);
-	--border: oklch(85.76% 0 0);
-	--focus: oklch(48.91% 0 0);
-	/**
-	 * The one control that is meant to be found without looking for it.
-	 *
-	 * It sat at 56%, which cleared white label text by 4.65:1 and the page by only 4.08:1 — legible,
-	 * but no louder than the things around it. 46% doubles neither: it reads at 6.25:1 against the
-	 * page and 7.13:1 under its own label, while staying a grey rather than the near-black an earlier
-	 * pass was right to move away from.
-	 */
-	--primary: oklch(46% 0 0);
-	/**
-	 * An explicit hover shade rather than an opacity step: fading the primary toward the page ground
-	 * lightens it, and white label text on the lightened result stops clearing 4.5:1 — the button would
-	 * become hardest to read exactly while the pointer is on it.
-	 */
-	--primary-hover: oklch(38% 0 0);
-	--primary-fg: oklch(100% 0 0);
-	--secondary: oklch(90.67% 0 0);
-	--secondary-fg: oklch(32.11% 0 0);
-	--danger: oklch(46% 0.16 27);
-	--danger-fg: oklch(100% 0 0);
-	--success: oklch(43% 0.09 160);
-	--success-fg: oklch(100% 0 0);
-	--warning: oklch(46% 0.1 70);
-	--warning-fg: oklch(100% 0 0);
+@utility effect-3d {
+	@apply shiny-edge;
 }
-
-.dark {
-	color-scheme: dark;
-	--ui-effect-edge: 0 -1px rgb(255 255 255 / 6%);
-	--card: oklch(24.35% 0 0);
-	--card-foreground: oklch(88.53% 0 0);
-	--popover: oklch(24.35% 0 0);
-	--popover-foreground: oklch(88.53% 0 0);
-	--chart-1: oklch(72% 0.15 255);
-	--chart-2: oklch(76% 0.14 175);
-	--chart-3: oklch(80% 0.15 75);
-	--chart-4: oklch(76% 0.15 305);
-	--chart-5: oklch(75% 0.16 350);
-	--sidebar: oklch(23.93% 0 0);
-	--sidebar-border: oklch(32.9% 0 0);
-	--surface: oklch(21.78% 0 0);
-	--surface-2: oklch(28.5% 0 0);
-	--field: oklch(32.54% 0 0);
-	--field-hover: oklch(36.73% 0 0);
-	--field-muted: oklch(69.11% 0 0);
-	--fg: oklch(88.53% 0 0);
-	--fg-muted: oklch(66% 0 0);
-	--fg-inverse: oklch(100% 0 0);
-	--fg-disabled: oklch(47% 0 0);
-	--border: oklch(32.9% 0 0);
-	--focus: oklch(70.58% 0 0);
-	--primary: oklch(84% 0 0);
-	--primary-hover: oklch(90% 0 0);
-	--primary-fg: oklch(21.78% 0 0);
-	--secondary: oklch(30.92% 0 0);
-	--secondary-fg: oklch(88.53% 0 0);
-	--danger: oklch(80% 0.09 27);
-	--danger-fg: oklch(26% 0.07 27);
-	--success: oklch(79% 0.09 160);
-	--success-fg: oklch(26% 0.035 160);
-	--warning: oklch(82% 0.1 80);
-	--warning-fg: oklch(28% 0.045 70);
-}
-
-@layer base {
-	* {
-		box-sizing: border-box;
-	}
-
-	/**
-	 * The document deliberately reserves nothing.
-	 *
-	 * A page-wide `scrollbar-gutter: stable` used to sit here, to keep an overlay's scroll lock from
-	 * shifting the page sideways. It cost ~15px of the window on every platform with classic
-	 * scrollbars — a dead strip down the right of an app that never scrolls its document, with the
-	 * panes and their scrollbars held off the edge. The lock is dealt with where it happens instead:
-	 * the shell is one viewport tall so the document has no scrollbar to take away, and the controls
-	 * that do not need to lock the page (see `select.tsx`) do not.
-	 */
-
-	body {
-		margin: 0;
-		min-height: 100dvh;
-		background-color: var(--color-surface);
-		color: var(--color-fg);
-		font-family: var(--font-sans);
-		-webkit-font-smoothing: antialiased;
-	}
-
-	:where(:focus-visible) {
-		outline: 2px solid var(--color-focus);
-		outline-offset: 2px;
-	}
-}
-
 @media (prefers-reduced-motion: reduce) {
 	*,
 	*::before,
@@ -221,5 +355,44 @@
 		animation-duration: 0.01ms;
 		transition-duration: 0.01ms;
 		scroll-behavior: auto;
+	}
+}
+
+@layer utilities {
+	[data-skeleton-form] * {
+		color: transparent;
+	}
+	[data-skeleton-form]
+		:is(
+			[data-slot="input-control"],
+			[data-slot="textarea-control"],
+			button,
+			label
+		) {
+		color: transparent;
+		background: var(--muted);
+		box-shadow: none;
+		border-color: transparent;
+		pointer-events: none;
+	}
+	[data-skeleton-form]
+		:is([data-slot="input-control"], [data-slot="textarea-control"], button)
+		> * {
+		visibility: hidden;
+	}
+	[data-skeleton-form] :is(p, h3, label) {
+		color: transparent;
+		background: var(--muted);
+		border-radius: var(--radius-sm);
+		width: fit-content;
+	}
+	[data-skeleton-form] :is(input, textarea) {
+		color: transparent;
+	}
+	[data-skeleton-form] [data-slot="switch"] {
+		background: var(--muted);
+	}
+	[data-skeleton-form] [data-slot="switch"] > * {
+		visibility: hidden;
 	}
 }

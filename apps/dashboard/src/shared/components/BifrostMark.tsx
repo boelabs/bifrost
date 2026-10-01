@@ -12,20 +12,20 @@ import Image from "next/image";
  * The artwork is wider than it is tall (1063 × 677), so `size` is its HEIGHT and the width follows;
  * asking for a square would letterbox it inside its own box.
  *
- * It carries the product's name as its alt text, because where this is drawn the name is not
- * written anywhere else — the mark is not decoration here, it is the only thing saying which
- * application this is.
+ * Use `decorative` when adjacent text already names the product.
  */
 export function BifrostMark({
 	size = 18,
 	className = "",
+	decorative = false,
 }: {
 	size?: number;
 	className?: string;
+	decorative?: boolean;
 }) {
 	return (
 		<Image
-			alt="Bifrost"
+			alt={decorative ? "" : "Bifrost"}
 			className={`dark:invert ${className}`}
 			height={size}
 			priority

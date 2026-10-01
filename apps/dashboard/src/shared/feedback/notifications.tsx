@@ -1,8 +1,9 @@
 "use client";
 
-import { ToastProvider, Toaster, useToastManager } from "#/components/ui/toast";
+import { ToastProvider } from "#/components/ui/primitives/toast";
 import { ApiError } from "#/shared/api/errors.ts";
 import { useMemo, type ReactNode } from "react";
+import { Toast } from "@base-ui/react/toast";
 
 /**
  * Every mutation in this dashboard costs something on the other side — a key that now exists, a
@@ -13,7 +14,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 	return (
 		<ToastProvider limit={3} timeout={6000}>
 			{children}
-			<Toaster aria-label="Notifications" />
 		</ToastProvider>
 	);
 }
@@ -25,7 +25,7 @@ export interface Notifier {
 }
 
 export function useNotify(): Notifier {
-	const manager = useToastManager();
+	const manager = Toast.useToastManager();
 	return useMemo<Notifier>(
 		() => ({
 			success: (title, description) =>

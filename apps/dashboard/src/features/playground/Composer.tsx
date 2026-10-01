@@ -7,13 +7,13 @@ import { ComposerView } from "./ComposerView";
 import type { FileUIPart } from "ai";
 
 import {
-	IconAdjustmentsHorizontal,
-	IconPlayerStop,
-	IconLoader2,
-	IconRotate2,
-	IconArrowUp,
-	IconPlus,
-} from "@tabler/icons-react";
+	SlidersHorizontal as IconAdjustmentsHorizontal,
+	LoaderCircle as IconLoader2,
+	Square as IconPlayerStop,
+	RotateCcw as IconRotate2,
+	ArrowUp as IconArrowUp,
+	Plus as IconPlus,
+} from "lucide-react";
 
 export type DraftAttachment = FileUIPart & { id: string };
 
@@ -141,11 +141,10 @@ export function Composer({
 							{reading ? (
 								<IconLoader2
 									aria-hidden
-									className="animate-spin motion-reduce:animate-none"
-									size={20}
+									className="size-5 animate-spin motion-reduce:animate-none"
 								/>
 							) : (
-								<IconPlus aria-hidden size={20} strokeWidth={2.5} />
+								<IconPlus aria-hidden className="size-5" strokeWidth={2.5} />
 							)}
 						</Button>
 					) : null
@@ -164,7 +163,7 @@ export function Composer({
 							type="button"
 							variant="ghost"
 						>
-							<IconAdjustmentsHorizontal aria-hidden size={20} />
+							<IconAdjustmentsHorizontal aria-hidden className="size-5" />
 						</Button>
 						<Button
 							aria-label="Reset conversation"
@@ -176,7 +175,7 @@ export function Composer({
 							type="button"
 							variant="ghost"
 						>
-							<IconRotate2 aria-hidden size={20} />
+							<IconRotate2 aria-hidden className="size-5" />
 						</Button>
 						<Button
 							aria-label={busy ? "Stop response" : "Send message"}
@@ -193,9 +192,13 @@ export function Composer({
 							type={busy ? "button" : "submit"}
 						>
 							{busy ? (
-								<IconPlayerStop aria-hidden fill="currentColor" size={16} />
+								<IconPlayerStop
+									aria-hidden
+									className="size-4"
+									fill="currentColor"
+								/>
 							) : (
-								<IconArrowUp aria-hidden size={20} strokeWidth={2.5} />
+								<IconArrowUp aria-hidden className="size-5" strokeWidth={2.5} />
 							)}
 						</Button>
 					</>
@@ -246,7 +249,7 @@ export function Composer({
 				topSectionLayoutKey={files.map((file) => file.id).join(":")}
 			/>
 			{dragging ? (
-				<div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-[28px] border-2 border-primary border-dashed bg-surface-2/95 text-fg text-sm">
+				<div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-2xl border-2 border-primary border-dashed bg-surface-2/95 text-fg text-sm">
 					{accepted.length
 						? "Drop files here"
 						: "This model does not support attachments"}

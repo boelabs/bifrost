@@ -3,17 +3,17 @@
 import type { ComponentProps, ReactNode } from "react";
 
 import {
+	ChevronDown as IconChevronDown,
+	type LucideIcon as TablerIcon,
+	Brain as IconBrain,
+	Dot as IconPoint,
+} from "lucide-react";
+
+import {
 	CollapsibleTrigger,
 	CollapsiblePanel,
 	CollapsibleRoot,
 } from "#/components/ui/collapsible";
-
-import {
-	IconChevronDown,
-	type TablerIcon,
-	IconBrain,
-	IconPoint,
-} from "@tabler/icons-react";
 
 // Adapted from AI Elements Chain of Thought to the dashboard's Base UI primitives.
 export function ChainOfThought({
@@ -22,7 +22,7 @@ export function ChainOfThought({
 }: ComponentProps<typeof CollapsibleRoot>) {
 	return (
 		<CollapsibleRoot
-			className={`not-prose w-full space-y-4 ${className}`}
+			className={`not-prose flex w-full flex-col gap-4 ${className}`}
 			{...props}
 		/>
 	);
@@ -87,10 +87,10 @@ export function ChainOfThoughtStep({
 				<Icon aria-hidden className="size-4" />
 				<span
 					aria-hidden
-					className="absolute top-7 -bottom-4 left-1/2 w-px bg-border group-last/step:hidden"
+					className="absolute top-5 -bottom-4 left-1/2 w-px bg-border group-last/step:hidden"
 				/>
 			</div>
-			<div className="min-w-0 flex-1 space-y-2">
+			<div className="flex min-w-0 flex-1 flex-col gap-2">
 				{label ? <div>{label}</div> : null}
 				{children}
 			</div>

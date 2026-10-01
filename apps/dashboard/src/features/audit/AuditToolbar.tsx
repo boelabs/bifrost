@@ -6,7 +6,7 @@ import { useSearchWriter } from "#/shared/lib/useSearchWriter.ts";
 import { SearchField } from "#/shared/components/SearchField.tsx";
 import { type AuditFilters, isFiltered } from "./filters.ts";
 import { Select, SelectItem } from "#/components/ui/select";
-import { IconFilterOff } from "@tabler/icons-react";
+import { FilterX as IconFilterOff } from "lucide-react";
 import { Button } from "#/components/ui/button";
 
 /**
@@ -25,7 +25,6 @@ export function AuditToolbar({ filters }: { filters: AuditFilters }) {
 			/>
 			<Select
 				aria-label="Filter by kind"
-				borderRadius="full"
 				onValueChange={(key) =>
 					filter({ kind: !key || key === ALL ? undefined : key })
 				}
@@ -53,7 +52,7 @@ export function AuditToolbar({ filters }: { filters: AuditFilters }) {
 			/>
 			{isFiltered(filters) ? (
 				<Button onClick={() => clear()} size="sm" variant="ghost">
-					<IconFilterOff aria-hidden className="mr-1" size={15} />
+					<IconFilterOff aria-hidden className="size-4" />
 					Clear filters
 				</Button>
 			) : null}

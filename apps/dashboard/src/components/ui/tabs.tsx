@@ -6,7 +6,6 @@ import {
 	type AppearanceProps,
 	type ControlProps,
 	mergeClassName,
-	controlStyles,
 	mergeStyle,
 	focusRing,
 } from "./appearance";
@@ -47,7 +46,7 @@ export function TabList({
 		<BaseTabs.List
 			{...props}
 			className={mergeClassName(
-				"relative isolate flex w-fit max-w-full shrink-0 gap-1 rounded-(--ui-radius-control) bg-surface-2 p-1 data-[orientation=vertical]:flex-col",
+				"relative isolate flex w-fit max-w-full items-center gap-x-0.5 rounded-lg bg-muted p-0.5 text-muted-foreground/72 data-[orientation=vertical]:flex-col",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -60,20 +59,15 @@ export function Tab({
 	style,
 	borderRadius,
 	width,
-	size = "sm",
-	variant = "ghost",
+	size: _size = "sm",
+	variant: _variant = "ghost",
 	...props
 }: TabProps) {
 	return (
 		<BaseTabs.Tab
 			{...props}
 			className={mergeClassName(
-				controlStyles({
-					size,
-					variant,
-					className:
-						"relative z-10 cursor-pointer justify-center whitespace-nowrap font-semibold text-fg-muted data-active:bg-surface data-active:text-primary data-active:shadow-sm",
-				}),
+				"relative flex h-9 shrink-0 grow cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-transparent px-[calc(--spacing(2.5)-1px)] font-medium text-base outline-none transition-[color,background-color,box-shadow] not-data-active:hover:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring data-disabled:pointer-events-none data-[orientation=vertical]:w-full data-[orientation=vertical]:justify-start data-active:bg-background data-active:text-foreground data-disabled:opacity-64 data-active:shadow-sm/5 sm:h-8 sm:text-sm [&_svg:not([class*='size-'])]:size-4.5 sm:[&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:-mx-0.5 [&_svg]:shrink-0",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -111,7 +105,7 @@ export function TabIndicator({
 		<BaseTabs.Indicator
 			{...props}
 			className={mergeClassName(
-				"pointer-events-none absolute top-(--active-tab-top) left-(--active-tab-left) z-20 h-(--active-tab-height) w-(--active-tab-width) rounded-(--ui-radius-control) ring-1 ring-primary/30 transition-[top,left,width,height] duration-200",
+				"pointer-events-none absolute top-(--active-tab-top) left-(--active-tab-left) -z-10 h-(--active-tab-height) w-(--active-tab-width) rounded-md bg-background shadow-sm/5",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

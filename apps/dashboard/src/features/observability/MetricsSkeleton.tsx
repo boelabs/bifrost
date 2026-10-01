@@ -1,41 +1,44 @@
+import { ActivitySkeleton, BreakdownSkeleton } from "./ChartSkeleton";
+import { TextSkeleton } from "#/shared/components/TextSkeleton";
 import { CacheUsageSkeleton } from "./OverviewSkeleton";
+import { ContentPanel } from "#/components/ui/card";
 
 import {
 	StatGridSkeleton,
-	ChartSkeleton,
 	TableSkeleton,
 	Skeleton,
 } from "#/shared/components/Skeleton.tsx";
 
 export function MetricsSkeleton() {
 	return (
-		<div className="space-y-6">
-			<div className="rounded-(--ui-radius-surface) border border-border/50 bg-card p-5">
+		<div className="flex flex-col gap-6">
+			<ContentPanel className="@container min-w-0 p-5">
 				<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-					{["Period", "Operation", "Model", "Deployment"].map((label) => (
-						<div key={label}>
-							<Skeleton className="mb-2 h-4" width="6rem" />
-							<Skeleton className="h-10 rounded-full" />
-						</div>
-					))}
+					{["Period · UTC", "Operation", "Public model", "Deployment"].map(
+						(label) => (
+							<div key={label}>
+								<div className="mb-2 font-medium text-sm">
+									<TextSkeleton length={label.length} />
+								</div>
+								<Skeleton className="h-8 rounded-lg sm:h-7" />
+							</div>
+						),
+					)}
 				</div>
 				<Skeleton className="mt-3 h-3" width="min(100%, 24rem)" />
-			</div>
+			</ContentPanel>
 			<StatGridSkeleton
-				className="xl:grid-cols-3"
+				className="grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
 				count={6}
 				icon={false}
 				note={false}
 			/>
 			<div className="grid gap-4 xl:grid-cols-2">
-				<ChartSkeleton height="22rem" />
-				<ChartSkeleton height="22rem" />
+				<ActivitySkeleton source="requests" />
+				<ActivitySkeleton source="attempts" />
 			</div>
 			<CacheUsageSkeleton />
-			<div className="grid gap-5 lg:grid-cols-2">
-				<ChartSkeleton height="25rem" />
-				<ChartSkeleton height="25rem" />
-			</div>
+			<BreakdownSkeleton />
 			{[
 				[
 					"Deployment",
@@ -56,7 +59,7 @@ export function MetricsSkeleton() {
 				],
 				["Deployment", "Failure", "Phase", "Provider status", "Errors"],
 			].map((headers) => (
-				<section className="space-y-3" key={headers.join()}>
+				<section className="flex flex-col gap-3" key={headers.join()}>
 					<Skeleton className="h-5" width="10rem" />
 					<Skeleton className="h-3" width="min(100%, 30rem)" />
 					<TableSkeleton

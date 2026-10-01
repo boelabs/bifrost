@@ -118,7 +118,7 @@ export function CustomModelEditor({
 					) : null}
 				</>
 			) : (
-				<div className="space-y-2">
+				<div className="flex flex-col gap-2">
 					<Textarea
 						aria-invalid={error !== null}
 						className="resize-y font-mono text-xs"

@@ -1,35 +1,34 @@
-import { type AppearanceProps, appearanceStyle } from "./appearance.ts";
-import { tv, type VariantProps } from "tailwind-variants";
+import { type AppearanceProps, appearanceStyle } from "./appearance";
+import { badgeVariants } from "./primitives/badge";
 import type { HTMLAttributes } from "react";
 
-export const badge = tv({
-	base: "inline-flex items-center justify-center gap-1 rounded-full font-semibold",
-	variants: {
-		variant: {
-			attention: "bg-linear-to-r from-pink-500 to-purple-500 text-white",
-			neutral: "bg-secondary text-secondary-fg",
-			danger: "bg-danger text-danger-fg",
-			success: "bg-success/15 text-success",
-			warning: "bg-warning/20 text-warning",
-			outlined: "border border-border text-fg-muted",
-		},
-		size: {
-			sm: "px-2 py-0.5 text-xs",
-			md: "px-3 py-1 text-xs",
-			lg: "px-3 py-2 text-sm",
-		},
-	},
-	defaultVariants: {
-		variant: "attention",
-		size: "md",
-	},
-});
-
-type BadgeProps = VariantProps<typeof badge> &
-	HTMLAttributes<HTMLSpanElement> &
-	AppearanceProps;
-
-const Badge = ({
+const variants = {
+	attention: "info",
+	neutral: "secondary",
+	danger: "error",
+	success: "success",
+	warning: "warning",
+	outlined: "outline",
+} as const;
+const sizes = { sm: "sm", md: "default", lg: "lg" } as const;
+export interface BadgeProps
+	extends HTMLAttributes<HTMLSpanElement>,
+		AppearanceProps {
+	variant?: keyof typeof variants;
+	size?: keyof typeof sizes;
+}
+export function badge({
+	variant = "neutral",
+	size = "md",
+	className,
+}: Pick<BadgeProps, "variant" | "size" | "className"> = {}) {
+	return badgeVariants({
+		variant: variants[variant],
+		size: sizes[size],
+		className,
+	});
+}
+export function Badge({
 	className,
 	variant,
 	size,
@@ -37,13 +36,13 @@ const Badge = ({
 	width,
 	style,
 	...props
-}: BadgeProps) => (
-	<span
-		className={badge({ variant, size, className })}
-		style={appearanceStyle({ borderRadius, width }, style)}
-		{...props}
-	/>
-);
-
-export { Badge };
-export type { BadgeProps };
+}: BadgeProps) {
+	return (
+		<span
+			{...props}
+			className={badge({ variant, size, className })}
+			data-slot="badge"
+			style={appearanceStyle({ borderRadius, width }, style)}
+		/>
+	);
+}

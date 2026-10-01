@@ -6,8 +6,8 @@ import { VideoSettingsDialog } from "./VideoSettings";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "#/components/ui/button";
 import { VideoRunView } from "./VideoRunView";
-import { IconX } from "@tabler/icons-react";
 import { ModelSelect } from "./ModelSelect";
+import { X as IconX } from "lucide-react";
 import { Workspace } from "./Workspace";
 import { Composer } from "./Composer";
 
@@ -69,7 +69,7 @@ function References({
 	disabled: boolean;
 }) {
 	return (
-		<ul className="mb-2 flex gap-2 overflow-x-auto rounded-[28px] border border-border bg-surface-2 p-2 max-sm:rounded-2xl">
+		<ul className="mb-2 flex gap-2 overflow-x-auto rounded-2xl border border-border bg-background p-2">
 			{references.map((reference) => {
 				const image = reference.mediaType.startsWith("image/");
 				return (

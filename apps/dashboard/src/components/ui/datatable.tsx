@@ -1,17 +1,18 @@
 "use client";
 
+import { TextSkeleton } from "#/shared/components/TextSkeleton";
 import { Select, SelectItem } from "./select";
 import { Button } from "./button";
 import { Input } from "./input";
 import { cn } from "cn";
 
 import {
-	IconChevronRight,
-	IconChevronLeft,
-	IconChevronDown,
-	IconChevronUp,
-	IconSelector,
-} from "@tabler/icons-react";
+	ChevronRight as IconChevronRight,
+	ChevronLeft as IconChevronLeft,
+	ChevronDown as IconChevronDown,
+	ChevronsUpDown as IconSelector,
+	ChevronUp as IconChevronUp,
+} from "lucide-react";
 
 import {
 	type AppearanceProps,
@@ -19,6 +20,15 @@ import {
 	appearanceStyle,
 	effectClassName,
 } from "./appearance";
+
+import {
+	TableHeader,
+	TableBody,
+	TableHead,
+	TableCell,
+	TableRow,
+	Table,
+} from "./primitives/table";
 
 import {
 	type CSSProperties,
@@ -42,6 +52,7 @@ export interface Column<T> {
 	header: ReactNode;
 	align?: "end";
 	render: (row: T) => ReactNode;
+	placeholder?: ReactNode;
 	/** Enables sorting with a comparator for the underlying values. */
 	compare?: (a: T, b: T) => number;
 }
@@ -149,7 +160,7 @@ export function DataTable<T>({
 			aria-busy={loading}
 			className={cn(
 				"min-w-0 rounded-(--ui-radius-surface)",
-				framed && "p-1",
+				framed && "bg-muted/72 p-1",
 				effectClassName(effect),
 				className,
 			)}
@@ -225,22 +236,19 @@ export function DataTable<T>({
 			)}
 			{/* Contain the absolutely positioned screen-reader caption while scrolling. */}
 			<div
-				className={cn(
-					"relative overflow-x-auto",
-					framed &&
-						"rounded-[max(0px,calc(var(--table-radius)-0.25rem))] border border-border/50 bg-card",
-				)}
+				className={cn("relative overflow-x-auto", framed && "rounded-xl")}
 				style={
 					{
+						borderRadius: radius,
 						"--table-radius":
 							typeof radius === "number" ? `${radius}px` : radius,
 					} as CSSProperties
 				}
 			>
-				<table className="w-full border-collapse text-sm" id={id}>
+				<Table id={id} variant={framed ? "card" : "default"}>
 					{caption ? <caption className="sr-only">{caption}</caption> : null}
-					<thead className="border-border/50 border-b">
-						<tr>
+					<TableHeader>
+						<TableRow>
 							{columns.map((column) => {
 								const active = sorting?.key === column.key;
 								// One direction drives both the icon and aria-sort, so a header can
@@ -251,10 +259,10 @@ export function DataTable<T>({
 								}
 								const SortIcon = SORT_ICONS[direction];
 								return (
-									<th
+									<TableHead
 										aria-sort={column.compare ? direction : undefined}
 										className={cn(
-											"whitespace-nowrap px-5 py-4 text-left font-medium text-fg-muted text-xs",
+											"text-left",
 											column.align === "end" && "text-right",
 										)}
 										key={column.key}
@@ -283,42 +291,58 @@ export function DataTable<T>({
 										) : (
 											column.header
 										)}
-									</th>
+									</TableHead>
 								);
 							})}
-						</tr>
-					</thead>
-					<tbody>
-						{visible.map((row) => (
-							<tr
-								className="border-border/30 border-b last:border-0 hover:bg-surface-2/40"
-								key={rowKey(row)}
-							>
-								{columns.map((column) => (
-									<td
-										className={cn(
-											"px-5 py-4 align-middle text-fg",
-											column.align === "end" && "text-right",
-										)}
-										key={column.key}
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{loading
+							? Array.from({ length: 8 }, (_, index) => (
+									<TableRow
+										aria-hidden="true"
+										// biome-ignore lint/suspicious/noArrayIndexKey: fixed placeholder positions have no record identity
+										key={`loading-${index}`}
 									>
-										{column.render(row)}
-									</td>
+										{columns.map((column) => (
+											<TableCell
+												className={
+													column.align === "end" ? "text-right" : undefined
+												}
+												key={column.key}
+											>
+												{column.placeholder ?? <TextSkeleton length={16} />}
+											</TableCell>
+										))}
+									</TableRow>
+								))
+							: visible.map((row) => (
+									<TableRow key={rowKey(row)}>
+										{columns.map((column) => (
+											<TableCell
+												className={cn(
+													"p-2.5 align-middle text-fg",
+													column.align === "end" && "text-right",
+												)}
+												key={column.key}
+											>
+												{column.render(row)}
+											</TableCell>
+										))}
+									</TableRow>
 								))}
-							</tr>
-						))}
-						{visible.length === 0 && (
-							<tr>
-								<td
+						{!loading && visible.length === 0 && (
+							<TableRow>
+								<TableCell
 									className="px-5 py-12 text-center text-fg-muted"
 									colSpan={Math.max(columns.length, 1)}
 								>
 									<span role="status">{placeholder}</span>
-								</td>
-							</tr>
+								</TableCell>
+							</TableRow>
 						)}
-					</tbody>
-				</table>
+					</TableBody>
+				</Table>
 			</div>
 			{pagination ? (
 				<div

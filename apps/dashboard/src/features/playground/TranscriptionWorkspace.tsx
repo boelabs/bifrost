@@ -39,11 +39,11 @@ import {
 } from "#/components/ui/dialog";
 
 import {
-	IconPlayerPlay,
-	IconFileText,
-	IconRotate2,
-	IconX,
-} from "@tabler/icons-react";
+	FileText as IconFileText,
+	RotateCcw as IconRotate2,
+	Play as IconPlayerPlay,
+	X as IconX,
+} from "lucide-react";
 
 import {
 	MESSAGE_ACTION_ICON,
@@ -79,7 +79,7 @@ function Chosen({
 	disabled: boolean;
 }) {
 	return (
-		<div className="mb-2 flex items-center gap-3 rounded-[28px] border border-border bg-surface-2 px-4 py-3 max-sm:rounded-2xl">
+		<div className="mb-2 flex items-center gap-3 rounded-2xl border border-border bg-background px-4 py-3">
 			<IconFileText aria-hidden className="size-5 shrink-0 text-fg-muted" />
 			<div className="min-w-0 flex-1">
 				<p className="truncate font-medium text-sm">{file.name}</p>

@@ -51,7 +51,13 @@ test("empty and loading tables retain semantic status feedback", () => {
 				rows={[]}
 			/>,
 		);
-		assert.match(html, loading ? /Loading\.\.\./ : /No results found\./);
+		if (loading) {
+			assert.match(html, /aria-busy="true"/);
+			assert.equal(html.match(/<tr[^>]*aria-hidden="true"/g)?.length, 8);
+			assert.match(html, /data-slot="skeleton"/);
+		} else {
+			assert.match(html, /No results found\./);
+		}
 		assert.match(html, /0–0 of 0 results/);
 		assert.match(html, /<button[^>]*aria-label="Next page"[^>]*disabled/);
 	}

@@ -1,10 +1,10 @@
 "use client";
 
 import type { UsageBucket, UsagePoint } from "./overview-data";
+import { ContentPanel as Card } from "#/components/ui/card";
 import { ToggleGroup } from "#/components/ui/toggle-group";
 import { TimeSeriesChart } from "#/components/ui/chart";
 import { Toggle } from "#/components/ui/toggle";
-import { Card } from "#/components/ui/card";
 import { useId, useState } from "react";
 
 const metrics = {
@@ -83,9 +83,9 @@ export function ActivityChart({
 			aria-labelledby={titleId}
 			className="flex min-w-0 flex-col overflow-hidden p-0"
 		>
-			<div className="flex flex-wrap items-center justify-between gap-4 border-border/50 border-b px-7 py-5">
+			<div className="flex flex-wrap items-center justify-between gap-4 border-border/50 border-b px-5 py-4">
 				<div>
-					<h2 className="font-semibold" id={titleId}>
+					<h2 className="font-semibold text-sm" id={titleId}>
 						Activity
 					</h2>
 					<p className="mt-1 text-fg-muted text-xs">
@@ -108,7 +108,7 @@ export function ActivityChart({
 					))}
 				</ToggleGroup>
 			</div>
-			<div className="flex flex-1 flex-col px-4 pt-7 pb-5 sm:px-7">
+			<div className="flex flex-1 flex-col p-5">
 				<p className="mb-6 font-semibold text-2xl tabular-nums">
 					{formatValue(total, metric, true)}{" "}
 					<span className="font-normal text-fg-muted text-xs">

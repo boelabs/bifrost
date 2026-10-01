@@ -1,6 +1,5 @@
 "use client";
 
-import { IconBan, IconCheck, IconPencil, IconTrash } from "@tabler/icons-react";
 import { type Column, DataTable, Dash } from "#/components/ui/datatable";
 import { useSearchWriter } from "#/shared/lib/useSearchWriter.ts";
 import { Pagination } from "#/shared/components/Pagination.tsx";
@@ -14,6 +13,13 @@ import { useSession } from "#/features/auth/session.tsx";
 import { EmptyState } from "#/components/ui/page";
 import { Status } from "#/components/ui/status";
 import { useKeys } from "./KeysView.tsx";
+
+import {
+	Pencil as IconPencil,
+	Trash2 as IconTrash,
+	Check as IconCheck,
+	Ban as IconBan,
+} from "lucide-react";
 
 /**
  * A key whose budget is gone stops working, and the first anyone hears about it is a client's 429.
@@ -173,20 +179,20 @@ export function KeysTable({
 							{
 								label: key.enabled ? "Disable" : "Enable",
 								icon: key.enabled ? (
-									<IconBan aria-hidden size={15} />
+									<IconBan aria-hidden className="size-4" />
 								) : (
-									<IconCheck aria-hidden size={15} />
+									<IconCheck aria-hidden className="size-4" />
 								),
 								onSelect: () => void toggle(key),
 							},
 							{
 								label: "Edit",
-								icon: <IconPencil aria-hidden size={15} />,
+								icon: <IconPencil aria-hidden className="size-4" />,
 								onSelect: () => edit(key),
 							},
 							{
 								label: "Delete",
-								icon: <IconTrash aria-hidden size={15} />,
+								icon: <IconTrash aria-hidden className="size-4" />,
 								danger: true,
 								onSelect: () => void remove(key),
 							},

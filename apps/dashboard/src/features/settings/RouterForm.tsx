@@ -34,7 +34,7 @@ function Section({
 	children: React.ReactNode;
 }) {
 	return (
-		<section className="flex flex-col gap-5 border-border/50 border-t pt-6">
+		<section className="flex flex-col gap-4 border-border/50 border-t pt-6">
 			<div>
 				<h3 className="font-medium text-fg text-sm">{title}</h3>
 				<p className="max-w-3xl pt-1 text-fg-muted text-xs">{description}</p>
@@ -203,7 +203,7 @@ export function RouterForm({
 			</div>
 
 			<Section {...ROUTER_GROUPS[0]}>
-				<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 					<Input
 						defaultValue={String(
 							toPercent(settings?.failureRatePercent ?? 0.5),
@@ -228,7 +228,7 @@ export function RouterForm({
 			</Section>
 
 			<Section {...ROUTER_GROUPS[1]}>
-				<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					{fieldsIn("cooldown").map(numberBox)}
 				</div>
 			</Section>
@@ -241,7 +241,7 @@ export function RouterForm({
 					label="Adapt deadlines to each deployment"
 					onChange={setAdaptive}
 				/>
-				<div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					{fieldsIn("deadlines").map(numberBox)}
 				</div>
 			</Section>

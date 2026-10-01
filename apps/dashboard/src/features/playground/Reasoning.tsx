@@ -1,4 +1,4 @@
-import { IconCircleCheck } from "@tabler/icons-react";
+import { CircleCheck as IconCircleCheck } from "lucide-react";
 import type { PlaygroundMessage } from "./transport";
 import { useEffect, useState } from "react";
 import { Markdown } from "./Markdown";
@@ -91,7 +91,7 @@ export function Reasoning({
 				{heading}
 			</ChainOfThoughtHeader>
 			<ChainOfThoughtContent>
-				<div className="space-y-4">
+				<div className="flex flex-col gap-4">
 					{steps.map((step) => (
 						<ChainOfThoughtStep
 							key={step.key}

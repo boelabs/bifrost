@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
+import { cn } from "#/shared/lib/classes";
 import { tv } from "tailwind-variants";
-import { cn } from "cn";
 
 export type UISize = "xs" | "sm" | "md" | "lg";
 export type UIVariant = "outlined" | "filled" | "ghost";
@@ -79,43 +79,30 @@ export function mergeStyle<State>(
 }
 
 export const focusRing =
-	"outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
+	"outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background";
 export const controlStyles = tv({
-	base: "ui-control flex min-w-0 items-center gap-2 rounded-(--ui-radius-control) border text-fg outline-none transition-[color,background-color,border-color,box-shadow] placeholder:text-fg-muted focus-visible:border-focus focus-visible:ring-2 focus-visible:ring-focus/25 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-danger data-disabled:cursor-not-allowed data-focused:border-focus data-invalid:border-danger data-disabled:opacity-50 data-focused:ring-2 data-focused:ring-focus/25",
+	base: "ui-control flex min-w-0 items-center gap-2 rounded-(--ui-radius-control) border text-base text-foreground shadow-xs/5 outline-none ring-ring/24 transition-shadow placeholder:text-muted-foreground/72 focus-visible:border-ring focus-visible:ring-[3px] disabled:opacity-64 aria-invalid:border-destructive/36 data-focused:border-ring data-invalid:border-destructive/36 data-disabled:opacity-64 data-focused:ring-[3px] sm:text-sm",
 	variants: {
-		/**
-		 * One step taller and wider than the kit shipped with. A 36px row of filters above a 20px
-		 * corner reads as a toolbar bolted to a card; 40px, with the padding to match, reads as part
-		 * of it. The steps stay in lockstep with `buttonStyles`, which is what keeps a button and the
-		 * input beside it the same height.
-		 */
 		size: {
-			xs: "min-h-8 px-2.5 py-1 text-xs",
-			sm: "min-h-10 px-3.5 py-2 text-sm",
-			md: "min-h-12 px-4 py-3 text-sm",
-			lg: "min-h-14 px-5 py-3.5 text-base",
+			xs: "min-h-7 px-[calc(--spacing(2)-1px)] py-1 sm:min-h-6",
+			sm: "min-h-8 px-[calc(--spacing(2.5)-1px)] py-1 sm:min-h-7",
+			md: "min-h-9 px-[calc(--spacing(3)-1px)] py-1 sm:min-h-8",
+			lg: "min-h-10 px-[calc(--spacing(3)-1px)] py-1 sm:min-h-9",
 		},
-		/**
-		 * `filled` is the default: a control is a plane the operator writes on, not a rectangle drawn
-		 * with a line. A form of outlined controls inside an outlined card spends the same border on
-		 * two different jobs — separating regions and marking what is interactive — so neither reads
-		 * as either. The border comes back only where it carries something: focus, and invalid.
-		 */
 		variant: {
-			outlined: "border-border bg-surface hover:border-fg-muted/60",
-			filled:
-				"border-transparent bg-field placeholder:text-field-muted hover:bg-field-hover",
-			ghost: "border-transparent bg-transparent hover:bg-field",
+			outlined: "border-input bg-background dark:bg-input/32",
+			filled: "border-input bg-background dark:bg-input/32",
+			ghost: "border-transparent bg-transparent shadow-none hover:bg-accent",
 		},
 	},
-	defaultVariants: { size: "md", variant: "filled" },
+	defaultVariants: { size: "md", variant: "outlined" },
 });
-
 export const overlayFadeStyles =
-	"transition-opacity duration-150 ease-out data-starting-style:opacity-0 data-ending-style:opacity-0 motion-reduce:transition-none";
-export const popupStyles = `z-50 max-h-(--available-height) max-w-[calc(100vw-2rem)] overflow-auto rounded-(--ui-radius-surface) border border-border/60 bg-popover p-1.5 text-popover-foreground shadow-lg outline-none ${overlayFadeStyles}`;
+	"transition-opacity duration-200 ease-out data-starting-style:opacity-0 data-ending-style:opacity-0 motion-reduce:transition-none";
+export const popupStyles = `z-50 max-h-(--available-height) max-w-[calc(100vw-2rem)] overflow-auto rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg/5 outline-none ${overlayFadeStyles}`;
 export const itemStyles =
-	"relative flex cursor-default items-center gap-2 rounded-(--ui-radius-item) px-3 py-2.5 text-sm font-medium outline-none data-highlighted:bg-secondary data-highlighted:text-secondary-fg data-disabled:pointer-events-none data-disabled:text-fg-disabled";
-export const labelStyles = "text-sm font-medium text-fg";
-export const descriptionStyles = "text-sm text-fg-muted";
-export const errorStyles = "text-sm text-danger";
+	"relative flex min-h-8 cursor-default select-none items-center gap-2 rounded-sm px-2 py-1 text-base outline-none data-highlighted:bg-accent data-highlighted:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-64 sm:min-h-7 sm:text-sm";
+export const labelStyles =
+	"inline-flex items-center gap-2 font-medium text-base/4.5 text-foreground data-disabled:opacity-64 sm:text-sm/4";
+export const descriptionStyles = "text-xs text-muted-foreground";
+export const errorStyles = "text-xs text-destructive-foreground";

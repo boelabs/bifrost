@@ -1,6 +1,6 @@
 "use client";
 
-import { IconSearch, IconX } from "@tabler/icons-react";
+import { Search as IconSearch, X as IconX } from "lucide-react";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { useEffect, useState } from "react";
@@ -29,7 +29,7 @@ export function SearchField({
 
 	return (
 		<form
-			className="flex items-center gap-2"
+			className="flex min-w-0 max-w-full items-center gap-2"
 			onSubmit={(event) => {
 				event.preventDefault();
 				onSearch(draft.trim());
@@ -37,12 +37,11 @@ export function SearchField({
 		>
 			<Input
 				aria-label={label}
-				borderRadius="full"
-				className="w-56"
 				onValueChange={setDraft}
 				placeholder={placeholder}
 				size="sm"
 				value={draft}
+				width="14rem"
 			/>
 			{value ? (
 				<Button
@@ -56,7 +55,7 @@ export function SearchField({
 					type="button"
 					variant="ghost"
 				>
-					<IconX aria-hidden size={15} />
+					<IconX aria-hidden className="size-4" />
 				</Button>
 			) : null}
 			<Button
@@ -66,7 +65,7 @@ export function SearchField({
 				type="submit"
 				variant="secondary"
 			>
-				<IconSearch aria-hidden size={15} />
+				<IconSearch aria-hidden className="size-4" />
 			</Button>
 		</form>
 	);

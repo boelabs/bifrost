@@ -31,7 +31,10 @@ function Root({
 		<FieldScopeContext.Provider value={true}>
 			<BaseField.Root
 				{...props}
-				className={mergeClassName("flex min-w-0 flex-col gap-1.5", className)}
+				className={mergeClassName(
+					"flex min-w-0 flex-col items-start gap-2",
+					className,
+				)}
 				style={mergeStyle({ borderRadius, width }, style)}
 			/>
 		</FieldScopeContext.Provider>
