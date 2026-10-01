@@ -69,7 +69,7 @@ function References({
 	disabled: boolean;
 }) {
 	return (
-		<ul className="mb-2 flex gap-2 overflow-x-auto rounded-2xl border border-border bg-background p-2">
+		<ul className="playground-composer mb-2 flex gap-2 overflow-x-auto rounded-[28px] border border-border bg-surface-2 p-2 max-sm:rounded-2xl">
 			{references.map((reference) => {
 				const image = reference.mediaType.startsWith("image/");
 				return (
