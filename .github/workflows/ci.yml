@@ -41,6 +41,9 @@ jobs:
         id: filter
         env:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          DEPLOY_MAP: ${{ vars.COOLIFY_DEPLOY_MAP }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail
 
@@ -52,6 +55,15 @@ jobs:
               echo "stack=true"
             } >> "$GITHUB_OUTPUT"
           }
+
+          # A superseding push can cancel a build before its images are published. Comparing only
+          # the newest commit would then skip an unpublished app, so deployment branches always
+          # publish one complete set of images from the same commit.
+          if [ "$EVENT_NAME" = "push" ] && [ -n "$DEPLOY_MAP" ] && printf '%s' "$DEPLOY_MAP" | jq -e --arg branch "$REF_NAME" '.[$branch] != null' >/dev/null; then
+            echo "::notice::A deployment branch requires all three images."
+            everything
+            exit 0
+          fi
 
           # A new branch reports an all-zero `before`, and a force push can report a commit that is
           # no longer reachable. Neither is a reason to skip a build.
@@ -72,7 +84,7 @@ jobs:
           # Every app's package.json counts as shared, including the other apps'. The install is a
           # workspace install: the gateway's Dockerfile copies apps/docs/package.json to resolve it,
           # so a manifest belonging to one app can change another's image.
-          if echo "$files" | grep -qE '^(packages/|patches/|scripts/|bun\.lock$|package\.json$|turbo\.json$|tsconfig\.json$|biome\.jsonc?$|\.github/workflows/|apps/[^/]+/package\.json$)'; then
+          if echo "$files" | grep -qE '^(packages/|patches/|scripts/|bun\.lock$|package\.json$|turbo\.json$|tsconfig\.json$|biome\.jsonc?$|\.dockerignore$|\.github/workflows/|apps/[^/]+/package\.json$)'; then
             echo "::notice::A shared path changed; treating every app as changed."
             everything
             exit 0
