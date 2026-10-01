@@ -34,7 +34,7 @@ COPY --chown=bun:bun --from=deps /app/node_modules /app/node_modules
 COPY --chown=bun:bun --from=deps /app/apps/gateway/node_modules ./node_modules
 COPY --chown=bun:bun --from=deps /app/packages /app/packages
 
-# Application source (run directly via Node's native type stripping; no build artifacts).
+# Application source (run directly by Bun; no build artifacts).
 COPY --chown=bun:bun apps/gateway/package.json ./package.json
 COPY --chown=bun:bun apps/gateway/src ./src
 

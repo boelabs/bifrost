@@ -6,11 +6,22 @@
 **/coverage
 **/.env
 **/.env.*
-**/*.local.md
 .git
 .github
 .vscode
-.scratch
 *.log
+
+# Private operator notes, tooling state, and scratch files never enter a build context.
+**/*.local.md
+**/.mcp.local.json
+**/.claude
+**/.codex
+**/.agents
+**/.cursor
+**/.aider*
+**/.windsurf
+**/.gemini
+**/.scratch
+
 apps/gateway/**
 !apps/gateway/package.json

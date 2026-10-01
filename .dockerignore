@@ -17,3 +17,15 @@
 **/.env
 **/.env.*
 !**/.env.example
+
+# Private operator notes, tooling state, and scratch files never enter a build context.
+**/*.local.md
+**/.mcp.local.json
+**/.claude
+**/.codex
+**/.agents
+**/.cursor
+**/.aider*
+**/.windsurf
+**/.gemini
+**/.scratch
