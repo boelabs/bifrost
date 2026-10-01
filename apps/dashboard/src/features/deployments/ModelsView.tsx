@@ -1,27 +1,17 @@
 "use client";
 
-import { type Column, DataTable, Dash, Mono } from "#/components/ui/datatable";
 import { deleteDeploymentAction, toggleDeploymentAction } from "./actions.ts";
 import { createContext, Suspense, use, useMemo, useState } from "react";
 import { ButtonSkeleton } from "#/shared/components/Skeleton.tsx";
-import { RowActions } from "#/shared/components/RowActions.tsx";
 import { Can, useSession } from "#/features/auth/session.tsx";
-import { ContentPanel as Card } from "#/components/ui/card";
 import { useConfirm } from "#/shared/feedback/confirm.tsx";
 import { DeploymentDialog } from "./DeploymentDialog.tsx";
 import { useRowActions } from "#/shared/lib/mutation.ts";
 import { useRefresh } from "#/shared/lib/useRefresh.ts";
 import { EmptyState } from "#/components/ui/page";
 import { Button } from "#/components/ui/button";
-import { Status } from "#/components/ui/status";
-
-import {
-	Pencil as IconPencil,
-	Trash2 as IconTrash,
-	Check as IconCheck,
-	Plus as IconPlus,
-	Ban as IconBan,
-} from "lucide-react";
+import { Plus as IconPlus } from "lucide-react";
+import { ModelsTable } from "./ModelsTable";
 
 import {
 	type AdapterSummary,
@@ -146,6 +136,7 @@ export function ModelsView({ deployments }: { deployments: Deployment[] }) {
 	const { openNew, edit } = useModels();
 	const { rows, act } = useRowActions(deployments, (row) => row.id);
 	const groups = groupByPublicModel([...rows]);
+	const { can } = useSession();
 
 	async function remove(deployment: Deployment) {
 		const siblings = rows.filter(
@@ -191,154 +182,14 @@ export function ModelsView({ deployments }: { deployments: Deployment[] }) {
 					</Can>
 				</EmptyState>
 			) : (
-				<div className="flex flex-col gap-6">
-					{groups.map((group) => (
-						<PublicModelCard
-							adapters={group.adapters}
-							deployments={group.deployments}
-							enabledCount={group.enabledCount}
-							key={group.publicModel}
-							name={group.publicModel}
-							onDelete={(deployment) => void remove(deployment)}
-							onEdit={edit}
-							onToggle={(deployment) => void toggle(deployment)}
-						/>
-					))}
-				</div>
+				<ModelsTable
+					deployments={[...rows]}
+					onDelete={(deployment) => void remove(deployment)}
+					onEdit={edit}
+					onToggle={(deployment) => void toggle(deployment)}
+					writable={can("deployments:write")}
+				/>
 			)}
 		</>
-	);
-}
-
-function PublicModelCard({
-	name,
-	enabledCount,
-	adapters,
-	deployments,
-	onEdit,
-	onToggle,
-	onDelete,
-}: {
-	name: string;
-	enabledCount: number;
-	adapters: string[];
-	deployments: Deployment[];
-	onEdit: (deployment: Deployment) => void;
-	onToggle: (deployment: Deployment) => void;
-	onDelete: (deployment: Deployment) => void;
-}) {
-	const { can } = useSession();
-	const writable = can("deployments:write");
-
-	const columns: Column<Deployment>[] = [
-		{
-			key: "upstream",
-			header: "Upstream model",
-			render: (row) => <span className="font-medium">{row.upstreamModel}</span>,
-		},
-		{
-			key: "adapter",
-			header: "Adapter",
-			render: (row) => <Mono>{row.adapterKey}</Mono>,
-		},
-		{ key: "label", header: "Label", render: (row) => row.label ?? <Dash /> },
-		{
-			key: "weight",
-			header: "Weight",
-			render: (row) => <span className="tabular-nums">{row.weight}</span>,
-		},
-		{
-			key: "limits",
-			header: "Limits",
-			render: (row) => {
-				const limits = [
-					row.rpmLimit ? `${row.rpmLimit} rpm` : null,
-					row.tpmLimit ? `${row.tpmLimit} tpm` : null,
-				].filter(Boolean);
-				return limits.length ? (
-					<span className="text-fg-muted text-xs">{limits.join(" · ")}</span>
-				) : (
-					<Dash />
-				);
-			},
-		},
-		{
-			key: "source",
-			header: "Catalog",
-			render: (row) => (
-				<Status tone={row.custom ? "warning" : "muted"}>
-					{row.custom ? "custom" : "built-in"}
-				</Status>
-			),
-		},
-		{
-			key: "state",
-			header: "State",
-			render: (row) => (
-				<Status tone={row.enabled ? "success" : "muted"}>
-					{row.enabled ? "enabled" : "disabled"}
-				</Status>
-			),
-		},
-		{
-			key: "actions",
-			header: "",
-			align: "end",
-			render: (row) =>
-				writable ? (
-					<RowActions
-						actions={[
-							{
-								label: row.enabled ? "Disable" : "Enable",
-								icon: row.enabled ? (
-									<IconBan aria-hidden className="size-4" />
-								) : (
-									<IconCheck aria-hidden className="size-4" />
-								),
-								onSelect: () => onToggle(row),
-							},
-							{
-								label: "Edit",
-								icon: <IconPencil aria-hidden className="size-4" />,
-								onSelect: () => onEdit(row),
-							},
-							{
-								label: "Delete",
-								icon: <IconTrash aria-hidden className="size-4" />,
-								danger: true,
-								onSelect: () => onDelete(row),
-							},
-						]}
-						label={`Actions for deployment ${row.upstreamModel}`}
-					/>
-				) : null,
-		},
-	];
-
-	return (
-		<Card className="p-0">
-			<div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-				<div>
-					<h2 className="font-semibold text-foreground text-sm">{name}</h2>
-					<p className="mt-0.5 text-fg-muted text-xs">
-						{deployments.length} deployment{deployments.length === 1 ? "" : "s"}{" "}
-						· {enabledCount} enabled · {adapters.join(", ")}
-					</p>
-				</div>
-				<Status tone={enabledCount > 0 ? "success" : "danger"}>
-					{enabledCount > 0 ? "routable" : "no enabled deployment"}
-				</Status>
-			</div>
-			<div>
-				<DataTable
-					caption={`Deployments for ${name}`}
-					columns={columns}
-					pagination={{ pageSize: 10 }}
-					rowKey={(row) => row.id}
-					rows={deployments}
-					variant="plain"
-				/>
-			</div>
-		</Card>
 	);
 }

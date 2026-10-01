@@ -1,6 +1,7 @@
 import { type AppearanceProps, appearanceStyle } from "./appearance";
 import { badgeVariants } from "./primitives/badge";
 import type { HTMLAttributes } from "react";
+import { cn } from "#/shared/lib/classes";
 
 const variants = {
 	attention: "info",
@@ -22,11 +23,10 @@ export function badge({
 	size = "md",
 	className,
 }: Pick<BadgeProps, "variant" | "size" | "className"> = {}) {
-	return badgeVariants({
-		variant: variants[variant],
-		size: sizes[size],
+	return cn(
+		badgeVariants({ variant: variants[variant], size: sizes[size] }),
 		className,
-	});
+	);
 }
 export function Badge({
 	className,
