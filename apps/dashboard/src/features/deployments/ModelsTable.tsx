@@ -1,15 +1,37 @@
 "use client";
 
 import { Select, SelectItem, SearchableSelect } from "#/components/ui/select";
-import { Skeleton, GhostSkeleton } from "#/shared/components/Skeleton";
-import { filterModelGroups, modelGroupPage } from "./modelTableState";
 import { RowActions } from "#/shared/components/RowActions";
 import { Frame, FrameFooter } from "#/components/ui/frame";
+import { useState, type ReactNode } from "react";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { Badge } from "#/components/ui/badge";
 import type { Deployment } from "./common";
-import { Fragment, useState } from "react";
+
+import {
+	MenuCheckboxItemIndicator,
+	MenuCheckboxItem,
+	MenuPositioner,
+	MenuTrigger,
+	MenuPortal,
+	MenuPopup,
+	MenuRoot,
+} from "#/components/ui/menu";
+
+import {
+	ChevronsUpDown,
+	ChevronRight,
+	ChevronLeft,
+	ArrowDown,
+	Columns3,
+	ArrowUp,
+	Pencil,
+	Trash2,
+	Search,
+	Check,
+	Ban,
+} from "lucide-react";
 
 import {
 	TableHeader,
@@ -21,14 +43,17 @@ import {
 } from "#/components/ui/table";
 
 import {
-	ArrowDown,
-	ArrowUp,
-	Pencil,
-	Trash2,
-	Search,
-	Check,
-	Ban,
-} from "lucide-react";
+	filterModelRows,
+	type ModelSort,
+	sortModelRows,
+	modelRowPage,
+} from "./modelTableState";
+
+import {
+	ButtonSkeleton,
+	GhostSkeleton,
+	Skeleton,
+} from "#/shared/components/Skeleton";
 
 interface ModelsTableProps {
 	deployments?: Deployment[];
@@ -39,11 +64,35 @@ interface ModelsTableProps {
 	onDelete?: (deployment: Deployment) => void;
 }
 
-const LOADING_GROUPS = [
-	{ id: "first", rows: ["primary", "secondary", "backup"] },
-	{ id: "second", rows: ["primary", "backup"] },
-	{ id: "third", rows: ["primary"] },
-];
+const COLUMNS = [
+	{ key: "id", label: "Deployment ID", width: 140, visible: true },
+	{ key: "publicModel", label: "Model", width: 280, visible: true },
+	{ key: "adapterKey", label: "Provider", width: 120, visible: true },
+	{ key: "enabled", label: "State", width: 110, visible: true },
+	{ key: "createdAt", label: "Created", width: 120, visible: true },
+	{ key: "updatedAt", label: "Updated", width: 120, visible: true },
+	{ key: "limits", label: "Limits", width: 140, visible: false },
+	{ key: "pricing", label: "Pricing override", width: 170, visible: false },
+] as const;
+type ColumnKey = (typeof COLUMNS)[number]["key"];
+const LOADING_ROWS = ["first", "second", "third", "fourth", "fifth"];
+const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
+	month: "short",
+	day: "numeric",
+	year: "numeric",
+	timeZone: "UTC",
+});
+const TIME_FORMAT = new Intl.DateTimeFormat("en-GB", {
+	hour: "2-digit",
+	minute: "2-digit",
+	timeZone: "UTC",
+});
+const MONEY_FORMAT = new Intl.NumberFormat("en-US", {
+	style: "currency",
+	currency: "USD",
+	minimumFractionDigits: 2,
+	maximumFractionDigits: 6,
+});
 
 function Placeholder({
 	loading,
@@ -51,7 +100,7 @@ function Placeholder({
 	className,
 }: {
 	loading: boolean;
-	children: React.ReactNode;
+	children: ReactNode;
 	className?: string;
 }) {
 	return loading ? (
@@ -61,140 +110,199 @@ function Placeholder({
 	);
 }
 
-function StateBadge({
-	active,
-	children,
-}: {
-	active: boolean;
-	children: React.ReactNode;
-}) {
+function Timestamp({ value }: { value: string }) {
+	const date = new Date(value);
 	return (
-		<Badge className="gap-1.5 font-normal" variant="outlined">
-			<span
-				aria-hidden
-				className={`size-1.5 rounded-full ${active ? "bg-success" : "bg-muted-foreground/50"}`}
-			/>
-			{children}
-		</Badge>
+		<time
+			className="flex flex-col gap-1 text-xs tabular-nums"
+			dateTime={value}
+			title={value}
+		>
+			<span>{DATE_FORMAT.format(date)}</span>
+			<span className="text-muted-foreground">
+				{TIME_FORMAT.format(date)} UTC
+			</span>
+		</time>
 	);
 }
 
-function DeploymentRow({
+function PricingCell({ deployment }: { deployment: Deployment }) {
+	const { pricing } = deployment;
+	if (!pricing) {
+		return (
+			<span className="text-muted-foreground" title="No pricing override">
+				—
+			</span>
+		);
+	}
+	return (
+		<div className="flex flex-col gap-1 text-xs tabular-nums">
+			<span className="text-muted-foreground">USD / 1M tokens</span>
+			<span>
+				In{" "}
+				{pricing.inputCentsPerMTokens === undefined
+					? "—"
+					: MONEY_FORMAT.format(pricing.inputCentsPerMTokens / 100)}{" "}
+				· Out{" "}
+				{pricing.outputCentsPerMTokens === undefined
+					? "—"
+					: MONEY_FORMAT.format(pricing.outputCentsPerMTokens / 100)}
+			</span>
+			{pricing.searchUnitCents === undefined ? null : (
+				<span className="text-muted-foreground">
+					{MONEY_FORMAT.format(pricing.searchUnitCents / 100)} / search
+				</span>
+			)}
+			{pricing.tiers?.length ? (
+				<span className="text-muted-foreground">Tiered rates</span>
+			) : null}
+		</div>
+	);
+}
+
+function CellContent({
+	column,
+	deployment,
+}: {
+	column: ColumnKey;
+	deployment?: Deployment;
+}) {
+	if (!deployment) {
+		if (
+			["publicModel", "createdAt", "updatedAt", "pricing", "limits"].includes(
+				column,
+			)
+		) {
+			return (
+				<div className="flex flex-col gap-1">
+					<Skeleton
+						className={column === "publicModel" ? "h-3.5 w-3/4" : "h-4 w-3/4"}
+					/>
+					<Skeleton className="h-4 w-3/5" />
+				</div>
+			);
+		}
+		return (
+			<Skeleton
+				className={column === "enabled" ? "h-5 w-20 rounded-md" : "h-3.5 w-20"}
+			/>
+		);
+	}
+	switch (column) {
+		case "id":
+			return (
+				<div className="flex min-w-0 flex-col gap-1">
+					<code
+						className="w-fit rounded-md bg-muted px-1.5 text-muted-foreground text-xs"
+						title={deployment.id}
+					>
+						{deployment.id.slice(0, 8)}…
+					</code>
+					{deployment.label ? (
+						<span
+							className="truncate text-muted-foreground text-xs"
+							title={deployment.label}
+						>
+							{deployment.label}
+						</span>
+					) : null}
+				</div>
+			);
+		case "publicModel":
+			return (
+				<div className="flex min-w-0 flex-col gap-1">
+					<span className="truncate font-medium" title={deployment.publicModel}>
+						{deployment.publicModel}
+					</span>
+					<span
+						className="truncate font-mono text-muted-foreground text-xs"
+						title={deployment.upstreamModel}
+					>
+						{deployment.upstreamModel}
+					</span>
+				</div>
+			);
+		case "adapterKey":
+			return (
+				<span
+					className="block truncate text-muted-foreground"
+					title={deployment.adapterKey}
+				>
+					{deployment.adapterKey}
+				</span>
+			);
+		case "enabled":
+			return (
+				<Badge className="gap-1.5 font-normal" variant="outlined">
+					<span
+						aria-hidden
+						className={
+							deployment.enabled
+								? "size-1.5 rounded-full bg-success"
+								: "size-1.5 rounded-full bg-muted-foreground/50"
+						}
+					/>
+					{deployment.enabled ? "Enabled" : "Disabled"}
+				</Badge>
+			);
+		case "createdAt":
+		case "updatedAt":
+			return <Timestamp value={deployment[column]} />;
+		case "limits":
+			return (
+				<div className="flex flex-col gap-1 text-muted-foreground text-xs tabular-nums">
+					{deployment.rpmLimit === null ? null : (
+						<span>{deployment.rpmLimit.toLocaleString("en-US")} rpm</span>
+					)}
+					{deployment.tpmLimit === null ? null : (
+						<span>{deployment.tpmLimit.toLocaleString("en-US")} tpm</span>
+					)}
+					{deployment.rpmLimit === null && deployment.tpmLimit === null ? (
+						<span title="No limits">—</span>
+					) : null}
+				</div>
+			);
+		case "pricing":
+			return <PricingCell deployment={deployment} />;
+		default:
+			return null;
+	}
+}
+
+function DeploymentActions({
 	deployment,
 	writable,
 	onEdit,
 	onToggle,
 	onDelete,
-}: ModelsTableProps & { deployment?: Deployment }) {
-	return (
-		<TableRow className="h-14">
-			<TableCell className="max-w-0 ps-5">
-				{deployment ? (
-					<div className="flex min-w-0 flex-col gap-1.5">
-						<span
-							className="truncate font-medium"
-							title={deployment.upstreamModel}
-						>
-							{deployment.upstreamModel}
-						</span>
-						{deployment.label ? (
-							<span
-								className="truncate text-muted-foreground text-xs"
-								title={deployment.label}
-							>
-								{deployment.label}
-							</span>
-						) : null}
-					</div>
-				) : (
-					<div className="flex flex-col gap-1.5">
-						<Skeleton className="h-3.5 w-3/5" />
-						<Skeleton className="h-3 w-2/5" />
-					</div>
-				)}
-			</TableCell>
-			<TableCell>
-				{deployment ? (
-					<Badge className="font-normal" variant="outlined">
-						{deployment.adapterKey}
-					</Badge>
-				) : (
-					<Skeleton className="h-5 w-20 rounded-md" />
-				)}
-			</TableCell>
-			<TableCell className="text-right tabular-nums">
-				{deployment ? (
-					deployment.weight
-				) : (
-					<Skeleton className="ms-auto h-3.5 w-6" />
-				)}
-			</TableCell>
-			<TableCell>
-				{deployment ? (
-					<div className="flex flex-col gap-1.5 text-muted-foreground text-xs tabular-nums">
-						{deployment.rpmLimit === null ? null : (
-							<span>{deployment.rpmLimit.toLocaleString("en-US")} rpm</span>
-						)}
-						{deployment.tpmLimit === null ? null : (
-							<span>{deployment.tpmLimit.toLocaleString("en-US")} tpm</span>
-						)}
-						{deployment.rpmLimit === null && deployment.tpmLimit === null ? (
-							<span title="No limits">—</span>
-						) : null}
-					</div>
-				) : (
-					<Skeleton className="h-3.5 w-20" />
-				)}
-			</TableCell>
-			<TableCell>
-				{deployment ? (
-					<Badge className="font-normal" variant="outlined">
-						{deployment.custom ? "Custom" : "Built-in"}
-					</Badge>
-				) : (
-					<Skeleton className="h-5 w-16 rounded-md" />
-				)}
-			</TableCell>
-			<TableCell>
-				{deployment ? (
-					<StateBadge active={deployment.enabled}>
-						{deployment.enabled ? "Enabled" : "Disabled"}
-					</StateBadge>
-				) : (
-					<Skeleton className="h-5 w-20 rounded-md" />
-				)}
-			</TableCell>
-			<TableCell className="text-right">
-				{deployment && writable ? (
-					<RowActions
-						actions={[
-							{
-								label: deployment.enabled ? "Disable" : "Enable",
-								icon: deployment.enabled ? (
-									<Ban aria-hidden className="size-4" />
-								) : (
-									<Check aria-hidden className="size-4" />
-								),
-								onSelect: () => onToggle?.(deployment),
-							},
-							{
-								label: "Edit",
-								icon: <Pencil aria-hidden className="size-4" />,
-								onSelect: () => onEdit?.(deployment),
-							},
-							{
-								label: "Delete",
-								icon: <Trash2 aria-hidden className="size-4" />,
-								danger: true,
-								onSelect: () => onDelete?.(deployment),
-							},
-						]}
-						label={`Actions for deployment ${deployment.upstreamModel}`}
-					/>
-				) : null}
-			</TableCell>
-		</TableRow>
-	);
+}: ModelsTableProps & { deployment: Deployment }) {
+	return writable ? (
+		<RowActions
+			actions={[
+				{
+					label: deployment.enabled ? "Disable" : "Enable",
+					icon: deployment.enabled ? (
+						<Ban aria-hidden className="size-4" />
+					) : (
+						<Check aria-hidden className="size-4" />
+					),
+					onSelect: () => onToggle?.(deployment),
+				},
+				{
+					label: "Edit",
+					icon: <Pencil aria-hidden className="size-4" />,
+					onSelect: () => onEdit?.(deployment),
+				},
+				{
+					label: "Delete",
+					icon: <Trash2 aria-hidden className="size-4" />,
+					danger: true,
+					onSelect: () => onDelete?.(deployment),
+				},
+			]}
+			label={`Actions for deployment ${deployment.id}`}
+		/>
+	) : null;
 }
 
 export function ModelsTable({
@@ -206,15 +314,23 @@ export function ModelsTable({
 		query: "",
 		provider: "",
 		state: "",
-		catalog: "",
 	});
 	const [requestedPage, setPage] = useState(0);
-	const [descending, setDescending] = useState(false);
-	const groups = filterModelGroups(deployments, filters);
-	if (descending) {
-		groups.reverse();
-	}
-	const pagination = modelGroupPage(groups, requestedPage);
+	const [pageSize, setPageSize] = useState(10);
+	const [sorting, setSorting] = useState<{
+		key: ModelSort;
+		descending: boolean;
+	}>({ key: "publicModel", descending: false });
+	const [visibleKeys, setVisibleKeys] = useState<ColumnKey[]>(
+		COLUMNS.filter((column) => column.visible).map((column) => column.key),
+	);
+	const columns = COLUMNS.filter((column) => visibleKeys.includes(column.key));
+	const rows = sortModelRows(
+		filterModelRows(deployments, filters),
+		sorting.key,
+		sorting.descending,
+	);
+	const pagination = modelRowPage(rows, requestedPage, pageSize);
 	const providers = [
 		...new Set(deployments.map((row) => row.adapterKey)),
 	].sort();
@@ -223,21 +339,6 @@ export function ModelsTable({
 		setFilters((previous) => ({ ...previous, [key]: value }));
 		setPage(0);
 	}
-	const range = `${pagination.start}–${pagination.end}`;
-	const deploymentCount = groups.reduce(
-		(total, group) => total + group.deployments.length,
-		0,
-	);
-	const pageOptions = Array.from(
-		{ length: pagination.pageCount },
-		(_, page) => ({
-			value: String(page),
-			label:
-				groups.length > 0
-					? `${page * 10 + 1}–${Math.min((page + 1) * 10, groups.length)}`
-					: range,
-		}),
-	);
 	return (
 		<Frame aria-busy={loading || undefined}>
 			{loading ? (
@@ -290,22 +391,10 @@ export function ModelsTable({
 							<SelectItem value="disabled">Disabled</SelectItem>
 						</Select>
 					</Placeholder>
-					<Placeholder loading={loading}>
-						<Select
-							aria-label="Filter by catalog"
-							onValueChange={(value) => updateFilter("catalog", value ?? "")}
-							size="sm"
-							value={filters.catalog}
-						>
-							<SelectItem value="">All catalogs</SelectItem>
-							<SelectItem value="built-in">Built-in</SelectItem>
-							<SelectItem value="custom">Custom</SelectItem>
-						</Select>
-					</Placeholder>
 					{filtered ? (
 						<Button
 							onClick={() => {
-								setFilters({ query: "", provider: "", state: "", catalog: "" });
+								setFilters({ query: "", provider: "", state: "" });
 								setPage(0);
 							}}
 							size="sm"
@@ -314,109 +403,157 @@ export function ModelsTable({
 							Clear filters
 						</Button>
 					) : null}
+					<div className="ms-auto">
+						<Placeholder loading={loading}>
+							<MenuRoot>
+								<MenuTrigger render={<Button size="sm" variant="secondary" />}>
+									<Columns3 aria-hidden className="size-4" />
+									Columns
+								</MenuTrigger>
+								<MenuPortal>
+									<MenuPositioner align="end">
+										<MenuPopup>
+											{COLUMNS.map((column) => (
+												<MenuCheckboxItem
+													checked={visibleKeys.includes(column.key)}
+													closeOnClick={false}
+													disabled={column.key === "publicModel"}
+													key={column.key}
+													onCheckedChange={(checked) =>
+														setVisibleKeys((previous) =>
+															checked
+																? [...previous, column.key]
+																: previous.filter((key) => key !== column.key),
+														)
+													}
+												>
+													{column.label}{" "}
+													<MenuCheckboxItemIndicator>
+														<Check aria-hidden className="size-4" />
+													</MenuCheckboxItemIndicator>
+												</MenuCheckboxItem>
+											))}
+										</MenuPopup>
+									</MenuPositioner>
+								</MenuPortal>
+							</MenuRoot>
+						</Placeholder>
+					</div>
 				</div>
 				<Table
 					aria-label="Public models and deployments"
-					className="min-w-200 table-fixed"
+					className="table-fixed"
+					style={{
+						minWidth: columns.reduce(
+							(total, column) => total + column.width,
+							52,
+						),
+					}}
 					variant="card"
 				>
+					<colgroup>
+						{columns.map((column) => (
+							<col
+								key={column.key}
+								style={
+									column.key === "publicModel"
+										? undefined
+										: { width: column.width }
+								}
+							/>
+						))}
+						<col style={{ width: 52 }} />
+					</colgroup>
 					<TableHeader>
 						<TableRow>
-							<TableHead
-								aria-sort={descending ? "descending" : "ascending"}
-								className="w-[32%]"
-							>
-								<Button
-									className="-ms-1"
-									onClick={() => {
-										setDescending(!descending);
-										setPage(0);
-									}}
-									size="sm"
-									variant="ghost"
-								>
-									Public model / Deployment
-									{descending ? (
-										<ArrowDown aria-hidden className="size-3.5" />
-									) : (
-										<ArrowUp aria-hidden className="size-3.5" />
-									)}
-								</Button>
-							</TableHead>
-							<TableHead className="w-[16%]">Provider</TableHead>
-							<TableHead className="w-[8%] text-right">Weight</TableHead>
-							<TableHead className="w-[14%]">Limits</TableHead>
-							<TableHead className="w-[12%]">Catalog</TableHead>
-							<TableHead className="w-[12%]">State</TableHead>
-							<TableHead className="w-[6%]">
+							{columns.map((column) => {
+								const sortable =
+									column.key === "publicModel" ||
+									column.key === "createdAt" ||
+									column.key === "updatedAt";
+								const active = sorting.key === column.key;
+								let direction: "ascending" | "descending" | "none" = "none";
+								let SortIcon = ChevronsUpDown;
+								if (active) {
+									direction = sorting.descending ? "descending" : "ascending";
+									SortIcon = sorting.descending ? ArrowDown : ArrowUp;
+								}
+								return (
+									<TableHead
+										aria-sort={sortable ? direction : undefined}
+										key={column.key}
+									>
+										{sortable ? (
+											<Button
+												className="-ms-2 gap-1 px-2 font-medium"
+												onClick={() => {
+													setSorting({
+														key: column.key as ModelSort,
+														descending: active ? !sorting.descending : false,
+													});
+													setPage(0);
+												}}
+												size="sm"
+												variant="ghost"
+											>
+												{column.label}
+												<SortIcon aria-hidden className="size-3.5" />
+											</Button>
+										) : (
+											column.label
+										)}
+									</TableHead>
+								);
+							})}
+							<TableHead>
 								<span className="sr-only">Actions</span>
 							</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
 						{loading
-							? LOADING_GROUPS.map((group) => (
-									<Fragment key={group.id}>
-										<TableRow className="h-12">
-											<TableCell
-												colSpan={7}
-												style={{ backgroundColor: "var(--muted)" }}
-											>
-												<div className="flex items-center justify-between gap-3">
-													<Skeleton className="h-4 w-40" />
-													<Skeleton className="h-5 w-44 rounded-md" />
-												</div>
+							? LOADING_ROWS.map((key) => (
+									<TableRow className="h-14" key={key}>
+										{columns.map((column) => (
+											<TableCell className="max-w-0" key={column.key}>
+												<CellContent column={column.key} />
 											</TableCell>
-										</TableRow>
-										{group.rows.map((id) => (
-											<DeploymentRow key={id} />
 										))}
-									</Fragment>
+										<TableCell>
+											<ButtonSkeleton label={0} mode="icon" />
+										</TableCell>
+									</TableRow>
 								))
-							: pagination.groups.map((group) => (
-									<Fragment key={group.publicModel}>
-										<TableRow className="h-12">
-											<TableCell
-												colSpan={7}
-												style={{ backgroundColor: "var(--muted)" }}
-											>
-												<div className="flex items-center justify-between gap-4">
-													<div className="flex min-w-0 items-center gap-3">
-														<h2
-															className="truncate font-semibold text-sm"
-															title={group.publicModel}
-														>
-															{group.publicModel}
-														</h2>
-														<span className="shrink-0 text-muted-foreground text-xs">
-															{group.deployments.length === group.totalCount
-																? `${group.totalCount} deployment${group.totalCount === 1 ? "" : "s"}`
-																: `${group.deployments.length} of ${group.totalCount} deployments`}
-														</span>
-													</div>
-													<StateBadge active={group.enabledCount > 0}>
-														{group.enabledCount > 0
-															? `${group.enabledCount} enabled`
-															: "No enabled deployments"}
-													</StateBadge>
-												</div>
+							: pagination.rows.map((deployment) => (
+									<TableRow className="h-14" key={deployment.id}>
+										{columns.map((column) => (
+											<TableCell className="max-w-0" key={column.key}>
+												<CellContent
+													column={column.key}
+													deployment={deployment}
+												/>
 											</TableCell>
-										</TableRow>
-										{group.deployments.map((deployment) => (
-											<DeploymentRow
-												{...actions}
-												deployment={deployment}
-												key={deployment.id}
-											/>
 										))}
-									</Fragment>
+										<TableCell>
+											<DeploymentActions {...actions} deployment={deployment} />
+										</TableCell>
+									</TableRow>
 								))}
-						{!loading && groups.length === 0 ? (
+						{!loading && rows.length === 0 ? (
 							<TableRow>
-								<TableCell className="h-40 text-center" colSpan={7}>
-									<p className="font-medium">No matching deployments</p>
+								<TableCell
+									className="h-40 text-center"
+									colSpan={columns.length + 1}
+								>
+									<p className="font-medium">
+										{deployments.length
+											? "No matching deployments"
+											: "No deployments yet"}
+									</p>
 									<p className="mt-2 text-muted-foreground text-sm">
-										Try another search or clear the filters.
+										{deployments.length
+											? "Try another search or clear the filters."
+											: "Create a deployment to make its public model available."}
 									</p>
 								</TableCell>
 							</TableRow>
@@ -425,47 +562,58 @@ export function ModelsTable({
 				</Table>
 				<FrameFooter className="flex flex-wrap items-center justify-between gap-3 p-2 text-muted-foreground text-sm">
 					<Placeholder loading={loading}>
-						<div className="flex flex-wrap items-center gap-2">
-							<span>Viewing</span>
+						<div className="flex items-center gap-2">
+							<span>Rows per page</span>
 							<Select
-								aria-label="Visible public models"
-								disabled={!groups.length}
-								onValueChange={(value) => setPage(Number(value ?? 0))}
+								aria-label="Rows per page"
+								onValueChange={(value) => {
+									setPageSize(Number(value ?? 10));
+									setPage(0);
+								}}
 								size="sm"
-								value={String(pagination.page)}
+								value={String(pageSize)}
 							>
-								{pageOptions.map((option) => (
-									<SelectItem key={option.value} value={option.value}>
-										{option.label}
+								{[10, 25, 50].map((size) => (
+									<SelectItem key={size} value={String(size)}>
+										{size}
 									</SelectItem>
 								))}
 							</Select>
-							<span className="tabular-nums">
-								of {groups.length} public models
-							</span>
-							<span className="text-xs tabular-nums">
-								· {deploymentCount} deployment{deploymentCount === 1 ? "" : "s"}
-							</span>
 						</div>
 					</Placeholder>
 					<Placeholder loading={loading}>
-						<div className="flex gap-2">
-							<Button
-								disabled={pagination.page === 0}
-								onClick={() => setPage(pagination.page - 1)}
-								size="sm"
-								variant="secondary"
+						<div className="flex flex-wrap items-center gap-3">
+							<span className="tabular-nums" role="status">
+								{pagination.start}–{pagination.end} of {rows.length} deployments
+							</span>
+							<nav
+								aria-label="Models pagination"
+								className="flex items-center gap-2"
 							>
-								Previous
-							</Button>
-							<Button
-								disabled={pagination.page + 1 >= pagination.pageCount}
-								onClick={() => setPage(pagination.page + 1)}
-								size="sm"
-								variant="secondary"
-							>
-								Next
-							</Button>
+								<Button
+									aria-label="Previous page"
+									disabled={pagination.page === 0}
+									mode="icon"
+									onClick={() => setPage(pagination.page - 1)}
+									size="sm"
+									variant="secondary"
+								>
+									<ChevronLeft aria-hidden className="size-4" />
+								</Button>
+								<span className="text-xs tabular-nums">
+									{pagination.page + 1} / {pagination.pageCount}
+								</span>
+								<Button
+									aria-label="Next page"
+									disabled={pagination.page + 1 >= pagination.pageCount}
+									mode="icon"
+									onClick={() => setPage(pagination.page + 1)}
+									size="sm"
+									variant="secondary"
+								>
+									<ChevronRight aria-hidden className="size-4" />
+								</Button>
+							</nav>
 						</div>
 					</Placeholder>
 				</FrameFooter>

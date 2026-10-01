@@ -19,7 +19,7 @@ import {
  *
  * The adapter registry is only needed by the dialog, so it is started here and handed to the
  * provider unawaited — nothing on the page waits for it. The deployments are the page's subject and
- * stream into one table grouped by public model.
+ * stream into one flat table, sorted by public model.
  */
 export default function ModelsPage() {
 	return (

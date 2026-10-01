@@ -3,21 +3,15 @@
 import { deleteDeploymentAction, toggleDeploymentAction } from "./actions.ts";
 import { createContext, Suspense, use, useMemo, useState } from "react";
 import { ButtonSkeleton } from "#/shared/components/Skeleton.tsx";
+import type { AdapterSummary, Deployment } from "./common.ts";
 import { Can, useSession } from "#/features/auth/session.tsx";
 import { useConfirm } from "#/shared/feedback/confirm.tsx";
 import { DeploymentDialog } from "./DeploymentDialog.tsx";
 import { useRowActions } from "#/shared/lib/mutation.ts";
 import { useRefresh } from "#/shared/lib/useRefresh.ts";
-import { EmptyState } from "#/components/ui/page";
 import { Button } from "#/components/ui/button";
 import { Plus as IconPlus } from "lucide-react";
 import { ModelsTable } from "./ModelsTable";
-
-import {
-	type AdapterSummary,
-	groupByPublicModel,
-	type Deployment,
-} from "./common.ts";
 
 /** `deployment: null` opens the dialog for a new one; a row opens it for editing that one. */
 type Editing = { deployment: Deployment | null } | null;
@@ -128,14 +122,12 @@ export function NewDeploymentButton() {
 /**
  * The models page below its header.
  *
- * Grouping happens here rather than on the server because a Public Model is not a row: it is every
- * deployment that shares a `publicModel`, and the gateway returns the deployments. See the glossary.
+ * Each row acts on one deployment; deletion checks the complete public model pool.
  */
 export function ModelsView({ deployments }: { deployments: Deployment[] }) {
 	const confirm = useConfirm();
-	const { openNew, edit } = useModels();
+	const { edit } = useModels();
 	const { rows, act } = useRowActions(deployments, (row) => row.id);
-	const groups = groupByPublicModel([...rows]);
 	const { can } = useSession();
 
 	async function remove(deployment: Deployment) {
@@ -171,25 +163,12 @@ export function ModelsView({ deployments }: { deployments: Deployment[] }) {
 	}
 
 	return (
-		<>
-			{groups.length === 0 ? (
-				<EmptyState
-					description="Create the first one and its public model appears here."
-					title="No deployments yet"
-				>
-					<Can permissions={["deployments:write"]}>
-						<Button onClick={openNew}>New deployment</Button>
-					</Can>
-				</EmptyState>
-			) : (
-				<ModelsTable
-					deployments={[...rows]}
-					onDelete={(deployment) => void remove(deployment)}
-					onEdit={edit}
-					onToggle={(deployment) => void toggle(deployment)}
-					writable={can("deployments:write")}
-				/>
-			)}
-		</>
+		<ModelsTable
+			deployments={[...rows]}
+			onDelete={(deployment) => void remove(deployment)}
+			onEdit={edit}
+			onToggle={(deployment) => void toggle(deployment)}
+			writable={can("deployments:write")}
+		/>
 	);
 }
