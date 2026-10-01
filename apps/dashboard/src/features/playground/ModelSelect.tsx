@@ -70,7 +70,7 @@ export function ModelSelect({
 		>
 			<Combobox.Trigger
 				aria-label="Model"
-				className="max-w-52 justify-between gap-1 font-medium text-sm"
+				className="composer-model max-w-52 justify-between gap-1 font-medium text-sm"
 				size="sm"
 				variant="ghost"
 			>

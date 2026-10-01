@@ -1,6 +1,6 @@
 import type { Transition } from "motion/react";
 
-export const COMPOSER_SURFACE_RADIUS_PX = 16;
+export const COMPOSER_SURFACE_RADIUS_PX = 28;
 export const COMPOSER_LAYOUT_TRANSITION: Transition = {
 	layout: { type: "spring", stiffness: 800, damping: 51, mass: 1 },
 };

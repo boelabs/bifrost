@@ -77,7 +77,7 @@ export function Composer({
 	return (
 		<form
 			aria-label="Message composer"
-			className="relative isolate w-full"
+			className="playground-composer relative isolate w-full"
 			onDragEnter={(event) => {
 				if (!event.dataTransfer.types.includes("Files")) {
 					return;
@@ -125,7 +125,7 @@ export function Composer({
 					showAttach ? (
 						<Button
 							aria-label="Attach files"
-							className="hover:border-fg-muted max-sm:border-transparent max-sm:hover:border-transparent"
+							className="composer-action composer-attach"
 							disabled={reading || busy || !accepted.length}
 							mode="icon"
 							onClick={() => input.current?.click()}
@@ -155,7 +155,7 @@ export function Composer({
 						{modelPicker}
 						<Button
 							aria-label="Open model settings"
-							className="max-sm:border-border"
+							className="composer-action"
 							mode="icon"
 							onClick={onSettings}
 							size="sm"
@@ -167,7 +167,7 @@ export function Composer({
 						</Button>
 						<Button
 							aria-label="Reset conversation"
-							className="max-sm:border-border"
+							className="composer-action"
 							mode="icon"
 							onClick={onReset}
 							size="sm"
@@ -179,7 +179,7 @@ export function Composer({
 						</Button>
 						<Button
 							aria-label={busy ? "Stop response" : "Send message"}
-							className="hover:bg-primary active:bg-primary"
+							className="composer-action composer-send"
 							disabled={
 								!busy &&
 								(reading ||
@@ -249,7 +249,7 @@ export function Composer({
 				topSectionLayoutKey={files.map((file) => file.id).join(":")}
 			/>
 			{dragging ? (
-				<div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-2xl border-2 border-primary border-dashed bg-surface-2/95 text-fg text-sm">
+				<div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center rounded-[28px] border-2 border-primary border-dashed bg-surface-2/95 text-fg text-sm">
 					{accepted.length
 						? "Drop files here"
 						: "This model does not support attachments"}

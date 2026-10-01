@@ -71,7 +71,7 @@ function Documents({
 	return (
 		<section
 			aria-label="Documents"
-			className="mb-2 overflow-hidden rounded-2xl border border-border bg-background"
+			className="playground-composer mb-2 overflow-hidden rounded-[28px] border border-border bg-surface-2 max-sm:rounded-2xl"
 		>
 			<button
 				aria-expanded={open}

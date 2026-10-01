@@ -13,7 +13,7 @@ export function PlaygroundSkeleton() {
 		<div
 			aria-busy="true"
 			aria-label="Loading playground"
-			className="flex h-full min-h-0 flex-col"
+			className="flex h-full min-h-0 w-full min-w-0 flex-col"
 			role="status"
 		>
 			<PageHeader
@@ -33,13 +33,18 @@ export function PlaygroundSkeleton() {
 						<SampleSkeleton>Playground</SampleSkeleton>
 					</h2>
 					<div aria-hidden inert>
-						<GhostSkeleton className="w-full rounded-2xl">
+						<GhostSkeleton className="w-full rounded-[28px]">
 							<Composer
 								accepted={[]}
 								busy={false}
 								files={[]}
 								modelPicker={
-									<Button disabled size="sm" variant="ghost">
+									<Button
+										className="composer-model"
+										disabled
+										size="sm"
+										variant="ghost"
+									>
 										Public model
 									</Button>
 								}

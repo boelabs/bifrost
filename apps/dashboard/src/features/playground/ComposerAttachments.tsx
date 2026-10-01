@@ -94,7 +94,7 @@ export function ComposerAttachments({
 							)}
 							<Button
 								aria-label={`Remove ${file.filename ?? "attachment"}`}
-								className="absolute top-1 right-1 z-20 size-6 bg-surface shadow-sm after:absolute after:-inset-2 md:top-1.25 md:right-1.25 md:size-4 md:translate-x-1/2 md:-translate-y-1/2 md:opacity-0 md:group-hover/file-tile:opacity-100 md:group-focus-within/file-tile:opacity-100"
+								className="composer-attachment-action absolute top-1 right-1 z-20 size-6 bg-surface shadow-sm after:absolute after:-inset-2 sm:size-6 md:top-1.25 md:right-1.25 md:size-4 md:translate-x-1/2 md:-translate-y-1/2 md:opacity-0 md:group-hover/file-tile:opacity-100 md:group-focus-within/file-tile:opacity-100"
 								mode="icon"
 								onClick={() => onRemove(file.id)}
 								size="sm"
@@ -114,7 +114,7 @@ export function ComposerAttachments({
 			{edges.left ? (
 				<Button
 					aria-label="Previous attachments"
-					className="absolute top-1/2 left-1 size-7 -translate-y-1/2 bg-surface shadow-sm"
+					className="composer-attachment-action absolute top-1/2 left-1 size-7 -translate-y-1/2 bg-surface shadow-sm"
 					mode="icon"
 					onClick={() => move(-1)}
 					size="sm"
@@ -127,7 +127,7 @@ export function ComposerAttachments({
 			{edges.right ? (
 				<Button
 					aria-label="Next attachments"
-					className="absolute top-1/2 right-1 size-7 -translate-y-1/2 bg-surface shadow-sm"
+					className="composer-attachment-action absolute top-1/2 right-1 size-7 -translate-y-1/2 bg-surface shadow-sm"
 					mode="icon"
 					onClick={() => move(1)}
 					size="sm"

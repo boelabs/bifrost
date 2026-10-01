@@ -63,6 +63,9 @@ The current navigation item keeps its background and text color on hover.
 
 Content scrolls inside the shell, centered at `max-w-6xl`, with `p-4 sm:p-6` and `gap-6`.
 The playground keeps its own transcript scrolling and a constrained composer.
+Its composer is an intentional exception to shared control geometry: a 28px surface, 40px circular
+actions and a pill model picker retain the previous writing experience. Its neutral palette is scoped
+to the composer; dialogs, popups and the rest of the dashboard use the shared kit.
 
 ## Controls and forms
 

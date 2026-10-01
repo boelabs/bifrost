@@ -1,0 +1,112 @@
+.playground-composer {
+	--surface: oklch(95.51% 0 0);
+	--surface-2: oklch(88.53% 0 0);
+	--field: oklch(88.24% 0 0);
+	--field-hover: oklch(83.24% 0 0);
+	--fg: oklch(32.11% 0 0);
+	--fg-muted: oklch(48.5% 0 0);
+	--foreground: var(--fg);
+	--secondary: oklch(90.67% 0 0);
+	--border: oklch(85.76% 0 0);
+	--ring: oklch(48.91% 0 0);
+	--primary: oklch(46% 0 0);
+	--primary-foreground: white;
+}
+
+.dark .playground-composer {
+	--surface: oklch(21.78% 0 0);
+	--surface-2: oklch(28.5% 0 0);
+	--field: oklch(32.54% 0 0);
+	--field-hover: oklch(36.73% 0 0);
+	--fg: oklch(88.53% 0 0);
+	--fg-muted: oklch(66% 0 0);
+	--secondary: oklch(30.92% 0 0);
+	--border: oklch(32.9% 0 0);
+	--ring: oklch(70.58% 0 0);
+	--primary: oklch(84% 0 0);
+	--primary-foreground: oklch(21.78% 0 0);
+}
+
+.playground-composer .composer-action,
+.playground-composer .composer-model {
+	height: 40px;
+	border-radius: 9999px;
+	border-color: transparent;
+	box-shadow: none;
+	font-size: 14px;
+}
+
+.playground-composer .composer-action {
+	width: 40px;
+	background: transparent;
+	color: var(--fg);
+}
+
+.playground-composer .composer-action::before,
+.playground-composer .composer-model::before {
+	box-shadow: none;
+}
+
+.playground-composer .composer-action svg {
+	opacity: 1;
+}
+
+.playground-composer .composer-action:disabled {
+	opacity: 0.5;
+}
+
+.playground-composer .composer-attachment-action {
+	border-radius: 9999px;
+	border-color: transparent;
+}
+
+.playground-composer .composer-attachment-action::before {
+	box-shadow: none;
+}
+
+.playground-composer .composer-attachment-action svg {
+	opacity: 1;
+}
+
+.playground-composer .composer-action:hover,
+.playground-composer .composer-action[data-pressed] {
+	background: var(--secondary);
+}
+
+.playground-composer .composer-attach {
+	background: var(--field);
+}
+
+.playground-composer .composer-attach:hover {
+	background: var(--field-hover);
+	border-color: var(--fg-muted);
+}
+
+.playground-composer .composer-send,
+.playground-composer .composer-send:hover,
+.playground-composer .composer-send[data-pressed] {
+	background: var(--primary);
+	color: var(--primary-foreground);
+}
+
+.playground-composer .composer-model {
+	padding-inline: 16px;
+	background: transparent;
+}
+
+.playground-composer .composer-model:hover {
+	background: var(--secondary);
+}
+
+.playground-composer .composer-action:focus-visible,
+.playground-composer .composer-model:focus-visible,
+.playground-composer .composer-attachment-action:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 2px;
+}
+
+@media (width < 40rem) {
+	.playground-composer .composer-attach:hover {
+		border-color: transparent;
+	}
+}
