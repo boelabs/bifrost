@@ -44,6 +44,11 @@ Update matching skeletons when the component's layout changes.
 Use tabular numbers for amounts, counts, and dates. Arrange sections with `gap-6`, panel contents
 and fields with `gap-4`, and inline controls with `gap-2`. Use flex or grid, never `space-*`.
 
+Tables use one continuous body with ordinary data rows and the shared table primitives. Repeat
+identifying context in each row rather than inserting group banners or nested tables. Model rows
+show the public name above the upstream name; secondary details stay muted. Keep optional columns
+in a Columns menu, with row pagination and a visible result count.
+
 ## Surfaces and shell
 
 `Frame` is the default content surface: a `rounded-2xl bg-muted/72 p-1` tray containing a bordered
