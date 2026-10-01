@@ -23,6 +23,7 @@
 		"typecheck": "turbo run typecheck && tsc --noEmit -p tsconfig.json"
 	},
 	"overrides": {
+		"@grpc/grpc-js": "1.14.5",
 		"esbuild": "0.28.1",
 		"nanoid": "3.3.18",
 		"postcss": "8.5.26",
