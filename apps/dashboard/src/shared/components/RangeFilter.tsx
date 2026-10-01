@@ -3,7 +3,7 @@
 import { PopoverRoot, PopoverTrigger, Popover } from "#/components/ui/popover";
 import type { Query } from "#/shared/lib/useSearchWriter.ts";
 import { Select, SelectItem } from "#/components/ui/select";
-import { IconCalendar } from "@tabler/icons-react";
+import { Calendar as IconCalendar } from "lucide-react";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { useState } from "react";
@@ -75,7 +75,6 @@ export function RangeFilter({
 		<>
 			<Select
 				aria-label={label ? undefined : "Time range"}
-				borderRadius="full"
 				{...(label ? { label } : {})}
 				onValueChange={(key) => {
 					if (!key) {
@@ -106,7 +105,7 @@ export function RangeFilter({
 						aria-label="Choose custom dates"
 						render={<Button size="sm" variant="secondary" />}
 					>
-						<IconCalendar aria-hidden size={15} />
+						<IconCalendar aria-hidden className="size-4" />
 						{applied}
 					</PopoverTrigger>
 					<Popover aria-label="Custom date range" className="w-72 p-4">

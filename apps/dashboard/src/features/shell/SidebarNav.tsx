@@ -7,17 +7,17 @@ import Link from "next/link";
 import { cn } from "cn";
 
 import {
-	IconAdjustmentsHorizontal,
-	IconPlugConnected,
-	IconShieldLock,
-	IconChartLine,
-	IconChartBar,
-	IconMessages,
-	IconPackages,
-	IconUsers,
-	IconLogs,
-	IconKey,
-} from "@tabler/icons-react";
+	SlidersHorizontal as IconAdjustmentsHorizontal,
+	MessagesSquare as IconMessages,
+	ShieldCheck as IconShieldLock,
+	ChartColumn as IconChartBar,
+	ChartLine as IconChartLine,
+	Plug as IconPlugConnected,
+	ScrollText as IconLogs,
+	Boxes as IconPackages,
+	KeyRound as IconKey,
+	Users as IconUsers,
+} from "lucide-react";
 
 interface NavItem {
 	href: string;
@@ -87,39 +87,67 @@ const NAV: NavItem[] = [
 export function SidebarNav({
 	collapsed,
 	onNavigate,
+	footer = false,
 }: {
 	collapsed: boolean;
 	onNavigate?: () => void;
+	footer?: boolean;
 }) {
 	// Suspends here, inside the shell's own boundary, until the gateway answers with the identity.
 	const { can } = useSession();
 	const pathname = usePathname();
-	return (
-		<>
-			{NAV.filter((item) => can(...item.requires)).map(
-				({ href, label, icon: Icon }) => {
-					const active =
-						href === "/" ? pathname === "/" : pathname.startsWith(href);
-					return (
-						<Link
-							aria-current={active ? "page" : undefined}
-							aria-label={collapsed ? label : undefined}
-							className={cn(
-								"flex min-h-11 items-center gap-3 rounded-(--ui-radius-control) px-3.5 py-2.5 text-fg-muted text-sm transition-colors hover:bg-secondary hover:text-fg focus-visible:outline-2 focus-visible:outline-focus",
-								collapsed && "justify-center px-0",
-								active && "bg-secondary font-medium text-secondary-fg",
-							)}
-							href={href}
-							key={href}
-							onClick={onNavigate}
-							title={collapsed ? label : undefined}
-						>
-							<Icon aria-hidden className="size-4.5 shrink-0" />
-							{!collapsed && <span className="truncate">{label}</span>}
-						</Link>
-					);
+	const groups = footer
+		? [{ label: null, paths: ["/settings"] }]
+		: [
+				{ label: null, paths: ["/", "/metrics"] },
+				{
+					label: "Gateway",
+					paths: ["/models", "/keys", "/playground", "/logs"],
 				},
-			)}
-		</>
+				{ label: "Administration", paths: ["/extensions", "/users", "/audit"] },
+			];
+	return (
+		<div className="flex flex-col gap-4">
+			{groups.map(({ label: groupLabel, paths }) => {
+				const items = NAV.filter(
+					(item) => paths.includes(item.href) && can(...item.requires),
+				);
+				if (items.length === 0) {
+					return null;
+				}
+				return (
+					<div className="flex flex-col gap-0.5" key={groupLabel ?? "main"}>
+						{!collapsed && groupLabel ? (
+							<p className="px-2 pb-1 font-medium text-muted-foreground text-xs">
+								{groupLabel}
+							</p>
+						) : null}
+						{items.map(({ href, label, icon: Icon }) => {
+							const active =
+								href === "/" ? pathname === "/" : pathname.startsWith(href);
+							return (
+								<Link
+									aria-current={active ? "page" : undefined}
+									aria-label={collapsed ? label : undefined}
+									className={cn(
+										"flex items-center gap-2 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent/50 hover:text-accent-foreground/80 focus-visible:outline-2 focus-visible:outline-ring",
+										collapsed && "justify-center px-0",
+										active &&
+											"bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary",
+									)}
+									href={href}
+									key={href}
+									onClick={onNavigate}
+									title={collapsed ? label : undefined}
+								>
+									<Icon aria-hidden className="size-4 shrink-0" />
+									{!collapsed && <span className="truncate">{label}</span>}
+								</Link>
+							);
+						})}
+					</div>
+				);
+			})}
+		</div>
 	);
 }

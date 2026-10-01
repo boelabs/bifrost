@@ -7,19 +7,19 @@ import { Button } from "#/components/ui/button";
 import { Status } from "#/components/ui/status";
 
 import {
+	Download as IconDownload,
+	RefreshCw as IconRefresh,
+	RotateCcw as IconRotate2,
+	Play as IconPlayerPlay,
+} from "lucide-react";
+
+import {
 	type VideoReference,
 	type VideoSettings,
 	videoContentUrl,
 	type VideoJob,
 	type VideoRun,
 } from "./videos";
-
-import {
-	IconPlayerPlay,
-	IconDownload,
-	IconRefresh,
-	IconRotate2,
-} from "@tabler/icons-react";
 
 import {
 	MESSAGE_ACTION_ICON,

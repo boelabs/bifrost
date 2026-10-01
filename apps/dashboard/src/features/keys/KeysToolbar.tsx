@@ -5,7 +5,7 @@ import { SearchField } from "#/shared/components/SearchField.tsx";
 import { Can } from "#/features/auth/session.tsx";
 import type { KeysFilters } from "./filters.ts";
 import { Button } from "#/components/ui/button";
-import { IconPlus } from "@tabler/icons-react";
+import { Plus as IconPlus } from "lucide-react";
 import { useNewKey } from "./KeysView.tsx";
 
 /**
@@ -26,7 +26,7 @@ export function KeysToolbar({ filters }: { filters: KeysFilters }) {
 			/>
 			<Can permissions={["keys:write"]}>
 				<Button onClick={openNew} size="sm">
-					<IconPlus aria-hidden className="mr-2" size={15} />
+					<IconPlus aria-hidden className="size-4" />
 					New key
 				</Button>
 			</Can>

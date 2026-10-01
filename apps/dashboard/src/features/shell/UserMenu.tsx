@@ -21,13 +21,13 @@ import {
 } from "#/components/ui/menu";
 
 import {
-	IconDeviceDesktop,
-	IconSelector,
-	IconLogout,
-	IconCheck,
-	IconMoon,
-	IconSun,
-} from "@tabler/icons-react";
+	ChevronsUpDown as IconSelector,
+	Monitor as IconDeviceDesktop,
+	LogOut as IconLogout,
+	Check as IconCheck,
+	Moon as IconMoon,
+	Sun as IconSun,
+} from "lucide-react";
 
 export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
 	const { identity, signOut } = useSession();
@@ -63,12 +63,12 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
 			<MenuRoot>
 				<MenuTrigger
 					aria-label={`User menu for ${name}`}
-					className="w-full justify-start gap-3 p-2 text-left hover:bg-secondary"
+					className="inline-flex size-9 items-center justify-center gap-2 rounded-lg p-0 text-left outline-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring sm:size-8"
 					title={collapsed ? name : undefined}
 				>
 					<span
 						aria-hidden
-						className="flex size-8 shrink-0 items-center justify-center rounded-(--ui-radius-control) border border-border/50 bg-card font-semibold text-sm"
+						className="flex size-7 shrink-0 select-none items-center justify-center rounded-full bg-muted font-medium text-xs"
 					>
 						{name.slice(0, 1).toUpperCase()}
 					</span>
@@ -90,9 +90,9 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
 					)}
 				</MenuTrigger>
 				<MenuPortal>
-					<MenuPositioner align="start" side="top" sideOffset={8}>
-						<MenuPopup className="w-64">
-							<div className="min-w-0 px-3 py-3">
+					<MenuPositioner align="end" side="bottom" sideOffset={8}>
+						<MenuPopup className="min-w-48">
+							<div className="flex min-w-0 flex-col px-2 py-1.5">
 								<p className="truncate font-semibold text-sm">{name}</p>
 								<p className="truncate text-fg-muted text-xs">{role}</p>
 							</div>

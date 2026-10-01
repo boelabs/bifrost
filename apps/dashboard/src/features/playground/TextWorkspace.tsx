@@ -237,7 +237,7 @@ function SettingsDialog({
 								</Tabs.Tab>
 							) : null}
 						</Tabs.List>
-						<Tabs.Panel className="mt-4 space-y-5" value="generation">
+						<Tabs.Panel className="mt-4 flex flex-col gap-4" value="generation">
 							{efforts.length ? (
 								<Select
 									label="Reasoning effort"
@@ -305,7 +305,10 @@ function SettingsDialog({
 								</NumberField.Root>
 							))}
 						</Tabs.Panel>
-						<Tabs.Panel className="mt-4 space-y-5" value="instructions">
+						<Tabs.Panel
+							className="mt-4 flex flex-col gap-4"
+							value="instructions"
+						>
 							<Textarea
 								label="System prompt"
 								onChange={(event) =>
@@ -320,7 +323,7 @@ function SettingsDialog({
 							/>
 						</Tabs.Panel>
 						{hasAdvanced ? (
-							<Tabs.Panel className="mt-4 space-y-5" value="advanced">
+							<Tabs.Panel className="mt-4 flex flex-col gap-4" value="advanced">
 								{advancedControls.map((control) => {
 									const values = parameterValues(model, control.key);
 									return values.length ? (

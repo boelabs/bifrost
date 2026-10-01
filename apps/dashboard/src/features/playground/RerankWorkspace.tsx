@@ -1,7 +1,6 @@
 "use client";
 
 import { MESSAGE_ACTION, MESSAGE_ACTION_ICON } from "./MessageParts";
-import { IconChevronDown, IconRotate2 } from "@tabler/icons-react";
 import type { ModelChoice, PlaygroundModel } from "./models";
 import { NumberField } from "#/components/ui/number-field";
 import { buttonStyles } from "#/components/ui/button";
@@ -32,6 +31,11 @@ import {
 	rankingFrom,
 	runRerank,
 } from "./rerank";
+
+import {
+	ChevronDown as IconChevronDown,
+	RotateCcw as IconRotate2,
+} from "lucide-react";
 
 /** One document per line, the same rule the embedding batch uses. */
 export function documentsFrom(draft: string): string[] {
@@ -67,7 +71,7 @@ function Documents({
 	return (
 		<section
 			aria-label="Documents"
-			className="mb-2 overflow-hidden rounded-[28px] border border-border bg-surface-2 max-sm:rounded-2xl"
+			className="mb-2 overflow-hidden rounded-2xl border border-border bg-background"
 		>
 			<button
 				aria-expanded={open}

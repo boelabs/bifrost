@@ -1,33 +1,18 @@
 "use client";
 
 import { type AppearanceProps, appearanceStyle } from "./appearance.ts";
-import { tv, type VariantProps } from "tailwind-variants";
+import { badgeVariants } from "./primitives/badge";
 import type { HTMLAttributes } from "react";
 
-/**
- * Outcome pill for logs and health. BaseLayer's own Badge only ships attention/neutral/danger, and
- * operation outcomes need success and warning too — so this extends the same shape (rounded-4xl,
- * semibold, text-xs) with the success/warning tokens declared in styles.css, rather than inventing a
- * second badge language.
- */
-const status = tv({
-	base: "inline-flex items-center justify-center gap-1.5 rounded-4xl px-3 py-1.5 font-semibold text-xs",
-	variants: {
-		tone: {
-			neutral: "bg-secondary text-secondary-fg",
-			success: "bg-success/15 text-success",
-			warning: "bg-warning/20 text-warning",
-			danger: "bg-danger/15 text-danger",
-			muted: "border border-border text-fg-muted",
-		},
-	},
-	defaultVariants: { tone: "neutral" },
-});
-
-type StatusProps = VariantProps<typeof status> &
-	HTMLAttributes<HTMLSpanElement> &
-	AppearanceProps;
-
+const tones = {
+	neutral: "secondary",
+	success: "success",
+	warning: "warning",
+	danger: "error",
+	muted: "outline",
+} as const;
+type StatusProps = HTMLAttributes<HTMLSpanElement> &
+	AppearanceProps & { tone?: keyof typeof tones };
 const Status = ({
 	className,
 	tone,
@@ -37,7 +22,7 @@ const Status = ({
 	...props
 }: StatusProps) => (
 	<span
-		className={status({ tone, className })}
+		className={badgeVariants({ variant: tones[tone ?? "neutral"], className })}
 		style={appearanceStyle({ borderRadius, width }, style)}
 		{...props}
 	/>

@@ -1,11 +1,11 @@
 "use client";
 
+import { Select, SelectItem, SearchableSelect } from "#/components/ui/select";
 import { RefreshControls } from "#/shared/components/RefreshControls.tsx";
 import { RangeFilter } from "#/shared/components/RangeFilter.tsx";
 import { SearchField } from "#/shared/components/SearchField.tsx";
 import { useSearchWriter } from "#/shared/lib/useSearchWriter.ts";
-import { Select, SelectItem } from "#/components/ui/select";
-import { IconFilterOff } from "@tabler/icons-react";
+import { FilterX as IconFilterOff } from "lucide-react";
 import { Button } from "#/components/ui/button";
 
 import {
@@ -52,7 +52,6 @@ export function LogsToolbar({
 			/>
 			<Select
 				aria-label="Filter by outcome"
-				borderRadius="full"
 				onValueChange={(key) =>
 					filter({ outcome: !key || key === ALL ? undefined : key })
 				}
@@ -67,22 +66,17 @@ export function LogsToolbar({
 				))}
 			</Select>
 			{models.length > 0 ? (
-				<Select
+				<SearchableSelect
 					aria-label="Filter by public model"
-					borderRadius="full"
+					clearLabel="All models"
+					items={models.map((model) => ({ value: model, label: model }))}
 					onValueChange={(key) =>
 						filter({ publicModel: !key || key === ALL ? undefined : key })
 					}
+					searchPlaceholder="Search public models"
 					size="sm"
-					value={publicModel ?? ALL}
-				>
-					<SelectItem value={ALL}>All models</SelectItem>
-					{models.map((model) => (
-						<SelectItem key={model} value={model}>
-							{model}
-						</SelectItem>
-					))}
-				</Select>
+					value={publicModel ?? null}
+				/>
 			) : null}
 			<SearchField
 				label="Filter by actor"
@@ -96,7 +90,7 @@ export function LogsToolbar({
 					size="sm"
 					variant="ghost"
 				>
-					<IconFilterOff aria-hidden className="mr-1" size={15} />
+					<IconFilterOff aria-hidden className="size-4" />
 					Clear filters
 				</Button>
 			) : null}

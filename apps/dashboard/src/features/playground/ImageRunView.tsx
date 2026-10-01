@@ -1,11 +1,15 @@
 "use client";
 
-import { IconDownload, IconRotate2 } from "@tabler/icons-react";
 import { ResponseLoader } from "./ResponseLoader";
 import { ErrorNote } from "#/components/ui/page";
 import { Button } from "#/components/ui/button";
 import { Status } from "#/components/ui/status";
 import type { ImageRun } from "./images";
+
+import {
+	Download as IconDownload,
+	RotateCcw as IconRotate2,
+} from "lucide-react";
 
 import {
 	MESSAGE_ACTION_ICON,

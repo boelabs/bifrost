@@ -35,8 +35,9 @@ export const chartTooltipStyle = {
 	background: "var(--popover)",
 	color: "var(--fg)",
 	border: "1px solid var(--border)",
-	borderRadius: "var(--ui-radius-item)",
+	borderRadius: "var(--radius-lg)",
 	fontSize: 12,
+	boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.05)",
 };
 
 /** Compare same-unit series from zero so each curve matches its tooltip value. */

@@ -4,7 +4,7 @@ import { type Column, DataTable, Dash, Mono } from "#/components/ui/datatable";
 import { type AuditFilters, isFiltered, PAGE_SIZE } from "./filters.ts";
 import { useSearchWriter } from "#/shared/lib/useSearchWriter.ts";
 import { Pagination } from "#/shared/components/Pagination.tsx";
-import { IconDownload } from "@tabler/icons-react";
+import { Download as IconDownload } from "lucide-react";
 import { EmptyState } from "#/components/ui/page";
 import { downloadCsv } from "#/shared/lib/csv.ts";
 import { Button } from "#/components/ui/button";
@@ -182,7 +182,7 @@ export function AuditTable({
 						size="sm"
 						variant="secondary"
 					>
-						<IconDownload aria-hidden className="mr-1" size={15} />
+						<IconDownload aria-hidden className="size-4" />
 						CSV
 					</Button>
 				}

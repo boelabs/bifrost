@@ -1,30 +1,15 @@
 "use client";
 
+import { Frame, FramePanel, FrameFooter } from "#/components/ui/frame";
 import type { StatusProps } from "#/components/ui/status";
-import type { TablerIcon } from "@tabler/icons-react";
 import { Status } from "#/components/ui/status";
-import { Card } from "#/components/ui/card";
+import type { LucideIcon } from "lucide-react";
 
 export interface StatNote {
 	text: string;
 	tone?: StatusProps["tone"];
-	/** The unrounded figure, for a pointer that rests on the pill. */
 	exact?: string;
 }
-
-/**
- * One headline number, at the size a number that leads a page should be read at.
- *
- * The shape is fixed — a label row, the figure, a caption — so the overview's tiles and the metrics
- * page's tiles are the same object twice rather than two arrangements of the same data.
- *
- * The pill sits under the figure rather than beside it, where a reference design would put it. Four
- * tiles across a 1440px window leave each one about 210px of usable width, and neither `$5495.70` at
- * 32px nor the label `Consumer cost` shares a line with a pill in that: laid out either way, two
- * tiles wrapped or truncated and two did not, which reads as a bug rather than as a layout. On its
- * own line every tile is the same shape at every width. Anything longer than a pill belongs in the
- * caption, where it can be a sentence.
- */
 export function StatCard({
 	label,
 	value,
@@ -35,38 +20,44 @@ export function StatCard({
 }: {
 	label: string;
 	value: string;
-	/** The unrounded figure, shown on hover where `value` is compact. */
 	exact?: string;
-	icon?: TablerIcon;
+	icon?: LucideIcon;
 	note?: StatNote;
 	detail: string;
 }) {
 	return (
-		<Card className="flex min-w-0 flex-col p-7">
-			<div className="flex min-w-0 items-center gap-2.5">
-				{Icon ? (
-					<Icon
-						aria-hidden
-						className="size-4.5 shrink-0 text-fg-muted"
-						stroke={1.6}
-					/>
-				) : null}
-				<h2 className="font-medium text-fg-muted text-sm">{label}</h2>
-			</div>
-			<p
-				className="mt-6 font-semibold text-[2rem] tabular-nums leading-none tracking-tight"
-				title={exact}
-			>
-				{value}
-			</p>
-			{note ? (
-				<div className="mt-3.5">
-					<Status title={note.exact} tone={note.tone ?? "neutral"}>
+		<Frame className="min-w-0">
+			<FramePanel className="flex flex-1 flex-col gap-2 p-4">
+				<div className="flex items-start justify-between gap-2">
+					<h2 className="text-muted-foreground text-xs">{label}</h2>
+					{Icon ? (
+						<Icon
+							aria-hidden
+							className="size-4 shrink-0 text-muted-foreground"
+						/>
+					) : null}
+				</div>
+				<p
+					className="font-semibold text-2xl text-foreground tabular-nums"
+					title={exact}
+				>
+					{value}
+				</p>
+			</FramePanel>
+			<FrameFooter className="flex min-w-0 items-center gap-2 px-3 pt-2 pb-1.5 text-muted-foreground text-xs">
+				{note ? (
+					<Status
+						className="shrink-0"
+						title={note.exact}
+						tone={note.tone ?? "neutral"}
+					>
 						{note.text}
 					</Status>
-				</div>
-			) : null}
-			<p className="mt-auto pt-5 text-fg-muted text-xs">{detail}</p>
-		</Card>
+				) : null}
+				<span className="truncate" title={detail}>
+					{detail}
+				</span>
+			</FrameFooter>
+		</Frame>
 	);
 }

@@ -17,12 +17,12 @@ import { Status } from "#/components/ui/status";
 import { useState } from "react";
 
 import {
-	IconCheck,
-	IconUsers,
-	IconTrash,
-	IconBan,
-	IconKey,
-} from "@tabler/icons-react";
+	Trash2 as IconTrash,
+	KeyRound as IconKey,
+	Check as IconCheck,
+	Users as IconUsers,
+	Ban as IconBan,
+} from "lucide-react";
 
 import {
 	setPasswordAction,
@@ -175,27 +175,27 @@ export function UsersTable({
 						actions={[
 							{
 								label: "Sessions",
-								icon: <IconUsers aria-hidden size={15} />,
+								icon: <IconUsers aria-hidden className="size-4" />,
 								onSelect: () => setInspecting(user),
 							},
 							{
 								label: "Reset password",
-								icon: <IconKey aria-hidden size={15} />,
+								icon: <IconKey aria-hidden className="size-4" />,
 								onSelect: () => setResetting(user),
 							},
 							{
 								label: user.enabled ? "Disable" : "Enable",
 								icon: user.enabled ? (
-									<IconBan aria-hidden size={15} />
+									<IconBan aria-hidden className="size-4" />
 								) : (
-									<IconCheck aria-hidden size={15} />
+									<IconCheck aria-hidden className="size-4" />
 								),
 								disabled: self,
 								onSelect: () => void toggle(user),
 							},
 							{
 								label: "Delete",
-								icon: <IconTrash aria-hidden size={15} />,
+								icon: <IconTrash aria-hidden className="size-4" />,
 								danger: true,
 								disabled: self,
 								onSelect: () => void remove(user),

@@ -1,38 +1,51 @@
 import { Skeleton } from "#/shared/components/Skeleton.tsx";
 import { cn } from "cn";
 
-/**
- * What the sidebar shows while the gateway is still deciding who this operator is.
- *
- * Both shapes copy the classes of the real thing — the nav link's `min-h-10 … px-3 py-2` and the
- * user trigger's `gap-3 p-2` with its `size-8` avatar — so the sidebar is already the right height
- * and the right rhythm before any answer arrives.
- */
+const NAV_GROUPS = [
+	{ label: null, items: ["Overview", "Metrics"] },
+	{ label: "Gateway", items: ["Models", "API keys", "Playground", "Logs"] },
+	{ label: "Administration", items: ["Extensions", "Users", "Audit"] },
+];
 
-/** Eight rows: the role decides the real count (four for a viewer, ten for an owner). */
-const NAV_ITEMS = 8;
-
-export function NavSkeleton({ collapsed }: { collapsed: boolean }) {
+export function NavSkeleton({
+	collapsed,
+	footer = false,
+}: {
+	collapsed: boolean;
+	footer?: boolean;
+}) {
 	return (
-		<div aria-busy="true" aria-label="Loading navigation" role="status">
-			{Array.from({ length: NAV_ITEMS }, (_, index) => (
-				<div
-					className={cn(
-						"flex min-h-10 items-center gap-3 px-3 py-2",
-						collapsed && "justify-center px-0",
-					)}
-					// biome-ignore lint/suspicious/noArrayIndexKey: placeholder rows have no identity
-					key={index}
-				>
-					<Skeleton className="size-4.5 shrink-0 rounded-md" />
-					{collapsed ? null : (
-						<Skeleton
-							className="h-3.5"
-							width={`${[64, 56, 60, 72, 80, 48, 84, 64][index] ?? 64}px`}
-						/>
-					)}
-				</div>
-			))}
+		<div
+			aria-busy="true"
+			aria-label="Loading navigation"
+			className="flex flex-col gap-4"
+			role="status"
+		>
+			{(footer ? [{ label: null, items: ["Settings"] }] : NAV_GROUPS).map(
+				({ label, items }) => (
+					<div className="flex flex-col gap-0.5" key={label ?? "main"}>
+						{!collapsed && label ? (
+							<div className="px-2 pb-1 text-xs">
+								<Skeleton className="h-4" width={`${label.length * 6}px`} />
+							</div>
+						) : null}
+						{items.map((item) => (
+							<div
+								className={cn(
+									"flex items-center gap-2 p-2",
+									collapsed && "justify-center px-0",
+								)}
+								key={item}
+							>
+								<Skeleton className="size-4 shrink-0 rounded-md" />
+								{collapsed ? null : (
+									<Skeleton className="h-5" width={`${item.length * 7}px`} />
+								)}
+							</div>
+						))}
+					</div>
+				),
+			)}
 		</div>
 	);
 }
@@ -42,10 +55,10 @@ export function UserMenuSkeleton({ collapsed }: { collapsed: boolean }) {
 		<div
 			aria-busy="true"
 			aria-label="Loading account"
-			className="flex w-full items-center gap-3 p-2"
+			className="flex size-9 items-center justify-center sm:size-8"
 			role="status"
 		>
-			<Skeleton className="size-8 shrink-0 rounded-(--ui-radius-control)" />
+			<Skeleton className="size-7 shrink-0 rounded-full" />
 			{collapsed ? null : (
 				<span className="min-w-0 flex-1">
 					<Skeleton className="h-3.5" width="60%" />

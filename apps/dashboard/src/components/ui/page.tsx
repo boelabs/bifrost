@@ -1,20 +1,26 @@
 "use client";
 
 import { type AppearanceProps, appearanceStyle } from "./appearance.ts";
+import { Alert, AlertDescription } from "./primitives/alert";
 import type { CSSProperties, ReactNode } from "react";
 import { tv } from "tailwind-variants";
+import { ContentPanel } from "./card";
 
-/**
- * Page furniture shared by every feature: header, empty state, and inline error. Written in
- * BaseLayer's idiom (tv slots, its tokens) so the chrome and the components look like one system.
- */
+import {
+	EmptyDescription,
+	EmptyContent,
+	EmptyHeader,
+	EmptyTitle,
+	Empty,
+} from "./primitives/empty";
+
+/** Page headings, empty states, and errors share the dashboard primitives. */
 const page = tv({
 	slots: {
-		header: "flex flex-wrap items-start justify-between gap-4 pb-7",
-		heading:
-			"font-semibold text-[1.75rem] text-fg leading-tight tracking-tight",
-		subtitle: "mt-1.5 max-w-2xl text-fg-muted text-sm",
-		actions: "flex items-center gap-2",
+		header: "flex flex-wrap items-start justify-between gap-4",
+		heading: "font-semibold text-foreground text-xl",
+		subtitle: "mt-1 text-muted-foreground text-sm",
+		actions: "flex min-w-0 max-w-full flex-wrap items-center gap-2",
 	},
 });
 
@@ -44,6 +50,7 @@ export function EmptyState({
 	title,
 	description,
 	children,
+	framed = true,
 	borderRadius,
 	width,
 	style,
@@ -51,19 +58,29 @@ export function EmptyState({
 	title: string;
 	description?: string;
 	children?: ReactNode;
+	framed?: boolean;
 	style?: CSSProperties;
 } & AppearanceProps) {
-	return (
-		<div
-			className="flex flex-col items-center justify-center gap-2 rounded-(--ui-radius-surface) border border-border/50 border-dashed px-6 py-16 text-center"
+	const content = (
+		<Empty>
+			<EmptyHeader>
+				<EmptyTitle>{title}</EmptyTitle>
+				{description ? (
+					<EmptyDescription>{description}</EmptyDescription>
+				) : null}
+			</EmptyHeader>
+			{children ? <EmptyContent>{children}</EmptyContent> : null}
+		</Empty>
+	);
+	return framed ? (
+		<ContentPanel
+			className="p-0"
 			style={appearanceStyle({ borderRadius, width }, style)}
 		>
-			<p className="font-medium text-fg">{title}</p>
-			{description ? (
-				<p className="max-w-md text-fg-muted text-sm">{description}</p>
-			) : null}
-			{children ? <div className="mt-4">{children}</div> : null}
-		</div>
+			{content}
+		</ContentPanel>
+	) : (
+		content
 	);
 }
 
@@ -74,13 +91,12 @@ export function ErrorNote({
 	style,
 }: { children: ReactNode; style?: CSSProperties } & AppearanceProps) {
 	return (
-		<p
-			className="rounded-(--ui-radius-control) border border-danger/30 bg-danger/10 px-3 py-2 font-medium text-danger text-sm"
-			role="alert"
+		<Alert
 			style={appearanceStyle({ borderRadius, width }, style)}
+			variant="error"
 		>
-			{children}
-		</p>
+			<AlertDescription>{children}</AlertDescription>
+		</Alert>
 	);
 }
 

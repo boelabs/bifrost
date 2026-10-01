@@ -4,11 +4,11 @@ import type { DraftAttachment } from "./Composer";
 import { Button } from "#/components/ui/button";
 
 import {
-	IconChevronRight,
-	IconChevronLeft,
-	IconFileText,
-	IconX,
-} from "@tabler/icons-react";
+	ChevronRight as IconChevronRight,
+	ChevronLeft as IconChevronLeft,
+	FileText as IconFileText,
+	X as IconX,
+} from "lucide-react";
 
 export function ComposerAttachments({
 	files,
@@ -121,7 +121,7 @@ export function ComposerAttachments({
 					type="button"
 					variant="secondary"
 				>
-					<IconChevronLeft aria-hidden size={16} />
+					<IconChevronLeft aria-hidden className="size-4" />
 				</Button>
 			) : null}
 			{edges.right ? (
@@ -134,7 +134,7 @@ export function ComposerAttachments({
 					type="button"
 					variant="secondary"
 				>
-					<IconChevronRight aria-hidden size={16} />
+					<IconChevronRight aria-hidden className="size-4" />
 				</Button>
 			) : null}
 		</div>

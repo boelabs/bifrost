@@ -100,7 +100,7 @@ export function ComposerView({
 			<div className="relative isolate z-10 w-full">
 				<motion.div
 					aria-hidden="true"
-					className="pointer-events-none absolute inset-0 z-0 overflow-clip bg-surface-2 bg-clip-padding shadow-sm max-sm:hidden"
+					className="pointer-events-none absolute inset-0 z-0 overflow-clip border bg-background bg-clip-padding shadow-xs/5 max-sm:hidden"
 					data-composer-surface="true"
 					layout={shouldAnimateLayout}
 					layoutDependency={layoutDependency}
@@ -127,7 +127,7 @@ export function ComposerView({
 						"relative z-10 m-0 grid w-full min-w-0 cursor-text grid-cols-[auto_minmax(0,1fr)_auto] overflow-visible border-0 px-2 pt-2.5 pb-2 text-fg contain-inline-size max-sm:p-2",
 						"[grid-template-areas:'header_header_header'_'leading_primary_trailing'_'._footer_.']",
 						"motion-safe:transition-colors motion-safe:duration-200 motion-safe:ease-in-out sm:grid-rows-[auto_minmax(42px,auto)_auto]",
-						"max-sm:overflow-hidden max-sm:border max-sm:border-border max-sm:bg-surface-2 max-sm:shadow-none max-sm:transition-none",
+						"max-sm:overflow-hidden max-sm:border max-sm:border-border max-sm:bg-background max-sm:shadow-none max-sm:transition-none",
 						!isExpanded && "min-h-13 py-1.25",
 						isExpanded &&
 							"[grid-template-areas:'header_header_header'_'primary_primary_primary'_'leading_footer_trailing']",

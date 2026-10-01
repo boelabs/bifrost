@@ -5,24 +5,24 @@ import { buildUsageSeries, getOverviewMetrics } from "./overview-data";
 import { type StatusProps, Status } from "#/components/ui/status";
 import { RequestOutcomes, Reliability } from "./RequestOutcomes";
 import { aggregateCacheUsage, tokenCount } from "./cache-usage";
+import { ContentPanel as Card } from "#/components/ui/card";
 import type { Readiness } from "#/shared/api/health.ts";
 import type { UsageBucket } from "./overview-data";
 import { downloadCsv } from "#/shared/lib/csv.ts";
 import { ActivityChart } from "./ActivityChart";
 import { Button } from "#/components/ui/button";
 import type { Summary, UsageRow } from "./api";
-import { Card } from "#/components/ui/card";
 import { CacheUsage } from "./CacheUsage";
 import { StatCard } from "./StatCard";
 
 import {
-	IconCurrencyDollar,
-	IconActivity,
-	IconDownload,
-	IconStack2,
-	IconServer,
-	IconClock,
-} from "@tabler/icons-react";
+	DollarSign as IconCurrencyDollar,
+	Activity as IconActivity,
+	Download as IconDownload,
+	Layers as IconStack2,
+	Server as IconServer,
+	Clock as IconClock,
+} from "lucide-react";
 
 const count = new Intl.NumberFormat("en-US");
 const compact = new Intl.NumberFormat("en-US", {
@@ -198,7 +198,7 @@ function UsageExport({ rows, name }: { rows: UsageRow[]; name: string }) {
 			size="sm"
 			variant="ghost"
 		>
-			<IconDownload aria-hidden className="mr-1" size={15} />
+			<IconDownload aria-hidden className="size-4" />
 			CSV
 		</Button>
 	);
@@ -231,7 +231,7 @@ function UsagePanel({
 	emptyMessage: string;
 }) {
 	return (
-		<Card aria-labelledby={id} className="flex min-w-0 flex-col p-7">
+		<Card aria-labelledby={id} className="flex min-w-0 flex-col p-5">
 			<div className="flex items-start justify-between gap-3">
 				<div>
 					<h2 className="font-semibold" id={id}>
@@ -300,10 +300,10 @@ export function Overview({
 	);
 
 	return (
-		<div className="space-y-6">
+		<div className="flex flex-col gap-6">
 			<section
 				aria-label="Usage summary"
-				className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"
+				className="grid grid-cols-2 gap-3 lg:grid-cols-4"
 			>
 				<StatCard
 					detail={`Across ${modelCount} public ${modelCount === 1 ? "model" : "models"}`}
@@ -351,9 +351,9 @@ export function Overview({
 				/>
 			</section>
 
-			<div className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+			<div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
 				<ActivityChart bucket={bucket} rows={series} />
-				<div className="grid min-w-0 content-start gap-5">
+				<div className="grid min-w-0 content-start gap-4">
 					<RequestOutcomes metrics={metrics} />
 					<Reliability metrics={metrics} />
 				</div>
@@ -362,7 +362,7 @@ export function Overview({
 				records={metrics.requests}
 				usage={aggregateCacheUsage(byModel)}
 			/>
-			<div className="grid items-start gap-5">
+			<div className="grid items-start gap-4">
 				<UsagePanel
 					caption="Usage by public model"
 					columns={usageColumns}

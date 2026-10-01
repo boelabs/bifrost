@@ -1,6 +1,5 @@
 "use client";
 
-import { IconSearch, IconSelector } from "@tabler/icons-react";
 import { Combobox } from "#/components/ui/combobox";
 import type { Capability } from "./capabilities";
 import { useMemo, useState } from "react";
@@ -12,6 +11,11 @@ import {
 	capabilityGroups,
 	choiceKey,
 } from "./models";
+
+import {
+	ChevronsUpDown as IconSelector,
+	Search as IconSearch,
+} from "lucide-react";
 
 /**
  * The model picker: a select that can be searched, grouped by what the model can do.

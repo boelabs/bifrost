@@ -1,4 +1,4 @@
-import { IconFileText } from "@tabler/icons-react";
+import { FileText as IconFileText } from "lucide-react";
 import type { FileUIPart } from "ai";
 
 import {
@@ -53,7 +53,7 @@ export function MessageAttachments({
 						title={name}
 					>
 						<div className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-border bg-secondary text-secondary-fg">
-							<IconFileText aria-hidden size={20} />
+							<IconFileText aria-hidden className="size-5" />
 						</div>
 						<div className="flex h-full min-w-0 flex-col justify-between py-0.5">
 							<span className="truncate font-medium text-xs">{name}</span>

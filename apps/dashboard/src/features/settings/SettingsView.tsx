@@ -3,12 +3,12 @@
 import { type Column, DataTable, Mono } from "#/components/ui/datatable";
 import { useMutation, useRowActions } from "#/shared/lib/mutation.ts";
 import { clearCacheAction, deleteFallbackAction } from "./actions.ts";
+import { Plus as IconPlus, Trash2 as IconTrash } from "lucide-react";
 import { useNotify } from "#/shared/feedback/notifications.tsx";
 import { RowActions } from "#/shared/components/RowActions.tsx";
 import { Can, useSession } from "#/features/auth/session.tsx";
+import { ContentPanel as Card } from "#/components/ui/card";
 import { useConfirm } from "#/shared/feedback/confirm.tsx";
-import { IconPlus, IconTrash } from "@tabler/icons-react";
-import { Card, CardContent } from "#/components/ui/card";
 import { useRefresh } from "#/shared/lib/useRefresh.ts";
 import { FallbackDialog } from "./FallbackDialog.tsx";
 import { EmptyState } from "#/components/ui/page";
@@ -114,7 +114,7 @@ export function SettingsView({
 						actions={[
 							{
 								label: "Delete chain",
-								icon: <IconTrash aria-hidden size={15} />,
+								icon: <IconTrash aria-hidden className="size-4" />,
 								danger: true,
 								onSelect: () => void removeChain(row),
 							},
@@ -128,8 +128,8 @@ export function SettingsView({
 	return (
 		<>
 			<div className="flex flex-col gap-6">
-				<Card>
-					<CardContent className="flex flex-col gap-6 p-6">
+				<Card className="p-0">
+					<div className="flex flex-col gap-6 p-5">
 						<div>
 							<h2 className="font-semibold text-fg">Router</h2>
 							<p className="pt-1 text-fg-muted text-sm">
@@ -153,12 +153,12 @@ export function SettingsView({
 							than eight more boxes. Set them through{" "}
 							<Mono>PUT /admin/router-settings</Mono> for now.
 						</p>
-					</CardContent>
+					</div>
 				</Card>
 
 				{sessions ? (
-					<Card>
-						<CardContent className="flex flex-col gap-6 p-6">
+					<Card className="p-0">
+						<div className="flex flex-col gap-6 p-5">
 							<div>
 								<h2 className="font-semibold text-fg">Operator sessions</h2>
 								<p className="pt-1 text-fg-muted text-sm">
@@ -175,15 +175,15 @@ export function SettingsView({
 								}}
 								settings={sessions}
 							/>
-						</CardContent>
+						</div>
 					</Card>
 				) : null}
 
 				{FALLBACK_KINDS.map((kind) => {
 					const rows = chains.filter((row) => row.reason === kind.reason);
 					return (
-						<Card key={kind.reason}>
-							<CardContent className="p-6">
+						<Card className="p-0" key={kind.reason}>
+							<div className="p-5">
 								<div className="flex flex-wrap items-start justify-between gap-3 pb-4">
 									<div>
 										<h2 className="font-semibold text-fg">{kind.title}</h2>
@@ -196,7 +196,7 @@ export function SettingsView({
 											onClick={() => setAddingFallback(kind.reason)}
 											size="sm"
 										>
-											<IconPlus aria-hidden className="mr-2" size={15} />
+											<IconPlus aria-hidden className="size-4" />
 											New chain
 										</Button>
 									</Can>
@@ -204,6 +204,7 @@ export function SettingsView({
 								{rows.length === 0 ? (
 									<EmptyState
 										description={kind.empty}
+										framed={false}
 										title="No chain configured"
 									/>
 								) : (
@@ -213,16 +214,17 @@ export function SettingsView({
 										pagination={{ pageSize: 10 }}
 										rowKey={(row) => row.id}
 										rows={rows}
+										variant="plain"
 									/>
 								)}
-							</CardContent>
+							</div>
 						</Card>
 					);
 				})}
 
 				<Can permissions={["settings:write"]}>
-					<Card>
-						<CardContent className="flex flex-wrap items-center justify-between gap-4 p-6">
+					<Card className="p-0">
+						<div className="flex flex-wrap items-center justify-between gap-4 p-5">
 							<div>
 								<h2 className="font-semibold text-fg">Response cache</h2>
 								<p className="pt-1 text-fg-muted text-sm">
@@ -234,7 +236,7 @@ export function SettingsView({
 							<Button onClick={() => void purgeCache()} variant="secondary">
 								Clear cache
 							</Button>
-						</CardContent>
+						</div>
 					</Card>
 				</Can>
 			</div>

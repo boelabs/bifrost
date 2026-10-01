@@ -1,13 +1,13 @@
 "use client";
 
-import { overlayButtonStyles, overlayArrowStyles } from "./dialog";
 import { Menu as BaseMenu } from "@base-ui/react/menu";
+import { menuPopupVariants } from "./primitives/menu";
+import { overlayArrowStyles } from "./dialog";
 import type { ComponentProps } from "react";
 
 import {
 	type AppearanceProps,
 	mergeClassName,
-	popupStyles,
 	mergeStyle,
 	itemStyles,
 } from "./appearance";
@@ -30,7 +30,7 @@ export function MenuTrigger<Payload = unknown>({
 	return (
 		<BaseMenu.Trigger
 			{...props}
-			className={mergeClassName(overlayButtonStyles, className)}
+			className={mergeClassName("", className)}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -89,7 +89,10 @@ export function MenuPopup({
 	return (
 		<BaseMenu.Popup
 			{...props}
-			className={mergeClassName(`${popupStyles} min-w-48`, className)}
+			className={mergeClassName(
+				`${menuPopupVariants()} min-w-48 flex-col p-1 transition-opacity duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0 motion-reduce:transition-none`,
+				className,
+			)}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);

@@ -461,13 +461,13 @@ test("reasoning ends with a ready step and collapses once the answer starts", ()
 	);
 	assert.match(html, />Ready</);
 	assert.match(html, /aria-expanded="false"/);
-	assert.match(html, /tabler-icon-circle-check/);
+	assert.match(html, /lucide-circle-check/);
 	const header = html.match(
 		/<button[^>]*aria-label="Toggle reasoning"[^>]*>.*?<\/button>/,
 	)?.[0];
 	assert.ok(header);
 	assert.match(header, />Reasoning</);
-	assert.doesNotMatch(header, /Ready|tabler-icon-circle-check/);
+	assert.doesNotMatch(header, /Ready|lucide-circle-check/);
 	assert.ok(html.indexOf("Considered the options.") < html.indexOf(">Ready<"));
 	assert.ok(html.indexOf(">Ready<") < html.indexOf(">Answer<"));
 });

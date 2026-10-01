@@ -1,10 +1,10 @@
 "use client";
 
+import { ContentPanel as Card } from "#/components/ui/card";
 import { ToggleGroup } from "#/components/ui/toggle-group";
 import { metricSeries, duration } from "./metrics-data";
 import { Toggle } from "#/components/ui/toggle";
 import type { DetailedMetrics } from "./api";
-import { Card } from "#/components/ui/card";
 import { useId, useState } from "react";
 
 import {
@@ -106,7 +106,7 @@ export function MetricsChart({
 	});
 	return (
 		<Card aria-labelledby={id} className="min-w-0 overflow-hidden p-0">
-			<div className="flex flex-wrap items-start justify-between gap-4 border-border/50 border-b px-7 py-5">
+			<div className="flex flex-wrap items-start justify-between gap-4 border-border/50 border-b px-5 py-4">
 				<div>
 					<h2 className="font-semibold" id={id}>
 						{upstream ? "Deployment activity" : "Request activity"}
@@ -135,7 +135,7 @@ export function MetricsChart({
 					))}
 				</ToggleGroup>
 			</div>
-			<div className="px-4 py-6 sm:px-7">
+			<div className="p-5">
 				<TimeSeriesChart
 					bucket={data.bucket}
 					formatTick={view === "latency" ? duration : undefined}

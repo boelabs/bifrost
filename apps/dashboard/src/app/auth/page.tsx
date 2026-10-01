@@ -1,7 +1,8 @@
+import { Card, CardHeader, CardContent } from "#/components/ui/card";
 import { currentSessionIfReachable } from "#/features/auth/api.ts";
+import { BifrostMark } from "#/shared/components/BifrostMark";
 import { ThemeSelect } from "#/shared/theme/ThemeSelect.tsx";
 import { SignInForm } from "#/features/auth/SignInForm.tsx";
-import { Card } from "#/components/ui/card";
 import { redirect } from "next/navigation";
 
 /**
@@ -30,21 +31,27 @@ export default async function SignInPage(props: PageProps<"/auth">) {
 			: "/";
 
 	return (
-		<div className="relative flex min-h-dvh items-center justify-center bg-surface px-4 py-20">
-			<div className="absolute top-4 right-4 w-36">
+		<main className="relative grid min-h-dvh place-items-center bg-muted/30 p-6">
+			<div className="absolute top-4 right-4 w-28">
 				<ThemeSelect />
 			</div>
-			<Card className="w-full max-w-sm p-8">
-				<div className="pb-6">
-					<h1 className="font-semibold text-2xl text-fg tracking-tight">
-						Bifrost
-					</h1>
-					<p className="mt-1 text-fg-muted text-sm">
-						Sign in to the operator dashboard.
-					</p>
+			<div className="flex w-full max-w-sm flex-col gap-6">
+				<div className="flex items-center justify-center gap-2">
+					<BifrostMark decorative size={32} />
+					<span className="font-semibold text-lg">Bifrost</span>
 				</div>
-				<SignInForm next={target} />
-			</Card>
-		</div>
+				<Card>
+					<CardHeader>
+						<h1 className="font-semibold text-xl">Sign in</h1>
+						<p className="text-muted-foreground text-sm">
+							Sign in to the operator dashboard.
+						</p>
+					</CardHeader>
+					<CardContent>
+						<SignInForm next={target} />
+					</CardContent>
+				</Card>
+			</div>
+		</main>
 	);
 }

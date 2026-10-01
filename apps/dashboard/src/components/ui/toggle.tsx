@@ -1,13 +1,8 @@
 "use client";
 
+import { type ControlProps, mergeClassName, mergeStyle } from "./appearance";
 import { Toggle as BaseToggle } from "@base-ui/react/toggle";
-
-import {
-	type ControlProps,
-	mergeClassName,
-	controlStyles,
-	mergeStyle,
-} from "./appearance";
+import { toggleVariants } from "./primitives/toggle";
 
 export type ToggleProps = BaseToggle.Props & ControlProps;
 
@@ -24,11 +19,12 @@ export function Toggle({
 		<BaseToggle
 			{...props}
 			className={mergeClassName(
-				controlStyles({
-					size,
-					variant,
-					className:
-						"inline-flex cursor-pointer justify-center rounded-(--ui-toggle-radius,var(--ui-radius-control)) font-medium data-pressed:border-primary/40 data-pressed:bg-primary/10 data-pressed:text-primary",
+				toggleVariants({
+					size: ({ md: "default", xs: "sm", sm: "sm", lg: "lg" } as const)[
+						size
+					],
+					variant: variant === "outlined" ? "outline" : "default",
+					className: "rounded-(--ui-toggle-radius,var(--radius-lg))",
 				}),
 				className,
 			)}

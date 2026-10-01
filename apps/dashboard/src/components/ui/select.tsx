@@ -1,20 +1,28 @@
 "use client";
 
-import { Children, isValidElement, type ReactNode } from "react";
-import { IconCheck, IconChevronDown } from "@tabler/icons-react";
+import { Children, isValidElement, type ReactNode, useState } from "react";
 import { Select as BaseSelect } from "@base-ui/react/select";
 import { Combobox } from "./combobox";
 import { Field } from "./field";
 
 import {
+	ChevronDown as IconChevronDown,
+	ChevronsUpDown as IconSelector,
+	Check as IconCheck,
+} from "lucide-react";
+
+import {
 	type AppearanceProps,
 	type ControlProps,
 	mergeClassName,
-	controlStyles,
-	popupStyles,
 	itemStyles,
 	mergeStyle,
 } from "./appearance";
+
+import {
+	selectTriggerVariants,
+	selectPopupVariants,
+} from "./primitives/select";
 
 function Trigger({
 	className,
@@ -22,17 +30,18 @@ function Trigger({
 	borderRadius,
 	width,
 	size,
-	variant,
+	variant: _variant,
 	...props
 }: BaseSelect.Trigger.Props & ControlProps) {
 	return (
 		<BaseSelect.Trigger
 			{...props}
 			className={mergeClassName(
-				controlStyles({
-					size,
-					variant,
-					className: "w-full justify-between text-left",
+				selectTriggerVariants({
+					size: ({ xs: "sm", sm: "sm", md: "default", lg: "lg" } as const)[
+						size ?? "md"
+					],
+					className: "min-w-0",
 				}),
 				className,
 			)}
@@ -51,7 +60,7 @@ function Popup({
 		<BaseSelect.Popup
 			{...props}
 			className={mergeClassName(
-				`${popupStyles} min-w-(--anchor-width)`,
+				`${selectPopupVariants()} p-1 outline-none`,
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}
@@ -209,6 +218,8 @@ export interface SearchableSelectProps
 	description?: ReactNode;
 	errorMessage?: ReactNode;
 	searchPlaceholder?: string;
+	placeholder?: string;
+	clearLabel?: string;
 	className?: string;
 	"aria-label"?: string;
 }
@@ -220,36 +231,76 @@ export function SearchableSelect({
 	description,
 	errorMessage,
 	searchPlaceholder = "Search...",
+	placeholder = "Select an option",
+	clearLabel,
 	className,
 	size,
 	variant,
 	borderRadius,
 	width,
 	"aria-label": ariaLabel,
+	onOpenChange,
+	onValueChange,
 	...props
 }: SearchableSelectProps) {
-	const labels = new Map(items.map((item) => [item.value, item.label]));
+	const [query, setQuery] = useState("");
+	const options = clearLabel
+		? [{ value: "", label: clearLabel }, ...items]
+		: items;
+	const labels = new Map(options.map((item) => [item.value, item.label]));
 	return (
 		<Field.Root disabled={props.disabled} name={props.name} width={width}>
 			{label ? <Field.Label>{label}</Field.Label> : null}
 			<Combobox.Root
 				{...props}
-				items={items.map((item) => item.value)}
+				inputValue={query}
+				items={options.map((item) => item.value)}
 				itemToStringLabel={(value) => labels.get(value) ?? value}
+				onInputValueChange={setQuery}
+				onOpenChange={(open, details) => {
+					if (!open) {
+						setQuery("");
+					}
+					onOpenChange?.(open, details);
+				}}
+				onValueChange={(value, details) =>
+					onValueChange?.(clearLabel && value === "" ? null : value, details)
+				}
 			>
-				<Combobox.Input
-					aria-label={ariaLabel}
+				<Combobox.Trigger
+					aria-label={
+						ariaLabel ?? (typeof label === "string" ? label : undefined)
+					}
 					borderRadius={borderRadius}
-					className={className}
-					placeholder={searchPlaceholder}
+					className={mergeClassName(
+						`${label ? "w-full" : "w-fit"} justify-between font-normal`,
+						className,
+					)}
 					size={size}
 					variant={variant}
-				/>
+				>
+					<span className="truncate">
+						<Combobox.Value>
+							{(value: string | null) =>
+								value
+									? (labels.get(value) ?? value)
+									: (clearLabel ?? placeholder)
+							}
+						</Combobox.Value>
+					</span>
+					<IconSelector aria-hidden className="size-4 shrink-0 text-fg-muted" />
+				</Combobox.Trigger>
 				<Combobox.Portal>
 					<Combobox.Positioner className="z-50" sideOffset={6}>
-						<Combobox.Popup>
+						<Combobox.Popup
+							aria-label={
+								ariaLabel ?? (typeof label === "string" ? label : undefined)
+							}
+							className="max-w-[calc(100vw-2rem)] p-0"
+						>
+							<Combobox.SearchInput placeholder={searchPlaceholder} />
 							<Combobox.Empty>No results found.</Combobox.Empty>
-							<Combobox.List>
+							<Combobox.List className="p-1">
 								{(value: string) => (
 									<Combobox.Item
 										disabled={

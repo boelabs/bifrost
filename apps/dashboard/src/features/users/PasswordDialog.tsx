@@ -52,7 +52,7 @@ export function PasswordDialog({
 		<Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
 			<Dialog aria-label={`Reset password for ${username}`} layout="sectioned">
 				<DialogHeader>
-					<h2 className="font-semibold text-fg text-lg">
+					<h2 className="font-semibold text-foreground text-xl">
 						Reset password for {username}
 					</h2>
 					<p className="pt-2 text-fg-muted text-sm">

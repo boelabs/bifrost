@@ -2,13 +2,13 @@
 
 import { SearchableSelect, Select, SelectItem } from "#/components/ui/select";
 import { type Column, DataTable } from "#/components/ui/datatable";
+import { ContentPanel as Card } from "#/components/ui/card";
 import { cacheReuseRate, tokenCount } from "./cache-usage";
 import { EmptyState } from "#/components/ui/page";
 import { Button } from "#/components/ui/button";
 import { MetricsChart } from "./MetricsChart";
 import { Input } from "#/components/ui/input";
 import type { DetailedMetrics } from "./api";
-import { Card } from "#/components/ui/card";
 import { CacheUsage } from "./CacheUsage";
 import { StatCard } from "./StatCard";
 import { useState } from "react";
@@ -58,13 +58,13 @@ function Breakdown({ data }: { data: DetailedMetrics }) {
 	];
 	const tokens = data.attempts;
 	return (
-		<div className="grid gap-5 lg:grid-cols-2">
-			<Card className="p-7">
+		<div className="grid gap-4 lg:grid-cols-2">
+			<Card className="p-5">
 				<h2 className="font-semibold">Request outcomes</h2>
 				<p className="mt-1 text-fg-muted text-xs">
 					Share of all requests by their latest outcome.
 				</p>
-				<div className="mt-6 space-y-4">
+				<div className="mt-6 flex flex-col gap-4">
 					{outcomes.map((row) => (
 						<div key={row.label}>
 							<div className="mb-2 flex items-center justify-between gap-3 text-xs">
@@ -92,13 +92,13 @@ function Breakdown({ data }: { data: DetailedMetrics }) {
 					))}
 				</div>
 			</Card>
-			<Card className="p-7">
+			<Card className="p-5">
 				<h2 className="font-semibold">Deployment token breakdown</h2>
 				<p className="mt-1 text-fg-muted text-xs">
 					Reported upstream usage, including retries. Reasoning and cache are
 					subsets, not additional totals.
 				</p>
-				<div className="mt-6 space-y-4">
+				<div className="mt-6 flex flex-col gap-4">
 					{(
 						[
 							["Input", tokens.promptTokens, "bg-chart-1"],
@@ -382,11 +382,10 @@ export function Metrics({
 		},
 	];
 	return (
-		<div aria-busy={refreshing} className="space-y-6">
+		<div aria-busy={refreshing} className="flex flex-col gap-6">
 			<Card className="p-5">
 				<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 					<Select
-						borderRadius="full"
 						label="Period · UTC"
 						onValueChange={(period) => {
 							if (period) {
@@ -412,7 +411,6 @@ export function Metrics({
 						))}
 					</Select>
 					<Select
-						borderRadius="full"
 						label="Operation"
 						onValueChange={(value) =>
 							onChange({
@@ -435,7 +433,7 @@ export function Metrics({
 						))}
 					</Select>
 					<SearchableSelect
-						borderRadius="full"
+						clearLabel="All public models"
 						items={modelOptions}
 						label="Public model"
 						onValueChange={(value) =>
@@ -444,18 +442,18 @@ export function Metrics({
 								deploymentId: undefined,
 							})
 						}
-						searchPlaceholder="All public models"
+						searchPlaceholder="Search public models"
 						size="sm"
 						value={search.publicModel ?? null}
 					/>
 					<SearchableSelect
-						borderRadius="full"
+						clearLabel="All deployments"
 						items={deploymentOptions}
 						label="Deployment"
 						onValueChange={(value) =>
 							onChange({ deploymentId: value ?? undefined })
 						}
-						searchPlaceholder="All deployments"
+						searchPlaceholder="Search deployments"
 						size="sm"
 						value={search.deploymentId ?? null}
 					/>
@@ -501,6 +499,7 @@ export function Metrics({
 				)}
 				{search.publicModel || search.deploymentId || search.operation ? (
 					<Button
+						aria-label="Clear model, deployment and operation filters"
 						className="mt-3"
 						onClick={() =>
 							onChange({
@@ -512,7 +511,7 @@ export function Metrics({
 						size="sm"
 						variant="link"
 					>
-						Clear model, deployment and operation filters
+						Clear filters
 					</Button>
 				) : null}
 				<p className="mt-3 text-fg-muted text-xs">
@@ -529,7 +528,7 @@ export function Metrics({
 			) : null}
 			<section
 				aria-label="Metrics summary"
-				className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3"
+				className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
 			>
 				<StatCard
 					detail={`${count.format(attempts.usageReported)} / ${count.format(attempts.attempts)} attempts reported usage · includes retries`}
@@ -578,7 +577,7 @@ export function Metrics({
 					</div>
 					<CacheUsage records={attempts.attempts} upstream usage={attempts} />
 					<Breakdown data={data} />
-					<section className="space-y-3">
+					<section className="flex flex-col gap-3">
 						<div>
 							<h2 className="font-semibold">By deployment</h2>
 							<p className="mt-1 text-fg-muted text-xs">
@@ -601,7 +600,7 @@ export function Metrics({
 							}}
 						/>
 					</section>
-					<section className="space-y-3">
+					<section className="flex flex-col gap-3">
 						<div>
 							<h2 className="font-semibold">By public model</h2>
 							<p className="mt-1 text-fg-muted text-xs">
@@ -621,7 +620,7 @@ export function Metrics({
 							}}
 						/>
 					</section>
-					<section className="space-y-3">
+					<section className="flex flex-col gap-3">
 						<div>
 							<h2 className="font-semibold">Deployment failures</h2>
 							<p className="mt-1 text-fg-muted text-xs">

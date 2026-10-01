@@ -100,7 +100,7 @@ export function PricingEditor({
 		});
 	}
 	return (
-		<section aria-label="Pricing override" className="space-y-4">
+		<section aria-label="Pricing override" className="flex flex-col gap-4">
 			<div>
 				<h3 className="font-semibold text-fg">Pricing override</h3>
 				<p className="text-fg-muted text-sm">

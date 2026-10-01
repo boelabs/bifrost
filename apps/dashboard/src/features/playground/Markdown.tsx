@@ -4,17 +4,17 @@ import { Block, Streamdown } from "streamdown";
 import { math } from "@streamdown/math";
 
 import {
-	IconExternalLink,
-	IconDownload,
-	IconMaximize,
-	IconLoader2,
-	IconRotate2,
-	IconZoomOut,
-	IconZoomIn,
-	IconCheck,
-	IconCopy,
-	IconX,
-} from "@tabler/icons-react";
+	ExternalLink as IconExternalLink,
+	LoaderCircle as IconLoader2,
+	Download as IconDownload,
+	Maximize as IconMaximize,
+	RotateCcw as IconRotate2,
+	ZoomOut as IconZoomOut,
+	ZoomIn as IconZoomIn,
+	Check as IconCheck,
+	Copy as IconCopy,
+	X as IconX,
+} from "lucide-react";
 
 const plugins = { math };
 const icons: ComponentProps<typeof Streamdown>["icons"] = {

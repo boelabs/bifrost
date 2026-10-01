@@ -4,17 +4,26 @@ import { type Column, DataTable, Dash, Mono } from "#/components/ui/datatable";
 import { type InstanceDraft, InstanceDialog } from "./InstanceDialog.tsx";
 import { createContext, Suspense, use, useMemo, useState } from "react";
 import { useMutation, useRowActions } from "#/shared/lib/mutation.ts";
+import { ButtonSkeleton } from "#/shared/components/Skeleton.tsx";
 import { useNotify } from "#/shared/feedback/notifications.tsx";
 import { RowActions } from "#/shared/components/RowActions.tsx";
 import { Can, useSession } from "#/features/auth/session.tsx";
-import { Skeleton } from "#/shared/components/Skeleton.tsx";
+import { ContentPanel as Card } from "#/components/ui/card";
 import { useConfirm } from "#/shared/feedback/confirm.tsx";
-import { Card, CardContent } from "#/components/ui/card";
 import { useRefresh } from "#/shared/lib/useRefresh.ts";
 import { EmptyState } from "#/components/ui/page";
 import { UploadDialog } from "./UploadDialog.tsx";
 import { Button } from "#/components/ui/button";
 import { Status } from "#/components/ui/status";
+
+import {
+	RefreshCw as IconRefresh,
+	Layers2 as IconVersions,
+	SquarePen as IconEdit,
+	Upload as IconUpload,
+	Trash2 as IconTrash,
+	Plus as IconPlus,
+} from "lucide-react";
 
 import {
 	loadArtifactVersionsAction,
@@ -23,15 +32,6 @@ import {
 	deleteInstanceAction,
 	resetInstanceAction,
 } from "./actions.ts";
-
-import {
-	IconVersions,
-	IconRefresh,
-	IconUpload,
-	IconTrash,
-	IconPlus,
-	IconEdit,
-} from "@tabler/icons-react";
 
 import type {
 	RuntimeInstance,
@@ -110,7 +110,7 @@ function UploadCode() {
 	return (
 		<Can permissions={["settings:write"]}>
 			<Button onClick={() => upload(null)} size="sm">
-				<IconUpload aria-hidden className="mr-2" size={15} />
+				<IconUpload aria-hidden className="size-4" />
 				Upload code
 			</Button>
 		</Can>
@@ -123,14 +123,7 @@ function UploadCode() {
  */
 export function UploadCodeButton() {
 	return (
-		<Suspense
-			fallback={
-				<Skeleton
-					className="h-10 rounded-(--ui-radius-control)"
-					width="7.5rem"
-				/>
-			}
-		>
+		<Suspense fallback={<ButtonSkeleton label={11} />}>
 			<UploadCode />
 		</Suspense>
 	);
@@ -289,19 +282,19 @@ export function ExtensionsView({
 					actions={[
 						{
 							label: versionsOf === row.key ? "Hide versions" : "Versions",
-							icon: <IconVersions aria-hidden size={15} />,
+							icon: <IconVersions aria-hidden className="size-4" />,
 							onSelect: () => void openVersions(row.key),
 						},
 						...(editable
 							? [
 									{
 										label: "Upload a version",
-										icon: <IconUpload aria-hidden size={15} />,
+										icon: <IconUpload aria-hidden className="size-4" />,
 										onSelect: () => upload(row.key),
 									},
 									{
 										label: "Delete",
-										icon: <IconTrash aria-hidden size={15} />,
+										icon: <IconTrash aria-hidden className="size-4" />,
 										danger: true,
 										onSelect: () => void removeArtifact(row),
 									},
@@ -386,7 +379,7 @@ export function ExtensionsView({
 								? [
 										{
 											label: "Reset in this replica",
-											icon: <IconRefresh aria-hidden size={15} />,
+											icon: <IconRefresh aria-hidden className="size-4" />,
 											onSelect: () =>
 												void run(() => resetInstanceAction(row.id), {
 													success: `${row.id} reset in this replica`,
@@ -397,7 +390,7 @@ export function ExtensionsView({
 								: []),
 							{
 								label: "Edit",
-								icon: <IconEdit aria-hidden size={15} />,
+								icon: <IconEdit aria-hidden className="size-4" />,
 								onSelect: () =>
 									setDraft({
 										id: row.id,
@@ -421,7 +414,7 @@ export function ExtensionsView({
 							},
 							{
 								label: "Delete",
-								icon: <IconTrash aria-hidden size={15} />,
+								icon: <IconTrash aria-hidden className="size-4" />,
 								danger: true,
 								onSelect: () => void removeInstance(row),
 							},
@@ -436,8 +429,8 @@ export function ExtensionsView({
 	return (
 		<>
 			<div className="flex flex-col gap-6">
-				<Card>
-					<CardContent className="p-6">
+				<Card className="p-0">
+					<div className="p-5">
 						<div className="flex flex-wrap items-start justify-between gap-3 pb-4">
 							<div>
 								<h2 className="font-semibold text-fg">Instances</h2>
@@ -465,7 +458,7 @@ export function ExtensionsView({
 									size="sm"
 									variant="secondary"
 								>
-									<IconPlus aria-hidden className="mr-2" size={15} />
+									<IconPlus aria-hidden className="size-4" />
 									New instance
 								</Button>
 							</Can>
@@ -477,6 +470,7 @@ export function ExtensionsView({
 										? "Upload a module first, then bind it to an instance."
 										: "Bind one of the uploaded definitions to an instance to put it in the request path."
 								}
+								framed={false}
 								title="Nothing is running"
 							/>
 						) : (
@@ -486,13 +480,14 @@ export function ExtensionsView({
 								pagination={{ pageSize: 10 }}
 								rowKey={(row) => row.id}
 								rows={instanceRows}
+								variant="plain"
 							/>
 						)}
-					</CardContent>
+					</div>
 				</Card>
 
-				<Card>
-					<CardContent className="p-6">
+				<Card className="p-0">
+					<div className="p-5">
 						<div className="pb-4">
 							<h2 className="font-semibold text-fg">Code</h2>
 							<p className="max-w-2xl pt-1 text-fg-muted text-sm">
@@ -555,7 +550,7 @@ export function ExtensionsView({
 								) : null}
 							</>
 						)}
-					</CardContent>
+					</div>
 				</Card>
 			</div>
 

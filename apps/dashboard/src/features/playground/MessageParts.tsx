@@ -1,6 +1,11 @@
-import { IconCheck, IconChevronDown, IconCopy } from "@tabler/icons-react";
 import { useId, useLayoutEffect, useRef, useState } from "react";
 import { Button } from "#/components/ui/button";
+
+import {
+	ChevronDown as IconChevronDown,
+	Check as IconCheck,
+	Copy as IconCopy,
+} from "lucide-react";
 
 /**
  * The geometry every action under a message shares: a 40px touch target that tightens to 32px from
@@ -110,8 +115,7 @@ export function UserBubble({
 				>
 					<IconChevronDown
 						aria-hidden
-						className={expanded ? "rotate-180" : ""}
-						size={18}
+						className={expanded ? "size-4.5 rotate-180" : "size-4.5"}
 					/>
 				</Button>
 			) : null}

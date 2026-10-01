@@ -8,7 +8,7 @@ import { createKeyAction, updateKeyAction } from "./actions.ts";
 import { useConfirm } from "#/shared/feedback/confirm.tsx";
 import { useMutation } from "#/shared/lib/mutation.ts";
 import { Button } from "#/components/ui/button";
-import { IconCopy } from "@tabler/icons-react";
+import { Copy as IconCopy } from "lucide-react";
 import { KeyDialog } from "./KeyDialog.tsx";
 
 import {
@@ -190,7 +190,9 @@ function IssuedKeyDialog({
 		<Modal isOpen={issued !== null} onOpenChange={(open) => !open && onClose()}>
 			<Dialog aria-label="New key created" layout="sectioned">
 				<DialogHeader>
-					<h2 className="font-semibold text-fg text-lg">Copy this key now</h2>
+					<h2 className="font-semibold text-foreground text-xl">
+						Copy this key now
+					</h2>
 					<p className="pt-2 text-fg-muted text-sm">
 						It is stored hashed and will never be shown again. If you lose it,
 						create a new key and delete this one.
@@ -211,7 +213,7 @@ function IssuedKeyDialog({
 						}}
 						variant="secondary"
 					>
-						<IconCopy aria-hidden className="mr-2" size={15} />
+						<IconCopy aria-hidden className="size-4" />
 						{copied ? "Copied" : "Copy"}
 					</Button>
 					<Button

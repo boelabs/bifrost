@@ -1,9 +1,9 @@
 import { MessageAttachments } from "./MessageAttachments";
 import { Reasoning, reasoningGroupAt } from "./Reasoning";
+import { RotateCcw as IconRotate2 } from "lucide-react";
 import type { PlaygroundMessage } from "./transport";
 import { ResponseDetails } from "./ResponseDetails";
 import { ResponseLoader } from "./ResponseLoader";
-import { IconRotate2 } from "@tabler/icons-react";
 import { ErrorNote } from "#/components/ui/page";
 import { Button } from "#/components/ui/button";
 import { Status } from "#/components/ui/status";
@@ -62,7 +62,7 @@ export function Conversation({
 	const failedId =
 		error && failed?.role === "assistant" ? failed.id : undefined;
 	return (
-		<div className="mx-auto w-full space-y-10 pb-8 sm:max-w-2xl xl:max-w-3xl">
+		<div className="mx-auto flex w-full flex-col gap-10 pb-8 sm:max-w-2xl xl:max-w-3xl">
 			{groups.map((group) => (
 				<section
 					aria-label="Conversation turn"

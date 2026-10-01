@@ -2,7 +2,7 @@ import { createPlaygroundTransport, type PlaygroundMessage } from "./transport";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { attachmentTypes, readAttachments } from "./attachments";
 import type { PlaygroundSettings, PublicEndpoint } from "./api";
-import { IconArrowDown } from "@tabler/icons-react";
+import { ArrowDown as IconArrowDown } from "lucide-react";
 import { ErrorNote } from "#/components/ui/page";
 import { Button } from "#/components/ui/button";
 import { Conversation } from "./Conversation";
@@ -214,7 +214,7 @@ export function ChatSession({
 						size="sm"
 						variant="secondary"
 					>
-						<IconArrowDown aria-hidden size={18} />
+						<IconArrowDown aria-hidden className="size-4.5" />
 					</Button>
 				) : null}
 				{messages.length ? null : (

@@ -1,7 +1,8 @@
 "use client";
 
-import { IconCheck, IconSelector, IconX } from "@tabler/icons-react";
 import { Combobox as BaseCombobox } from "@base-ui/react/combobox";
+import { selectTriggerVariants } from "./primitives/select";
+import { inputControlVariants } from "./primitives/input";
 
 import {
 	type AppearanceProps,
@@ -15,24 +16,34 @@ import {
 	focusRing,
 } from "./appearance";
 
+import {
+	ChevronsUpDown as IconSelector,
+	Search as IconSearch,
+	Check as IconCheck,
+	X as IconX,
+} from "lucide-react";
+
 function Input({
 	className,
 	style,
 	borderRadius,
 	width,
 	size,
-	variant,
+	variant: _variant,
 	...props
 }: Omit<BaseCombobox.Input.Props, "size" | "width"> & ControlProps) {
 	return (
-		<BaseCombobox.Input
-			{...props}
-			className={mergeClassName(
-				controlStyles({ size, variant, className: "w-full" }),
-				className,
-			)}
-			style={mergeStyle({ borderRadius, width }, style)}
-		/>
+		<span className={inputControlVariants()}>
+			<BaseCombobox.Input
+				{...props}
+				className={mergeClassName(
+					"h-8.5 w-full min-w-0 rounded-[inherit] bg-transparent px-[calc(--spacing(3)-1px)] outline-none placeholder:text-muted-foreground/72 sm:h-7.5" +
+						(size === "sm" ? "h-7.5 sm:h-6.5" : ""),
+					className,
+				)}
+				style={mergeStyle({ borderRadius, width }, style)}
+			/>
+		</span>
 	);
 }
 function Trigger({
@@ -48,7 +59,18 @@ function Trigger({
 	return (
 		<BaseCombobox.Trigger
 			{...props}
-			className={mergeClassName(controlStyles({ size, variant }), className)}
+			className={mergeClassName(
+				selectTriggerVariants({
+					size: ({ md: "default", xs: "sm", sm: "sm", lg: "lg" } as const)[
+						size ?? "md"
+					],
+					className:
+						variant === "ghost"
+							? "border-transparent bg-transparent shadow-none"
+							: undefined,
+				}),
+				className,
+			)}
 			style={mergeStyle({ borderRadius, width }, style)}
 		>
 			{children ?? <IconSelector className="size-4" />}
@@ -350,12 +372,31 @@ function InputField({
 	);
 }
 
+function SearchInput({
+	placeholder = "Search...",
+	...props
+}: Omit<BaseCombobox.Input.Props, "size" | "width">) {
+	return (
+		<div className="border-border/60 border-b p-2">
+			<InputGroup>
+				<IconSearch aria-hidden className="size-4 shrink-0 text-fg-muted" />
+				<BareInput
+					aria-label={placeholder}
+					placeholder={placeholder}
+					{...props}
+				/>
+			</InputGroup>
+		</div>
+	);
+}
+
 export const Combobox = {
 	...BaseCombobox,
 	Positioner,
 	Input,
 	InputGroup,
 	InputField,
+	SearchInput,
 	ChipsInput: BareInput,
 	InlineTrigger,
 	InlineClear,

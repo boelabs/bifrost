@@ -42,10 +42,7 @@ export default function OverviewPage(props: PageProps<"/">) {
 					{/* Its own boundary, for the URL the control reads. */}
 					<Suspense
 						fallback={
-							<Skeleton
-								className="h-10 rounded-(--ui-radius-control)"
-								width="8.5rem"
-							/>
+							<Skeleton className="h-8 rounded-lg sm:h-7" width="8.5rem" />
 						}
 					>
 						<Range searchParams={props.searchParams} />

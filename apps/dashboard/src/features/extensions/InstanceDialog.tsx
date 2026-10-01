@@ -1,6 +1,6 @@
 "use client";
 
-import { Select, SelectItem } from "#/components/ui/select";
+import { SearchableSelect } from "#/components/ui/select";
 import { Textarea } from "#/components/ui/textarea";
 import { saveInstanceAction } from "./actions.ts";
 import type { InstanceInput } from "./common.ts";
@@ -119,7 +119,7 @@ export function InstanceDialog({
 		<Modal isOpen={draft !== null} onOpenChange={(open) => !open && onClose()}>
 			<Dialog aria-label="Extension instance" layout="sectioned">
 				<DialogHeader>
-					<h2 className="font-semibold text-fg text-lg">
+					<h2 className="font-semibold text-foreground text-xl">
 						{editing ? "Edit instance" : "New instance"}
 					</h2>
 					<p className="pt-2 text-fg-muted text-sm">
@@ -141,18 +141,14 @@ export function InstanceDialog({
 								required
 							/>
 						)}
-						<Select
+						<SearchableSelect
 							description="An uploaded artifact. Upload the code first if the list is empty."
+							items={definitions.map((key) => ({ value: key, label: key }))}
 							label="Definition"
-							onValueChange={(key) => setDefinition(String(key))}
+							onValueChange={(key) => setDefinition(key ?? "")}
+							searchPlaceholder="Search definitions"
 							value={definition}
-						>
-							{definitions.map((key) => (
-								<SelectItem key={key} value={key}>
-									{key}
-								</SelectItem>
-							))}
-						</Select>
+						/>
 						<Input
 							defaultValue={String(draft?.priority ?? 0)}
 							description="Lower runs first when several instances handle the same hook."

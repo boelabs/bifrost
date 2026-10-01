@@ -2,8 +2,8 @@
 
 import { MESSAGE_ACTION, MESSAGE_ACTION_ICON } from "./MessageParts";
 import { cosineSimilarity, type EmbeddingRun } from "./embeddings";
+import { RotateCcw as IconRotate2 } from "lucide-react";
 import { ResponseLoader } from "./ResponseLoader";
-import { IconRotate2 } from "@tabler/icons-react";
 import { ErrorNote } from "#/components/ui/page";
 import { Button } from "#/components/ui/button";
 import { Status } from "#/components/ui/status";

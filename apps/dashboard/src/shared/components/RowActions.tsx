@@ -1,6 +1,7 @@
 "use client";
 
-import { IconDots } from "@tabler/icons-react";
+import { Ellipsis as IconDots } from "lucide-react";
+import { Button } from "#/components/ui/button";
 import type { ReactNode } from "react";
 
 import {
@@ -53,10 +54,17 @@ export function RowActions({
 		<MenuRoot>
 			<MenuTrigger
 				aria-label={label}
-				className="ml-auto size-8 justify-center p-0 text-fg-muted hover:text-fg"
+				render={
+					<Button
+						className="ml-auto text-muted-foreground"
+						mode="icon"
+						size="sm"
+						variant="ghost"
+					/>
+				}
 				title="Actions"
 			>
-				<IconDots aria-hidden size={16} />
+				<IconDots aria-hidden className="size-4" />
 			</MenuTrigger>
 			<MenuPortal>
 				<MenuPositioner align="end" side="bottom" sideOffset={6}>

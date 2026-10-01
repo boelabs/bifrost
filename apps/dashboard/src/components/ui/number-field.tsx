@@ -1,13 +1,13 @@
 "use client";
 
 import { NumberField as BaseNumberField } from "@base-ui/react/number-field";
-import { IconMinus, IconPlus } from "@tabler/icons-react";
+import { numberFieldGroupVariants } from "./primitives/number-field";
+import { Minus as IconMinus, Plus as IconPlus } from "lucide-react";
 
 import {
 	type AppearanceProps,
 	type ControlProps,
 	mergeClassName,
-	controlStyles,
 	mergeStyle,
 	focusRing,
 } from "./appearance";
@@ -22,7 +22,7 @@ function Root({
 	return (
 		<BaseNumberField.Root
 			{...props}
-			className={mergeClassName("flex min-w-0 flex-col gap-1.5", className)}
+			className={mergeClassName("flex min-w-0 flex-col gap-2", className)}
 			style={mergeStyle({ borderRadius, width }, style)}
 		/>
 	);
@@ -40,10 +40,18 @@ function Group({
 		<BaseNumberField.Group
 			{...props}
 			className={mergeClassName(
-				controlStyles({
-					size,
-					variant,
-					className: "gap-0 overflow-hidden p-0",
+				numberFieldGroupVariants({
+					className:
+						"gap-0 overflow-hidden p-0" +
+						{
+							xs: "min-h-7 sm:min-h-6",
+							sm: "min-h-8 sm:min-h-7",
+							md: "min-h-9 sm:min-h-8",
+							lg: "min-h-10 sm:min-h-9",
+						}[size ?? "md"] +
+						(variant === "ghost"
+							? "border-transparent bg-transparent shadow-none"
+							: ""),
 				}),
 				className,
 			)}
@@ -62,7 +70,7 @@ function Input({
 		<BaseNumberField.Input
 			{...props}
 			className={mergeClassName(
-				"w-full min-w-0 flex-1 bg-transparent px-2 text-center tabular-nums outline-none disabled:cursor-not-allowed",
+				"h-8.5 w-full min-w-0 flex-1 bg-transparent px-2 text-center tabular-nums outline-none disabled:cursor-not-allowed sm:h-7.5",
 				className,
 			)}
 			style={mergeStyle({ borderRadius, width }, style)}

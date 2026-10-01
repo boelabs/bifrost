@@ -65,7 +65,7 @@ export function UploadDialog({
 		<Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
 			<Dialog aria-label="Upload extension code" layout="sectioned">
 				<DialogHeader>
-					<h2 className="font-semibold text-fg text-lg">
+					<h2 className="font-semibold text-foreground text-xl">
 						{initialKey ? `New version of ${initialKey}` : "Upload extension"}
 					</h2>
 					<p className="pt-2 text-fg-muted text-sm">

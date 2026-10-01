@@ -145,7 +145,7 @@ export function VideoSettingsDialog({
 					</DialogDescription>
 				</DialogHeader>
 				<DialogBody>
-					<div className="grid gap-5 sm:grid-cols-2">
+					<div className="grid gap-4 sm:grid-cols-2">
 						<Optional
 							description="What kind of generation this is. Left out, the model decides from the attachments."
 							label="Task"
@@ -258,7 +258,7 @@ export function VideoSettingsDialog({
 							</Toggle>
 						</ToggleGroup>
 						{dimensions === "ratio" ? (
-							<div className="grid gap-5 sm:grid-cols-2">
+							<div className="grid gap-4 sm:grid-cols-2">
 								<Optional
 									label="Aspect ratio"
 									onChange={(value) => set("aspectRatio", value)}

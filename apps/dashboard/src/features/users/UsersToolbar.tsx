@@ -10,7 +10,7 @@ import type { UsersFilters } from "./filters.ts";
 import { ErrorNote } from "#/components/ui/page";
 import { createUserAction } from "./actions.ts";
 import { Button } from "#/components/ui/button";
-import { IconPlus } from "@tabler/icons-react";
+import { Plus as IconPlus } from "lucide-react";
 import { Input } from "#/components/ui/input";
 import { Form } from "#/components/ui/form";
 import { useState } from "react";
@@ -39,7 +39,7 @@ export function UsersToolbar({ filters }: { filters: UsersFilters }) {
 				value={filters.q ?? ""}
 			/>
 			<Button onClick={() => setCreating(true)} size="sm">
-				<IconPlus aria-hidden className="mr-2" size={15} />
+				<IconPlus aria-hidden className="size-4" />
 				New user
 			</Button>
 			<CreateUserDialog isOpen={creating} onClose={() => setCreating(false)} />
@@ -96,7 +96,9 @@ function CreateUserDialog({
 		<Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
 			<Dialog aria-label="New operator" layout="sectioned">
 				<DialogHeader>
-					<h2 className="font-semibold text-fg text-lg">New operator</h2>
+					<h2 className="font-semibold text-foreground text-xl">
+						New operator
+					</h2>
 				</DialogHeader>
 				<Form className="flex min-h-0 flex-1 flex-col" onSubmit={onSubmit}>
 					<DialogBody>
