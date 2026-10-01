@@ -4,7 +4,7 @@ import type { components } from "#/shared/api/schema";
  * The deployment vocabulary and the pure functions over it.
  *
  * `api.ts` reads cookies through `next/headers`, so a Client Component cannot import it. The dialog
- * and the model cards need these types and helpers on both sides of that boundary, so they live in a
+ * and the model table need these types and helpers on both sides of that boundary, so they live in a
  * module with no server import at all.
  */
 export type Deployment = components["schemas"]["Deployment"];

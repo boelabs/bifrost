@@ -19,13 +19,13 @@ import {
  *
  * The adapter registry is only needed by the dialog, so it is started here and handed to the
  * provider unawaited — nothing on the page waits for it. The deployments are the page's subject and
- * stream into cards that already have their frame and their table headers.
+ * stream into one table grouped by public model.
  */
 export default function ModelsPage() {
 	return (
 		<ModelsProvider adapters={adapters()}>
 			<PageHeader
-				description="A public model is the name clients send, and every deployment sharing that name forms its routing pool. Models are not rows — one exists while at least one deployment carries its name."
+				description="Manage the deployments behind your public models."
 				title="Models"
 			>
 				<NewDeploymentButton />
