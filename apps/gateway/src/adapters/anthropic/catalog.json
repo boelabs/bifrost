@@ -929,7 +929,8 @@
 						"tools": true,
 						"vision": true,
 						"structuredOutputs": true,
-						"reasoning": true
+						"reasoning": true,
+						"strictTools": true
 					},
 					"reasoning": {
 						"kind": "anthropic_adaptive",
