@@ -8,8 +8,10 @@ export interface CostBreakdown {
 	cacheReadCents: number;
 	/** Cost of tokens written to cache (cache creation), in USD cents. */
 	cacheWriteCents: number;
-	/** Cost of output tokens, in USD cents. */
+	/** Cost of output tokens, in USD cents; image output included. */
 	outputCents: number;
+	/** The part of `inputCents` and `outputCents` charged at image rates, in USD cents. */
+	imageCents: number;
 	/** Cost of reranking search units, in USD cents. */
 	searchUnitCents: number;
 	/** Cost reported by the upstream, retained separately for reconciliation. */
@@ -31,6 +33,9 @@ function effectiveRates(p: PricingShape, promptTokens: number): PricingShape {
 	let cacheRead = p.cacheReadCentsPerMTokens ?? p.inputCentsPerMTokens ?? 0;
 	let cacheWrite = p.cacheWriteCentsPerMTokens ?? p.inputCentsPerMTokens ?? 0;
 	let cacheWriteByTtl = p.cacheWriteCentsPerMTokensByTtl;
+	// Image rates are explicit or follow the effective text rates, tier by tier.
+	let imageInput = p.imageInputCentsPerMTokens;
+	let imageOutput = p.imageOutputCentsPerMTokens;
 
 	const tiers = [...(p.tiers ?? [])].sort(
 		(a, b) => a.aboveInputTokens - b.aboveInputTokens,
@@ -43,6 +48,8 @@ function effectiveRates(p: PricingShape, promptTokens: number): PricingShape {
 			if (t.outputCentsPerMTokens !== undefined) {
 				output = t.outputCentsPerMTokens;
 			}
+			imageInput = t.imageInputCentsPerMTokens ?? imageInput;
+			imageOutput = t.imageOutputCentsPerMTokens ?? imageOutput;
 			if (t.cacheReadCentsPerMTokens !== undefined) {
 				cacheRead = t.cacheReadCentsPerMTokens;
 			}
@@ -62,6 +69,8 @@ function effectiveRates(p: PricingShape, promptTokens: number): PricingShape {
 		outputCentsPerMTokens: output,
 		cacheReadCentsPerMTokens: cacheRead,
 		cacheWriteCentsPerMTokens: cacheWrite,
+		imageInputCentsPerMTokens: imageInput ?? input,
+		imageOutputCentsPerMTokens: imageOutput ?? output,
 		...(cacheWriteByTtl === undefined
 			? {}
 			: { cacheWriteCentsPerMTokensByTtl: cacheWriteByTtl }),
@@ -74,8 +83,10 @@ function effectiveRates(p: PricingShape, promptTokens: number): PricingShape {
 /**
  * Computes the cost from the model's pricing (cents per 1M tokens) and the usage.
  * `cacheReadTokens` and `cacheWriteTokens` are disjoint subsets of promptTokens: they are subtracted
- * from input and charged at their rate (read -> cacheRead or input; write -> cacheWrite or input). If the
- * model has a context-tiered rate, the tier is applied based on promptTokens. No pricing -> 0.
+ * from input and charged at their rate (read -> cacheRead or input; write -> cacheWrite or input).
+ * Image tokens are subsets too: uncached image input and image output are charged at their image
+ * rates, which default to the text rates. If the model has a context-tiered rate, the tier is applied
+ * based on promptTokens. No pricing -> 0.
  */
 export function computeCost(
 	meta: Pick<ResolvedModelMetadata, "pricing">,
@@ -94,7 +105,22 @@ export function computeCost(
 		usage.promptTokens - cacheRead - cacheWrite,
 	);
 
-	const inputCents = nonCachedPrompt * inputRate;
+	const imageInputRate = (r.imageInputCentsPerMTokens ?? 0) / 1_000_000;
+	const imageOutputRate = (r.imageOutputCentsPerMTokens ?? 0) / 1_000_000;
+	// Cached tokens are billed at the cache rates whatever their modality, so only the uncached share
+	// of image input can be charged at the image rate.
+	const imagePrompt = Math.min(
+		nonCachedPrompt,
+		Math.max(0, usage.promptImageTokens ?? 0),
+	);
+	const imageCompletion = Math.min(
+		usage.completionTokens,
+		Math.max(0, usage.completionImageTokens ?? 0),
+	);
+	const imageCents =
+		imagePrompt * imageInputRate + imageCompletion * imageOutputRate;
+	const inputCents =
+		(nonCachedPrompt - imagePrompt) * inputRate + imagePrompt * imageInputRate;
 	const cacheReadCents = cacheRead * cacheReadRate;
 	let cacheWriteCents = 0;
 	let remainingWrites = cacheWrite;
@@ -111,7 +137,9 @@ export function computeCost(
 		remainingWrites -= count;
 	}
 	cacheWriteCents += remainingWrites * cacheWriteRate;
-	const outputCents = usage.completionTokens * outputRate;
+	const outputCents =
+		(usage.completionTokens - imageCompletion) * outputRate +
+		imageCompletion * imageOutputRate;
 	const searchUnitCents =
 		(usage.searchUnits ?? 0) * (meta.pricing?.searchUnitCents ?? 0);
 	const providerReportedCents = usage.providerCostCents ?? null;
@@ -123,6 +151,8 @@ export function computeCost(
 			configuredPricing.cacheReadCentsPerMTokens !== undefined ||
 			configuredPricing.cacheWriteCentsPerMTokens !== undefined ||
 			configuredPricing.cacheWriteCentsPerMTokensByTtl !== undefined ||
+			configuredPricing.imageInputCentsPerMTokens !== undefined ||
+			configuredPricing.imageOutputCentsPerMTokens !== undefined ||
 			configuredPricing.searchUnitCents !== undefined ||
 			(configuredPricing.tiers?.length ?? 0) > 0);
 	const calculatedCents =
@@ -137,6 +167,7 @@ export function computeCost(
 		cacheReadCents,
 		cacheWriteCents,
 		outputCents,
+		imageCents,
 		searchUnitCents,
 		providerReportedCents,
 		totalCents: hasConfiguredPricing
@@ -164,12 +195,16 @@ export function estimateMaximumCostCents(
 		pricing.outputCentsPerMTokens,
 		pricing.cacheReadCentsPerMTokens,
 		pricing.cacheWriteCentsPerMTokens,
+		pricing.imageInputCentsPerMTokens,
+		pricing.imageOutputCentsPerMTokens,
 		...Object.values(pricing.cacheWriteCentsPerMTokensByTtl ?? {}),
 		...(pricing.tiers ?? []).flatMap((tier) => [
 			tier.inputCentsPerMTokens,
 			tier.outputCentsPerMTokens,
 			tier.cacheReadCentsPerMTokens,
 			tier.cacheWriteCentsPerMTokens,
+			tier.imageInputCentsPerMTokens,
+			tier.imageOutputCentsPerMTokens,
 			...Object.values(tier.cacheWriteCentsPerMTokensByTtl ?? {}),
 		]),
 	].filter((rate): rate is number => rate !== undefined);

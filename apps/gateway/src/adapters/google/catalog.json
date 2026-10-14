@@ -589,7 +589,8 @@
 			},
 			"pricing": {
 				"inputCentsPerMTokens": 150,
-				"outputCentsPerMTokens": 750
+				"outputCentsPerMTokens": 750,
+				"imageOutputCentsPerMTokens": 3000
 			},
 			"notes": "Sizes follow Google's Nano Banana 2.1 aspect-ratio table (no 512px tier). Output is priced at the text/thinking rate ($7.50/1M) like its siblings; Google bills image output tokens at $30/1M (1K = 1,120 tokens, ~$0.0336/image), which token pricing cannot express. Caching is not supported. Google's medium thinking level (the model default) has no quality rung."
 		},
@@ -1085,7 +1086,8 @@
 			"pricing": {
 				"inputCentsPerMTokens": 50,
 				"outputCentsPerMTokens": 300,
-				"cacheReadCentsPerMTokens": 5
+				"cacheReadCentsPerMTokens": 5,
+				"imageOutputCentsPerMTokens": 6000
 			},
 			"notes": "Sizes follow Google's published aspect-ratio table. The 21:9 / 512px cell is omitted: the documented 792x168 is not a 21:9 frame, so it is left out rather than guessed."
 		},
@@ -1221,7 +1223,8 @@
 			"pricing": {
 				"inputCentsPerMTokens": 25,
 				"outputCentsPerMTokens": 150,
-				"cacheReadCentsPerMTokens": 3
+				"cacheReadCentsPerMTokens": 3,
+				"imageOutputCentsPerMTokens": 3000
 			}
 		},
 		"gemini-3-pro-image": {
@@ -1499,7 +1502,8 @@
 				"inputCentsPerMTokens": 200,
 				"outputCentsPerMTokens": 1200,
 				"cacheReadCentsPerMTokens": 20,
-				"cacheWriteCentsPerMTokens": 37.5
+				"cacheWriteCentsPerMTokens": 37.5,
+				"imageOutputCentsPerMTokens": 12000
 			}
 		},
 		"gemini-2.5-flash-image": {
@@ -1597,7 +1601,8 @@
 				"inputCentsPerMTokens": 30,
 				"outputCentsPerMTokens": 250,
 				"cacheReadCentsPerMTokens": 3,
-				"cacheWriteCentsPerMTokens": 4.166667
+				"cacheWriteCentsPerMTokens": 4.166667,
+				"imageOutputCentsPerMTokens": 3000
 			},
 			"deprecated": true,
 			"notes": "Deprecated by Google; replacement gemini-3.1-flash-lite-image or gemini-3.1-flash-image. Google's pricing page says it shuts down on 2026-10-02, while its deprecations page lists 2027-03-15 as the earliest shutdown."
@@ -2681,7 +2686,8 @@
 			"pricing": {
 				"inputCentsPerMTokens": 50,
 				"outputCentsPerMTokens": 300,
-				"cacheReadCentsPerMTokens": 5
+				"cacheReadCentsPerMTokens": 5,
+				"imageOutputCentsPerMTokens": 6000
 			},
 			"deprecated": true,
 			"notes": "Shut down by Google on 2026-06-25 (deprecations page); replacement gemini-nano-banana-2.1."
@@ -2982,7 +2988,8 @@
 				"inputCentsPerMTokens": 200,
 				"outputCentsPerMTokens": 1200,
 				"cacheReadCentsPerMTokens": 20,
-				"cacheWriteCentsPerMTokens": 37.5
+				"cacheWriteCentsPerMTokens": 37.5,
+				"imageOutputCentsPerMTokens": 12000
 			},
 			"deprecated": true,
 			"notes": "Shut down by Google on 2026-06-25 (deprecations page); replacement gemini-3-pro-image."

@@ -341,6 +341,48 @@ test("Vercel image models inherit the request contract of a first-party twin", (
 	assert.deepEqual(generated.report.imageProfilesWithoutReference, []);
 });
 
+test("Vercel image models take image token rates from a first-party twin sold at its price", () => {
+	const references: ReferenceCatalogs = {
+		googleaistudio: {
+			"gemini-3-pro-image": {
+				operations: { "image.generate": { outputFormats: ["png"] } },
+				pricing: {
+					inputCentsPerMTokens: 200,
+					outputCentsPerMTokens: 1200,
+					imageOutputCentsPerMTokens: 12_000,
+				},
+			},
+		},
+	};
+	const resold = (input: string) =>
+		buildVercelCatalog(
+			[
+				{
+					id: "google/gemini-3-pro-image",
+					type: "image",
+					pricing: { input, output: "0.000012" },
+				},
+			],
+			references,
+		);
+	const same = resold("0.000002");
+	assert.deepEqual(same.document.models["google/gemini-3-pro-image"]?.pricing, {
+		inputCentsPerMTokens: 200,
+		outputCentsPerMTokens: 1200,
+		imageOutputCentsPerMTokens: 12_000,
+	});
+	assert.deepEqual(same.report.inheritedImagePricing, [
+		{ id: "google/gemini-3-pro-image", from: "googleaistudio" },
+	]);
+	// A different resale price is Vercel's own: the provider's image rate would not be its rate.
+	const marked = resold("0.0000025");
+	assert.equal(
+		marked.document.models["google/gemini-3-pro-image"]?.pricing
+			?.imageOutputCentsPerMTokens,
+		undefined,
+	);
+});
+
 test("Vercel image models without a first-party twin keep the conservative profile", () => {
 	const generated = buildVercelCatalog(
 		[{ id: "bfl/flux-2-pro", type: "image" }],

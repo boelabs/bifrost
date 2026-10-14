@@ -80,6 +80,9 @@ async function run(): Promise<void> {
 			`image profiles inherited from a first-party adapter: ${generated.report.inheritedImageProfiles.length}, ` +
 				`without a reference: ${generated.report.imageProfilesWithoutReference.length}`,
 		);
+		console.log(
+			`image token rates inherited from a first-party adapter: ${generated.report.inheritedImagePricing.length}`,
+		);
 	} else if (runMode === "verify") {
 		const current = loadCatalogDocument(CATALOG_URL, {
 			adapterKey: "vercel",

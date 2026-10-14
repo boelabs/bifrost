@@ -66,3 +66,20 @@ test("pricing: rejects invalid rates and malformed tiers", () => {
 		assert.throws(() => parsePricing(value), /Invalid pricing/);
 	}
 });
+
+test("image token rates survive parsing, base and per tier", () => {
+	assert.deepEqual(
+		parsePricing({
+			inputCentsPerMTokens: 200,
+			outputCentsPerMTokens: 1200,
+			imageOutputCentsPerMTokens: 12_000,
+			tiers: [{ aboveInputTokens: 200_000, imageInputCentsPerMTokens: 400 }],
+		}),
+		{
+			inputCentsPerMTokens: 200,
+			outputCentsPerMTokens: 1200,
+			imageOutputCentsPerMTokens: 12_000,
+			tiers: [{ aboveInputTokens: 200_000, imageInputCentsPerMTokens: 400 }],
+		},
+	);
+});

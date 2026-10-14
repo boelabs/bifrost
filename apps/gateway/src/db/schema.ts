@@ -128,6 +128,10 @@ export interface RuntimeModelMetadata {
 		/** Cost in USD cents per 1M tokens written to cache (cache creation). */
 		cacheWriteCentsPerMTokens?: number;
 		cacheWriteCentsPerMTokensByTtl?: Record<string, number>;
+		/** Cost in USD cents per 1M image input tokens. Absent: image input is billed as input. */
+		imageInputCentsPerMTokens?: number;
+		/** Cost in USD cents per 1M image output tokens. Absent: image output is billed as output. */
+		imageOutputCentsPerMTokens?: number;
 		/** Cost in USD cents per reranking search unit. */
 		searchUnitCents?: number;
 		/**
@@ -144,6 +148,8 @@ export interface RuntimeModelMetadata {
 			cacheReadCentsPerMTokens?: number;
 			cacheWriteCentsPerMTokens?: number;
 			cacheWriteCentsPerMTokensByTtl?: Record<string, number>;
+			imageInputCentsPerMTokens?: number;
+			imageOutputCentsPerMTokens?: number;
 		}>;
 	};
 	maxInputTokens?: number;

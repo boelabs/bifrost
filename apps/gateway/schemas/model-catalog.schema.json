@@ -471,6 +471,16 @@
 					"propertyNames": { "pattern": "^[1-9][0-9]*$" },
 					"additionalProperties": { "type": "number", "minimum": 0 }
 				},
+				"imageInputCentsPerMTokens": {
+					"type": "number",
+					"minimum": 0,
+					"description": "Image input tokens. Absent: billed at inputCentsPerMTokens."
+				},
+				"imageOutputCentsPerMTokens": {
+					"type": "number",
+					"minimum": 0,
+					"description": "Image output tokens. Absent: billed at outputCentsPerMTokens."
+				},
 				"searchUnitCents": { "type": "number", "minimum": 0 },
 				"tiers": {
 					"type": "array",
@@ -492,6 +502,16 @@
 					"type": "object",
 					"propertyNames": { "pattern": "^[1-9][0-9]*$" },
 					"additionalProperties": { "type": "number", "minimum": 0 }
+				},
+				"imageInputCentsPerMTokens": {
+					"type": "number",
+					"minimum": 0,
+					"description": "Image input tokens. Absent: billed at inputCentsPerMTokens."
+				},
+				"imageOutputCentsPerMTokens": {
+					"type": "number",
+					"minimum": 0,
+					"description": "Image output tokens. Absent: billed at outputCentsPerMTokens."
 				}
 			}
 		}

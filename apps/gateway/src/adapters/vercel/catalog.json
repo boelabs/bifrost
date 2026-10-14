@@ -3739,7 +3739,8 @@
 			"pricing": {
 				"inputCentsPerMTokens": 30,
 				"outputCentsPerMTokens": 250,
-				"cacheReadCentsPerMTokens": 3
+				"cacheReadCentsPerMTokens": 3,
+				"imageOutputCentsPerMTokens": 3000
 			}
 		},
 		"google/gemini-2.5-flash-lite": {
@@ -4317,7 +4318,8 @@
 			"pricing": {
 				"inputCentsPerMTokens": 200,
 				"outputCentsPerMTokens": 1200,
-				"cacheReadCentsPerMTokens": 20
+				"cacheReadCentsPerMTokens": 20,
+				"imageOutputCentsPerMTokens": 12000
 			}
 		},
 		"google/gemini-3.1-flash-image": {
@@ -4825,7 +4827,8 @@
 			"pricing": {
 				"inputCentsPerMTokens": 50,
 				"outputCentsPerMTokens": 300,
-				"cacheReadCentsPerMTokens": 5
+				"cacheReadCentsPerMTokens": 5,
+				"imageOutputCentsPerMTokens": 6000
 			}
 		},
 		"google/gemini-3.1-flash-image-preview": {
@@ -5333,7 +5336,8 @@
 			"pricing": {
 				"inputCentsPerMTokens": 50,
 				"outputCentsPerMTokens": 300,
-				"cacheReadCentsPerMTokens": 5
+				"cacheReadCentsPerMTokens": 5,
+				"imageOutputCentsPerMTokens": 6000
 			}
 		},
 		"google/gemini-3.1-flash-lite": {
@@ -5559,7 +5563,8 @@
 			"pricing": {
 				"inputCentsPerMTokens": 25,
 				"outputCentsPerMTokens": 150,
-				"cacheReadCentsPerMTokens": 3
+				"cacheReadCentsPerMTokens": 3,
+				"imageOutputCentsPerMTokens": 3000
 			}
 		},
 		"google/gemini-3.1-pro-preview": {
@@ -6481,7 +6486,8 @@
 			"pricing": {
 				"inputCentsPerMTokens": 150,
 				"outputCentsPerMTokens": 750,
-				"cacheReadCentsPerMTokens": 15
+				"cacheReadCentsPerMTokens": 15,
+				"imageOutputCentsPerMTokens": 3000
 			}
 		},
 		"google/gemini-omni-flash-preview": {
@@ -12088,7 +12094,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 500,
 				"outputCentsPerMTokens": 4000,
-				"cacheReadCentsPerMTokens": 125
+				"cacheReadCentsPerMTokens": 125,
+				"imageInputCentsPerMTokens": 1000,
+				"imageOutputCentsPerMTokens": 4000
 			}
 		},
 		"openai/gpt-image-1-mini": {
@@ -12118,7 +12126,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 200,
 				"outputCentsPerMTokens": 800,
-				"cacheReadCentsPerMTokens": 20
+				"cacheReadCentsPerMTokens": 20,
+				"imageInputCentsPerMTokens": 250,
+				"imageOutputCentsPerMTokens": 800
 			}
 		},
 		"openai/gpt-image-1.5": {
@@ -12148,7 +12158,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 500,
 				"outputCentsPerMTokens": 3200,
-				"cacheReadCentsPerMTokens": 125
+				"cacheReadCentsPerMTokens": 125,
+				"imageInputCentsPerMTokens": 800,
+				"imageOutputCentsPerMTokens": 3200
 			}
 		},
 		"openai/gpt-image-2": {
@@ -12185,7 +12197,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 500,
 				"outputCentsPerMTokens": 3000,
-				"cacheReadCentsPerMTokens": 125
+				"cacheReadCentsPerMTokens": 125,
+				"imageInputCentsPerMTokens": 800,
+				"imageOutputCentsPerMTokens": 3000
 			}
 		},
 		"openai/gpt-image-2.5-flare": {
@@ -12223,7 +12237,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 500,
 				"outputCentsPerMTokens": 3000,
-				"cacheReadCentsPerMTokens": 125
+				"cacheReadCentsPerMTokens": 125,
+				"imageInputCentsPerMTokens": 800,
+				"imageOutputCentsPerMTokens": 3000
 			}
 		},
 		"openai/gpt-image-2.5-sunburst": {
@@ -12261,7 +12277,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 500,
 				"outputCentsPerMTokens": 3000,
-				"cacheReadCentsPerMTokens": 125
+				"cacheReadCentsPerMTokens": 125,
+				"imageInputCentsPerMTokens": 800,
+				"imageOutputCentsPerMTokens": 3000
 			}
 		},
 		"openai/gpt-oss-120b": {

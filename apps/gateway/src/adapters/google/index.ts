@@ -612,12 +612,31 @@ interface GeminiCandidate {
 	finishReason?: string;
 	index?: number;
 }
+interface GeminiModalityTokens {
+	modality?: string;
+	tokenCount?: number;
+}
 interface GeminiUsage {
 	promptTokenCount?: number;
 	candidatesTokenCount?: number;
 	totalTokenCount?: number;
 	cachedContentTokenCount?: number;
 	thoughtsTokenCount?: number;
+	promptTokensDetails?: GeminiModalityTokens[];
+	candidatesTokensDetails?: GeminiModalityTokens[];
+}
+
+/** Tokens of one modality in a Gemini breakdown, or undefined when the breakdown is absent. */
+function modalityTokens(
+	details: GeminiModalityTokens[] | undefined,
+	modality: string,
+): number | undefined {
+	if (!Array.isArray(details)) {
+		return;
+	}
+	return details
+		.filter((entry) => entry.modality === modality)
+		.reduce((total, entry) => total + (entry.tokenCount ?? 0), 0);
 }
 interface GeminiResponse {
 	candidates?: GeminiCandidate[];
@@ -847,6 +866,9 @@ function parseGeminiImageResponse(raw: unknown): CanonicalImageResponse {
 		});
 	}
 	const u = response.usageMetadata;
+	// Gemini bills image output far above text output, so the modality split is what prices it.
+	const inputImageTokens = modalityTokens(u?.promptTokensDetails, "IMAGE");
+	const outputImageTokens = modalityTokens(u?.candidatesTokensDetails, "IMAGE");
 	const usage =
 		u?.totalTokenCount === undefined
 			? undefined
@@ -855,6 +877,8 @@ function parseGeminiImageResponse(raw: unknown): CanonicalImageResponse {
 					outputTokens:
 						(u.candidatesTokenCount ?? 0) + (u.thoughtsTokenCount ?? 0),
 					totalTokens: u.totalTokenCount,
+					...(inputImageTokens === undefined ? {} : { inputImageTokens }),
+					...(outputImageTokens === undefined ? {} : { outputImageTokens }),
 				};
 	return {
 		created: Math.floor(Date.now() / 1000),
@@ -962,6 +986,17 @@ function mapGeminiUsage(u: GeminiUsage | undefined): Usage {
 	}
 	if (thoughts > 0) {
 		usage.reasoningTokens = thoughts;
+	}
+	const promptImageTokens = modalityTokens(u?.promptTokensDetails, "IMAGE");
+	if (promptImageTokens) {
+		usage.promptImageTokens = promptImageTokens;
+	}
+	const completionImageTokens = modalityTokens(
+		u?.candidatesTokensDetails,
+		"IMAGE",
+	);
+	if (completionImageTokens) {
+		usage.completionImageTokens = completionImageTokens;
 	}
 	return usage;
 }

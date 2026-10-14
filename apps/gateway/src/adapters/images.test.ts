@@ -277,14 +277,22 @@ test("Gemini images: generateContent emits IMAGE config and parses inlineData", 
 			],
 			usageMetadata: {
 				promptTokenCount: 2,
-				candidatesTokenCount: 3,
-				totalTokenCount: 5,
+				candidatesTokenCount: 1123,
+				totalTokenCount: 1125,
+				promptTokensDetails: [{ modality: "TEXT", tokenCount: 2 }],
+				candidatesTokensDetails: [
+					{ modality: "TEXT", tokenCount: 3 },
+					{ modality: "IMAGE", tokenCount: 1120 },
+				],
 			},
 		},
 		ctx("generate_content", "google"),
 	);
 	assert.equal(response.data[0]?.mimeType, "image/png");
-	assert.equal(response.usage?.totalTokens, 5);
+	assert.equal(response.usage?.totalTokens, 1125);
+	// Gemini bills image output apart from text output, so the split must survive.
+	assert.equal(response.usage?.outputImageTokens, 1120);
+	assert.equal(response.usage?.inputImageTokens, 0);
 });
 
 test("resolveImageSize: auto resolves to autoSize natively or the first profile size", () => {

@@ -73,6 +73,7 @@ export interface VercelCatalogReport {
 		fields: string[];
 	}>;
 	imageProfilesWithoutReference: Array<{ id: string; operation: string }>;
+	inheritedImagePricing: Array<{ id: string; from: string }>;
 }
 
 export interface VercelCatalogGeneration {
@@ -510,6 +511,53 @@ function imageEntry(
 	};
 }
 
+/**
+ * Image token rates for an image-producing model, taken from its first-party entry.
+ *
+ * Vercel publishes Google's image output per image and size rather than per token, and OpenAI's
+ * image input not at all, so the snapshot alone would bill images at the text rate. The provider's
+ * own rates apply only when Vercel resells the model at the provider's price: same input rate, and
+ * an output rate that is either the provider's text or image rate.
+ */
+function withReferenceImagePricing(
+	entry: CatalogEntry,
+	modelId: string,
+	references: ReferenceCatalogs | undefined,
+	report: VercelCatalogReport,
+): CatalogEntry {
+	const producesImages =
+		entry.operations["image.generate"] !== undefined ||
+		entry.operations["image.edit"] !== undefined;
+	const reference = producesImages
+		? referenceEntryFor(modelId, references)
+		: undefined;
+	const own = entry.pricing;
+	const theirs = reference?.entry.pricing;
+	if (!(reference && own && theirs)) {
+		return entry;
+	}
+	const imageRates = {
+		...(theirs.imageInputCentsPerMTokens === undefined
+			? {}
+			: { imageInputCentsPerMTokens: theirs.imageInputCentsPerMTokens }),
+		...(theirs.imageOutputCentsPerMTokens === undefined
+			? {}
+			: { imageOutputCentsPerMTokens: theirs.imageOutputCentsPerMTokens }),
+	};
+	const samePrice =
+		own.inputCentsPerMTokens === theirs.inputCentsPerMTokens &&
+		(own.outputCentsPerMTokens === theirs.outputCentsPerMTokens ||
+			own.outputCentsPerMTokens === theirs.imageOutputCentsPerMTokens);
+	if (!samePrice || Object.keys(imageRates).length === 0) {
+		return entry;
+	}
+	report.inheritedImagePricing.push({
+		id: modelId,
+		from: `${reference.adapterKey}`,
+	});
+	return { ...entry, pricing: { ...own, ...imageRates } };
+}
+
 function hasOnlyZeroRates(pricing: Pricing | undefined): boolean {
 	if (!pricing) {
 		return false;
@@ -576,6 +624,7 @@ export function buildVercelCatalog(
 		orphanedRerankPricingOverrides: [],
 		paidRerankModelsWithoutCost: [],
 		inheritedImageProfiles: [],
+		inheritedImagePricing: [],
 		imageProfilesWithoutReference: [],
 	};
 	const models: Record<string, CatalogEntry> = {};
@@ -600,7 +649,12 @@ export function buildVercelCatalog(
 			});
 			continue;
 		}
-		const entry = catalogEntryFor(type, model, report, references);
+		const entry = withReferenceImagePricing(
+			catalogEntryFor(type, model, report, references),
+			model.id,
+			references,
+			report,
+		);
 		models[model.id] = entry;
 		increment(report.includedByType, type);
 		report.includedModels += 1;
