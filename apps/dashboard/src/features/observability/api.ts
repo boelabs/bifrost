@@ -28,6 +28,8 @@ export interface LogFilter {
 	publicModel?: string;
 	actor?: string;
 	virtualKeyId?: string;
+	failureOwner?: LogQuery["failureOwner"];
+	requestId?: string;
 	start?: string;
 	end?: string;
 }

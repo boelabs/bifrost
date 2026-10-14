@@ -1700,6 +1700,17 @@ paths:
           in: query
           schema:
             type: string
+        - name: failureOwner
+          in: query
+          schema:
+            type: string
+            enum:
+              - provider
+              - gateway_deadline
+              - deployment_config
+              - client
+              - gateway
+          description: Operations with at least one attempt that failed this way
         - name: minDurationMs
           in: query
           schema:
@@ -5581,10 +5592,71 @@ components:
               minimum: -9007199254740991
               maximum: 9007199254740991
             - type: "null"
+        firstOutputMs:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
         startedAt:
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+        attemptCount:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Upstream attempts made.
+        servedBy:
+          description: Label (or id) of the deployment of the last attempt.
+          type:
+            - string
+            - "null"
+        lastFailure:
+          anyOf:
+            - type: object
+              properties:
+                owner:
+                  type:
+                    - string
+                    - "null"
+                phase:
+                  type:
+                    - string
+                    - "null"
+                kind:
+                  type:
+                    - string
+                    - "null"
+                providerStatus:
+                  anyOf:
+                    - type: integer
+                      minimum: -9007199254740991
+                      maximum: 9007199254740991
+                    - type: "null"
+                deployment:
+                  type:
+                    - string
+                    - "null"
+                providerType:
+                  type:
+                    - string
+                    - "null"
+                providerCode:
+                  type:
+                    - string
+                    - "null"
+              required:
+                - owner
+                - phase
+                - kind
+                - providerStatus
+                - deployment
+                - providerType
+                - providerCode
+              additionalProperties: false
+            - type: "null"
+          description: The most recent failed attempt, including one a retry or fallback recovered from.
       required:
         - id
         - requestId
@@ -5601,7 +5673,11 @@ components:
         - httpStatus
         - totalTokens
         - durationMs
+        - firstOutputMs
         - startedAt
+        - attemptCount
+        - servedBy
+        - lastFailure
       additionalProperties: true
       description: One row of GET /admin/logs. Additional columns of gateway_operations are returned and intentionally left unconstrained.
     OperationDetail:

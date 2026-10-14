@@ -32,6 +32,10 @@ Los mensajes se limitan a 2000 caracteres y se limpian de cadenas con forma de c
 
 `GET /admin/logs` enumera resúmenes de operaciones. `GET /admin/logs/{operationId}` devuelve la operación y su cronograma de intento completo. `GET /admin/observability/summary` devuelve resultados, bloqueo, reintento, activo/abandonado y agregados de latencia, para un rango final de `window=5m|1h|24h`, o para un `start`/`end` explícito de como máximo 31 días, que es lo que muestra el panel. Envíos de control de rango propios.
 
+## Logs del panel [#dashboard-logs]
+
+La página **Logs** muestra una fila por solicitud con su estado HTTP, la causa de su último intento fallido en una frase (`Upstream 503 · server error`, `Deadline · response`, `Rejected 400 · bad request`), cuántos intentos necesitó, qué deployment respondió al final y su tiempo hasta la primera salida. Una causa en una fila exitosa es una de la que se recuperó un reintento o fallback. Filtra por causa (errores del proveedor, plazos del gateway, solicitudes rechazadas o canceladas, deployments mal configurados, errores del gateway) o pega un request id de `x-request-id`. Al abrir una fila se ve cada intento en la línea de tiempo de la propia solicitud, con la respuesta del proveedor y los datos de [Qué registra un intento fallido](#what-a-failed-attempt-records).
+
 ## Métricas del panel [#dashboard-metrics]
 
 La sección **Métricas** del panel filtra por public model, deployment, operación y rango de fechas. Las fechas de hoy y del calendario utilizan UTC; las fechas de finalización personalizadas son inclusivas. Los gráficos alternan entre tráfico, errores, latencia y uso de token de deployment. Las tablas muestran el consumo de public models, los intentos de deployment y las fallas agrupadas por deployment, tipo, fase y estado del proveedor.

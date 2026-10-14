@@ -490,6 +490,7 @@ function attemptErrorRecord(
 	};
 }
 
+/** What went wrong, in one word an operator can filter and count by. */
 function normalizedFailureKind(attempt: OperationAttemptInput): string | null {
 	if (attempt.ok) {
 		return null;
@@ -497,31 +498,33 @@ function normalizedFailureKind(attempt: OperationAttemptInput): string | null {
 	if (attempt.errorCode === "client_closed_request") {
 		return "cancelled";
 	}
+	if (attempt.errorCode === "upstream_stream_truncated") {
+		return "truncated";
+	}
 	if (attempt.errorCode?.includes("protocol")) {
 		return "protocol";
 	}
-	if (attempt.errorClass === "timeout") {
-		return "timeout";
-	}
-	if (attempt.errorClass === "rate_limit") {
-		return "rate_limit";
-	}
-	if (attempt.errorClass === "context_window") {
-		return "context_window";
-	}
-	if (attempt.errorClass === "content_policy") {
-		return "content_policy";
-	}
-	if (attempt.errorClass === "auth") {
-		return "auth";
+	switch (attempt.errorClass) {
+		case "timeout":
+		case "rate_limit":
+		case "context_window":
+		case "content_policy":
+		case "auth":
+		case "bad_request":
+			return attempt.errorClass;
+		case "permission":
+		case "not_found":
+			return "configuration";
+		default:
+			break;
 	}
 	if ((attempt.providerStatus ?? 0) >= 500) {
 		return "upstream_server";
 	}
-	if (attempt.failureKind === "transient") {
+	if (attempt.phase === "connect") {
 		return "network";
 	}
-	return "internal";
+	return attempt.failureKind === "transient" ? "upstream_server" : "internal";
 }
 
 /**

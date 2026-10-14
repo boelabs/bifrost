@@ -44,7 +44,15 @@ export default function LogsPage(props: PageProps<"/logs">) {
 				<Suspense
 					fallback={
 						<ToolbarSkeleton
-							widths={["8.5rem", "8.5rem", "8.5rem", "16rem", "5.5rem"]}
+							widths={[
+								"8.5rem",
+								"8.5rem",
+								"8.5rem",
+								"10rem",
+								"16rem",
+								"16rem",
+								"5.5rem",
+							]}
 						/>
 					}
 				>
@@ -82,6 +90,8 @@ async function Operations({ searchParams }: { searchParams: Params }) {
 		...(filters.outcome ? { outcome: filters.outcome } : {}),
 		...(filters.publicModel ? { publicModel: filters.publicModel } : {}),
 		...(filters.actor ? { actor: filters.actor } : {}),
+		...(filters.cause ? { failureOwner: filters.cause as never } : {}),
+		...(filters.requestId ? { requestId: filters.requestId } : {}),
 		...(range.start ? { start: range.start } : {}),
 		...(range.end ? { end: range.end } : {}),
 	});

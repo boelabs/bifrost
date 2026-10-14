@@ -1410,7 +1410,29 @@ export const OperationSummaryRow = loose(
 		httpStatus: nullableInteger,
 		totalTokens: nullableInteger,
 		durationMs: nullableInteger,
+		firstOutputMs: nullableInteger,
 		startedAt: timestamp,
+		attemptCount: z.int().meta({ description: "Upstream attempts made." }),
+		servedBy: nullableString.meta({
+			description: "Label (or id) of the deployment of the last attempt.",
+		}),
+		lastFailure: z
+			.union([
+				z.object({
+					owner: nullableString,
+					phase: nullableString,
+					kind: nullableString,
+					providerStatus: nullableInteger,
+					deployment: nullableString,
+					providerType: nullableString,
+					providerCode: nullableString,
+				}),
+				z.null(),
+			])
+			.meta({
+				description:
+					"The most recent failed attempt, including one a retry or fallback recovered from.",
+			}),
 	},
 	{
 		id: "OperationSummaryRow",

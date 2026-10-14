@@ -54,6 +54,17 @@ its complete attempt timeline. `GET /admin/observability/summary` returns outcom
 active/abandoned, and latency aggregates — for a trailing `window=5m|1h|24h`, or for an explicit
 `start`/`end` range of at most 31 days, which is what the dashboard's own range control sends.
 
+## Dashboard logs
+
+The **Logs** page lists one row per request with its HTTP status, the cause of its latest failed
+attempt in one phrase (`Upstream 503 · server error`, `Deadline · response`, `Rejected 400 · bad
+request`), how many attempts it took, which deployment answered last, and its first-output time. A
+cause on a successful row is one a retry or fallback recovered from. Filter by cause (provider
+errors, gateway deadlines, rejected or cancelled requests, misconfigured deployments, gateway
+errors) or paste a request id from `x-request-id`. Opening a row shows every attempt on the
+request's own timeline, with the provider's answer and the facts in
+[What a failed attempt records](#what-a-failed-attempt-records).
+
 ## Dashboard metrics
 
 The dashboard's **Metrics** section filters by public model, deployment, operation and date range.
