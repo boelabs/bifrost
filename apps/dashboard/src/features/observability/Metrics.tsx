@@ -4,6 +4,7 @@ import { SearchableSelect, Select, SelectItem } from "#/components/ui/select";
 import { type Column, DataTable } from "#/components/ui/datatable";
 import { ContentPanel as Card } from "#/components/ui/card";
 import { cacheReuseRate, tokenCount } from "./cache-usage";
+import { phaseLabel, kindLabel } from "./trace.ts";
 import { EmptyState } from "#/components/ui/page";
 import { Button } from "#/components/ui/button";
 import { MetricsChart } from "./MetricsChart";
@@ -365,9 +366,13 @@ export function Metrics({
 		{
 			key: "kind",
 			header: "Failure",
-			render: (row) => row.kind ?? "Unclassified",
+			render: (row) => kindLabel(row.kind) ?? "Unclassified",
 		},
-		{ key: "phase", header: "Phase", render: (row) => row.phase ?? "—" },
+		{
+			key: "phase",
+			header: "Phase",
+			render: (row) => phaseLabel(row.phase) ?? "—",
+		},
 		{
 			key: "status",
 			header: "Provider status",

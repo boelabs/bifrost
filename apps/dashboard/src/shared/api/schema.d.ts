@@ -1918,6 +1918,13 @@ export interface paths {
 					terminalVerified?: boolean;
 					failureKind?: string;
 					failurePhase?: string;
+					/** @description Operations with at least one attempt that failed this way */
+					failureOwner?:
+						| "provider"
+						| "gateway_deadline"
+						| "deployment_config"
+						| "client"
+						| "gateway";
 					minDurationMs?: number;
 					maxDurationMs?: number;
 					requestId?: string;
@@ -3752,8 +3759,23 @@ export interface components {
 			httpStatus: number | null;
 			totalTokens: number | null;
 			durationMs: number | null;
+			firstOutputMs: number | null;
 			/** Format: date-time */
 			startedAt: string;
+			/** @description Upstream attempts made. */
+			attemptCount: number;
+			/** @description Label (or id) of the deployment of the last attempt. */
+			servedBy: string | null;
+			/** @description The most recent failed attempt, including one a retry or fallback recovered from. */
+			lastFailure: {
+				owner: string | null;
+				phase: string | null;
+				kind: string | null;
+				providerStatus: number | null;
+				deployment: string | null;
+				providerType: string | null;
+				providerCode: string | null;
+			} | null;
 		} & {
 			[key: string]: unknown;
 		};

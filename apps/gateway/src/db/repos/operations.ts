@@ -1,8 +1,20 @@
-import { and, count, desc, eq, gte, lt, lte, sql, type SQL } from "drizzle-orm";
 import type { Page, PageResult } from "./deployments.ts";
 import type { PgColumn } from "drizzle-orm/pg-core";
 import { cacheMetrics } from "./cacheMetrics.ts";
 import { db } from "#db/client.ts";
+
+import {
+	getTableColumns,
+	type SQL,
+	count,
+	desc,
+	and,
+	gte,
+	lte,
+	sql,
+	eq,
+	lt,
+} from "drizzle-orm";
 
 import {
 	gatewayOperations,
@@ -27,6 +39,7 @@ export interface OperationFilter {
 	cacheHit?: boolean;
 	failureKind?: string;
 	failurePhase?: string;
+	failureOwner?: string;
 	minDurationMs?: number;
 	maxDurationMs?: number;
 	start?: Date;
@@ -98,6 +111,11 @@ function conditions(filter: OperationFilter): SQL[] {
 			sql`exists (select 1 from ${upstreamAttempts} a where a.operation_id = ${gatewayOperations.id} and a.failure_phase = ${filter.failurePhase})`,
 		);
 	}
+	if (filter.failureOwner) {
+		result.push(
+			sql`exists (select 1 from ${upstreamAttempts} a where a.operation_id = ${gatewayOperations.id} and a.failure_owner = ${filter.failureOwner})`,
+		);
+	}
 	if (filter.start) {
 		result.push(gte(gatewayOperations.startedAt, filter.start));
 	}
@@ -107,14 +125,56 @@ function conditions(filter: OperationFilter): SQL[] {
 	return result;
 }
 
+/** The most recent failed attempt of a row, as the list shows it. */
+export interface OperationFailureSummary {
+	owner: string | null;
+	phase: string | null;
+	kind: string | null;
+	providerStatus: number | null;
+	deployment: string | null;
+	providerType: string | null;
+	providerCode: string | null;
+}
+
+export type OperationListRow = GatewayOperationRow & {
+	attemptCount: number;
+	servedBy: string | null;
+	lastFailure: OperationFailureSummary | null;
+};
+
+/**
+ * Each row carries enough of its attempts to say what happened without opening it: how many there
+ * were, which deployment answered last, and the latest failure. The unique (operation, ordinal)
+ * index serves all three.
+ */
+// Drizzle leaves column references in a select list unqualified, which inside these subqueries
+// would bind to the attempt's own "id"; the parent row is named explicitly.
+const operationIdColumn = sql.raw('"gateway_operations"."id"');
+
+const attemptSummary = {
+	attemptCount: sql<number>`(select count(*)::int from ${upstreamAttempts} a where a.operation_id = ${operationIdColumn})`,
+	servedBy: sql<
+		string | null
+	>`(select coalesce(a.deployment_label, a.deployment_id::text) from ${upstreamAttempts} a where a.operation_id = ${operationIdColumn} order by a.ordinal desc limit 1)`,
+	lastFailure: sql<OperationFailureSummary | null>`(select jsonb_build_object(
+		'owner', a.failure_owner,
+		'phase', a.failure_phase,
+		'kind', a.failure_kind,
+		'providerStatus', a.provider_status,
+		'deployment', coalesce(a.deployment_label, a.deployment_id::text),
+		'providerType', a.error->'provider'->>'type',
+		'providerCode', a.error->'provider'->>'code'
+	) from ${upstreamAttempts} a where a.operation_id = ${operationIdColumn} and a.outcome = 'error' order by a.ordinal desc limit 1)`,
+};
+
 export async function listOperationsPage(
 	opts: Page & OperationFilter,
-): Promise<PageResult<GatewayOperationRow>> {
+): Promise<PageResult<OperationListRow>> {
 	const conds = conditions(opts);
 	const where = conds.length > 0 ? and(...conds) : undefined;
 	const [rows, totalRow] = await Promise.all([
 		db
-			.select()
+			.select({ ...getTableColumns(gatewayOperations), ...attemptSummary })
 			.from(gatewayOperations)
 			.where(where)
 			.orderBy(desc(gatewayOperations.startedAt))

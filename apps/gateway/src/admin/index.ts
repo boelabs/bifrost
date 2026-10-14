@@ -198,6 +198,7 @@ function parseLogFilter(c: import("hono").Context): OperationFilter {
 		...(terminalVerified === undefined ? {} : { terminalVerified }),
 		...queryPatch(c, "failureKind"),
 		...queryPatch(c, "failurePhase"),
+		...queryPatch(c, "failureOwner"),
 		...(minDurationMs === undefined ? {} : { minDurationMs }),
 		...(maxDurationMs === undefined ? {} : { maxDurationMs }),
 		...(start ? { start } : {}),

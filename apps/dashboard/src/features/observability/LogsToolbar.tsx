@@ -7,6 +7,7 @@ import { SearchField } from "#/shared/components/SearchField.tsx";
 import { useSearchWriter } from "#/shared/lib/useSearchWriter.ts";
 import { FilterX as IconFilterOff } from "lucide-react";
 import { Button } from "#/components/ui/button";
+import { FAILURE_OWNERS } from "./trace.ts";
 
 import {
 	type LogsFilters,
@@ -40,6 +41,7 @@ export function LogsToolbar({
 	const { filter, clear } = useSearchWriter(filters);
 	const { outcome, publicModel } = filters;
 	const actor = filters.actor ?? "";
+	const requestId = filters.requestId ?? "";
 	const filtered = isFiltered(filters);
 
 	return (
@@ -65,6 +67,21 @@ export function LogsToolbar({
 					</SelectItem>
 				))}
 			</Select>
+			<Select
+				aria-label="Filter by failure cause"
+				onValueChange={(key) =>
+					filter({ cause: !key || key === ALL ? undefined : key })
+				}
+				size="sm"
+				value={filters.cause ?? ALL}
+			>
+				<SelectItem value={ALL}>Any cause</SelectItem>
+				{FAILURE_OWNERS.map((owner) => (
+					<SelectItem key={owner.value} value={owner.value}>
+						{owner.label}
+					</SelectItem>
+				))}
+			</Select>
 			{models.length > 0 ? (
 				<SearchableSelect
 					aria-label="Filter by public model"
@@ -83,6 +100,12 @@ export function LogsToolbar({
 				onSearch={(value) => filter({ actor: value })}
 				placeholder="Actor"
 				value={actor}
+			/>
+			<SearchField
+				label="Find a request ID"
+				onSearch={(value) => filter({ requestId: value || undefined })}
+				placeholder="Request ID"
+				value={requestId}
 			/>
 			{filtered ? (
 				<Button

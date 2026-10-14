@@ -1510,6 +1510,22 @@ export function buildOpenApiDocument() {
 						{ name: "failureKind", in: "query", schema: { type: "string" } },
 						{ name: "failurePhase", in: "query", schema: { type: "string" } },
 						{
+							name: "failureOwner",
+							in: "query",
+							schema: {
+								type: "string",
+								enum: [
+									"provider",
+									"gateway_deadline",
+									"deployment_config",
+									"client",
+									"gateway",
+								],
+							},
+							description:
+								"Operations with at least one attempt that failed this way",
+						},
+						{
 							name: "minDurationMs",
 							in: "query",
 							schema: { type: "number", minimum: 0 },

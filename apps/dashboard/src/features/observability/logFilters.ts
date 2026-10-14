@@ -1,4 +1,5 @@
 import { type RangeKey, rangeSchema } from "#/shared/lib/range.ts";
+import { FAILURE_OWNERS } from "./trace.ts";
 import { z } from "zod";
 
 export const PAGE_SIZE = 50;
@@ -37,6 +38,11 @@ const schema = z.object({
 	outcome: z.enum(OUTCOMES).optional().catch(undefined),
 	publicModel: z.string().min(1).optional().catch(undefined),
 	actor: z.string().min(1).optional().catch(undefined),
+	cause: z
+		.enum(FAILURE_OWNERS.map((owner) => owner.value) as [string, ...string[]])
+		.optional()
+		.catch(undefined),
+	requestId: z.string().trim().min(1).max(200).optional().catch(undefined),
 	...rangeSchema(LOG_PERIODS),
 	offset: z.coerce.number().int().min(0).optional().catch(undefined),
 });
@@ -51,7 +57,13 @@ export function parseLogsFilters(
 }
 
 export function isFiltered(filters: LogsFilters): boolean {
-	return Boolean(filters.outcome || filters.publicModel || filters.actor);
+	return Boolean(
+		filters.outcome ||
+			filters.publicModel ||
+			filters.actor ||
+			filters.cause ||
+			filters.requestId,
+	);
 }
 
 /**
@@ -64,10 +76,11 @@ export const LOG_HEADERS = [
 	"Time",
 	"Outcome",
 	"Public model",
-	"Call",
-	"Actor",
-	"Tokens",
+	"Status",
+	"Cause",
+	"Attempts",
+	"First output",
 	"Duration",
-	"",
+	"Tokens",
 	"",
 ] as const;
