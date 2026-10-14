@@ -310,7 +310,9 @@
 				"inputCentsPerMTokens": 60,
 				"outputCentsPerMTokens": 300,
 				"cacheReadCentsPerMTokens": 10
-			}
+			},
+			"deprecated": true,
+			"notes": "Moonshot discontinued kimi-k2.5 on 2026-08-31; replacement kimi-k3."
 		},
 		"kimi-latest": {
 			"operations": {
@@ -325,7 +327,9 @@
 					"maxInputTokens": 131072,
 					"maxOutputTokens": 16384
 				}
-			}
+			},
+			"deprecated": true,
+			"notes": "Moonshot discontinued kimi-latest on 2026-01-28; replacement kimi-k3."
 		},
 		"kimi-k2": {
 			"operations": {
@@ -391,7 +395,9 @@
 			},
 			"pricing": {
 				"cacheReadCentsPerMTokens": 14.1
-			}
+			},
+			"deprecated": true,
+			"notes": "Moonshot discontinued the kimi-k2 series, including kimi-k2-thinking, on 2026-05-25; replacement kimi-k3."
 		}
 	}
 }

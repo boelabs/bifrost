@@ -380,7 +380,9 @@
 				"cacheReadCentsPerMTokens": 125,
 				"imageInputCentsPerMTokens": 800,
 				"imageOutputCentsPerMTokens": 3200
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-image-1.5; it shuts down on 2026-12-01 (replacement: gpt-image-2.5-sunburst or gpt-image-2.5-flare)."
 		},
 		"gpt-image-1": {
 			"operations": {
@@ -433,7 +435,9 @@
 				"cacheReadCentsPerMTokens": 125,
 				"imageInputCentsPerMTokens": 1000,
 				"imageOutputCentsPerMTokens": 4000
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-image-1; it shuts down on 2026-10-23 (replacement: gpt-image-2.5-sunburst or gpt-image-2.5-flare)."
 		},
 		"gpt-image-1-mini": {
 			"operations": {
@@ -486,7 +490,9 @@
 				"cacheReadCentsPerMTokens": 20,
 				"imageInputCentsPerMTokens": 250,
 				"imageOutputCentsPerMTokens": 800
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-image-1-mini; it shuts down on 2026-12-01 (replacement: gpt-image-2.5-sunburst or gpt-image-2.5-flare)."
 		},
 		"chatgpt-image-latest": {
 			"operations": {
@@ -539,7 +545,9 @@
 				"cacheReadCentsPerMTokens": 125,
 				"imageInputCentsPerMTokens": 800,
 				"imageOutputCentsPerMTokens": 3200
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated chatgpt-image-latest; it shuts down on 2026-12-01 (replacement: gpt-image-2.5-sunburst or gpt-image-2.5-flare)."
 		},
 		"dall-e-2": {
 			"operations": {
@@ -587,7 +595,9 @@
 						}
 					}
 				}
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI shut down dall-e-2 on 2026-05-12; replacement gpt-image-2."
 		},
 		"dall-e-3": {
 			"operations": {
@@ -614,7 +624,9 @@
 						}
 					}
 				}
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI shut down dall-e-3 on 2026-05-12; replacement gpt-image-2."
 		},
 		"gpt-transcribe": {
 			"operations": {
@@ -638,7 +650,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 250,
 				"outputCentsPerMTokens": 1000
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-4o-transcribe; it shuts down on 2027-02-26 (replacement: gpt-transcribe or gpt-live-transcribe)."
 		},
 		"gpt-4o-mini-transcribe": {
 			"operations": {
@@ -651,7 +665,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 125,
 				"outputCentsPerMTokens": 500
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-4o-mini-transcribe; it shuts down on 2027-02-26 (replacement: gpt-transcribe or gpt-live-transcribe)."
 		},
 		"gpt-5.6": {
 			"operations": {
@@ -1097,7 +1113,9 @@
 				"inputCentsPerMTokens": 20,
 				"outputCentsPerMTokens": 125,
 				"cacheReadCentsPerMTokens": 2
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-5.4-nano; it shuts down on 2027-04-01 (replacement: gpt-6-luna)."
 		},
 		"gpt-5.3-codex": {
 			"operations": {
@@ -1134,7 +1152,9 @@
 				"inputCentsPerMTokens": 175,
 				"outputCentsPerMTokens": 1400,
 				"cacheReadCentsPerMTokens": 17.5
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-5.3-codex; it shuts down on 2027-04-01 (replacement: gpt-6-sol)."
 		},
 		"gpt-5.2": {
 			"operations": {
@@ -1246,7 +1266,9 @@
 				"inputCentsPerMTokens": 125,
 				"outputCentsPerMTokens": 1000,
 				"cacheReadCentsPerMTokens": 12.5
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-5.1; it shuts down on 2027-04-01 (replacement: gpt-6-sol)."
 		},
 		"gpt-5": {
 			"operations": {
@@ -1679,7 +1701,9 @@
 				"inputCentsPerMTokens": 175,
 				"outputCentsPerMTokens": 1400,
 				"cacheReadCentsPerMTokens": 17.5
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI shut down gpt-5.3-chat-latest on 2026-08-10; replacement gpt-5.6-sol."
 		},
 		"gpt-audio": {
 			"operations": {
@@ -1714,7 +1738,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 250,
 				"outputCentsPerMTokens": 1000
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-audio; it shuts down on 2027-01-20 (replacement: gpt-audio-1.5)."
 		},
 		"gpt-audio-mini": {
 			"operations": {
@@ -1749,7 +1775,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 60,
 				"outputCentsPerMTokens": 240
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-audio-mini; it shuts down on 2027-01-20 (replacement: gpt-audio-1.5)."
 		},
 		"gpt-5.2-codex": {
 			"operations": {
@@ -1783,7 +1811,9 @@
 				"inputCentsPerMTokens": 175,
 				"outputCentsPerMTokens": 1400,
 				"cacheReadCentsPerMTokens": 17.5
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI shut down gpt-5.2-codex on 2026-07-23; replacement gpt-5.6-sol."
 		},
 		"gpt-5.2-chat": {
 			"operations": {
@@ -1814,7 +1844,9 @@
 				"inputCentsPerMTokens": 175,
 				"outputCentsPerMTokens": 1400,
 				"cacheReadCentsPerMTokens": 17.5
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI shut down gpt-5.2-chat-latest on 2026-08-10; replacement gpt-5.6-sol."
 		},
 		"gpt-5.1-codex-max": {
 			"operations": {
@@ -1848,7 +1880,9 @@
 				"inputCentsPerMTokens": 125,
 				"outputCentsPerMTokens": 1000,
 				"cacheReadCentsPerMTokens": 12.5
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI shut down gpt-5.1-codex-max on 2026-07-23; replacement gpt-5.6-sol."
 		},
 		"gpt-5.1-chat": {
 			"operations": {
@@ -1876,7 +1910,9 @@
 				"inputCentsPerMTokens": 125,
 				"outputCentsPerMTokens": 1000,
 				"cacheReadCentsPerMTokens": 12.5
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI shut down gpt-5.1-chat-latest on 2026-07-23; replacement gpt-5.6-sol."
 		},
 		"gpt-5.1-codex": {
 			"operations": {
@@ -1910,7 +1946,9 @@
 				"inputCentsPerMTokens": 125,
 				"outputCentsPerMTokens": 1000,
 				"cacheReadCentsPerMTokens": 13
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI shut down gpt-5.1-codex on 2026-07-23; replacement gpt-5.6-sol."
 		},
 		"gpt-5.1-codex-mini": {
 			"operations": {
@@ -1944,7 +1982,9 @@
 				"inputCentsPerMTokens": 25,
 				"outputCentsPerMTokens": 200,
 				"cacheReadCentsPerMTokens": 3
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI shut down gpt-5.1-codex-mini on 2026-07-23; replacement gpt-5.6-terra."
 		},
 		"gpt-5-image-mini": {
 			"operations": {
@@ -2058,7 +2098,9 @@
 				"inputCentsPerMTokens": 1000,
 				"outputCentsPerMTokens": 4000,
 				"cacheReadCentsPerMTokens": 250
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI shut down o3-deep-research (o3-deep-research-2025-06-26) on 2026-07-23; replacement gpt-5.6-sol."
 		},
 		"o4-mini-deep-research": {
 			"operations": {
@@ -2096,7 +2138,9 @@
 				"inputCentsPerMTokens": 200,
 				"outputCentsPerMTokens": 800,
 				"cacheReadCentsPerMTokens": 50
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI shut down o4-mini-deep-research (o4-mini-deep-research-2025-06-26) on 2026-07-23; replacement gpt-5.6-sol."
 		},
 		"gpt-5-codex": {
 			"operations": {
@@ -2129,7 +2173,9 @@
 				"outputCentsPerMTokens": 1000,
 				"cacheReadCentsPerMTokens": 13,
 				"cacheWriteCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI shut down gpt-5-codex on 2026-07-23; replacement gpt-5.6-sol."
 		},
 		"gpt-5-chat": {
 			"operations": {
@@ -2158,7 +2204,9 @@
 				"inputCentsPerMTokens": 125,
 				"outputCentsPerMTokens": 1000,
 				"cacheReadCentsPerMTokens": 12.5
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI shut down gpt-5-chat-latest on 2026-07-23; replacement gpt-5.6-sol."
 		},
 		"o4-mini-high": {
 			"operations": {
@@ -2222,7 +2270,9 @@
 				"outputCentsPerMTokens": 440,
 				"cacheReadCentsPerMTokens": 27.5,
 				"cacheWriteCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated o4-mini (o4-mini-2025-04-16); it shuts down on 2026-10-23 (replacement: gpt-5.6-terra)."
 		},
 		"gpt-4.1-nano": {
 			"operations": {
@@ -2254,7 +2304,9 @@
 				"outputCentsPerMTokens": 40,
 				"cacheReadCentsPerMTokens": 2.5,
 				"cacheWriteCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-4.1-nano (gpt-4.1-nano-2025-04-14); it shuts down on 2026-10-23 (replacement: gpt-5.6-luna)."
 		},
 		"o1-pro": {
 			"operations": {
@@ -2280,7 +2332,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 15000,
 				"outputCentsPerMTokens": 60000
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated o1-pro (o1-pro-2025-03-19); it shuts down on 2026-10-23 (replacement: gpt-5.6-sol with reasoning.mode pro)."
 		},
 		"gpt-4o-mini-search-preview": {
 			"operations": {
@@ -2394,7 +2448,9 @@
 				"outputCentsPerMTokens": 440,
 				"cacheReadCentsPerMTokens": 55,
 				"cacheWriteCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated o3-mini (o3-mini-2025-01-31); it shuts down on 2026-10-23 (replacement: gpt-5.6-sol)."
 		},
 		"o1": {
 			"operations": {
@@ -2427,7 +2483,9 @@
 				"outputCentsPerMTokens": 6000,
 				"cacheReadCentsPerMTokens": 750,
 				"cacheWriteCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated o1 (o1-2024-12-17); it shuts down on 2026-10-23 (replacement: gpt-5.6-sol)."
 		},
 		"gpt-4o-2024-11-20": {
 			"operations": {
@@ -2465,7 +2523,9 @@
 				"inputCentsPerMTokens": 250,
 				"outputCentsPerMTokens": 1000,
 				"cacheReadCentsPerMTokens": 125
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-4o-2024-11-20; it shuts down on 2027-01-14 (replacement: gpt-6-luna)."
 		},
 		"gpt-4o-2024-08-06": {
 			"operations": {
@@ -2503,7 +2563,9 @@
 				"inputCentsPerMTokens": 250,
 				"outputCentsPerMTokens": 1000,
 				"cacheReadCentsPerMTokens": 125
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-4o-2024-08-06; it shuts down on 2027-01-14 (replacement: gpt-6-luna)."
 		},
 		"gpt-4o-mini-2024-07-18": {
 			"operations": {
@@ -2541,7 +2603,9 @@
 				"inputCentsPerMTokens": 15,
 				"outputCentsPerMTokens": 60,
 				"cacheReadCentsPerMTokens": 7.5
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-4o-mini-2024-07-18; it shuts down on 2027-01-14 (replacement: gpt-6-luna)."
 		},
 		"gpt-4o-2024-05-13": {
 			"operations": {
@@ -2577,7 +2641,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 500,
 				"outputCentsPerMTokens": 1500
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-4o-2024-05-13; it shuts down on 2026-10-23 (replacement: gpt-5.6-sol)."
 		},
 		"gpt-4o": {
 			"operations": {
@@ -2650,7 +2716,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 1000,
 				"outputCentsPerMTokens": 3000
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-4-turbo (gpt-4-turbo-2024-04-09); it shuts down on 2026-10-23 (replacement: gpt-5.6-sol)."
 		},
 		"gpt-4-turbo-preview": {
 			"operations": {
@@ -2684,7 +2752,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 1000,
 				"outputCentsPerMTokens": 3000
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI shut down gpt-4-0125-preview, which gpt-4-turbo-preview points to, on 2026-03-26; replacement gpt-5 or gpt-4.1."
 		},
 		"gpt-3.5-turbo-instruct": {
 			"operations": {
@@ -2716,7 +2786,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 150,
 				"outputCentsPerMTokens": 200
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI shut down gpt-3.5-turbo-instruct on 2026-09-28; replacement gpt-5.6-terra."
 		},
 		"gpt-3.5-turbo-16k": {
 			"operations": {
@@ -2785,7 +2857,9 @@
 				"inputCentsPerMTokens": 50,
 				"outputCentsPerMTokens": 150,
 				"cacheReadCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-3.5-turbo (gpt-3.5-turbo-0125); it shuts down on 2026-10-23 (replacement: gpt-5.6-terra)."
 		},
 		"gpt-4": {
 			"operations": {
@@ -2819,7 +2893,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 3000,
 				"outputCentsPerMTokens": 6000
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-4 (gpt-4-0613); it shuts down on 2026-10-23 (replacement: gpt-5.6-sol)."
 		},
 		"gpt-oss-20b": {
 			"operations": {

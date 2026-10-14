@@ -92,7 +92,9 @@
 					"supportsVideoUrl": true,
 					"maxInputReferences": 3
 				}
-			}
+			},
+			"deprecated": true,
+			"notes": "Google's deprecations page schedules veo-3.1-generate-preview for shutdown on 2026-10-22; replacement gemini-omni-1.1-flash."
 		},
 		"veo-3.1-fast-generate-preview": {
 			"operations": {
@@ -133,7 +135,9 @@
 					"supportsVideoUrl": true,
 					"maxInputReferences": 3
 				}
-			}
+			},
+			"deprecated": true,
+			"notes": "Google's deprecations page schedules veo-3.1-fast-generate-preview for shutdown on 2026-10-22; replacement gemini-omni-1.1-flash."
 		},
 		"veo-3.1-lite-generate-preview": {
 			"operations": {
@@ -165,7 +169,9 @@
 					"supportsSeed": true,
 					"maxInputReferences": 1
 				}
-			}
+			},
+			"deprecated": true,
+			"notes": "Google's deprecations page schedules veo-3.1-lite-generate-preview for shutdown on 2026-10-22; replacement gemini-omni-1.1-flash."
 		},
 		"gemini-embedding-2": {
 			"operations": {
@@ -1089,7 +1095,8 @@
 				"cacheReadCentsPerMTokens": 5,
 				"imageOutputCentsPerMTokens": 6000
 			},
-			"notes": "Sizes follow Google's published aspect-ratio table. The 21:9 / 512px cell is omitted: the documented 792x168 is not a 21:9 frame, so it is left out rather than guessed."
+			"deprecated": true,
+			"notes": "Google deprecated gemini-3.1-flash-image on 2026-10-06 with no shutdown date announced; replacement gemini-nano-banana-2.1. Sizes follow Google's published aspect-ratio table. The 21:9 / 512px cell is omitted: the documented 792x168 is not a 21:9 frame, so it is left out rather than guessed."
 		},
 		"gemini-3.1-flash-lite-image": {
 			"operations": {
@@ -1605,7 +1612,7 @@
 				"imageOutputCentsPerMTokens": 3000
 			},
 			"deprecated": true,
-			"notes": "Deprecated by Google; replacement gemini-3.1-flash-lite-image or gemini-3.1-flash-image. Google's pricing page says it shuts down on 2026-10-02, while its deprecations page lists 2027-03-15 as the earliest shutdown."
+			"notes": "Google deprecated gemini-2.5-flash-image; its deprecations page lists shutdown on 2027-03-15 (the pricing page says 2026-10-02); replacement gemini-3.1-flash-lite-image."
 		},
 		"gemini-4-argon": {
 			"operations": {
@@ -1802,7 +1809,9 @@
 				"outputCentsPerMTokens": 375,
 				"cacheReadCentsPerMTokens": 7.5,
 				"cacheWriteCentsPerMTokens": 2.083333
-			}
+			},
+			"deprecated": true,
+			"notes": "Google deprecated gemini-3.7-flash on 2026-10-08; API requests to it are automatically routed to gemini-3.8-flash (replacement)."
 		},
 		"gemini-3.5-flash": {
 			"operations": {
@@ -1841,7 +1850,9 @@
 				"outputCentsPerMTokens": 900,
 				"cacheReadCentsPerMTokens": 15,
 				"cacheWriteCentsPerMTokens": 4.166667
-			}
+			},
+			"deprecated": true,
+			"notes": "Google deprecated gemini-3.5-flash on 2026-10-08; API requests to it are automatically routed to gemini-3.6-flash (replacement)."
 		},
 		"gemini-3.5-flash-lite": {
 			"operations": {
@@ -3025,7 +3036,9 @@
 				"outputCentsPerMTokens": 40,
 				"cacheReadCentsPerMTokens": 1,
 				"cacheWriteCentsPerMTokens": 8.333333
-			}
+			},
+			"deprecated": true,
+			"notes": "Google shut down gemini-2.5-flash-lite-preview-09-2025 on 2026-03-31 (deprecations page); replacement gemini-3.1-flash-lite."
 		},
 		"gemini-2.5-pro-preview": {
 			"operations": {
@@ -3107,7 +3120,9 @@
 						"cacheReadCentsPerMTokens": 25
 					}
 				]
-			}
+			},
+			"deprecated": true,
+			"notes": "Google redirected gemini-2.5-pro-preview-05-06 to gemini-2.5-pro on 2025-06-26 and shut it down on 2025-12-02 (deprecations page); replacement gemini-3.1-pro-preview."
 		},
 		"gemma-4-31b-it": {
 			"operations": {
