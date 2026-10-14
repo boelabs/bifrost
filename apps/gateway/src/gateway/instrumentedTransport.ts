@@ -13,15 +13,18 @@ export async function upstreamFetch(
 			...init,
 			...(ctx.signal ? { signal: ctx.signal } : {}),
 		});
+		ctx.watchdog?.headers();
 		if (!response.body) {
 			return response;
 		}
 		ctx.transportStats ??= { upstreamBytes: 0 };
 		const stats = ctx.transportStats;
+		const { watchdog } = ctx;
 		const counted = response.body.pipeThrough(
 			new TransformStream<Uint8Array, Uint8Array>({
 				transform(chunk, controller) {
 					stats.upstreamBytes += chunk.byteLength;
+					watchdog?.bytes();
 					controller.enqueue(chunk);
 				},
 			}),
@@ -33,7 +36,7 @@ export async function upstreamFetch(
 		});
 	} catch (error) {
 		if (ctx.signal?.aborted) {
-			throw abortGatewayError(ctx.signal, "headers");
+			throw abortGatewayError(ctx.signal, "response");
 		}
 		throw error;
 	}
@@ -49,6 +52,7 @@ export function upstreamWebSocket(
 	ctx.transportStats ??= { upstreamBytes: 0 };
 	const stats = ctx.transportStats;
 	socket.on("message", (data) => {
+		ctx.watchdog?.bytes();
 		if (typeof data === "string") {
 			stats.upstreamBytes += Buffer.byteLength(data);
 		} else if (data instanceof ArrayBuffer) {

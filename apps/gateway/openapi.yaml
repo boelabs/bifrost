@@ -3621,19 +3621,11 @@ components:
     ExecutionPolicyOverride:
       type: object
       properties:
-        firstOutputMs:
+        responseMs:
           type: integer
           exclusiveMinimum: 0
           maximum: 9007199254740991
         idleMs:
-          type: integer
-          exclusiveMinimum: 0
-          maximum: 9007199254740991
-        reasoningOnlyMs:
-          type: integer
-          exclusiveMinimum: 0
-          maximum: 9007199254740991
-        preCommitMs:
           type: integer
           exclusiveMinimum: 0
           maximum: 9007199254740991
@@ -3941,81 +3933,9 @@ components:
               type: object
               properties:
                 json:
-                  type: object
-                  properties:
-                    firstOutputMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    idleMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    reasoningOnlyMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    preCommitMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    totalMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    maxAttempts:
-                      type: integer
-                      minimum: 1
-                      maximum: 20
-                  required:
-                    - firstOutputMs
-                    - idleMs
-                    - reasoningOnlyMs
-                    - preCommitMs
-                    - totalMs
-                    - maxAttempts
+                  $ref: "#/components/schemas/ExecutionPolicy"
                 stream:
-                  type: object
-                  properties:
-                    firstOutputMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    idleMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    reasoningOnlyMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    preCommitMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    totalMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    maxAttempts:
-                      type: integer
-                      minimum: 1
-                      maximum: 20
-                  required:
-                    - firstOutputMs
-                    - idleMs
-                    - reasoningOnlyMs
-                    - preCommitMs
-                    - totalMs
-                    - maxAttempts
+                  $ref: "#/components/schemas/ExecutionPolicy"
               required:
                 - json
                 - stream
@@ -4023,81 +3943,9 @@ components:
               type: object
               properties:
                 json:
-                  type: object
-                  properties:
-                    firstOutputMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    idleMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    reasoningOnlyMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    preCommitMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    totalMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    maxAttempts:
-                      type: integer
-                      minimum: 1
-                      maximum: 20
-                  required:
-                    - firstOutputMs
-                    - idleMs
-                    - reasoningOnlyMs
-                    - preCommitMs
-                    - totalMs
-                    - maxAttempts
+                  $ref: "#/components/schemas/ExecutionPolicy"
                 stream:
-                  type: object
-                  properties:
-                    firstOutputMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    idleMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    reasoningOnlyMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    preCommitMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    totalMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    maxAttempts:
-                      type: integer
-                      minimum: 1
-                      maximum: 20
-                  required:
-                    - firstOutputMs
-                    - idleMs
-                    - reasoningOnlyMs
-                    - preCommitMs
-                    - totalMs
-                    - maxAttempts
+                  $ref: "#/components/schemas/ExecutionPolicy"
               required:
                 - json
                 - stream
@@ -4105,81 +3953,9 @@ components:
               type: object
               properties:
                 json:
-                  type: object
-                  properties:
-                    firstOutputMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    idleMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    reasoningOnlyMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    preCommitMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    totalMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    maxAttempts:
-                      type: integer
-                      minimum: 1
-                      maximum: 20
-                  required:
-                    - firstOutputMs
-                    - idleMs
-                    - reasoningOnlyMs
-                    - preCommitMs
-                    - totalMs
-                    - maxAttempts
+                  $ref: "#/components/schemas/ExecutionPolicy"
                 stream:
-                  type: object
-                  properties:
-                    firstOutputMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    idleMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    reasoningOnlyMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    preCommitMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    totalMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    maxAttempts:
-                      type: integer
-                      minimum: 1
-                      maximum: 20
-                  required:
-                    - firstOutputMs
-                    - idleMs
-                    - reasoningOnlyMs
-                    - preCommitMs
-                    - totalMs
-                    - maxAttempts
+                  $ref: "#/components/schemas/ExecutionPolicy"
               required:
                 - json
                 - stream
@@ -4187,81 +3963,9 @@ components:
               type: object
               properties:
                 json:
-                  type: object
-                  properties:
-                    firstOutputMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    idleMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    reasoningOnlyMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    preCommitMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    totalMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    maxAttempts:
-                      type: integer
-                      minimum: 1
-                      maximum: 20
-                  required:
-                    - firstOutputMs
-                    - idleMs
-                    - reasoningOnlyMs
-                    - preCommitMs
-                    - totalMs
-                    - maxAttempts
+                  $ref: "#/components/schemas/ExecutionPolicy"
                 stream:
-                  type: object
-                  properties:
-                    firstOutputMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    idleMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    reasoningOnlyMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    preCommitMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    totalMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    maxAttempts:
-                      type: integer
-                      minimum: 1
-                      maximum: 20
-                  required:
-                    - firstOutputMs
-                    - idleMs
-                    - reasoningOnlyMs
-                    - preCommitMs
-                    - totalMs
-                    - maxAttempts
+                  $ref: "#/components/schemas/ExecutionPolicy"
               required:
                 - json
                 - stream
@@ -4269,81 +3973,9 @@ components:
               type: object
               properties:
                 json:
-                  type: object
-                  properties:
-                    firstOutputMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    idleMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    reasoningOnlyMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    preCommitMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    totalMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    maxAttempts:
-                      type: integer
-                      minimum: 1
-                      maximum: 20
-                  required:
-                    - firstOutputMs
-                    - idleMs
-                    - reasoningOnlyMs
-                    - preCommitMs
-                    - totalMs
-                    - maxAttempts
+                  $ref: "#/components/schemas/ExecutionPolicy"
                 stream:
-                  type: object
-                  properties:
-                    firstOutputMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    idleMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    reasoningOnlyMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    preCommitMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    totalMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    maxAttempts:
-                      type: integer
-                      minimum: 1
-                      maximum: 20
-                  required:
-                    - firstOutputMs
-                    - idleMs
-                    - reasoningOnlyMs
-                    - preCommitMs
-                    - totalMs
-                    - maxAttempts
+                  $ref: "#/components/schemas/ExecutionPolicy"
               required:
                 - json
                 - stream
@@ -4351,81 +3983,9 @@ components:
               type: object
               properties:
                 json:
-                  type: object
-                  properties:
-                    firstOutputMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    idleMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    reasoningOnlyMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    preCommitMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    totalMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    maxAttempts:
-                      type: integer
-                      minimum: 1
-                      maximum: 20
-                  required:
-                    - firstOutputMs
-                    - idleMs
-                    - reasoningOnlyMs
-                    - preCommitMs
-                    - totalMs
-                    - maxAttempts
+                  $ref: "#/components/schemas/ExecutionPolicy"
                 stream:
-                  type: object
-                  properties:
-                    firstOutputMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    idleMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    reasoningOnlyMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    preCommitMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    totalMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    maxAttempts:
-                      type: integer
-                      minimum: 1
-                      maximum: 20
-                  required:
-                    - firstOutputMs
-                    - idleMs
-                    - reasoningOnlyMs
-                    - preCommitMs
-                    - totalMs
-                    - maxAttempts
+                  $ref: "#/components/schemas/ExecutionPolicy"
               required:
                 - json
                 - stream
@@ -4433,81 +3993,9 @@ components:
               type: object
               properties:
                 json:
-                  type: object
-                  properties:
-                    firstOutputMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    idleMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    reasoningOnlyMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    preCommitMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    totalMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    maxAttempts:
-                      type: integer
-                      minimum: 1
-                      maximum: 20
-                  required:
-                    - firstOutputMs
-                    - idleMs
-                    - reasoningOnlyMs
-                    - preCommitMs
-                    - totalMs
-                    - maxAttempts
+                  $ref: "#/components/schemas/ExecutionPolicy"
                 stream:
-                  type: object
-                  properties:
-                    firstOutputMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    idleMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    reasoningOnlyMs:
-                      anyOf:
-                        - type: integer
-                          exclusiveMinimum: 0
-                          maximum: 3600000
-                        - type: "null"
-                    preCommitMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    totalMs:
-                      type: integer
-                      exclusiveMinimum: 0
-                      maximum: 3600000
-                    maxAttempts:
-                      type: integer
-                      minimum: 1
-                      maximum: 20
-                  required:
-                    - firstOutputMs
-                    - idleMs
-                    - reasoningOnlyMs
-                    - preCommitMs
-                    - totalMs
-                    - maxAttempts
+                  $ref: "#/components/schemas/ExecutionPolicy"
               required:
                 - json
                 - stream
@@ -4574,18 +4062,6 @@ components:
         protectLastDeployment:
           description: Never open the deployment circuit when a public model has nowhere else to route. Quarantining the only deployment turns a degraded upstream into a total outage, and the gateway's 503 is less useful to the caller than the upstream's own error.
           type: boolean
-        adaptiveTimeoutsEnabled:
-          description: Narrow each attempt's first-output deadline to a multiple of what that deployment usually takes, instead of the budget the slowest member of the pool needs.
-          type: boolean
-        adaptiveTimeoutMultiplier:
-          description: How many times its own typical time-to-first-output a deployment is granted.
-          type: number
-          minimum: 1
-        adaptiveTimeoutFloorMs:
-          description: Lower bound for the adaptive deadline, so a very fast deployment is not cut off by ordinary variance.
-          type: integer
-          exclusiveMinimum: 0
-          maximum: 9007199254740991
         cooldownSeconds:
           description: Time a deployment remains unavailable after exceeding allowedFails. Zero disables automatic cooldown circuits.
           type: integer
@@ -4616,6 +4092,36 @@ components:
           type: integer
           minimum: 0
           maximum: 9007199254740991
+    ExecutionPolicy:
+      type: object
+      properties:
+        responseMs:
+          type: integer
+          exclusiveMinimum: 0
+          maximum: 3600000
+          description: "JSON: time until the complete upstream response has arrived. Stream: time until the upstream answers with response headers."
+        idleMs:
+          anyOf:
+            - type: integer
+              exclusiveMinimum: 0
+              maximum: 3600000
+            - type: "null"
+          description: "Stream only: the longest silence allowed between two upstream bytes. Model output is never interpreted, so silent reasoning is not a stall. null disables it."
+        totalMs:
+          type: integer
+          exclusiveMinimum: 0
+          maximum: 3600000
+          description: Request-wide bound across every attempt, retry and fallback.
+        maxAttempts:
+          type: integer
+          minimum: 1
+          maximum: 20
+          description: Upstream attempts per request, across deployments and fallbacks.
+      required:
+        - responseMs
+        - idleMs
+        - totalMs
+        - maxAttempts
     DashboardSettings:
       type: object
       properties:
@@ -6921,14 +6427,6 @@ components:
           maximum: 9007199254740991
         protectLastDeployment:
           type: boolean
-        adaptiveTimeoutsEnabled:
-          type: boolean
-        adaptiveTimeoutMultiplier:
-          type: number
-        adaptiveTimeoutFloorMs:
-          type: integer
-          minimum: -9007199254740991
-          maximum: 9007199254740991
         cooldownSeconds:
           type: integer
           minimum: -9007199254740991
@@ -6961,7 +6459,17 @@ components:
           type: object
           propertyNames:
             type: string
-          additionalProperties: {}
+          additionalProperties:
+            type: object
+            properties:
+              json:
+                $ref: "#/components/schemas/ExecutionPolicyOutput"
+              stream:
+                $ref: "#/components/schemas/ExecutionPolicyOutput"
+            required:
+              - json
+              - stream
+            additionalProperties: false
         updatedAt:
           type: string
           format: date-time
@@ -6974,9 +6482,6 @@ components:
         - failureRatePercent
         - minWindowRequests
         - protectLastDeployment
-        - adaptiveTimeoutsEnabled
-        - adaptiveTimeoutMultiplier
-        - adaptiveTimeoutFloorMs
         - cooldownSeconds
         - failureWindowSeconds
         - maxCooldownSeconds
@@ -7076,7 +6581,7 @@ components:
     ExecutionPolicyOverrideOutput:
       type: object
       properties:
-        firstOutputMs:
+        responseMs:
           type: integer
           exclusiveMinimum: 0
           maximum: 9007199254740991
@@ -7084,18 +6589,41 @@ components:
           type: integer
           exclusiveMinimum: 0
           maximum: 9007199254740991
-        reasoningOnlyMs:
-          type: integer
-          exclusiveMinimum: 0
-          maximum: 9007199254740991
-        preCommitMs:
-          type: integer
-          exclusiveMinimum: 0
-          maximum: 9007199254740991
         totalMs:
           type: integer
           exclusiveMinimum: 0
           maximum: 9007199254740991
+      additionalProperties: false
+    ExecutionPolicyOutput:
+      type: object
+      properties:
+        responseMs:
+          type: integer
+          exclusiveMinimum: 0
+          maximum: 3600000
+          description: "JSON: time until the complete upstream response has arrived. Stream: time until the upstream answers with response headers."
+        idleMs:
+          anyOf:
+            - type: integer
+              exclusiveMinimum: 0
+              maximum: 3600000
+            - type: "null"
+          description: "Stream only: the longest silence allowed between two upstream bytes. Model output is never interpreted, so silent reasoning is not a stall. null disables it."
+        totalMs:
+          type: integer
+          exclusiveMinimum: 0
+          maximum: 3600000
+          description: Request-wide bound across every attempt, retry and fallback.
+        maxAttempts:
+          type: integer
+          minimum: 1
+          maximum: 20
+          description: Upstream attempts per request, across deployments and fallbacks.
+      required:
+        - responseMs
+        - idleMs
+        - totalMs
+        - maxAttempts
       additionalProperties: false
   responses:
     Error:

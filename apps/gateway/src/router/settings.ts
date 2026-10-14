@@ -2,7 +2,7 @@ import type { UnsupportedParameterStrategy } from "#catalog/parameters.ts";
 import { getRouterSettings } from "#db/repos/router.ts";
 
 import {
-	type AdaptiveDeadlineSettings,
+	normalizeExecutionPolicies,
 	DEFAULT_EXECUTION_POLICIES,
 	type ExecutionPolicies,
 } from "#core/executionPolicy.ts";
@@ -25,7 +25,6 @@ export interface EffectiveSettings {
 	failureRatePercent: number;
 	minWindowRequests: number;
 	protectLastDeployment: boolean;
-	adaptiveTimeouts: AdaptiveDeadlineSettings;
 	cooldownSeconds: number;
 	failureWindowSeconds: number;
 	maxCooldownSeconds: number;
@@ -44,7 +43,6 @@ const DEFAULTS: EffectiveSettings = {
 	failureRatePercent: 0.5,
 	minWindowRequests: 5,
 	protectLastDeployment: true,
-	adaptiveTimeouts: { enabled: true, multiplier: 4, floorMs: 5000 },
 	cooldownSeconds: 5,
 	failureWindowSeconds: 60,
 	maxCooldownSeconds: 300,
@@ -73,18 +71,13 @@ async function loadGlobal(): Promise<EffectiveSettings> {
 				failureRatePercent: row.failureRatePercent,
 				minWindowRequests: row.minWindowRequests,
 				protectLastDeployment: row.protectLastDeployment,
-				adaptiveTimeouts: {
-					enabled: row.adaptiveTimeoutsEnabled,
-					multiplier: row.adaptiveTimeoutMultiplier,
-					floorMs: row.adaptiveTimeoutFloorMs,
-				},
 				cooldownSeconds: row.cooldownSeconds,
 				failureWindowSeconds: row.failureWindowSeconds,
 				maxCooldownSeconds: row.maxCooldownSeconds,
 				halfOpenProbeSeconds: row.halfOpenProbeSeconds,
 				configurationCooldownSeconds: row.configurationCooldownSeconds,
 				throttleCooldownSeconds: row.throttleCooldownSeconds,
-				executionPolicies: row.executionPolicies ?? DEFAULT_EXECUTION_POLICIES,
+				executionPolicies: normalizeExecutionPolicies(row.executionPolicies),
 				retryAfterSeconds: row.retryAfterSeconds,
 			}
 		: DEFAULTS;

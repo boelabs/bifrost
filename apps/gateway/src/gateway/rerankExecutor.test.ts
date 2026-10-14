@@ -87,7 +87,7 @@ test("rerank executor classifies malformed rankings as retryable protocol errors
 	);
 });
 
-test("rerank executor honors an exhausted first-output deadline before dispatch", async () => {
+test("rerank executor does not dispatch an attempt whose deadline already expired", async () => {
 	let dispatched = false;
 	await withStubbedFetch(
 		async () => {
@@ -95,21 +95,17 @@ test("rerank executor honors an exhausted first-output deadline before dispatch"
 			return jsonResponse({});
 		},
 		async () => {
-			const ctx = context();
-			ctx.attemptStartedAt = Date.now() - 100;
-			ctx.executionPolicy = {
-				firstOutputMs: 10,
-				idleMs: null,
-				reasoningOnlyMs: null,
-				preCommitMs: 60_000,
-				totalMs: 60_000,
-				maxAttempts: 3,
-			};
+			const controller = new AbortController();
+			controller.abort({
+				owner: "gateway",
+				type: "timeout",
+				phase: "response",
+			});
+			const ctx = { ...context(), signal: controller.signal };
 			await assert.rejects(
 				() => executeRerank(openrouterAdapter, request, ctx),
 				(error: unknown) =>
-					GatewayError.is(error) &&
-					error.code === "upstream_first_output_timeout",
+					GatewayError.is(error) && error.code === "upstream_response_timeout",
 			);
 		},
 	);

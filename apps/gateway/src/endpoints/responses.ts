@@ -23,6 +23,20 @@ import { env } from "#config/env.ts";
 import type { Context } from "hono";
 
 import {
+	finishDownstreamWriteObservation,
+	type DownstreamWriteObservation,
+	markDownstreamSemanticWritten,
+	markDownstreamTerminalWritten,
+	newDownstreamWriteObservation,
+	markDownstreamClientAborted,
+	awaitWithSSEHeartbeats,
+	settleBeforeCommit,
+	withSSEHeartbeats,
+	writeSSEHeartbeat,
+	writeSSE,
+} from "./runtime/sse.ts";
+
+import {
 	canonicalChunksToResponsesEvents,
 	canonicalToResponsesResponse,
 	responsesRequestToCanonical,
@@ -49,19 +63,6 @@ import {
 	parseBody,
 	preflight,
 } from "./runtime/pipeline.ts";
-
-import {
-	finishDownstreamWriteObservation,
-	type DownstreamWriteObservation,
-	markDownstreamSemanticWritten,
-	markDownstreamTerminalWritten,
-	newDownstreamWriteObservation,
-	markDownstreamClientAborted,
-	awaitWithSSEHeartbeats,
-	withSSEHeartbeats,
-	writeSSEHeartbeat,
-	writeSSE,
-} from "./runtime/sse.ts";
 
 import {
 	compactResponseRequestSchema,
@@ -349,6 +350,7 @@ function streamResponses(
 	prepared: PreparedResponsesRequest,
 	canonical: CanonicalChatRequest,
 	settings: EffectiveSettings,
+	routePromise: ReturnType<typeof routeChat>,
 ): Response {
 	return streamSSE(c, async (stream) => {
 		const downstream = newDownstreamWriteObservation(log.operationId);
@@ -370,11 +372,6 @@ function streamResponses(
 		} | null = null;
 		let nextFailureSequence = 0;
 		try {
-			await writeSSEHeartbeat(stream, downstream);
-			const routePromise = routeChat(c, canonical, log.requestId, settings, {
-				signal: log.clientSignal,
-				operationId: log.operationId,
-			});
 			routed = await awaitWithSSEHeartbeats(routePromise, () =>
 				writeSSEHeartbeat(stream, downstream),
 			);
@@ -673,6 +670,11 @@ export async function responsesHandler(c: Context<AppEnv>): Promise<Response> {
 
 		const settings = await getEffectiveSettings();
 		if (canonical.stream) {
+			const routePromise = routeChat(c, canonical, log.requestId, settings, {
+				signal: log.clientSignal,
+				operationId: log.operationId,
+			});
+			await settleBeforeCommit(routePromise);
 			return streamResponses(
 				c,
 				log,
@@ -681,6 +683,7 @@ export async function responsesHandler(c: Context<AppEnv>): Promise<Response> {
 				prepared,
 				canonical,
 				settings,
+				routePromise,
 			);
 		}
 		const { routing, parameterPolicy, contentInputResolution } =

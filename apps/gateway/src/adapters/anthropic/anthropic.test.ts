@@ -1,6 +1,8 @@
 import { jsonBody, must, streamOf } from "#test-support/adapters.ts";
+import { observeChatStream } from "#gateway/streamLifecycle.ts";
 import { adapterDiagnostics } from "#adapters/diagnostics.ts";
 import type { AdapterContext } from "#adapters/types.ts";
+import { GatewayError } from "#core/errors.ts";
 import { anthropicAdapter } from "./index.ts";
 import type { Usage } from "#core/usage.ts";
 import assert from "node:assert/strict";
@@ -802,5 +804,58 @@ test("anthropic.parseResponse: new stop reasons preserve valid output and diagno
 	assert.equal(
 		adapterDiagnostics(parsed)?.originalTerminalReason,
 		"pause_turn",
+	);
+});
+
+async function observeAnthropic(sse: string) {
+	const local: AdapterContext = { ...ctx, diagnostics: {} };
+	const observed = observeChatStream(
+		must(anthropicAdapter, "chat").parseStream(streamOf(sse), local),
+		local.diagnostics,
+	);
+	const chunks: CanonicalChatStreamChunk[] = [];
+	for await (const chunk of observed.items) {
+		chunks.push(chunk);
+	}
+	return { chunks, observation: observed.observation };
+}
+
+const start = `event: message_start\ndata: {"type":"message_start","message":{"id":"msg_1","model":"claude","usage":{"input_tokens":3,"output_tokens":1},"content":[]}}\n\n`;
+const text = `event: content_block_delta\ndata: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Hi"}}\n\n`;
+const stop = `event: message_stop\ndata: {"type":"message_stop"}\n\n`;
+
+test("anthropic.parseStream: tolerates what the SDK tolerates", async () => {
+	// A repeated message_delta keeps the last one, like the SDK.
+	const repeated = await observeAnthropic(
+		start +
+			text +
+			`event: message_delta\ndata: {"type":"message_delta","delta":{"stop_reason":"max_tokens"},"usage":{"output_tokens":4}}\n\n` +
+			`event: message_delta\ndata: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":5}}\n\n` +
+			stop,
+	);
+	assert.equal(repeated.observation.terminal?.reason, "stop");
+	assert.equal(repeated.observation.transportTerminator, "semantic_event");
+
+	// message_stop without a stop_reason: the message ended, the reason is read from the output.
+	const unexplained = await observeAnthropic(start + text + stop);
+	assert.equal(unexplained.observation.terminal?.outcome, "completed");
+	assert.deepEqual(unexplained.observation.diagnostics?.metadata?.anomalies, [
+		"missing_finish_reason",
+	]);
+
+	// The connection dropped after the stop_reason but before message_stop: the answer is whole.
+	const unstopped = await observeAnthropic(
+		start +
+			text +
+			`event: message_delta\ndata: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":5}}\n\n`,
+	);
+	assert.equal(unstopped.observation.terminal?.reason, "stop");
+});
+
+test("anthropic.parseStream: a stream cut mid-answer is still a failure", async () => {
+	await assert.rejects(
+		() => observeAnthropic(start + text),
+		(error: unknown) =>
+			GatewayError.is(error) && error.code === "upstream_stream_truncated",
 	);
 });

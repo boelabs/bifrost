@@ -717,7 +717,7 @@ async function* parseStream(
 	let streamUsage: AnthropicUsage = {};
 	let pendingTerminal:
 		| {
-				finishReason: CanonicalFinishReason;
+				finishReason: CanonicalFinishReason | null;
 				stopSequence: string | null;
 				originalTerminalReason: string;
 				usage: Usage;
@@ -961,62 +961,40 @@ async function* parseStream(
 			continue;
 		}
 		if (event.type === "message_delta") {
-			if (pendingTerminal) {
-				throw new GatewayError({
-					class: "server",
-					code: "upstream_protocol_error",
-					message: "Anthropic emitted more than one terminal message_delta",
-				});
-			}
+			// The SDK keeps the last delta; so does the gateway. A missing stop_reason is left for the
+			// stream observer to infer from the output once message_stop confirms the end.
 			streamUsage = mergeStreamUsage(streamUsage, event.usage);
-			const finishReason = mapFinishReason(
-				event.delta?.stop_reason,
-				event.delta?.stop_reason === "tool_use",
-			);
-			if (finishReason === null) {
-				throw new GatewayError({
-					class: "server",
-					code: "upstream_protocol_error",
-					message: "Anthropic terminal message_delta omitted stop_reason",
-				});
-			}
-			const usage = mapUsage(streamUsage);
 			pendingTerminal = {
-				finishReason,
-				stopSequence: event.delta?.stop_sequence ?? null,
-				originalTerminalReason: event.delta?.stop_reason ?? "unknown",
-				usage,
+				finishReason:
+					mapFinishReason(
+						event.delta?.stop_reason,
+						event.delta?.stop_reason === "tool_use",
+					) ??
+					pendingTerminal?.finishReason ??
+					null,
+				stopSequence:
+					event.delta?.stop_sequence ?? pendingTerminal?.stopSequence ?? null,
+				originalTerminalReason:
+					event.delta?.stop_reason ??
+					pendingTerminal?.originalTerminalReason ??
+					"unknown",
+				usage: mapUsage(streamUsage),
 			};
 			continue;
 		}
 		if (event.type === "message_stop") {
-			if (messageStopped || !pendingTerminal) {
-				throw new GatewayError({
-					class: "server",
-					code: "upstream_protocol_error",
-					message: "Anthropic emitted an invalid message_stop sequence",
-				});
+			if (messageStopped) {
+				continue;
 			}
 			messageStopped = true;
-			yield attachAdapterDiagnostics(
-				{
-					id,
-					created,
-					model,
-					choices: [
-						{
-							index: 0,
-							delta: {},
-							finishReason: pendingTerminal.finishReason,
-							stopSequence: pendingTerminal.stopSequence,
-						},
-					],
-					usage: pendingTerminal.usage,
-				},
-				{
-					originalTerminalReason: pendingTerminal.originalTerminalReason,
-				},
-			);
+			adapterContextDiagnostics(ctx).transportTerminator = "semantic_event";
+			pendingTerminal ??= {
+				finishReason: null,
+				stopSequence: null,
+				originalTerminalReason: "unknown",
+				usage: mapUsage(streamUsage),
+			};
+			yield terminalChunk(pendingTerminal);
 			continue;
 		}
 		const metadataChunk: CanonicalChatStreamChunk = {
@@ -1037,6 +1015,32 @@ async function* parseStream(
 					? { heartbeat: true }
 					: { unknownEvents: [event.type ?? "missing_type"] },
 		});
+	}
+	// A stop_reason that arrived before the connection dropped still finished the message.
+	if (pendingTerminal && !messageStopped) {
+		yield terminalChunk(pendingTerminal);
+	}
+
+	function terminalChunk(terminal: NonNullable<typeof pendingTerminal>) {
+		return attachAdapterDiagnostics(
+			{
+				id,
+				created,
+				model,
+				choices: [
+					{
+						index: 0,
+						delta: {},
+						finishReason: terminal.finishReason,
+						stopSequence: terminal.stopSequence,
+					},
+				],
+				usage: terminal.usage,
+			},
+			{
+				originalTerminalReason: terminal.originalTerminalReason,
+			},
+		);
 	}
 }
 

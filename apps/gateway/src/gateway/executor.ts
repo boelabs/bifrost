@@ -11,6 +11,7 @@ import {
 	terminalForChatResponse,
 	type CanonicalTerminal,
 	type StreamObservation,
+	chatResponseAnomalies,
 	observeImageStream,
 	observeChatStream,
 	completedTerminal,
@@ -129,66 +130,18 @@ async function parseBody(res: Response): Promise<unknown> {
 /** A handler's error mapper: turns a network error or a non-2xx upstream response into a GatewayError. */
 type MapError = (err: unknown, ctx: AdapterContext) => GatewayError;
 
-function firstOutputTimeout(ctx: AdapterContext): GatewayError {
-	return new GatewayError({
-		class: "timeout",
-		code: "upstream_first_output_timeout",
-		message: "Upstream execution exceeded the first output deadline",
-		failureKind: "transient",
-		// Missing a deadline the router shortened is evidence about the router's estimate, not about
-		// the deployment. Counting it as a health failure lets a narrowed deadline open the breaker
-		// on an upstream that was answering normally, and the cooldown then looks like corroboration.
-		deploymentHealth: ctx.executionPolicy?.firstOutputNarrowed
-			? "neutral"
-			: "penalize",
-	});
-}
-
-function firstOutputRemaining(ctx: AdapterContext): number | null {
-	if (!ctx.executionPolicy) {
-		return null;
-	}
-	return Math.max(
-		0,
-		ctx.executionPolicy.firstOutputMs -
-			(Date.now() - (ctx.attemptStartedAt ?? Date.now())),
-	);
-}
-
-export async function beforeFirstOutput<T>(
-	promise: Promise<T>,
-	ctx: AdapterContext,
-): Promise<T> {
-	const remaining = firstOutputRemaining(ctx);
-	if (remaining === null) {
-		return promise;
-	}
-	if (remaining <= 0) {
-		throw firstOutputTimeout(ctx);
-	}
-	let timer: ReturnType<typeof setTimeout> | undefined;
+/** Reads a complete upstream body; the response deadline ends once it has arrived. */
+async function readBody(res: Response, ctx: AdapterContext): Promise<unknown> {
 	try {
-		return await Promise.race([
-			promise,
-			new Promise<never>((_, reject) => {
-				timer = setTimeout(() => reject(firstOutputTimeout(ctx)), remaining);
-			}),
-		]);
-	} finally {
-		if (timer) {
-			clearTimeout(timer);
+		return await parseBody(res);
+	} catch (error) {
+		if (ctx.signal?.aborted) {
+			throw abortGatewayError(ctx.signal, "response");
 		}
+		throw error;
+	} finally {
+		ctx.watchdog?.complete();
 	}
-}
-
-export function remainingExecutionPolicy(ctx: AdapterContext) {
-	if (!ctx.executionPolicy) {
-		return;
-	}
-	return {
-		...ctx.executionPolicy,
-		firstOutputMs: Math.max(1, firstOutputRemaining(ctx) ?? 1),
-	};
 }
 
 async function* mapStreamErrors<T>(
@@ -198,16 +151,19 @@ async function* mapStreamErrors<T>(
 ): AsyncIterable<T> {
 	try {
 		for await (const item of items) {
+			ctx.watchdog?.bytes();
 			yield item;
 		}
 	} catch (error) {
-		if (GatewayError.is(error)) {
-			throw error;
-		}
 		if (ctx.signal?.aborted) {
 			throw abortGatewayError(ctx.signal);
 		}
+		if (GatewayError.is(error)) {
+			throw error;
+		}
 		throw mapError(error, ctx);
+	} finally {
+		ctx.watchdog?.complete();
 	}
 }
 
@@ -245,18 +201,16 @@ async function dispatch(
 	ctx: AdapterContext,
 	mapError: MapError,
 ): Promise<Response> {
+	if (ctx.signal?.aborted) {
+		throw abortGatewayError(ctx.signal, "response");
+	}
 	let res: Response;
 	try {
-		// Reject an already-exhausted request-wide deadline before constructing the fetch promise.
-		await beforeFirstOutput(Promise.resolve(), ctx);
-		res = await beforeFirstOutput(
-			upstreamFetch(ctx, httpReq.url, {
-				method: httpReq.method,
-				headers: httpReq.headers,
-				...(httpReq.body === undefined ? {} : { body: httpReq.body }),
-			}),
-			ctx,
-		);
+		res = await upstreamFetch(ctx, httpReq.url, {
+			method: httpReq.method,
+			headers: httpReq.headers,
+			...(httpReq.body === undefined ? {} : { body: httpReq.body }),
+		});
 	} catch (err) {
 		if (GatewayError.is(err)) {
 			throw err;
@@ -285,7 +239,7 @@ async function dispatch(
 		throw mapError(
 			{
 				status: res.status,
-				body: await beforeFirstOutput(parseBody(res), ctx),
+				body: await readBody(res, ctx),
 				...(retryAfter === null
 					? {}
 					: { headers: { "retry-after": retryAfter } }),
@@ -339,7 +293,6 @@ export async function executeChat(
 		const body = requireStreamBody(res, ctx, handler.mapError);
 		const observed = observeChatStream(
 			mapStreamErrors(handler.parseStream(body, ctx), ctx, handler.mapError),
-			remainingExecutionPolicy(ctx),
 			adapterContextDiagnostics(ctx),
 		);
 		return {
@@ -349,19 +302,16 @@ export async function executeChat(
 		};
 	}
 
-	const response = await beforeFirstOutput(
-		Promise.resolve(parseBody(res)).then((raw) =>
-			handler.parseResponse(raw, ctx),
-		),
-		ctx,
-	);
+	const response = handler.parseResponse(await readBody(res, ctx), ctx);
 	const responseDiagnostics = adapterDiagnostics(response);
+	const anomalies = chatResponseAnomalies(response);
 	const diagnostics = {
 		...adapterContextDiagnostics(ctx),
 		...(responseDiagnostics ?? {}),
 		metadata: {
 			...(adapterContextDiagnostics(ctx).metadata ?? {}),
 			...(responseDiagnostics?.metadata ?? {}),
+			...(anomalies.length > 0 ? { anomalies } : {}),
 		},
 	};
 	return {
@@ -389,12 +339,7 @@ export async function executeMessageTokenCount(
 		ctx,
 		handler.mapError,
 	);
-	const response = await beforeFirstOutput(
-		Promise.resolve(parseBody(res)).then((raw) =>
-			handler.parseResponse(raw, ctx),
-		),
-		ctx,
-	);
+	const response = handler.parseResponse(await readBody(res, ctx), ctx);
 	if (!Number.isSafeInteger(response.inputTokens) || response.inputTokens < 0) {
 		throw new GatewayError({
 			class: "server",
@@ -437,7 +382,6 @@ export async function executeImage(
 		const body = requireStreamBody(res, ctx, handler.mapError);
 		const observed = observeImageStream(
 			mapStreamErrors(handler.parseStream(body, ctx), ctx, handler.mapError),
-			remainingExecutionPolicy(ctx),
 			adapterContextDiagnostics(ctx),
 		);
 		return {
@@ -446,12 +390,7 @@ export async function executeImage(
 			observation: observed.observation,
 		};
 	}
-	const response = await beforeFirstOutput(
-		Promise.resolve(parseBody(res)).then((raw) =>
-			handler.parseResponse(raw, ctx),
-		),
-		ctx,
-	);
+	const response = await handler.parseResponse(await readBody(res, ctx), ctx);
 	if (response.data.length === 0) {
 		throw new GatewayError({
 			class: "server",
@@ -496,7 +435,6 @@ export async function executeTranscription(
 		const body = requireStreamBody(res, ctx, handler.mapError);
 		const observed = observeTranscriptionStream(
 			mapStreamErrors(handler.parseStream(body, ctx), ctx, handler.mapError),
-			remainingExecutionPolicy(ctx),
 			adapterContextDiagnostics(ctx),
 		);
 		return {
@@ -505,12 +443,7 @@ export async function executeTranscription(
 			observation: observed.observation,
 		};
 	}
-	const response = await beforeFirstOutput(
-		Promise.resolve(parseBody(res)).then((raw) =>
-			handler.parseResponse(raw, ctx),
-		),
-		ctx,
-	);
+	const response = handler.parseResponse(await readBody(res, ctx), ctx);
 	return {
 		kind: "json",
 		response,
@@ -536,12 +469,7 @@ export async function executeEmbeddings(
 		handler.mapError,
 	);
 
-	const response = await beforeFirstOutput(
-		Promise.resolve(parseBody(res)).then((raw) =>
-			handler.parseResponse(raw, ctx),
-		),
-		ctx,
-	);
+	const response = handler.parseResponse(await readBody(res, ctx), ctx);
 	if (response.data.length === 0) {
 		throw new GatewayError({
 			class: "server",
@@ -575,12 +503,7 @@ export async function executeRerank(
 		ctx,
 		handler.mapError,
 	);
-	const response = await beforeFirstOutput(
-		Promise.resolve(parseBody(res)).then((raw) =>
-			handler.parseResponse(raw, ctx),
-		),
-		ctx,
-	);
+	const response = handler.parseResponse(await readBody(res, ctx), ctx);
 	assertRerankResponseValid(req, response);
 	return {
 		kind: "json",

@@ -1,6 +1,5 @@
 import type { CanonicalEmbeddingsRequest } from "#core/embeddings.ts";
 import { jsonBody, must, streamOf } from "#test-support/adapters.ts";
-import { adapterDiagnostics } from "#adapters/diagnostics.ts";
 import type { AdapterContext } from "#adapters/types.ts";
 import { GatewayError } from "#core/errors.ts";
 import { openaiAdapter } from "./index.ts";
@@ -396,7 +395,6 @@ test("openai.parseStream: reasoning summary deltas preserve their native item id
 			data: { item_id: "rs_native", delta: "Think" },
 		},
 	);
-	assert.equal(adapterDiagnostics(chunks[1]!)?.progress, "reasoning");
 	const doneFields = chunks[1]!.choices[0]!.delta.providerFields;
 	assert.deepEqual(openaiReasoningFromProviderFields(doneFields), [
 		{

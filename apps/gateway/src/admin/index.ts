@@ -57,6 +57,7 @@ import {
 	deleteFallbackPolicy,
 	listFallbackPolicies,
 	updateRouterSettings,
+	routerSettingsView,
 	getRouterSettings,
 } from "#db/repos/router.ts";
 
@@ -851,28 +852,17 @@ adminApp.get("/usage", async (c) => {
 
 const executionPolicySchema = z
 	.object({
-		firstOutputMs: z.int().positive().max(EXECUTION_POLICY_MAX_TOTAL_MS),
+		responseMs: z.int().positive().max(EXECUTION_POLICY_MAX_TOTAL_MS),
 		idleMs: z.int().positive().max(EXECUTION_POLICY_MAX_TOTAL_MS).nullable(),
-		reasoningOnlyMs: z
-			.int()
-			.positive()
-			.max(EXECUTION_POLICY_MAX_TOTAL_MS)
-			.nullable(),
-		preCommitMs: z.int().positive().max(EXECUTION_POLICY_MAX_TOTAL_MS),
 		totalMs: z.int().positive().max(EXECUTION_POLICY_MAX_TOTAL_MS),
 		maxAttempts: z.int().min(1).max(20),
 	})
+	.strict()
 	.refine(
 		(policy) =>
-			policy.firstOutputMs <= policy.preCommitMs &&
-			policy.preCommitMs <= policy.totalMs &&
-			(policy.idleMs === null || policy.idleMs <= policy.totalMs) &&
-			(policy.reasoningOnlyMs === null ||
-				policy.reasoningOnlyMs <= policy.totalMs),
-		{
-			message:
-				"Execution policy deadlines must be ordered and bounded by totalMs",
-		},
+			policy.responseMs <= policy.totalMs &&
+			(policy.idleMs === null || policy.idleMs <= policy.totalMs),
+		{ message: "responseMs and idleMs must not exceed totalMs" },
 	);
 
 const routerSettingsSchema = z
@@ -924,9 +914,6 @@ const routerSettingsSchema = z
 		failureRatePercent: z.number().gt(0).max(1),
 		minWindowRequests: z.int().min(1),
 		protectLastDeployment: z.boolean(),
-		adaptiveTimeoutsEnabled: z.boolean(),
-		adaptiveTimeoutMultiplier: z.number().min(1),
-		adaptiveTimeoutFloorMs: z.int().positive(),
 		cooldownSeconds: z.int().min(0),
 		failureWindowSeconds: z.int().min(1),
 		maxCooldownSeconds: z.int().min(1),
@@ -940,14 +927,14 @@ const routerSettingsSchema = z
 
 adminApp.get("/router-settings", async (c) => {
 	const settings = await getRouterSettings();
-	return ok(c, settings ?? null);
+	return ok(c, settings ? routerSettingsView(settings) : null);
 });
 
 adminApp.put("/router-settings", async (c) => {
 	const patch = await parseJsonBody(c, routerSettingsSchema);
 	const updated = await updateRouterSettings(patch);
 	invalidateRouterSettingsCache();
-	return ok(c, updated);
+	return ok(c, routerSettingsView(updated));
 });
 
 /* ------------------------------------------------------ dashboard settings */

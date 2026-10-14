@@ -25,78 +25,52 @@ function base() {
 	};
 }
 
-test("a pool held down by misconfiguration says so, instead of inviting a retry", () => {
-	const error = buildRoutingError({
-		...base(),
-		reason: "cooldown",
-		cooldownCauses: causes(["a", "not_found"]),
-	});
-	assert.equal(error.class, "not_found");
-	assert.equal(error.httpStatus, 404);
-	assert.equal(error.code, "deployments_misconfigured");
-	assert.match(error.publicMessage, /every one of them is misconfigured/);
-	// Retrying is the one thing that cannot help, so nothing may suggest it.
-	assert.doesNotMatch(error.publicMessage, /retry|try again/i);
-	assert.equal(error.headers?.["Retry-After"], undefined);
-});
-
-test("every configuration class counts, and the causes still reach the logs", () => {
+test("a pool held down by misconfiguration is unavailable, without inviting a retry", () => {
 	for (const cls of ["auth", "permission", "not_found"]) {
 		const error = buildRoutingError({
 			...base(),
 			reason: "cooldown",
+			retryAfterMs: 4000,
 			cooldownCauses: causes(["a", cls], ["b", cls]),
 		});
-		assert.equal(error.class, cls, cls);
-		assert.equal(error.code, "deployments_misconfigured", cls);
+		// Never the caller's credentials or a missing resource on their side.
+		assert.equal(error.httpStatus, 503, cls);
+		assert.equal(error.code, "model_unavailable", cls);
+		assert.equal(error.headers?.["Retry-After"], undefined, cls);
 	}
+});
+
+test("the cooldown causes reach the logs and never the caller", () => {
 	const error = buildRoutingError({
 		...base(),
+		attempts: 1,
 		reason: "cooldown",
 		cooldownCauses: causes(["a", "auth"]),
+		lastError: new GatewayError({
+			class: "not_found",
+			message: "models/gemini-omni-1.1-flash is not found",
+		}),
 	});
 	assert.deepEqual(error.provider?.body, {
 		cooldown_causes: {
 			"deployment:a": { class: "auth", message: "Upstream auth failure" },
 		},
 	});
+	assert.match(error.message, /reason=cooldown/);
+	assert.match(error.message, /gemini-omni-1\.1-flash is not found/);
+	assert.doesNotMatch(error.publicMessage, /gemini-omni|cooldown|deployment/);
 });
 
-test("one transient cause in the mix is still worth waiting for", () => {
+test("a transient cooldown is an overload worth retrying", () => {
 	const error = buildRoutingError({
 		...base(),
 		reason: "cooldown",
 		cooldownCauses: causes(["a", "not_found"], ["b", "server"]),
 		retryAfterMs: 4000,
 	});
-	assert.equal(error.class, "server");
 	assert.equal(error.httpStatus, 503);
-	assert.equal(error.code, "deployments_in_cooldown");
+	assert.equal(error.code, "model_overloaded");
 	assert.equal(error.headers?.["Retry-After"], "4");
-});
-
-test("a cooldown with no recorded cause stays a plain retry", () => {
-	const error = buildRoutingError({ ...base(), reason: "cooldown" });
-	assert.equal(error.code, "deployments_in_cooldown");
-	assert.equal(error.httpStatus, 503);
-});
-
-test("the internal message keeps the detail an operator needs", () => {
-	const error = buildRoutingError({
-		...base(),
-		attempts: 1,
-		reason: "cooldown",
-		cooldownCauses: causes(["a", "not_found"]),
-		lastError: new GatewayError({
-			class: "not_found",
-			message: "models/gemini-omni-1.1-flash is not found",
-		}),
-	});
-	assert.match(error.message, /blink-0826/);
-	assert.match(error.message, /reason=cooldown/);
-	assert.match(error.message, /gemini-omni-1\.1-flash is not found/);
-	// And never in what the caller is shown.
-	assert.doesNotMatch(error.publicMessage, /gemini-omni/);
 });
 
 test("rate limiting stays a rate limit, with the provider's own delay", () => {
@@ -106,69 +80,56 @@ test("rate limiting stays a rate limit, with the provider's own delay", () => {
 		retryAfterMs: 2500,
 	});
 	assert.equal(error.class, "rate_limit");
+	assert.equal(error.httpStatus, 429);
 	assert.equal(error.code, "rate_limit_exceeded");
 	assert.equal(error.headers?.["Retry-After"], "3");
 });
 
-test("an exhausted pool reports the last error's own class and status", () => {
+test("whatever ended the request, the caller hears the last upstream answer", () => {
+	for (const reason of ["exhausted", "attempt_limit", "deadline"] as const) {
+		const error = buildRoutingError({
+			...base(),
+			attempts: 3,
+			reason,
+			lastError: new GatewayError({
+				class: "server",
+				message: "OpenAI: upstream error (HTTP 500)",
+				status: 500,
+				provider: { status: 500, body: { error: { message: "boom" } } },
+			}),
+		});
+		assert.equal(error.httpStatus, 500, reason);
+		assert.equal(
+			error.publicMessage,
+			"The service is temporarily unavailable. Please try again later.",
+			reason,
+		);
+		assert.doesNotMatch(error.publicMessage, /attempt|budget|deadline/);
+		assert.match(error.message, new RegExp(`reason=${reason}`));
+		assert.deepEqual(error.provider?.status, 500);
+	}
+});
+
+test("a request rejected upstream keeps its sanitized public detail", () => {
 	const error = buildRoutingError({
 		...base(),
-		attempts: 3,
+		attempts: 1,
 		reason: "exhausted",
 		lastError: new GatewayError({
 			class: "context_window",
 			message: "too long",
+			publicMessage: "This model's maximum context length is 8192 tokens.",
+			param: "messages",
 		}),
 	});
-	assert.equal(error.class, "context_window");
-	assert.equal(error.code, "no_deployments_available");
-	assert.match(error.publicMessage, /context window exceeded/);
-	assert.match(error.publicMessage, /3 attempts/);
+	assert.equal(error.httpStatus, 400);
+	assert.equal(error.code, "context_length_exceeded");
+	assert.equal(error.param, "messages");
+	assert.match(error.publicMessage, /maximum context length/);
 });
 
-test("an exhausted budget is not reported as an empty pool", () => {
-	const error = buildRoutingError({
-		...base(),
-		attempts: 6,
-		reason: "attempt_limit",
-		lastError: new GatewayError({
-			class: "timeout",
-			code: "upstream_first_output_timeout",
-			message: "Upstream execution exceeded the first output deadline",
-		}),
-	});
-	assert.equal(error.code, "routing_budget_exhausted");
-	assert.match(error.publicMessage, /ran out of routing budget/);
-	assert.match(error.publicMessage, /6 attempts were spent/);
-	// The deployment was there and was tried; saying otherwise sends the operator to the wrong page.
-	assert.doesNotMatch(error.publicMessage, /No deployments/);
-});
-
-test("a first-output deadline is named as the gateway's own, not the upstream's", () => {
-	const error = buildRoutingError({
-		...base(),
-		attempts: 6,
-		reason: "pre_output_deadline",
-		lastError: new GatewayError({
-			class: "timeout",
-			code: "upstream_first_output_timeout",
-			message: "Upstream execution exceeded the first output deadline",
-		}),
-	});
-	assert.match(error.publicMessage, /pre-output deadline passed/);
-	assert.match(error.publicMessage, /deadlines set by this gateway/);
-
-	// A timeout the upstream actually reported keeps pointing at the upstream.
-	const reported = buildRoutingError({
-		...base(),
-		attempts: 2,
-		reason: "exhausted",
-		lastError: new GatewayError({
-			class: "timeout",
-			code: "upstream_gateway_timeout",
-			message: "Upstream timed out",
-			provider: { status: 504 },
-		}),
-	});
-	assert.match(reported.publicMessage, /upstream timeouts/);
+test("no upstream reached at all reads as an unavailable model", () => {
+	const error = buildRoutingError({ ...base(), reason: "no_candidates" });
+	assert.equal(error.httpStatus, 503);
+	assert.equal(error.code, "model_unavailable");
 });

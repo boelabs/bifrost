@@ -3,20 +3,25 @@ import type { CallType } from "./callType.ts";
 /** Administrative safety bound; operation leases are deliberately longer than this. */
 export const EXECUTION_POLICY_MAX_TOTAL_MS = 3_600_000;
 
+/**
+ * How long the gateway waits on an upstream, expressed the way an HTTP client does.
+ *
+ * The defaults mirror the official OpenAI and Anthropic SDKs (a 600 s read timeout): calling a
+ * provider through the gateway must not be less patient than calling it directly. None of these
+ * deadlines interprets the model's output - a model that thinks silently for minutes is working,
+ * not stalled - so a request only ends when the connection itself stops moving.
+ */
 export interface ExecutionPolicy {
-	firstOutputMs: number;
 	/**
-	 * Whether `firstOutputMs` is below the deadline the operator configured, because the router
-	 * narrowed it for this attempt - adaptively, or against what is left of the request's own
-	 * pre-output window. It changes nothing about enforcement and everything about what expiry
-	 * means: a deployment that misses the operator's deadline is slow, while one that misses a
-	 * deadline the router invented has only shown the router's estimate to be wrong.
+	 * JSON: until the complete upstream response has arrived. Stream: until the upstream answers
+	 * with response headers.
 	 */
-	firstOutputNarrowed?: boolean;
+	responseMs: number;
+	/** Stream only: the longest silence allowed between two upstream bytes. null = no limit. */
 	idleMs: number | null;
-	reasoningOnlyMs: number | null;
-	preCommitMs: number;
+	/** Request-wide bound across every attempt, retry and fallback. */
 	totalMs: number;
+	/** Upstream attempts per request, across deployments and fallbacks. */
 	maxAttempts: number;
 }
 
@@ -28,104 +33,21 @@ export interface OperationExecutionPolicies {
 export type ExecutionPolicies = Record<CallType, OperationExecutionPolicies>;
 
 /**
- * Per-deployment narrowing of the global policy. A pool routinely mixes upstreams with very
- * different latency profiles, and one global `firstOutputMs` has to be generous enough for the
- * slowest of them - which is exactly the budget the fastest one then burns before failing over.
+ * Per-deployment narrowing of the global policy. A pool can mix a fast regional endpoint with a slow
+ * batch one, and an operator who knows that can fail over sooner on the fast one.
  *
- * Overrides may only TIGHTEN the effective policy. Letting a deployment widen it would let one
- * upstream hold a request past the deadline the operator set for the call type, and past the
- * lease and cost assumptions built on it.
+ * Overrides may only TIGHTEN the effective policy: a deployment must not hold a request past the
+ * deadline the operator set for the call type.
  */
 export interface ExecutionPolicyOverride {
-	firstOutputMs?: number | undefined;
+	responseMs?: number | undefined;
 	idleMs?: number | undefined;
-	reasoningOnlyMs?: number | undefined;
-	preCommitMs?: number | undefined;
 	totalMs?: number | undefined;
 }
 
 export type ExecutionPolicyOverrides = Partial<
 	Record<CallType | "all", ExecutionPolicyOverride>
 >;
-
-export interface AdaptiveDeadlineSettings {
-	enabled: boolean;
-	/** How many times its own typical time-to-first-output a deployment is granted. */
-	multiplier: number;
-	/** Lower bound, so a very fast deployment is not cut off by ordinary variance. */
-	floorMs: number;
-}
-
-/**
- * The two conditions under which narrowing a first-output deadline is sound at all.
- *
- * Both are properties of the attempt being built, not of the deployment, which is why the router
- * supplies them per attempt rather than storing them alongside the EWMA.
- */
-export interface AdaptiveDeadlineScope {
-	/**
-	 * Whether first output really arrives before the answer is finished. In streaming mode it does:
-	 * the deadline covers the first event, and the measurement it is compared against means the same
-	 * thing. In JSON mode the upstream sends nothing until the whole completion exists, so
-	 * `firstOutputMs` is a total-generation budget and the EWMA is an average of past total
-	 * generations - a number that says how long SHORT answers took, applied to an answer whose
-	 * length is not known yet.
-	 */
-	incremental: boolean;
-	/** Deployments this request could still fail over to if the chosen one is abandoned. */
-	alternatives: number;
-	/**
-	 * Attempts this request has already spent on this deployment. The EWMA only moves on success, so
-	 * a narrowed deadline that just expired will be recomputed identically for the next attempt: the
-	 * retry re-runs an experiment whose result is already known. Each prior attempt therefore doubles
-	 * the granted budget, which is the router admitting that its estimate was wrong about THIS
-	 * request rather than repeating it until the attempt budget runs out.
-	 */
-	priorAttempts: number;
-}
-
-/**
- * Narrows the first-output deadline to what THIS deployment actually takes.
- *
- * A pool-wide budget has to accommodate its slowest member, so a deployment that normally answers
- * in a second is granted the same minutes-long grace as one that legitimately takes them - and a
- * request stuck behind it waits out the whole budget before failing over to a healthy sibling.
- * The EWMA is only an estimate, so the result never widens the configured deadline and never drops
- * below `floorMs`; a deployment with no measurement yet keeps the configured value.
- *
- * That whole argument rests on two premises, and `scope` is where they are checked rather than
- * assumed. Failing over early is only worth anything when there is somewhere to fail over TO: with
- * a single candidate the narrowed deadline cannot save a request, it can only end one that was
- * still being served. And comparing an elapsed time against the EWMA is only meaningful when both
- * measure the same event - which stops being true in JSON mode, where nothing arrives until the
- * answer is complete and the EWMA therefore describes the length of past answers instead of the
- * responsiveness of the upstream. When either premise fails the configured deadline stands.
- */
-export function adaptiveFirstOutputMs(
-	configuredMs: number,
-	ttftEwmaMs: number | null | undefined,
-	adaptive: AdaptiveDeadlineSettings,
-	scope: AdaptiveDeadlineScope,
-): number {
-	if (!adaptive.enabled) {
-		return configuredMs;
-	}
-	if (!scope.incremental || scope.alternatives < 1) {
-		return configuredMs;
-	}
-	if (
-		ttftEwmaMs === null ||
-		ttftEwmaMs === undefined ||
-		!Number.isFinite(ttftEwmaMs) ||
-		ttftEwmaMs <= 0
-	) {
-		return configuredMs;
-	}
-	const budget = Math.ceil(
-		ttftEwmaMs * adaptive.multiplier * 2 ** Math.max(0, scope.priorAttempts),
-	);
-	return Math.min(configuredMs, Math.max(adaptive.floorMs, budget));
-}
 
 function tighten(
 	base: number | null,
@@ -135,6 +57,23 @@ function tighten(
 		return base;
 	}
 	return base === null ? override : Math.min(base, override);
+}
+
+/**
+ * Overrides written before `responseMs` existed named it `firstOutputMs`. The other retired keys
+ * (`reasoningOnlyMs`, `preCommitMs`) have no equivalent and are ignored.
+ */
+function normalizeOverride(
+	raw: (ExecutionPolicyOverride & { firstOutputMs?: number }) | undefined,
+): ExecutionPolicyOverride | undefined {
+	if (!raw) {
+		return;
+	}
+	return {
+		responseMs: raw.responseMs ?? raw.firstOutputMs,
+		idleMs: raw.idleMs,
+		totalMs: raw.totalMs,
+	};
 }
 
 /**
@@ -148,65 +87,132 @@ export function resolveExecutionPolicy(
 	overrides: ExecutionPolicyOverrides | null | undefined,
 	callType: CallType,
 ): ExecutionPolicy {
-	const override = overrides?.[callType] ?? overrides?.all;
+	const override = normalizeOverride(overrides?.[callType] ?? overrides?.all);
 	if (!override) {
 		return base;
 	}
 	return {
 		maxAttempts: base.maxAttempts,
-		firstOutputMs:
-			tighten(base.firstOutputMs, override.firstOutputMs) ?? base.firstOutputMs,
+		responseMs:
+			tighten(base.responseMs, override.responseMs) ?? base.responseMs,
 		idleMs: tighten(base.idleMs, override.idleMs),
-		reasoningOnlyMs: tighten(base.reasoningOnlyMs, override.reasoningOnlyMs),
-		preCommitMs:
-			tighten(base.preCommitMs, override.preCommitMs) ?? base.preCommitMs,
 		totalMs: tighten(base.totalMs, override.totalMs) ?? base.totalMs,
 	};
 }
 
 const policy = (
-	firstOutputMs: number,
+	responseMs: number,
 	idleMs: number | null,
-	reasoningOnlyMs: number | null,
-	preCommitMs: number,
 	totalMs: number,
 	maxAttempts: number,
-): ExecutionPolicy => ({
-	firstOutputMs,
-	idleMs,
-	reasoningOnlyMs,
-	preCommitMs,
-	totalMs,
-	maxAttempts,
-});
+): ExecutionPolicy => ({ responseMs, idleMs, totalMs, maxAttempts });
+
+const MINUTE = 60_000;
 
 export const DEFAULT_EXECUTION_POLICIES: ExecutionPolicies = {
 	chat: {
-		json: policy(300_000, null, null, 300_000, 600_000, 6),
-		stream: policy(180_000, 180_000, null, 300_000, 600_000, 6),
+		json: policy(10 * MINUTE, null, 30 * MINUTE, 3),
+		stream: policy(10 * MINUTE, 10 * MINUTE, 60 * MINUTE, 3),
 	},
 	"images.generations": {
-		json: policy(60_000, null, null, 180_000, 600_000, 3),
-		stream: policy(60_000, 60_000, null, 180_000, 600_000, 3),
+		json: policy(10 * MINUTE, null, 30 * MINUTE, 2),
+		stream: policy(10 * MINUTE, 5 * MINUTE, 30 * MINUTE, 2),
 	},
 	"images.edits": {
-		json: policy(60_000, null, null, 180_000, 600_000, 3),
-		stream: policy(60_000, 60_000, null, 180_000, 600_000, 3),
+		json: policy(10 * MINUTE, null, 30 * MINUTE, 2),
+		stream: policy(10 * MINUTE, 5 * MINUTE, 30 * MINUTE, 2),
 	},
 	"audio.transcriptions": {
-		json: policy(60_000, null, null, 180_000, 900_000, 2),
-		stream: policy(60_000, 60_000, null, 180_000, 900_000, 2),
+		json: policy(15 * MINUTE, null, 30 * MINUTE, 2),
+		stream: policy(10 * MINUTE, 5 * MINUTE, 30 * MINUTE, 2),
 	},
 	embeddings: {
-		json: policy(30_000, null, null, 60_000, 60_000, 3),
-		stream: policy(30_000, null, null, 60_000, 60_000, 3),
+		json: policy(2 * MINUTE, null, 5 * MINUTE, 3),
+		stream: policy(2 * MINUTE, null, 5 * MINUTE, 3),
 	},
 	rerank: {
-		json: policy(30_000, null, null, 60_000, 60_000, 3),
-		stream: policy(30_000, null, null, 60_000, 60_000, 3),
+		json: policy(2 * MINUTE, null, 5 * MINUTE, 3),
+		stream: policy(2 * MINUTE, null, 5 * MINUTE, 3),
 	},
 	"videos.generations": {
-		json: policy(60_000, null, null, 120_000, 120_000, 3),
-		stream: policy(30_000, 30_000, null, 60_000, 900_000, 2),
+		json: policy(2 * MINUTE, null, 5 * MINUTE, 2),
+		stream: policy(2 * MINUTE, 2 * MINUTE, 15 * MINUTE, 2),
 	},
 };
+
+function isPolicy(value: unknown): value is ExecutionPolicy {
+	if (value === null || typeof value !== "object") {
+		return false;
+	}
+	const candidate = value as Partial<ExecutionPolicy>;
+	return (
+		typeof candidate.responseMs === "number" &&
+		typeof candidate.totalMs === "number" &&
+		typeof candidate.maxAttempts === "number" &&
+		(candidate.idleMs === null || typeof candidate.idleMs === "number")
+	);
+}
+
+/**
+ * Reads stored policies, falling back to the defaults for any entry written in the retired shape
+ * (first-output, pre-commit and reasoning-only deadlines). Those numbers measured model output,
+ * not the connection, so they do not translate into the current fields.
+ */
+export function normalizeExecutionPolicies(stored: unknown): ExecutionPolicies {
+	const source =
+		stored !== null && typeof stored === "object"
+			? (stored as Partial<
+					Record<CallType, Partial<OperationExecutionPolicies>>
+				>)
+			: {};
+	const out = {} as ExecutionPolicies;
+	for (const callType of Object.keys(
+		DEFAULT_EXECUTION_POLICIES,
+	) as CallType[]) {
+		const defaults = DEFAULT_EXECUTION_POLICIES[callType];
+		const entry = source[callType];
+		out[callType] = {
+			json: isPolicy(entry?.json) ? pickPolicy(entry.json) : defaults.json,
+			stream: isPolicy(entry?.stream)
+				? pickPolicy(entry.stream)
+				: defaults.stream,
+		};
+	}
+	return out;
+}
+
+function pickPolicy(value: ExecutionPolicy): ExecutionPolicy {
+	return policy(
+		value.responseMs,
+		value.idleMs,
+		value.totalMs,
+		value.maxAttempts,
+	);
+}
+
+/**
+ * The stored form. It also carries the retired fields, derived from the current ones, so a gateway
+ * from the previous release still reads a valid policy while both run during a rollout. Drop them
+ * once no release older than this one can be serving.
+ */
+export function storableExecutionPolicies(
+	policies: ExecutionPolicies,
+): Record<string, Record<string, Record<string, number | null>>> {
+	const out: Record<string, Record<string, Record<string, number | null>>> = {};
+	for (const [callType, modes] of Object.entries(policies)) {
+		out[callType] = {};
+		for (const [mode, value] of Object.entries(modes) as [
+			string,
+			ExecutionPolicy,
+		][]) {
+			const firstOutputMs = Math.min(value.responseMs, value.totalMs);
+			const legacy = {
+				firstOutputMs,
+				reasoningOnlyMs: null,
+				preCommitMs: value.totalMs,
+			};
+			out[callType][mode] = { ...legacy, ...pickPolicy(value) };
+		}
+	}
+	return out;
+}

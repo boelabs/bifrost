@@ -140,19 +140,14 @@ export function SettingsView({
 						</div>
 						<RouterForm
 							editable={editable}
+							// Uncontrolled fields read their defaults once; a saved change remounts them.
+							key={settings?.updatedAt ?? "defaults"}
 							onSaved={() => {
 								refresh();
 								notify.success("Router settings saved");
 							}}
 							settings={settings}
 						/>
-						<p className="border-border/50 border-t pt-4 text-fg-muted text-xs">
-							Execution policies (per-operation deadlines and attempt caps) are
-							not edited here: they are a nested structure whose deadlines
-							constrain each other, and they deserve their own editor rather
-							than eight more boxes. Set them through{" "}
-							<Mono>PUT /admin/router-settings</Mono> for now.
-						</p>
 					</div>
 				</Card>
 

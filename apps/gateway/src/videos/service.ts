@@ -1,4 +1,6 @@
 import type { DeploymentCandidate } from "#gateway/deploymentCandidates.ts";
+import { startAttemptWatchdog } from "#gateway/attemptWatchdog.ts";
+import type { GatewayAbortReason } from "#gateway/abortReason.ts";
 import { getEffectiveSettings } from "#router/settings.ts";
 import { resolveModelMetadata } from "#catalog/index.ts";
 import type { AdapterContext } from "#adapters/types.ts";
@@ -127,8 +129,7 @@ async function candidateFromJob(
 		meta,
 	};
 	const settings = await getEffectiveSettings();
-	const timeoutMs =
-		settings.executionPolicies["videos.generations"][mode].totalMs;
+	const policy = settings.executionPolicies["videos.generations"][mode];
 	const controller = new AbortController();
 	const abortFromCaller = () =>
 		controller.abort({ owner: "client", type: "cancelled" });
@@ -137,14 +138,15 @@ async function candidateFromJob(
 	} else {
 		signal?.addEventListener("abort", abortFromCaller, { once: true });
 	}
+	const abort = (reason: GatewayAbortReason) => {
+		if (!controller.signal.aborted) {
+			controller.abort(reason);
+		}
+	};
+	const watchdog = startAttemptWatchdog(policy, mode, abort);
 	const timer = setTimeout(
-		() =>
-			controller.abort({
-				owner: "gateway",
-				type: "timeout",
-				phase: mode === "stream" ? "streaming" : "headers",
-			}),
-		timeoutMs,
+		() => abort({ owner: "gateway", type: "timeout", phase: "total" }),
+		policy.totalMs,
 	);
 	timer.unref?.();
 	const ctx: AdapterContext = {
@@ -156,7 +158,7 @@ async function candidateFromJob(
 		meta,
 		transport: resolveTransport(candidate, "videos.generations"),
 		requestId: row.id,
-		executionPolicy: settings.executionPolicies["videos.generations"][mode],
+		watchdog,
 		diagnostics: {},
 		signal: controller.signal,
 	};
@@ -165,11 +167,10 @@ async function candidateFromJob(
 		videoGeneration: adapter.videoGeneration,
 		ctx,
 		cleanup: () => {
+			watchdog.stop();
 			clearTimeout(timer);
 			signal?.removeEventListener("abort", abortFromCaller);
-			if (!controller.signal.aborted) {
-				controller.abort({ owner: "gateway", type: "settled" });
-			}
+			abort({ owner: "gateway", type: "settled" });
 		},
 	};
 }

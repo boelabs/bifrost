@@ -1,5 +1,4 @@
 import { makeOpenAIResponsesWebSocketHandler } from "./openaiResponsesWebSocket.ts";
-import { observeResponsesProgress } from "./responsesProgress.ts";
 import { upstreamFetch } from "#gateway/instrumentedTransport.ts";
 import { looksLikeContextWindowError } from "#core/httpError.ts";
 import { GatewayError, type ErrorClass } from "#core/errors.ts";
@@ -388,10 +387,8 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 		stream: ReadableStream<Uint8Array>,
 		ctx: AdapterContext,
 	): AsyncGenerator<ReturnType<typeof parseOpenAIChatChunk>> {
-		let transportDone = false;
 		for await (const event of parseSSE(stream)) {
 			if (event.data === "[DONE]") {
-				transportDone = true;
 				adapterContextDiagnostics(ctx).transportTerminator = "done_marker";
 				break;
 			}
@@ -430,15 +427,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 						originalTerminalReason: String(originalTerminalReason),
 					});
 		}
-		if (!transportDone) {
-			throw new GatewayError({
-				class: "server",
-				code: "upstream_protocol_error",
-				message: `${config.label}: stream ended without [DONE]`,
-				failureKind: "transient",
-				deploymentHealth: "penalize",
-			});
-		}
+		// A missing [DONE] is judged by the stream observer: finished choices make it complete.
 	}
 
 	async function* responsesStream(
@@ -450,8 +439,9 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 		let terminal:
 			| NonNullable<NonNullable<AdapterContext["diagnostics"]>["terminal"]>
 			| undefined;
-		for await (const chunk of observeResponsesProgress(
-			responsesEventsToCanonicalChunks(parseSSE(stream), {
+		for await (const chunk of responsesEventsToCanonicalChunks(
+			parseSSE(stream),
+			{
 				onUnknownEvent: (type) => {
 					unknownEvents.push(type);
 					recordUnknownAdapterEvent(adapterContextDiagnostics(ctx), type);
@@ -466,7 +456,7 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 							? { outcome: "incomplete", reason: normalizedReason }
 							: { outcome: "completed", reason: normalizedReason };
 				},
-			}),
+			},
 		)) {
 			if (unknownEvents.length > 0 || originalTerminalReason || terminal) {
 				yield attachAdapterDiagnostics(chunk, {

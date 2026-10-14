@@ -86,9 +86,7 @@ export async function routeChat(
 	let contentInputResolution: ContentInputResolutionMetadata | null = null;
 	const policy =
 		settings.executionPolicies.chat[canonical.stream ? "stream" : "json"];
-	const startedAt = Date.now();
-	const preOutputDeadlineAt = startedAt + policy.preCommitMs;
-	const totalDeadlineAt = startedAt + policy.totalMs;
+	const totalDeadlineAt = Date.now() + policy.totalMs;
 	const clientSignal = options?.signal ?? c.req.raw.signal;
 	const contentInputResolver = createContentInputResolver(
 		canonical,
@@ -142,7 +140,6 @@ export async function routeChat(
 				requestId,
 				executionMode: canonical.stream ? "stream" : "json",
 				maxAttempts: remainingAttempts,
-				preOutputDeadlineAt,
 				totalDeadlineAt,
 				previousDeploymentIds: previouslyFailed,
 				attemptOrdinalOffset: failedAttempts,
@@ -256,7 +253,7 @@ export async function routeChat(
 				streamError.routingScope === "request" ||
 				(options?.signal ?? c.req.raw.signal).aborted ||
 				remainingAttempts <= 0 ||
-				Date.now() >= preOutputDeadlineAt
+				Date.now() >= totalDeadlineAt
 			) {
 				streamError.attempts = failedAttemptLog;
 				throw streamError;

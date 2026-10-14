@@ -764,12 +764,8 @@ export async function* responsesEventsToCanonicalChunks(
 		}
 		const type = (ev.event ?? d.type) as string | undefined;
 		if (terminalSeen) {
-			throw new GatewayError({
-				class: "server",
-				code: "upstream_protocol_error",
-				message: "Responses upstream emitted an event after its terminal event",
-				provider: { body: { type: type ?? null } },
-			});
+			// The answer is already whole; trailing events cannot change it.
+			continue;
 		}
 		if (type === "error" || type === "response.failed") {
 			const response = d.response as Record<string, unknown> | undefined;

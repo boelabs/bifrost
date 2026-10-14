@@ -29,7 +29,7 @@ import {
 import {
 	type ExecutionPolicyOverrides,
 	DEFAULT_EXECUTION_POLICIES,
-	type ExecutionPolicies,
+	storableExecutionPolicies,
 } from "#core/executionPolicy.ts";
 
 /* ------------------------------------------------------------------ enums */
@@ -277,8 +277,8 @@ export const routerSettings = pgTable(
 			.notNull()
 			.default(true),
 		/**
-		 * Narrow each attempt's first-output deadline to a multiple of what that deployment usually
-		 * takes, instead of the budget the slowest member of the pool needs.
+		 * Retired: adaptive first-output deadlines cut legitimately slow requests. No longer read;
+		 * kept for the previous release during a rollout. Drop in a later migration.
 		 */
 		adaptiveTimeoutsEnabled: boolean("adaptive_timeouts_enabled")
 			.notNull()
@@ -303,10 +303,11 @@ export const routerSettings = pgTable(
 		throttleCooldownSeconds: integer("throttle_cooldown_seconds")
 			.notNull()
 			.default(5),
+		/** Read through `normalizeExecutionPolicies`; written through `storableExecutionPolicies`. */
 		executionPolicies: jsonb("execution_policies")
-			.$type<ExecutionPolicies>()
+			.$type<Record<string, unknown>>()
 			.notNull()
-			.default(DEFAULT_EXECUTION_POLICIES),
+			.default(storableExecutionPolicies(DEFAULT_EXECUTION_POLICIES)),
 		retryAfterSeconds: integer("retry_after_seconds").notNull().default(0),
 		unsupportedParameterStrategy: unsupportedParameterStrategyEnum(
 			"unsupported_parameter_strategy",

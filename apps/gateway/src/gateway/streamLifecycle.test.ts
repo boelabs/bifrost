@@ -1,12 +1,13 @@
-import { DEFAULT_EXECUTION_POLICIES } from "#core/executionPolicy.ts";
 import { attachAdapterDiagnostics } from "#adapters/diagnostics.ts";
 import type { CanonicalChatStreamChunk } from "#core/canonical.ts";
+import type { AdapterDiagnostics } from "#adapters/types.ts";
 import { GatewayError } from "#core/errors.ts";
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
 	terminalForChatResponse,
+	chatResponseAnomalies,
 	observeChatStream,
 } from "./streamLifecycle.ts";
 
@@ -26,51 +27,6 @@ const chunk = (
 	],
 });
 
-test("default text policy allows long reasoning and silence while preserving the idle bound", async () => {
-	const originalNow = Date.now;
-	let clock = 0;
-	Date.now = () => clock;
-	try {
-		async function* source() {
-			clock = 150_000;
-			yield attachAdapterDiagnostics(chunk(undefined), {
-				progress: "reasoning",
-			});
-			for (let i = 0; i < 4; i++) {
-				clock += 45_000;
-				const item = chunk(undefined);
-				item.choices[0]!.delta.reasoning = "Still working";
-				yield item;
-			}
-			yield chunk("Answer", "stop");
-		}
-		const observed = observeChatStream(
-			source(),
-			DEFAULT_EXECUTION_POLICIES.chat.stream,
-		);
-		await drain(observed.items);
-		assert.equal(observed.observation.reasoningFrames, 4);
-		assert.equal(observed.observation.terminal?.outcome, "completed");
-		async function* stalled() {
-			yield chunk("started");
-			clock += DEFAULT_EXECUTION_POLICIES.chat.stream.idleMs! + 1;
-			yield chunk(undefined);
-			yield chunk("too late", "stop");
-		}
-		await assert.rejects(
-			() =>
-				drain(
-					observeChatStream(stalled(), DEFAULT_EXECUTION_POLICIES.chat.stream)
-						.items,
-				),
-			(error: unknown) =>
-				GatewayError.is(error) && error.code === "upstream_idle_timeout",
-		);
-	} finally {
-		Date.now = originalNow;
-	}
-});
-
 async function drain<T>(items: AsyncIterable<T>): Promise<T[]> {
 	const values: T[] = [];
 	for await (const item of items) {
@@ -79,17 +35,26 @@ async function drain<T>(items: AsyncIterable<T>): Promise<T[]> {
 	return values;
 }
 
+const ended = (): AdapterDiagnostics => ({
+	transportTerminator: "done_marker",
+});
+
+function anomalies(diagnostics: AdapterDiagnostics | undefined): unknown {
+	return diagnostics?.metadata?.anomalies ?? [];
+}
+
 describe("observeChatStream", () => {
-	test("requires a semantic terminal and records content timing", async () => {
+	test("emits one terminal chunk last and records content timing", async () => {
 		async function* source() {
 			yield chunk("hello");
 			yield chunk(undefined, "stop");
 		}
-		const observed = observeChatStream(source());
+		const observed = observeChatStream(source(), ended());
 		const values = await drain(observed.items);
+		// The finish-only frame is folded into the terminal chunk instead of repeating as an empty one.
 		assert.deepEqual(
 			values.map((value) => value.choices[0]?.finishReason),
-			[null, null, "stop"],
+			[null, "stop"],
 		);
 		assert.equal(observed.observation.contentFrames, 1);
 		assert.deepEqual(observed.observation.terminal, {
@@ -97,98 +62,55 @@ describe("observeChatStream", () => {
 			reason: "stop",
 			usage: null,
 		});
+		assert.deepEqual(anomalies(observed.observation.diagnostics), []);
 	});
 
-	test("rejects EOF without a semantic terminal", async () => {
+	test("a finished stream without [DONE] is complete", async () => {
+		async function* source() {
+			yield chunk("hello");
+			yield chunk(undefined, "stop");
+		}
+		const observed = observeChatStream(source(), {});
+		await drain(observed.items);
+		assert.equal(observed.observation.terminal?.outcome, "completed");
+		assert.equal(observed.observation.transportTerminator, "eof");
+	});
+
+	test("an ended stream without a finish reason is complete, and says so", async () => {
+		async function* source() {
+			yield chunk("hello");
+		}
+		const observed = observeChatStream(source(), ended());
+		const values = await drain(observed.items);
+		assert.equal(values.at(-1)?.choices[0]?.finishReason, "stop");
+		assert.equal(observed.observation.terminal?.reason, "stop");
+		assert.deepEqual(anomalies(observed.observation.diagnostics), [
+			"missing_finish_reason",
+		]);
+	});
+
+	test("a stream cut before any finish or end marker is truncated", async () => {
 		async function* source() {
 			yield chunk("partial");
 		}
-		const observed = observeChatStream(source());
-		try {
-			await drain(observed.items);
-			throw new Error("expected protocol error");
-		} catch (error) {
-			assert.equal(GatewayError.is(error), true);
-			assert.equal((error as GatewayError).code, "upstream_protocol_error");
-		}
+		await assert.rejects(
+			() => drain(observeChatStream(source(), {}).items),
+			(error: unknown) =>
+				GatewayError.is(error) &&
+				error.code === "upstream_stream_truncated" &&
+				error.retryable,
+		);
 	});
 
-	test("enforces the first useful output deadline", async () => {
-		async function* source() {
-			await new Promise<void>((resolve) => setTimeout(resolve, 20));
-			yield chunk("late", "stop");
+	test("a stream with no choice at all is a protocol error", async () => {
+		async function* source(): AsyncGenerator<CanonicalChatStreamChunk> {
+			yield { id: "x", created: 1, model: "m", choices: [] };
 		}
-		const observed = observeChatStream(source(), {
-			firstOutputMs: 5,
-			idleMs: 5,
-			reasoningOnlyMs: 20,
-			preCommitMs: 20,
-			totalMs: 50,
-			maxAttempts: 2,
-		});
-		try {
-			await drain(observed.items);
-			throw new Error("expected timeout");
-		} catch (error) {
-			assert.equal(GatewayError.is(error), true);
-			assert.equal(
-				(error as GatewayError).code,
-				"upstream_first_output_timeout",
-			);
-			// The operator's own deadline: missing it is the deployment's record.
-			assert.equal((error as GatewayError).deploymentHealth, "penalize");
-		}
-	});
-
-	test("a narrowed first-output deadline does not count against the deployment", async () => {
-		async function* source() {
-			await new Promise<void>((resolve) => setTimeout(resolve, 20));
-			yield chunk("late", "stop");
-		}
-		const observed = observeChatStream(source(), {
-			firstOutputMs: 5,
-			firstOutputNarrowed: true,
-			idleMs: 5,
-			reasoningOnlyMs: 20,
-			preCommitMs: 20,
-			totalMs: 50,
-			maxAttempts: 2,
-		});
-		try {
-			await drain(observed.items);
-			throw new Error("expected timeout");
-		} catch (error) {
-			assert.equal(
-				(error as GatewayError).code,
-				"upstream_first_output_timeout",
-			);
-			// The router shortened the deadline; the deployment never saw the operator's.
-			assert.equal((error as GatewayError).deploymentHealth, "neutral");
-		}
-	});
-
-	test("a narrowed first-output deadline still leaves the idle budget the operator's", async () => {
-		async function* source() {
-			yield chunk("first");
-			await new Promise<void>((resolve) => setTimeout(resolve, 20));
-			yield chunk("late", "stop");
-		}
-		const observed = observeChatStream(source(), {
-			firstOutputMs: 50,
-			firstOutputNarrowed: true,
-			idleMs: 5,
-			reasoningOnlyMs: 50,
-			preCommitMs: 50,
-			totalMs: 100,
-			maxAttempts: 2,
-		});
-		try {
-			await drain(observed.items);
-			throw new Error("expected timeout");
-		} catch (error) {
-			assert.equal((error as GatewayError).code, "upstream_idle_timeout");
-			assert.equal((error as GatewayError).deploymentHealth, "penalize");
-		}
+		await assert.rejects(
+			() => drain(observeChatStream(source(), ended()).items),
+			(error: unknown) =>
+				GatewayError.is(error) && error.code === "upstream_protocol_error",
+		);
 	});
 
 	test("coalesces repeated compatible terminal evidence", async () => {
@@ -200,7 +122,7 @@ describe("observeChatStream", () => {
 				usage: { promptTokens: 2, completionTokens: 1, totalTokens: 3 },
 			};
 		}
-		const observed = observeChatStream(source());
+		const observed = observeChatStream(source(), ended());
 		const values = await drain(observed.items);
 		assert.equal(
 			values.filter((value) => value.choices[0]?.finishReason !== null).length,
@@ -214,27 +136,28 @@ describe("observeChatStream", () => {
 		});
 	});
 
-	test("rejects conflicting terminal evidence", async () => {
+	test("conflicting finish reasons keep the last one and are recorded", async () => {
 		async function* source() {
-			yield chunk(undefined, "stop");
+			yield chunk("text", "stop");
 			yield chunk(undefined, "content_filter");
 		}
-		await assert.rejects(
-			() => drain(observeChatStream(source()).items),
-			(error: unknown) =>
-				GatewayError.is(error) && error.code === "upstream_protocol_error",
-		);
+		const observed = observeChatStream(source(), ended());
+		await drain(observed.items);
+		assert.equal(observed.observation.terminal?.reason, "content_filter");
+		assert.deepEqual(anomalies(observed.observation.diagnostics), [
+			"conflicting_finish_reason",
+		]);
 	});
 
-	test("holds provisional terminal evidence until trailing semantic output ends", async () => {
+	test("holds provisional terminal evidence until trailing output ends", async () => {
 		async function* source() {
 			yield chunk(undefined, "stop");
 			yield chunk("late output");
 		}
-		const values = await drain(observeChatStream(source()).items);
+		const values = await drain(observeChatStream(source(), ended()).items);
 		assert.deepEqual(
 			values.map((value) => value.choices[0]?.finishReason),
-			[null, null, "stop"],
+			[null, "stop"],
 		);
 	});
 
@@ -261,7 +184,7 @@ describe("observeChatStream", () => {
 				],
 			};
 		}
-		const observed = observeChatStream(source());
+		const observed = observeChatStream(source(), ended());
 		const values = await drain(observed.items);
 		assert.equal(values.at(-1)?.choices[0]?.finishReason, "tool_calls");
 		assert.deepEqual(observed.observation.terminal, {
@@ -271,15 +194,16 @@ describe("observeChatStream", () => {
 		});
 	});
 
-	test("rejects a streaming stop without semantic output", async () => {
+	test("an empty answer is the upstream's answer, not a failure", async () => {
 		async function* source() {
 			yield chunk(undefined, "stop");
 		}
-		await assert.rejects(
-			() => drain(observeChatStream(source()).items),
-			(error: unknown) =>
-				GatewayError.is(error) && error.code === "upstream_protocol_error",
-		);
+		const observed = observeChatStream(source(), ended());
+		await drain(observed.items);
+		assert.equal(observed.observation.terminal?.outcome, "completed");
+		assert.deepEqual(anomalies(observed.observation.diagnostics), [
+			"empty_output",
+		]);
 	});
 
 	test("preserves an adapter's explicit incomplete outcome", async () => {
@@ -290,7 +214,7 @@ describe("observeChatStream", () => {
 				terminal: { outcome: "incomplete", reason: "content_filter" },
 			});
 		}
-		const observed = observeChatStream(source());
+		const observed = observeChatStream(source(), ended());
 		await drain(observed.items);
 		assert.deepEqual(observed.observation.terminal, {
 			outcome: "incomplete",
@@ -299,157 +223,66 @@ describe("observeChatStream", () => {
 		});
 	});
 
-	test("rejects a JSON completion that claims stop without output", () => {
+	test("long silences between frames are not the observer's concern", async () => {
+		async function* source() {
+			yield chunk("first");
+			await new Promise<void>((resolve) => setTimeout(resolve, 30));
+			yield chunk("second", "stop");
+		}
+		const observed = observeChatStream(source(), ended());
+		await drain(observed.items);
+		assert.equal(observed.observation.terminal?.outcome, "completed");
+		assert.ok(observed.observation.maxInterEventGapMs >= 25);
+	});
+});
+
+describe("terminalForChatResponse", () => {
+	const response = (
+		message: Record<string, unknown>,
+		finishReason: "stop" | "tool_calls" | null,
+	) => ({
+		id: "response-1",
+		created: 1,
+		model: "model",
+		choices: [
+			{
+				index: 0,
+				finishReason,
+				message: { role: "assistant" as const, content: null, ...message },
+			},
+		],
+		usage: { promptTokens: 1, completionTokens: 0, totalTokens: 1 },
+	});
+
+	test("an empty completion is completed and recorded as such", () => {
+		const empty = response({}, "stop");
+		assert.equal(terminalForChatResponse(empty).outcome, "completed");
+		assert.deepEqual(chatResponseAnomalies(empty), ["empty_output"]);
+	});
+
+	test("a missing finish reason is read from the output", () => {
+		const text = response({ content: "hi" }, null);
+		assert.equal(terminalForChatResponse(text).reason, "stop");
+		assert.deepEqual(chatResponseAnomalies(text), ["missing_finish_reason"]);
+		const tool = response(
+			{ toolCalls: [{ id: "c", name: "f", arguments: "{}" }] },
+			null,
+		);
+		assert.equal(terminalForChatResponse(tool).reason, "tool_calls");
+	});
+
+	test("a response without choices is a protocol error", () => {
 		assert.throws(
 			() =>
 				terminalForChatResponse({
-					id: "response-1",
+					id: "r",
 					created: 1,
-					model: "model",
-					choices: [
-						{
-							index: 0,
-							finishReason: "stop",
-							message: { role: "assistant", content: null },
-						},
-					],
+					model: "m",
+					choices: [],
 					usage: { promptTokens: 1, completionTokens: 0, totalTokens: 1 },
 				}),
 			(error: unknown) =>
 				GatewayError.is(error) && error.code === "upstream_protocol_error",
 		);
 	});
-});
-
-test("opaque reasoning can precede the first visible output beyond the initial deadline", async () => {
-	const originalNow = Date.now;
-	let clock = 0;
-	Date.now = () => clock;
-	try {
-		async function* source() {
-			for (let index = 0; index < 5; index++) {
-				clock += 10;
-				yield attachAdapterDiagnostics(chunk(undefined), {
-					progress: "reasoning",
-				});
-			}
-			clock += 10;
-			yield chunk("answer", "stop");
-		}
-		const observed = observeChatStream(source(), {
-			firstOutputMs: 15,
-			idleMs: 30,
-			reasoningOnlyMs: 90,
-			preCommitMs: 25,
-			totalMs: 600,
-			maxAttempts: 1,
-		});
-		await drain(observed.items);
-		assert.equal(observed.observation.firstReasoningAt, null);
-		assert.equal(observed.observation.firstOutputAt, 60);
-		assert.equal(observed.observation.terminal?.outcome, "completed");
-	} finally {
-		Date.now = originalNow;
-	}
-});
-
-for (const kind of ["reasoning", "tool"] as const) {
-	test(`fresh opaque ${kind} progress renews idle deadlines without counting visible text`, async () => {
-		const originalNow = Date.now;
-		let clock = 0;
-		Date.now = () => clock;
-		try {
-			async function* source() {
-				yield chunk("initial");
-				for (let i = 0; i < 5; i++) {
-					clock += 20;
-					yield attachAdapterDiagnostics(chunk(undefined), { progress: kind });
-				}
-				clock += 20;
-				yield chunk("done", "stop");
-			}
-			const observed = observeChatStream(source(), {
-				firstOutputMs: 50,
-				idleMs: 50,
-				reasoningOnlyMs: 500,
-				preCommitMs: 50,
-				totalMs: 1000,
-				maxAttempts: 1,
-			});
-			await drain(observed.items);
-			assert.equal(observed.observation.contentFrames, 2);
-			assert.equal(observed.observation.reasoningFrames, 0);
-			assert.equal(observed.observation.terminal?.outcome, "completed");
-		} finally {
-			Date.now = originalNow;
-		}
-	});
-}
-
-test("metadata does not renew idle deadlines", async () => {
-	const originalNow = Date.now;
-	let clock = 0;
-	Date.now = () => clock;
-	try {
-		async function* source() {
-			yield chunk("initial");
-			for (let i = 0; i < 10; i++) {
-				clock += 20;
-				yield chunk(undefined);
-			}
-			yield chunk("late", "stop");
-		}
-		await assert.rejects(
-			() =>
-				drain(
-					observeChatStream(source(), {
-						firstOutputMs: 50,
-						idleMs: 50,
-						reasoningOnlyMs: 500,
-						preCommitMs: 50,
-						totalMs: 1000,
-						maxAttempts: 1,
-					}).items,
-				),
-			(error: unknown) =>
-				GatewayError.is(error) && error.code === "upstream_idle_timeout",
-		);
-	} finally {
-		Date.now = originalNow;
-	}
-});
-
-test("opaque reasoning progress still respects the reasoning-only deadline", async () => {
-	const originalNow = Date.now;
-	let clock = 0;
-	Date.now = () => clock;
-	try {
-		async function* source() {
-			for (let i = 0; i < 10; i++) {
-				clock += 20;
-				yield attachAdapterDiagnostics(chunk(undefined), {
-					progress: "reasoning",
-				});
-			}
-			yield chunk("late", "stop");
-		}
-		await assert.rejects(
-			() =>
-				drain(
-					observeChatStream(source(), {
-						firstOutputMs: 50,
-						idleMs: 50,
-						reasoningOnlyMs: 70,
-						preCommitMs: 50,
-						totalMs: 1000,
-						maxAttempts: 1,
-					}).items,
-				),
-			(error: unknown) =>
-				GatewayError.is(error) &&
-				error.code === "upstream_reasoning_only_timeout",
-		);
-	} finally {
-		Date.now = originalNow;
-	}
 });

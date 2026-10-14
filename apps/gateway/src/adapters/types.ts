@@ -1,5 +1,5 @@
 import type { UpstreamTransport, AdapterTransports } from "#core/transport.ts";
-import type { ExecutionPolicy } from "#core/executionPolicy.ts";
+import type { AttemptWatchdog } from "#gateway/attemptWatchdog.ts";
 import type { ReasoningControlKind } from "#core/reasoning.ts";
 import type { ResolvedModelMetadata } from "#catalog/types.ts";
 import type { GatewayError } from "#core/errors.ts";
@@ -94,12 +94,10 @@ export interface AdapterContext {
 	transport: UpstreamTransport;
 	requestId: string;
 	operationId?: string;
-	/** Epoch at which the router acquired this attempt, used for request-wide first-output timing. */
-	attemptStartedAt?: number;
 	/** To cancel/timeout the upstream call. */
 	signal?: AbortSignal;
-	/** Provider-agnostic deadlines enforced by the executor, never interpreted by adapters. */
-	executionPolicy?: ExecutionPolicy;
+	/** The attempt's connection deadlines, fed by the executor and transport; adapters never touch it. */
+	watchdog?: AttemptWatchdog;
 	/** Mutable private evidence for transport-level observations that do not produce a public frame. */
 	diagnostics?: AdapterDiagnostics;
 	/** Private transport timestamps populated by the instrumented executor. */
@@ -116,8 +114,6 @@ export interface ChatSupportContext {
 
 /** Safe, private provider evidence retained for operator diagnostics and never rendered publicly. */
 export interface AdapterDiagnostics {
-	/** Fresh semantic progress without a visible canonical text delta; never a heartbeat. */
-	progress?: "reasoning" | "tool";
 	providerRequestId?: string;
 	modelVersion?: string;
 	originalTerminalReason?: string;

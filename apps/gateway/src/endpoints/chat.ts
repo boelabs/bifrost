@@ -37,6 +37,7 @@ import {
 	newDownstreamWriteObservation,
 	markDownstreamClientAborted,
 	awaitWithSSEHeartbeats,
+	settleBeforeCommit,
 	withSSEHeartbeats,
 	writeSSEHeartbeat,
 	writeSSE,
@@ -66,6 +67,7 @@ function streamChatCompletion(
 	canonical: CanonicalChatRequest,
 	settings: EffectiveSettings,
 	log: OperationLogDraft,
+	routePromise: ReturnType<typeof routeChat>,
 ): Response {
 	return streamSSE(c, async (stream) => {
 		const downstream = newDownstreamWriteObservation(log.operationId);
@@ -81,12 +83,6 @@ function streamChatCompletion(
 		let streamError: GatewayError | null = null;
 		let metadata: Record<string, unknown> = { downstream };
 		try {
-			// Force headers onto the wire before upstream routing can stall.
-			await writeSSEHeartbeat(stream, downstream);
-			const routePromise = routeChat(c, canonical, log.requestId, settings, {
-				signal: log.clientSignal,
-				operationId: log.operationId,
-			});
 			routed = await awaitWithSSEHeartbeats(routePromise, () =>
 				writeSSEHeartbeat(stream, downstream),
 			);
@@ -158,7 +154,14 @@ function streamChatCompletion(
 
 				let out = transformed;
 				if (!canonical.includeUsage && transformed.usage !== undefined) {
-					if (transformed.choices.length === 0) {
+					// Without include_usage OpenAI never sends a usage frame; one that carried nothing
+					// else disappears instead of reaching the caller as an empty delta.
+					const carriesMore = transformed.choices.some(
+						(choice) =>
+							choice.finishReason !== null ||
+							Object.keys(choice.delta).length > 0,
+					);
+					if (!carriesMore) {
 						continue;
 					}
 					out = { ...transformed };
@@ -307,7 +310,12 @@ export async function chatCompletionsHandler(
 
 		const settings = await getEffectiveSettings();
 		if (canonical.stream) {
-			return streamChatCompletion(c, canonical, settings, log);
+			const routePromise = routeChat(c, canonical, log.requestId, settings, {
+				signal: log.clientSignal,
+				operationId: log.operationId,
+			});
+			await settleBeforeCommit(routePromise);
+			return streamChatCompletion(c, canonical, settings, log, routePromise);
 		}
 		const { routing, parameterPolicy, contentInputResolution } =
 			await routeChat(c, canonical, log.requestId, settings, {

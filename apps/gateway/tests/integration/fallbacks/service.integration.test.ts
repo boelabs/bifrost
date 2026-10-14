@@ -4,9 +4,15 @@ import { test } from "node:test";
 
 import "#adapters/index.ts";
 
+import { listFallbackPoliciesFor } from "#db/repos/deployments.ts";
 import { updateDeployment } from "#deployments/service.ts";
 import { configureFallback } from "#fallbacks/service.ts";
-import { getFallbackPolicy } from "#db/repos/router.ts";
+
+async function getFallbackPolicy(primaryModel: string, reason: string) {
+	return (await listFallbackPoliciesFor(primaryModel)).find(
+		(policy) => policy.reason === reason,
+	);
+}
 import { pgAvailable } from "#test-support/infra.ts";
 import { GatewayError } from "#core/errors.ts";
 

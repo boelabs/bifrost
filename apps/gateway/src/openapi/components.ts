@@ -760,10 +760,8 @@ export const ExecutionPolicyOverrides = z
 		z.enum([...CALL_TYPE_VALUES, "all"]),
 		z
 			.object({
-				firstOutputMs: z.int().positive().optional(),
+				responseMs: z.int().positive().optional(),
 				idleMs: z.int().positive().optional(),
-				reasoningOnlyMs: z.int().positive().optional(),
-				preCommitMs: z.int().positive().optional(),
 				totalMs: z.int().positive().optional(),
 			})
 			.meta({ id: "ExecutionPolicyOverride" }),
@@ -949,20 +947,28 @@ export const UpdateKey = z
 
 /* ------------------------------------------------------------ router/fallbacks */
 
-const ExecutionPolicy = z.object({
-	firstOutputMs: z.int().positive().max(EXECUTION_POLICY_MAX_TOTAL_MS),
-	idleMs: z.union([
-		z.int().positive().max(EXECUTION_POLICY_MAX_TOTAL_MS),
-		z.null(),
-	]),
-	reasoningOnlyMs: z.union([
-		z.int().positive().max(EXECUTION_POLICY_MAX_TOTAL_MS),
-		z.null(),
-	]),
-	preCommitMs: z.int().positive().max(EXECUTION_POLICY_MAX_TOTAL_MS),
-	totalMs: z.int().positive().max(EXECUTION_POLICY_MAX_TOTAL_MS),
-	maxAttempts: z.int().min(1).max(20),
-});
+const ExecutionPolicy = z
+	.object({
+		responseMs: z.int().positive().max(EXECUTION_POLICY_MAX_TOTAL_MS).meta({
+			description:
+				"JSON: time until the complete upstream response has arrived. Stream: time until the upstream answers with response headers.",
+		}),
+		idleMs: z
+			.union([z.int().positive().max(EXECUTION_POLICY_MAX_TOTAL_MS), z.null()])
+			.meta({
+				description:
+					"Stream only: the longest silence allowed between two upstream bytes. Model output is never interpreted, so silent reasoning is not a stall. null disables it.",
+			}),
+		totalMs: z.int().positive().max(EXECUTION_POLICY_MAX_TOTAL_MS).meta({
+			description:
+				"Request-wide bound across every attempt, retry and fallback.",
+		}),
+		maxAttempts: z.int().min(1).max(20).meta({
+			description:
+				"Upstream attempts per request, across deployments and fallbacks.",
+		}),
+	})
+	.meta({ id: "ExecutionPolicy" });
 
 const OperationExecutionPolicy = z.object({
 	json: ExecutionPolicy,
@@ -1036,18 +1042,6 @@ export const RouterSettings = z
 		protectLastDeployment: z.boolean().optional().meta({
 			description:
 				"Never open the deployment circuit when a public model has nowhere else to route. Quarantining the only deployment turns a degraded upstream into a total outage, and the gateway's 503 is less useful to the caller than the upstream's own error.",
-		}),
-		adaptiveTimeoutsEnabled: z.boolean().optional().meta({
-			description:
-				"Narrow each attempt's first-output deadline to a multiple of what that deployment usually takes, instead of the budget the slowest member of the pool needs.",
-		}),
-		adaptiveTimeoutMultiplier: z.number().min(1).optional().meta({
-			description:
-				"How many times its own typical time-to-first-output a deployment is granted.",
-		}),
-		adaptiveTimeoutFloorMs: z.int().positive().optional().meta({
-			description:
-				"Lower bound for the adaptive deadline, so a very fast deployment is not cut off by ordinary variance.",
 		}),
 		cooldownSeconds: z.int().min(0).optional().meta({
 			description:
@@ -1344,9 +1338,6 @@ export const RouterSettingsState = z
 		failureRatePercent: z.number(),
 		minWindowRequests: z.int(),
 		protectLastDeployment: z.boolean(),
-		adaptiveTimeoutsEnabled: z.boolean(),
-		adaptiveTimeoutMultiplier: z.number(),
-		adaptiveTimeoutFloorMs: z.int(),
 		cooldownSeconds: z.int(),
 		failureWindowSeconds: z.int(),
 		maxCooldownSeconds: z.int(),
@@ -1354,7 +1345,7 @@ export const RouterSettingsState = z
 		configurationCooldownSeconds: z.int(),
 		throttleCooldownSeconds: z.int(),
 		retryAfterSeconds: z.int(),
-		executionPolicies: z.record(z.string(), z.unknown()),
+		executionPolicies: z.record(z.string(), OperationExecutionPolicy),
 		updatedAt: timestamp,
 	})
 	.meta({
