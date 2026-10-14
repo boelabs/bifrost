@@ -213,7 +213,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 250,
 				"outputCentsPerMTokens": 1000
-			}
+			},
+			"deprecated": true,
+			"notes": "Azure retires gpt-4o-transcribe 2025-03-20, its only version, on 2026-10-15 and names no replacement; gpt-4o-mini-transcribe 2025-12-15 stays available until 2027-06-15."
 		},
 		"gpt-4o-mini-transcribe": {
 			"operations": {
@@ -679,7 +681,9 @@
 				"inputCentsPerMTokens": 175,
 				"outputCentsPerMTokens": 1400,
 				"cacheReadCentsPerMTokens": 17.5
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft retired Azure OpenAI gpt-5.3-chat (version 2026-03-03) on 2026-06-29; replacement gpt-chat-latest."
 		},
 		"gpt-5.2-codex": {
 			"operations": {
@@ -787,7 +791,9 @@
 				"inputCentsPerMTokens": 175,
 				"outputCentsPerMTokens": 1400,
 				"cacheReadCentsPerMTokens": 17.5
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft retired Azure OpenAI gpt-5.2-chat (version 2025-12-11 on 2026-05-13, version 2026-02-10 on 2026-06-29); replacement gpt-chat-latest."
 		},
 		"gpt-5.1": {
 			"operations": {
@@ -851,7 +857,9 @@
 				"inputCentsPerMTokens": 125,
 				"outputCentsPerMTokens": 1000,
 				"cacheReadCentsPerMTokens": 12.5
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft retired Azure OpenAI gpt-5.1-chat (version 2025-11-13) on 2026-06-29; replacement gpt-chat-latest."
 		},
 		"gpt-5.1-codex": {
 			"operations": {
@@ -1107,7 +1115,9 @@
 				"inputCentsPerMTokens": 125,
 				"outputCentsPerMTokens": 1000,
 				"cacheReadCentsPerMTokens": 12.5
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft retired Azure OpenAI gpt-5-chat (version 2025-10-03 on 2026-05-13, version 2025-08-07 on 2026-06-29); replacement gpt-chat-latest."
 		},
 		"gpt-5-codex": {
 			"operations": {
@@ -1233,7 +1243,9 @@
 				"outputCentsPerMTokens": 800,
 				"cacheReadCentsPerMTokens": 50,
 				"cacheWriteCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists Azure OpenAI gpt-4.1 (version 2025-04-14) as deprecated (closed to new customers); it retires on 2027-04-14 with no replacement listed yet."
 		},
 		"gpt-4.1-mini": {
 			"operations": {
@@ -1266,7 +1278,9 @@
 				"outputCentsPerMTokens": 160,
 				"cacheReadCentsPerMTokens": 10,
 				"cacheWriteCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists Azure OpenAI gpt-4.1-mini (version 2025-04-14) as deprecated (closed to new customers); it retires on 2027-04-14 with no replacement listed yet."
 		},
 		"gpt-4.1-nano": {
 			"operations": {
@@ -1299,7 +1313,9 @@
 				"outputCentsPerMTokens": 40,
 				"cacheReadCentsPerMTokens": 3,
 				"cacheWriteCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists Azure OpenAI gpt-4.1-nano (version 2025-04-14) as deprecated (closed to new customers); it retires on 2027-04-14 with no replacement listed yet."
 		},
 		"codex-mini": {
 			"operations": {
@@ -1319,7 +1335,9 @@
 				"inputCentsPerMTokens": 150,
 				"outputCentsPerMTokens": 600,
 				"cacheReadCentsPerMTokens": 37.5
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists Azure OpenAI codex-mini (version 2025-05-16) as deprecated (closed to new customers); it retires on 2026-11-15 with no replacement listed."
 		},
 		"o3-pro": {
 			"operations": {
@@ -1342,7 +1360,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 2000,
 				"outputCentsPerMTokens": 8000
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists Azure OpenAI o3-pro (version 2025-06-10) as deprecated (closed to new customers); it retires on 2026-11-19 (replacement: gpt-5.6-sol)."
 		},
 		"o4-mini": {
 			"operations": {
@@ -1378,7 +1398,9 @@
 				"outputCentsPerMTokens": 440,
 				"cacheReadCentsPerMTokens": 27.5,
 				"cacheWriteCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists Azure OpenAI o4-mini (version 2025-04-16) as deprecated (closed to new customers); it retires on 2026-11-19 (replacement: gpt-5.6-terra)."
 		},
 		"o3": {
 			"operations": {
@@ -1402,7 +1424,9 @@
 				"inputCentsPerMTokens": 200,
 				"outputCentsPerMTokens": 800,
 				"cacheReadCentsPerMTokens": 50
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists Azure OpenAI o3 (version 2025-04-16) as deprecated (closed to new customers); it retires on 2026-11-19 (replacement: gpt-5.6-sol)."
 		},
 		"o3-mini": {
 			"operations": {
@@ -1434,7 +1458,9 @@
 				"outputCentsPerMTokens": 440,
 				"cacheReadCentsPerMTokens": 55,
 				"cacheWriteCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists Azure OpenAI o3-mini (version 2025-01-31) as deprecated (closed to new customers); it retires on 2026-11-19 (replacement: gpt-5.6-terra)."
 		},
 		"o1": {
 			"operations": {
@@ -1466,7 +1492,9 @@
 				"outputCentsPerMTokens": 6000,
 				"cacheReadCentsPerMTokens": 750,
 				"cacheWriteCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists Azure OpenAI o1 (version 2024-12-17) as deprecated (closed to new customers); it retires on 2026-11-19 (replacement: gpt-5.6-sol)."
 		},
 		"gpt-4o": {
 			"operations": {
@@ -1544,7 +1572,9 @@
 				"outputCentsPerMTokens": 60,
 				"cacheReadCentsPerMTokens": 7.5,
 				"cacheWriteCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists Azure OpenAI gpt-4o-mini (version 2024-07-18) as deprecated (closed to new customers); it retires on 2027-04-14 with no replacement listed yet."
 		},
 		"gpt-4": {
 			"operations": {
@@ -1577,7 +1607,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 3000,
 				"outputCentsPerMTokens": 6000
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft retired Azure OpenAI gpt-4 (versions 0314 and 0613) on 2025-06-06; replacement gpt-4o (version 2024-11-20)."
 		},
 		"gpt-4o-2024-08-06": {
 			"operations": {
@@ -1614,7 +1646,9 @@
 				"inputCentsPerMTokens": 250,
 				"outputCentsPerMTokens": 1000,
 				"cacheReadCentsPerMTokens": 125
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists Azure OpenAI gpt-4o version 2024-08-06 as deprecated (closed to new customers); it retires on 2027-04-14 (replacement: gpt-5.1)."
 		},
 		"gpt-4o-2024-05-13": {
 			"operations": {
@@ -1649,7 +1683,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 500,
 				"outputCentsPerMTokens": 1500
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists Azure OpenAI gpt-4o version 2024-05-13 as deprecated (closed to new customers); it retires on 2026-12-09 (replacement: gpt-5.6-sol)."
 		},
 		"gpt-3.5-turbo-0613": {
 			"operations": {
@@ -1683,7 +1719,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 100,
 				"outputCentsPerMTokens": 200
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft retired Azure OpenAI gpt-35-turbo (version 0613) on 2025-02-13; replacement gpt-4o-mini."
 		},
 		"gpt-3.5-turbo-16k": {
 			"operations": {
@@ -1717,7 +1755,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 300,
 				"outputCentsPerMTokens": 400
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft retired Azure OpenAI gpt-35-turbo-16k (version 0613) on 2025-04-30; replacement gpt-4.1-mini (version 2025-04-14)."
 		},
 		"gpt-6-astra": {
 			"operations": {
