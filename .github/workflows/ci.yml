@@ -1,9 +1,11 @@
 name: CI
 
+# Branches only: a release tag points at a commit main already validated, and release.yml builds its
+# images. Pull requests run whatever their base, so a PR stacked on another branch is checked too.
 on:
   push:
+    branches: ["**"]
   pull_request:
-    branches: [main]
 
 permissions:
   contents: read
@@ -27,18 +29,41 @@ jobs:
     name: Detect changed apps
     runs-on: ubuntu-latest
     outputs:
+      run: ${{ steps.scope.outputs.run }}
       gateway: ${{ steps.filter.outputs.gateway }}
       dashboard: ${{ steps.filter.outputs.dashboard }}
       docs: ${{ steps.filter.outputs.docs }}
       stack: ${{ steps.filter.outputs.stack }}
     steps:
+      # A push to a feature branch is validated by its pull request, which runs the same jobs on the
+      # same commit. Running both doubled every check. Pushes still run where something consumes
+      # them: main, and branches in COOLIFY_DEPLOY_MAP, which publish and deploy their images.
+      - name: Decide whether this run is needed
+        id: scope
+        env:
+          DEPLOY_MAP: ${{ vars.COOLIFY_DEPLOY_MAP }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          run=true
+          if [ "$EVENT_NAME" = "push" ] && [ "$REF_NAME" != "main" ]; then
+            if [ -z "${DEPLOY_MAP:-}" ] || ! printf '%s' "$DEPLOY_MAP" | jq -e --arg branch "$REF_NAME" '.[$branch] != null' >/dev/null; then
+              echo "::notice::'$REF_NAME' is neither main nor a deployment branch; its pull request runs the checks."
+              run=false
+            fi
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        if: steps.scope.outputs.run == 'true'
         with:
           # Both sides of the comparison have to be present locally.
           fetch-depth: 0
 
       - name: Compare against the base commit
         id: filter
+        if: steps.scope.outputs.run == 'true'
         env:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           DEPLOY_MAP: ${{ vars.COOLIFY_DEPLOY_MAP }}
@@ -115,6 +140,8 @@ jobs:
   quality:
     name: Lint, typecheck & unit tests
     runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.run == 'true'
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
@@ -164,6 +191,8 @@ jobs:
   integration:
     name: Integration tests
     runs-on: ubuntu-latest
+    needs: [changes]
+    if: needs.changes.outputs.run == 'true'
     services:
       postgres:
         image: postgres:18-alpine
@@ -222,6 +251,7 @@ jobs:
     name: Build container images
     runs-on: ubuntu-latest
     needs: [changes]
+    if: needs.changes.outputs.run == 'true'
     permissions:
       contents: read
       # Only used when this commit's images are actually published — see "Derive image tags".

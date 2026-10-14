@@ -57,7 +57,7 @@ Tres imágenes, una por aplicación: `ghcr.io/<owner>/bifrost-{gateway,dashboard
 
 ## Deployment desde CI [#deploying-from-ci]
 
-`.github/workflows/ci.yml` crea las imágenes para una confirmación y le pide a Coolify que las implemente, de modo que un entorno obtenga el artefacto con el que se ejecutaron las pruebas. No hay nada vinculado a `main`: una rama que no está en el mapa no se implementa.
+`.github/workflows/ci.yml` crea las imágenes para una confirmación y le pide a Coolify que las implemente, de modo que un entorno obtenga el artefacto con el que se ejecutaron las pruebas. No hay nada vinculado a `main`: una rama que no está en el mapa no se implementa. Un push a esa rama lo comprueba su pull request, que ejecuta los mismos jobs sobre la misma confirmación, y una etiqueta `v*` no ejecuta CI: apunta a una confirmación que `main` ya validó, y `release.yml` crea sus imágenes.
 
 | Configuración | Amable |
 |---|---|
