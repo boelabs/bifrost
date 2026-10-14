@@ -103,7 +103,9 @@ that are actually deployed, not for every branch.
 
 `.github/workflows/ci.yml` builds the images for a commit and asks Coolify to deploy them, so an
 environment gets the artifact the tests ran against. Nothing is tied to `main`: a branch that is not
-in the map is not deployed.
+in the map is not deployed. A push to such a branch is checked by its pull request, which runs the
+same jobs on the same commit, and a `v*` tag runs no CI at all: it points at a commit `main` already
+validated, and `release.yml` builds its images.
 
 | Setting | Kind |
 |---|---|
