@@ -55,11 +55,17 @@
 							"mode": "ignored",
 							"notes": "Thinking mode does not use sampling parameters."
 						},
-						"frequency_penalty": true,
+						"frequency_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
 						"include_reasoning": true,
 						"logprobs": true,
 						"max_tokens": true,
-						"presence_penalty": true,
+						"presence_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
 						"reasoning": true,
 						"response_format": true,
 						"stop": true,
@@ -120,11 +126,17 @@
 							"mode": "ignored",
 							"notes": "Thinking mode does not use sampling parameters."
 						},
-						"frequency_penalty": true,
+						"frequency_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
 						"include_reasoning": true,
 						"logprobs": true,
 						"max_tokens": true,
-						"presence_penalty": true,
+						"presence_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
 						"reasoning": true,
 						"response_format": true,
 						"stop": true,
@@ -159,9 +171,15 @@
 						"max_tokens": true,
 						"temperature": true,
 						"top_p": true,
-						"frequency_penalty": true,
+						"frequency_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
 						"stop": true,
-						"presence_penalty": true,
+						"presence_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
 						"response_format": true,
 						"structured_outputs": true,
 						"tools": true,
@@ -216,11 +234,17 @@
 						"reasoning": true,
 						"include_reasoning": true,
 						"top_p": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
-						"seed": true,
-						"top_k": true,
-						"repetition_penalty": true,
+						"frequency_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
+						"presence_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
+						"seed": false,
+						"top_k": false,
+						"repetition_penalty": false,
 						"response_format": true,
 						"structured_outputs": true
 					},
@@ -247,12 +271,15 @@
 						"reasoning": true,
 						"include_reasoning": true,
 						"top_p": true,
-						"frequency_penalty": true,
+						"frequency_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
 						"response_format": true,
 						"structured_outputs": true,
 						"logprobs": true,
 						"top_logprobs": true,
-						"seed": true
+						"seed": false
 					},
 					"capabilities": {
 						"tools": true,
@@ -278,14 +305,20 @@
 						"reasoning": true,
 						"include_reasoning": true,
 						"top_p": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
-						"repetition_penalty": true,
-						"top_k": true,
-						"seed": true,
-						"min_p": true,
+						"frequency_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
+						"presence_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
+						"repetition_penalty": false,
+						"top_k": false,
+						"seed": false,
+						"min_p": false,
 						"response_format": true,
-						"logit_bias": true,
+						"logit_bias": false,
 						"structured_outputs": true
 					},
 					"capabilities": {
@@ -313,10 +346,16 @@
 						"tool_choice": true,
 						"reasoning": true,
 						"include_reasoning": true,
-						"seed": true,
+						"seed": false,
 						"top_p": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
+						"frequency_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
+						"presence_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
 						"structured_outputs": true,
 						"response_format": true,
 						"reasoning_effort": true
@@ -343,8 +382,14 @@
 						"reasoning": true,
 						"include_reasoning": true,
 						"top_p": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
+						"frequency_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
+						"presence_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
 						"logprobs": true,
 						"top_logprobs": true,
 						"response_format": true,
@@ -377,8 +422,14 @@
 						"reasoning": true,
 						"include_reasoning": true,
 						"top_p": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
+						"frequency_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
+						"presence_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
 						"logprobs": true,
 						"top_logprobs": true,
 						"response_format": true,
@@ -412,8 +463,14 @@
 						"reasoning": true,
 						"include_reasoning": true,
 						"top_p": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
+						"frequency_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
+						"presence_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
 						"logprobs": true,
 						"top_logprobs": true,
 						"response_format": true,
@@ -446,14 +503,20 @@
 						"reasoning": true,
 						"include_reasoning": true,
 						"top_p": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
-						"repetition_penalty": true,
-						"top_k": true,
-						"seed": true,
-						"min_p": true,
+						"frequency_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
+						"presence_penalty": {
+							"mode": "ignored",
+							"notes": "Deprecated by DeepSeek; it has no effect."
+						},
+						"repetition_penalty": false,
+						"top_k": false,
+						"seed": false,
+						"min_p": false,
 						"response_format": true,
-						"logit_bias": true,
+						"logit_bias": false,
 						"structured_outputs": true,
 						"reasoning_effort": true
 					},
