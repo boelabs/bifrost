@@ -1437,11 +1437,95 @@ export const RetainedPayloadState = z
 			"Whether a retained request/response sample stands behind this operation, and whether it can be read. Describing it costs no audit entry; reading it does.",
 	});
 
+const ProviderErrorDetail = z
+	.object({
+		type: z.string().optional(),
+		code: z.string().optional(),
+		param: z.string().optional(),
+		message: z.string().optional(),
+	})
+	.meta({
+		id: "ProviderErrorDetail",
+		description:
+			"The provider's own error as it answered. `message` is bounded, scrubbed of credential-shaped strings, and absent when OBSERVABILITY_PAYLOAD_ACCESS is sealed.",
+	});
+
+export const UpstreamAttemptError = loose(
+	{
+		class: nullableString,
+		code: nullableString,
+		httpStatus: nullableInteger,
+		providerStatus: nullableInteger,
+		retryAfterMs: z.int().optional(),
+		message: z.string().optional().meta({
+			description:
+				"The gateway's internal account of the failure. Never returned to the caller; absent when payload access is sealed.",
+		}),
+		provider: ProviderErrorDetail.optional(),
+	},
+	{ id: "UpstreamAttemptError" },
+);
+
+export const UpstreamAttempt = loose(
+	{
+		id: z.uuid(),
+		ordinal: z.int(),
+		deploymentId: z.union([z.uuid(), z.null()]),
+		deploymentLabel: nullableString,
+		adapterKey: nullableString,
+		transport: nullableString,
+		upstreamModel: nullableString,
+		outcome: z.string(),
+		failureOwner: nullableString.meta({
+			description:
+				"provider, gateway_deadline, gateway, deployment_config or client.",
+		}),
+		failureKind: nullableString,
+		failurePhase: nullableString.meta({
+			description:
+				"connect (no response), response (an error answer, or none in time), stream (after the stream opened), client, or gateway.",
+		}),
+		healthEffect: z.string(),
+		httpStatus: nullableInteger,
+		providerStatus: nullableInteger,
+		durationMs: nullableInteger,
+		headersMs: nullableInteger,
+		firstEventMs: nullableInteger,
+		firstOutputMs: nullableInteger,
+		maxInterEventGapMs: nullableInteger,
+		upstreamBytes: nullableInteger,
+		promptTokens: nullableInteger,
+		completionTokens: nullableInteger,
+		reasoningTokens: nullableInteger,
+		totalTokens: nullableInteger,
+		startedAt: timestamp,
+		endedAt: z.union([timestamp, z.null()]),
+		diagnostics: z.record(z.string(), z.unknown()),
+		error: z.union([UpstreamAttemptError, z.null()]),
+	},
+	{
+		id: "UpstreamAttempt",
+		description: "One upstream attempt of an operation, in order.",
+	},
+);
+
 export const OperationDetail = loose(
 	{
 		id: z.uuid(),
 		requestId: z.string(),
-		attempts: z.array(z.record(z.string(), z.unknown())).meta({
+		publicModel: nullableString,
+		callType: z.string(),
+		outcome: nullableString,
+		stream: z.boolean(),
+		httpStatus: nullableInteger,
+		durationMs: nullableInteger,
+		firstOutputMs: nullableInteger,
+		startedAt: timestamp,
+		error: z.union([z.record(z.string(), z.unknown()), z.null()]).meta({
+			description:
+				"What the caller received (class, code, http_status) and the internal message behind it.",
+		}),
+		attempts: z.array(UpstreamAttempt).meta({
 			description: "Ordered upstream attempts for this operation.",
 		}),
 		payload: RetainedPayloadState,

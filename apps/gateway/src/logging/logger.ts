@@ -1,6 +1,8 @@
 import { recordRequestTelemetry } from "#telemetry/index.ts";
+import { internalMessage } from "./errorRecord.ts";
 import type { CostBreakdown } from "./cost.ts";
 import type { Usage } from "#core/usage.ts";
+import { env } from "#config/env.ts";
 import { log } from "./log.ts";
 
 export interface OperationLogInput {
@@ -43,9 +45,24 @@ export interface OperationLogInput {
 	attempts?: unknown[] | null;
 }
 
-/** Emits low-cardinality telemetry; durable persistence is owned by logging/operations.ts. */
+interface FailedAttempt {
+	ok?: boolean;
+	label?: string;
+	deploymentId?: string;
+	adapterKey?: string;
+	errorCode?: string | null;
+	errorMessage?: string;
+	phase?: string;
+	providerStatus?: number;
+	ms?: number;
+}
+
+/**
+ * Emits one line per operation plus, when an upstream failed, one line per failed attempt: the
+ * provider's answer belongs where operators already look, not only in the database.
+ */
 export function logOperation(input: OperationLogInput): void {
-	log.info("operation", "operation completed", {
+	const fields = {
 		operationId: input.operationId,
 		requestId: input.requestId,
 		callType: input.callType,
@@ -60,6 +77,29 @@ export function logOperation(input: OperationLogInput): void {
 		fallbackUsed: input.fallbackUsed,
 		cacheHit: input.cacheHit,
 		errorCode: input.error?.code ?? null,
-	});
+	};
+	if (input.status === "error") {
+		log.warn("operation", "operation failed", fields);
+	} else {
+		log.info("operation", "operation completed", fields);
+	}
+	const includeMessage = env.OBSERVABILITY_PAYLOAD_ACCESS === "open";
+	for (const attempt of (input.attempts ?? []) as FailedAttempt[]) {
+		if (attempt.ok !== false || attempt.errorCode === "client_closed_request") {
+			continue;
+		}
+		log.warn("operation", "upstream attempt failed", {
+			operationId: input.operationId,
+			requestId: input.requestId,
+			deployment: attempt.label ?? attempt.deploymentId ?? null,
+			adapterKey: attempt.adapterKey ?? null,
+			phase: attempt.phase ?? null,
+			errorCode: attempt.errorCode ?? null,
+			providerStatus: attempt.providerStatus ?? null,
+			durationMs: attempt.ms ?? null,
+			detail:
+				internalMessage(attempt.errorMessage, includeMessage).message ?? null,
+		});
+	}
 	recordRequestTelemetry(input);
 }

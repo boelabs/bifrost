@@ -1,5 +1,6 @@
 import { deriveActiveKey, decryptJson, encryptJson } from "#db/crypto.ts";
 import { EXECUTION_POLICY_MAX_TOTAL_MS } from "#core/executionPolicy.ts";
+import { providerErrorDetail, internalMessage } from "./errorRecord.ts";
 import { and, eq, inArray, isNull, lt, lte, sql } from "drizzle-orm";
 import { PersistenceHealthTracker } from "./persistenceHealth.ts";
 import { purgeExpiredAuditEntries } from "#db/repos/audit.ts";
@@ -356,10 +357,14 @@ interface OperationAttemptInput {
 	ok?: boolean;
 	errorClass?: string;
 	errorCode?: string | null;
+	errorMessage?: string;
+	phase?: string;
+	retryAfterMs?: number;
 	failureKind?: string;
 	httpStatus?: number;
 	deploymentHealth?: "neutral";
 	providerStatus?: number;
+	providerBody?: unknown;
 	terminalOutcome?: "completed" | "incomplete" | "blocked";
 	terminalReason?: string;
 	terminalVerified?: boolean;
@@ -410,6 +415,13 @@ export function failureOwner(attempt: OperationAttemptInput): string | null {
 	if (isGatewayDeadline(attempt)) {
 		return "gateway_deadline";
 	}
+	// The upstream answered and rejected the request itself: invalid input, too long, blocked.
+	if (
+		attempt.failureKind === "request" &&
+		attempt.providerStatus !== undefined
+	) {
+		return "client";
+	}
 	if (
 		attempt.failureKind === "gateway" ||
 		attempt.deploymentHealth === "neutral"
@@ -436,26 +448,46 @@ function isGatewayDeadline(attempt: OperationAttemptInput): boolean {
 	);
 }
 
+/**
+ * Where the attempt failed: `connect`, `response`, `stream` or `client` as the executor recorded
+ * it, or `gateway` for a failure before any upstream exchange.
+ */
 function normalizedFailurePhase(attempt: OperationAttemptInput): string | null {
 	if (attempt.ok) {
 		return null;
 	}
-	if (attempt.errorCode === "downstream_backpressure") {
-		return "rendering";
+	if (
+		attempt.errorCode === "client_closed_request" ||
+		attempt.errorCode === "downstream_backpressure"
+	) {
+		return "client";
 	}
-	if (attempt.errorCode?.includes("first_output")) {
-		return "first_progress";
+	if (attempt.phase) {
+		return attempt.phase;
 	}
-	if (attempt.errorCode?.includes("connect")) {
-		return "connect";
+	if (attempt.failureKind === "gateway") {
+		return "gateway";
 	}
-	if (attempt.headersMs !== undefined) {
-		return "streaming";
-	}
-	if (attempt.errorCode?.includes("protocol")) {
-		return "rendering";
-	}
-	return "headers";
+	return attempt.headersMs === undefined ? "connect" : "response";
+}
+
+/** The failure as the attempt row keeps it; see `errorRecord.ts` for what is and is not stored. */
+function attemptErrorRecord(
+	attempt: OperationAttemptInput,
+	includeMessage: boolean,
+): Record<string, unknown> {
+	const provider = providerErrorDetail(attempt.providerBody, includeMessage);
+	return {
+		class: attempt.errorClass ?? null,
+		code: attempt.errorCode ?? null,
+		httpStatus: attempt.httpStatus ?? null,
+		providerStatus: attempt.providerStatus ?? null,
+		...(attempt.retryAfterMs === undefined
+			? {}
+			: { retryAfterMs: attempt.retryAfterMs }),
+		...internalMessage(attempt.errorMessage, includeMessage),
+		...(provider ? { provider } : {}),
+	};
 }
 
 function normalizedFailureKind(attempt: OperationAttemptInput): string | null {
@@ -734,6 +766,15 @@ export function completeOperation(
 											code: input.error.code,
 											http_status: input.error.http_status,
 											failure_kind: input.error.failure_kind,
+											...(input.error.phase === undefined
+												? {}
+												: { phase: input.error.phase }),
+											...internalMessage(
+												typeof input.error.message === "string"
+													? input.error.message
+													: undefined,
+												payloadAccessIsOpen(),
+											),
 										}
 									: missingTerminalError,
 							})
@@ -802,12 +843,7 @@ export function completeOperation(
 											},
 											error: attempt.ok
 												? null
-												: {
-														class: attempt.errorClass ?? null,
-														code: attempt.errorCode ?? null,
-														httpStatus: attempt.httpStatus ?? null,
-														providerStatus: attempt.providerStatus ?? null,
-													},
+												: attemptErrorRecord(attempt, payloadAccessIsOpen()),
 										};
 									}),
 								)
@@ -852,6 +888,10 @@ export function completeOperation(
 										lastProgressAt: sql`excluded.last_progress_at`,
 										startedAt: sql`excluded.started_at`,
 										endedAt: sql`excluded.ended_at`,
+										// The row opened before the upstream call has neither; without these the
+										// provider's answer and the attempt's diagnostics were silently dropped.
+										diagnostics: sql`excluded.diagnostics`,
+										error: sql`excluded.error`,
 									},
 								});
 						}

@@ -5613,23 +5613,295 @@ components:
           pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
         requestId:
           type: string
+        publicModel:
+          type:
+            - string
+            - "null"
+        callType:
+          type: string
+        outcome:
+          type:
+            - string
+            - "null"
+        stream:
+          type: boolean
+        httpStatus:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        durationMs:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        firstOutputMs:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        startedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+        error:
+          anyOf:
+            - type: object
+              propertyNames:
+                type: string
+              additionalProperties: {}
+            - type: "null"
+          description: What the caller received (class, code, http_status) and the internal message behind it.
         attempts:
           type: array
           items:
-            type: object
-            propertyNames:
-              type: string
-            additionalProperties: {}
+            $ref: "#/components/schemas/UpstreamAttempt"
           description: Ordered upstream attempts for this operation.
         payload:
           $ref: "#/components/schemas/RetainedPayloadState"
       required:
         - id
         - requestId
+        - publicModel
+        - callType
+        - outcome
+        - stream
+        - httpStatus
+        - durationMs
+        - firstOutputMs
+        - startedAt
+        - error
         - attempts
         - payload
       additionalProperties: true
       description: A full operation record, its ordered upstream-attempt timeline, and the state of its retained payload sample.
+    UpstreamAttempt:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+        ordinal:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        deploymentId:
+          anyOf:
+            - type: string
+              format: uuid
+              pattern: ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$
+            - type: "null"
+        deploymentLabel:
+          type:
+            - string
+            - "null"
+        adapterKey:
+          type:
+            - string
+            - "null"
+        transport:
+          type:
+            - string
+            - "null"
+        upstreamModel:
+          type:
+            - string
+            - "null"
+        outcome:
+          type: string
+        failureOwner:
+          description: provider, gateway_deadline, gateway, deployment_config or client.
+          type:
+            - string
+            - "null"
+        failureKind:
+          type:
+            - string
+            - "null"
+        failurePhase:
+          description: connect (no response), response (an error answer, or none in time), stream (after the stream opened), client, or gateway.
+          type:
+            - string
+            - "null"
+        healthEffect:
+          type: string
+        httpStatus:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        providerStatus:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        durationMs:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        headersMs:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        firstEventMs:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        firstOutputMs:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        maxInterEventGapMs:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        upstreamBytes:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        promptTokens:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        completionTokens:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        reasoningTokens:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        totalTokens:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        startedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+        endedAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+            - type: "null"
+        diagnostics:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties: {}
+        error:
+          anyOf:
+            - $ref: "#/components/schemas/UpstreamAttemptError"
+            - type: "null"
+      required:
+        - id
+        - ordinal
+        - deploymentId
+        - deploymentLabel
+        - adapterKey
+        - transport
+        - upstreamModel
+        - outcome
+        - failureOwner
+        - failureKind
+        - failurePhase
+        - healthEffect
+        - httpStatus
+        - providerStatus
+        - durationMs
+        - headersMs
+        - firstEventMs
+        - firstOutputMs
+        - maxInterEventGapMs
+        - upstreamBytes
+        - promptTokens
+        - completionTokens
+        - reasoningTokens
+        - totalTokens
+        - startedAt
+        - endedAt
+        - diagnostics
+        - error
+      additionalProperties: true
+      description: One upstream attempt of an operation, in order.
+    UpstreamAttemptError:
+      type: object
+      properties:
+        class:
+          type:
+            - string
+            - "null"
+        code:
+          type:
+            - string
+            - "null"
+        httpStatus:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        providerStatus:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+        retryAfterMs:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        message:
+          description: The gateway's internal account of the failure. Never returned to the caller; absent when payload access is sealed.
+          type: string
+        provider:
+          $ref: "#/components/schemas/ProviderErrorDetail"
+      required:
+        - class
+        - code
+        - httpStatus
+        - providerStatus
+      additionalProperties: true
+    ProviderErrorDetail:
+      type: object
+      properties:
+        type:
+          type: string
+        code:
+          type: string
+        param:
+          type: string
+        message:
+          type: string
+      additionalProperties: false
+      description: The provider's own error as it answered. `message` is bounded, scrubbed of credential-shaped strings, and absent when OBSERVABILITY_PAYLOAD_ACCESS is sealed.
     RetainedPayloadState:
       type: object
       properties:

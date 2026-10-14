@@ -25,9 +25,29 @@ is still successful but remains visible. A database constraint rejects new `succ
 
 The stream supervisor records headers/first-event/first-reasoning/first-output timing, last progress,
 maximum inter-event gap, upstream/downstream bytes, frame classes, the physical transport terminator,
-and the normalized semantic terminal. EOF without a terminal, malformed JSON/SSE, duplicate
-terminals, and empty invalid responses are protocol errors. Only a verified terminal rewards
-deployment health.
+and the normalized semantic terminal. A stream cut before any finish reason or end marker, and
+malformed JSON/SSE, are errors; departures the provider's own SDK tolerates (a missing `[DONE]` or
+finish reason, an empty answer, repeated terminal events) complete normally and are listed in the
+attempt's `diagnostics.metadata.anomalies`. Only a verified terminal rewards deployment health.
+
+## What a failed attempt records
+
+Every failed attempt keeps what the upstream said, without opening a payload sample:
+
+- `failurePhase` — `connect` (no response: network, DNS, TLS), `response` (an error answer, or none
+  within `responseMs`), `stream` (after the stream opened), `client` (the caller left or stopped
+  reading), or `gateway` (before any upstream exchange).
+- `failureOwner` — `provider`, `gateway_deadline` (the gateway stopped waiting), `deployment_config`,
+  `client` (the caller left, or the upstream rejected the request itself), or `gateway`.
+- `error` — the class, code, HTTP and provider status, `retryAfterMs`, the gateway's internal
+  `message`, and `provider`: the provider's own `type`, `code`, `param` and `message`.
+- `diagnostics.providerRequestId` — the provider's request id, for its support.
+
+Messages are bounded to 2,000 characters and scrubbed of credential-shaped strings. With
+`OBSERVABILITY_PAYLOAD_ACCESS=sealed` only the structured fields are kept, because a provider's
+message can quote the request it rejected. None of this reaches the caller, whose error is the
+provider's public answer. Each failed attempt is also logged as an `upstream attempt failed` line at
+`warn`, with the same fields.
 
 `GET /admin/logs` lists operation summaries. `GET /admin/logs/{operationId}` returns the operation and
 its complete attempt timeline. `GET /admin/observability/summary` returns outcome, stall, retry,

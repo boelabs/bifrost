@@ -5,11 +5,11 @@ import type { CanonicalTerminal } from "#gateway/streamLifecycle.ts";
 import { listFallbackPoliciesFor } from "#db/repos/deployments.ts";
 import { startAttemptWatchdog } from "#gateway/attemptWatchdog.ts";
 import { resolveExecutionPolicy } from "#core/executionPolicy.ts";
+import { type FailurePhase, GatewayError } from "#core/errors.ts";
 import { beginUpstreamAttempt } from "#logging/operations.ts";
 import type { CallType } from "#core/callType.ts";
 import { resolveTransport } from "./transport.ts";
 import { pickDeployment } from "./strategies.ts";
-import { GatewayError } from "#core/errors.ts";
 import { computeCost } from "#logging/cost.ts";
 import type { Usage } from "#core/usage.ts";
 import { log } from "#logging/log.ts";
@@ -127,6 +127,10 @@ interface AttemptRecord {
 	ok: boolean;
 	errorClass?: string;
 	errorCode?: string | null;
+	/** The gateway's internal account of the failure, including the provider's own message. */
+	errorMessage?: string;
+	phase?: FailurePhase;
+	retryAfterMs?: number;
 	failureKind?: string;
 	httpStatus?: number;
 	/** Present for failures intentionally excluded from deployment health and cooldown accounting. */
@@ -210,6 +214,65 @@ function fallbackReasonForFailures(
 }
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/** What an attempt record keeps of a failure: enough to answer "what did the upstream say". */
+function failureDetail(
+	error: GatewayError,
+	fallbackPhase: FailurePhase | undefined,
+): Pick<
+	AttemptRecord,
+	| "errorClass"
+	| "errorCode"
+	| "errorMessage"
+	| "phase"
+	| "retryAfterMs"
+	| "failureKind"
+	| "httpStatus"
+> {
+	const phase = error.phase ?? fallbackPhase;
+	return {
+		errorClass: error.class,
+		errorCode: error.code,
+		errorMessage: error.message,
+		...(phase === undefined ? {} : { phase }),
+		...(error.retryAfterMs === undefined
+			? {}
+			: { retryAfterMs: error.retryAfterMs }),
+		failureKind: error.failureKind,
+		httpStatus: error.httpStatus,
+	};
+}
+
+/** The part of an attempt record every ending shares: who was asked, when, and how far it got. */
+function endedAttempt(
+	chosen: DeploymentCandidate,
+	transport: string,
+	startedAt: number,
+	ctx: AdapterContext | undefined,
+): Omit<AttemptRecord, "ok"> {
+	const endedAt = Date.now();
+	const headersAt = ctx?.timings?.headersAt;
+	return {
+		deploymentId: chosen.row.id,
+		...(chosen.row.label == null ? {} : { label: chosen.row.label }),
+		adapterKey: chosen.adapter.key,
+		transport,
+		ms: endedAt - startedAt,
+		startedAt,
+		endedAt,
+		lastProgressAt: headersAt ?? startedAt,
+		upstreamBytes: ctx?.transportStats?.upstreamBytes ?? 0,
+		...(headersAt ? { headersMs: headersAt - startedAt } : {}),
+		...(ctx?.diagnostics ? { diagnostics: ctx.diagnostics } : {}),
+	};
+}
+
+/** An attempt that failed before returning had an answer once headers arrived, none before. */
+function phaseBeforeStream(
+	ctx: AdapterContext | undefined,
+): FailurePhase | undefined {
+	return ctx?.timings?.headersAt === undefined ? undefined : "response";
+}
 
 const RETRY_BASE_MS = 500;
 const RETRY_MAX_MS = 8000;
@@ -913,10 +976,10 @@ export async function route<T>(
 									return;
 								}
 
-								attemptRecord.errorClass = error.class;
-								attemptRecord.errorCode = error.code;
-								attemptRecord.failureKind = error.failureKind;
-								attemptRecord.httpStatus = error.httpStatus;
+								Object.assign(
+									attemptRecord,
+									failureDetail(error, observation ? "stream" : undefined),
+								);
 								if (error.deploymentHealth === "neutral") {
 									attemptRecord.deploymentHealth = "neutral";
 								}
@@ -1069,26 +1132,11 @@ export async function route<T>(
 						});
 						await onAttemptCancel(chosen.row.id, permit, activeAttemptLease);
 						attemptLog.push({
-							deploymentId: chosen.row.id,
-							...(chosen.row.label == null ? {} : { label: chosen.row.label }),
-							adapterKey: chosen.adapter.key,
-							transport,
-							ms: Date.now() - startedAt,
-							startedAt,
-							endedAt: Date.now(),
-							lastProgressAt: activeContext?.timings?.headersAt ?? startedAt,
-							upstreamBytes: activeContext?.transportStats?.upstreamBytes ?? 0,
-							...(activeContext?.timings?.headersAt
-								? {
-										headersMs: activeContext.timings.headersAt - startedAt,
-									}
-								: {}),
-							...(activeContext?.diagnostics
-								? { diagnostics: activeContext.diagnostics }
-								: {}),
+							...endedAttempt(chosen, transport, startedAt, activeContext),
 							ok: false,
 							errorClass: "client_closed_request",
 							errorCode: "client_closed_request",
+							phase: "client",
 							deploymentHealth: "neutral",
 						});
 						const cancelled = new GatewayError({
@@ -1120,28 +1168,9 @@ export async function route<T>(
 					if (ge.routingScope === "request") {
 						await onAttemptCancel(chosen.row.id, permit, activeAttemptLease);
 						attemptLog.push({
-							deploymentId: chosen.row.id,
-							...(chosen.row.label == null ? {} : { label: chosen.row.label }),
-							adapterKey: chosen.adapter.key,
-							transport,
-							ms: Date.now() - startedAt,
-							startedAt,
-							endedAt: Date.now(),
-							lastProgressAt: activeContext?.timings?.headersAt ?? startedAt,
-							upstreamBytes: activeContext?.transportStats?.upstreamBytes ?? 0,
-							...(activeContext?.timings?.headersAt
-								? {
-										headersMs: activeContext.timings.headersAt - startedAt,
-									}
-								: {}),
-							...(activeContext?.diagnostics
-								? { diagnostics: activeContext.diagnostics }
-								: {}),
+							...endedAttempt(chosen, transport, startedAt, activeContext),
 							ok: false,
-							errorClass: ge.class,
-							errorCode: ge.code,
-							failureKind: ge.failureKind,
-							httpStatus: ge.httpStatus,
+							...failureDetail(ge, phaseBeforeStream(activeContext)),
 							deploymentHealth: "neutral",
 						});
 						ge.attempts = attemptLog;
@@ -1226,28 +1255,9 @@ export async function route<T>(
 					}
 					lastError = ge;
 					attemptLog.push({
-						deploymentId: chosen.row.id,
-						...(chosen.row.label == null ? {} : { label: chosen.row.label }),
-						adapterKey: chosen.adapter.key,
-						transport,
-						ms: Date.now() - startedAt,
-						startedAt,
-						endedAt: Date.now(),
-						lastProgressAt: activeContext?.timings?.headersAt ?? startedAt,
-						upstreamBytes: activeContext?.transportStats?.upstreamBytes ?? 0,
-						...(activeContext?.timings?.headersAt
-							? {
-									headersMs: activeContext.timings.headersAt - startedAt,
-								}
-							: {}),
-						...(activeContext?.diagnostics
-							? { diagnostics: activeContext.diagnostics }
-							: {}),
+						...endedAttempt(chosen, transport, startedAt, activeContext),
 						ok: false,
-						errorClass: ge.class,
-						errorCode: ge.code,
-						failureKind: ge.failureKind,
-						httpStatus: ge.httpStatus,
+						...failureDetail(ge, phaseBeforeStream(activeContext)),
 						...(ge.deploymentHealth === "neutral"
 							? { deploymentHealth: "neutral" as const }
 							: {}),

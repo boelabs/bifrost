@@ -11,7 +11,7 @@ test("failure owner: a deadline the gateway imposed is not the provider's failur
 		failureOwner(
 			attempt({
 				errorClass: "timeout",
-				errorCode: "upstream_first_output_timeout",
+				errorCode: "upstream_response_timeout",
 			}),
 		),
 		"gateway_deadline",
@@ -31,7 +31,7 @@ test("failure owner: a narrowed deadline keeps the precise label, not the genera
 		failureOwner(
 			attempt({
 				errorClass: "timeout",
-				errorCode: "upstream_first_output_timeout",
+				errorCode: "upstream_response_timeout",
 				deploymentHealth: "neutral",
 			}),
 		),
@@ -74,5 +74,30 @@ test("failure owner: the existing verdicts are unchanged", () => {
 	assert.equal(
 		failureOwner(attempt({ errorClass: "auth", providerStatus: 401 })),
 		"provider",
+	);
+});
+
+test("failure owner: a request the upstream rejected is the caller's", () => {
+	assert.equal(
+		failureOwner(
+			attempt({
+				errorClass: "bad_request",
+				failureKind: "request",
+				providerStatus: 400,
+				deploymentHealth: "neutral",
+			}),
+		),
+		"client",
+	);
+	// Rejected by the gateway before any upstream answered: not the caller's alone to fix.
+	assert.equal(
+		failureOwner(
+			attempt({
+				errorClass: "bad_request",
+				failureKind: "request",
+				deploymentHealth: "neutral",
+			}),
+		),
+		"gateway",
 	);
 });

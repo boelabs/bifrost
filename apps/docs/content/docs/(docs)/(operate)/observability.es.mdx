@@ -17,7 +17,18 @@ El modelo de observabilidad actual utiliza cuatro tablas:
 
 Una operación es `in_progress` o `finished`. Su resultado es `success`, `incomplete`, `blocked`, `error`, `cancelled`, `abandoned` o `unknown`. `degraded` es ortogonal: un reintento recuperado o un fallback aún tiene éxito pero permanece visible. Una restricción de base de datos rechaza nuevas filas `success`, `incomplete` o `blocked` a menos que sean `terminalVerified=true`.
 
-El supervisor de flujo registra headers/primer evento/primer reasoning/temporización de primera salida, último progreso, espacio máximo entre eventos, bytes ascendentes/descendentes, clases de trama, el terminador de transport físico y el terminal semántico normalizado. EOF sin terminal, JSON/SSE con formato incorrecto, terminales duplicados y respuestas vacías no válidas son errores de protocolo. Sólo una terminal verificada recompensa la salud del deployment.
+El supervisor de flujo registra headers/primer evento/primer reasoning/temporización de primera salida, último progreso, espacio máximo entre eventos, bytes ascendentes/descendentes, clases de trama, el terminador de transport físico y el terminal semántico normalizado. Un stream cortado antes de cualquier finish reason o marcador de fin, y el JSON/SSE con formato incorrecto, son errores; lo que el SDK del propio proveedor tolera (falta de `[DONE]` o de finish reason, una respuesta vacía, eventos terminales repetidos) termina con normalidad y queda listado en `diagnostics.metadata.anomalies` del intento. Sólo una terminal verificada recompensa la salud del deployment.
+
+## Qué registra un intento fallido [#what-a-failed-attempt-records]
+
+Cada intento fallido guarda lo que dijo el upstream, sin abrir una muestra de payload:
+
+- `failurePhase`: `connect` (sin respuesta: red, DNS, TLS), `response` (una respuesta de error, o ninguna dentro de `responseMs`), `stream` (después de abrirse el stream), `client` (quien llama se fue o dejó de leer) o `gateway` (antes de cualquier intercambio upstream).
+- `failureOwner`: `provider`, `gateway_deadline` (el gateway dejó de esperar), `deployment_config`, `client` (quien llama se fue, o el upstream rechazó la propia solicitud) o `gateway`.
+- `error`: la clase, el código, el estado HTTP y del proveedor, `retryAfterMs`, el `message` interno del gateway y `provider`: el `type`, `code`, `param` y `message` del propio proveedor.
+- `diagnostics.providerRequestId`: el id de solicitud del proveedor, para su soporte.
+
+Los mensajes se limitan a 2000 caracteres y se limpian de cadenas con forma de credencial. Con `OBSERVABILITY_PAYLOAD_ACCESS=sealed` solo se guardan los campos estructurados, porque el mensaje de un proveedor puede citar la solicitud que rechazó. Nada de esto llega a quien llama, cuyo error es la respuesta pública del proveedor. Cada intento fallido también se registra como una línea `upstream attempt failed` en `warn`, con los mismos campos.
 
 `GET /admin/logs` enumera resúmenes de operaciones. `GET /admin/logs/{operationId}` devuelve la operación y su cronograma de intento completo. `GET /admin/observability/summary` devuelve resultados, bloqueo, reintento, activo/abandonado y agregados de latencia, para un rango final de `window=5m|1h|24h`, o para un `start`/`end` explícito de como máximo 31 días, que es lo que muestra el panel. Envíos de control de rango propios.
 
