@@ -202,6 +202,397 @@
 				"outputCentsPerMTokens": 0
 			}
 		},
+		"gemini-nano-banana-2.1": {
+			"operations": {
+				"image.generate": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 14,
+					"maxImageBytes": 20000000,
+					"maxTotalInputBytes": 20000000,
+					"maxN": 1,
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["low", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"qualityMappings": {
+						"low": {
+							"thinkingLevel": "minimal"
+						},
+						"high": {
+							"thinkingLevel": "high"
+						}
+					},
+					"sizes": {
+						"1024x1024": {
+							"aspectRatio": "1:1",
+							"imageSize": "1K"
+						},
+						"2048x2048": {
+							"aspectRatio": "1:1",
+							"imageSize": "2K"
+						},
+						"4096x4096": {
+							"aspectRatio": "1:1",
+							"imageSize": "4K"
+						},
+						"848x1264": {
+							"aspectRatio": "2:3",
+							"imageSize": "1K"
+						},
+						"1264x848": {
+							"aspectRatio": "3:2",
+							"imageSize": "1K"
+						},
+						"1376x768": {
+							"aspectRatio": "16:9",
+							"imageSize": "1K"
+						},
+						"768x1376": {
+							"aspectRatio": "9:16",
+							"imageSize": "1K"
+						},
+						"512x2048": {
+							"aspectRatio": "1:4",
+							"imageSize": "1K"
+						},
+						"1024x4096": {
+							"aspectRatio": "1:4",
+							"imageSize": "2K"
+						},
+						"2048x8192": {
+							"aspectRatio": "1:4",
+							"imageSize": "4K"
+						},
+						"384x3072": {
+							"aspectRatio": "1:8",
+							"imageSize": "1K"
+						},
+						"768x6144": {
+							"aspectRatio": "1:8",
+							"imageSize": "2K"
+						},
+						"1536x12288": {
+							"aspectRatio": "1:8",
+							"imageSize": "4K"
+						},
+						"1696x2528": {
+							"aspectRatio": "2:3",
+							"imageSize": "2K"
+						},
+						"3392x5056": {
+							"aspectRatio": "2:3",
+							"imageSize": "4K"
+						},
+						"2528x1696": {
+							"aspectRatio": "3:2",
+							"imageSize": "2K"
+						},
+						"5056x3392": {
+							"aspectRatio": "3:2",
+							"imageSize": "4K"
+						},
+						"896x1200": {
+							"aspectRatio": "3:4",
+							"imageSize": "1K"
+						},
+						"1792x2400": {
+							"aspectRatio": "3:4",
+							"imageSize": "2K"
+						},
+						"3584x4800": {
+							"aspectRatio": "3:4",
+							"imageSize": "4K"
+						},
+						"2048x512": {
+							"aspectRatio": "4:1",
+							"imageSize": "1K"
+						},
+						"4096x1024": {
+							"aspectRatio": "4:1",
+							"imageSize": "2K"
+						},
+						"8192x2048": {
+							"aspectRatio": "4:1",
+							"imageSize": "4K"
+						},
+						"1200x896": {
+							"aspectRatio": "4:3",
+							"imageSize": "1K"
+						},
+						"2400x1792": {
+							"aspectRatio": "4:3",
+							"imageSize": "2K"
+						},
+						"4800x3584": {
+							"aspectRatio": "4:3",
+							"imageSize": "4K"
+						},
+						"928x1152": {
+							"aspectRatio": "4:5",
+							"imageSize": "1K"
+						},
+						"1856x2304": {
+							"aspectRatio": "4:5",
+							"imageSize": "2K"
+						},
+						"3712x4608": {
+							"aspectRatio": "4:5",
+							"imageSize": "4K"
+						},
+						"1152x928": {
+							"aspectRatio": "5:4",
+							"imageSize": "1K"
+						},
+						"2304x1856": {
+							"aspectRatio": "5:4",
+							"imageSize": "2K"
+						},
+						"4608x3712": {
+							"aspectRatio": "5:4",
+							"imageSize": "4K"
+						},
+						"3072x384": {
+							"aspectRatio": "8:1",
+							"imageSize": "1K"
+						},
+						"6144x768": {
+							"aspectRatio": "8:1",
+							"imageSize": "2K"
+						},
+						"12288x1536": {
+							"aspectRatio": "8:1",
+							"imageSize": "4K"
+						},
+						"1536x2752": {
+							"aspectRatio": "9:16",
+							"imageSize": "2K"
+						},
+						"3072x5504": {
+							"aspectRatio": "9:16",
+							"imageSize": "4K"
+						},
+						"2752x1536": {
+							"aspectRatio": "16:9",
+							"imageSize": "2K"
+						},
+						"5504x3072": {
+							"aspectRatio": "16:9",
+							"imageSize": "4K"
+						},
+						"1584x672": {
+							"aspectRatio": "21:9",
+							"imageSize": "1K"
+						},
+						"3168x1344": {
+							"aspectRatio": "21:9",
+							"imageSize": "2K"
+						},
+						"6336x2688": {
+							"aspectRatio": "21:9",
+							"imageSize": "4K"
+						}
+					}
+				},
+				"image.edit": {
+					"maxPromptChars": 32000,
+					"maxInputImages": 14,
+					"maxImageBytes": 20000000,
+					"maxTotalInputBytes": 20000000,
+					"maxN": 1,
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["low", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"qualityMappings": {
+						"low": {
+							"thinkingLevel": "minimal"
+						},
+						"high": {
+							"thinkingLevel": "high"
+						}
+					},
+					"sizes": {
+						"1024x1024": {
+							"aspectRatio": "1:1",
+							"imageSize": "1K"
+						},
+						"2048x2048": {
+							"aspectRatio": "1:1",
+							"imageSize": "2K"
+						},
+						"4096x4096": {
+							"aspectRatio": "1:1",
+							"imageSize": "4K"
+						},
+						"848x1264": {
+							"aspectRatio": "2:3",
+							"imageSize": "1K"
+						},
+						"1264x848": {
+							"aspectRatio": "3:2",
+							"imageSize": "1K"
+						},
+						"1376x768": {
+							"aspectRatio": "16:9",
+							"imageSize": "1K"
+						},
+						"768x1376": {
+							"aspectRatio": "9:16",
+							"imageSize": "1K"
+						},
+						"512x2048": {
+							"aspectRatio": "1:4",
+							"imageSize": "1K"
+						},
+						"1024x4096": {
+							"aspectRatio": "1:4",
+							"imageSize": "2K"
+						},
+						"2048x8192": {
+							"aspectRatio": "1:4",
+							"imageSize": "4K"
+						},
+						"384x3072": {
+							"aspectRatio": "1:8",
+							"imageSize": "1K"
+						},
+						"768x6144": {
+							"aspectRatio": "1:8",
+							"imageSize": "2K"
+						},
+						"1536x12288": {
+							"aspectRatio": "1:8",
+							"imageSize": "4K"
+						},
+						"1696x2528": {
+							"aspectRatio": "2:3",
+							"imageSize": "2K"
+						},
+						"3392x5056": {
+							"aspectRatio": "2:3",
+							"imageSize": "4K"
+						},
+						"2528x1696": {
+							"aspectRatio": "3:2",
+							"imageSize": "2K"
+						},
+						"5056x3392": {
+							"aspectRatio": "3:2",
+							"imageSize": "4K"
+						},
+						"896x1200": {
+							"aspectRatio": "3:4",
+							"imageSize": "1K"
+						},
+						"1792x2400": {
+							"aspectRatio": "3:4",
+							"imageSize": "2K"
+						},
+						"3584x4800": {
+							"aspectRatio": "3:4",
+							"imageSize": "4K"
+						},
+						"2048x512": {
+							"aspectRatio": "4:1",
+							"imageSize": "1K"
+						},
+						"4096x1024": {
+							"aspectRatio": "4:1",
+							"imageSize": "2K"
+						},
+						"8192x2048": {
+							"aspectRatio": "4:1",
+							"imageSize": "4K"
+						},
+						"1200x896": {
+							"aspectRatio": "4:3",
+							"imageSize": "1K"
+						},
+						"2400x1792": {
+							"aspectRatio": "4:3",
+							"imageSize": "2K"
+						},
+						"4800x3584": {
+							"aspectRatio": "4:3",
+							"imageSize": "4K"
+						},
+						"928x1152": {
+							"aspectRatio": "4:5",
+							"imageSize": "1K"
+						},
+						"1856x2304": {
+							"aspectRatio": "4:5",
+							"imageSize": "2K"
+						},
+						"3712x4608": {
+							"aspectRatio": "4:5",
+							"imageSize": "4K"
+						},
+						"1152x928": {
+							"aspectRatio": "5:4",
+							"imageSize": "1K"
+						},
+						"2304x1856": {
+							"aspectRatio": "5:4",
+							"imageSize": "2K"
+						},
+						"4608x3712": {
+							"aspectRatio": "5:4",
+							"imageSize": "4K"
+						},
+						"3072x384": {
+							"aspectRatio": "8:1",
+							"imageSize": "1K"
+						},
+						"6144x768": {
+							"aspectRatio": "8:1",
+							"imageSize": "2K"
+						},
+						"12288x1536": {
+							"aspectRatio": "8:1",
+							"imageSize": "4K"
+						},
+						"1536x2752": {
+							"aspectRatio": "9:16",
+							"imageSize": "2K"
+						},
+						"3072x5504": {
+							"aspectRatio": "9:16",
+							"imageSize": "4K"
+						},
+						"2752x1536": {
+							"aspectRatio": "16:9",
+							"imageSize": "2K"
+						},
+						"5504x3072": {
+							"aspectRatio": "16:9",
+							"imageSize": "4K"
+						},
+						"1584x672": {
+							"aspectRatio": "21:9",
+							"imageSize": "1K"
+						},
+						"3168x1344": {
+							"aspectRatio": "21:9",
+							"imageSize": "2K"
+						},
+						"6336x2688": {
+							"aspectRatio": "21:9",
+							"imageSize": "4K"
+						}
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 150,
+				"outputCentsPerMTokens": 750
+			},
+			"notes": "Sizes follow Google's Nano Banana 2.1 aspect-ratio table (no 512px tier). Output is priced at the text/thinking rate ($7.50/1M) like its siblings; Google bills image output tokens at $30/1M (1K = 1,120 tokens, ~$0.0336/image), which token pricing cannot express. Caching is not supported. Google's medium thinking level (the model default) has no quality rung."
+		},
 		"gemini-3.1-flash-image": {
 			"operations": {
 				"image.generate": {
@@ -1207,7 +1598,43 @@
 				"outputCentsPerMTokens": 250,
 				"cacheReadCentsPerMTokens": 3,
 				"cacheWriteCentsPerMTokens": 4.166667
-			}
+			},
+			"deprecated": true,
+			"notes": "Deprecated by Google; replacement gemini-3.1-flash-lite-image or gemini-3.1-flash-image. Google's pricing page says it shuts down on 2026-10-02, while its deprecations page lists 2027-03-15 as the earliest shutdown."
+		},
+		"gemini-4-argon": {
+			"operations": {
+				"text.generate": {
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 65536,
+					"parameters": {
+						"max_tokens": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true,
+						"response_format": true,
+						"structured_outputs": true,
+						"reasoning_effort": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"structuredOutputs": true,
+						"reasoning": true
+					},
+					"reasoning": {
+						"kind": "gemini_level",
+						"levels": ["low", "medium", "high"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 10
+			},
+			"notes": "Introductory pricing through 2026-11-30. From 2026-12-01 Google publishes $4.00 input / $20.00 output / $0.20 cached input per 1M tokens: update before then. Implicit caching only (no explicit cache or storage price). Non-streaming generateContent caps output at 32,768 tokens (a higher max_output_tokens without a continuation token returns 400); streaming caps at 65,536. Long decode up to 1,048,576 needs continuation hops the adapter does not run. temperature/top_p/top_k are ignored by Gemini 4."
 		},
 		"gemini-3.1-pro-preview": {
 			"operations": {
@@ -1736,7 +2163,9 @@
 				"outputCentsPerMTokens": 150,
 				"cacheReadCentsPerMTokens": 2.5,
 				"cacheWriteCentsPerMTokens": 4.166667
-			}
+			},
+			"deprecated": true,
+			"notes": "Shut down by Google on 2026-05-25 (deprecations page); replacement gemini-3.1-flash-lite."
 		},
 		"gemini-3.1-flash-image-preview": {
 			"operations": {
@@ -2253,7 +2682,9 @@
 				"inputCentsPerMTokens": 50,
 				"outputCentsPerMTokens": 300,
 				"cacheReadCentsPerMTokens": 5
-			}
+			},
+			"deprecated": true,
+			"notes": "Shut down by Google on 2026-06-25 (deprecations page); replacement gemini-nano-banana-2.1."
 		},
 		"gemini-3-pro-image-preview": {
 			"operations": {
@@ -2552,7 +2983,9 @@
 				"outputCentsPerMTokens": 1200,
 				"cacheReadCentsPerMTokens": 20,
 				"cacheWriteCentsPerMTokens": 37.5
-			}
+			},
+			"deprecated": true,
+			"notes": "Shut down by Google on 2026-06-25 (deprecations page); replacement gemini-3-pro-image."
 		},
 		"gemini-2.5-flash-lite-preview-09-2025": {
 			"operations": {

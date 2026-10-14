@@ -28,7 +28,7 @@
 						"strictTools": true
 					},
 					"maxInputTokens": 1048576,
-					"maxOutputTokens": 131072,
+					"maxOutputTokens": 1048576,
 					"reasoning": {
 						"kind": "openai_effort",
 						"levels": ["low", "high", "max"]
@@ -67,7 +67,12 @@
 			"pricing": {
 				"inputCentsPerMTokens": 300,
 				"outputCentsPerMTokens": 1500,
-				"cacheReadCentsPerMTokens": 30
+				"cacheReadCentsPerMTokens": 30,
+				"cacheWriteCentsPerMTokens": 300,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 300,
+					"3600": 600
+				}
 			}
 		},
 		"kimi-k2.7-code": {
@@ -121,7 +126,9 @@
 						"top_k": true,
 						"seed": true,
 						"min_p": true,
-						"logit_bias": true
+						"logit_bias": true,
+						"logprobs": true,
+						"top_logprobs": true
 					}
 				}
 			},
@@ -171,7 +178,9 @@
 						"stop": true,
 						"tools": true,
 						"reasoning": true,
-						"include_reasoning": true
+						"include_reasoning": true,
+						"response_format": true,
+						"structured_outputs": true
 					}
 				}
 			},

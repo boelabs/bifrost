@@ -1,5 +1,6 @@
 import { resolveModelMetadata, getCatalogEntry } from "#catalog/index.ts";
 import { type ReasoningSpec, reasoningLogInfo } from "#core/reasoning.ts";
+import vercelCatalog from "./catalog.json" with { type: "json" };
 import { jsonBody, must } from "#test-support/adapters.ts";
 import type { AdapterContext } from "#adapters/types.ts";
 import { vercelAdapter } from "./index.ts";
@@ -110,7 +111,11 @@ test("vercel owns creator/model metadata from its public catalog", () => {
 	 * getting this wrong bills long prompts at the short-prompt price. Which model publishes them is
 	 * Vercel's business, so this asserts the shape and the ordering, not one provider's numbers.
 	 */
-	const tiered = resolveModelMetadata("vercel", "alibaba/qwen3-coder");
+	const tieredModel = Object.entries(
+		vercelCatalog.models as Record<string, { pricing?: { tiers?: unknown[] } }>,
+	).find(([, entry]) => (entry.pricing?.tiers?.length ?? 0) >= 2)?.[0];
+	assert.ok(tieredModel, "the snapshot carries at least one multi-tier price");
+	const tiered = resolveModelMetadata("vercel", tieredModel);
 	const tiers = tiered.pricing?.tiers ?? [];
 	assert.ok(tiers.length >= 2);
 	assert.ok((tiers[0]?.aboveInputTokens ?? 0) > 0);

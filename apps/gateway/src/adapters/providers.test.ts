@@ -358,7 +358,7 @@ test("catalog: Kimi K3 and K2.x model-native thinking", () => {
 	const k26 = resolveModelMetadata("moonshot", "kimi-k2.6");
 	const k27 = resolveModelMetadata("moonshot", "kimi-k2.7-code");
 	assert.equal(k3.maxInputTokens, 1_048_576);
-	assert.equal(k3.maxOutputTokens, 131_072);
+	assert.equal(k3.maxOutputTokens, 1_048_576);
 	assert.equal(k3.pricing?.inputCentsPerMTokens, 300);
 	assert.deepEqual(k3.reasoning, {
 		kind: "openai_effort",
