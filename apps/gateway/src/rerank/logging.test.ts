@@ -47,6 +47,7 @@ test("rerank response logging stores only result indexes, usage, and cost", () =
 				cacheReadCents: 0,
 				cacheWriteCents: 0,
 				outputCents: 0,
+				imageCents: 0,
 				searchUnitCents: 0.1,
 				providerReportedCents: null,
 				totalCents: 0.1,

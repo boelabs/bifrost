@@ -138,6 +138,8 @@ function validatePricing(value: unknown, path: string): void {
 		"outputCentsPerMTokens",
 		"cacheReadCentsPerMTokens",
 		"cacheWriteCentsPerMTokens",
+		"imageInputCentsPerMTokens",
+		"imageOutputCentsPerMTokens",
 		"searchUnitCents",
 	]) {
 		if (value[key] !== undefined) {
@@ -169,6 +171,8 @@ function validatePricing(value: unknown, path: string): void {
 				"outputCentsPerMTokens",
 				"cacheReadCentsPerMTokens",
 				"cacheWriteCentsPerMTokens",
+				"imageInputCentsPerMTokens",
+				"imageOutputCentsPerMTokens",
 			]) {
 				if (tier[key] !== undefined) {
 					assertNumber(tier[key], `${path}.tiers[${i}].${key}`);

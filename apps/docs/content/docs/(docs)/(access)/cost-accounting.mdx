@@ -9,6 +9,14 @@ Every model's rate is declared in cents-per-1M-tokens in its catalog entry's `pr
 (`inputCentsPerMTokens`, `outputCentsPerMTokens`, `cacheReadCentsPerMTokens`, `cacheWriteCentsPerMTokens`)
 and reranking search units use `searchUnitCents`. Token and search-unit components are additive when
 both are configured.
+
+Image tokens have their own rates, `imageInputCentsPerMTokens` and `imageOutputCentsPerMTokens`,
+because providers bill them far above text (Gemini 3 Pro Image: $12 per 1M text output, $120 image
+output). Uncached image input and image output are charged at those rates; absent, they fall back to
+the input and output rates. Adapters report the split when the provider does (Gemini's per-modality
+counts, OpenAI's `input_tokens_details`/`output_tokens_details`); output of an image endpoint that
+the provider does not split is counted as image output. The Vercel snapshot inherits a first-party
+model's image rates only when Vercel resells it at the provider's own price.
 A deployment's own `pricing` field, if set, **overrides** the catalog rate entirely for that deployment
 — useful for a negotiated rate or a custom model with no catalog entry at all. A model with no pricing
 anywhere (no catalog rate, no override) normally bills as **zero cost**, not an error. Reranking has

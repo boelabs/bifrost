@@ -3544,6 +3544,12 @@ components:
           additionalProperties:
             type: number
             minimum: 0
+        imageInputCentsPerMTokens:
+          type: number
+          minimum: 0
+        imageOutputCentsPerMTokens:
+          type: number
+          minimum: 0
         searchUnitCents:
           type: number
           minimum: 0
@@ -3576,6 +3582,12 @@ components:
                 additionalProperties:
                   type: number
                   minimum: 0
+              imageInputCentsPerMTokens:
+                type: number
+                minimum: 0
+              imageOutputCentsPerMTokens:
+                type: number
+                minimum: 0
             required:
               - aboveInputTokens
             additionalProperties: false

@@ -52,14 +52,28 @@ export interface ImageUsage {
 	outputTextTokens?: number;
 }
 
+/**
+ * An image endpoint's usage in canonical form. Output the upstream did not split by modality is
+ * counted as image output: the endpoint exists to produce images, and pricing a whole image at the
+ * text rate is the error that undercharges by an order of magnitude.
+ */
 export function imageUsageToCore(u: ImageUsage | undefined): Usage | null {
 	if (!u) {
 		return null;
 	}
+	const outputImageTokens =
+		u.outputImageTokens ??
+		(u.outputTextTokens === undefined
+			? u.outputTokens
+			: Math.max(0, u.outputTokens - u.outputTextTokens));
 	return {
 		promptTokens: u.inputTokens,
 		completionTokens: u.outputTokens,
 		totalTokens: u.totalTokens,
+		...(u.inputImageTokens === undefined
+			? {}
+			: { promptImageTokens: u.inputImageTokens }),
+		completionImageTokens: outputImageTokens,
 	};
 }
 

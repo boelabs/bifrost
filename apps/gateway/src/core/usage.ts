@@ -26,6 +26,10 @@ export interface Usage {
 	reasoningTokens?: number;
 	/** Audio input tokens. Subset of promptTokens. */
 	promptAudioTokens?: number;
+	/** Image input tokens. Subset of promptTokens. */
+	promptImageTokens?: number;
+	/** Image output tokens. Subset of completionTokens. */
+	completionImageTokens?: number;
 	/** Audio output tokens. Subset of completionTokens. */
 	completionAudioTokens?: number;
 	/** Predicted output tokens accepted by the model. Subset of completionTokens. */

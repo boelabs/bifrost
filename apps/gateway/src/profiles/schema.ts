@@ -14,6 +14,8 @@ export const pricingSchema = z
 		cacheWriteCentsPerMTokensByTtl: z
 			.record(z.string().regex(/^[1-9][0-9]*$/), z.number().nonnegative())
 			.optional(),
+		imageInputCentsPerMTokens: z.number().nonnegative().optional(),
+		imageOutputCentsPerMTokens: z.number().nonnegative().optional(),
 		searchUnitCents: z.number().nonnegative().optional(),
 		tiers: z
 			.array(
@@ -30,6 +32,8 @@ export const pricingSchema = z
 								z.number().nonnegative(),
 							)
 							.optional(),
+						imageInputCentsPerMTokens: z.number().nonnegative().optional(),
+						imageOutputCentsPerMTokens: z.number().nonnegative().optional(),
 					})
 					.strict(),
 			)

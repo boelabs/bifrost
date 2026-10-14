@@ -247,3 +247,81 @@ test("cache write lifetimes use distinct prices without double counting", () => 
 		0.8,
 	);
 });
+
+test("image tokens are charged at their image rates", () => {
+	// Gemini 3 Pro Image: $2 input, $12 text output, $120 image output per 1M.
+	const pricing = {
+		inputCentsPerMTokens: 200,
+		outputCentsPerMTokens: 1200,
+		imageOutputCentsPerMTokens: 12_000,
+	};
+	const c = computeCost(
+		{ pricing },
+		{
+			promptTokens: 100,
+			completionTokens: 1220,
+			totalTokens: 1320,
+			completionImageTokens: 1120,
+		},
+	);
+	// 100 text tokens out at 1200/1e6 + 1120 image tokens at 12000/1e6.
+	assert.ok(Math.abs(c.outputCents - (100 * 0.0012 + 1120 * 0.012)) < 1e-9);
+	assert.ok(Math.abs(c.imageCents - 1120 * 0.012) < 1e-9);
+	assert.ok(Math.abs(c.inputCents - 100 * 0.0002) < 1e-9);
+});
+
+test("image input is charged at its rate, cached tokens at the cache rate", () => {
+	// gpt-image-1: $5 text input, $10 image input, $1.25 cached input.
+	const c = computeCost(
+		{
+			pricing: {
+				inputCentsPerMTokens: 500,
+				cacheReadCentsPerMTokens: 125,
+				imageInputCentsPerMTokens: 1000,
+				outputCentsPerMTokens: 4000,
+			},
+		},
+		{
+			promptTokens: 1000,
+			completionTokens: 0,
+			totalTokens: 1000,
+			cacheReadTokens: 200,
+			promptImageTokens: 900,
+		},
+	);
+	// 800 uncached: 800 image tokens at the image rate (capped to the uncached share), none at text.
+	assert.ok(Math.abs(c.inputCents - 800 * 0.001) < 1e-9);
+	assert.ok(Math.abs(c.cacheReadCents - 200 * 0.000_125) < 1e-9);
+});
+
+test("without image rates, image tokens cost what text tokens cost", () => {
+	const usage = {
+		promptTokens: 10,
+		completionTokens: 1000,
+		totalTokens: 1010,
+		completionImageTokens: 1000,
+	};
+	const pricing = { inputCentsPerMTokens: 100, outputCentsPerMTokens: 4000 };
+	const withImages = computeCost({ pricing }, usage);
+	const textOnly = computeCost(
+		{ pricing },
+		{ promptTokens: 10, completionTokens: 1000, totalTokens: 1010 },
+	);
+	assert.equal(withImages.totalCents, textOnly.totalCents);
+});
+
+test("maximum cost reservation accounts for image rates", () => {
+	assert.equal(
+		estimateMaximumCostCents(
+			{
+				pricing: {
+					inputCentsPerMTokens: 150,
+					outputCentsPerMTokens: 750,
+					imageOutputCentsPerMTokens: 3000,
+				},
+			},
+			1_000_000,
+		),
+		3000,
+	);
+});

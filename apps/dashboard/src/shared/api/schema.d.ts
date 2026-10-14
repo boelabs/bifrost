@@ -3075,6 +3075,8 @@ export interface components {
 			cacheWriteCentsPerMTokensByTtl?: {
 				[key: string]: number;
 			};
+			imageInputCentsPerMTokens?: number;
+			imageOutputCentsPerMTokens?: number;
 			searchUnitCents?: number;
 			tiers?: {
 				aboveInputTokens: number;
@@ -3085,6 +3087,8 @@ export interface components {
 				cacheWriteCentsPerMTokensByTtl?: {
 					[key: string]: number;
 				};
+				imageInputCentsPerMTokens?: number;
+				imageOutputCentsPerMTokens?: number;
 			}[];
 		};
 		/** @description Advanced operation-to-transport override. Defaults normally come from the adapter. */

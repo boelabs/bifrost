@@ -11,6 +11,8 @@ export const PRICING_RATE_FIELDS = [
 	"outputCentsPerMTokens",
 	"cacheReadCentsPerMTokens",
 	"cacheWriteCentsPerMTokens",
+	"imageInputCentsPerMTokens",
+	"imageOutputCentsPerMTokens",
 	"searchUnitCents",
 ] as const;
 export type PricingRateField = (typeof PRICING_RATE_FIELDS)[number];
@@ -23,6 +25,8 @@ const tokenRates = {
 	cacheWriteCentsPerMTokensByTtl: z
 		.record(z.string().regex(/^[1-9][0-9]*$/), z.number().nonnegative())
 		.optional(),
+	imageInputCentsPerMTokens: z.number().nonnegative().optional(),
+	imageOutputCentsPerMTokens: z.number().nonnegative().optional(),
 };
 const pricingSchema = z
 	.object({
