@@ -3762,13 +3762,82 @@ export interface components {
 			/** Format: uuid */
 			id: string;
 			requestId: string;
-			/** @description Ordered upstream attempts for this operation. */
-			attempts: {
+			publicModel: string | null;
+			callType: string;
+			outcome: string | null;
+			stream: boolean;
+			httpStatus: number | null;
+			durationMs: number | null;
+			firstOutputMs: number | null;
+			/** Format: date-time */
+			startedAt: string;
+			/** @description What the caller received (class, code, http_status) and the internal message behind it. */
+			error: {
 				[key: string]: unknown;
-			}[];
+			} | null;
+			/** @description Ordered upstream attempts for this operation. */
+			attempts: components["schemas"]["UpstreamAttempt"][];
 			payload: components["schemas"]["RetainedPayloadState"];
 		} & {
 			[key: string]: unknown;
+		};
+		/** @description One upstream attempt of an operation, in order. */
+		UpstreamAttempt: {
+			/** Format: uuid */
+			id: string;
+			ordinal: number;
+			deploymentId: string | null;
+			deploymentLabel: string | null;
+			adapterKey: string | null;
+			transport: string | null;
+			upstreamModel: string | null;
+			outcome: string;
+			/** @description provider, gateway_deadline, gateway, deployment_config or client. */
+			failureOwner: string | null;
+			failureKind: string | null;
+			/** @description connect (no response), response (an error answer, or none in time), stream (after the stream opened), client, or gateway. */
+			failurePhase: string | null;
+			healthEffect: string;
+			httpStatus: number | null;
+			providerStatus: number | null;
+			durationMs: number | null;
+			headersMs: number | null;
+			firstEventMs: number | null;
+			firstOutputMs: number | null;
+			maxInterEventGapMs: number | null;
+			upstreamBytes: number | null;
+			promptTokens: number | null;
+			completionTokens: number | null;
+			reasoningTokens: number | null;
+			totalTokens: number | null;
+			/** Format: date-time */
+			startedAt: string;
+			endedAt: string | null;
+			diagnostics: {
+				[key: string]: unknown;
+			};
+			error: components["schemas"]["UpstreamAttemptError"] | null;
+		} & {
+			[key: string]: unknown;
+		};
+		UpstreamAttemptError: {
+			class: string | null;
+			code: string | null;
+			httpStatus: number | null;
+			providerStatus: number | null;
+			retryAfterMs?: number;
+			/** @description The gateway's internal account of the failure. Never returned to the caller; absent when payload access is sealed. */
+			message?: string;
+			provider?: components["schemas"]["ProviderErrorDetail"];
+		} & {
+			[key: string]: unknown;
+		};
+		/** @description The provider's own error as it answered. `message` is bounded, scrubbed of credential-shaped strings, and absent when OBSERVABILITY_PAYLOAD_ACCESS is sealed. */
+		ProviderErrorDetail: {
+			type?: string;
+			code?: string;
+			param?: string;
+			message?: string;
 		};
 		/** @description Whether a retained request/response sample stands behind this operation, and whether it can be read. Describing it costs no audit entry; reading it does. */
 		RetainedPayloadState: {

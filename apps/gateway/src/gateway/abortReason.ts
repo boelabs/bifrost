@@ -56,6 +56,7 @@ export function abortGatewayError(
 			deploymentHealth: "neutral",
 			routingScope: "request",
 			retryable: false,
+			phase: "client",
 		});
 	}
 	if (reason?.type === "downstream_backpressure") {
@@ -67,6 +68,7 @@ export function abortGatewayError(
 			deploymentHealth: "neutral",
 			routingScope: "request",
 			retryable: false,
+			phase: "client",
 		});
 	}
 	const phase = reason?.phase ?? fallbackPhase;
@@ -86,5 +88,6 @@ export function abortGatewayError(
 		message: `Upstream execution exceeded its ${phase} deadline`,
 		failureKind: "transient",
 		deploymentHealth: "penalize",
+		...(phase === "idle" ? { phase: "stream" as const } : {}),
 	});
 }

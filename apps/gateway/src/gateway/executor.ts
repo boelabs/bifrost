@@ -136,7 +136,7 @@ async function readBody(res: Response, ctx: AdapterContext): Promise<unknown> {
 		return await parseBody(res);
 	} catch (error) {
 		if (ctx.signal?.aborted) {
-			throw abortGatewayError(ctx.signal, "response");
+			throw abortGatewayError(ctx.signal, "response").inPhase("response");
 		}
 		throw error;
 	} finally {
@@ -156,12 +156,12 @@ async function* mapStreamErrors<T>(
 		}
 	} catch (error) {
 		if (ctx.signal?.aborted) {
-			throw abortGatewayError(ctx.signal);
+			throw abortGatewayError(ctx.signal).inPhase("stream");
 		}
 		if (GatewayError.is(error)) {
-			throw error;
+			throw error.inPhase("stream");
 		}
-		throw mapError(error, ctx);
+		throw mapError(error, ctx).inPhase("stream");
 	} finally {
 		ctx.watchdog?.complete();
 	}
@@ -202,7 +202,7 @@ async function dispatch(
 	mapError: MapError,
 ): Promise<Response> {
 	if (ctx.signal?.aborted) {
-		throw abortGatewayError(ctx.signal, "response");
+		throw abortGatewayError(ctx.signal, "response").inPhase("response");
 	}
 	let res: Response;
 	try {
@@ -212,10 +212,11 @@ async function dispatch(
 			...(httpReq.body === undefined ? {} : { body: httpReq.body }),
 		});
 	} catch (err) {
+		// An abort before headers is a deadline on the response; anything else never got one.
 		if (GatewayError.is(err)) {
-			throw err;
+			throw err.inPhase(ctx.signal?.aborted ? "response" : "connect");
 		}
-		throw mapError(err, ctx);
+		throw mapError(err, ctx).inPhase("connect");
 	}
 
 	if (ctx.timings === undefined) {
@@ -236,16 +237,17 @@ async function dispatch(
 	}
 	if (!res.ok) {
 		const retryAfter = res.headers.get("retry-after");
+		const body = await readBody(res, ctx);
 		throw mapError(
 			{
 				status: res.status,
-				body: await readBody(res, ctx),
+				body,
 				...(retryAfter === null
 					? {}
 					: { headers: { "retry-after": retryAfter } }),
 			},
 			ctx,
-		);
+		).inPhase("response");
 	}
 	return res;
 }

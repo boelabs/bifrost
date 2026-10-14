@@ -30,6 +30,13 @@ export type FailureKind =
 	| "configuration"
 	| "gateway";
 
+/**
+ * Where in an upstream exchange a failure happened. `connect`: no response at all (network,
+ * DNS, TLS). `response`: the upstream answered with an error, or its answer never arrived or could
+ * not be read. `stream`: after the stream opened. `client`: the caller left or stopped reading.
+ */
+export type FailurePhase = "connect" | "response" | "stream" | "client";
+
 export interface OpenAIErrorBody {
 	error: {
 		message: string;
@@ -166,6 +173,7 @@ export interface GatewayErrorOptions {
 	retryAfterMs?: number;
 	/** Overrides the class default when a transport has more precise retry semantics. */
 	retryable?: boolean;
+	phase?: FailurePhase;
 	cause?: unknown;
 }
 
@@ -202,6 +210,8 @@ export class GatewayError extends Error {
 	readonly deploymentHealth: "penalize" | "neutral";
 	readonly failureKind: FailureKind;
 	readonly retryAfterMs?: number;
+	/** Where the failure happened; set by whoever knows, never overwritten once set. */
+	phase?: FailurePhase;
 	/** Router attempts that led to this error (attached by the router; for logs). */
 	attempts?: unknown[];
 
@@ -234,6 +244,9 @@ export class GatewayError extends Error {
 		if (opts.retryAfterMs !== undefined) {
 			this.retryAfterMs = Math.max(0, Math.floor(opts.retryAfterMs));
 		}
+		if (opts.phase !== undefined) {
+			this.phase = opts.phase;
+		}
 		this.deploymentHealth =
 			opts.deploymentHealth ??
 			(this.routingScope === "request" ||
@@ -242,6 +255,12 @@ export class GatewayError extends Error {
 			this.failureKind === "gateway"
 				? "neutral"
 				: "penalize");
+	}
+
+	/** Records where the failure happened, unless something closer to it already did. */
+	inPhase(phase: FailurePhase): this {
+		this.phase ??= phase;
+		return this;
 	}
 
 	/** Rich representation for LOGS: gateway classification + raw provider detail. */
@@ -263,6 +282,7 @@ export class GatewayError extends Error {
 			...(this.retryAfterMs === undefined
 				? {}
 				: { retry_after_ms: this.retryAfterMs }),
+			...(this.phase === undefined ? {} : { phase: this.phase }),
 			...(this.provider === undefined ? {} : { provider: this.provider }),
 		};
 	}
