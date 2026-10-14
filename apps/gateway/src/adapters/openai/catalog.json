@@ -708,7 +708,8 @@
 						"tool_choice": true,
 						"tools": true,
 						"temperature": true,
-						"stop": true
+						"stop": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -755,7 +756,8 @@
 						"tool_choice": true,
 						"tools": true,
 						"temperature": true,
-						"stop": true
+						"stop": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -802,7 +804,8 @@
 						"tool_choice": true,
 						"tools": true,
 						"temperature": true,
-						"stop": true
+						"stop": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -849,7 +852,8 @@
 						"tools": true,
 						"temperature": true,
 						"stop": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -937,7 +941,8 @@
 						"tools": true,
 						"temperature": true,
 						"stop": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -982,7 +987,8 @@
 						"tools": true,
 						"temperature": true,
 						"stop": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -1025,7 +1031,8 @@
 						"tools": true,
 						"temperature": true,
 						"stop": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -1062,7 +1069,8 @@
 						"tools": true,
 						"temperature": true,
 						"stop": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -1136,7 +1144,8 @@
 						"tools": true,
 						"temperature": true,
 						"stop": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -1173,7 +1182,8 @@
 						"tools": true,
 						"temperature": true,
 						"stop": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -1208,7 +1218,8 @@
 						"tool_choice": true,
 						"tools": true,
 						"max_completion_tokens": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -1246,7 +1257,8 @@
 						"temperature": true,
 						"stop": true,
 						"max_completion_tokens": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				},
 				"image.generate": {
@@ -1287,7 +1299,8 @@
 						"tools": true,
 						"temperature": true,
 						"stop": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -1325,7 +1338,8 @@
 						"tools": true,
 						"temperature": true,
 						"stop": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -2763,8 +2777,8 @@
 						"reasoning": false,
 						"structuredOutputs": false
 					},
-					"maxInputTokens": 8191,
-					"maxOutputTokens": 4096,
+					"maxInputTokens": 8192,
+					"maxOutputTokens": 8192,
 					"parameters": {
 						"frequency_penalty": true,
 						"logit_bias": true,
@@ -2791,7 +2805,8 @@
 		"gpt-oss-20b": {
 			"operations": {
 				"text.generate": {
-					"maxOutputTokens": 8192,
+					"maxInputTokens": 131072,
+					"maxOutputTokens": 131072,
 					"parameters": {
 						"max_tokens": true,
 						"temperature": true,
@@ -2820,9 +2835,6 @@
 						"strictTools": true
 					}
 				}
-			},
-			"pricing": {
-				"cacheReadCentsPerMTokens": 3
 			}
 		},
 		"gpt-oss-120b": {
@@ -2857,9 +2869,6 @@
 						"strictTools": true
 					}
 				}
-			},
-			"pricing": {
-				"cacheReadCentsPerMTokens": 3
 			}
 		},
 		"gpt-oss-safeguard-20b": {
@@ -2909,7 +2918,8 @@
 						"seed": true,
 						"response_format": true,
 						"structured_outputs": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					},
 					"capabilities": {
 						"tools": true,
@@ -2954,7 +2964,8 @@
 						"seed": true,
 						"response_format": true,
 						"structured_outputs": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					},
 					"capabilities": {
 						"tools": true,
@@ -2999,7 +3010,12 @@
 						"seed": true,
 						"response_format": true,
 						"structured_outputs": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true,
+						"temperature": {
+							"mode": "supported",
+							"notes": "OpenAI accepts temperature only when reasoning effort is `none`; any other effort rejects it."
+						}
 					},
 					"capabilities": {
 						"tools": true,
@@ -3044,7 +3060,12 @@
 						"seed": true,
 						"response_format": true,
 						"structured_outputs": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true,
+						"temperature": {
+							"mode": "supported",
+							"notes": "OpenAI accepts temperature only when reasoning effort is `none`; any other effort rejects it."
+						}
 					},
 					"capabilities": {
 						"tools": true,

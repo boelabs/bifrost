@@ -625,6 +625,7 @@
 			"operations": {
 				"text.generate": {
 					"maxInputTokens": 200000,
+					"maxOutputTokens": 131072,
 					"parameters": {
 						"max_tokens": true,
 						"temperature": true,
@@ -678,6 +679,16 @@
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 131072,
 					"parameters": {
+						"thinking": {
+							"mode": "supported",
+							"upstreamField": "thinking",
+							"values": ["enabled"],
+							"notes": "GLM-5.3-Flash series always reasons; disabling thinking is not supported."
+						},
+						"reasoning_effort": {
+							"mode": "mapped",
+							"values": ["low", "high", "max"]
+						},
 						"max_tokens": true,
 						"temperature": true,
 						"stop": true,
@@ -694,13 +705,24 @@
 						"min_p": true,
 						"response_format": true,
 						"logit_bias": true,
-						"structured_outputs": true,
-						"reasoning_effort": true
+						"structured_outputs": true
 					},
 					"capabilities": {
 						"tools": true,
 						"vision": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"reasoning": true
+					},
+					"reasoning": {
+						"kind": "openai_body",
+						"levels": ["low", "high", "max"],
+						"bodyField": {
+							"param": "thinking",
+							"onValue": {
+								"type": "enabled"
+							}
+						},
+						"effortField": "reasoning_effort"
 					}
 				}
 			},
@@ -709,8 +731,7 @@
 				"outputCentsPerMTokens": 50,
 				"cacheReadCentsPerMTokens": 3,
 				"cacheWriteCentsPerMTokens": 0
-			},
-			"notes": "Reasoning control mechanism unconfirmed against the provider's docs; left unspecified rather than guessed."
+			}
 		},
 		"glm-5.3-flashx": {
 			"operations": {
@@ -718,6 +739,16 @@
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 131072,
 					"parameters": {
+						"thinking": {
+							"mode": "supported",
+							"upstreamField": "thinking",
+							"values": ["enabled"],
+							"notes": "GLM-5.3-Flash series always reasons; disabling thinking is not supported."
+						},
+						"reasoning_effort": {
+							"mode": "mapped",
+							"values": ["low", "high", "max"]
+						},
 						"max_tokens": true,
 						"temperature": true,
 						"stop": true,
@@ -734,13 +765,24 @@
 						"min_p": true,
 						"response_format": true,
 						"logit_bias": true,
-						"structured_outputs": true,
-						"reasoning_effort": true
+						"structured_outputs": true
 					},
 					"capabilities": {
 						"tools": true,
 						"vision": true,
-						"structuredOutputs": true
+						"structuredOutputs": true,
+						"reasoning": true
+					},
+					"reasoning": {
+						"kind": "openai_body",
+						"levels": ["low", "high", "max"],
+						"bodyField": {
+							"param": "thinking",
+							"onValue": {
+								"type": "enabled"
+							}
+						},
+						"effortField": "reasoning_effort"
 					}
 				}
 			},
@@ -749,8 +791,7 @@
 				"outputCentsPerMTokens": 125,
 				"cacheReadCentsPerMTokens": 7.5,
 				"cacheWriteCentsPerMTokens": 0
-			},
-			"notes": "Reasoning control mechanism unconfirmed against the provider's docs; left unspecified rather than guessed."
+			}
 		}
 	}
 }

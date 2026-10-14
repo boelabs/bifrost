@@ -18,7 +18,7 @@
 						"structuredOutputs": false
 					},
 					"maxInputTokens": 1000000,
-					"maxOutputTokens": 131072,
+					"maxOutputTokens": 524288,
 					"parameters": {
 						"include_reasoning": true,
 						"max_tokens": true,
@@ -64,7 +64,7 @@
 						"structuredOutputs": false
 					},
 					"maxInputTokens": 204800,
-					"maxOutputTokens": 131072,
+					"maxOutputTokens": 204800,
 					"parameters": {
 						"include_reasoning": true,
 						"max_tokens": true,
@@ -100,7 +100,7 @@
 						"structuredOutputs": false
 					},
 					"maxInputTokens": 204800,
-					"maxOutputTokens": 131072,
+					"maxOutputTokens": 204800,
 					"parameters": {
 						"max_tokens": true,
 						"temperature": true,
@@ -129,7 +129,7 @@
 						"structuredOutputs": false
 					},
 					"maxInputTokens": 204800,
-					"maxOutputTokens": 131072,
+					"maxOutputTokens": 204800,
 					"parameters": {
 						"include_reasoning": true,
 						"max_tokens": true,
@@ -165,7 +165,7 @@
 						"structuredOutputs": false
 					},
 					"maxInputTokens": 204800,
-					"maxOutputTokens": 131072,
+					"maxOutputTokens": 204800,
 					"parameters": {
 						"max_tokens": true,
 						"temperature": true,
@@ -194,7 +194,7 @@
 						"structuredOutputs": false
 					},
 					"maxInputTokens": 204800,
-					"maxOutputTokens": 131072,
+					"maxOutputTokens": 204800,
 					"parameters": {
 						"include_reasoning": true,
 						"max_tokens": true,
@@ -233,7 +233,7 @@
 						"structuredOutputs": false
 					},
 					"maxInputTokens": 204800,
-					"maxOutputTokens": 131072
+					"maxOutputTokens": 204800
 				}
 			},
 			"pricing": {
@@ -252,7 +252,7 @@
 						"structuredOutputs": false
 					},
 					"maxInputTokens": 204800,
-					"maxOutputTokens": 131072,
+					"maxOutputTokens": 204800,
 					"parameters": {
 						"include_reasoning": true,
 						"max_tokens": true,

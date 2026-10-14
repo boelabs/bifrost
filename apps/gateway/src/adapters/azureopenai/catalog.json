@@ -276,25 +276,27 @@
 						"tools": true,
 						"max_tokens": true,
 						"temperature": true,
-						"stop": true
+						"stop": true,
+						"verbosity": true
 					}
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 500,
-				"outputCentsPerMTokens": 3000,
-				"cacheReadCentsPerMTokens": 50,
-				"cacheWriteCentsPerMTokens": 625,
+				"inputCentsPerMTokens": 400,
+				"outputCentsPerMTokens": 2000,
+				"cacheReadCentsPerMTokens": 40,
+				"cacheWriteCentsPerMTokens": 500,
 				"tiers": [
 					{
 						"aboveInputTokens": 272000,
-						"inputCentsPerMTokens": 1000,
-						"outputCentsPerMTokens": 4500,
-						"cacheReadCentsPerMTokens": 100,
-						"cacheWriteCentsPerMTokens": 1250
+						"inputCentsPerMTokens": 800,
+						"outputCentsPerMTokens": 3000,
+						"cacheReadCentsPerMTokens": 80,
+						"cacheWriteCentsPerMTokens": 1000
 					}
 				]
-			}
+			},
+			"notes": "Azure promotional Global Standard pricing ($4 input / $20 output per 1M), announced to run from 2026-09-01 through at least 2026-11-30. The standard rate is $5 / $30 with $0.50 cached input and $6.25 cache writes; restore it when the promotion ends."
 		},
 		"gpt-5.6-terra": {
 			"operations": {
@@ -324,7 +326,8 @@
 						"tools": true,
 						"max_tokens": true,
 						"temperature": true,
-						"stop": true
+						"stop": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -372,7 +375,8 @@
 						"tools": true,
 						"max_tokens": true,
 						"temperature": true,
-						"stop": true
+						"stop": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -420,7 +424,8 @@
 						"max_tokens": true,
 						"temperature": true,
 						"stop": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -466,7 +471,8 @@
 						"max_tokens": true,
 						"temperature": true,
 						"stop": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -512,7 +518,8 @@
 						"max_tokens": true,
 						"temperature": true,
 						"stop": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -556,7 +563,8 @@
 						"max_tokens": true,
 						"temperature": true,
 						"stop": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -595,7 +603,8 @@
 						"max_tokens": true,
 						"temperature": true,
 						"stop": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -738,7 +747,8 @@
 						"max_tokens": true,
 						"temperature": true,
 						"stop": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -804,7 +814,8 @@
 						"structured_outputs": true,
 						"tool_choice": true,
 						"tools": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -976,7 +987,8 @@
 						"max_tokens": true,
 						"temperature": true,
 						"stop": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				},
 				"image.generate": {
@@ -1018,7 +1030,8 @@
 						"max_tokens": true,
 						"temperature": true,
 						"stop": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -1057,7 +1070,8 @@
 						"max_tokens": true,
 						"temperature": true,
 						"stop": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					}
 				}
 			},
@@ -1118,7 +1132,9 @@
 						"tools": true,
 						"tool_choice": true,
 						"reasoning": true,
-						"include_reasoning": true
+						"include_reasoning": true,
+						"response_format": true,
+						"structured_outputs": true
 					}
 				}
 			},
@@ -1351,7 +1367,9 @@
 						"tools": true,
 						"tool_choice": true,
 						"reasoning": true,
-						"include_reasoning": true
+						"include_reasoning": true,
+						"response_format": true,
+						"structured_outputs": true
 					}
 				}
 			},
@@ -1405,7 +1423,9 @@
 						"tools": true,
 						"tool_choice": true,
 						"reasoning": true,
-						"include_reasoning": true
+						"include_reasoning": true,
+						"response_format": true,
+						"structured_outputs": true
 					}
 				}
 			},
@@ -1435,7 +1455,9 @@
 						"tools": true,
 						"tool_choice": true,
 						"reasoning": true,
-						"include_reasoning": true
+						"include_reasoning": true,
+						"response_format": true,
+						"structured_outputs": true
 					}
 				}
 			},
@@ -1713,7 +1735,8 @@
 						"seed": true,
 						"response_format": true,
 						"structured_outputs": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					},
 					"capabilities": {
 						"tools": true,
@@ -1743,6 +1766,53 @@
 				]
 			}
 		},
+		"gpt-6.1-sol": {
+			"operations": {
+				"text.generate": {
+					"maxInputTokens": 1050000,
+					"maxOutputTokens": 128000,
+					"parameters": {
+						"max_tokens": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true,
+						"max_completion_tokens": true,
+						"seed": true,
+						"response_format": true,
+						"structured_outputs": true,
+						"reasoning_effort": true,
+						"verbosity": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"structuredOutputs": true,
+						"reasoning": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high", "xhigh", "max"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 10,
+				"cacheWriteCentsPerMTokens": 250,
+				"tiers": [
+					{
+						"aboveInputTokens": 272000,
+						"inputCentsPerMTokens": 400,
+						"outputCentsPerMTokens": 1500,
+						"cacheReadCentsPerMTokens": 20,
+						"cacheWriteCentsPerMTokens": 500
+					}
+				]
+			}
+		},
 		"gpt-6-sol": {
 			"operations": {
 				"text.generate": {
@@ -1759,7 +1829,8 @@
 						"seed": true,
 						"response_format": true,
 						"structured_outputs": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					},
 					"capabilities": {
 						"tools": true,
@@ -1805,7 +1876,8 @@
 						"seed": true,
 						"response_format": true,
 						"structured_outputs": true,
-						"reasoning_effort": true
+						"reasoning_effort": true,
+						"verbosity": true
 					},
 					"capabilities": {
 						"tools": true,
