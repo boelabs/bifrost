@@ -243,6 +243,30 @@ function failureDetail(
 	};
 }
 
+/** The part of an attempt record every ending shares: who was asked, when, and how far it got. */
+function endedAttempt(
+	chosen: DeploymentCandidate,
+	transport: string,
+	startedAt: number,
+	ctx: AdapterContext | undefined,
+): Omit<AttemptRecord, "ok"> {
+	const endedAt = Date.now();
+	const headersAt = ctx?.timings?.headersAt;
+	return {
+		deploymentId: chosen.row.id,
+		...(chosen.row.label == null ? {} : { label: chosen.row.label }),
+		adapterKey: chosen.adapter.key,
+		transport,
+		ms: endedAt - startedAt,
+		startedAt,
+		endedAt,
+		lastProgressAt: headersAt ?? startedAt,
+		upstreamBytes: ctx?.transportStats?.upstreamBytes ?? 0,
+		...(headersAt ? { headersMs: headersAt - startedAt } : {}),
+		...(ctx?.diagnostics ? { diagnostics: ctx.diagnostics } : {}),
+	};
+}
+
 /** An attempt that failed before returning had an answer once headers arrived, none before. */
 function phaseBeforeStream(
 	ctx: AdapterContext | undefined,
@@ -1108,23 +1132,7 @@ export async function route<T>(
 						});
 						await onAttemptCancel(chosen.row.id, permit, activeAttemptLease);
 						attemptLog.push({
-							deploymentId: chosen.row.id,
-							...(chosen.row.label == null ? {} : { label: chosen.row.label }),
-							adapterKey: chosen.adapter.key,
-							transport,
-							ms: Date.now() - startedAt,
-							startedAt,
-							endedAt: Date.now(),
-							lastProgressAt: activeContext?.timings?.headersAt ?? startedAt,
-							upstreamBytes: activeContext?.transportStats?.upstreamBytes ?? 0,
-							...(activeContext?.timings?.headersAt
-								? {
-										headersMs: activeContext.timings.headersAt - startedAt,
-									}
-								: {}),
-							...(activeContext?.diagnostics
-								? { diagnostics: activeContext.diagnostics }
-								: {}),
+							...endedAttempt(chosen, transport, startedAt, activeContext),
 							ok: false,
 							errorClass: "client_closed_request",
 							errorCode: "client_closed_request",
@@ -1160,23 +1168,7 @@ export async function route<T>(
 					if (ge.routingScope === "request") {
 						await onAttemptCancel(chosen.row.id, permit, activeAttemptLease);
 						attemptLog.push({
-							deploymentId: chosen.row.id,
-							...(chosen.row.label == null ? {} : { label: chosen.row.label }),
-							adapterKey: chosen.adapter.key,
-							transport,
-							ms: Date.now() - startedAt,
-							startedAt,
-							endedAt: Date.now(),
-							lastProgressAt: activeContext?.timings?.headersAt ?? startedAt,
-							upstreamBytes: activeContext?.transportStats?.upstreamBytes ?? 0,
-							...(activeContext?.timings?.headersAt
-								? {
-										headersMs: activeContext.timings.headersAt - startedAt,
-									}
-								: {}),
-							...(activeContext?.diagnostics
-								? { diagnostics: activeContext.diagnostics }
-								: {}),
+							...endedAttempt(chosen, transport, startedAt, activeContext),
 							ok: false,
 							...failureDetail(ge, phaseBeforeStream(activeContext)),
 							deploymentHealth: "neutral",
@@ -1263,23 +1255,7 @@ export async function route<T>(
 					}
 					lastError = ge;
 					attemptLog.push({
-						deploymentId: chosen.row.id,
-						...(chosen.row.label == null ? {} : { label: chosen.row.label }),
-						adapterKey: chosen.adapter.key,
-						transport,
-						ms: Date.now() - startedAt,
-						startedAt,
-						endedAt: Date.now(),
-						lastProgressAt: activeContext?.timings?.headersAt ?? startedAt,
-						upstreamBytes: activeContext?.transportStats?.upstreamBytes ?? 0,
-						...(activeContext?.timings?.headersAt
-							? {
-									headersMs: activeContext.timings.headersAt - startedAt,
-								}
-							: {}),
-						...(activeContext?.diagnostics
-							? { diagnostics: activeContext.diagnostics }
-							: {}),
+						...endedAttempt(chosen, transport, startedAt, activeContext),
 						ok: false,
 						...failureDetail(ge, phaseBeforeStream(activeContext)),
 						...(ge.deploymentHealth === "neutral"
