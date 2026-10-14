@@ -267,6 +267,13 @@ OpenRouter, and models.dev. It is report-only: it writes under
 `apps/gateway/.source/catalog-sync/` and never modifies a provider catalog. Use it to investigate
 new models and conflicts before making reviewed, provider-specific edits.
 
+A catalog key is sent upstream as the model name, so it must be an id the provider's own API accepts.
+The aggregators' slugs are not always one: some rename a model (OpenRouter's `gpt-5-chat` is OpenAI's
+`gpt-5-chat-latest`), others list reseller-only variants or reasoning-effort presets. The sync maps or
+drops those slugs through `SOURCE_MODEL_ID_CORRECTIONS` in
+`apps/gateway/src/catalog/sync/providerIdentity.ts`, and a unit test fails if a dropped slug comes back
+as a catalog key. Check a new model against the provider's model list before adding it.
+
 ### Vercel-owned sync
 
 Vercel is the exception because its public, unauthenticated `/v1/models` response is the authoritative

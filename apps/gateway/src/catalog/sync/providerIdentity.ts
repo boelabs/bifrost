@@ -60,6 +60,72 @@ export const PROVIDER_IDENTITY: readonly ProviderIdentityRule[] = [
 ];
 
 /**
+ * Source slugs that are not an id the provider's own API accepts, per adapterKey. A catalog key is sent
+ * upstream verbatim, but the existence sources slug models their own way: some slugs name a real model
+ * under another id (OpenAI's `gpt-5-chat` is `gpt-5-chat-latest`), others name nothing the provider
+ * serves (a reseller-only variant, a reasoning-effort preset, a model version instead of an API id). A
+ * string maps the slug to the provider's id; `null` drops it, so the sync neither drafts it as a new model
+ * nor counts it as a sighting. Keys compare normalized (see normalizeTag). Add entries only after checking
+ * the provider's own model list - never on an aggregator's word.
+ */
+export const SOURCE_MODEL_ID_CORRECTIONS: Readonly<
+	Record<string, Readonly<Record<string, string | null>>>
+> = {
+	openai: {
+		"gpt-chat-latest": "chat-latest",
+		"gpt-5-chat": "gpt-5-chat-latest",
+		"gpt-5.1-chat": "gpt-5.1-chat-latest",
+		"gpt-5.2-chat": "gpt-5.2-chat-latest",
+		"gpt-5.3-chat": "gpt-5.3-chat-latest",
+		"gpt-5-image": null,
+		"gpt-5-image-mini": null,
+		"gpt-5.4-image-2": null,
+		"gpt-oss-safeguard-20b": null,
+		"gpt-oss-safeguard-120b": null,
+		"o3-mini-high": null,
+		"o4-mini-high": null,
+		"gpt-3.5-turbo-16k": null,
+	},
+	googleaistudio: {
+		"gemini-2.5-pro-preview": null,
+	},
+	moonshot: {
+		"kimi-k2": null,
+	},
+	deepseek: {
+		"deepseek-v4.1-flash": "deepseek-flash",
+		"deepseek-v4-pro-0813": "deepseek-v4-pro",
+		"deepseek-v4-flash-0731": null,
+		"deepseek-v3.2": null,
+		"deepseek-v3.1-terminus": null,
+		"deepseek-r1": null,
+	},
+	minimax: {
+		"minimax-m2-her": null,
+		"minimax-m1": null,
+		"minimax-01": null,
+	},
+};
+
+const normalizedCorrections = new Map(
+	Object.entries(SOURCE_MODEL_ID_CORRECTIONS).map(([adapterKey, byId]) => [
+		adapterKey,
+		new Map(Object.entries(byId).map(([id, to]) => [normalizeTag(id), to])),
+	]),
+);
+
+/** The id the provider's API accepts for a source slug; `null` when the slug names no model it serves. */
+export function providerModelId(
+	adapterKey: string,
+	sourceUpstreamModel: string,
+): string | null {
+	const corrected = normalizedCorrections
+		.get(adapterKey)
+		?.get(normalizeTag(sourceUpstreamModel));
+	return corrected === undefined ? sourceUpstreamModel : corrected;
+}
+
+/**
  * models.dev keys its document by its OWN provider ids, which don't line up 1:1 with our adapterKeys or
  * with the OpenRouter/Vercel provider tags above (e.g. "moonshotai" here vs. our "moonshot" adapterKey).
  * "azure-cognitive-services" is intentionally left unmapped: models.dev tracks it as a distinct provider
@@ -105,9 +171,16 @@ export function candidateAdapterMappings(
 			if (!sourceModelId.startsWith(prefix)) {
 				continue;
 			}
+			const upstreamModel = providerModelId(
+				rule.adapterKey,
+				sourceModelId.slice(prefix.length),
+			);
+			if (upstreamModel === null) {
+				continue;
+			}
 			mappings.push({
 				adapterKey: rule.adapterKey,
-				upstreamModel: sourceModelId.slice(prefix.length),
+				upstreamModel,
 				idPrefix: prefix,
 				...(rule.requiresEndpointMatch ? { requiresEndpointMatch: true } : {}),
 			});
@@ -132,8 +205,8 @@ export function endpointBelongsToAdapter(
 }
 
 /**
- * Fails fast (called at CLI startup, and asserted in a unit test) if PROVIDER_IDENTITY or
- * MODELS_DEV_PROVIDER_ALIASES references an adapterKey that isn't actually registered - e.g. a typo, or a
+ * Fails fast (called at CLI startup, and asserted in a unit test) if PROVIDER_IDENTITY,
+ * MODELS_DEV_PROVIDER_ALIASES or SOURCE_MODEL_ID_CORRECTIONS references an adapterKey that isn't actually registered - e.g. a typo, or a
  * rule left behind after an adapter was removed. Without this, that rule would just silently never match
  * anything, and nothing else would notice.
  */
@@ -144,6 +217,7 @@ export function assertProviderIdentityRegistered(
 	const unknown = [
 		...PROVIDER_IDENTITY.map((rule) => rule.adapterKey),
 		...Object.values(MODELS_DEV_PROVIDER_ALIASES),
+		...Object.keys(SOURCE_MODEL_ID_CORRECTIONS),
 	].filter((adapterKey) => !known.has(adapterKey));
 	if (unknown.length > 0) {
 		throw new Error(

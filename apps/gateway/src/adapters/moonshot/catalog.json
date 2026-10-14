@@ -331,36 +331,6 @@
 			"deprecated": true,
 			"notes": "Moonshot discontinued kimi-latest on 2026-01-28; replacement kimi-k3."
 		},
-		"kimi-k2": {
-			"operations": {
-				"text.generate": {
-					"maxInputTokens": 131072,
-					"parameters": {
-						"max_tokens": true,
-						"temperature": true,
-						"stop": true,
-						"tools": true,
-						"tool_choice": true,
-						"top_p": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
-						"seed": false,
-						"top_k": false,
-						"repetition_penalty": false
-					},
-					"capabilities": {
-						"tools": true,
-						"vision": false,
-						"structuredOutputs": false,
-						"strictTools": true
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 57,
-				"outputCentsPerMTokens": 230
-			}
-		},
 		"kimi-k2-thinking": {
 			"operations": {
 				"text.generate": {
