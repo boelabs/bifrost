@@ -37,6 +37,7 @@ import {
 	newDownstreamWriteObservation,
 	markDownstreamClientAborted,
 	awaitWithSSEHeartbeats,
+	settleBeforeCommit,
 	withSSEHeartbeats,
 	writeSSEHeartbeat,
 	writeSSE,
@@ -66,6 +67,7 @@ function streamMessages(
 	canonical: CanonicalChatRequest,
 	settings: EffectiveSettings,
 	log: OperationLogDraft,
+	routePromise: ReturnType<typeof routeChat>,
 ): Response {
 	return streamSSE(c, async (stream) => {
 		const downstream = newDownstreamWriteObservation(log.operationId);
@@ -80,11 +82,6 @@ function streamMessages(
 		let streamError: GatewayError | null = null;
 		let metadata: Record<string, unknown> = { downstream };
 		try {
-			await writeSSEHeartbeat(stream, downstream);
-			const routePromise = routeChat(c, canonical, log.requestId, settings, {
-				signal: log.clientSignal,
-				operationId: log.operationId,
-			});
 			routed = await awaitWithSSEHeartbeats(routePromise, () =>
 				writeSSEHeartbeat(stream, downstream),
 			);
@@ -284,7 +281,12 @@ export async function messagesHandler(c: Context<AppEnv>): Promise<Response> {
 
 		const settings = await getEffectiveSettings();
 		if (canonical.stream) {
-			return streamMessages(c, canonical, settings, log);
+			const routePromise = routeChat(c, canonical, log.requestId, settings, {
+				signal: log.clientSignal,
+				operationId: log.operationId,
+			});
+			await settleBeforeCommit(routePromise);
+			return streamMessages(c, canonical, settings, log, routePromise);
 		}
 		const { routing, parameterPolicy, contentInputResolution } =
 			await routeChat(c, canonical, log.requestId, settings, {

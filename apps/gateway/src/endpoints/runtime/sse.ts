@@ -180,6 +180,35 @@ export function writeSSEHeartbeat(
 }
 
 /**
+ * How long a streaming request may hold back its response headers while routing settles. A failure
+ * inside this window (a rejected request, an unknown model, every upstream failing fast) is answered
+ * with its real HTTP status, as the provider itself would; past it the stream opens and keeps the
+ * connection alive with heartbeats. It stays well under the 60 s idle timeout of common proxies.
+ */
+export const STREAM_COMMIT_WAIT_MS = 10_000;
+
+/**
+ * Waits up to `waitMs` for routing. Rejects with the routing failure when it arrives in time;
+ * resolves, leaving `pending` to the opened stream, otherwise.
+ */
+export async function settleBeforeCommit(
+	pending: Promise<unknown>,
+	waitMs = STREAM_COMMIT_WAIT_MS,
+): Promise<void> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	try {
+		await Promise.race([
+			pending.then(() => undefined),
+			new Promise<void>((resolve) => {
+				timer = setTimeout(resolve, waitMs);
+			}),
+		]);
+	} finally {
+		clearTimeout(timer);
+	}
+}
+
+/**
  * Keeps an already-open SSE response alive while work that precedes the first upstream item is
  * pending (routing, retries, and fallback selection). The heartbeat is transport-only and never
  * counts as semantic model progress.

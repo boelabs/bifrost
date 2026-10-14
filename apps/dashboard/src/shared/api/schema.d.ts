@@ -3089,10 +3089,8 @@ export interface components {
 			[key: string]: components["schemas"]["ExecutionPolicyOverride"];
 		};
 		ExecutionPolicyOverride: {
-			firstOutputMs?: number;
+			responseMs?: number;
 			idleMs?: number;
-			reasoningOnlyMs?: number;
-			preCommitMs?: number;
 			totalMs?: number;
 		};
 		CreateDeployment: {
@@ -3205,130 +3203,32 @@ export interface components {
 		RouterSettings: {
 			executionPolicies?: {
 				chat: {
-					json: {
-						firstOutputMs: number;
-						idleMs: number | null;
-						reasoningOnlyMs: number | null;
-						preCommitMs: number;
-						totalMs: number;
-						maxAttempts: number;
-					};
-					stream: {
-						firstOutputMs: number;
-						idleMs: number | null;
-						reasoningOnlyMs: number | null;
-						preCommitMs: number;
-						totalMs: number;
-						maxAttempts: number;
-					};
+					json: components["schemas"]["ExecutionPolicy"];
+					stream: components["schemas"]["ExecutionPolicy"];
 				};
 				"images.generations": {
-					json: {
-						firstOutputMs: number;
-						idleMs: number | null;
-						reasoningOnlyMs: number | null;
-						preCommitMs: number;
-						totalMs: number;
-						maxAttempts: number;
-					};
-					stream: {
-						firstOutputMs: number;
-						idleMs: number | null;
-						reasoningOnlyMs: number | null;
-						preCommitMs: number;
-						totalMs: number;
-						maxAttempts: number;
-					};
+					json: components["schemas"]["ExecutionPolicy"];
+					stream: components["schemas"]["ExecutionPolicy"];
 				};
 				"images.edits": {
-					json: {
-						firstOutputMs: number;
-						idleMs: number | null;
-						reasoningOnlyMs: number | null;
-						preCommitMs: number;
-						totalMs: number;
-						maxAttempts: number;
-					};
-					stream: {
-						firstOutputMs: number;
-						idleMs: number | null;
-						reasoningOnlyMs: number | null;
-						preCommitMs: number;
-						totalMs: number;
-						maxAttempts: number;
-					};
+					json: components["schemas"]["ExecutionPolicy"];
+					stream: components["schemas"]["ExecutionPolicy"];
 				};
 				"videos.generations": {
-					json: {
-						firstOutputMs: number;
-						idleMs: number | null;
-						reasoningOnlyMs: number | null;
-						preCommitMs: number;
-						totalMs: number;
-						maxAttempts: number;
-					};
-					stream: {
-						firstOutputMs: number;
-						idleMs: number | null;
-						reasoningOnlyMs: number | null;
-						preCommitMs: number;
-						totalMs: number;
-						maxAttempts: number;
-					};
+					json: components["schemas"]["ExecutionPolicy"];
+					stream: components["schemas"]["ExecutionPolicy"];
 				};
 				"audio.transcriptions": {
-					json: {
-						firstOutputMs: number;
-						idleMs: number | null;
-						reasoningOnlyMs: number | null;
-						preCommitMs: number;
-						totalMs: number;
-						maxAttempts: number;
-					};
-					stream: {
-						firstOutputMs: number;
-						idleMs: number | null;
-						reasoningOnlyMs: number | null;
-						preCommitMs: number;
-						totalMs: number;
-						maxAttempts: number;
-					};
+					json: components["schemas"]["ExecutionPolicy"];
+					stream: components["schemas"]["ExecutionPolicy"];
 				};
 				embeddings: {
-					json: {
-						firstOutputMs: number;
-						idleMs: number | null;
-						reasoningOnlyMs: number | null;
-						preCommitMs: number;
-						totalMs: number;
-						maxAttempts: number;
-					};
-					stream: {
-						firstOutputMs: number;
-						idleMs: number | null;
-						reasoningOnlyMs: number | null;
-						preCommitMs: number;
-						totalMs: number;
-						maxAttempts: number;
-					};
+					json: components["schemas"]["ExecutionPolicy"];
+					stream: components["schemas"]["ExecutionPolicy"];
 				};
 				rerank: {
-					json: {
-						firstOutputMs: number;
-						idleMs: number | null;
-						reasoningOnlyMs: number | null;
-						preCommitMs: number;
-						totalMs: number;
-						maxAttempts: number;
-					};
-					stream: {
-						firstOutputMs: number;
-						idleMs: number | null;
-						reasoningOnlyMs: number | null;
-						preCommitMs: number;
-						totalMs: number;
-						maxAttempts: number;
-					};
+					json: components["schemas"]["ExecutionPolicy"];
+					stream: components["schemas"]["ExecutionPolicy"];
 				};
 			};
 			/** @enum {string} */
@@ -3358,12 +3258,6 @@ export interface components {
 			minWindowRequests?: number;
 			/** @description Never open the deployment circuit when a public model has nowhere else to route. Quarantining the only deployment turns a degraded upstream into a total outage, and the gateway's 503 is less useful to the caller than the upstream's own error. */
 			protectLastDeployment?: boolean;
-			/** @description Narrow each attempt's first-output deadline to a multiple of what that deployment usually takes, instead of the budget the slowest member of the pool needs. */
-			adaptiveTimeoutsEnabled?: boolean;
-			/** @description How many times its own typical time-to-first-output a deployment is granted. */
-			adaptiveTimeoutMultiplier?: number;
-			/** @description Lower bound for the adaptive deadline, so a very fast deployment is not cut off by ordinary variance. */
-			adaptiveTimeoutFloorMs?: number;
 			/** @description Time a deployment remains unavailable after exceeding allowedFails. Zero disables automatic cooldown circuits. */
 			cooldownSeconds?: number;
 			failureWindowSeconds?: number;
@@ -3373,6 +3267,16 @@ export interface components {
 			throttleCooldownSeconds?: number;
 			/** @description Minimum wait before a transient retry. Exponential full jitter is added above this floor. */
 			retryAfterSeconds?: number;
+		};
+		ExecutionPolicy: {
+			/** @description JSON: time until the complete upstream response has arrived. Stream: time until the upstream answers with response headers. */
+			responseMs: number;
+			/** @description Stream only: the longest silence allowed between two upstream bytes. Model output is never interpreted, so silent reasoning is not a stall. null disables it. */
+			idleMs: number | null;
+			/** @description Request-wide bound across every attempt, retry and fallback. */
+			totalMs: number;
+			/** @description Upstream attempts per request, across deployments and fallbacks. */
+			maxAttempts: number;
 		};
 		/** @description Operator-session policy. Every field is optional; only those supplied change. */
 		DashboardSettings: {
@@ -4104,9 +4008,6 @@ export interface components {
 			failureRatePercent: number;
 			minWindowRequests: number;
 			protectLastDeployment: boolean;
-			adaptiveTimeoutsEnabled: boolean;
-			adaptiveTimeoutMultiplier: number;
-			adaptiveTimeoutFloorMs: number;
 			cooldownSeconds: number;
 			failureWindowSeconds: number;
 			maxCooldownSeconds: number;
@@ -4115,7 +4016,10 @@ export interface components {
 			throttleCooldownSeconds: number;
 			retryAfterSeconds: number;
 			executionPolicies: {
-				[key: string]: unknown;
+				[key: string]: {
+					json: components["schemas"]["ExecutionPolicyOutput"];
+					stream: components["schemas"]["ExecutionPolicyOutput"];
+				};
 			};
 			/** Format: date-time */
 			updatedAt: string;
@@ -4143,11 +4047,19 @@ export interface components {
 			[key: string]: components["schemas"]["ExecutionPolicyOverrideOutput"];
 		};
 		ExecutionPolicyOverrideOutput: {
-			firstOutputMs?: number;
+			responseMs?: number;
 			idleMs?: number;
-			reasoningOnlyMs?: number;
-			preCommitMs?: number;
 			totalMs?: number;
+		};
+		ExecutionPolicyOutput: {
+			/** @description JSON: time until the complete upstream response has arrived. Stream: time until the upstream answers with response headers. */
+			responseMs: number;
+			/** @description Stream only: the longest silence allowed between two upstream bytes. Model output is never interpreted, so silent reasoning is not a stall. null disables it. */
+			idleMs: number | null;
+			/** @description Request-wide bound across every attempt, retry and fallback. */
+			totalMs: number;
+			/** @description Upstream attempts per request, across deployments and fallbacks. */
+			maxAttempts: number;
 		};
 	};
 	responses: {

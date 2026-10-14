@@ -38,6 +38,7 @@ import {
 	type DownstreamWriteObservation,
 	newDownstreamWriteObservation,
 	awaitWithSSEHeartbeats,
+	settleBeforeCommit,
 	withSSEHeartbeats,
 	writeSSEHeartbeat,
 	writeSSE,
@@ -219,6 +220,8 @@ async function handleImageRequest(
 			return c.json(toOpenAIImagesResponse(response));
 		}
 
+		const routePromise = routeImage();
+		await settleBeforeCommit(routePromise);
 		cleanupDeferred = true;
 		return streamSSE(c, async (stream) => {
 			stream.onAbort(() => log.abortClient());
@@ -230,10 +233,8 @@ async function handleImageRequest(
 			let firstAt: number | null = null;
 			let streamError: GatewayError | null = null;
 			try {
-				// Force headers onto the wire before upstream routing can stall: a JSON upstream serving
-				// a streaming request generates the whole image inside routing.
-				await writeSSEHeartbeat(stream, downstream);
-				const routed = await awaitWithSSEHeartbeats(routeImage(), () =>
+				// A JSON upstream serving a streaming request generates the whole image inside routing.
+				const routed = await awaitWithSSEHeartbeats(routePromise, () =>
 					writeSSEHeartbeat(stream, downstream),
 				);
 				Object.assign(metadata, routeMetadata(routed));

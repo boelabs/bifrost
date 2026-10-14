@@ -2,9 +2,10 @@ import { getEffectiveSettings, type EffectiveSettings } from "./settings.ts";
 import type { AdapterContext, AdapterDiagnostics } from "#adapters/types.ts";
 import { buildRoutingError, type FailReason } from "./routingError.ts";
 import type { CanonicalTerminal } from "#gateway/streamLifecycle.ts";
+import { listFallbackPoliciesFor } from "#db/repos/deployments.ts";
+import { startAttemptWatchdog } from "#gateway/attemptWatchdog.ts";
+import { resolveExecutionPolicy } from "#core/executionPolicy.ts";
 import { beginUpstreamAttempt } from "#logging/operations.ts";
-import { isClientAbortSignal } from "#gateway/abortReason.ts";
-import { getFallbackPolicy } from "#db/repos/router.ts";
 import type { CallType } from "#core/callType.ts";
 import { resolveTransport } from "./transport.ts";
 import { pickDeployment } from "./strategies.ts";
@@ -31,7 +32,6 @@ import {
 
 import {
 	onAttemptGatewayFinish,
-	type DeploymentMetrics,
 	type CooldownCause,
 	type AttemptLease,
 	onAttemptFailure,
@@ -60,9 +60,9 @@ import {
 } from "#endpoints/runtime/sse.ts";
 
 import {
-	resolveExecutionPolicy,
-	adaptiveFirstOutputMs,
-} from "#core/executionPolicy.ts";
+	type GatewayAbortReason,
+	isClientAbortSignal,
+} from "#gateway/abortReason.ts";
 
 export interface RouteOptions {
 	clientSignal: AbortSignal;
@@ -74,8 +74,6 @@ export interface RouteOptions {
 	executionMode?: "json" | "stream";
 	/** Remaining request-wide attempt budget for a pre-output retry coordinator. */
 	maxAttempts?: number;
-	/** Request-wide deadline used before any semantic output is committed. */
-	preOutputDeadlineAt?: number;
 	/** Request-wide hard deadline, retained when pre-output stream retries re-enter route(). */
 	totalDeadlineAt?: number;
 	/** Deployments already failed by a returned stream; reuse only after alternatives are exhausted. */
@@ -213,6 +211,37 @@ function fallbackReasonForFailures(
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+const RETRY_BASE_MS = 500;
+const RETRY_MAX_MS = 8000;
+/** A provider's Retry-After is honored up to this; a longer one moves the request elsewhere. */
+const RETRY_AFTER_CAP_MS = 60_000;
+
+/**
+ * How long to wait before the next attempt. `round` is null when the next attempt goes to an
+ * upstream this request has not tried, which needs no wait. Otherwise the wait grows
+ * exponentially from 500 ms to 8 s, never below the operator's minimum or the provider's own
+ * Retry-After, and carries up to 25% jitter so retrying clients do not move in lockstep.
+ */
+export function retryDelayMs(
+	round: number | null,
+	minimumMs: number,
+	retryAfterMs: number | undefined,
+): number {
+	if (round === null && retryAfterMs === undefined) {
+		return minimumMs;
+	}
+	const exponential =
+		round === null
+			? 0
+			: Math.min(RETRY_MAX_MS, RETRY_BASE_MS * 2 ** Math.max(0, round));
+	const base = Math.max(
+		minimumMs,
+		exponential,
+		Math.min(retryAfterMs ?? 0, RETRY_AFTER_CAP_MS),
+	);
+	return base + Math.floor(Math.random() * base * 0.25);
+}
+
 async function settleSideEffects(
 	requestId: string,
 	tasks: Promise<unknown>[],
@@ -245,41 +274,14 @@ function buildContext(
 	callType: CallType,
 	settings: EffectiveSettings,
 	opts: RouteOptions,
-	attemptStartedAt: number,
-	observed: DeploymentMetrics | undefined,
-	alternatives: number,
-	priorAttempts: number,
+	totalDeadlineAt: number,
 ): { ctx: AdapterContext; cleanup: () => void } {
-	const configuredPolicy = resolveExecutionPolicy(
-		settings.executionPolicies[callType][opts.executionMode ?? "json"],
+	const mode = opts.executionMode ?? "json";
+	const policy = resolveExecutionPolicy(
+		settings.executionPolicies[callType][mode],
 		candidate.row.executionPolicyOverrides,
 		callType,
 	);
-	const remainingPreOutputMs = opts.preOutputDeadlineAt
-		? Math.max(1, opts.preOutputDeadlineAt - Date.now())
-		: configuredPolicy.preCommitMs;
-	const remainingTotalMs = opts.totalDeadlineAt
-		? Math.max(1, opts.totalDeadlineAt - Date.now())
-		: configuredPolicy.totalMs;
-	const firstOutputMs = Math.min(
-		adaptiveFirstOutputMs(
-			configuredPolicy.firstOutputMs,
-			observed?.ttftMs,
-			settings.adaptiveTimeouts,
-			{
-				incremental: (opts.executionMode ?? "json") === "stream",
-				alternatives,
-				priorAttempts,
-			},
-		),
-		remainingPreOutputMs,
-	);
-	const executionPolicy = {
-		...configuredPolicy,
-		firstOutputMs,
-		firstOutputNarrowed: firstOutputMs < configuredPolicy.firstOutputMs,
-		totalMs: Math.min(configuredPolicy.totalMs, remainingTotalMs),
-	};
 	const controller = new AbortController();
 	const abortFromClient = () =>
 		controller.abort({ owner: "client", type: "cancelled" });
@@ -290,16 +292,17 @@ function buildContext(
 			once: true,
 		});
 	}
-	const timeout = setTimeout(
-		() =>
-			controller.abort({
-				owner: "gateway",
-				type: "timeout",
-				phase: opts.executionMode === "stream" ? "streaming" : "headers",
-			}),
-		executionPolicy.totalMs,
+	const abort = (reason: GatewayAbortReason) => {
+		if (!controller.signal.aborted) {
+			controller.abort(reason);
+		}
+	};
+	const watchdog = startAttemptWatchdog(policy, mode, abort);
+	const total = setTimeout(
+		() => abort({ owner: "gateway", type: "timeout", phase: "total" }),
+		Math.max(1, Math.min(policy.totalMs, totalDeadlineAt - Date.now())),
 	);
-	timeout.unref?.();
+	total.unref?.();
 	return {
 		ctx: {
 			upstreamModel: candidate.upstreamModel,
@@ -308,17 +311,15 @@ function buildContext(
 			transport: resolveTransport(candidate, callType),
 			requestId: opts.requestId,
 			...(opts.operationId ? { operationId: opts.operationId } : {}),
-			attemptStartedAt,
-			executionPolicy,
+			watchdog,
 			diagnostics: {},
 			signal: controller.signal,
 		},
 		cleanup: () => {
-			clearTimeout(timeout);
+			watchdog.stop();
+			clearTimeout(total);
 			opts.clientSignal.removeEventListener("abort", abortFromClient);
-			if (!controller.signal.aborted) {
-				controller.abort({ owner: "gateway", type: "settled" });
-			}
+			abort({ owner: "gateway", type: "settled" });
 		},
 	};
 }
@@ -341,15 +342,8 @@ export async function route<T>(
 		const settings = await getEffectiveSettings();
 		const executionPolicy =
 			settings.executionPolicies[callType][opts.executionMode ?? "json"];
-		const preOutputDeadlineAt =
-			opts.preOutputDeadlineAt ?? Date.now() + executionPolicy.preCommitMs;
 		const totalDeadlineAt =
 			opts.totalDeadlineAt ?? Date.now() + executionPolicy.totalMs;
-		const deadlineOptions: RouteOptions = {
-			...opts,
-			preOutputDeadlineAt,
-			totalDeadlineAt,
-		};
 		const attemptLimit = Math.min(
 			executionPolicy.maxAttempts,
 			opts.maxAttempts ?? executionPolicy.maxAttempts,
@@ -535,9 +529,8 @@ export async function route<T>(
 			}
 
 			while (true) {
-				if (attempts >= attemptLimit || Date.now() >= preOutputDeadlineAt) {
-					reason =
-						attempts >= attemptLimit ? "attempt_limit" : "pre_output_deadline";
+				if (attempts >= attemptLimit || Date.now() >= totalDeadlineAt) {
+					reason = attempts >= attemptLimit ? "attempt_limit" : "deadline";
 					break;
 				}
 				if (attempts - poolStartedAt >= maxAttemptsPerPool) {
@@ -700,26 +693,18 @@ export async function route<T>(
 				attempts += 1;
 				const startedAt = Date.now();
 				const attemptOrdinal = (opts.attemptOrdinalOffset ?? 0) + attempts;
-				try {
-					if (opts.operationId) {
-						await beginUpstreamAttempt({
-							operationId: opts.operationId,
-							ordinal: attemptOrdinal,
-							deploymentId: chosen.row.id,
-							deploymentLabel: chosen.row.label ?? null,
-							adapterKey: chosen.adapter.key,
-							transport,
-							upstreamModel: chosen.upstreamModel,
-							startedAt: new Date(startedAt),
-							requestId: opts.requestId,
-						});
-					}
-				} catch (error) {
-					await settleSideEffects(opts.requestId, [
-						usageQuotaLease?.release() ?? Promise.resolve(),
-						onAttemptCancel(chosen.row.id, permit, activeAttemptLease),
-					]);
-					throw error;
+				if (opts.operationId) {
+					beginUpstreamAttempt({
+						operationId: opts.operationId,
+						ordinal: attemptOrdinal,
+						deploymentId: chosen.row.id,
+						deploymentLabel: chosen.row.label ?? null,
+						adapterKey: chosen.adapter.key,
+						transport,
+						upstreamModel: chosen.upstreamModel,
+						startedAt: new Date(startedAt),
+						requestId: opts.requestId,
+					});
 				}
 				const attemptTelemetry = startUpstreamAttemptTelemetry({
 					requestId: opts.requestId,
@@ -740,18 +725,8 @@ export async function route<T>(
 						chosen,
 						callType,
 						settings,
-						deadlineOptions,
-						startedAt,
-						metrics.get(chosen.row.id),
-						// Only siblings inside the current pool are counted. A configured fallback is
-						// another way out, but reaching it costs a whole pool of attempts, so counting
-						// it here would re-enable narrowing for the single-deployment case this is
-						// meant to protect. Undercounting keeps the configured deadline; overcounting
-						// ends live requests.
-						selectableCandidates.length - 1,
-						// The counter already includes the attempt being built, so subtract it: what
-						// widens the budget is the attempts that came before and failed.
-						(attemptsByDeployment.get(chosen.row.id) ?? 1) - 1,
+						opts,
+						totalDeadlineAt,
 					);
 					activeContext = instrumentedContext.ctx;
 					cleanupContext = instrumentedContext.cleanup;
@@ -1284,6 +1259,17 @@ export async function route<T>(
 							: { providerBody: ge.provider.body }),
 					});
 
+					// The upstream rejected the request itself. Another deployment of the same model would
+					// reject it the same way, so the caller gets this answer now, as from the provider.
+					if (
+						ge.class === "bad_request" &&
+						ge.failureKind === "request" &&
+						ge.provider?.status !== undefined
+					) {
+						ge.attempts = attemptLog;
+						throw ge;
+					}
+
 					const failureReason = fallbackReasonFor(ge.class);
 					failureReasons.add(failureReason);
 
@@ -1306,15 +1292,22 @@ export async function route<T>(
 						attempts < attemptLimit &&
 						attempts - poolStartedAt < maxAttemptsPerPool
 					) {
-						const exponent = Math.min(5, attempts - poolStartedAt - 1);
-						const minimum = Math.max(
-							settings.retryAfterSeconds * 1000,
-							ge.retryAfterMs ?? 0,
+						// A sibling nobody has tried yet is a fresh upstream: go now. Otherwise the same
+						// upstream is asked again, after a backoff.
+						const untriedSibling = candidates.some(
+							(candidate) =>
+								!(
+									attemptsByDeployment.has(candidate.row.id) ||
+									requestExhaustedDeployments.has(candidate.row.id)
+								),
 						);
-						const jitterCeiling = Math.min(2000, 100 * 2 ** exponent);
-						const delay = minimum + Math.floor(Math.random() * jitterCeiling);
-						if (Date.now() + delay >= preOutputDeadlineAt) {
-							reason = "pre_output_deadline";
+						const delay = retryDelayMs(
+							untriedSibling ? null : attempts - poolStartedAt - 1,
+							settings.retryAfterSeconds * 1000,
+							ge.retryAfterMs,
+						);
+						if (Date.now() + delay >= totalDeadlineAt) {
+							reason = "deadline";
 							break;
 						}
 						await sleep(delay);
@@ -1343,20 +1336,10 @@ export async function route<T>(
 			});
 		}
 
-		const fallbackReasons: FallbackReason[] = [
-			"general",
-			"context_window",
-			"content_policy",
-		];
 		const fallbackPolicies = new Map(
-			(
-				await Promise.all(
-					fallbackReasons.map(
-						async (reason) =>
-							[reason, await getFallbackPolicy(publicModel, reason)] as const,
-					),
-				)
-			).filter((entry) => entry[1] !== undefined),
+			(await listFallbackPoliciesFor(publicModel)).map(
+				(policy) => [policy.reason as FallbackReason, policy] as const,
+			),
 		);
 		const longestFallbackChain = Math.max(
 			0,
@@ -1404,21 +1387,17 @@ export async function route<T>(
 		let retryRound = 0;
 		while (
 			attempts < attemptLimit &&
-			Date.now() < preOutputDeadlineAt &&
+			Date.now() < totalDeadlineAt &&
 			retryModels.length > 0
 		) {
 			if (lastError?.failureKind === "transient" && lastError.retryable) {
-				const minimum = Math.max(
+				const delay = retryDelayMs(
+					retryRound,
 					settings.retryAfterSeconds * 1000,
-					lastError.retryAfterMs ?? 0,
+					lastError.retryAfterMs,
 				);
-				const jitterCeiling = Math.min(
-					2000,
-					100 * 2 ** Math.min(5, retryRound),
-				);
-				const delay = minimum + Math.floor(Math.random() * jitterCeiling);
-				if (Date.now() + delay >= preOutputDeadlineAt) {
-					lastReason = "pre_output_deadline";
+				if (Date.now() + delay >= totalDeadlineAt) {
+					lastReason = "deadline";
 					break;
 				}
 				await sleep(delay);
@@ -1426,7 +1405,7 @@ export async function route<T>(
 
 			const roundStartedAt = attempts;
 			for (const retryModel of retryModels) {
-				if (attempts >= attemptLimit || Date.now() >= preOutputDeadlineAt) {
+				if (attempts >= attemptLimit || Date.now() >= totalDeadlineAt) {
 					break;
 				}
 				const attempt = await tryPublicModel(

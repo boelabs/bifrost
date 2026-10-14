@@ -1,3 +1,4 @@
+import { normalizeExecutionPolicies } from "#core/executionPolicy.ts";
 import { after, before, test } from "node:test";
 import { randomUUID } from "node:crypto";
 import assert from "node:assert/strict";
@@ -40,11 +41,13 @@ before(async () => {
 		allowedFails: 100,
 		cooldownSeconds: 1,
 		executionPolicies: {
-			...originalSettings!.executionPolicies!,
+			...normalizeExecutionPolicies(originalSettings?.executionPolicies),
 			chat: {
-				...originalSettings!.executionPolicies!.chat,
+				...normalizeExecutionPolicies(originalSettings?.executionPolicies).chat,
 				json: {
-					...originalSettings!.executionPolicies!.chat.json,
+					...normalizeExecutionPolicies(originalSettings?.executionPolicies)
+						.chat.json,
+					responseMs: 10_000,
 					maxAttempts: 6,
 					totalMs: 10_000,
 				},
@@ -66,7 +69,9 @@ after(async () => {
 			configurationCooldownSeconds:
 				originalSettings.configurationCooldownSeconds,
 			throttleCooldownSeconds: originalSettings.throttleCooldownSeconds,
-			executionPolicies: originalSettings.executionPolicies,
+			executionPolicies: normalizeExecutionPolicies(
+				originalSettings.executionPolicies,
+			),
 			retryAfterSeconds: originalSettings.retryAfterSeconds,
 		}).catch(() => {
 			/* intentionally empty */
@@ -510,5 +515,77 @@ test("router: attempt log carries the deployment label, omitting it when unset",
 		await route2.finish(null);
 	} finally {
 		await cleanupDeployments([labeled, plain]);
+	}
+});
+
+test("router: a request the upstream rejects ends after one attempt, as the provider said", {
+	skip,
+}, async () => {
+	const publicModel = modelName("rejected");
+	const deployments = [
+		await deployment(publicModel),
+		await deployment(publicModel),
+	];
+	let calls = 0;
+	try {
+		await assert.rejects(
+			route(
+				publicModel,
+				"chat",
+				{ clientSignal: new AbortController().signal, requestId: randomUUID() },
+				async () => {
+					calls += 1;
+					throw new GatewayError({
+						class: "bad_request",
+						message: "OpenAI: max_tokens is too large",
+						publicMessage: "max_tokens is too large",
+						param: "max_tokens",
+						status: 400,
+						provider: { status: 400, body: { error: {} } },
+					});
+				},
+			),
+			(error: unknown) =>
+				GatewayError.is(error) &&
+				error.httpStatus === 400 &&
+				error.publicMessage === "max_tokens is too large" &&
+				error.param === "max_tokens" &&
+				(error.attempts?.length ?? 0) === 1,
+		);
+		assert.equal(calls, 1);
+	} finally {
+		await cleanupDeployments(deployments);
+	}
+});
+
+test("router: a transient failure moves to an untried sibling without waiting", {
+	skip,
+}, async () => {
+	await updateRouterSettings({ retryAfterSeconds: 0 });
+	const publicModel = modelName("sibling");
+	const deployments = [
+		await deployment(publicModel),
+		await deployment(publicModel),
+	];
+	const started: number[] = [];
+	try {
+		const result = await route(
+			publicModel,
+			"chat",
+			{ clientSignal: new AbortController().signal, requestId: randomUUID() },
+			async (candidate) => {
+				started.push(Date.now());
+				if (started.length === 1) {
+					return fail("server");
+				}
+				return candidate.row.id;
+			},
+		);
+		assert.equal(result.attempts, 2);
+		// The exponential backoff starts at 500 ms; a fresh upstream does not wait for it.
+		assert.ok((started[1] ?? 0) - (started[0] ?? 0) < 400);
+		await result.finish(null);
+	} finally {
+		await cleanupDeployments(deployments);
 	}
 });

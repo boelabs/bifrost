@@ -5,8 +5,42 @@ import type { TransportOverrides } from "#profiles/types.ts";
 import { decryptRecord, encryptJson } from "#db/crypto.ts";
 import type { RuntimeModelMetadata } from "#db/schema.ts";
 import type { CatalogEntry } from "#catalog/types.ts";
+import { ConfigCache } from "#cache/configCache.ts";
 import { writtenRow } from "#db/returning.ts";
 import { db } from "#db/client.ts";
+
+type FallbackPolicyRow = typeof fallbackPolicies.$inferSelect;
+
+/** Enabled deployments and fallback chains per public model: read by every routed request. */
+const routableDeployments = new ConfigCache<DeploymentRow[]>();
+const fallbackPolicyCache = new ConfigCache<FallbackPolicyRow[]>();
+
+/** Makes a deployment or fallback write visible to the next request on this replica. */
+export function invalidateRoutingConfig(): void {
+	routableDeployments.clear();
+	fallbackPolicyCache.clear();
+}
+
+/** The enabled deployments of a public model, as routing sees them. */
+export function listRoutableDeployments(
+	publicModel: string,
+): Promise<DeploymentRow[]> {
+	return routableDeployments.get(publicModel, () =>
+		listDeploymentsByPublicModel(publicModel),
+	);
+}
+
+/** Every fallback chain configured for a primary model, in one query for all reasons. */
+export function listFallbackPoliciesFor(
+	primaryModel: string,
+): Promise<FallbackPolicyRow[]> {
+	return fallbackPolicyCache.get(primaryModel, () =>
+		db
+			.select()
+			.from(fallbackPolicies)
+			.where(eq(fallbackPolicies.primaryModel, primaryModel)),
+	);
+}
 
 export interface DeploymentListFilter {
 	enabled?: boolean;
@@ -96,7 +130,7 @@ export class PublicModelReferencedError extends Error {
 export async function createDeployment(
 	input: CreateDeploymentInput,
 ): Promise<DeploymentRow> {
-	return db.transaction(async (tx) => {
+	const created = await db.transaction(async (tx) => {
 		await tx.execute(
 			sql`SELECT pg_advisory_xact_lock(hashtext(${input.publicModel}))`,
 		);
@@ -122,6 +156,8 @@ export async function createDeployment(
 			.returning();
 		return writtenRow(row, "createDeployment");
 	});
+	invalidateRoutingConfig();
+	return created;
 }
 
 export interface UpdateDeploymentInput {
@@ -194,7 +230,7 @@ export async function updateDeployment(
 	if (input.rpmLimit !== undefined) {
 		set.rpmLimit = input.rpmLimit;
 	}
-	return db.transaction(async (tx) => {
+	const updated = await db.transaction(async (tx) => {
 		const [existing] = await tx
 			.select({ publicModel: modelDeployments.publicModel })
 			.from(modelDeployments)
@@ -243,6 +279,8 @@ export async function updateDeployment(
 			.returning();
 		return row;
 	});
+	invalidateRoutingConfig();
+	return updated;
 }
 
 export async function getDeploymentById(
@@ -315,6 +353,11 @@ export async function getDeploymentCredentials(
 }
 
 export async function deleteDeployment(id: string): Promise<void> {
+	await deleteDeploymentRows(id);
+	invalidateRoutingConfig();
+}
+
+async function deleteDeploymentRows(id: string): Promise<void> {
 	await db.transaction(async (tx) => {
 		const [existing] = await tx
 			.select({ publicModel: modelDeployments.publicModel })

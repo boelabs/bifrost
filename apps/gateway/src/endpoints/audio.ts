@@ -26,6 +26,7 @@ import {
 	type DownstreamWriteObservation,
 	newDownstreamWriteObservation,
 	awaitWithSSEHeartbeats,
+	settleBeforeCommit,
 	withSSEHeartbeats,
 	writeSSEHeartbeat,
 	writeSSE,
@@ -175,6 +176,8 @@ async function handleTranscription(
 			return typeof rendered === "string" ? c.text(rendered) : c.json(rendered);
 		}
 
+		const routePromise = routeTranscription();
+		await settleBeforeCommit(routePromise);
 		cleanupDeferred = true;
 		return streamSSE(c, async (stream) => {
 			stream.onAbort(() => log.abortClient());
@@ -184,9 +187,7 @@ async function handleTranscription(
 			let firstAt: number | null = null;
 			let streamError: GatewayError | null = null;
 			try {
-				// Force headers onto the wire before upstream routing can stall.
-				await writeSSEHeartbeat(stream, downstream);
-				const routed = await awaitWithSSEHeartbeats(routeTranscription(), () =>
+				const routed = await awaitWithSSEHeartbeats(routePromise, () =>
 					writeSSEHeartbeat(stream, downstream),
 				);
 				Object.assign(metadata, routeMetadata(routed));

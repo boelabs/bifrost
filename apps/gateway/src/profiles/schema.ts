@@ -581,10 +581,8 @@ export const transportOverridesSchema = z.partialRecord(
  */
 const executionPolicyOverrideSchema = z
 	.object({
-		firstOutputMs: z.int().positive(),
+		responseMs: z.int().positive(),
 		idleMs: z.int().positive(),
-		reasoningOnlyMs: z.int().positive(),
-		preCommitMs: z.int().positive(),
 		totalMs: z.int().positive(),
 	})
 	.partial()

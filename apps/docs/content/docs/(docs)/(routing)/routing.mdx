@@ -85,7 +85,7 @@ Circuit controls remain global. Execution deadlines and retry budgets are define
 |---|---|---|
 | `allowedFails` | `3` | Transient logical-request failures a deployment is allowed before the **next** one opens cooldown. A success resets the count; `0` opens on the first failure. |
 | `cooldownSeconds` | `5` | Time a deployment stays in cooldown after exceeding `allowedFails`. `0` disables automatic cooldown circuits. |
-| `retryAfterSeconds` | `0` | Minimum wait before a transient retry; exponential full jitter is added above this floor. |
+| `retryAfterSeconds` | `0` | Minimum wait before retrying the same upstream (see [Retries](#retries)). |
 
 The remaining fields are advanced safety controls:
 
@@ -96,41 +96,77 @@ The remaining fields are advanced safety controls:
 | `halfOpenProbeSeconds` | `30` | Ownership TTL for the single half-open recovery probe |
 | `configurationCooldownSeconds` | `300` | Immediate quarantine for invalid credentials/model access |
 | `throttleCooldownSeconds` | `5` | Minimum shared-capacity cooldown for provider `429` responses |
-Each `executionPolicies[operation].json|stream` entry defines `firstOutputMs`, nullable `idleMs`,
-nullable `reasoningOnlyMs`, `preCommitMs`, `totalMs`, and `maxAttempts`. The initial defaults are:
 
-| Operation | First output | Idle | Reasoning only | Pre-commit | Total | Attempts |
-|---|---:|---:|---:|---:|---:|---:|
-| Text stream/WebSocket | 180s | 180s | — | 300s | 600s | 6 |
-| Text JSON | 300s | — | — | 300s | 600s | 6 |
-| Images | 60s | 60s stream | — | 180s | 600s | 3 |
-| Audio | 60s | 60s stream | — | 180s | 900s | 2 |
-| Embeddings | 30s | — | — | 60s | 60s | 3 |
-| Video submit/refresh/delete | 60s | — | — | 120s | 120s | 3 |
-| Video download | 30s | 30s | — | 60s | 900s | 2 |
+### How long the gateway waits
 
-The router makes a first pass across eligible deployments before reusing one. `Retry-After` is honored
-only when the wait fits inside the pre-commit deadline. Text streams are validated and buffered until
-the first semantic reasoning/content/tool frame or terminal. A retry or fallback is possible before
-commitment, but forbidden after any semantic frame is exposed to the client. Metadata, keepalives,
-roles, and usage-only frames do not commit the response.
+Each `executionPolicies[operation].json|stream` entry defines `responseMs`, nullable `idleMs`,
+`totalMs`, and `maxAttempts`. They are enforced on the **connection**, the way an HTTP client's
+timeouts are, and never on the model's output:
 
-Reasoning models can spend minutes computing before returning text, and Chat Completions upstreams
-may withhold even HTTP headers during that time. The text defaults allow this without delaying
-responses that arrive sooner. `reasoningOnlyMs` is disabled by default: active reasoning remains
-bounded by the total deadline. Operators can still set a separate reasoning limit or shorter idle
-and first-output limits. Upgrading updates only text policies that exactly match the old defaults;
-custom policies remain unchanged.
+- **`responseMs`** — JSON: until the complete upstream answer has arrived. Stream: until the
+  upstream answers with response headers.
+- **`idleMs`** — stream only: the longest silence allowed between two upstream **bytes**. Any byte
+  counts, including the provider's own keepalives, so a model reasoning silently for minutes is not
+  mistaken for a stalled one. `null` disables it.
+- **`totalMs`** — the whole request, across every attempt, retry, and fallback.
+
+An expired deadline aborts the upstream request itself. The defaults match the official OpenAI and
+Anthropic SDKs (a 600 s read timeout), so calling a provider through the gateway is never less
+patient than calling it directly:
+
+| Operation | Response | Idle | Total | Attempts |
+|---|---:|---:|---:|---:|
+| Text stream/WebSocket | 600s | 600s | 3600s | 3 |
+| Text JSON | 600s | — | 1800s | 3 |
+| Images | 600s | 300s stream | 1800s | 2 |
+| Audio | 900s JSON, 600s stream | 300s stream | 1800s | 2 |
+| Embeddings / rerank | 120s | — | 300s | 3 |
+| Video submit/refresh/delete | 120s | — | 300s | 2 |
+| Video download | 120s | 120s | 900s | 2 |
+
+A deployment's `executionPolicyOverrides` may only tighten these. Policies saved by a release that
+still used first-output, pre-commit, or reasoning-only deadlines are replaced by these defaults.
+
+A JSON request that runs longer than about 100 s behind Cloudflare is answered by Cloudflare with
+`524`, whatever the gateway allows: use `stream: true` for long generations there.
+
+### Retries
+
+The router makes a first pass across eligible deployments before reusing one. A deployment nobody
+has tried yet is used immediately; asking the same upstream again waits 0.5 s, doubling up to 8 s,
+never less than `retryAfterSeconds` or the provider's `Retry-After` (honored up to 60 s), plus up to
+25% jitter.
+
+A stream is retried or failed over only before it has shown the client anything: until the first
+reasoning, content, or tool frame, nothing is committed. After that a failure ends the stream with an
+in-band error event, as the provider's own stream would.
+
+Streaming requests hold their response headers for up to 10 s while routing settles, so an error in
+that window — an unknown model, a rejected request, every upstream failing fast — is answered with
+its real HTTP status, exactly as the provider answers. Past 10 s the stream opens and keepalives
+hold the connection.
+
+### What counts as complete
+
+The gateway is no stricter than the provider's own SDK. A stream that finished every choice is
+complete even when the upstream skipped `[DONE]`; one that reached the protocol's end marker is
+complete even without a finish reason (it is read from the output: `tool_calls` when tools were
+called, otherwise `stop`); an empty answer is an answer. These are recorded on the attempt as
+`anomalies` and never retried. Only a stream that stops with neither — a dropped connection — fails,
+as `upstream_stream_truncated`.
 
 Failures are classified by effect rather than by a broad "provider error" bucket:
 
-- **Request** (`400`-class input/context/content failures, including otherwise unknown provider
-  `4xx` statuses): try a different candidate if useful, but never lower health or open a circuit.
+- **Request** (`400`-class input/context/content failures): an upstream that rejects the request
+  itself ends it at once with the provider's own status and sanitized message — another deployment
+  of the same model would reject it the same way. Context-window and content-policy rejections may
+  still move to their dedicated [fallback](/docs/fallbacks) chain. Never lowers health.
 - **Throttle** (`429`): do not lower deployment health. Open the shared `failureDomain` capacity
   circuit immediately and honor the provider's `Retry-After` value when present. These capacity
   signals do not increment `allowedFails`.
-- **Transient** (timeouts, network failures, provider `5xx`, malformed protocol, missing terminal): retry with exponential full jitter and
-  count at most one failure per logical request and deployment toward the circuit.
+- **Transient** (timeouts, network failures, provider `5xx`, malformed protocol, truncated stream):
+  retry as described above and count at most one failure per logical request and deployment toward
+  the circuit.
 - **Configuration** (invalid provider auth/access/model): quarantine that deployment immediately
   instead of repeatedly spending the request budget on it.
 - **Gateway/request-scoped** failures: do not penalize any deployment.
@@ -147,9 +183,11 @@ failed probe reopens it with exponential cooldown and jitter, capped by `maxCool
 While closed, every successful upstream call clears that deployment's accumulated transient-failure
 count.
 
-If every deployment circuit is open, the gateway returns `503 deployments_in_cooldown` with an
-accurate `Retry-After` header. If shared capacity is the blocker, it returns `429
-rate_limit_exceeded`. The authenticated `GET /v1/models/{model}/deployments` view reports each
+When the pool fails, the caller receives what the provider would have said: the last upstream
+answer's status and public message. Routing detail (attempts, reasons, cooldown causes) stays in the
+operation log. If every deployment circuit is open, the gateway returns `503 model_overloaded` with
+an accurate `Retry-After` header (`503 model_unavailable`, without one, when every circuit was opened
+by misconfiguration). If shared capacity is the blocker, it returns `429 rate_limit_exceeded`. The authenticated `GET /v1/models/{model}/deployments` view reports each
 deployment as `available`, `cooldown`, `half_open`, or `rate_limited`, plus `retry_after_ms`.
 
 ## Fallbacks

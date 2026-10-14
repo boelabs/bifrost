@@ -12,7 +12,7 @@ import {
 } from "#catalog/types.ts";
 
 import {
-	listDeploymentsByPublicModel,
+	listRoutableDeployments,
 	type DeploymentRow,
 } from "#db/repos/deployments.ts";
 
@@ -38,7 +38,31 @@ export async function listDeploymentCandidates(
 	publicModel: string,
 	callType: CallType,
 ): Promise<DeploymentCandidate[]> {
-	const rows = await listDeploymentsByPublicModel(publicModel);
+	const rows = await listRoutableDeployments(publicModel);
+	// The cached row list is shared until it expires, so its resolved candidates are too.
+	let byCallType = resolvedCandidates.get(rows);
+	if (!byCallType) {
+		byCallType = new Map();
+		resolvedCandidates.set(rows, byCallType);
+	}
+	const cached = byCallType.get(callType);
+	if (cached) {
+		return cached;
+	}
+	const resolved = resolveCandidates(rows, callType);
+	byCallType.set(callType, resolved);
+	return resolved;
+}
+
+const resolvedCandidates = new WeakMap<
+	DeploymentRow[],
+	Map<CallType, DeploymentCandidate[]>
+>();
+
+function resolveCandidates(
+	rows: DeploymentRow[],
+	callType: CallType,
+): DeploymentCandidate[] {
 	const out: DeploymentCandidate[] = [];
 	for (const row of rows) {
 		const adapter = getAdapter(row.adapterKey);

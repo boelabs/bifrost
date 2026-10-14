@@ -53,7 +53,7 @@ Los controles de los circuitos siguen siendo globales. Los plazos de ejecución 
 |---|---|---|
 | `allowedFails` | `3` | Fallos transitorios de solicitudes lógicas: se permite un deployment antes de que la **siguiente** abre el cooldown. Un éxito reinicia la cuenta; `0` se abre ante el primer error. |
 | `cooldownSeconds` | `5` | Tiempo que un deployment permanece en cooldown después de exceder `allowedFails`. `0` desactiva los circuitos de enfriamiento automático. |
-| `retryAfterSeconds` | `0` | Espera mínima antes de un reintento transitorio; Se añade una fluctuación total exponencial por encima de este piso. |
+| `retryAfterSeconds` | `0` | Espera mínima antes de reintentar el mismo upstream (ver [Reintentos](#retries)). |
 
 Los campos restantes son controles de seguridad avanzados:
 
@@ -63,27 +63,49 @@ Los campos restantes son controles de seguridad avanzados:
 | `maxCooldownSeconds` | `300` | Enfriamiento exponencial máximo después de sondas de recuperación fallidas |
 | `halfOpenProbeSeconds` | `30` | Propiedad TTL para la sonda única de recuperación semiabierta |
 | `configurationCooldownSeconds` | `300` | Cuarentena inmediata para credenciales/acceso a modelos no válidos |
-| `throttleCooldownSeconds` | `5` | Tiempo de reutilización mínimo de capacidad compartida para las respuestas del proveedor `429` | Cada entrada `executionPolicies[operation].json|stream` define `firstOutputMs`, `idleMs` anulable, `reasoningOnlyMs` anulable, `preCommitMs`, `totalMs` y `maxAttempts`. Los valores predeterminados iniciales son:
+| `throttleCooldownSeconds` | `5` | Tiempo de reutilización mínimo de capacidad compartida para las respuestas del proveedor `429` |
 
-| Operación | Primera salida | Inactivo | Sólo reasoning | Compromiso previo | Totales | Intentos |
-|---|---:|---:|---:|---:|---:|---:|
-| Flujo de texto/WebSocket | 180 | 180 | — | 300 | 600 | 6 |
-| Texto JSON | 300 | — | — | 300 | 600 | 6 |
-| Imágenes | años 60 | Transmisión de los 60 | — | 180 | 600 | 3 |
-| Audio | años 60 | Transmisión de los 60 | — | 180 | 900 | 2 |
-| Embeddings | 30 años | — | — | años 60 | años 60 | 3 |
-| Enviar/actualizar/eliminar vídeo | años 60 | — | — | 120 | 120 | 3 |
-| Descarga de vídeo | 30 años | 30 años | — | años 60 | 900 | 2 |
+### Cuánto espera el gateway [#how-long-the-gateway-waits]
 
-El router realiza una primera pasada por los deployments elegibles antes de reutilizar una. `Retry-After` se respeta solo cuando la espera se ajusta dentro de la fecha límite previa al compromiso. Los flujos de texto se validan y almacenan en búfer hasta el primer marco o terminal de reasoning/contenido/herramienta semántico. Es posible realizar un reintento o un fallback antes del compromiso, pero está prohibido después de que cualquier marco semántico se haya expuesto al cliente. Los metadatos, los keepalive, los roles y los marcos de uso exclusivo no confirman la respuesta.
+Cada entrada `executionPolicies[operation].json|stream` define `responseMs`, `idleMs` anulable, `totalMs` y `maxAttempts`. Se aplican sobre la **conexión**, como los timeouts de un cliente HTTP, y nunca sobre la salida del modelo:
 
-Los modelos de reasoning pueden pasar minutos computando antes de devolver texto, y los upstreams Chat Completions pueden retener incluso headers HTTP durante ese tiempo. Los valores predeterminados de texto lo permiten sin retrasar las respuestas que llegan antes. `reasoningOnlyMs` está deshabilitado por defecto: el reasoning activo permanece limitado al plazo total. Los operadores aún pueden establecer un límite de reasoning separado o límites más cortos de inactividad y de primera salida. La actualización actualiza sólo las políticas de texto que coinciden exactamente con los valores predeterminados anteriores; las políticas personalizadas permanecen sin cambios.
+- **`responseMs`**: JSON, hasta que llega la respuesta upstream completa. Stream, hasta que el upstream responde con los headers.
+- **`idleMs`**: solo stream; el silencio máximo entre dos **bytes** upstream. Cualquier byte cuenta, incluidos los keepalives del proveedor, así que un modelo que razona en silencio durante minutos no se confunde con uno bloqueado. `null` lo desactiva.
+- **`totalMs`**: la solicitud completa, con todos sus intentos, reintentos y fallbacks.
+
+Un plazo vencido aborta la propia solicitud upstream. Los valores predeterminados coinciden con los SDK oficiales de OpenAI y Anthropic (600 s de lectura), así que llamar a un proveedor a través del gateway nunca es menos paciente que llamarlo directamente:
+
+| Operación | Respuesta | Inactividad | Total | Intentos |
+|---|---:|---:|---:|---:|
+| Texto stream/WebSocket | 600 s | 600 s | 3600 s | 3 |
+| Texto JSON | 600 s | — | 1800 s | 3 |
+| Imágenes | 600 s | 300 s en stream | 1800 s | 2 |
+| Audio | 900 s JSON, 600 s stream | 300 s en stream | 1800 s | 2 |
+| Embeddings / reranking | 120 s | — | 300 s | 3 |
+| Enviar/actualizar/eliminar vídeo | 120 s | — | 300 s | 2 |
+| Descarga de vídeo | 120 s | 120 s | 900 s | 2 |
+
+Los `executionPolicyOverrides` de un deployment solo pueden ajustarlos a la baja. Las políticas guardadas por una versión que aún usaba plazos de primera salida, pre-commit o solo-reasoning se sustituyen por estos valores.
+
+Detrás de Cloudflare, una solicitud JSON que dura más de unos 100 s recibe un `524` de Cloudflare, permita lo que permita el gateway: usa `stream: true` para generaciones largas.
+
+### Reintentos [#retries]
+
+El router hace una primera pasada por los deployments elegibles antes de reutilizar uno. Un deployment que nadie ha probado se usa de inmediato; volver a preguntar al mismo upstream espera 0,5 s, duplicándose hasta 8 s, nunca menos que `retryAfterSeconds` ni que el `Retry-After` del proveedor (respetado hasta 60 s), más hasta un 25 % de jitter.
+
+Un stream solo se reintenta o pasa a un fallback antes de haber mostrado algo al cliente: hasta el primer frame de reasoning, contenido o herramienta no hay nada comprometido. Después, un fallo cierra el stream con un evento de error en banda, como haría el stream del propio proveedor.
+
+Las solicitudes en streaming retienen sus headers hasta 10 s mientras se resuelve el routing, de modo que un error en esa ventana (un modelo desconocido, una solicitud rechazada, todos los upstreams fallando rápido) se responde con su estado HTTP real, igual que el proveedor. Pasados 10 s el stream se abre y los keepalives mantienen la conexión.
+
+### Qué cuenta como completo [#what-counts-as-complete]
+
+El gateway no es más estricto que el SDK del propio proveedor. Un stream que terminó todas sus choices está completo aunque el upstream omita `[DONE]`; uno que llegó al marcador de fin del protocolo está completo aunque falte el finish reason (se deduce de la salida: `tool_calls` si se llamaron herramientas, si no `stop`); una respuesta vacía es una respuesta. Todo esto se registra en el intento como `anomalies` y nunca se reintenta. Solo falla un stream que se corta sin ninguna de las dos cosas (una conexión caída), como `upstream_stream_truncated`.
 
 Las fallas se clasifican por efecto en lugar de por un grupo amplio de "errores de proveedor":
 
-- **Solicitud** (fallas de entrada/contexto/contenido de clase `400`, incluidos estados de proveedor `4xx` desconocidos): prueba con un candidato diferente si es útil, pero nunca reduzca la salud ni abre un circuito.
+- **Solicitud** (fallas de entrada/contexto/contenido de clase `400`): un upstream que rechaza la propia solicitud la termina de inmediato con el estado y el mensaje saneado del proveedor; otro deployment del mismo modelo la rechazaría igual. Los rechazos por ventana de contexto o política de contenido pueden pasar a su cadena de [fallbacks](/es/docs/fallbacks) dedicada. Nunca reduce la salud.
 - **Acelerador** (`429`): no reduce el estado del deployment. Abre el circuito de capacidad compartido `failureDomain` inmediatamente y respete el valor `Retry-After` del proveedor cuando esté presente. Estas señales de capacidad no incrementan `allowedFails`.
-- **Transitorio** (tiempos de espera, fallas de red, proveedor `5xx`, protocolo mal formado, terminal faltante): reintente con fluctuación total exponencial y cuente como máximo una falla por solicitud lógica e deployment hacia el circuito.
+- **Transitorio** (tiempos de espera, fallas de red, proveedor `5xx`, protocolo mal formado, stream truncado): se reintenta como se describe arriba y cuenta como máximo una falla por solicitud lógica y deployment hacia el circuito.
 - **Configuración** (autenticación/acceso/modelo de proveedor no válido): ponga en cuarentena ese deployment inmediatamente en lugar de gastar repetidamente el presupuesto de la solicitud en ella.
 - Errores de **gateway/ámbito de solicitud**: no penalizan ninguna deployment.
 
@@ -91,7 +113,7 @@ Las incompatibilidades de candidatos descubiertas por el preprocesamiento del ga
 
 Las transiciones de circuitos son atómicas en Redis. Una vez que el umbral de falla fijo abre un circuito, las fallas tardías en vuelo no pueden extenderlo. Después del cooldown, se vuelve **medio abierto**: exactamente una solicitud posee la sonda de recuperación, mientras que las solicitudes simultáneas utilizan otros candidatos. Una investigación exitosa lo cierra; una sonda fallida lo vuelve a abrir con un enfriamiento y una fluctuación exponenciales, limitados por `maxCooldownSeconds`. Mientras está cerrado, cada llamada upstream exitosa borra el recuento acumulado de fallas transitorias de ese deployment.
 
-Si todos los circuitos de deployment están abiertos, el gateway devuelve `503 deployments_in_cooldown` con un header `Retry-After` preciso. Si la capacidad compartida es el bloqueador, devuelve `429 rate_limit_exceeded`. La vista autenticada `GET /v1/models/{model}/deployments` informa cada deployment como `available`, `cooldown`, `half_open` o `rate_limited`, además `retry_after_ms`.
+Cuando el grupo falla, quien llama recibe lo que habría dicho el proveedor: el estado y el mensaje público de la última respuesta upstream. El detalle del routing (intentos, motivos, causas del cooldown) queda en el registro de la operación. Si todos los circuitos de deployment están abiertos, el gateway devuelve `503 model_overloaded` con un header `Retry-After` preciso (`503 model_unavailable`, sin él, cuando todos los circuitos los abrió una mala configuración). Si la capacidad compartida es el bloqueador, devuelve `429 rate_limit_exceeded`. La vista autenticada `GET /v1/models/{model}/deployments` informa cada deployment como `available`, `cooldown`, `half_open` o `rate_limited`, además `retry_after_ms`.
 
 ## Reservas [#fallbacks]
 

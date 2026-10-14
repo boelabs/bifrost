@@ -309,7 +309,11 @@ export function beginOperation(input: OperationStart): Promise<void> {
 	return task;
 }
 
-export async function beginUpstreamAttempt(input: {
+/**
+ * Records that an attempt started, off the request path: the insert yields to the final upsert
+ * (on conflict, nothing), so it may land late without overwriting the attempt's outcome.
+ */
+export function beginUpstreamAttempt(input: {
 	operationId: string;
 	ordinal: number;
 	deploymentId: string;
@@ -319,8 +323,8 @@ export async function beginUpstreamAttempt(input: {
 	upstreamModel: string;
 	startedAt: Date;
 	requestId: string;
-}): Promise<void> {
-	await retry(async () => {
+}): void {
+	const task = retry(async () => {
 		await db
 			.insert(upstreamAttempts)
 			.values({
@@ -337,6 +341,7 @@ export async function beginUpstreamAttempt(input: {
 			})
 			.onConflictDoNothing();
 	}, input.requestId);
+	track(task);
 }
 
 interface OperationAttemptInput {

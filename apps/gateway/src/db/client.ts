@@ -13,7 +13,7 @@ const wantsSsl = /sslmode=(require|verify-full|verify-ca|prefer)/i.test(
 );
 
 export const sql = postgres(env.DATABASE_URL, {
-	max: 10,
+	max: env.DATABASE_POOL_MAX,
 	onnotice: () => {
 		/* intentionally empty */
 	},

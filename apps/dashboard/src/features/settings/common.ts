@@ -10,6 +10,21 @@ import type { components } from "#/shared/api/schema";
 export type RouterSettings = components["schemas"]["RouterSettingsState"];
 export type RouterSettingsPatch = components["schemas"]["RouterSettings"];
 export type FallbackPolicy = components["schemas"]["FallbackPolicy"];
+export type ExecutionPolicy = components["schemas"]["ExecutionPolicy"];
+export type ExecutionPolicies = NonNullable<
+	RouterSettingsPatch["executionPolicies"]
+>;
+
+/** Call types with their own deadlines, in the order an operator meets them. */
+export const EXECUTION_CALL_TYPES = [
+	{ key: "chat", label: "Text (chat, responses, messages)" },
+	{ key: "images.generations", label: "Image generation" },
+	{ key: "images.edits", label: "Image edits" },
+	{ key: "audio.transcriptions", label: "Transcription" },
+	{ key: "embeddings", label: "Embeddings" },
+	{ key: "rerank", label: "Rerank" },
+	{ key: "videos.generations", label: "Video jobs" },
+] as const satisfies readonly { key: keyof ExecutionPolicies; label: string }[];
 
 export const ROUTING_STRATEGIES = [
 	"simple-shuffle",
@@ -89,11 +104,8 @@ export type RouterGroup = "opening" | "cooldown" | "deadlines";
 
 /**
  * The router's scalar knobs, grouped the way an operator reasons about them rather than the way the
- * table stores them: what opens a circuit, how long it stays open, and how long an attempt is given
- * before it is abandoned. Fifteen numbers in one grid is a wall; three named groups is a decision.
- *
- * `executionPolicies` is deliberately absent — it is a nested per-operation structure with ordering
- * constraints between its deadlines, and it belongs in its own editor rather than smuggled in here.
+ * table stores them: what opens a circuit and how long it stays open. The deadlines are a nested
+ * per-call-type structure and have their own editor.
  */
 export const ROUTER_NUMERIC_FIELDS: readonly {
 	key: keyof Pick<
@@ -107,8 +119,6 @@ export const ROUTER_NUMERIC_FIELDS: readonly {
 		| "configurationCooldownSeconds"
 		| "throttleCooldownSeconds"
 		| "retryAfterSeconds"
-		| "adaptiveTimeoutMultiplier"
-		| "adaptiveTimeoutFloorMs"
 	>;
 	group: RouterGroup;
 	label: string;
@@ -185,26 +195,9 @@ export const ROUTER_NUMERIC_FIELDS: readonly {
 		key: "retryAfterSeconds",
 		group: "cooldown",
 		label: "Retry after",
-		hint: "Floor before a transient retry; exponential full jitter is added on top.",
+		hint: "Minimum wait before retrying the same upstream. A deployment not yet tried is used at once; the same one waits 0.5 s, doubling to 8 s.",
 		min: 0,
 		unit: "s",
-	},
-	{
-		key: "adaptiveTimeoutMultiplier",
-		group: "deadlines",
-		label: "Deadline multiplier",
-		hint: "How many times its own typical first-output time a deployment is granted before the attempt is abandoned.",
-		min: 1,
-		step: 0.5,
-		unit: "×",
-	},
-	{
-		key: "adaptiveTimeoutFloorMs",
-		group: "deadlines",
-		label: "Deadline floor",
-		hint: "The adaptive deadline never goes below this, so ordinary variance cannot cut off a fast deployment.",
-		min: 1,
-		unit: "ms",
 	},
 ];
 
@@ -225,9 +218,9 @@ export const ROUTER_GROUPS = [
 	},
 	{
 		id: "deadlines",
-		title: "How long an attempt is given",
+		title: "How long the gateway waits",
 		description:
-			"A pool-wide deadline has to accommodate its slowest member, so a fast deployment inherits a budget it never needs — and a stuck request waits it out before failing over.",
+			"In seconds, measured on the connection like an HTTP client, never on the model's output. Response: until the answer (JSON) or its headers (stream) arrive. Idle: the longest silence between stream bytes; empty means no limit. Total: the whole request, retries included.",
 	},
 ] as const satisfies readonly {
 	id: RouterGroup;

@@ -75,6 +75,11 @@ export const env = createEnv({
 		MIGRATE_ON_BOOT: boolString.default(true),
 
 		DATABASE_URL: z.url(),
+		/**
+		 * Postgres connections per process. Routing reads are cached, but every request still writes
+		 * its operation record, so a pool that is too small queues requests behind log writes.
+		 */
+		DATABASE_POOL_MAX: z.coerce.number().int().min(2).max(200).default(20),
 		REDIS_URL: z.url(),
 
 		/**

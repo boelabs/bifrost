@@ -1,5 +1,4 @@
 import { upstreamWebSocket } from "#gateway/instrumentedTransport.ts";
-import { observeResponsesProgress } from "./responsesProgress.ts";
 import { abortGatewayError } from "#gateway/abortReason.ts";
 import { GatewayError } from "#core/errors.ts";
 import type { SSEEvent } from "#core/sse.ts";
@@ -304,9 +303,7 @@ export function makeOpenAIResponsesWebSocketHandler(
 					}
 
 					return {
-						chunks: observeResponsesProgress(
-							responsesEventsToCanonicalChunks(events()),
-						),
+						chunks: responsesEventsToCanonicalChunks(events()),
 						upstreamResponseId,
 					};
 				},

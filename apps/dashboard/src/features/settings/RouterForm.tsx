@@ -20,6 +20,11 @@ import {
 	ERROR_CLASSES,
 } from "./common.ts";
 
+import {
+	ExecutionPoliciesEditor,
+	readExecutionPolicies,
+} from "./ExecutionPolicies.tsx";
+
 /** The gateway stores a share; an operator reads a percentage. */
 const toPercent = (share: number) => Math.round(share * 1000) / 10;
 const toShare = (percent: number) => percent / 100;
@@ -94,9 +99,6 @@ export function RouterForm({
 	const [protectLast, setProtectLast] = useState(
 		settings?.protectLastDeployment ?? true,
 	);
-	const [adaptive, setAdaptive] = useState(
-		settings?.adaptiveTimeoutsEnabled ?? true,
-	);
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
 	const [saved, setSaved] = useState(false);
@@ -133,7 +135,7 @@ export function RouterForm({
 				routingStrategy: strategy as never,
 				unsupportedParameterStrategy: parameters as never,
 				protectLastDeployment: protectLast,
-				adaptiveTimeoutsEnabled: adaptive,
+				executionPolicies: readExecutionPolicies(form),
 				failureRatePercent: toShare(Number(form.get("failureRatePercent"))),
 				allowedFailsByClass: allowedFailsByClass as never,
 				...numbers,
@@ -165,7 +167,7 @@ export function RouterForm({
 			{...(field.step === undefined ? {} : { step: field.step })}
 			defaultValue={String(settings?.[field.key] ?? "")}
 			description={field.hint}
-			disabled={!editable || (field.group === "deadlines" && !adaptive)}
+			disabled={!editable}
 			label={field.unit ? `${field.label} (${field.unit})` : field.label}
 		/>
 	);
@@ -234,16 +236,10 @@ export function RouterForm({
 			</Section>
 
 			<Section {...ROUTER_GROUPS[2]}>
-				<Toggle
-					checked={adaptive}
-					description="Use each deployment's measured first-output time instead of the pool-wide budget."
-					disabled={!editable}
-					label="Adapt deadlines to each deployment"
-					onChange={setAdaptive}
+				<ExecutionPoliciesEditor
+					editable={editable}
+					policies={settings?.executionPolicies as never}
 				/>
-				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-					{fieldsIn("deadlines").map(numberBox)}
-				</div>
 			</Section>
 
 			<Section
