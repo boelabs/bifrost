@@ -6,7 +6,7 @@ import {
 } from "#adapters/openaiStyle.ts";
 
 /**
- * MiniMax (api.minimax.io). OpenAI-compatible API. MiniMax-M1/M2 reason and return
+ * MiniMax (api.minimax.io). OpenAI-compatible API. The MiniMax-M2 family and later reason and return
  * `reasoning_content` (parsed by the OpenAI transport) without an effort knob. For the China cloud the
  * operator can set baseUrl = https://api.minimaxi.chat/v1.
  */

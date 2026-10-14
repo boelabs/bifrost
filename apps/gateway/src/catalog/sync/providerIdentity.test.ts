@@ -4,6 +4,7 @@ import { test } from "node:test";
 
 import {
 	assertProviderIdentityRegistered,
+	SOURCE_MODEL_ID_CORRECTIONS,
 	MODELS_DEV_PROVIDER_ALIASES,
 	candidateAdapterMappings,
 	endpointBelongsToAdapter,
@@ -36,6 +37,50 @@ test("candidateAdapterMappings surfaces both candidates for an ambiguous prefix"
 	assert.equal(azure?.requiresEndpointMatch, true);
 	const openai = mappings.find((m) => m.adapterKey === "openai");
 	assert.equal(openai?.requiresEndpointMatch, undefined);
+});
+
+test("candidateAdapterMappings maps source slugs to the provider's own API id", () => {
+	const chat = candidateAdapterMappings("openai/gpt-5.2-chat");
+	assert.equal(
+		chat.find((m) => m.adapterKey === "openai")?.upstreamModel,
+		"gpt-5.2-chat-latest",
+	);
+	// Azure names its models differently; the OpenAI correction must not leak into it.
+	assert.equal(
+		chat.find((m) => m.adapterKey === "azureopenai")?.upstreamModel,
+		"gpt-5.2-chat",
+	);
+	assert.deepEqual(
+		candidateAdapterMappings("openai/o4-mini-high").map((m) => m.adapterKey),
+		["azureopenai"],
+	);
+	assert.deepEqual(candidateAdapterMappings("minimax/minimax-m1"), []);
+	assert.equal(
+		candidateAdapterMappings("deepseek/deepseek-v4.1-flash")[0]?.upstreamModel,
+		"deepseek-flash",
+	);
+});
+
+test("SOURCE_MODEL_ID_CORRECTIONS agrees with the catalogs", () => {
+	for (const [adapterKey, byId] of Object.entries(
+		SOURCE_MODEL_ID_CORRECTIONS,
+	)) {
+		const catalog = MODEL_CATALOG[adapterKey] ?? {};
+		const keys = new Set(Object.keys(catalog).map(normalizeTag));
+		for (const [sourceId, providerId] of Object.entries(byId)) {
+			// A corrected slug is not a provider id, so it must never come back as a catalog key.
+			assert.ok(
+				!keys.has(normalizeTag(sourceId)),
+				`${adapterKey} catalog has "${sourceId}", which its provider does not accept`,
+			);
+			if (providerId !== null) {
+				assert.ok(
+					catalog[providerId],
+					`${adapterKey}: "${sourceId}" maps to "${providerId}", which is not in the catalog`,
+				);
+			}
+		}
+	}
 });
 
 test("endpointBelongsToAdapter matches by normalized provider tag", () => {

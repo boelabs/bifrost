@@ -68,8 +68,8 @@ test("new providers: default base URL, max_tokens, and auth", () => {
 
 test("compatible providers downgrade developer and forward catalog top_k", () => {
 	for (const [adapter, model] of [
-		[deepseekAdapter, "deepseek-r1"],
-		[moonshotAdapter, "kimi-k2"],
+		[deepseekAdapter, "deepseek-v4-pro"],
+		[moonshotAdapter, "kimi-k3"],
 		[zaiAdapter, "glm-4.6"],
 		[minimaxAdapter, "MiniMax-M2"],
 		[openaicompatibleAdapter, "custom-model"],

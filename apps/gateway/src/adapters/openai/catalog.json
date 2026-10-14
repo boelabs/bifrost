@@ -1602,7 +1602,7 @@
 				"cacheWriteCentsPerMTokens": 0
 			}
 		},
-		"gpt-chat-latest": {
+		"chat-latest": {
 			"operations": {
 				"text.generate": {
 					"capabilities": {
@@ -1636,44 +1636,7 @@
 				"cacheReadCentsPerMTokens": 50
 			}
 		},
-		"gpt-5.4-image-2": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": false,
-						"vision": true,
-						"reasoning": true,
-						"structuredOutputs": true
-					},
-					"maxInputTokens": 272000,
-					"maxOutputTokens": 128000,
-					"parameters": {
-						"frequency_penalty": true,
-						"include_reasoning": true,
-						"logit_bias": true,
-						"logprobs": true,
-						"max_tokens": true,
-						"presence_penalty": true,
-						"reasoning": true,
-						"response_format": true,
-						"seed": true,
-						"stop": true,
-						"structured_outputs": true,
-						"top_logprobs": true,
-						"reasoning_effort": true
-					}
-				},
-				"image.generate": {
-					"responseFormats": ["b64_json"]
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 800,
-				"outputCentsPerMTokens": 1500,
-				"cacheReadCentsPerMTokens": 200
-			}
-		},
-		"gpt-5.3-chat": {
+		"gpt-5.3-chat-latest": {
 			"operations": {
 				"text.generate": {
 					"capabilities": {
@@ -1815,7 +1778,7 @@
 			"deprecated": true,
 			"notes": "OpenAI shut down gpt-5.2-codex on 2026-07-23; replacement gpt-5.6-sol."
 		},
-		"gpt-5.2-chat": {
+		"gpt-5.2-chat-latest": {
 			"operations": {
 				"text.generate": {
 					"capabilities": {
@@ -1884,7 +1847,7 @@
 			"deprecated": true,
 			"notes": "OpenAI shut down gpt-5.1-codex-max on 2026-07-23; replacement gpt-5.6-sol."
 		},
-		"gpt-5.1-chat": {
+		"gpt-5.1-chat-latest": {
 			"operations": {
 				"text.generate": {
 					"capabilities": {
@@ -1985,82 +1948,6 @@
 			},
 			"deprecated": true,
 			"notes": "OpenAI shut down gpt-5.1-codex-mini on 2026-07-23; replacement gpt-5.6-terra."
-		},
-		"gpt-5-image-mini": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": false,
-						"vision": true,
-						"reasoning": true,
-						"structuredOutputs": true
-					},
-					"maxInputTokens": 400000,
-					"maxOutputTokens": 128000,
-					"parameters": {
-						"frequency_penalty": true,
-						"include_reasoning": true,
-						"logit_bias": true,
-						"logprobs": true,
-						"max_tokens": true,
-						"presence_penalty": true,
-						"reasoning": true,
-						"response_format": true,
-						"seed": true,
-						"stop": true,
-						"structured_outputs": true,
-						"temperature": true,
-						"top_logprobs": true,
-						"top_p": true
-					}
-				},
-				"image.generate": {
-					"responseFormats": ["b64_json"]
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 250,
-				"outputCentsPerMTokens": 200,
-				"cacheReadCentsPerMTokens": 25
-			}
-		},
-		"gpt-5-image": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": false,
-						"vision": true,
-						"reasoning": true,
-						"structuredOutputs": true
-					},
-					"maxInputTokens": 400000,
-					"maxOutputTokens": 128000,
-					"parameters": {
-						"frequency_penalty": true,
-						"include_reasoning": true,
-						"logit_bias": true,
-						"logprobs": true,
-						"max_tokens": true,
-						"presence_penalty": true,
-						"reasoning": true,
-						"response_format": true,
-						"seed": true,
-						"stop": true,
-						"structured_outputs": true,
-						"temperature": true,
-						"top_logprobs": true,
-						"top_p": true
-					}
-				},
-				"image.generate": {
-					"responseFormats": ["b64_json"]
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 1000,
-				"outputCentsPerMTokens": 1000,
-				"cacheReadCentsPerMTokens": 125
-			}
 		},
 		"o3-deep-research": {
 			"operations": {
@@ -2177,7 +2064,7 @@
 			"deprecated": true,
 			"notes": "OpenAI shut down gpt-5-codex on 2026-07-23; replacement gpt-5.6-sol."
 		},
-		"gpt-5-chat": {
+		"gpt-5-chat-latest": {
 			"operations": {
 				"text.generate": {
 					"capabilities": {
@@ -2207,37 +2094,6 @@
 			},
 			"deprecated": true,
 			"notes": "OpenAI shut down gpt-5-chat-latest on 2026-07-23; replacement gpt-5.6-sol."
-		},
-		"o4-mini-high": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": true,
-						"reasoning": true,
-						"structuredOutputs": true,
-						"strictTools": true
-					},
-					"maxInputTokens": 200000,
-					"maxOutputTokens": 100000,
-					"parameters": {
-						"include_reasoning": true,
-						"max_tokens": true,
-						"reasoning": true,
-						"response_format": true,
-						"seed": true,
-						"structured_outputs": true,
-						"tool_choice": true,
-						"tools": true,
-						"reasoning_effort": true
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 110,
-				"outputCentsPerMTokens": 440,
-				"cacheReadCentsPerMTokens": 27.5
-			}
 		},
 		"o4-mini": {
 			"operations": {
@@ -2389,37 +2245,6 @@
 			},
 			"deprecated": true,
 			"notes": "OpenAI shut down gpt-4o-search-preview-2025-03-11, the alias's only snapshot, on 2026-07-23; replacement gpt-5.6-terra."
-		},
-		"o3-mini-high": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": false,
-						"reasoning": true,
-						"structuredOutputs": true,
-						"strictTools": true
-					},
-					"maxInputTokens": 200000,
-					"maxOutputTokens": 100000,
-					"parameters": {
-						"include_reasoning": true,
-						"max_tokens": true,
-						"reasoning": true,
-						"response_format": true,
-						"seed": true,
-						"structured_outputs": true,
-						"tool_choice": true,
-						"tools": true,
-						"reasoning_effort": true
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 110,
-				"outputCentsPerMTokens": 440,
-				"cacheReadCentsPerMTokens": 55
-			}
 		},
 		"o3-mini": {
 			"operations": {
@@ -2794,40 +2619,6 @@
 			"deprecated": true,
 			"notes": "OpenAI shut down gpt-3.5-turbo-instruct on 2026-09-28; replacement gpt-5.6-terra."
 		},
-		"gpt-3.5-turbo-16k": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": false,
-						"reasoning": false,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 16385,
-					"maxOutputTokens": 4096,
-					"parameters": {
-						"frequency_penalty": true,
-						"logit_bias": true,
-						"logprobs": true,
-						"max_tokens": true,
-						"presence_penalty": true,
-						"response_format": true,
-						"seed": true,
-						"stop": true,
-						"structured_outputs": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true,
-						"top_logprobs": true,
-						"top_p": true
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 300,
-				"outputCentsPerMTokens": 400
-			}
-		},
 		"gpt-3.5-turbo": {
 			"operations": {
 				"text.generate": {
@@ -2968,38 +2759,6 @@
 						"strictTools": true
 					}
 				}
-			}
-		},
-		"gpt-oss-safeguard-20b": {
-			"operations": {
-				"text.generate": {
-					"maxInputTokens": 131072,
-					"maxOutputTokens": 65536,
-					"parameters": {
-						"max_tokens": true,
-						"temperature": true,
-						"stop": true,
-						"tools": true,
-						"tool_choice": true,
-						"reasoning": true,
-						"include_reasoning": true,
-						"top_p": true,
-						"seed": true,
-						"response_format": true,
-						"structured_outputs": true
-					},
-					"capabilities": {
-						"tools": true,
-						"vision": false,
-						"structuredOutputs": true,
-						"strictTools": true
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 7.5,
-				"outputCentsPerMTokens": 30,
-				"cacheReadCentsPerMTokens": 3.75
 			}
 		},
 		"gpt-6-astra": {
