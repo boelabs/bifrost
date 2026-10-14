@@ -57,10 +57,10 @@
 						"user": false,
 						"logprobs": true,
 						"top_logprobs": true,
-						"top_k": true,
-						"min_p": true,
-						"repetition_penalty": true,
-						"logit_bias": true
+						"top_k": false,
+						"min_p": false,
+						"repetition_penalty": false,
+						"logit_bias": false
 					}
 				}
 			},
@@ -122,11 +122,11 @@
 						"stop": true,
 						"structured_outputs": true,
 						"tools": true,
-						"repetition_penalty": true,
-						"top_k": true,
-						"seed": true,
-						"min_p": true,
-						"logit_bias": true,
+						"repetition_penalty": false,
+						"top_k": false,
+						"seed": false,
+						"min_p": false,
+						"logit_bias": false,
 						"logprobs": true,
 						"top_logprobs": true
 					}
@@ -302,7 +302,7 @@
 						"top_p": true,
 						"logprobs": true,
 						"top_logprobs": true,
-						"top_k": true
+						"top_k": false
 					}
 				}
 			},
@@ -340,9 +340,9 @@
 						"top_p": true,
 						"frequency_penalty": true,
 						"presence_penalty": true,
-						"seed": true,
-						"top_k": true,
-						"repetition_penalty": true
+						"seed": false,
+						"top_k": false,
+						"repetition_penalty": false
 					},
 					"capabilities": {
 						"tools": true,
@@ -369,13 +369,13 @@
 						"reasoning": true,
 						"include_reasoning": true,
 						"top_p": true,
-						"top_k": true,
-						"min_p": true,
+						"top_k": false,
+						"min_p": false,
 						"frequency_penalty": true,
 						"presence_penalty": true,
-						"repetition_penalty": true,
-						"seed": true,
-						"logit_bias": true,
+						"repetition_penalty": false,
+						"seed": false,
+						"logit_bias": false,
 						"response_format": true,
 						"structured_outputs": true,
 						"logprobs": true,

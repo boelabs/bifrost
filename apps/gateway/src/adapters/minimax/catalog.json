@@ -23,20 +23,30 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
-						"response_format": true,
+						"response_format": false,
 						"temperature": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["none", "auto"],
+							"notes": "Documented on MiniMax's native text API (none or auto); the OpenAI-compatible reference does not list it."
+						},
 						"tools": true,
 						"top_p": true,
-						"stop": true,
-						"top_k": true,
-						"repetition_penalty": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
-						"seed": true,
-						"structured_outputs": true,
-						"logprobs": true,
-						"top_logprobs": true
+						"stop": false,
+						"top_k": false,
+						"repetition_penalty": false,
+						"frequency_penalty": {
+							"mode": "ignored",
+							"notes": "MiniMax's OpenAI-compatible API ignores this parameter."
+						},
+						"presence_penalty": {
+							"mode": "ignored",
+							"notes": "MiniMax's OpenAI-compatible API ignores this parameter."
+						},
+						"seed": false,
+						"structured_outputs": false,
+						"logprobs": false,
+						"top_logprobs": false
 					}
 				}
 			},
@@ -69,17 +79,21 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
-						"response_format": true,
+						"response_format": false,
 						"temperature": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["none", "auto"],
+							"notes": "Documented on MiniMax's native text API (none or auto); the OpenAI-compatible reference does not list it."
+						},
 						"tools": true,
 						"top_p": true,
-						"stop": true,
-						"top_k": true,
-						"structured_outputs": true,
-						"logprobs": true,
-						"top_logprobs": true,
-						"seed": true
+						"stop": false,
+						"top_k": false,
+						"structured_outputs": false,
+						"logprobs": false,
+						"top_logprobs": false,
+						"seed": false
 					}
 				}
 			},
@@ -104,9 +118,13 @@
 					"parameters": {
 						"max_tokens": true,
 						"temperature": true,
-						"stop": true,
+						"stop": false,
 						"tools": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["none", "auto"],
+							"notes": "Documented on MiniMax's native text API (none or auto); the OpenAI-compatible reference does not list it."
+						},
 						"reasoning": true,
 						"include_reasoning": true
 					}
@@ -134,17 +152,27 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
-						"response_format": true,
+						"response_format": false,
 						"temperature": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["none", "auto"],
+							"notes": "Documented on MiniMax's native text API (none or auto); the OpenAI-compatible reference does not list it."
+						},
 						"tools": true,
 						"top_p": true,
-						"stop": true,
-						"top_k": true,
-						"logprobs": true,
-						"top_logprobs": true,
-						"frequency_penalty": true,
-						"presence_penalty": true
+						"stop": false,
+						"top_k": false,
+						"logprobs": false,
+						"top_logprobs": false,
+						"frequency_penalty": {
+							"mode": "ignored",
+							"notes": "MiniMax's OpenAI-compatible API ignores this parameter."
+						},
+						"presence_penalty": {
+							"mode": "ignored",
+							"notes": "MiniMax's OpenAI-compatible API ignores this parameter."
+						}
 					}
 				}
 			},
@@ -169,9 +197,13 @@
 					"parameters": {
 						"max_tokens": true,
 						"temperature": true,
-						"stop": true,
+						"stop": false,
 						"tools": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["none", "auto"],
+							"notes": "Documented on MiniMax's native text API (none or auto); the OpenAI-compatible reference does not list it."
+						},
 						"reasoning": true,
 						"include_reasoning": true
 					}
@@ -199,20 +231,33 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
-						"response_format": true,
+						"response_format": false,
 						"temperature": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["none", "auto"],
+							"notes": "Documented on MiniMax's native text API (none or auto); the OpenAI-compatible reference does not list it."
+						},
 						"tools": true,
 						"top_p": true,
-						"stop": true,
-						"top_k": true,
-						"min_p": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
-						"repetition_penalty": true,
-						"seed": true,
-						"logit_bias": true,
-						"structured_outputs": true
+						"stop": false,
+						"top_k": false,
+						"min_p": false,
+						"frequency_penalty": {
+							"mode": "ignored",
+							"notes": "MiniMax's OpenAI-compatible API ignores this parameter."
+						},
+						"presence_penalty": {
+							"mode": "ignored",
+							"notes": "MiniMax's OpenAI-compatible API ignores this parameter."
+						},
+						"repetition_penalty": false,
+						"seed": false,
+						"logit_bias": {
+							"mode": "ignored",
+							"notes": "MiniMax's OpenAI-compatible API ignores this parameter."
+						},
+						"structured_outputs": false
 					}
 				}
 			},
@@ -258,19 +303,32 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"temperature": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["none", "auto"],
+							"notes": "Documented on MiniMax's native text API (none or auto); the OpenAI-compatible reference does not list it."
+						},
 						"tools": true,
 						"top_p": true,
-						"stop": true,
-						"top_k": true,
-						"min_p": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
-						"repetition_penalty": true,
-						"seed": true,
-						"logit_bias": true,
-						"response_format": true,
-						"structured_outputs": true
+						"stop": false,
+						"top_k": false,
+						"min_p": false,
+						"frequency_penalty": {
+							"mode": "ignored",
+							"notes": "MiniMax's OpenAI-compatible API ignores this parameter."
+						},
+						"presence_penalty": {
+							"mode": "ignored",
+							"notes": "MiniMax's OpenAI-compatible API ignores this parameter."
+						},
+						"repetition_penalty": false,
+						"seed": false,
+						"logit_bias": {
+							"mode": "ignored",
+							"notes": "MiniMax's OpenAI-compatible API ignores this parameter."
+						},
+						"response_format": false,
+						"structured_outputs": false
 					}
 				}
 			},

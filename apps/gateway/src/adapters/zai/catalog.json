@@ -56,18 +56,21 @@
 						"reasoning": true,
 						"response_format": true,
 						"stop": true,
-						"structured_outputs": true,
 						"temperature": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["auto"],
+							"notes": "Z.ai only accepts auto."
+						},
 						"tools": true,
 						"top_p": true,
-						"frequency_penalty": true,
-						"logit_bias": true,
-						"parallel_tool_calls": true,
-						"presence_penalty": true,
-						"seed": true,
-						"logprobs": true,
-						"top_logprobs": true
+						"frequency_penalty": false,
+						"logit_bias": false,
+						"parallel_tool_calls": false,
+						"presence_penalty": false,
+						"seed": false,
+						"logprobs": false,
+						"top_logprobs": false
 					}
 				}
 			},
@@ -120,18 +123,21 @@
 						"reasoning": true,
 						"response_format": true,
 						"temperature": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["auto"],
+							"notes": "Z.ai only accepts auto."
+						},
 						"tools": true,
-						"top_k": true,
+						"top_k": false,
 						"top_p": true,
 						"stop": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
-						"repetition_penalty": true,
-						"seed": true,
-						"min_p": true,
-						"logit_bias": true,
-						"structured_outputs": true
+						"frequency_penalty": false,
+						"presence_penalty": false,
+						"repetition_penalty": false,
+						"seed": false,
+						"min_p": false,
+						"logit_bias": false
 					}
 				}
 			},
@@ -173,17 +179,20 @@
 						"reasoning": true,
 						"response_format": true,
 						"temperature": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["auto"],
+							"notes": "Z.ai only accepts auto."
+						},
 						"tools": true,
-						"top_k": true,
+						"top_k": false,
 						"top_p": true,
 						"stop": true,
-						"structured_outputs": true,
-						"logprobs": true,
-						"top_logprobs": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
-						"repetition_penalty": true
+						"logprobs": false,
+						"top_logprobs": false,
+						"frequency_penalty": false,
+						"presence_penalty": false,
+						"repetition_penalty": false
 					}
 				}
 			},
@@ -224,16 +233,19 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"temperature": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["auto"],
+							"notes": "Z.ai only accepts auto."
+						},
 						"tools": true,
-						"top_k": true,
+						"top_k": false,
 						"top_p": true,
 						"stop": true,
-						"seed": true,
-						"structured_outputs": true,
+						"seed": false,
 						"response_format": true,
-						"logprobs": true,
-						"top_logprobs": true
+						"logprobs": false,
+						"top_logprobs": false
 					}
 				}
 			},
@@ -275,9 +287,13 @@
 						"reasoning": true,
 						"response_format": true,
 						"temperature": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["auto"],
+							"notes": "Z.ai only accepts auto."
+						},
 						"tools": true,
-						"top_k": true,
+						"top_k": false,
 						"top_p": true,
 						"stop": true
 					}
@@ -319,11 +335,15 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
-						"response_format": true,
+						"response_format": false,
 						"temperature": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["auto"],
+							"notes": "Z.ai only accepts auto."
+						},
 						"tools": true,
-						"top_k": true,
+						"top_k": false,
 						"top_p": true,
 						"stop": true
 					}
@@ -367,18 +387,21 @@
 						"reasoning": true,
 						"response_format": true,
 						"temperature": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["auto"],
+							"notes": "Z.ai only accepts auto."
+						},
 						"tools": true,
-						"top_k": true,
+						"top_k": false,
 						"top_p": true,
 						"stop": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
-						"repetition_penalty": true,
-						"seed": true,
-						"min_p": true,
-						"structured_outputs": true,
-						"logit_bias": true
+						"frequency_penalty": false,
+						"presence_penalty": false,
+						"repetition_penalty": false,
+						"seed": false,
+						"min_p": false,
+						"logit_bias": false
 					}
 				}
 			},
@@ -419,19 +442,22 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"temperature": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["auto"],
+							"notes": "Z.ai only accepts auto."
+						},
 						"tools": true,
-						"top_k": true,
+						"top_k": false,
 						"top_p": true,
 						"stop": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
-						"repetition_penalty": true,
-						"seed": true,
-						"min_p": true,
+						"frequency_penalty": false,
+						"presence_penalty": false,
+						"repetition_penalty": false,
+						"seed": false,
+						"min_p": false,
 						"response_format": true,
-						"logit_bias": true,
-						"structured_outputs": true
+						"logit_bias": false
 					}
 				}
 			},
@@ -472,16 +498,20 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"temperature": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["auto"],
+							"notes": "Z.ai only accepts auto."
+						},
 						"tools": true,
-						"top_k": true,
+						"top_k": false,
 						"top_p": true,
 						"stop": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
-						"seed": true,
-						"repetition_penalty": true,
-						"response_format": true
+						"frequency_penalty": false,
+						"presence_penalty": false,
+						"seed": false,
+						"repetition_penalty": false,
+						"response_format": false
 					}
 				}
 			},
@@ -522,9 +552,13 @@
 						"reasoning": true,
 						"response_format": true,
 						"temperature": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["auto"],
+							"notes": "Z.ai only accepts auto."
+						},
 						"tools": true,
-						"top_k": true,
+						"top_k": false,
 						"top_p": true,
 						"stop": true
 					}
@@ -567,15 +601,19 @@
 						"max_tokens": true,
 						"reasoning": true,
 						"temperature": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["auto"],
+							"notes": "Z.ai only accepts auto."
+						},
 						"tools": true,
-						"top_k": true,
+						"top_k": false,
 						"top_p": true,
 						"stop": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
-						"seed": true,
-						"repetition_penalty": true
+						"frequency_penalty": false,
+						"presence_penalty": false,
+						"seed": false,
+						"repetition_penalty": false
 					}
 				}
 			},
@@ -601,17 +639,21 @@
 						"include_reasoning": true,
 						"max_tokens": true,
 						"reasoning": true,
-						"response_format": true,
+						"response_format": false,
 						"temperature": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["auto"],
+							"notes": "Z.ai only accepts auto."
+						},
 						"tools": true,
-						"top_k": true,
+						"top_k": false,
 						"top_p": true,
 						"stop": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
-						"seed": true,
-						"repetition_penalty": true
+						"frequency_penalty": false,
+						"presence_penalty": false,
+						"seed": false,
+						"repetition_penalty": false
 					}
 				}
 			},
@@ -631,19 +673,22 @@
 						"temperature": true,
 						"stop": true,
 						"tools": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["auto"],
+							"notes": "Z.ai only accepts auto."
+						},
 						"reasoning": true,
 						"include_reasoning": true,
 						"top_p": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
-						"repetition_penalty": true,
-						"top_k": true,
-						"seed": true,
-						"min_p": true,
+						"frequency_penalty": false,
+						"presence_penalty": false,
+						"repetition_penalty": false,
+						"top_k": false,
+						"seed": false,
+						"min_p": false,
 						"response_format": true,
-						"structured_outputs": true,
-						"logit_bias": true
+						"logit_bias": false
 					},
 					"capabilities": {
 						"tools": true,
@@ -693,24 +738,27 @@
 						"temperature": true,
 						"stop": true,
 						"tools": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["auto"],
+							"notes": "Z.ai only accepts auto."
+						},
 						"reasoning": true,
 						"include_reasoning": true,
 						"top_p": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
-						"repetition_penalty": true,
-						"top_k": true,
-						"seed": true,
-						"min_p": true,
+						"frequency_penalty": false,
+						"presence_penalty": false,
+						"repetition_penalty": false,
+						"top_k": false,
+						"seed": false,
+						"min_p": false,
 						"response_format": true,
-						"logit_bias": true,
-						"structured_outputs": true
+						"logit_bias": false
 					},
 					"capabilities": {
 						"tools": true,
 						"vision": true,
-						"structuredOutputs": true,
+						"structuredOutputs": false,
 						"reasoning": true
 					},
 					"reasoning": {
@@ -753,24 +801,27 @@
 						"temperature": true,
 						"stop": true,
 						"tools": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["auto"],
+							"notes": "Z.ai only accepts auto."
+						},
 						"reasoning": true,
 						"include_reasoning": true,
 						"top_p": true,
-						"frequency_penalty": true,
-						"presence_penalty": true,
-						"repetition_penalty": true,
-						"top_k": true,
-						"seed": true,
-						"min_p": true,
+						"frequency_penalty": false,
+						"presence_penalty": false,
+						"repetition_penalty": false,
+						"top_k": false,
+						"seed": false,
+						"min_p": false,
 						"response_format": true,
-						"logit_bias": true,
-						"structured_outputs": true
+						"logit_bias": false
 					},
 					"capabilities": {
 						"tools": true,
 						"vision": true,
-						"structuredOutputs": true,
+						"structuredOutputs": false,
 						"reasoning": true
 					},
 					"reasoning": {
