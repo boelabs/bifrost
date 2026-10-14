@@ -4,6 +4,38 @@ interface Advisory {
 	severity: Severity;
 	title?: string;
 	url?: string;
+	vulnerableVersions?: string;
+}
+
+/**
+ * Reviewed advisories that have no fixed release and only reach dev tooling, never an image.
+ *
+ * Each entry matches the package, the advisory and its CURRENT vulnerable range. When the fix ships,
+ * the advisory's range changes, the entry stops matching and the audit fails again, which is the
+ * prompt to upgrade and delete the entry. Never add one for a package that reaches runtime code.
+ */
+const ACCEPTED_ADVISORIES: readonly {
+	packageName: string;
+	url: string;
+	vulnerableVersions: string;
+	reason: string;
+}[] = [
+	{
+		packageName: "braces",
+		url: "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+		vulnerableVersions: "<=3.0.3",
+		reason:
+			"No fixed release exists; only reached through micromatch <- fast-glob <- shadcn and ultracite (build and lint tooling).",
+	},
+];
+
+function accepted(packageName: string, advisory: Advisory) {
+	return ACCEPTED_ADVISORIES.find(
+		(entry) =>
+			entry.packageName === packageName &&
+			entry.url === advisory.url &&
+			entry.vulnerableVersions === advisory.vulnerableVersions,
+	);
 }
 
 const MINIMUM_SEVERITY: Severity = "high";
@@ -22,9 +54,20 @@ try {
 	}
 	const report = parseAuditReport(audit.stdout);
 	const findings = collectFindings(report);
-	const blockingFindings = findings.filter(
+	const severeFindings = findings.filter(
 		({ advisory }) =>
 			SEVERITY_RANK[advisory.severity] >= SEVERITY_RANK[MINIMUM_SEVERITY],
+	);
+	for (const { advisory, packageName } of severeFindings) {
+		const entry = accepted(packageName, advisory);
+		if (entry) {
+			console.log(
+				`Accepted ${packageName} ${advisory.url} (${entry.vulnerableVersions}): ${entry.reason}`,
+			);
+		}
+	}
+	const blockingFindings = severeFindings.filter(
+		({ advisory, packageName }) => !accepted(packageName, advisory),
 	);
 
 	if (blockingFindings.length === 0) {
@@ -117,7 +160,9 @@ function collectFindings(
 			}
 			if (
 				(advisory.title !== undefined && typeof advisory.title !== "string") ||
-				(advisory.url !== undefined && typeof advisory.url !== "string")
+				(advisory.url !== undefined && typeof advisory.url !== "string") ||
+				(advisory.vulnerable_versions !== undefined &&
+					typeof advisory.vulnerable_versions !== "string")
 			) {
 				throw new Error(
 					`Bun returned invalid advisory metadata for package "${packageName}".`,
@@ -128,6 +173,9 @@ function collectFindings(
 					severity: advisory.severity,
 					...(advisory.title === undefined ? {} : { title: advisory.title }),
 					...(advisory.url === undefined ? {} : { url: advisory.url }),
+					...(advisory.vulnerable_versions === undefined
+						? {}
+						: { vulnerableVersions: advisory.vulnerable_versions }),
 				},
 				packageName,
 			});
