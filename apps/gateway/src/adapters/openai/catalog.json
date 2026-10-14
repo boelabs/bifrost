@@ -2360,7 +2360,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 15,
 				"outputCentsPerMTokens": 60
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI shut down gpt-4o-mini-search-preview-2025-03-11, the alias's only snapshot, on 2026-07-23; replacement gpt-5.6-terra."
 		},
 		"gpt-4o-search-preview": {
 			"operations": {
@@ -2384,7 +2386,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 250,
 				"outputCentsPerMTokens": 1000
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI shut down gpt-4o-search-preview-2025-03-11, the alias's only snapshot, on 2026-07-23; replacement gpt-5.6-terra."
 		},
 		"o3-mini-high": {
 			"operations": {

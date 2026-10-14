@@ -213,7 +213,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 250,
 				"outputCentsPerMTokens": 1000
-			}
+			},
+			"deprecated": true,
+			"notes": "Azure retires gpt-4o-transcribe 2025-03-20, its only version, on 2026-10-15 and names no replacement; gpt-4o-mini-transcribe 2025-12-15 stays available until 2027-06-15."
 		},
 		"gpt-4o-mini-transcribe": {
 			"operations": {
