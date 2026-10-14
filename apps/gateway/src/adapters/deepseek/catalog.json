@@ -251,7 +251,8 @@
 					"capabilities": {
 						"tools": true,
 						"vision": true,
-						"structuredOutputs": false
+						"structuredOutputs": false,
+						"strictTools": true
 					},
 					"maxInputTokens": 1000000
 				}

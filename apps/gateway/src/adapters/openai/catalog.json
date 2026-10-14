@@ -2783,7 +2783,8 @@
 						"tools": true,
 						"vision": true,
 						"structuredOutputs": true,
-						"reasoning": true
+						"reasoning": true,
+						"strictTools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
@@ -2829,7 +2830,8 @@
 						"tools": true,
 						"vision": true,
 						"structuredOutputs": true,
-						"reasoning": true
+						"reasoning": true,
+						"strictTools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
@@ -2879,7 +2881,8 @@
 						"tools": true,
 						"vision": true,
 						"structuredOutputs": true,
-						"reasoning": true
+						"reasoning": true,
+						"strictTools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
@@ -2929,7 +2932,8 @@
 						"tools": true,
 						"vision": true,
 						"structuredOutputs": true,
-						"reasoning": true
+						"reasoning": true,
+						"strictTools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",

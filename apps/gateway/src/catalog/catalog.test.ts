@@ -1,5 +1,6 @@
 import { resolveModelMetadata, getCatalogEntry } from "./index.ts";
 import { reasoningLogInfo } from "../core/reasoning.ts";
+import { MODEL_CATALOG } from "#adapters/index.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -269,6 +270,35 @@ test("Anthropic catalog exposes Opus 5 reasoning, fast mode, and model-specific 
 test("retired DeepSeek compatibility aliases are marked deprecated", () => {
 	for (const model of ["deepseek-chat", "deepseek-reasoner"]) {
 		assert.equal(getCatalogEntry("deepseek", model)?.deprecated, true, model);
+	}
+});
+
+test("live models declare strict tools where the provider's strict mode covers them", () => {
+	// OpenAI, Azure OpenAI and Anthropic compile strict tools with the same constrained decoding as
+	// structured outputs; Gemini 3+ validates strict calls in VALIDATED mode; DeepSeek's strict beta
+	// has no model restriction. Without the flag, strict clients get unsupported_model_capability.
+	const coversModel: Record<
+		string,
+		(model: string, structured: boolean) => boolean
+	> = {
+		openai: (_model, structured) => structured,
+		azureopenai: (_model, structured) => structured,
+		anthropic: (_model, structured) => structured,
+		googleaistudio: (model) => /^gemini-(?:[3-9]|\d{2,})(?:[.-]|$)/.test(model),
+		deepseek: () => true,
+	};
+	for (const [adapterKey, covers] of Object.entries(coversModel)) {
+		const catalog = MODEL_CATALOG[adapterKey];
+		assert.ok(catalog, adapterKey);
+		for (const [model, entry] of Object.entries(catalog)) {
+			const caps = entry.operations["text.generate"]?.capabilities;
+			if (entry.deprecated || caps?.tools !== true) {
+				continue;
+			}
+			if (covers(model, caps.structuredOutputs === true)) {
+				assert.equal(caps.strictTools, true, `${adapterKey}/${model}`);
+			}
+		}
 	}
 });
 
