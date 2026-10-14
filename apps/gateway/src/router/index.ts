@@ -1332,6 +1332,8 @@ export async function route<T>(
 			throw new GatewayError({
 				class: "not_found",
 				message: `Public model "${publicModel}" does not exist or has no enabled ${callType} deployments`,
+				// The provider's own wording, so a client's handling of a missing model keeps working.
+				publicMessage: `The model \`${publicModel}\` does not exist or you do not have access to it.`,
 				code: "model_not_found",
 			});
 		}
