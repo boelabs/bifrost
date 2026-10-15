@@ -52,15 +52,7 @@ export function CustomModelEditor({
 		}
 	}
 	return (
-		<fieldset className="flex min-w-0 flex-col gap-4 rounded-xl border border-border/50 p-4">
-			<legend className="px-1 font-medium text-fg text-sm">
-				Custom model configuration
-			</legend>
-			<p className="text-fg-muted text-xs">
-				This ID is not in the adapter catalog. Enable only the operations and
-				capabilities your upstream supports. Suggested image and video values
-				must match your provider.
-			</p>
+		<div className="flex min-w-0 flex-col gap-4">
 			<div>
 				<Button onClick={toggleTechnical} size="sm" variant="secondary">
 					{technical === null
@@ -188,7 +180,7 @@ export function CustomModelEditor({
 						})}
 				</div>
 			</details>
-		</fieldset>
+		</div>
 	);
 }
 

@@ -2,10 +2,11 @@ import type { components } from "#/shared/api/schema";
 
 /**
  * The router vocabulary: the settings types, the strategy and reason enumerations, and the field
- * descriptions the form is generated from.
+ * descriptions the cards are generated from.
  *
- * `api.ts` reads cookies through `next/headers`, so the form and the fallback dialog — both Client
- * Components — cannot import it. Everything they need that is not a network call lives here.
+ * `api.ts` reads cookies through `next/headers`, so the settings cards and the fallback dialog —
+ * all Client Components — cannot import it. Everything they need that is not a network call lives
+ * here.
  */
 export type RouterSettings = components["schemas"]["RouterSettingsState"];
 export type RouterSettingsPatch = components["schemas"]["RouterSettings"];
@@ -100,12 +101,12 @@ export const ERROR_CLASSES = [
 	"bad_request",
 ] as const;
 
-export type RouterGroup = "opening" | "cooldown" | "deadlines";
+export type RouterGroup = "opening" | "cooldown";
 
 /**
  * The router's scalar knobs, grouped the way an operator reasons about them rather than the way the
  * table stores them: what opens a circuit and how long it stays open. The deadlines are a nested
- * per-call-type structure and have their own editor.
+ * per-call-type structure and have their own section.
  */
 export const ROUTER_NUMERIC_FIELDS: readonly {
 	key: keyof Pick<
@@ -203,30 +204,23 @@ export const ROUTER_NUMERIC_FIELDS: readonly {
 
 export type RouterNumericKey = (typeof ROUTER_NUMERIC_FIELDS)[number]["key"];
 
-export const ROUTER_GROUPS = [
-	{
-		id: "opening",
-		title: "When a deployment is taken out",
-		description:
-			"A deployment is quarantined on its failure RATE, not on a raw count — an absolute threshold punishes a busy deployment for the same error rate a quiet one survives.",
-	},
-	{
-		id: "cooldown",
-		title: "How long it stays out",
-		description:
-			"The cooldown escalates on each failed recovery probe, up to the ceiling. A successful probe clears it immediately.",
-	},
-	{
-		id: "deadlines",
-		title: "How long the gateway waits",
-		description:
-			"In seconds, measured on the connection like an HTTP client, never on the model's output. Response: until the answer (JSON) or its headers (stream) arrive. Idle: the longest silence between stream bytes; empty means no limit. Total: the whole request, retries included.",
-	},
-] as const satisfies readonly {
-	id: RouterGroup;
-	title: string;
-	description: string;
-}[];
+/**
+ * The number boxes of a form, by name. An empty box is left out rather than read as zero: what the
+ * operator did not fill in is not a value to write.
+ */
+export function readNumbers<K extends string>(
+	form: FormData,
+	keys: readonly K[],
+): Partial<Record<K, number>> {
+	const numbers: Partial<Record<K, number>> = {};
+	for (const key of keys) {
+		const raw = form.get(key);
+		if (typeof raw === "string" && raw.trim() !== "") {
+			numbers[key] = Number(raw);
+		}
+	}
+	return numbers;
+}
 
 export type DashboardSettings = components["schemas"]["DashboardSettingsState"];
 export type DashboardSettingsPatch = components["schemas"]["DashboardSettings"];

@@ -1,13 +1,14 @@
 "use client";
 
 import { Select, SelectItem, SearchableSelect } from "#/components/ui/select";
+import { SearchField } from "#/shared/components/SearchField";
 import { RowActions } from "#/shared/components/RowActions";
 import { Frame, FrameFooter } from "#/components/ui/frame";
 import { useState, type ReactNode } from "react";
 import { Button } from "#/components/ui/button";
-import { Input } from "#/components/ui/input";
 import { Badge } from "#/components/ui/badge";
 import type { Deployment } from "./common";
+import Link from "next/link";
 
 import {
 	MenuCheckboxItemIndicator,
@@ -28,7 +29,6 @@ import {
 	ArrowUp,
 	Pencil,
 	Trash2,
-	Search,
 	Check,
 	Ban,
 } from "lucide-react";
@@ -211,9 +211,14 @@ function CellContent({
 		case "publicModel":
 			return (
 				<div className="flex min-w-0 flex-col gap-1">
-					<span className="truncate font-medium" title={deployment.publicModel}>
+					{/* The row's link: it stretches over the whole row, under the row's own menu. */}
+					<Link
+						className="truncate font-medium outline-none after:absolute after:inset-0 after:rounded-[inherit] hover:underline focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-inset"
+						href={`/models/${deployment.id}`}
+						title={deployment.publicModel}
+					>
 						{deployment.publicModel}
-					</span>
+					</Link>
 					<span
 						className="truncate font-mono text-muted-foreground text-xs"
 						title={deployment.upstreamModel}
@@ -348,26 +353,14 @@ export function ModelsTable({
 			) : null}
 			<div aria-hidden={loading || undefined} inert={loading || undefined}>
 				<div className="flex flex-wrap items-center gap-2 p-2">
-					<div className="min-w-48 flex-1 sm:max-w-80">
-						<Placeholder className="w-full" loading={loading}>
-							<div className="relative">
-								<Search
-									aria-hidden
-									className="pointer-events-none absolute top-1/2 left-2.5 z-10 size-3.5 -translate-y-1/2 text-muted-foreground"
-								/>
-								<Input
-									aria-label="Search models and deployments"
-									className="ps-8"
-									onChange={(event) =>
-										updateFilter("query", event.target.value)
-									}
-									placeholder="Search models or deployments…"
-									size="sm"
-									value={filters.query}
-								/>
-							</div>
-						</Placeholder>
-					</div>
+					<Placeholder loading={loading}>
+						<SearchField
+							label="Search models and deployments"
+							onSearch={(value) => updateFilter("query", value)}
+							placeholder="Search models or deployments…"
+							value={filters.query}
+						/>
+					</Placeholder>
 					<Placeholder loading={loading}>
 						<SearchableSelect
 							aria-label="Filter by provider"
@@ -375,7 +368,6 @@ export function ModelsTable({
 							items={providers.map((value) => ({ value, label: value }))}
 							onValueChange={(value) => updateFilter("provider", value ?? "")}
 							searchPlaceholder="Search providers…"
-							size="sm"
 							value={filters.provider || null}
 						/>
 					</Placeholder>
@@ -383,7 +375,6 @@ export function ModelsTable({
 						<Select
 							aria-label="Filter by state"
 							onValueChange={(value) => updateFilter("state", value ?? "")}
-							size="sm"
 							value={filters.state}
 						>
 							<SelectItem value="">All states</SelectItem>
@@ -397,7 +388,6 @@ export function ModelsTable({
 								setFilters({ query: "", provider: "", state: "" });
 								setPage(0);
 							}}
-							size="sm"
 							variant="ghost"
 						>
 							Clear filters
@@ -406,7 +396,7 @@ export function ModelsTable({
 					<div className="ms-auto">
 						<Placeholder loading={loading}>
 							<MenuRoot>
-								<MenuTrigger render={<Button size="sm" variant="secondary" />}>
+								<MenuTrigger render={<Button variant="secondary" />}>
 									<Columns3 aria-hidden className="size-4" />
 									Columns
 								</MenuTrigger>
@@ -525,7 +515,10 @@ export function ModelsTable({
 									</TableRow>
 								))
 							: pagination.rows.map((deployment) => (
-									<TableRow className="h-14" key={deployment.id}>
+									<TableRow
+										className="relative h-14 cursor-pointer"
+										key={deployment.id}
+									>
 										{columns.map((column) => (
 											<TableCell className="max-w-0" key={column.key}>
 												<CellContent
@@ -534,7 +527,7 @@ export function ModelsTable({
 												/>
 											</TableCell>
 										))}
-										<TableCell>
+										<TableCell className="relative z-10">
 											<DeploymentActions {...actions} deployment={deployment} />
 										</TableCell>
 									</TableRow>

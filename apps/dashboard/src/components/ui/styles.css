@@ -292,6 +292,8 @@ body {
 }
 
 :root {
+	/* Billete's sidebar width: both dashboards share the shell's geometry. */
+	--app-sidebar-width: 268px;
 	--surface: var(--background);
 	--surface-2: var(--muted);
 	--sidebar: var(--background);

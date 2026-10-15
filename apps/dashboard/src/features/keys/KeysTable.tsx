@@ -12,7 +12,7 @@ import { useRowActions } from "#/shared/lib/mutation.ts";
 import { useSession } from "#/features/auth/session.tsx";
 import { EmptyState } from "#/components/ui/page";
 import { Status } from "#/components/ui/status";
-import { useKeys } from "./KeysView.tsx";
+import { useRouter } from "next/navigation";
 
 import {
 	Pencil as IconPencil,
@@ -54,7 +54,7 @@ export function KeysTable({
 }) {
 	const { set } = useSearchWriter(filters);
 	const { can } = useSession();
-	const { edit } = useKeys();
+	const router = useRouter();
 	const confirm = useConfirm();
 	const { rows: keys, act } = useRowActions(loaded, (key) => key.id);
 	const searched = Boolean(filters.q);
@@ -188,7 +188,7 @@ export function KeysTable({
 							{
 								label: "Edit",
 								icon: <IconPencil aria-hidden className="size-4" />,
-								onSelect: () => edit(key),
+								onSelect: () => router.push(`/keys/${key.id}`),
 							},
 							{
 								label: "Delete",
@@ -221,6 +221,7 @@ export function KeysTable({
 			<DataTable
 				caption="Virtual keys"
 				columns={columns}
+				rowHref={(key) => `/keys/${key.id}`}
 				rowKey={(key) => key.id}
 				rows={keys}
 			/>

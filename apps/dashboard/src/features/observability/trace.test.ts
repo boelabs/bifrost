@@ -3,10 +3,12 @@ import assert from "node:assert/strict";
 
 import {
 	formatDuration,
+	isOperationId,
 	formatBytes,
 	causeLabel,
 	phaseLabel,
 	percentOf,
+	shortId,
 } from "./trace.ts";
 
 describe("formatDuration", () => {
@@ -65,4 +67,13 @@ test("percentOf clamps to the bar", () => {
 	assert.equal(percentOf(500, 200), 100);
 	assert.equal(percentOf(-1, 200), 0);
 	assert.equal(percentOf(1, 0), 0);
+});
+
+test("an operation is named by its UUID", () => {
+	const id = "0192f4c1-7a2b-7c3d-8e4f-5a6b7c8d9e0f";
+	assert.equal(isOperationId(id), true);
+	assert.equal(isOperationId(id.toUpperCase()), true);
+	assert.equal(isOperationId("not-an-id"), false);
+	assert.equal(isOperationId(`${id}x`), false);
+	assert.equal(shortId(id), "0192f4c1");
 });

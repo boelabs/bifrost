@@ -1,17 +1,15 @@
 "use client";
 
 import { type Column, DataTable, Dash, Mono } from "#/components/ui/datatable";
-import { Download as IconDownload, Search as IconSearch } from "lucide-react";
 import { useSearchWriter } from "#/shared/lib/useSearchWriter.ts";
 import { Pagination } from "#/shared/components/Pagination.tsx";
 import { Status, outcomeTone } from "#/components/ui/status";
 import { causeLabel, formatDuration } from "./trace.ts";
+import { Download as IconDownload } from "lucide-react";
 import { EmptyState } from "#/components/ui/page";
 import { downloadCsv } from "#/shared/lib/csv.ts";
 import { Button } from "#/components/ui/button";
 import type { OperationRow } from "./api.ts";
-import { LogDetail } from "./LogDetail.tsx";
-import { useState } from "react";
 
 import {
 	type LogsFilters,
@@ -72,7 +70,6 @@ export function LogsTable({
 	filters: LogsFilters;
 }) {
 	const { set } = useSearchWriter(filters);
-	const [inspecting, setInspecting] = useState<string | null>(null);
 	const filtered = isFiltered(filters);
 	// When the window is already "Everything", widening it is not the advice to give.
 	const everything = (filters.period ?? DEFAULT_PERIOD) === "all";
@@ -83,15 +80,22 @@ export function LogsTable({
 			key: "time",
 			header: "Time",
 			render: (row) => (
-				// Rendered from the operator's own clock and timezone, which the server does not have:
-				// the markup it streamed is expected to differ from what hydration produces here.
-				<span
-					className="whitespace-nowrap text-fg-muted text-xs"
-					suppressHydrationWarning
-					title={new Date(row.startedAt).toLocaleString()}
-				>
-					{relative(row.startedAt)}
-				</span>
+				// The row's link (`rowHref`): every row opens its operation's page, and the list's
+				// filters stay in the URL Back returns to.
+				<>
+					<span className="sr-only">Open operation started </span>
+					{/*
+					 * Rendered from the operator's own clock and timezone, which the server does not
+					 * have: the markup it streamed is expected to differ from what hydration produces.
+					 */}
+					<span
+						className="whitespace-nowrap text-fg-muted text-xs"
+						suppressHydrationWarning
+						title={new Date(row.startedAt).toLocaleString()}
+					>
+						{relative(row.startedAt)}
+					</span>
+				</>
 			),
 		},
 		{
@@ -187,93 +191,71 @@ export function LogsTable({
 					</span>
 				),
 		},
-		{
-			key: "inspect",
-			header: "",
-			align: "end",
-			render: (row) => (
-				<Button
-					aria-label={`Inspect operation ${row.id}`}
-					mode="icon"
-					onClick={() => setInspecting(row.id)}
-					size="sm"
-					variant="ghost"
-				>
-					<IconSearch aria-hidden className="size-4" />
-				</Button>
-			),
-		},
 	];
 
-	return (
+	return rows.length === 0 ? (
+		<EmptyState
+			description={
+				filtered || !everything
+					? "Widen the time range or clear the filters — traffic older than the window is not shown."
+					: "Traffic through /v1 appears here within seconds."
+			}
+			title="No operations match"
+		/>
+	) : (
 		<>
-			{rows.length === 0 ? (
-				<EmptyState
-					description={
-						filtered || !everything
-							? "Widen the time range or clear the filters — traffic older than the window is not shown."
-							: "Traffic through /v1 appears here within seconds."
-					}
-					title="No operations match"
-				/>
-			) : (
-				<>
-					<DataTable
-						caption="Gateway operations"
-						columns={columns}
-						rowKey={(row) => row.id}
-						rows={rows}
-						toolbar={
-							<Button
-								onClick={() =>
-									downloadCsv(
-										`operations-${new Date().toISOString().slice(0, 10)}.csv`,
-										rows,
-										[
-											["id", (row) => row.id],
-											["requestId", (row) => row.requestId],
-											["startedAt", (row) => row.startedAt],
-											["outcome", (row) => row.outcome ?? row.lifecycleState],
-											["httpStatus", (row) => row.httpStatus],
-											["publicModel", (row) => row.publicModel],
-											["callType", (row) => row.callType],
-											["servedBy", (row) => row.servedBy],
-											["actor", (row) => row.actor],
-											["attempts", (row) => row.attemptCount],
-											[
-												"cause",
-												(row) =>
-													row.lastFailure ? causeLabel(row.lastFailure) : null,
-											],
-											["firstOutputMs", (row) => row.firstOutputMs],
-											["durationMs", (row) => row.durationMs],
-											["totalTokens", (row) => row.totalTokens],
-											["stream", (row) => row.stream],
-											["cacheHit", (row) => row.cacheHit],
-										],
-									)
-								}
-								size="sm"
-								variant="secondary"
-							>
-								<IconDownload aria-hidden className="size-4" />
-								CSV
-							</Button>
+			<DataTable
+				caption="Gateway operations"
+				columns={columns}
+				rowHref={(row) => `/logs/${row.id}`}
+				rowKey={(row) => row.id}
+				rows={rows}
+				toolbar={
+					<Button
+						onClick={() =>
+							downloadCsv(
+								`operations-${new Date().toISOString().slice(0, 10)}.csv`,
+								rows,
+								[
+									["id", (row) => row.id],
+									["requestId", (row) => row.requestId],
+									["startedAt", (row) => row.startedAt],
+									["outcome", (row) => row.outcome ?? row.lifecycleState],
+									["httpStatus", (row) => row.httpStatus],
+									["publicModel", (row) => row.publicModel],
+									["callType", (row) => row.callType],
+									["servedBy", (row) => row.servedBy],
+									["actor", (row) => row.actor],
+									["attempts", (row) => row.attemptCount],
+									[
+										"cause",
+										(row) =>
+											row.lastFailure ? causeLabel(row.lastFailure) : null,
+									],
+									["firstOutputMs", (row) => row.firstOutputMs],
+									["durationMs", (row) => row.durationMs],
+									["totalTokens", (row) => row.totalTokens],
+									["stream", (row) => row.stream],
+									["cacheHit", (row) => row.cacheHit],
+								],
+							)
 						}
-					/>
-					<Pagination
-						label="operations"
-						limit={PAGE_SIZE}
-						offset={offset}
-						onOffsetChange={(next) =>
-							set({ offset: next === 0 ? undefined : next })
-						}
-						total={total}
-					/>
-				</>
-			)}
-
-			<LogDetail onClose={() => setInspecting(null)} operationId={inspecting} />
+						variant="secondary"
+					>
+						<IconDownload aria-hidden className="size-4" />
+						CSV
+					</Button>
+				}
+			/>
+			<Pagination
+				label="operations"
+				limit={PAGE_SIZE}
+				offset={offset}
+				onOffsetChange={(next) =>
+					set({ offset: next === 0 ? undefined : next })
+				}
+				total={total}
+			/>
 		</>
 	);
 }

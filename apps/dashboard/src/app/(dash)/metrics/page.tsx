@@ -26,11 +26,10 @@ export default function MetricsPage(props: PageProps<"/metrics">) {
 			{/* The only heading this page has. `Metrics` renders the body alone, so the title and
 			    the refresh control paint with the shell rather than waiting on the query. */}
 			<PageHeader
+				actions={<RefreshControls />}
 				description="Explore consumption, performance and reliability across public models and deployments."
 				title="Metrics"
-			>
-				<RefreshControls />
-			</PageHeader>
+			/>
 			<RouteBoundary resetHref="/metrics" title="Metrics could not be loaded">
 				<Suspense fallback={<MetricsSkeleton />}>
 					<Window searchParams={props.searchParams} />

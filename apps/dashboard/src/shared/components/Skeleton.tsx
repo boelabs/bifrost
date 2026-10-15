@@ -245,6 +245,8 @@ export function ToolbarSkeleton({
 				<ButtonSkeleton
 					// biome-ignore lint/suspicious/noArrayIndexKey: fixed placeholder positions have no record identity
 					key={`control-${index}`}
+					// Toolbar controls use the default size, matching the search field and page buttons.
+					size="md"
 					width={width}
 				/>
 			))}

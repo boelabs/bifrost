@@ -1,16 +1,18 @@
 "use client";
 
+import { useDebouncedValue } from "#/shared/lib/useDebouncedValue.ts";
 import { Search as IconSearch, X as IconX } from "lucide-react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
-import { useEffect, useState } from "react";
 
 /**
- * Search that the gateway performs, not the browser.
+ * A list's search box, Billete's: it asks once the operator pauses (300 ms), and a clear button
+ * empties it. `value` is what the list searches now; the box keeps what is being typed.
  *
- * These tables are one page of a much longer list, so filtering the rows already on screen would
- * search the wrong set. Submitting puts the term in the URL, the loader sends it, and the result is
- * a page of matches from the whole table.
+ * The gateway searches, not the browser: these tables are one page of a much longer list, so the
+ * term goes into the URL, the loader sends it, and the result is a page of matches from the whole
+ * table.
  */
 export function SearchField({
 	value,
@@ -23,50 +25,55 @@ export function SearchField({
 	placeholder?: string;
 	label: string;
 }) {
-	const [draft, setDraft] = useState(value);
-	// The URL is the source of truth: back, forward and a shared link all have to move the box.
-	useEffect(() => setDraft(value), [value]);
+	const [text, setText] = useState(value);
+	// The URL changed from elsewhere (back, a link, clearing filters): the box follows it.
+	const [seen, setSeen] = useState(value);
+	if (value !== seen) {
+		setSeen(value);
+		if (value !== text.trim()) {
+			setText(value);
+		}
+	}
+	const settled = useDebouncedValue(text.trim(), 300);
+	// Only a pause in typing searches; a new `value` from outside does not echo back.
+	const search = useEffectEvent((next: string) => {
+		if (next !== value) {
+			onSearch(next);
+		}
+	});
+	useEffect(() => search(settled), [settled]);
 
 	return (
-		<form
-			className="flex min-w-0 max-w-full items-center gap-2"
-			onSubmit={(event) => {
-				event.preventDefault();
-				onSearch(draft.trim());
-			}}
-		>
+		<div className="relative w-full min-w-0 sm:w-64">
+			<IconSearch
+				aria-hidden
+				className="pointer-events-none absolute start-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground"
+			/>
 			<Input
 				aria-label={label}
-				onValueChange={setDraft}
+				className="ps-9 pe-9"
+				maxLength={100}
+				onValueChange={setText}
 				placeholder={placeholder}
-				size="sm"
-				value={draft}
-				width="14rem"
+				type="search"
+				value={text}
 			/>
-			{value ? (
+			{text ? (
 				<Button
 					aria-label="Clear search"
+					className="absolute end-1 top-1/2 z-10 -translate-y-1/2"
 					mode="icon"
 					onClick={() => {
-						setDraft("");
+						setText("");
 						onSearch("");
 					}}
-					size="sm"
+					size="xs"
 					type="button"
 					variant="ghost"
 				>
-					<IconX aria-hidden className="size-4" />
+					<IconX aria-hidden className="size-3.5" />
 				</Button>
 			) : null}
-			<Button
-				aria-label={label}
-				mode="icon"
-				size="sm"
-				type="submit"
-				variant="secondary"
-			>
-				<IconSearch aria-hidden className="size-4" />
-			</Button>
-		</form>
+		</div>
 	);
 }

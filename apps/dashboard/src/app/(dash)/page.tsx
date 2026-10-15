@@ -30,27 +30,30 @@ export default function OverviewPage(props: PageProps<"/">) {
 	return (
 		<>
 			<PageHeader
+				actions={
+					<div className="flex flex-wrap items-center gap-3">
+						<Suspense
+							fallback={
+								<Skeleton className="h-7 rounded-full" width="8.5rem" />
+							}
+						>
+							<Health />
+						</Suspense>
+						{/* Its own boundary, for the URL the control reads. */}
+						<Suspense
+							fallback={
+								<Skeleton className="h-8 rounded-lg sm:h-7" width="8.5rem" />
+							}
+						>
+							<Range searchParams={props.searchParams} />
+						</Suspense>
+						{/* The one page that ticks on its own: it is left open on a second screen. */}
+						<RefreshControls auto />
+					</div>
+				}
 				description="Traffic, consumption and reliability for a window you choose."
 				title="Overview"
-			>
-				<div className="flex flex-wrap items-center gap-3">
-					<Suspense
-						fallback={<Skeleton className="h-7 rounded-full" width="8.5rem" />}
-					>
-						<Health />
-					</Suspense>
-					{/* Its own boundary, for the URL the control reads. */}
-					<Suspense
-						fallback={
-							<Skeleton className="h-8 rounded-lg sm:h-7" width="8.5rem" />
-						}
-					>
-						<Range searchParams={props.searchParams} />
-					</Suspense>
-					{/* The one page that ticks on its own: it is left open on a second screen. */}
-					<RefreshControls auto />
-				</div>
-			</PageHeader>
+			/>
 
 			<RouteBoundary resetHref="/" title="The overview could not be loaded">
 				<Suspense fallback={<OverviewSkeleton />}>

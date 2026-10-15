@@ -68,7 +68,12 @@ export function ExecutionPoliciesEditor({
 	policies,
 	editable,
 }: {
-	policies: Policies | undefined;
+	/** As the gateway reports them: keyed by call type, any of which may be missing. */
+	policies:
+		| Partial<
+				Record<string, { json: ExecutionPolicy; stream: ExecutionPolicy }>
+		  >
+		| undefined;
 	editable: boolean;
 }) {
 	return (

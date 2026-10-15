@@ -12,7 +12,13 @@ import {
 	mergeStyle,
 } from "./appearance";
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "link";
+type ButtonVariant =
+	| "primary"
+	| "secondary"
+	| "ghost"
+	| "danger"
+	| "danger-outline"
+	| "link";
 type ButtonMode = "default" | "icon";
 const sizes = { xs: "xs", sm: "sm", md: "default", lg: "lg" } as const;
 const iconSizes = {
@@ -26,6 +32,7 @@ const variants = {
 	secondary: "outline",
 	ghost: "ghost",
 	danger: "destructive",
+	"danger-outline": "destructive-outline",
 	link: "link",
 } as const;
 function resolveButtonStyles({

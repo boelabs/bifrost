@@ -4,9 +4,11 @@ The operator dashboard. A **separate product** from the gateway — its own imag
 own process — in the same repository. Next.js App Router, Base UI, React 19, Tailwind CSS 4 — all of
 it on Bun, including the production server.
 
-Deployment forms start with an explicit adapter choice, model selection and inline required credentials. Advanced options contain
-optional credentials, routing limits and overrides, and retain their values when collapsed.
-Virtual keys use the same disclosure for budgets, rate limits and expiration.
+Deployments and virtual keys are created and edited on their own pages (`/models/new`,
+`/models/[deployment]`, `/keys/new`, `/keys/[key]`), one panel per group of fields. A deployment
+starts with an explicit adapter choice, model selection and inline required credentials; optional
+credentials, routing limits, pricing and metadata follow in their own panels. A key's budget, rate
+limits and expiry do the same.
 Custom models are inferred from the selected adapter's catalog, including dated model aliases;
 OpenAI-compatible has no catalog and always uses an upstream ID input. Their guided editor exposes
 operations, capabilities, limits and adapter-supported transports. Technical configuration retains

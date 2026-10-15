@@ -1,21 +1,19 @@
 "use client";
 
-import { loadOperationDetail, loadPayloadSample } from "./actions.ts";
+import { Check as IconCheck, Copy as IconCopy } from "lucide-react";
+import { DetailLayout } from "#/shared/components/DetailLayout.tsx";
+import { Breadcrumbs } from "#/shared/components/Breadcrumbs.tsx";
+import { ButtonSkeleton } from "#/shared/components/Skeleton.tsx";
+import { ErrorNote, PageHeader } from "#/components/ui/page";
 import { Status, outcomeTone } from "#/components/ui/status";
+import { type ReactNode, Suspense, useState } from "react";
+import { Panel } from "#/shared/components/Panel.tsx";
 import type { components } from "#/shared/api/schema";
-import { ErrorNote } from "#/components/ui/page";
+import { Can } from "#/features/auth/session.tsx";
 import { Mono } from "#/components/ui/datatable";
+import { loadPayloadSample } from "./actions.ts";
 import { Button } from "#/components/ui/button";
 import type { OperationDetail } from "./api.ts";
-import { useEffect, useState } from "react";
-
-import {
-	DialogHeader,
-	DialogFooter,
-	DialogBody,
-	Dialog,
-	Modal,
-} from "#/components/ui/modal";
 
 import {
 	formatDuration,
@@ -23,46 +21,90 @@ import {
 	causeLabel,
 	phaseLabel,
 	percentOf,
+	shortId,
 } from "./trace.ts";
 
+import {
+	type DetailItem,
+	DetailList,
+} from "#/shared/components/DetailList.tsx";
+
 type Attempt = components["schemas"]["UpstreamAttempt"];
+type PayloadState = components["schemas"]["RetainedPayloadState"];
 type Json = Record<string, unknown>;
 
-function Block({ title, value }: { title: string; value: unknown }) {
-	if (value === undefined || value === null) {
-		return null;
-	}
+/**
+ * A timestamp in the operator's own clock and timezone, which the server does not have: the markup
+ * it streamed is expected to differ from what hydration produces here.
+ */
+function LocalTime({ iso }: { iso: string }) {
 	return (
-		<div className="flex flex-col gap-2">
-			<h4 className="font-medium text-fg text-xs uppercase tracking-wide">
-				{title}
-			</h4>
-			<pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-md bg-surface-2/60 p-3 text-xs leading-relaxed">
-				{typeof value === "string" ? value : JSON.stringify(value, null, 2)}
-			</pre>
-		</div>
+		<time dateTime={iso} suppressHydrationWarning>
+			{new Date(iso).toLocaleString()}
+		</time>
 	);
 }
 
-function Section({
-	title,
-	children,
-}: {
-	title: string;
-	children: React.ReactNode;
-}) {
+function CopyButton({ value, label }: { value: string; label: string }) {
+	const [copied, setCopied] = useState(false);
 	return (
-		<section className="flex flex-col gap-2">
-			<h4 className="font-medium text-fg text-xs uppercase tracking-wide">
-				{title}
-			</h4>
-			{children}
-		</section>
+		<Button
+			aria-label={copied ? "Copied" : label}
+			mode="icon"
+			onClick={() => {
+				navigator.clipboard
+					.writeText(value)
+					.then(() => {
+						setCopied(true);
+						window.setTimeout(() => setCopied(false), 1500);
+					})
+					.catch(() => setCopied(false));
+			}}
+			size="xs"
+			title={label}
+			variant="ghost"
+		>
+			{copied ? (
+				<IconCheck aria-hidden className="size-3.5" />
+			) : (
+				<IconCopy aria-hidden className="size-3.5" />
+			)}
+		</Button>
+	);
+}
+
+/** An identifier to read and copy whole. */
+function CopyableId({ value, label }: { value: string; label: string }) {
+	return (
+		<span className="flex items-center gap-1 break-all font-mono text-xs">
+			{value}
+			<CopyButton label={label} value={value} />
+		</span>
+	);
+}
+
+/** A retained payload part, formatted and ready to copy. */
+function JsonPanel({ title, value }: { title: string; value: unknown }) {
+	if (value === undefined || value === null) {
+		return null;
+	}
+	const text =
+		typeof value === "string" ? value : JSON.stringify(value, null, 2);
+	return (
+		<Panel
+			action={<CopyButton label={`Copy ${title.toLowerCase()}`} value={text} />}
+			flush
+			title={title}
+		>
+			<pre className="max-h-[32rem] overflow-auto whitespace-pre-wrap break-words p-5 font-mono text-xs leading-relaxed">
+				{text}
+			</pre>
+		</Panel>
 	);
 }
 
 /** A term and its value; a missing value is left out rather than shown as a dash wall. */
-function Fact({ label, value }: { label: string; value: React.ReactNode }) {
+function Fact({ label, value }: { label: string; value: ReactNode }) {
 	if (value === null || value === undefined || value === "") {
 		return null;
 	}
@@ -74,27 +116,33 @@ function Fact({ label, value }: { label: string; value: React.ReactNode }) {
 	);
 }
 
-interface PayloadState {
-	retained: boolean;
-	readable: boolean;
-	access: "open" | "sealed";
-	expiresAt: string | null;
+/** The aside's lists leave a missing value out too, rather than listing dashes. */
+function present(items: DetailItem[]): DetailItem[] {
+	return items.filter(
+		(item) =>
+			item.value !== null && item.value !== undefined && item.value !== "",
+	);
 }
 
-function payloadNote(sample: PayloadState | undefined): string {
-	if (!sample) {
-		return "Loading…";
-	}
+function payloadNote(sample: PayloadState): ReactNode {
 	if (sample.access === "sealed") {
 		return "Sealed on this deployment: the gateway still captures and encrypts every sample, and no operator can read one here.";
 	}
 	if (!sample.retained) {
 		return "Nothing retained for this operation — the retention window has passed.";
 	}
-	const until = sample.expiresAt
-		? ` Kept until ${new Date(sample.expiresAt).toLocaleString()}.`
-		: "";
-	return `The request and response as the gateway saw them. Reading it is recorded in the payload access audit.${until}`;
+	return (
+		<>
+			The request and response as the gateway saw them. Reading it is recorded
+			in the payload access audit.
+			{sample.expiresAt ? (
+				<>
+					{" "}
+					Kept until <LocalTime iso={sample.expiresAt} />.
+				</>
+			) : null}
+		</>
+	);
 }
 
 const BAR_TONES: Record<string, string> = {
@@ -188,7 +236,7 @@ function AttemptCard({
 				}`;
 
 	return (
-		<li className="flex flex-col gap-3 border-border/40 border-b py-4 last:border-0">
+		<li className="flex flex-col gap-3 border-border/40 border-b py-4 first:pt-0 last:border-0 last:pb-0">
 			<div className="flex flex-wrap items-center gap-2 text-sm">
 				<span className="text-fg-muted tabular-nums">#{attempt.ordinal}</span>
 				<Status tone={outcomeTone(attempt.outcome)}>{attempt.outcome}</Status>
@@ -332,69 +380,84 @@ function AttemptCard({
 }
 
 /**
- * Everything the gateway recorded about one request: what the caller got, every upstream attempt on
- * one timeline with the provider's own answer, and — only when asked for — the retained payload.
+ * The retained sample, behind its own click.
  *
- * The payload is a separate, deliberate click because reading it is audited and because it is the
- * one part of this view that contains the caller's own content.
+ * Reading it is audited by the gateway and it is the one part of this page that holds the caller's
+ * own content, so opening the page never fetches it: only "Reveal payload" does, through a Server
+ * Action, and only for a role allowed to read payloads.
  */
-export function LogDetail({
+function RetainedPayload({
 	operationId,
-	onClose,
+	sample,
 }: {
-	operationId: string | null;
-	onClose: () => void;
+	operationId: string;
+	sample: PayloadState;
 }) {
-	const [detail, setDetail] = useState<OperationDetail | null>(null);
 	const [payload, setPayload] = useState<Json | null>(null);
 	const [error, setError] = useState<string | null>(null);
-	const [loadingPayload, setLoadingPayload] = useState(false);
+	const [loading, setLoading] = useState(false);
 
-	useEffect(() => {
-		if (!operationId) {
-			return;
-		}
-		setDetail(null);
-		setPayload(null);
-		setError(null);
-		let cancelled = false;
-		void loadOperationDetail(operationId).then((result) => {
-			if (cancelled) {
-				return;
-			}
-			if (result.ok) {
-				setDetail(result.data as OperationDetail);
-			} else {
-				setError(result.message);
-			}
-		});
-		return () => {
-			cancelled = true;
-		};
-	}, [operationId]);
-
-	async function revealPayload() {
-		if (!operationId) {
-			return;
-		}
-		setLoadingPayload(true);
+	async function reveal() {
+		setLoading(true);
 		setError(null);
 		const result = await loadPayloadSample(operationId);
 		if (result.ok) {
-			setPayload(result.data as Json);
+			setPayload(result.data);
 		} else {
 			setError(result.message);
 		}
-		setLoadingPayload(false);
+		setLoading(false);
 	}
 
-	const attempts = detail?.attempts ?? [];
-	const opError = detail?.error as Json | null | undefined;
-	const sample = detail?.payload as PayloadState | undefined;
-	const operationStart = detail ? Date.parse(detail.startedAt) : 0;
+	return (
+		<>
+			<Panel
+				action={
+					payload === null && sample.readable ? (
+						<Suspense fallback={<ButtonSkeleton label={14} />}>
+							<Can permissions={["payloads:read"]}>
+								<Button
+									loading={loading}
+									onClick={reveal}
+									size="sm"
+									variant="secondary"
+								>
+									Reveal payload
+								</Button>
+							</Can>
+						</Suspense>
+					) : null
+				}
+				title="Retained payload"
+			>
+				<div className="flex flex-col gap-3">
+					<p className="text-muted-foreground text-sm">{payloadNote(sample)}</p>
+					{error ? <ErrorNote>{error}</ErrorNote> : null}
+				</div>
+			</Panel>
+			{payload ? (
+				<>
+					<JsonPanel title="Request" value={payload.request} />
+					<JsonPanel title="Response" value={payload.response} />
+					<JsonPanel title="Error" value={payload.error} />
+					<JsonPanel title="Attempt payloads" value={payload.attempts} />
+				</>
+			) : null}
+		</>
+	);
+}
+
+/**
+ * Everything the gateway recorded about one request: what the caller got, every upstream attempt on
+ * one timeline with the provider's own answer, and — only when asked for — the retained payload.
+ */
+export function LogDetail({ detail }: { detail: OperationDetail }) {
+	const { attempts } = detail;
+	const opError = detail.error;
+	const operationStart = Date.parse(detail.startedAt);
 	const operationMs = Math.max(
 		1,
-		detail?.durationMs ?? 0,
+		detail.durationMs ?? 0,
 		...attempts.map(
 			(attempt) =>
 				Date.parse(attempt.startedAt) -
@@ -402,191 +465,179 @@ export function LogDetail({
 				(attempt.durationMs ?? 0),
 		),
 	);
-	const details = (detail ?? {}) as Json;
-	const metadata = (details.metadata ?? {}) as Json;
+	const metadata = (detail.metadata ?? {}) as Json;
 	const terminal = (metadata.terminal ??
 		(metadata.streamLifecycle as Json | undefined)?.terminal) as
 		| Json
 		| null
 		| undefined;
+	const cost =
+		typeof detail.consumerCostCents === "string" &&
+		Number(detail.consumerCostCents) > 0
+			? `$${(Number(detail.consumerCostCents) / 100).toFixed(6)}`
+			: null;
+	const usage = present([
+		{
+			label: "Tokens",
+			value:
+				typeof detail.totalTokens === "number"
+					? detail.totalTokens.toLocaleString()
+					: null,
+		},
+		{ label: "Cost", value: cost },
+	]);
 
 	return (
-		<Modal
-			isOpen={operationId !== null}
-			onOpenChange={(open) => !open && onClose()}
-			width="min(100%, 56rem)"
-		>
-			<Dialog aria-label="Operation detail" layout="sectioned">
-				<DialogHeader>
-					<div className="flex flex-wrap items-center gap-2">
-						<h2 className="font-semibold text-foreground text-xl">
-							{detail?.publicModel ?? "Operation"}
-						</h2>
-						{detail ? (
-							<>
-								<Status tone={outcomeTone(detail.outcome)}>
-									{detail.outcome ?? "in progress"}
-								</Status>
-								{detail.httpStatus === null ? null : (
-									<Mono>HTTP {detail.httpStatus}</Mono>
-								)}
-								{detail.stream ? <Status tone="muted">stream</Status> : null}
-							</>
-						) : null}
-					</div>
-					<p className="pt-2 text-fg-muted text-sm">
-						{detail ? (
-							<>
-								{detail.callType} · request <Mono>{detail.requestId}</Mono>
-							</>
-						) : (
-							"Loading…"
+		<>
+			<Breadcrumbs
+				items={[
+					{ label: "Logs", href: "/logs" },
+					{ label: shortId(detail.id) },
+				]}
+			/>
+			<PageHeader
+				badge={
+					<>
+						<Status tone={outcomeTone(detail.outcome)}>
+							{detail.outcome ?? "in progress"}
+						</Status>
+						{detail.httpStatus === null ? null : (
+							<Mono>HTTP {detail.httpStatus}</Mono>
 						)}
-					</p>
-				</DialogHeader>
-
-				<DialogBody>
-					{detail ? (
-						<div className="flex flex-col gap-6">
-							<dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
-								<Fact
-									label="Started"
-									value={new Date(detail.startedAt).toLocaleString()}
-								/>
-								<Fact
-									label="Duration"
-									value={formatDuration(detail.durationMs)}
-								/>
-								<Fact
-									label="First output"
-									value={
-										detail.firstOutputMs === null
-											? null
-											: formatDuration(detail.firstOutputMs)
-									}
-								/>
-								<Fact
-									label="Tokens"
-									value={
-										typeof details.totalTokens === "number"
-											? details.totalTokens.toLocaleString()
-											: null
-									}
-								/>
-								<Fact
-									label="Cost"
-									value={
-										typeof details.consumerCostCents === "string" &&
-										Number(details.consumerCostCents) > 0
-											? `$${(Number(details.consumerCostCents) / 100).toFixed(6)}`
-											: null
-									}
-								/>
-								<Fact
-									label="Finish"
-									value={
-										typeof terminal?.reason === "string"
-											? terminal.reason
-											: null
-									}
-								/>
-								<Fact label="Attempts" value={String(attempts.length)} />
-								<Fact
-									label="Actor"
-									value={
-										typeof details.actor === "string" ? (
-											<Mono>{details.actor}</Mono>
-										) : null
-									}
-								/>
-							</dl>
-
-							{opError ? (
-								<Section title="What the caller received">
-									<p className="text-sm">
-										<Status tone="danger">
-											{String(opError.code ?? opError.class ?? "error")}
-										</Status>{" "}
-										<span className="text-fg-muted">
-											HTTP {String(opError.http_status ?? "?")}
-										</span>
-									</p>
-									{typeof opError.message === "string" ? (
-										<p className="whitespace-pre-wrap break-words font-mono text-fg-muted text-xs">
-											{opError.message}
-										</p>
-									) : null}
-								</Section>
-							) : null}
-
-							<Section title={`Attempts (${attempts.length})`}>
-								{attempts.length > 0 ? (
-									<p className="text-fg-muted text-xs">
-										Each bar spans the whole request; ticks mark when headers
-										and the first output arrived.
-									</p>
-								) : null}
-								{attempts.length === 0 ? (
-									<p className="py-2 text-fg-muted text-sm">
-										No upstream was contacted — the request never left the
-										gateway.
-									</p>
-								) : (
-									<ul className="flex flex-col">
-										{attempts.map((attempt) => (
-											<AttemptCard
-												attempt={attempt}
-												key={attempt.id}
-												operationMs={operationMs}
-												operationStart={operationStart}
+						{detail.stream ? <Status tone="muted">stream</Status> : null}
+					</>
+				}
+				description={
+					<>
+						{detail.callType} · <LocalTime iso={detail.startedAt} />
+					</>
+				}
+				title={
+					<span className="break-all">
+						{detail.publicModel ?? detail.callType}
+					</span>
+				}
+			/>
+			<DetailLayout
+				aside={
+					<>
+						<Panel title="Summary">
+							<DetailList
+								items={present([
+									{
+										label: "Operation ID",
+										value: (
+											<CopyableId label="Copy operation ID" value={detail.id} />
+										),
+									},
+									{
+										label: "Request ID",
+										value: (
+											<CopyableId
+												label="Copy request ID"
+												value={detail.requestId}
 											/>
-										))}
-									</ul>
-								)}
-							</Section>
-
-							<div className="flex flex-col gap-3 border-border/50 border-t pt-5">
-								<div className="flex flex-wrap items-start justify-between gap-3">
-									<div>
-										<h4 className="font-medium text-fg text-xs uppercase tracking-wide">
-											Retained payload
-										</h4>
-										<p className="max-w-xl pt-1 text-fg-muted text-xs">
-											{payloadNote(sample)}
-										</p>
-									</div>
-									{payload === null && sample?.readable ? (
-										<Button
-											disabled={loadingPayload}
-											onClick={revealPayload}
-											size="sm"
-											variant="secondary"
-										>
-											{loadingPayload ? "Loading…" : "Reveal payload"}
-										</Button>
-									) : null}
-								</div>
-								{payload ? (
-									<div className="flex flex-col gap-4">
-										<Block title="Request" value={payload.request} />
-										<Block title="Response" value={payload.response} />
-										<Block title="Error" value={payload.error} />
-										<Block title="Attempts" value={payload.attempts} />
-									</div>
-								) : null}
-							</div>
+										),
+									},
+									{ label: "Public model", value: detail.publicModel },
+									{ label: "Call type", value: detail.callType },
+									{
+										label: "Actor",
+										value:
+											typeof detail.actor === "string" ? (
+												<span className="break-all font-mono text-xs">
+													{detail.actor}
+												</span>
+											) : null,
+									},
+									{
+										label: "Started",
+										value: <LocalTime iso={detail.startedAt} />,
+									},
+								])}
+							/>
+						</Panel>
+						<Panel title="Timing">
+							<DetailList
+								items={present([
+									{
+										label: "Duration",
+										value: formatDuration(detail.durationMs),
+									},
+									{
+										label: "First output",
+										value:
+											detail.firstOutputMs === null
+												? null
+												: formatDuration(detail.firstOutputMs),
+									},
+									{
+										label: "Finish",
+										value:
+											typeof terminal?.reason === "string"
+												? terminal.reason
+												: null,
+									},
+									{ label: "Attempts", value: String(attempts.length) },
+								])}
+							/>
+						</Panel>
+						{usage.length > 0 ? (
+							<Panel title="Usage">
+								<DetailList items={usage} />
+							</Panel>
+						) : null}
+					</>
+				}
+			>
+				{opError ? (
+					<Panel title="What the caller received">
+						<div className="flex flex-col gap-2">
+							<p className="text-sm">
+								<Status tone="danger">
+									{String(opError.code ?? opError.class ?? "error")}
+								</Status>{" "}
+								<span className="text-fg-muted">
+									HTTP {String(opError.http_status ?? "?")}
+								</span>
+							</p>
+							{typeof opError.message === "string" ? (
+								<p className="whitespace-pre-wrap break-words font-mono text-fg-muted text-xs">
+									{opError.message}
+								</p>
+							) : null}
 						</div>
-					) : null}
+					</Panel>
+				) : null}
 
-					{error ? <ErrorNote>{error}</ErrorNote> : null}
-				</DialogBody>
+				<Panel
+					description={
+						attempts.length > 0
+							? "Each bar spans the whole request; ticks mark when headers and the first output arrived."
+							: undefined
+					}
+					title={`Attempts (${attempts.length})`}
+				>
+					{attempts.length === 0 ? (
+						<p className="text-fg-muted text-sm">
+							No upstream was contacted — the request never left the gateway.
+						</p>
+					) : (
+						<ul className="flex flex-col">
+							{attempts.map((attempt) => (
+								<AttemptCard
+									attempt={attempt}
+									key={attempt.id}
+									operationMs={operationMs}
+									operationStart={operationStart}
+								/>
+							))}
+						</ul>
+					)}
+				</Panel>
 
-				<DialogFooter>
-					<Button onClick={onClose} variant="secondary">
-						Close
-					</Button>
-				</DialogFooter>
-			</Dialog>
-		</Modal>
+				<RetainedPayload operationId={detail.id} sample={detail.payload} />
+			</DetailLayout>
+		</>
 	);
 }

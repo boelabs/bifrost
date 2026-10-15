@@ -1,6 +1,6 @@
+import { NewUserButton, UsersToolbar } from "#/features/users/UsersToolbar.tsx";
 import { PAGE_SIZE, parseUsersFilters } from "#/features/users/filters.ts";
 import { RouteBoundary } from "#/shared/components/RouteBoundary.tsx";
-import { UsersToolbar } from "#/features/users/UsersToolbar.tsx";
 import { UsersTable } from "#/features/users/UsersView.tsx";
 import { USER_HEADERS } from "#/features/users/common.ts";
 import { listUsers } from "#/features/users/api.ts";
@@ -19,13 +19,13 @@ export default function UsersPage(props: PageProps<"/users">) {
 	return (
 		<>
 			<PageHeader
+				actions={<NewUserButton />}
 				description="Operators of this dashboard. Accounts exist only because an owner created them — there is no self-registration and no OAuth."
 				title="Users"
-			>
-				<Suspense fallback={<ToolbarSkeleton widths={["17rem", "6.5rem"]} />}>
-					<Filters searchParams={props.searchParams} />
-				</Suspense>
-			</PageHeader>
+			/>
+			<Suspense fallback={<ToolbarSkeleton widths={["16rem"]} />}>
+				<Filters searchParams={props.searchParams} />
+			</Suspense>
 
 			<RouteBoundary title="Users could not be loaded">
 				<Suspense fallback={<TableSkeleton headers={USER_HEADERS} rows={8} />}>

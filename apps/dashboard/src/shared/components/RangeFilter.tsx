@@ -90,7 +90,6 @@ export function RangeFilter({
 					}
 					onChange({ period: next, from: undefined, to: undefined });
 				}}
-				size="sm"
 				value={period}
 			>
 				{periods.map((key) => (
@@ -103,7 +102,7 @@ export function RangeFilter({
 				<PopoverRoot onOpenChange={setOpen} open={open}>
 					<PopoverTrigger
 						aria-label="Choose custom dates"
-						render={<Button size="sm" variant="secondary" />}
+						render={<Button variant="secondary" />}
 					>
 						<IconCalendar aria-hidden className="size-4" />
 						{applied}

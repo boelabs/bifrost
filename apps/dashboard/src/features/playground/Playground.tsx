@@ -84,7 +84,7 @@ export function Playground({ models }: { models: PlaygroundModel[] }) {
 	}
 
 	return (
-		<div className="flex h-full min-h-0 flex-col">
+		<div className="flex h-full min-h-0 flex-col" data-fill-viewport="">
 			<PageHeader
 				description="Try your models. Conversations stay in this session."
 				title="Playground"
