@@ -36,29 +36,28 @@ export default function LogsPage(props: PageProps<"/logs">) {
 			<PageHeader
 				description="Operation summaries. Request and response bodies are never persisted in these rows — only metadata, alongside the encrypted forensic sample kept for every finished request."
 				title="Logs"
+			/>
+			{/*
+			 * Two boundaries, for two different waits: this one covers the model list the filter
+			 * comes from, and `LogsToolbar` carries its own for the URL the controls read.
+			 */}
+			<Suspense
+				fallback={
+					<ToolbarSkeleton
+						widths={[
+							"8.5rem",
+							"8.5rem",
+							"8.5rem",
+							"10rem",
+							"16rem",
+							"16rem",
+							"5.5rem",
+						]}
+					/>
+				}
 			>
-				{/*
-				 * Two boundaries, for two different waits: this one covers the model list the filter
-				 * comes from, and `LogsToolbar` carries its own for the URL the controls read.
-				 */}
-				<Suspense
-					fallback={
-						<ToolbarSkeleton
-							widths={[
-								"8.5rem",
-								"8.5rem",
-								"8.5rem",
-								"10rem",
-								"16rem",
-								"16rem",
-								"5.5rem",
-							]}
-						/>
-					}
-				>
-					<Filters searchParams={props.searchParams} />
-				</Suspense>
-			</PageHeader>
+				<Filters searchParams={props.searchParams} />
+			</Suspense>
 
 			<RouteBoundary title="Operations could not be loaded">
 				<Suspense

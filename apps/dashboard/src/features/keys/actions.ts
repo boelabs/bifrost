@@ -14,9 +14,13 @@ import { revalidatePath } from "next/cache";
  *
  * `revalidatePath` is what replaces the old manual refetch: the response to the action already
  * carries the re-rendered table, so the row an operator just changed is the gateway's version of it
- * by the time the click finishes.
+ * by the time the click finishes. It covers the list and every key's own page beneath it.
  */
 const PAGE = "/keys";
+
+function revalidateKeys() {
+	revalidatePath(PAGE, "layout");
+}
 
 export async function createKeyAction(
 	body: CreateKeyInput,
@@ -27,7 +31,7 @@ export async function createKeyAction(
 		"The key could not be created.",
 	);
 	if (result.ok) {
-		revalidatePath(PAGE);
+		revalidateKeys();
 	}
 	return result;
 }
@@ -38,7 +42,7 @@ export async function updateKeyAction(id: string, body: UpdateKeyInput) {
 		"The key could not be updated.",
 	);
 	if (result.ok) {
-		revalidatePath(PAGE);
+		revalidateKeys();
 	}
 	return result;
 }
@@ -49,7 +53,7 @@ export async function deleteKeyAction(id: string) {
 		"The key could not be deleted.",
 	);
 	if (result.ok) {
-		revalidatePath(PAGE);
+		revalidateKeys();
 	}
 	return result;
 }

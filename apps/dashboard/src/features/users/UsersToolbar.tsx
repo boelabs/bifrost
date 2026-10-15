@@ -23,13 +23,9 @@ import {
 	Modal,
 } from "#/components/ui/modal";
 
-/**
- * Search and "New user". Unlike the other pages, the dialog it opens lives here rather than in a
- * shared provider: creating an operator needs nothing from the table it will appear in.
- */
+/** The list's search, in the row under the page header. */
 export function UsersToolbar({ filters }: { filters: UsersFilters }) {
 	const { filter } = useSearchWriter(filters);
-	const [creating, setCreating] = useState(false);
 	return (
 		<div className="flex flex-wrap items-center gap-3">
 			<SearchField
@@ -38,12 +34,24 @@ export function UsersToolbar({ filters }: { filters: UsersFilters }) {
 				placeholder="Username"
 				value={filters.q ?? ""}
 			/>
-			<Button onClick={() => setCreating(true)} size="sm">
+		</div>
+	);
+}
+
+/**
+ * The page header's primary action, with the short dialog it opens. The dialog lives here rather
+ * than in a shared provider: creating an operator needs nothing from the table it will appear in.
+ */
+export function NewUserButton() {
+	const [creating, setCreating] = useState(false);
+	return (
+		<>
+			<Button onClick={() => setCreating(true)}>
 				<IconPlus aria-hidden className="size-4" />
 				New user
 			</Button>
 			<CreateUserDialog isOpen={creating} onClose={() => setCreating(false)} />
-		</div>
+		</>
 	);
 }
 

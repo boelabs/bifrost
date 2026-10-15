@@ -1,105 +1,23 @@
 "use client";
 
 import { deleteDeploymentAction, toggleDeploymentAction } from "./actions.ts";
-import { createContext, Suspense, use, useMemo, useState } from "react";
 import { ButtonSkeleton } from "#/shared/components/Skeleton.tsx";
-import type { AdapterSummary, Deployment } from "./common.ts";
 import { Can, useSession } from "#/features/auth/session.tsx";
 import { useConfirm } from "#/shared/feedback/confirm.tsx";
-import { DeploymentDialog } from "./DeploymentDialog.tsx";
 import { useRowActions } from "#/shared/lib/mutation.ts";
-import { useRefresh } from "#/shared/lib/useRefresh.ts";
 import { Button } from "#/components/ui/button";
 import { Plus as IconPlus } from "lucide-react";
+import type { Deployment } from "./common.ts";
+import { useRouter } from "next/navigation";
 import { ModelsTable } from "./ModelsTable";
+import { Suspense } from "react";
+import Link from "next/link";
 
-/** `deployment: null` opens the dialog for a new one; a row opens it for editing that one. */
-type Editing = { deployment: Deployment | null } | null;
-
-interface ModelsValue {
-	openNew: () => void;
-	edit: (deployment: Deployment) => void;
-}
-
-const ModelsContext = createContext<ModelsValue | null>(null);
-
-function useModels(): ModelsValue {
-	const value = use(ModelsContext);
-	if (!value) {
-		throw new Error("useModels must be used inside ModelsProvider");
-	}
-	return value;
-}
-
-/**
- * The deployment dialog, shared by the "New deployment" button in the page header and the edit
- * button on every row further down — two different `<Suspense>` boundaries, one dialog.
- *
- * `adapters` arrives as an unawaited promise so the header does not wait on the adapter registry; it
- * is only unwrapped once the dialog is actually open.
- */
-export function ModelsProvider({
-	adapters,
-	children,
-}: {
-	adapters: Promise<AdapterSummary[]>;
-	children: React.ReactNode;
-}) {
-	const { refresh } = useRefresh();
-	const [editing, setEditing] = useState<Editing>(null);
-	const value = useMemo<ModelsValue>(
-		() => ({
-			openNew: () => setEditing({ deployment: null }),
-			edit: (deployment) => setEditing({ deployment }),
-		}),
-		[],
-	);
-	return (
-		<ModelsContext value={value}>
-			{children}
-			{editing ? (
-				<Suspense fallback={null}>
-					<DeploymentEditor
-						adapters={adapters}
-						existing={editing.deployment}
-						onClose={() => setEditing(null)}
-						onSaved={refresh}
-					/>
-				</Suspense>
-			) : null}
-		</ModelsContext>
-	);
-}
-
-/** Unwraps the adapter registry where suspending costs a dialog rather than the page. */
-function DeploymentEditor({
-	adapters,
-	existing,
-	onClose,
-	onSaved,
-}: {
-	adapters: Promise<AdapterSummary[]>;
-	existing: Deployment | null;
-	onClose: () => void;
-	onSaved: () => void;
-}) {
-	return (
-		<DeploymentDialog
-			adapters={use(adapters)}
-			isOpen
-			{...(existing ? { existing } : {})}
-			onClose={onClose}
-			onSaved={onSaved}
-		/>
-	);
-}
-
-/** The "New deployment" button, which lives up in the page header. */
+/** The "New deployment" button: the editor is a page of its own. */
 function NewDeployment() {
-	const { openNew } = useModels();
 	return (
 		<Can permissions={["deployments:write"]}>
-			<Button onClick={openNew} size="sm">
+			<Button nativeButton={false} render={<Link href="/models/new" />}>
 				<IconPlus aria-hidden className="size-4" />
 				New deployment
 			</Button>
@@ -109,11 +27,11 @@ function NewDeployment() {
 
 /**
  * Its own `<Suspense>` boundary: the button waits on the operator's permissions, and a `<Suspense>`
- * the page passes *into* `PageHeader` (a Client Component) does not count as one during prerendering.
+ * the page passes *into* `PageHeader` does not count as one during prerendering.
  */
 export function NewDeploymentButton() {
 	return (
-		<Suspense fallback={<ButtonSkeleton label={14} />}>
+		<Suspense fallback={<ButtonSkeleton label={14} size="md" />}>
 			<NewDeployment />
 		</Suspense>
 	);
@@ -122,11 +40,12 @@ export function NewDeploymentButton() {
 /**
  * The models page below its header.
  *
- * Each row acts on one deployment; deletion checks the complete public model pool.
+ * Each row opens its deployment's page; the row menu toggles or deletes it in place, and deletion
+ * checks the complete public model pool.
  */
 export function ModelsView({ deployments }: { deployments: Deployment[] }) {
+	const router = useRouter();
 	const confirm = useConfirm();
-	const { edit } = useModels();
 	const { rows, act } = useRowActions(deployments, (row) => row.id);
 	const { can } = useSession();
 
@@ -166,7 +85,7 @@ export function ModelsView({ deployments }: { deployments: Deployment[] }) {
 		<ModelsTable
 			deployments={[...rows]}
 			onDelete={(deployment) => void remove(deployment)}
-			onEdit={edit}
+			onEdit={(deployment) => router.push(`/models/${deployment.id}`)}
 			onToggle={(deployment) => void toggle(deployment)}
 			writable={can("deployments:write")}
 		/>

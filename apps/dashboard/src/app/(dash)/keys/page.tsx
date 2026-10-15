@@ -1,8 +1,6 @@
+import { KeysToolbar, NewKeyButton } from "#/features/keys/KeysToolbar.tsx";
 import { PAGE_SIZE, parseKeysFilters } from "#/features/keys/filters.ts";
 import { RouteBoundary } from "#/shared/components/RouteBoundary.tsx";
-import { publicModelNames } from "#/features/deployments/api.ts";
-import { KeysToolbar } from "#/features/keys/KeysToolbar.tsx";
-import { KeysProvider } from "#/features/keys/KeysView.tsx";
 import { KeysTable } from "#/features/keys/KeysTable.tsx";
 import { KEY_HEADERS } from "#/features/keys/common.ts";
 import { PageHeader } from "#/components/ui/page";
@@ -17,31 +15,27 @@ import {
 type Params = PageProps<"/keys">["searchParams"];
 
 /**
- * Virtual keys.
- *
- * `KeysProvider` wraps both boundaries because the "New key" button sits in the header and the row
- * it edits sits in the table — they share one dialog. The model suggestions that dialog offers are
- * started here but never awaited, so neither boundary waits on a list that only matters once a
- * dialog is open.
+ * Virtual keys. Creating one and inspecting one each have their own page (`/keys/new`,
+ * `/keys/[key]`); this one lists them, with the search in the row under the header.
  */
 export default function KeysPage(props: PageProps<"/keys">) {
 	return (
-		<KeysProvider models={publicModelNames()}>
+		<>
 			<PageHeader
+				actions={<NewKeyButton />}
 				description="Virtual keys scope which public models a client may call, and carry their own rate limits and budget."
 				title="API keys"
-			>
-				<Suspense fallback={<ToolbarSkeleton widths={["17rem", "6.5rem"]} />}>
-					<Filters searchParams={props.searchParams} />
-				</Suspense>
-			</PageHeader>
+			/>
+			<Suspense fallback={<ToolbarSkeleton widths={["16rem"]} />}>
+				<Filters searchParams={props.searchParams} />
+			</Suspense>
 
 			<RouteBoundary title="Keys could not be loaded">
 				<Suspense fallback={<TableSkeleton headers={KEY_HEADERS} rows={10} />}>
 					<Keys searchParams={props.searchParams} />
 				</Suspense>
 			</RouteBoundary>
-		</KeysProvider>
+		</>
 	);
 }
 

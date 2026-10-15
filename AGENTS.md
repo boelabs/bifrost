@@ -124,17 +124,26 @@ bun test --preload ./tests/support/unitSetup.ts src/router/strategies.test.ts
   missing component, consult [coss UI's official components and examples](https://coss.com/ui/docs)
   and adapt its source into the kit. Custom components must compose existing primitives and follow
   coss UI's design and interaction patterns, using the dashboard's shared tokens and sizes.
-- Follow [the dashboard design guidelines](apps/dashboard/DESIGN.md), shared with Billete.
-  Compact toolbar actions and filters use `size="sm"` and the primitive's default radius.
-  Match adjacent controls; form fields keep the shared control radius.
+- **The dashboard looks and behaves like Billete's.** Follow
+  [the dashboard design guidelines](apps/dashboard/DESIGN.md), which mirror Billete's
+  (`billete/apps/dashboard/DESIGN.md`): same tokens, primitives, shell (268px sidebar, no header,
+  search beside the logo, operator at the foot) and page anatomy. Before adding a screen, study the
+  existing ones and Billete's equivalent; a screen that would look out of place in Billete is wrong.
+- Page and toolbar controls (search, filters, export, header buttons) use the default size, matching
+  the inputs beside them. Compact sizes belong inside table rows and popups.
+- **Dialogs only for short forms (six fields or fewer), confirmations and show-once secrets.**
+  Longer editors are pages (`/models/new`, `/models/[deployment]`, `/keys/new`): Breadcrumbs →
+  PageHeader → one `Panel` per group of fields → `FormActions`. Records are inspected on their own
+  pages with real URLs (`/logs/[id]`), never in a modal or side sheet; table rows that have a page
+  link to it (`DataTable rowHref`).
 - Creation selects for providers, models and roles start with a placeholder and require an explicit
   choice. Do not select the first available item. Editing preserves the stored selection; filters
   and optional settings may use meaningful defaults such as "All" or "Never".
 - Put required credentials directly in the form flow. Avoid decorative fieldsets and copy about
   encryption, validation or adapter internals. Keep help that changes a decision, such as leaving
   a credential blank to preserve it. Explain permissions next to the role selector, not in a page banner.
-- Put optional creation fields under "Advanced options", using the deployment dialog pattern.
-  Collapsing must retain values, include them on submit and reveal fields with validation errors.
+- On a form page, required panels come first and optional groups follow in their own panels,
+  each optional field labelled "(optional)". Nothing optional hides behind a collapsed section.
 - Choose charts by the question: areas for activity over time, lines for latency, bars for interval
   volumes or category comparisons, and donuts for mutually exclusive parts of one total. Never
   stack overlapping subsets (cache writes, reasoning) or mix units on one axis. Missing measurements

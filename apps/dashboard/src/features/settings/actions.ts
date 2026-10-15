@@ -18,8 +18,8 @@ import type {
 	FallbackPolicy,
 } from "./common.ts";
 
-/** Every write the settings page can make. */
-const PAGE = "/settings";
+/** Every section of Settings hangs off this layout, so one revalidation covers them all. */
+const SETTINGS = "/settings";
 
 export async function saveRouterSettingsAction(body: RouterSettingsPatch) {
 	const result = await attempt(
@@ -27,7 +27,7 @@ export async function saveRouterSettingsAction(body: RouterSettingsPatch) {
 		"The router settings could not be saved.",
 	);
 	if (result.ok) {
-		revalidatePath(PAGE);
+		revalidatePath(SETTINGS, "layout");
 	}
 	return result;
 }
@@ -40,7 +40,7 @@ export async function saveFallbackAction(
 		"The chain could not be saved.",
 	);
 	if (result.ok) {
-		revalidatePath(PAGE);
+		revalidatePath(SETTINGS, "layout");
 	}
 	return result;
 }
@@ -54,13 +54,13 @@ export async function deleteFallbackAction(
 		"The chain could not be removed.",
 	);
 	if (result.ok) {
-		revalidatePath(PAGE);
+		revalidatePath(SETTINGS, "layout");
 	}
 	return result;
 }
 
 /**
- * Not revalidated on purpose: clearing the cache changes nothing this page displays, and the count
+ * Not revalidated on purpose: clearing the cache changes nothing Settings displays, and the count
  * it returns is the whole answer.
  */
 export async function clearCacheAction() {
@@ -75,7 +75,7 @@ export async function saveDashboardSettingsAction(
 		"The session policy could not be saved.",
 	);
 	if (result.ok) {
-		revalidatePath(PAGE);
+		revalidatePath(SETTINGS, "layout");
 	}
 	return result;
 }

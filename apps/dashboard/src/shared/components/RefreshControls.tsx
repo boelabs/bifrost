@@ -21,7 +21,7 @@ export function RefreshControls({
 	useAutoRefresh(refresh, auto);
 	const text = pending ? "Refreshing…" : label;
 	return (
-		<Button disabled={pending} onClick={refresh} size="sm" variant="secondary">
+		<Button disabled={pending} onClick={refresh} variant="secondary">
 			<IconRefresh aria-hidden className="size-4" />
 			{text}
 		</Button>

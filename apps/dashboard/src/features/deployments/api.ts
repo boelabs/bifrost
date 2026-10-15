@@ -20,6 +20,17 @@ export async function listDeployments(params?: {
 	);
 }
 
+/** One deployment, without its credentials; `null` when no deployment has that id. */
+export async function getDeployment(id: string) {
+	const result = await api.GET("/admin/deployments/{id}", {
+		params: { path: { id } },
+	});
+	if (result.response.status === 404) {
+		return null;
+	}
+	return unwrap(result).data;
+}
+
 export async function createDeployment(
 	body: CreateDeploymentInput,
 	idempotencyKey?: string,

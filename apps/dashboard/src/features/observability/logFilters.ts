@@ -82,5 +82,4 @@ export const LOG_HEADERS = [
 	"First output",
 	"Duration",
 	"Tokens",
-	"",
 ] as const;

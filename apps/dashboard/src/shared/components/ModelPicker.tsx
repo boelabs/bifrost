@@ -173,7 +173,7 @@ export function ModelListInput({
 					{(selected: string[]) => (
 						<Combobox.Chips
 							aria-label={selected.length > 0 ? label : undefined}
-							className="gap-1.5 pr-2"
+							className="w-full gap-1.5 pr-2"
 						>
 							{selected.map((model) => (
 								<Combobox.Chip

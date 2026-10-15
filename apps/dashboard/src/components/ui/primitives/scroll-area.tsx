@@ -9,10 +9,13 @@ export function ScrollArea({
 	children,
 	scrollFade = false,
 	scrollbarGutter = false,
+	scrollbar = "inset",
 	...props
 }: ScrollAreaPrimitive.Root.Props & {
 	scrollFade?: boolean;
 	scrollbarGutter?: boolean;
+	/** `edge`: a thinner vertical bar against the area's edge, for areas that reach a border. */
+	scrollbar?: "inset" | "edge";
 }): React.ReactElement {
 	return (
 		<ScrollAreaPrimitive.Root
@@ -31,7 +34,13 @@ export function ScrollArea({
 			>
 				{children}
 			</ScrollAreaPrimitive.Viewport>
-			<ScrollBar orientation="vertical" />
+			<ScrollBar
+				className={cn(
+					scrollbar === "edge" &&
+						"my-1 ms-0 me-px data-[orientation=vertical]:w-1",
+				)}
+				orientation="vertical"
+			/>
 			<ScrollBar orientation="horizontal" />
 			<ScrollAreaPrimitive.Corner data-slot="scroll-area-corner" />
 		</ScrollAreaPrimitive.Root>

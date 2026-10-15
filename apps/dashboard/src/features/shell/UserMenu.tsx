@@ -2,36 +2,44 @@
 
 import { isThemePreference } from "#/shared/theme/theme";
 import { useTheme } from "#/shared/theme/ThemeProvider";
+import { useShowShortcuts } from "./KeyboardShortcuts";
 import { useSession } from "#/features/auth/session";
 import { useState, useTransition } from "react";
 
 import {
 	MenuRadioItemIndicator,
 	MenuPositioner,
-	MenuGroupLabel,
 	MenuRadioGroup,
 	MenuSeparator,
 	MenuRadioItem,
 	MenuTrigger,
 	MenuPortal,
 	MenuPopup,
-	MenuGroup,
 	MenuRoot,
 	MenuItem,
 } from "#/components/ui/menu";
 
 import {
-	ChevronsUpDown as IconSelector,
-	Monitor as IconDeviceDesktop,
-	LogOut as IconLogout,
-	Check as IconCheck,
-	Moon as IconMoon,
-	Sun as IconSun,
+	ChevronsUpDownIcon,
+	KeyboardIcon,
+	LogOutIcon,
+	CheckIcon,
 } from "lucide-react";
 
-export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
+const THEMES = [
+	{ value: "light", label: "Light theme" },
+	{ value: "dark", label: "Dark theme" },
+	{ value: "system", label: "Automatic" },
+] as const;
+
+/**
+ * Who is signed in, at the foot of the sidebar: their name opens, upward, the theme, the keyboard
+ * shortcuts and signing out.
+ */
+export function UserMenu() {
 	const { identity, signOut } = useSession();
 	const { preference, setPreference } = useTheme();
+	const showShortcuts = useShowShortcuts();
 	/**
 	 * Signing out is a transition, not a flag that is set and never cleared.
 	 *
@@ -62,91 +70,81 @@ export function UserMenu({ collapsed = false }: { collapsed?: boolean }) {
 		<div className="min-w-0">
 			<MenuRoot>
 				<MenuTrigger
-					aria-label={`User menu for ${name}`}
-					className="inline-flex size-9 items-center justify-center gap-2 rounded-lg p-0 text-left outline-none hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring sm:size-8"
-					title={collapsed ? name : undefined}
+					aria-label={`Your account: ${name}`}
+					className="group flex w-full items-center gap-2 rounded-lg p-2 text-start outline-none transition-colors hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring data-popup-open:bg-accent"
 				>
 					<span
 						aria-hidden
-						className="flex size-7 shrink-0 select-none items-center justify-center rounded-full bg-muted font-medium text-xs"
+						className="flex size-6 shrink-0 select-none items-center justify-center rounded-full bg-muted font-medium text-[0.6875rem]"
 					>
 						{name.slice(0, 1).toUpperCase()}
 					</span>
-					{!collapsed && (
-						<>
-							<span className="min-w-0 flex-1">
-								<span className="block truncate font-medium text-sm">
-									{name}
-								</span>
-								<span className="block truncate text-fg-muted text-xs">
-									{role}
-								</span>
-							</span>
-							<IconSelector
-								aria-hidden
-								className="size-4 shrink-0 text-fg-muted"
-							/>
-						</>
-					)}
+					<span className="min-w-0 flex-1 truncate font-medium text-sm">
+						{name}
+					</span>
+					<ChevronsUpDownIcon
+						aria-hidden
+						className="size-4 shrink-0 text-muted-foreground"
+					/>
 				</MenuTrigger>
 				<MenuPortal>
-					<MenuPositioner align="end" side="bottom" sideOffset={8}>
-						<MenuPopup className="min-w-48">
+					<MenuPositioner align="start" side="top" sideOffset={6}>
+						<MenuPopup className="w-(--anchor-width) min-w-56 max-w-(--available-width)">
 							<div className="flex min-w-0 flex-col px-2 py-1.5">
-								<p className="truncate font-semibold text-sm">{name}</p>
-								<p className="truncate text-fg-muted text-xs">{role}</p>
+								<span className="truncate font-medium text-sm">{name}</span>
+								<span className="truncate text-muted-foreground text-xs">
+									{role}
+								</span>
 							</div>
 							<MenuSeparator />
-							<MenuGroup>
-								<MenuGroupLabel>Appearance</MenuGroupLabel>
-								<MenuRadioGroup
-									onValueChange={(value) => {
-										if (isThemePreference(value)) {
-											setPreference(value);
-										}
-									}}
-									value={preference}
-								>
-									{(
-										[
-											{ value: "light", label: "Light", icon: IconSun },
-											{ value: "dark", label: "Dark", icon: IconMoon },
-											{
-												value: "system",
-												label: "System",
-												icon: IconDeviceDesktop,
-											},
-										] as const
-									).map(({ value, label, icon: Icon }) => (
-										<MenuRadioItem
-											className="flex items-center gap-2"
-											key={value}
-											value={value}
-										>
-											<Icon aria-hidden className="size-4" />
-											<span className="flex-1">{label}</span>
-											<MenuRadioItemIndicator>
-												<IconCheck aria-hidden className="size-4" />
-											</MenuRadioItemIndicator>
-										</MenuRadioItem>
-									))}
-								</MenuRadioGroup>
-							</MenuGroup>
+							<MenuRadioGroup
+								onValueChange={(value) => {
+									if (isThemePreference(value)) {
+										setPreference(value);
+									}
+								}}
+								value={preference}
+							>
+								{THEMES.map(({ value, label }) => (
+									<MenuRadioItem
+										className="flex items-center gap-2"
+										key={value}
+										value={value}
+									>
+										<span className="flex-1">{label}</span>
+										<MenuRadioItemIndicator>
+											<CheckIcon aria-hidden className="size-4" />
+										</MenuRadioItemIndicator>
+									</MenuRadioItem>
+								))}
+							</MenuRadioGroup>
 							<MenuSeparator />
 							<MenuItem
-								className="flex items-center gap-2 text-danger"
+								className="flex items-center gap-2"
+								onClick={showShortcuts}
+							>
+								<KeyboardIcon aria-hidden className="size-4" />
+								<span className="flex-1">Keyboard shortcuts</span>
+								<kbd className="font-sans text-muted-foreground text-xs">?</kbd>
+							</MenuItem>
+							<MenuSeparator />
+							<MenuItem
+								className="flex items-center gap-2 text-destructive-foreground"
 								disabled={pending}
 								onClick={logout}
 							>
-								<IconLogout aria-hidden className="size-4" />
-								{pending ? "Signing out..." : "Sign out"}
+								<LogOutIcon aria-hidden className="size-4" />
+								{pending ? "Signing out…" : "Sign out"}
 							</MenuItem>
 						</MenuPopup>
 					</MenuPositioner>
 				</MenuPortal>
 			</MenuRoot>
 			{error ? (
-				<p className="px-2 py-1 text-danger text-xs" role="alert">
+				<p
+					className="px-2 py-1 text-destructive-foreground text-xs"
+					role="alert"
+				>
 					{error}
 				</p>
 			) : null}

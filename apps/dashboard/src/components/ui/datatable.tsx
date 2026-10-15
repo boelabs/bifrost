@@ -4,6 +4,7 @@ import { TextSkeleton } from "#/shared/components/TextSkeleton";
 import { Select, SelectItem } from "./select";
 import { Button } from "./button";
 import { Input } from "./input";
+import Link from "next/link";
 import { cn } from "cn";
 
 import {
@@ -83,7 +84,16 @@ export interface DataTableProps<T> extends AppearanceProps, EffectProps {
 	pagination?: false | { pageSize?: number };
 	loading?: boolean;
 	emptyMessage?: ReactNode;
+	/**
+	 * The page a row opens, or `null` for a row without one. The first column's content becomes the
+	 * row's link, stretched over the whole row; links and buttons in the other cells stay above it.
+	 */
+	rowHref?: (row: T) => string | null;
 }
+
+/** Raises a row's own controls above its stretched link. */
+const ABOVE_ROW_LINK =
+	"[&_:is(a,button,input,select,textarea)]:relative [&_:is(a,button,input,select,textarea)]:z-10";
 
 export function DataTable<T>({
 	rows,
@@ -102,6 +112,7 @@ export function DataTable<T>({
 	pagination = false,
 	loading = false,
 	emptyMessage = "No results found.",
+	rowHref,
 }: DataTableProps<T>) {
 	const id = useId();
 	const [query, setQuery] = useState("");
@@ -182,7 +193,6 @@ export function DataTable<T>({
 									setPage(0);
 								}}
 								placeholder={search.placeholder ?? "Search..."}
-								size="sm"
 								type="search"
 								value={query}
 							/>
@@ -200,7 +210,6 @@ export function DataTable<T>({
 								setPage(0);
 							}}
 							placeholder={`All ${filter.label.toLowerCase()}`}
-							size="sm"
 							value={filterValues[filter.key] ?? null}
 						>
 							<SelectItem value={null}>
@@ -220,7 +229,6 @@ export function DataTable<T>({
 								setFilterValues({});
 								setPage(0);
 							}}
-							size="sm"
 							type="button"
 							variant="ghost"
 						>
@@ -316,21 +324,37 @@ export function DataTable<T>({
 										))}
 									</TableRow>
 								))
-							: visible.map((row) => (
-									<TableRow key={rowKey(row)}>
-										{columns.map((column) => (
-											<TableCell
-												className={cn(
-													"p-2.5 align-middle text-fg",
-													column.align === "end" && "text-right",
-												)}
-												key={column.key}
-											>
-												{column.render(row)}
-											</TableCell>
-										))}
-									</TableRow>
-								))}
+							: visible.map((row) => {
+									const href = rowHref?.(row) ?? null;
+									return (
+										<TableRow
+											className={cn(href && "relative cursor-pointer")}
+											key={rowKey(row)}
+										>
+											{columns.map((column, index) => (
+												<TableCell
+													className={cn(
+														"p-2.5 align-middle text-fg",
+														column.align === "end" && "text-right",
+														href && index > 0 && ABOVE_ROW_LINK,
+													)}
+													key={column.key}
+												>
+													{href && index === 0 ? (
+														<Link
+															className="outline-none after:absolute after:inset-0 after:rounded-[inherit] focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-inset"
+															href={href}
+														>
+															{column.render(row)}
+														</Link>
+													) : (
+														column.render(row)
+													)}
+												</TableCell>
+											))}
+										</TableRow>
+									);
+								})}
 						{!loading && visible.length === 0 && (
 							<TableRow>
 								<TableCell

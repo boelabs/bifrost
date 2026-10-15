@@ -14,6 +14,7 @@ export function PlaygroundSkeleton() {
 			aria-busy="true"
 			aria-label="Loading playground"
 			className="flex h-full min-h-0 w-full min-w-0 flex-col"
+			data-fill-viewport=""
 			role="status"
 		>
 			<PageHeader

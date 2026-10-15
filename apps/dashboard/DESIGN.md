@@ -1,128 +1,301 @@
 # Bifrost Dashboard — Design Guidelines
 
-The dashboard shares Billete's visual language and vendored coss UI primitives. Product behavior,
-permissions, API contracts, and server boundaries remain Bifrost's own. Shared appearance does
-not introduce a dependency on Billete. Read this before changing a screen.
+Source of truth for how the operator dashboard looks and is built. Read it before adding a screen
+or component; follow it exactly. When something is missing here, extend this document in the same
+change instead of improvising.
 
-## Component source and new components
+The dashboard is a sibling of Billete's (`billete/apps/dashboard/DESIGN.md`): same tokens, same
+vendored coss UI primitives, same shell, same page anatomy. A screen that would look out of place in
+Billete is wrong here too. Product behavior, permissions, API contracts and server boundaries remain
+Bifrost's own; the shared appearance never introduces a dependency on Billete.
 
-[coss UI](https://coss.com/ui/docs) is the component library and design reference. Its source is
-vendored locally; import components from `#/components/ui/<component>`.
+The visual language is **quiet, dense and precise**: neutral surfaces, one accent (the primary
+neutral), soft hairline borders, rounded panels, tabular numbers. Color only carries meaning
+(status, chart series), never decoration.
 
-1. Reuse or compose the existing local kit before creating a component.
-2. If a component is missing, consult coss UI's official components, examples, and particles first.
-   Adapt the appropriate source into the local kit, preserving Base UI behavior and accessibility.
-3. If coss UI has no suitable component, build it from the existing primitives and follow its
-   composition, geometry, states, focus, and keyboard patterns. Use the shared tokens, typography,
-   spacing, radii, and sizes defined here so it matches Billete and the rest of the dashboard.
+## 1. Foundations
 
-Do not introduce a separate visual system or duplicate an existing primitive. Reusable UI belongs
-in `src/components/ui`; product-specific compositions belong in their feature or shared components.
-Update matching skeletons when the component's layout changes.
+### Stack
 
-## Foundations
+- **coss UI** primitives (Base UI + Tailwind CSS), vendored in `src/components/ui/primitives`.
+  Treat them as a library: extend with variants in the component file, never fork a copy.
+  `src/components/ui/<component>.tsx` adapts them to the dashboard's callers (`label`/`description`
+  props on fields, `variant="secondary"` for coss `outline`…). Import from `#/components/ui/<name>`.
+- **New components:** reuse or compose the local kit first. If one is missing, take coss UI's
+  official component, example or particle ([coss.com/ui/docs](https://coss.com/ui/docs)) — or
+  Billete's vendored copy, which is the same source — into `primitives`, keeping Base UI's behavior
+  and accessibility. Only build from scratch when coss has nothing suitable, following its geometry,
+  states, focus and keyboard patterns.
+- **Icons:** `lucide-react` only, `aria-hidden` when decorative, sized with `size-*` classes. The
+  Bifrost mark (`BifrostMark`) is the one brand asset.
+- **Charts:** `recharts` through `src/components/ui/chart.tsx`.
+- **Font:** Google Sans Flex, the only UI font, headings included (`src/shared/fonts`). Google Sans
+  Code for identifiers and code. Never set a font family anywhere else.
 
-- Base UI owns interaction, focus, and accessibility. Vendored primitives live in
-  `src/components/ui/primitives`; `src/components/ui` adapts their API to existing callers.
-- Use `lucide-react` icons with `aria-hidden` for decoration. Size with `size-*` classes.
-- Google Sans Flex is the only UI font, including headings.
-- Light and dark tokens live in `src/components/ui/styles.css`. Use semantic colors:
-  `background`, `foreground`, `muted`, `muted-foreground`, `accent`, `border`, `primary`,
-  `success`, `warning`, `destructive`, and `info`. Legacy aliases resolve to these tokens.
-- Color indicates status or distinguishes chart series; it is not decorative.
+### Tokens (never raw palette classes)
 
-| Element | Typography |
+| Purpose | Token classes |
 | --- | --- |
-| Page heading | `font-semibold text-xl` |
-| Section heading | `font-semibold text-base` |
-| Panel heading | `font-semibold text-sm` |
-| Body | Inherited 14px, line-height 1.5 |
-| Helper text | `text-muted-foreground text-sm` or `text-xs` |
-| Stat value | `font-semibold text-2xl tabular-nums` |
-| Identifier | `font-mono text-xs` |
+| Page background | `bg-background` |
+| Primary text / secondary text | `text-foreground` / `text-muted-foreground` |
+| Subtle fills, hovers | `bg-muted`, `bg-accent`, `hover:bg-accent/50` |
+| Hairlines | `border` (inherits `--border`) |
+| Primary action / selected nav | `bg-primary text-primary-foreground`, `bg-primary/10 text-primary` |
+| Status | `success`, `warning`, `destructive`, `info` (+ `-foreground`) |
+| Charts | `var(--chart-1…5)` |
 
-Use tabular numbers for amounts, counts, and dates. Arrange sections with `gap-6`, panel contents
-and fields with `gap-4`, and inline controls with `gap-2`. Use flex or grid, never `space-*`.
+Light and dark tokens live in `src/components/ui/styles.css` and are Billete's, value for value.
+Add a token there before using a new color. `--alpha()` is intentional Tailwind syntax. The older
+aliases (`fg`, `fg-muted`, `surface`, `danger`…) resolve to these tokens; new code uses the
+semantic names.
 
-Tables use one continuous body with ordinary data rows and the shared table primitives. Repeat
-identifying context in each row rather than inserting group banners or nested tables. Model rows
-show the public name above the upstream name; secondary details stay muted. Keep optional columns
-in a Columns menu, with row pagination and a visible result count.
+### Typography
 
-## Surfaces and shell
+| Use | Classes |
+| --- | --- |
+| Page title | `font-semibold text-xl` (`PageHeader`) |
+| Section title | `font-semibold text-base` (`Section`) |
+| Panel title | `font-semibold text-sm` (provided by `Panel`, `FrameTitle`, `CardTitle`) |
+| Body | inherited: 14px, line-height 1.5 (`styles.css`); never set it per page |
+| Secondary / helper | `text-muted-foreground text-sm` or `text-xs` |
+| Big figures | `font-semibold text-2xl tabular-nums` |
+| IDs, keys, model ids | `font-mono text-xs` |
 
-`Frame` is the default content surface: a `rounded-2xl bg-muted/72 p-1` tray containing a bordered
-`rounded-xl` panel with `p-5` and its built-in hairline highlight. `ContentPanel` composes these
-primitives. Stats use `p-4`. Tables use the same tray around the table container.
+Amounts, counts, durations and dates use `tabular-nums`.
 
-`Card` is for standalone flows such as sign-in. Use its header, content, and footer instead of
-padding the root. Do not nest framed surfaces. Tables and empty states inside an existing panel
-use their plain variant. Do not add shadows or decorative fieldsets.
+### Spacing, radius, elevation
 
-The desktop sidebar is 224px wide; its collapse mode is 64px. The header is 48px tall. Navigation
-uses `p-2 gap-2`, 16px icons, muted labels, and `bg-primary/10 text-primary` for the current page.
-Group captions use 12px text. Settings sits in the footer. Account and theme controls sit on the
-right of the header. Mobile navigation opens a 256px drawer.
+- Layout with `flex flex-col gap-*` / `grid gap-*`; never `space-*`.
+- Page sections `gap-6`; panels of one form or one record `gap-3`; inside a panel and between form
+  fields `gap-4`; inline items `gap-2`.
+- Radius comes from the primitives: outer surfaces `rounded-2xl`, inner panels `rounded-xl`,
+  controls `rounded-lg`. Do not add radius classes to primitives.
+- Elevation is the primitives' built-in hairline shadow. No extra shadows, except popovers'
+  `shadow-lg/5` on things that float over content.
 
-The current navigation item keeps its background and text color on hover.
+### Controls
 
-Content scrolls inside the shell, centered at `max-w-6xl`, with `p-4 sm:p-6` and `gap-6`.
-The playground keeps its own transcript scrolling and a constrained composer.
-Its composer is an intentional exception to shared control geometry: a 28px surface, 40px circular
-actions and a pill model picker retain the previous writing experience. Its neutral palette is scoped
-to the composer; dialogs, popups and the rest of the dashboard use the shared kit.
+Desktop density changes at `sm`; mobile controls use 16px text so iOS does not zoom.
 
-## Controls and forms
-
-Controls inherit their corners: 8px for controls, 12px for inner panels, 16px for outer surfaces.
-Avoid pill overrides. Mobile controls have 16px text to prevent input zoom; desktop controls use
-14px. Desktop density changes at `sm`.
-
-| Compatibility size | Mobile height | Desktop height |
+| Adapter size | Mobile height | Desktop height |
 | --- | --- | --- |
 | `xs` | 28px | 24px |
 | `sm` | 32px | 28px |
-| `md` | 36px | 32px |
+| `md` (default) | 36px | 32px |
 | `lg` | 40px | 36px |
 
-Input heights include their outer border. Toolbar controls use `sm`. Primary actions use the
-neutral fill, secondary actions an outline, quiet actions ghost, and destructive actions the
-destructive variant. Icon actions are square and require an accessible label.
+Page, form and toolbar controls (search, filters, export, header buttons) use the default size,
+matching the inputs beside them. Compact sizes (`sm`, `xs`) belong inside table rows and popups,
+never beside full-size inputs.
 
-Keep required fields in the main form. Creation selects require an explicit choice; editing
-preserves stored values. Optional creation fields belong under Advanced options, retain values
-when collapsed, and reveal validation failures. Preserve server errors and pending states.
+Button variants (adapter names, coss names in parentheses):
 
-Use a combobox trigger with search inside its popup for model, deployment, adapter, and definition
-lists. Opening shows existing options before typing. Filters include an explicit option to reset
-the selection. Model fields that accept custom names keep that behavior; multiple selections
-retain their order and removable chips.
+- `primary` (`default`): the single main action of a page, form or dialog.
+- `secondary` (`outline`): every other decision — *Cancel*, *Back*, *Disable*, *Load more*, a
+  report or secondary page linked from a list.
+- `danger-outline` (`destructive-outline`): destructive actions in a page header (*Delete*,
+  *Revoke*). `danger` (filled) only for the confirm button of a destructive dialog.
+- `ghost`: where a border would fight the surface — icon buttons inside a field or a row, the
+  shell's chrome (search, menu, close), option lists inside a popup.
+- `link`: a quiet text action that is not one of the decisions in front of the operator (*View
+  all*, *Change*).
 
-Dialogs use the shared backdrop, 16px corners, 24px content padding, 20px titles, and a muted footer.
-Long existing editors retain their scrollable body and fixed actions. Menus, badges, tabs, switches,
-checkboxes, toasts, and tooltips use the vendored primitives' geometry and colors.
+Icon-only buttons are square (`mode="icon"`) and always have an `aria-label`.
 
-## Skeletons
+## 2. Surfaces
 
-Skeletons reserve the loaded component's geometry: padding, grids, breakpoints, headers, row
-heights, and radii. Use `TextSkeleton` for text lengths, invisible controls inside `GhostSkeleton`
-for controls, and `ButtonSkeleton` for actions. `FormSkeleton` renders the actual form with inert
-controls, so it cannot submit or receive focus.
+- **`Frame`** is the default container: a muted tray (`rounded-2xl bg-muted/72 p-1`) holding one or
+  more `FramePanel`s (`rounded-xl border bg-background p-5`). Use it for stat tiles, tables, detail
+  lists, charts and form sections.
+- **`Panel`** (`src/shared/components/Panel.tsx`) is a `Frame` with its title, description and
+  action in the tray and the content in the panel: every titled block (a form section, a detail
+  list, a table with a heading). `flush` drops the padding for edge-to-edge content.
+- **`Card`** is for standalone, self-contained flows: sign-in, confirmations.
+- **`Dialog`** only for short create/edit forms (**six fields or fewer**), confirmations and
+  show-once secrets. Longer or multi-section editors get their own page. Records are inspected and
+  edited on their own pages with real URLs, never in a modal or side sheet.
+- Never nest a `Frame` inside a `Frame` or a `Card` inside a `Card`. Tables and empty states inside
+  an existing panel use their plain variant. No decorative fieldsets.
 
-Tables keep their headers and per-column placeholders. Pagination remains visible. Loading
-navigation mirrors the groups; permission-dependent sections resolve with identity. Unknown
-record counts cannot be inferred from placeholders.
+## 3. App shell
 
-Use the shared shimmer in both themes. Hide placeholders from assistive technology and announce
-loading once. Reduced motion disables shimmer and movement.
+Billete's shell, value for value (`src/features/shell`):
 
-## Charts and verification
+```
+┌ Sidebar (268px) ──┬──────────────────────────────────────────────────┐
+│ ◠ Bifrost      🔍 │                                                  │
+│ ───────────────── │  main: centered max-w-6xl, p-4 sm:p-6, gap-6     │
+│ Overview          │                                                  │
+│ Metrics           │                                                  │
+│ Gateway           │                                                  │
+│   Models …        │                                                  │
+│ Administration    │                                                  │
+│   Extensions …    │                                                  │
+│ ───────────────── │                                                  │
+│ (A) admin      ⇅  │                                                  │
+└───────────────────┴──────────────────────────────────────────────────┘
+```
 
-Use areas for activity, lines for latency, bars for comparisons, and continuous donuts for mutually
-exclusive shares. Use `--chart-1` through `--chart-5`, UTC intervals, units, exact values, readable
-legends, and accessible data tables. Compare each series from zero. Missing measurements remain
-missing, never zero. Container width determines chart layouts.
+- **No header.** The desktop sidebar is `--app-sidebar-width` (268px, shared with Billete), with no
+  collapsed mode. Top: the logo (link to Overview) and a quiet square search button, separated
+  from the navigation by a hairline. Middle: the navigation groups in a `ScrollArea` with
+  `scrollFade` and the thin `edge` scrollbar. Foot: the operator (`UserMenu`).
+- **Navigation** is one list, `src/features/shell/navigation.ts` (`NAVIGATION`), read by the
+  sidebar, the command palette and the keyboard shortcuts. Each entry declares the permissions it
+  needs; an operator never sees a page whose calls would come back 403. Rows are quiet (`NAV_ROW`:
+  `text-muted-foreground`, `p-2`, 16px icon); the open page is `bg-primary/10 text-primary`
+  (`aria-current="page"`) and is active on every page nested under it (`/models/new`,
+  `/models/<id>`). Group captions are `text-xs font-medium text-muted-foreground`. A new page joins
+  the group of its area; a new group is for a new area.
+- **UserMenu** at the sidebar's foot: avatar initial, name and a chevron; it opens upward with
+  name and role, the theme (*Light theme*, *Dark theme*, *Automatic*), *Keyboard shortcuts* and
+  *Sign out*.
+- **Command palette:** the search button beside the logo (and in the mobile bar) or Ctrl/⌘+K opens
+  one coss `CommandDialog` with the pages and the create actions the role allows. The trigger has
+  no visible text; its accessible name and title carry the action and shortcut. Triggers reach the
+  dialog through a Base UI handle (`CommandCreateHandle`), never by wrapping the app in a dialog
+  root (that would make every other dialog a nested one, drawn without its backdrop).
+- **Keyboard shortcuts:** `g` then a letter goes to a page (`NavItem.key`), `c` then a letter
+  creates (`CREATE_ACTIONS`), `?` lists them (`Kbd` keycaps, uppercase). Keys typed in a field, an
+  editable area, a menu, a list or a dialog are never shortcuts, nor any with Ctrl, ⌘ or Alt.
+- **Phones:** a slim `MobileBar` (menu button, logo, search) opens the same sidebar as a left
+  `Sheet`.
+- The shell never reads the pathname outside a `<Suspense>` boundary (it would block prerendering
+  every dynamic route). A page that scrolls its own content (the playground) marks its root
+  `data-fill-viewport` and gets the main column's exact height.
 
-Verify both themes, desktop and mobile, narrow panels, empty and loading states, keyboard
-navigation, scrollable dialogs, and reduced motion. Run lint, typecheck, unit tests, and the
-dashboard build without weakening any gate.
+## 4. Page anatomy
+
+Every page is built from the same pieces, in this order:
+
+1. `Breadcrumbs` (`src/shared/components/Breadcrumbs.tsx`) — only on record and creation pages,
+   back to their list (*Models › New*, *Models › gpt-5*).
+2. `PageHeader` (`src/components/ui/page.tsx`) — `title`, one-line `description`, `badge` (a
+   record's status) and `actions` on the right: one primary button at most, the rest `secondary`.
+3. A toolbar row for lists (search and filters on one row that wraps), then the content: `Frame`s,
+   `Panel`s, tables, charts, `StatCard` grids.
+
+**List pages:** `PageHeader` with the create action as its primary button → toolbar (search,
+filters, *Columns*) → table with pagination and a visible result count → empty state that says what
+the list is for and offers the primary action. A narrowed list that comes back empty says so and
+offers to clear the filters, never the first-use empty state. Filters live in the URL so a filtered
+list survives reload, back and sharing. Table rows that have a page are links: the first column's
+link stretches over the row (`after:absolute after:inset-0`), and the row's own controls (its menu)
+sit `relative z-10` above it.
+
+**Creation and record pages** (`/models/new`, `/models/[deployment]`, `/keys/new`, `/keys/[key]`,
+`/logs/[id]`): `Breadcrumbs` → `PageHeader` (the record's name, its status badge, header actions:
+destructive ones `danger-outline`, toggles `secondary`, at most one primary) → the form or the
+record's body. An editable record's page is its form, pre-filled; a read-only record uses
+`DetailLayout` (main column and an aside of `Panel`s holding `DetailList`s, side by side only when
+the content area fits both — a container query, not the window).
+
+**Settings:** `PageHeader` with only its title → the sections nav (a sticky column of titled groups
+beside the content on wide screens, a row of tabs on phones) → the open section, one settings card
+per group of values saved together. A card is a title and description, its fields, and a footer
+with a note and *Save*, enabled only while the card differs from what it loaded. Each section is its
+own URL under `/settings`.
+
+**Overview and Metrics:** `PageHeader` with the period and refresh controls as its actions →
+`StatCard` grids (as many columns as cards, up to four; label, value and tray each on one line) →
+chart and table `Frame`s.
+
+## 5. Shared components (use these, do not re-create them)
+
+| Need | Component |
+| --- | --- |
+| Page title + actions | `#/components/ui/page` → `PageHeader` |
+| Back trail on record and creation pages | `#/shared/components/Breadcrumbs` → `Breadcrumbs` |
+| Titled content block, form section | `#/shared/components/Panel` → `Panel` |
+| Titled block of a page above its own panels | `#/shared/components/Section` → `Section` |
+| Body of a read-only record page | `#/shared/components/DetailLayout` → `DetailLayout` |
+| Key/value details | `#/shared/components/DetailList` → `DetailList` (empty values read as —) |
+| Full-page form footer | `#/shared/components/FormActions` → `FormActions` (error, *Cancel* link, single primary submit) |
+| Metric tile | `#/features/observability/StatCard` → `StatCard` |
+| Status of a resource | `#/components/ui/status` → `Status` (tone `success`, `warning`, `danger`, `neutral`, `muted`) |
+| Tables | `#/components/ui/datatable` → `DataTable` (`rowHref` makes each row open its record); `#/components/ui/table` for bespoke ones |
+| A row's secondary actions | `#/shared/components/RowActions` → `RowActions` (one "…" menu, destructive items set apart) |
+| Nothing to show | `#/components/ui/page` → `EmptyState` |
+| Errors of a form or a page | `#/components/ui/page` → `ErrorNote`; route failures `RouteBoundary` |
+| A list's search | `#/shared/components/SearchField` (icon inside, asks after a 300 ms pause, × clears; the term goes to the URL) |
+| A group of settings saved together | `#/features/settings/SettingsCard` → `SettingsCard`, `SettingRow`, `SettingsCardSkeleton` |
+| Model and deployment pickers | `#/shared/components/ModelPicker`, `SearchableSelect` from `#/components/ui/select` |
+| Destructive confirmation | `useConfirm()` from `#/shared/feedback/confirm` |
+| Results of actions | `useNotify()` from `#/shared/feedback/notifications`; mutations through `useMutation` / `useRowActions` |
+| Permission-gated UI | `Can` / `useSession().can` from `#/features/auth/session` |
+| Loading | `#/shared/components/Skeleton` and `TextSkeleton` (see below) |
+
+If a pattern repeats twice, promote it to `src/shared/components` and add it to this table.
+Reusable primitives belong in `src/components/ui`; product compositions in their feature or in
+`src/shared/components`. A feature never imports another feature's components.
+
+### Loading states
+
+A skeleton is **the page with the data taken out**: nothing moves when the data arrives, at any
+width. Build it from the page's own components and layout:
+
+- Text the page always shows is itself; data is `TextSkeleton length={n}` with the usual length;
+  IDs are `IdSkeleton`.
+- Controls are ghosts (`ButtonSkeleton`, `GhostSkeleton` around the real control) — never a bar
+  with a hand-written height. A form's skeleton is the real form inside `FormSkeleton` (inert,
+  text masked), and lives next to the form (`DeploymentFormSkeleton` in `DeploymentForm.tsx`).
+- Tables keep their headers, per-column placeholders and pagination. Unknown counts use the usual
+  case.
+- Use the shared shimmer in both themes; hide placeholders from assistive technology and announce
+  loading once. Reduced motion disables shimmer and movement.
+
+## 6. Forms
+
+- **One primary submit** per form, showing `loading` while pending. A submit that leads to another
+  page keeps loading until that page is on screen (navigate inside a transition and pass
+  `pending || navigating`). A failure never navigates, so the button unlocks with the error.
+- Full-page forms are a column of `Panel`s, one per group of related fields, then `FormActions`.
+  Forms whose fields read better narrow use a bounded column (`w-full max-w-3xl`), skeleton
+  included. Required panels come first; optional groups follow in their own panels, labelled
+  *(optional)* field by field.
+- Labels are sentence case; optional fields say "(optional)" in the label.
+- Creation selects for providers, models and roles start with a placeholder and require an explicit
+  choice; editing preserves stored values; filters may default to *All*.
+- Put required credentials directly in the form flow. Keep help that changes a decision (*Leave a
+  field blank to keep the stored value*); drop copy about encryption or adapter internals.
+- Use a combobox with search inside its popup for models, deployments, adapters and definitions.
+  Opening shows the options before typing; model fields that accept custom ids keep doing so.
+- Preserve server errors next to the submit (`FormActions`, `ErrorNote`) and field errors on their
+  field.
+- Destructive or irreversible actions confirm with `useConfirm`; cancel buttons in overlays are
+  `secondary`.
+
+## 7. Data display
+
+- Model rows show the public name above the upstream name; secondary details stay muted.
+- Optional table columns live in a *Columns* menu; tables have row pagination and a visible count.
+- Repeat identifying context in each row rather than inserting group banners or nested tables.
+- Dates in tables: date over time, UTC, `tabular-nums`; exact timestamp on hover.
+- Statuses always through `Status`: success = enabled/succeeded, warning = degraded/retried,
+  danger = failed/revoked, neutral = disabled.
+- Numbers right-aligned in tables; text left-aligned.
+
+## 8. Charts
+
+Areas for activity over time, lines for latency, bars for interval volumes and comparisons,
+continuous donuts for mutually exclusive shares. Use `--chart-1` through `--chart-5`, UTC
+intervals, units, exact values, readable legends and accessible data tables. Compare each series
+from zero; missing measurements stay missing, never zero. Container width decides the layout.
+
+The playground composer is an intentional exception to the shared control geometry (a 28px
+surface, 40px circular actions and a pill model picker); its palette is scoped to the composer.
+
+## 9. Copy
+
+English, second person, short and concrete: "Create a deployment to make its public model
+available", not "Here you can manage deployments". Buttons are verbs: *Create deployment*, *Save
+changes*, *Revoke key*. Domain words, used consistently: **public model**, **deployment**,
+**adapter**, **upstream model**, **API key** (virtual key), **operator**.
+
+## 10. Accessibility and verification
+
+- Every control has a visible label or `aria-label`; overlays trap focus (primitives handle it).
+- Contrast comes from tokens; never lower text opacity below `text-muted-foreground`.
+- Verify both themes, desktop and phone widths, narrow panels, empty and loading states, keyboard
+  navigation and reduced motion, in the browser. Run lint, typecheck, unit tests and the dashboard
+  build without weakening any gate.

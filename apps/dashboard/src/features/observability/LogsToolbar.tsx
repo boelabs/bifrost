@@ -57,7 +57,6 @@ export function LogsToolbar({
 				onValueChange={(key) =>
 					filter({ outcome: !key || key === ALL ? undefined : key })
 				}
-				size="sm"
 				value={outcome ?? ALL}
 			>
 				<SelectItem value={ALL}>All outcomes</SelectItem>
@@ -72,7 +71,6 @@ export function LogsToolbar({
 				onValueChange={(key) =>
 					filter({ cause: !key || key === ALL ? undefined : key })
 				}
-				size="sm"
 				value={filters.cause ?? ALL}
 			>
 				<SelectItem value={ALL}>Any cause</SelectItem>
@@ -91,7 +89,6 @@ export function LogsToolbar({
 						filter({ publicModel: !key || key === ALL ? undefined : key })
 					}
 					searchPlaceholder="Search public models"
-					size="sm"
 					value={publicModel ?? null}
 				/>
 			) : null}
@@ -108,11 +105,7 @@ export function LogsToolbar({
 				value={requestId}
 			/>
 			{filtered ? (
-				<Button
-					onClick={() => clear(["period", "from", "to"])}
-					size="sm"
-					variant="ghost"
-				>
+				<Button onClick={() => clear(["period", "from", "to"])} variant="ghost">
 					<IconFilterOff aria-hidden className="size-4" />
 					Clear filters
 				</Button>

@@ -102,15 +102,7 @@ export function PricingEditor({
 		});
 	}
 	return (
-		<section aria-label="Pricing override" className="flex flex-col gap-4">
-			<div>
-				<h3 className="font-semibold text-fg">Pricing override</h3>
-				<p className="text-fg-muted text-sm">
-					USD cents: 100 cents = $1. Token rates are per million tokens. Zero
-					means free. An override replaces all catalog rates; blank fields are
-					unset, not inherited. Clear the override to use catalog pricing.
-				</p>
-			</div>
+		<div className="flex flex-col gap-4">
 			<div className="grid gap-3 sm:grid-cols-2" key={reset}>
 				{PRICING_RATE_FIELDS.map((field) => (
 					<NumberInput
@@ -235,6 +227,6 @@ export function PricingEditor({
 			>
 				Clear pricing override
 			</Button>
-		</section>
+		</div>
 	);
 }

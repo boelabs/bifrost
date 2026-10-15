@@ -28,18 +28,19 @@ export default function ExtensionsPage() {
 	return (
 		<ExtensionsProvider>
 			<PageHeader
+				actions={
+					<div className="flex items-center gap-2">
+						<Suspense
+							fallback={<Skeleton className="h-5 rounded-sm" width="7.5rem" />}
+						>
+							<RuntimeBadge />
+						</Suspense>
+						<UploadCodeButton />
+					</div>
+				}
 				description="Code that runs inside the request path — the gateway's equivalent of a logging or policy callback, except it can also change the request."
 				title="Extensions"
-			>
-				<div className="flex items-center gap-2">
-					<Suspense
-						fallback={<Skeleton className="h-5 rounded-sm" width="7.5rem" />}
-					>
-						<RuntimeBadge />
-					</Suspense>
-					<UploadCodeButton />
-				</div>
-			</PageHeader>
+			/>
 
 			<RouteBoundary title="Extensions could not be loaded">
 				<Suspense fallback={<ExtensionsSkeleton />}>

@@ -28,7 +28,6 @@ export function AuditToolbar({ filters }: { filters: AuditFilters }) {
 				onValueChange={(key) =>
 					filter({ kind: !key || key === ALL ? undefined : key })
 				}
-				size="sm"
 				value={filters.kind ?? ALL}
 			>
 				<SelectItem value={ALL}>Everything</SelectItem>
@@ -51,7 +50,7 @@ export function AuditToolbar({ filters }: { filters: AuditFilters }) {
 				value={filters.action ?? ""}
 			/>
 			{isFiltered(filters) ? (
-				<Button onClick={() => clear()} size="sm" variant="ghost">
+				<Button onClick={() => clear()} variant="ghost">
 					<IconFilterOff aria-hidden className="size-4" />
 					Clear filters
 				</Button>

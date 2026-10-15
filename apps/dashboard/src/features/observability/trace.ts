@@ -127,3 +127,19 @@ export function percentOf(valueMs: number, totalMs: number): number {
 	}
 	return Math.min(100, Math.max(0, (valueMs / totalMs) * 100));
 }
+
+/** An operation's short name, as its page's breadcrumb gives it: the start of its UUID. */
+export function shortId(id: string): string {
+	return id.slice(0, 8);
+}
+
+const OPERATION_ID =
+	/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Whether a URL segment can name an operation. Anything else is a page that does not exist, not a
+ * question for the gateway, whose database would reject it as a malformed UUID.
+ */
+export function isOperationId(value: string): boolean {
+	return OPERATION_ID.test(value);
+}

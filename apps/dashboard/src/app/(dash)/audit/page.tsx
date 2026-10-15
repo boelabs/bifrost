@@ -34,13 +34,12 @@ export default function AuditPage(props: PageProps<"/audit">) {
 			<PageHeader
 				description="Who changed the gateway's configuration, and who read a retained prompt or completion. Append-only: nothing here can be edited or removed from the dashboard."
 				title="Audit"
+			/>
+			<Suspense
+				fallback={<ToolbarSkeleton widths={["11rem", "16rem", "16rem"]} />}
 			>
-				<Suspense
-					fallback={<ToolbarSkeleton widths={["11rem", "16rem", "16rem"]} />}
-				>
-					<Filters searchParams={props.searchParams} />
-				</Suspense>
-			</PageHeader>
+				<Filters searchParams={props.searchParams} />
+			</Suspense>
 
 			<RouteBoundary title="The audit trail could not be loaded">
 				<Suspense

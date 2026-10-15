@@ -1,21 +1,18 @@
 "use client";
 
 import { useSearchWriter } from "#/shared/lib/useSearchWriter.ts";
+import { ButtonSkeleton } from "#/shared/components/Skeleton.tsx";
 import { SearchField } from "#/shared/components/SearchField.tsx";
 import { Can } from "#/features/auth/session.tsx";
 import type { KeysFilters } from "./filters.ts";
 import { Button } from "#/components/ui/button";
 import { Plus as IconPlus } from "lucide-react";
-import { useNewKey } from "./KeysView.tsx";
+import { Suspense } from "react";
+import Link from "next/link";
 
-/**
- * Search and "New key", which live in the page header while the dialog and the table they drive live
- * further down — `useNewKey` is the context that connects them without lifting the whole page into
- * one component.
- */
+/** The list's search, in the row under the page header. */
 export function KeysToolbar({ filters }: { filters: KeysFilters }) {
 	const { filter } = useSearchWriter(filters);
-	const openNew = useNewKey();
 	return (
 		<div className="flex flex-wrap items-center gap-3">
 			<SearchField
@@ -24,12 +21,24 @@ export function KeysToolbar({ filters }: { filters: KeysFilters }) {
 				placeholder="Name or prefix"
 				value={filters.q ?? ""}
 			/>
+		</div>
+	);
+}
+
+/**
+ * The page header's primary action. Its own `<Suspense>` boundary: the button waits on the
+ * operator's permissions, and a `<Suspense>` the page passes *into* `PageHeader` (a Client Component)
+ * does not count as one during prerendering.
+ */
+export function NewKeyButton() {
+	return (
+		<Suspense fallback={<ButtonSkeleton label={7} size="md" />}>
 			<Can permissions={["keys:write"]}>
-				<Button onClick={openNew} size="sm">
+				<Button nativeButton={false} render={<Link href="/keys/new" />}>
 					<IconPlus aria-hidden className="size-4" />
 					New key
 				</Button>
 			</Can>
-		</div>
+		</Suspense>
 	);
 }
