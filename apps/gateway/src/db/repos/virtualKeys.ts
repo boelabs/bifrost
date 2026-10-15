@@ -11,6 +11,7 @@ import {
 	ilike,
 	count,
 	and,
+	or,
 	lte,
 	eq,
 } from "drizzle-orm";
@@ -39,11 +40,15 @@ export async function listVirtualKeysPage(
 		);
 	}
 	if (opts.q) {
+		// Either field: a key is found by part of its name or by its prefix.
 		const like = `%${opts.q}%`;
-		conds.push(
+		const match = or(
 			ilike(virtualKeys.name, like),
 			ilike(virtualKeys.keyPrefix, like),
 		);
+		if (match) {
+			conds.push(match);
+		}
 	}
 	const where = conds.length > 0 ? and(...conds) : undefined;
 	const [rows, totalRow] = await Promise.all([
