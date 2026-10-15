@@ -15,26 +15,15 @@ export async function listKeys(params?: {
 	return unwrap(await api.GET("/admin/keys", { params: { query: params } }));
 }
 
-/** The admin API's largest page. */
-const SCAN_LIMIT = 200;
-
-/**
- * One key, for its own page.
- *
- * Until the gateway serves `GET /admin/keys/{id}`, the key is found in the list, a page at a time.
- * `null` when no key has that id.
- */
+/** One key, for its own page, never its secret; `null` when no key has that id. */
 export async function getKey(id: string): Promise<VirtualKey | null> {
-	let offset: number | null = 0;
-	while (offset !== null) {
-		const { data, pagination } = await listKeys({ limit: SCAN_LIMIT, offset });
-		const found = data.find((key) => key.id === id);
-		if (found) {
-			return found;
-		}
-		offset = pagination.nextOffset;
+	const result = await api.GET("/admin/keys/{id}", {
+		params: { path: { id } },
+	});
+	if (result.response.status === 404) {
+		return null;
 	}
-	return null;
+	return unwrap(result).data;
 }
 
 /**
