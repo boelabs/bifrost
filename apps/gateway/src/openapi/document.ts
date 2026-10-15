@@ -1163,6 +1163,16 @@ export function buildOpenApiDocument() {
 				},
 			},
 			"/admin/keys/{id}": {
+				get: {
+					tags: ["Admin"],
+					operationId: "retrieveKey",
+					summary: "Retrieve a virtual key (never its secret)",
+					parameters: [{ $ref: "#/components/parameters/IdPath" }],
+					responses: {
+						"200": dataResponse(c.VirtualKey, "Virtual key"),
+						"404": errorResponse,
+					},
+				},
 				patch: {
 					tags: ["Admin"],
 					summary: "Edit virtual key (master key)",

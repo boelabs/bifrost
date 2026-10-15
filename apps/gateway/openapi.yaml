@@ -1188,6 +1188,27 @@ paths:
                   - data
                 additionalProperties: false
   /admin/keys/{id}:
+    get:
+      tags:
+        - Admin
+      operationId: retrieveKey
+      summary: Retrieve a virtual key (never its secret)
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Virtual key
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/VirtualKey"
+                required:
+                  - data
+                additionalProperties: false
+        "404": *a1
     patch:
       tags:
         - Admin

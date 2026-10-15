@@ -1303,7 +1303,8 @@ export interface paths {
 			path?: never;
 			cookie?: never;
 		};
-		get?: never;
+		/** Retrieve a virtual key (never its secret) */
+		get: operations["retrieveKey"];
 		put?: never;
 		post?: never;
 		/** Delete virtual key (master key) */
@@ -4701,6 +4702,31 @@ export interface operations {
 				content: {
 					"application/json": {
 						data: components["schemas"]["Deployment"];
+					};
+				};
+			};
+			404: components["responses"]["Error"];
+		};
+	};
+	retrieveKey: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: components["parameters"]["IdPath"];
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Virtual key */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						data: components["schemas"]["VirtualKey"];
 					};
 				};
 			};

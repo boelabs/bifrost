@@ -376,6 +376,21 @@ adminApp.post("/keys", async (c) => {
 	return ok(c, { ...publicKey(row), key: rawKey }, 201);
 });
 
+adminApp.get("/keys/:id", async (c) => {
+	const id = c.req.param("id");
+	// The column is a UUID: anything else names no key, and Postgres would reject it as a 500.
+	const row = z.uuid().safeParse(id).success
+		? await getVirtualKeyById(id)
+		: undefined;
+	if (!row) {
+		throw new GatewayError({
+			class: "not_found",
+			message: `Virtual key "${id}" does not exist`,
+		});
+	}
+	return ok(c, publicKey(row));
+});
+
 adminApp.patch("/keys/:id", async (c) => {
 	const existing = await getVirtualKeyById(c.req.param("id"));
 	if (!existing) {
