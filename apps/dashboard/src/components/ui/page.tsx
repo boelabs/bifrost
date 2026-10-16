@@ -3,6 +3,7 @@
 import { type AppearanceProps, appearanceStyle } from "./appearance.ts";
 import { Alert, AlertDescription } from "./primitives/alert";
 import type { CSSProperties, ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 import { tv } from "tailwind-variants";
 import { ContentPanel } from "./card";
 
@@ -10,6 +11,7 @@ import {
 	EmptyDescription,
 	EmptyContent,
 	EmptyHeader,
+	EmptyMedia,
 	EmptyTitle,
 	Empty,
 } from "./primitives/empty";
@@ -57,9 +59,14 @@ export function PageHeader({
 	);
 }
 
+/**
+ * What a list or a block says when it has nothing to show, Billete's: an icon in a small tile, what
+ * would be here and, optionally, the action that fills it.
+ */
 export function EmptyState({
 	title,
 	description,
+	icon: Icon,
 	children,
 	framed = true,
 	borderRadius,
@@ -68,13 +75,19 @@ export function EmptyState({
 }: {
 	title: string;
 	description?: string;
+	icon?: LucideIcon;
 	children?: ReactNode;
 	framed?: boolean;
 	style?: CSSProperties;
 } & AppearanceProps) {
 	const content = (
-		<Empty>
+		<Empty className="md:py-14">
 			<EmptyHeader>
+				{Icon ? (
+					<EmptyMedia variant="icon">
+						<Icon aria-hidden="true" />
+					</EmptyMedia>
+				) : null}
 				<EmptyTitle>{title}</EmptyTitle>
 				{description ? (
 					<EmptyDescription>{description}</EmptyDescription>

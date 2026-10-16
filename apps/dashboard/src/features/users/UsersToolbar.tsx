@@ -1,9 +1,11 @@
 "use client";
 
+import { type Role, ROLE_LABELS, ROLE_SUMMARY, ROLES } from "./common.ts";
 import { useIdempotencyKey } from "#/shared/lib/useIdempotencyKey.ts";
 import { SearchField } from "#/shared/components/SearchField.tsx";
 import { useSearchWriter } from "#/shared/lib/useSearchWriter.ts";
-import { type Role, ROLE_SUMMARY, ROLES } from "./common.ts";
+import { ListToolbar } from "#/shared/components/ListToolbar.tsx";
+import { GhostSkeleton } from "#/shared/components/Skeleton.tsx";
 import { Select, SelectItem } from "#/components/ui/select";
 import { useMutation } from "#/shared/lib/mutation.ts";
 import type { UsersFilters } from "./filters.ts";
@@ -18,23 +20,44 @@ import { useState } from "react";
 import {
 	DialogHeader,
 	DialogFooter,
+	DialogTitle,
 	DialogBody,
 	Dialog,
 	Modal,
 } from "#/components/ui/modal";
 
-/** The list's search, in the row under the page header. */
-export function UsersToolbar({ filters }: { filters: UsersFilters }) {
+/**
+ * Above the list: its search, on the toolbar's right like every list's. `loading` draws it as a
+ * ghost for the page's fallback.
+ */
+export function UsersToolbar({
+	filters,
+	loading = false,
+}: {
+	filters: UsersFilters;
+	loading?: boolean;
+}) {
 	const { filter } = useSearchWriter(filters);
-	return (
-		<div className="flex flex-wrap items-center gap-3">
-			<SearchField
-				label="Search users"
-				onSearch={(value) => filter({ q: value })}
-				placeholder="Username"
-				value={filters.q ?? ""}
+	const search = (
+		<SearchField
+			label="Search users"
+			onSearch={(value) => filter({ q: value })}
+			placeholder="Username"
+			value={filters.q ?? ""}
+		/>
+	);
+	return loading ? (
+		<div aria-hidden="true" inert>
+			<ListToolbar
+				controls={
+					<GhostSkeleton className="min-w-0 @min-[40rem]:flex-none flex-1">
+						{search}
+					</GhostSkeleton>
+				}
 			/>
 		</div>
+	) : (
+		<ListToolbar controls={search} />
 	);
 }
 
@@ -104,9 +127,7 @@ function CreateUserDialog({
 		<Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
 			<Dialog aria-label="New operator" layout="sectioned">
 				<DialogHeader>
-					<h2 className="font-semibold text-foreground text-xl">
-						New operator
-					</h2>
+					<DialogTitle>New operator</DialogTitle>
 				</DialogHeader>
 				<Form className="flex min-h-0 flex-1 flex-col" onSubmit={onSubmit}>
 					<DialogBody>
@@ -135,7 +156,7 @@ function CreateUserDialog({
 						>
 							{ROLES.map((value) => (
 								<SelectItem key={value} value={value}>
-									{value}
+									{ROLE_LABELS[value]}
 								</SelectItem>
 							))}
 						</Select>

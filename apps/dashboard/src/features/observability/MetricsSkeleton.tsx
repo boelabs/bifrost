@@ -1,6 +1,7 @@
 import { ActivitySkeleton, BreakdownSkeleton } from "./ChartSkeleton";
 import { TextSkeleton } from "#/shared/components/TextSkeleton";
 import { CacheUsageSkeleton } from "./OverviewSkeleton";
+import { Section } from "#/shared/components/Section";
 import { ContentPanel } from "#/components/ui/card";
 
 import {
@@ -9,9 +10,54 @@ import {
 	Skeleton,
 } from "#/shared/components/Skeleton.tsx";
 
+/** The three tables `Metrics` renders, with the headings and headers it gives them. */
+const TABLES = [
+	{
+		title: "By deployment",
+		description:
+			"Select one to inspect its consumption and failures. Error rates use finished attempts; deleted deployments stay while their history is retained.",
+		headers: [
+			"Deployment",
+			"Attempts",
+			"Reported tokens",
+			"Cached input",
+			"Errors",
+			"Error rate",
+			"Latency p95",
+		],
+		toolbar: true,
+	},
+	{
+		title: "By public model",
+		description:
+			"The model name clients request. Each request is counted once, even if it required several attempts.",
+		headers: [
+			"Public model",
+			"Requests",
+			"Request tokens",
+			"Errors",
+			"Consumer cost",
+			"Latency p95",
+		],
+		toolbar: true,
+	},
+	{
+		title: "Deployment failures",
+		description:
+			"Failed attempts, including failures recovered by retries or fallback.",
+		headers: ["Deployment", "Failure", "Phase", "Provider status", "Errors"],
+		toolbar: false,
+	},
+];
+
 export function MetricsSkeleton() {
 	return (
-		<div className="flex flex-col gap-6">
+		<div
+			aria-busy="true"
+			aria-label="Loading metrics"
+			className="flex flex-col gap-6"
+			role="status"
+		>
 			<ContentPanel className="@container min-w-0 p-5">
 				<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 					{["Period · UTC", "Operation", "Public model", "Deployment"].map(
@@ -25,7 +71,7 @@ export function MetricsSkeleton() {
 						),
 					)}
 				</div>
-				<Skeleton className="mt-3 h-3" width="min(100%, 24rem)" />
+				<Skeleton className="mt-3 h-3" width="min(100%, 36rem)" />
 			</ContentPanel>
 			<StatGridSkeleton
 				className="grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
@@ -33,42 +79,21 @@ export function MetricsSkeleton() {
 				icon={false}
 				note={false}
 			/>
-			<div className="grid gap-4 xl:grid-cols-2">
+			<div className="grid gap-3 xl:grid-cols-2">
 				<ActivitySkeleton source="requests" />
 				<ActivitySkeleton source="attempts" />
 			</div>
-			<CacheUsageSkeleton />
+			<CacheUsageSkeleton upstream />
 			<BreakdownSkeleton />
-			{[
-				[
-					"Deployment",
-					"Attempts",
-					"Reported tokens",
-					"Cached input",
-					"Errors",
-					"Error rate",
-					"Latency p95",
-				],
-				[
-					"Public model",
-					"Requests",
-					"Request tokens",
-					"Errors",
-					"Consumer cost",
-					"Latency p95",
-				],
-				["Deployment", "Failure", "Phase", "Provider status", "Errors"],
-			].map((headers) => (
-				<section className="flex flex-col gap-3" key={headers.join()}>
-					<Skeleton className="h-5" width="10rem" />
-					<Skeleton className="h-3" width="min(100%, 30rem)" />
+			{TABLES.map(({ title, description, headers, toolbar }) => (
+				<Section description={description} key={title} title={title}>
 					<TableSkeleton
 						headers={headers}
 						pagination
 						rows={5}
-						toolbar={headers[1] !== "Failure"}
+						toolbar={toolbar}
 					/>
-				</section>
+				</Section>
 			))}
 		</div>
 	);

@@ -46,7 +46,7 @@ async function KeyDetail({ params }: { params: Params }) {
 				actions={<KeyHeaderActions apiKey={apiKey} />}
 				badge={
 					<Status tone={apiKey.enabled ? "success" : "muted"}>
-						{apiKey.enabled ? "enabled" : "disabled"}
+						{apiKey.enabled ? "Enabled" : "Disabled"}
 					</Status>
 				}
 				description={<span className="font-mono">{apiKey.keyPrefix}…</span>}

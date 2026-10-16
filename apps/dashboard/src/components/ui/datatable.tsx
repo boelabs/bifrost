@@ -39,6 +39,14 @@ import {
 	useId,
 } from "react";
 
+/** Above this many columns a phone shows each row as a card (`[data-stack]` in styles.css). */
+const MAX_PHONE_COLUMNS = 3;
+
+/** What a stacked row prints beside a cell: its header, when the header is text. */
+function headerLabel(header: ReactNode): string {
+	return typeof header === "string" ? header : "";
+}
+
 /** The three values `aria-sort` takes on a sortable column header. */
 type SortDirection = "ascending" | "descending" | "none";
 
@@ -253,7 +261,12 @@ export function DataTable<T>({
 					} as CSSProperties
 				}
 			>
-				<Table id={id} variant={framed ? "card" : "default"}>
+				<Table
+					// More columns than fit a phone: there each row reads as a card (`data-stack`).
+					data-stack={columns.length > MAX_PHONE_COLUMNS ? "" : undefined}
+					id={id}
+					variant={framed ? "card" : "default"}
+				>
 					{caption ? <caption className="sr-only">{caption}</caption> : null}
 					<TableHeader>
 						<TableRow>
@@ -279,7 +292,9 @@ export function DataTable<T>({
 										{column.compare ? (
 											<Button
 												className={cn(
-													"-mx-2 gap-1 px-2 font-medium text-xs",
+													// Billete's headers are plain text: a sortable one looks the same, and its
+													// arrows appear on the sorted column or under the pointer.
+													"group/sort -mx-2 h-auto gap-1 px-2 py-1 font-[inherit] text-[length:inherit] text-inherit hover:bg-transparent hover:text-foreground sm:h-auto",
 													column.align === "end" && "ml-auto",
 												)}
 												onClick={() => {
@@ -294,7 +309,14 @@ export function DataTable<T>({
 												variant="ghost"
 											>
 												{column.header}
-												<SortIcon aria-hidden className="size-3.5" />
+												<SortIcon
+													aria-hidden
+													className={cn(
+														"size-3.5",
+														!active &&
+															"opacity-0 group-hover/sort:opacity-60 group-focus-visible/sort:opacity-60",
+													)}
+												/>
 											</Button>
 										) : (
 											column.header
@@ -314,9 +336,10 @@ export function DataTable<T>({
 									>
 										{columns.map((column) => (
 											<TableCell
-												className={
-													column.align === "end" ? "text-right" : undefined
-												}
+												className={cn(
+													column.align === "end" && "text-right tabular-nums",
+												)}
+												data-label={headerLabel(column.header)}
 												key={column.key}
 											>
 												{column.placeholder ?? <TextSkeleton length={16} />}
@@ -335,9 +358,10 @@ export function DataTable<T>({
 												<TableCell
 													className={cn(
 														"p-2.5 align-middle text-fg",
-														column.align === "end" && "text-right",
+														column.align === "end" && "text-right tabular-nums",
 														href && index > 0 && ABOVE_ROW_LINK,
 													)}
+													data-label={headerLabel(column.header)}
 													key={column.key}
 												>
 													{href && index === 0 ? (
@@ -356,12 +380,17 @@ export function DataTable<T>({
 									);
 								})}
 						{!loading && visible.length === 0 && (
-							<TableRow>
+							// An empty state brings its own spacing, as Billete's table does: only plain
+							// text gets the cell's padding.
+							<TableRow data-empty="">
 								<TableCell
-									className="px-5 py-12 text-center text-fg-muted"
+									className={cn(
+										"whitespace-normal text-center text-fg-muted",
+										typeof placeholder === "string" ? "px-5 py-12" : "p-0",
+									)}
 									colSpan={Math.max(columns.length, 1)}
 								>
-									<span role="status">{placeholder}</span>
+									<div role="status">{placeholder}</div>
 								</TableCell>
 							</TableRow>
 						)}

@@ -49,7 +49,7 @@ export function KeyPageSkeleton() {
 				}
 				badge={
 					<GhostSkeleton className="rounded-sm">
-						<Status>enabled</Status>
+						<Status>Enabled</Status>
 					</GhostSkeleton>
 				}
 				description={<TextSkeleton length={12} />}

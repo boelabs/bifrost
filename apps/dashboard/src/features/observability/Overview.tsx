@@ -5,12 +5,14 @@ import { buildUsageSeries, getOverviewMetrics } from "./overview-data";
 import { type StatusProps, Status } from "#/components/ui/status";
 import { RequestOutcomes, Reliability } from "./RequestOutcomes";
 import { aggregateCacheUsage, tokenCount } from "./cache-usage";
-import { ContentPanel as Card } from "#/components/ui/card";
 import type { Readiness } from "#/shared/api/health.ts";
+import { Section } from "#/shared/components/Section";
 import type { UsageBucket } from "./overview-data";
+import { EmptyState } from "#/components/ui/page";
 import { downloadCsv } from "#/shared/lib/csv.ts";
 import { ActivityChart } from "./ActivityChart";
 import { Button } from "#/components/ui/button";
+import type { LucideIcon } from "lucide-react";
 import type { Summary, UsageRow } from "./api";
 import { CacheUsage } from "./CacheUsage";
 import { StatCard } from "./StatCard";
@@ -21,6 +23,8 @@ import {
 	Download as IconDownload,
 	Layers as IconStack2,
 	Server as IconServer,
+	Boxes as IconBoxes,
+	Users as IconUsers,
 	Clock as IconClock,
 } from "lucide-react";
 
@@ -32,12 +36,6 @@ const compact = new Intl.NumberFormat("en-US", {
 const percent = new Intl.NumberFormat("en-US", {
 	style: "percent",
 	maximumFractionDigits: 1,
-});
-const updatedTime = new Intl.DateTimeFormat("en-US", {
-	hour: "2-digit",
-	minute: "2-digit",
-	hourCycle: "h23",
-	timeZone: "UTC",
 });
 
 function cost(cents: number): string {
@@ -205,56 +203,47 @@ function UsageExport({ rows, name }: { rows: UsageRow[]; name: string }) {
 }
 
 /**
- * A usage table and the heading that says what it counts, in one surface.
- *
- * The heading sits inside the card rather than above it because the two are one statement: a title
- * floating on the page ground reads as a section containing a card, which is one box more than there
- * is. `variant="plain"` is what lets the table drop its own frame and use this one.
+ * A usage table under the heading that says what it counts, Billete's table section: the title,
+ * description and export above, the framed table below.
  */
-function UsagePanel({
-	id,
+function UsageSection({
 	title,
 	description,
 	rows,
 	columns,
 	caption,
 	export: name,
-	emptyMessage,
+	empty,
 }: {
-	id: string;
 	title: string;
 	description: string;
 	rows: UsageRow[];
 	columns: Column<UsageRow>[];
 	caption: string;
 	export: string;
-	emptyMessage: string;
+	empty: { title: string; description: string; icon: LucideIcon };
 }) {
 	return (
-		<Card aria-labelledby={id} className="flex min-w-0 flex-col p-5">
-			<div className="flex items-start justify-between gap-3">
-				<div>
-					<h2 className="font-semibold" id={id}>
-						{title}
-					</h2>
-					<p className="mt-1 text-fg-muted text-xs">{description}</p>
-				</div>
-				<div className="-mt-1 -mr-2">
-					<UsageExport name={name} rows={rows} />
-				</div>
-			</div>
+		<Section
+			action={<UsageExport name={name} rows={rows} />}
+			description={description}
+			title={title}
+		>
 			<DataTable
 				caption={caption}
-				className="mt-5"
 				columns={columns}
-				emptyMessage={emptyMessage}
+				emptyMessage={<EmptyState framed={false} {...empty} />}
 				pagination={{ pageSize: 10 }}
 				rowKey={(row) => row.key ?? "none"}
 				rows={rows}
-				variant="plain"
 			/>
-		</Card>
+		</Section>
 	);
+}
+
+/** "Today" reads as "By public model · today"; a custom range keeps its dates and "UTC". */
+function inTitle(range: string): string {
+	return range.charAt(0).toLowerCase() + range.slice(1);
 }
 
 export interface OverviewProps {
@@ -266,16 +255,17 @@ export interface OverviewProps {
 	start: string;
 	end: string;
 	bucket: UsageBucket;
-	/** The range in words, for the tables that have to say what "no usage" refers to. */
+	/** The range in words, for the table titles: "By public model · today". */
 	rangeLabel: string;
 }
 
 /**
  * The body of the overview, and nothing else.
  *
- * The page header, the system-status badge and the refresh controls are rendered by the page around
- * this component rather than inside it: they need either no data or a different request, so keeping
- * them out is what lets the page paint its chrome before any of these numbers exist.
+ * The page header, the system-status badge, the refresh controls and the "Summary" heading with the
+ * range control are rendered by the page around this component rather than inside it: they need
+ * either no data or a different request, so keeping them out is what lets the page paint its chrome
+ * before any of these numbers exist.
  */
 export function Overview({
 	health,
@@ -351,9 +341,9 @@ export function Overview({
 				/>
 			</section>
 
-			<div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-				<ActivityChart bucket={bucket} rows={series} />
-				<div className="grid min-w-0 content-start gap-4">
+			<div className="grid gap-3 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+				<ActivityChart bucket={bucket} rows={series} updatedAt={end} />
+				<div className="grid min-w-0 content-start gap-3">
 					<RequestOutcomes metrics={metrics} />
 					<Reliability metrics={metrics} />
 				</div>
@@ -362,32 +352,34 @@ export function Overview({
 				records={metrics.requests}
 				usage={aggregateCacheUsage(byModel)}
 			/>
-			<div className="grid items-start gap-4">
-				<UsagePanel
-					caption="Usage by public model"
-					columns={usageColumns}
-					description="Total = input + output. Cached, uncached and unclassified counts split the reported input."
-					emptyMessage={`No model usage in this range (${rangeLabel.toLowerCase()}).`}
-					export="usage-by-model"
-					id="models-heading"
-					rows={models}
-					title="By public model"
-				/>
-				<UsagePanel
-					caption="Usage by actor"
-					columns={actorColumns}
-					description="Includes operator traffic from the playground and manual tests."
-					emptyMessage={`No actor usage in this range (${rangeLabel.toLowerCase()}).`}
-					export="usage-by-actor"
-					id="actors-heading"
-					rows={actors}
-					title="By actor"
-				/>
-			</div>
-			<p className="px-1 text-fg-muted text-xs" role="status">
-				Updated at {updatedTime.format(new Date(end))} UTC · Usage reflects
-				recorded requests.
-			</p>
+			<UsageSection
+				caption="Usage by public model"
+				columns={usageColumns}
+				description="Total = input + output. Cached, uncached and unclassified counts split the reported input."
+				empty={{
+					icon: IconBoxes,
+					title: "No usage in this period",
+					description:
+						"Requests, tokens and cost per public model appear here as traffic arrives.",
+				}}
+				export="usage-by-model"
+				rows={models}
+				title={`By public model · ${inTitle(rangeLabel)}`}
+			/>
+			<UsageSection
+				caption="Usage by actor"
+				columns={actorColumns}
+				description="Includes operator traffic from the playground and manual tests."
+				empty={{
+					icon: IconUsers,
+					title: "No usage in this period",
+					description:
+						"Requests, tokens and cost per API key or operator appear here as traffic arrives.",
+				}}
+				export="usage-by-actor"
+				rows={actors}
+				title={`By actor · ${inTitle(rangeLabel)}`}
+			/>
 		</div>
 	);
 }

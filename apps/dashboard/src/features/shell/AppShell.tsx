@@ -10,6 +10,7 @@ import { KeyboardShortcuts } from "./KeyboardShortcuts";
 import { Button } from "#/components/ui/button";
 import { Suspense, useState } from "react";
 import { SidebarNav } from "./SidebarNav";
+import { CreateMenu } from "./CreateMenu";
 import { MenuIcon } from "lucide-react";
 import { UserMenu } from "./UserMenu";
 import Link from "next/link";
@@ -86,6 +87,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 				</Link>
 				<div className="hidden items-center gap-1 md:flex">
 					<CommandPaletteTrigger />
+					<Suspense fallback={null}>
+						<CreateMenu onNavigate={onNavigate} />
+					</Suspense>
 				</div>
 			</div>
 			{/*
@@ -105,7 +109,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 			</ScrollArea>
 			<div className="flex shrink-0 flex-col gap-1 border-t pt-3">
 				<Suspense fallback={<UserMenuSkeleton />}>
-					<UserMenu />
+					<UserMenu onNavigate={onNavigate} />
 				</Suspense>
 			</div>
 		</div>
@@ -135,9 +139,10 @@ function MobileBar() {
 				<BifrostMark decorative size={20} />
 				<span className="font-semibold text-base">Bifrost</span>
 			</Link>
-			<div className="ms-auto">
-				<CommandPaletteTrigger />
-			</div>
+			<CommandPaletteTrigger />
+			<Suspense fallback={null}>
+				<CreateMenu />
+			</Suspense>
 		</header>
 	);
 }

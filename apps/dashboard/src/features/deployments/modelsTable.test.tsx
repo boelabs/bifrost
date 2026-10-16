@@ -90,19 +90,31 @@ describe("model table rows", () => {
 		});
 	});
 
-	test("sorts public names and timestamps without mutating rows", () => {
+	test("sorts by name, creation and update without mutating rows", () => {
 		const rows = [
 			deployment("a", {
 				publicModel: "writer",
 				createdAt: "2026-02-01T00:00:00Z",
 			}),
-			deployment("b"),
+			deployment("b", { updatedAt: "2026-03-01T00:00:00Z" }),
 			deployment("c", { upstreamModel: "gpt-4.1" }),
 		];
-		expect(
-			sortModelRows(rows, "publicModel", false).map((row) => row.id),
-		).toEqual(["c", "b", "a"]);
-		expect(sortModelRows(rows, "createdAt", true)[0]?.id).toBe("a");
+		expect(sortModelRows(rows, "model").map((row) => row.id)).toEqual([
+			"c",
+			"b",
+			"a",
+		]);
+		expect(sortModelRows(rows, "newest").map((row) => row.id)).toEqual([
+			"a",
+			"b",
+			"c",
+		]);
+		expect(sortModelRows(rows, "oldest").map((row) => row.id)).toEqual([
+			"b",
+			"c",
+			"a",
+		]);
+		expect(sortModelRows(rows, "updated")[0]?.id).toBe("b");
 		expect(rows.map((row) => row.id)).toEqual(["a", "b", "c"]);
 	});
 });

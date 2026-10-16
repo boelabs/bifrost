@@ -75,6 +75,12 @@ export function RangeFilter({
 		<>
 			<Select
 				aria-label={label ? undefined : "Time range"}
+				icon={
+					<IconCalendar
+						aria-hidden
+						className="-ms-0.5 size-4.5 shrink-0 opacity-80 sm:size-4"
+					/>
+				}
 				{...(label ? { label } : {})}
 				onValueChange={(key) => {
 					if (!key) {

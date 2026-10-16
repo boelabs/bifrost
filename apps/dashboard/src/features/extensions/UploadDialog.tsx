@@ -10,8 +10,10 @@ import { Form } from "#/components/ui/form";
 import { useState } from "react";
 
 import {
+	DialogDescription,
 	DialogHeader,
 	DialogFooter,
+	DialogTitle,
 	DialogBody,
 	Dialog,
 	Modal,
@@ -65,13 +67,13 @@ export function UploadDialog({
 		<Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
 			<Dialog aria-label="Upload extension code" layout="sectioned">
 				<DialogHeader>
-					<h2 className="font-semibold text-foreground text-xl">
+					<DialogTitle>
 						{initialKey ? `New version of ${initialKey}` : "Upload extension"}
-					</h2>
-					<p className="pt-2 text-fg-muted text-sm">
+					</DialogTitle>
+					<DialogDescription>
 						An ES module exporting a definition. It is probed on upload and
 						becomes the active version immediately; earlier versions are kept.
-					</p>
+					</DialogDescription>
 				</DialogHeader>
 
 				<Form className="flex min-h-0 flex-1 flex-col" onSubmit={onSubmit}>

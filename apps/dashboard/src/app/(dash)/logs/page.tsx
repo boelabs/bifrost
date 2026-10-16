@@ -1,7 +1,8 @@
-import { LogsToolbar } from "#/features/observability/LogsToolbar.tsx";
+import { LogsToolbar, LogRows } from "#/features/observability/LogsToolbar.tsx";
 import { RouteBoundary } from "#/shared/components/RouteBoundary.tsx";
 import { LogsTable } from "#/features/observability/LogsTable.tsx";
 import { publicModelNames } from "#/features/deployments/api.ts";
+import { TableSkeleton } from "#/shared/components/Skeleton.tsx";
 import { listLogs } from "#/features/observability/api.ts";
 import { PageHeader } from "#/components/ui/page";
 import { safeRange } from "#/shared/lib/range.ts";
@@ -14,11 +15,6 @@ import {
 	LOG_HEADERS,
 	PAGE_SIZE,
 } from "#/features/observability/logFilters.ts";
-
-import {
-	ToolbarSkeleton,
-	TableSkeleton,
-} from "#/shared/components/Skeleton.tsx";
 
 type Params = PageProps<"/logs">["searchParams"];
 
@@ -39,33 +35,26 @@ export default function LogsPage(props: PageProps<"/logs">) {
 			/>
 			{/*
 			 * Two boundaries, for two different waits: this one covers the model list the filter
-			 * comes from, and `LogsToolbar` carries its own for the URL the controls read.
+			 * comes from and the URL the controls read; the table's covers the rows. `LogRows` hands
+			 * the rows on screen to the toolbar's Export.
 			 */}
-			<Suspense
-				fallback={
-					<ToolbarSkeleton
-						widths={[
-							"8.5rem",
-							"8.5rem",
-							"8.5rem",
-							"10rem",
-							"16rem",
-							"16rem",
-							"5.5rem",
-						]}
-					/>
-				}
-			>
-				<Filters searchParams={props.searchParams} />
-			</Suspense>
-
-			<RouteBoundary title="Operations could not be loaded">
+			<LogRows>
 				<Suspense
-					fallback={<TableSkeleton headers={LOG_HEADERS} rows={12} toolbar />}
+					fallback={
+						<LogsToolbar filters={{ period: undefined }} loading models={[]} />
+					}
 				>
-					<Operations searchParams={props.searchParams} />
+					<Filters searchParams={props.searchParams} />
 				</Suspense>
-			</RouteBoundary>
+
+				<RouteBoundary title="Operations could not be loaded">
+					<Suspense
+						fallback={<TableSkeleton headers={LOG_HEADERS} rows={12} />}
+					>
+						<Operations searchParams={props.searchParams} />
+					</Suspense>
+				</RouteBoundary>
+			</LogRows>
 		</>
 	);
 }

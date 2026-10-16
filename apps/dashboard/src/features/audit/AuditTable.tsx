@@ -4,13 +4,17 @@ import { type Column, DataTable, Dash, Mono } from "#/components/ui/datatable";
 import { type AuditFilters, isFiltered, PAGE_SIZE } from "./filters.ts";
 import { useSearchWriter } from "#/shared/lib/useSearchWriter.ts";
 import { Pagination } from "#/shared/components/Pagination.tsx";
-import { Download as IconDownload } from "lucide-react";
+import { usePublishAuditRows } from "./AuditToolbar.tsx";
 import { EmptyState } from "#/components/ui/page";
-import { downloadCsv } from "#/shared/lib/csv.ts";
 import { Button } from "#/components/ui/button";
 import { Status } from "#/components/ui/status";
 import type { AuditEntry } from "./api.ts";
 import { splitAction } from "./common.ts";
+
+import {
+	ShieldCheck as IconShieldCheck,
+	SearchX as IconSearchX,
+} from "lucide-react";
 
 function statusTone(status: number | null) {
 	if (status === null) {
@@ -79,9 +83,9 @@ const columns: Column<AuditEntry>[] = [
 		header: "Kind",
 		render: (row) =>
 			row.kind === "payload_access" ? (
-				<Status tone="warning">payload read</Status>
+				<Status tone="warning">Payload read</Status>
 			) : (
-				<Status tone="muted">config</Status>
+				<Status tone="muted">Config change</Status>
 			),
 	},
 	{
@@ -90,7 +94,7 @@ const columns: Column<AuditEntry>[] = [
 		render: (row) =>
 			row.kind === "payload_access" ? (
 				<Status tone={row.metadata.found ? "success" : "muted"}>
-					{row.metadata.found ? "sample returned" : "nothing stored"}
+					{row.metadata.found ? "Sample returned" : "Nothing stored"}
 				</Status>
 			) : (
 				<Status tone={statusTone(row.status)}>{row.status}</Status>
@@ -117,15 +121,10 @@ export function AuditTable({
 	total: number;
 	filters: AuditFilters;
 }) {
-	const { set } = useSearchWriter(filters);
+	const { set, clear } = useSearchWriter(filters);
+	usePublishAuditRows(rows);
 	const filtered = isFiltered(filters);
 	const offset = filters.offset ?? 0;
-	const emptyTitle = filtered
-		? "Nothing matches those filters"
-		: "Nothing recorded yet";
-	const emptyDescription = filtered
-		? "Reads are not audited — only changes and payload access — so a quiet trail can also mean nobody has changed anything."
-		: "Every mutating admin call and every payload read lands here as it happens.";
 
 	const pagination = (
 		<Pagination
@@ -138,16 +137,37 @@ export function AuditTable({
 		/>
 	);
 	if (rows.length === 0) {
+		let empty = (
+			<EmptyState
+				description="Every mutating admin call and every payload read lands here as it happens."
+				icon={IconShieldCheck}
+				title="Nothing recorded yet"
+			/>
+		);
+		if (offset > 0) {
+			empty = (
+				<EmptyState
+					description="Use Previous to return to earlier entries."
+					icon={IconShieldCheck}
+					title="No entries on this page"
+				/>
+			);
+		} else if (filtered) {
+			empty = (
+				<EmptyState
+					description="Reads are not audited — only changes and payload access — so a quiet trail can also mean nobody has changed anything."
+					icon={IconSearchX}
+					title="Nothing matches those filters"
+				>
+					<Button onClick={() => clear()} variant="secondary">
+						Clear filters
+					</Button>
+				</EmptyState>
+			);
+		}
 		return (
 			<>
-				<EmptyState
-					description={
-						offset > 0
-							? "Use Previous to return to earlier entries."
-							: emptyDescription
-					}
-					title={offset > 0 ? "No entries on this page" : emptyTitle}
-				/>
+				{empty}
 				{pagination}
 			</>
 		);
@@ -160,32 +180,6 @@ export function AuditTable({
 				columns={columns}
 				rowKey={(row) => row.id}
 				rows={rows}
-				toolbar={
-					<Button
-						onClick={() =>
-							downloadCsv(
-								`audit-${new Date().toISOString().slice(0, 10)}.csv`,
-								rows,
-								[
-									["at", (row) => row.at],
-									["kind", (row) => row.kind],
-									["actor", (row) => row.actor],
-									["action", (row) => row.action],
-									["targetType", (row) => row.targetType],
-									["targetId", (row) => row.targetId],
-									["status", (row) => row.status],
-									["ip", (row) => row.ip],
-									["requestId", (row) => row.requestId],
-								],
-							)
-						}
-						size="sm"
-						variant="secondary"
-					>
-						<IconDownload aria-hidden className="size-4" />
-						CSV
-					</Button>
-				}
 			/>
 			{pagination}
 		</>

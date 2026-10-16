@@ -1,20 +1,24 @@
 "use client";
 
 import { type Column, DataTable, Dash } from "#/components/ui/datatable";
+import { type KeysFilters, isFiltered, PAGE_SIZE } from "./filters.ts";
 import { useSearchWriter } from "#/shared/lib/useSearchWriter.ts";
 import { Pagination } from "#/shared/components/Pagination.tsx";
 import { deleteKeyAction, updateKeyAction } from "./actions.ts";
 import { RowActions } from "#/shared/components/RowActions.tsx";
 import { formatCents, type VirtualKey } from "./common.ts";
 import { useConfirm } from "#/shared/feedback/confirm.tsx";
-import { type KeysFilters, PAGE_SIZE } from "./filters.ts";
 import { useRowActions } from "#/shared/lib/mutation.ts";
 import { useSession } from "#/features/auth/session.tsx";
 import { EmptyState } from "#/components/ui/page";
+import { NewKeyButton } from "./KeysToolbar.tsx";
+import { Button } from "#/components/ui/button";
 import { Status } from "#/components/ui/status";
 import { useRouter } from "next/navigation";
 
 import {
+	KeyRound as IconKeyRound,
+	SearchX as IconSearchX,
 	Pencil as IconPencil,
 	Trash2 as IconTrash,
 	Check as IconCheck,
@@ -35,7 +39,7 @@ function budgetWarning(key: VirtualKey) {
 	}
 	const share = spent / key.maxBudgetCents;
 	if (share >= 1) {
-		return <Status tone="danger">budget spent</Status>;
+		return <Status tone="danger">Budget spent</Status>;
 	}
 	if (share >= 0.9) {
 		return <Status tone="warning">{Math.round(share * 100)}% of budget</Status>;
@@ -52,12 +56,12 @@ export function KeysTable({
 	total: number;
 	filters: KeysFilters;
 }) {
-	const { set } = useSearchWriter(filters);
+	const { set, clear } = useSearchWriter(filters);
 	const { can } = useSession();
 	const router = useRouter();
 	const confirm = useConfirm();
 	const { rows: keys, act } = useRowActions(loaded, (key) => key.id);
-	const searched = Boolean(filters.q);
+	const filtered = isFiltered(filters);
 	const offset = filters.offset ?? 0;
 	const writable = can("keys:write");
 
@@ -99,7 +103,7 @@ export function KeysTable({
 			header: "Models",
 			render: (key) =>
 				key.allowedModels.length === 0 ? (
-					<span className="text-fg-muted">all</span>
+					<span className="text-fg-muted">All</span>
 				) : (
 					key.allowedModels.join(", ")
 				),
@@ -107,8 +111,9 @@ export function KeysTable({
 		{
 			key: "spend",
 			header: "Spend",
+			align: "end",
 			render: (key) => (
-				<div className="flex flex-wrap items-center gap-2">
+				<div className="flex flex-wrap items-center justify-end gap-2">
 					<span>
 						{formatCents(key.spendCents)}
 						{key.maxBudgetCents === null ? null : (
@@ -148,8 +153,8 @@ export function KeysTable({
 					<span
 						className={
 							Date.parse(key.expiresAt) < Date.now()
-								? "text-danger text-xs"
-								: "text-fg-muted text-xs"
+								? "text-danger text-xs tabular-nums"
+								: "text-fg-muted text-xs tabular-nums"
 						}
 						suppressHydrationWarning
 					>
@@ -163,8 +168,8 @@ export function KeysTable({
 			key: "state",
 			header: "State",
 			render: (key) => (
-				<Status tone={key.enabled ? "success" : "muted"}>
-					{key.enabled ? "enabled" : "disabled"}
+				<Status tone={key.enabled ? "success" : "neutral"}>
+					{key.enabled ? "Enabled" : "Disabled"}
 				</Status>
 			),
 		},
@@ -204,15 +209,24 @@ export function KeysTable({
 	];
 
 	if (keys.length === 0) {
-		return (
+		return filtered ? (
 			<EmptyState
-				description={
-					searched
-						? "Names and key prefixes are searched; the secret itself is stored hashed and cannot be."
-						: "Create one to give a client scoped access without handing out the master key."
-				}
-				title={searched ? "No keys match that search" : "No virtual keys yet"}
-			/>
+				description="Nothing matches the search or the state you chose. Only names and key prefixes are searched."
+				icon={IconSearchX}
+				title="No keys match"
+			>
+				<Button onClick={() => clear()} variant="secondary">
+					Clear filters
+				</Button>
+			</EmptyState>
+		) : (
+			<EmptyState
+				description="Create one to give a client scoped access without handing out the master key."
+				icon={IconKeyRound}
+				title="No API keys yet"
+			>
+				<NewKeyButton />
+			</EmptyState>
 		);
 	}
 

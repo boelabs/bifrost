@@ -5,6 +5,7 @@ import { Search as IconSearch, X as IconX } from "lucide-react";
 import { useEffect, useEffectEvent, useState } from "react";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
+import { cn } from "#/shared/lib/classes";
 
 /**
  * A list's search box, Billete's: it asks once the operator pauses (300 ms), and a clear button
@@ -19,11 +20,14 @@ export function SearchField({
 	onSearch,
 	placeholder = "Search",
 	label,
+	className,
 }: {
 	value: string;
 	onSearch: (value: string) => void;
 	placeholder?: string;
 	label: string;
+	/** Its width: by default the list toolbar's, which fills a phone and is 16rem from 40rem up. */
+	className?: string;
 }) {
 	const [text, setText] = useState(value);
 	// The URL changed from elsewhere (back, a link, clearing filters): the box follows it.
@@ -44,14 +48,20 @@ export function SearchField({
 	useEffect(() => search(settled), [settled]);
 
 	return (
-		<div className="relative w-full min-w-0 sm:w-64">
+		<div
+			className={cn(
+				"relative @min-[40rem]:w-64 min-w-0 @min-[40rem]:flex-none flex-1",
+				className,
+			)}
+		>
 			<IconSearch
 				aria-hidden
 				className="pointer-events-none absolute start-3 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground"
 			/>
 			<Input
 				aria-label={label}
-				className="ps-9 pe-9"
+				// Billete's input group: the text starts 8px after the icon.
+				className="ps-8 pe-8"
 				maxLength={100}
 				onValueChange={setText}
 				placeholder={placeholder}

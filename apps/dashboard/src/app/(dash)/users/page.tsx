@@ -1,16 +1,12 @@
 import { NewUserButton, UsersToolbar } from "#/features/users/UsersToolbar.tsx";
 import { PAGE_SIZE, parseUsersFilters } from "#/features/users/filters.ts";
 import { RouteBoundary } from "#/shared/components/RouteBoundary.tsx";
+import { TableSkeleton } from "#/shared/components/Skeleton.tsx";
 import { UsersTable } from "#/features/users/UsersView.tsx";
 import { USER_HEADERS } from "#/features/users/common.ts";
 import { listUsers } from "#/features/users/api.ts";
 import { PageHeader } from "#/components/ui/page";
 import { Suspense } from "react";
-
-import {
-	ToolbarSkeleton,
-	TableSkeleton,
-} from "#/shared/components/Skeleton.tsx";
 
 type Params = PageProps<"/users">["searchParams"];
 
@@ -23,7 +19,7 @@ export default function UsersPage(props: PageProps<"/users">) {
 				description="Operators of this dashboard. Accounts exist only because an owner created them — there is no self-registration and no OAuth."
 				title="Users"
 			/>
-			<Suspense fallback={<ToolbarSkeleton widths={["16rem"]} />}>
+			<Suspense fallback={<UsersToolbar filters={{}} loading />}>
 				<Filters searchParams={props.searchParams} />
 			</Suspense>
 

@@ -1,6 +1,5 @@
 import { ButtonSkeleton, TableSkeleton } from "#/shared/components/Skeleton";
-import { SampleSkeleton } from "#/shared/components/TextSkeleton";
-import { ContentPanel } from "#/components/ui/card";
+import { Panel } from "#/shared/components/Panel.tsx";
 
 const panels = [
 	{
@@ -17,6 +16,7 @@ const panels = [
 	},
 ];
 
+/** The two panels `ExtensionsView` renders, their copy in place and their tables still loading. */
 export function ExtensionsSkeleton() {
 	return (
 		<div
@@ -26,27 +26,16 @@ export function ExtensionsSkeleton() {
 			role="status"
 		>
 			{panels.map(({ title, description, headers }) => (
-				<ContentPanel className="min-w-0 p-0" key={title}>
-					<div className="p-5">
-						<div className="flex flex-wrap items-start justify-between gap-3 pb-4">
-							<div>
-								<h2 className="font-semibold">
-									<SampleSkeleton>{title}</SampleSkeleton>
-								</h2>
-								<p className="max-w-2xl pt-1 text-muted-foreground text-sm">
-									<SampleSkeleton>{description}</SampleSkeleton>
-								</p>
-							</div>
-							{title === "Instances" ? <ButtonSkeleton label={12} /> : null}
-						</div>
-						<TableSkeleton
-							headers={headers}
-							pagination
-							plain={title === "Instances"}
-							rows={3}
-						/>
-					</div>
-				</ContentPanel>
+				<Panel
+					action={
+						title === "Instances" ? <ButtonSkeleton label={12} /> : undefined
+					}
+					description={<span className="block max-w-2xl">{description}</span>}
+					key={title}
+					title={<h2>{title}</h2>}
+				>
+					<TableSkeleton headers={headers} pagination plain rows={3} />
+				</Panel>
 			))}
 		</div>
 	);

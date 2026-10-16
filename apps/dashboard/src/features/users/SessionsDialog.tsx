@@ -9,8 +9,10 @@ import { Status } from "#/components/ui/status";
 import { useEffect, useState } from "react";
 
 import {
+	DialogDescription,
 	DialogHeader,
 	DialogFooter,
+	DialogTitle,
 	DialogBody,
 	Dialog,
 	Modal,
@@ -122,13 +124,11 @@ export function SessionsDialog({
 				width="min(100%, 46rem)"
 			>
 				<DialogHeader>
-					<h2 className="font-semibold text-foreground text-xl">
-						Sessions for {username}
-					</h2>
-					<p className="pt-2 text-fg-muted text-sm">
+					<DialogTitle>Sessions for {username}</DialogTitle>
+					<DialogDescription>
 						Disabling the account revokes all of them at once; there is no
 						per-session sign-out.
-					</p>
+					</DialogDescription>
 				</DialogHeader>
 				<DialogBody>
 					{error ? <ErrorNote>{error}</ErrorNote> : null}

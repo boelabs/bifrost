@@ -8,9 +8,9 @@ import { ButtonSkeleton } from "#/shared/components/Skeleton.tsx";
 import { useNotify } from "#/shared/feedback/notifications.tsx";
 import { RowActions } from "#/shared/components/RowActions.tsx";
 import { Can, useSession } from "#/features/auth/session.tsx";
-import { ContentPanel as Card } from "#/components/ui/card";
 import { useConfirm } from "#/shared/feedback/confirm.tsx";
 import { useRefresh } from "#/shared/lib/useRefresh.ts";
+import { Panel } from "#/shared/components/Panel.tsx";
 import { EmptyState } from "#/components/ui/page";
 import { UploadDialog } from "./UploadDialog.tsx";
 import { Button } from "#/components/ui/button";
@@ -21,6 +21,8 @@ import {
 	Layers2 as IconVersions,
 	SquarePen as IconEdit,
 	Upload as IconUpload,
+	FileCode as IconCode,
+	Puzzle as IconPuzzle,
 	Trash2 as IconTrash,
 	Plus as IconPlus,
 } from "lucide-react";
@@ -429,129 +431,130 @@ export function ExtensionsView({
 	return (
 		<>
 			<div className="flex flex-col gap-6">
-				<Card className="p-0">
-					<div className="p-5">
-						<div className="flex flex-wrap items-start justify-between gap-3 pb-4">
-							<div>
-								<h2 className="font-semibold text-fg">Instances</h2>
-								<p className="max-w-2xl pt-1 text-fg-muted text-sm">
-									One definition running with one configuration. Status is read
-									from the replica answering this page — a breaker trip disables
-									an instance there, not in the database, so another replica may
-									still be running it.
-								</p>
-							</div>
-							<Can permissions={["settings:write"]}>
-								<Button
-									disabled={definitions.length === 0}
-									onClick={() =>
-										setDraft({
-											id: "",
-											definition: definitions[0] ?? "",
-											enabled: true,
-											critical: false,
-											priority: 0,
-											match: "",
-											config: "",
-										})
-									}
-									size="sm"
-									variant="secondary"
-								>
-									<IconPlus aria-hidden className="size-4" />
-									New instance
-								</Button>
-							</Can>
-						</div>
-						{instanceRows.length === 0 ? (
-							<EmptyState
-								description={
-									definitions.length === 0
-										? "Upload a module first, then bind it to an instance."
-										: "Bind one of the uploaded definitions to an instance to put it in the request path."
+				<Panel
+					action={
+						<Can permissions={["settings:write"]}>
+							<Button
+								disabled={definitions.length === 0}
+								onClick={() =>
+									setDraft({
+										id: "",
+										definition: definitions[0] ?? "",
+										enabled: true,
+										critical: false,
+										priority: 0,
+										match: "",
+										config: "",
+									})
 								}
-								framed={false}
-								title="Nothing is running"
-							/>
-						) : (
+								size="sm"
+								variant="secondary"
+							>
+								<IconPlus aria-hidden className="size-4" />
+								New instance
+							</Button>
+						</Can>
+					}
+					description={
+						<span className="block max-w-2xl">
+							One definition running with one configuration. Status is read from
+							the replica answering this page — a breaker trip disables an
+							instance there, not in the database, so another replica may still
+							be running it.
+						</span>
+					}
+					title={<h2>Instances</h2>}
+				>
+					{instanceRows.length === 0 ? (
+						<EmptyState
+							description={
+								definitions.length === 0
+									? "Upload a module first, then bind it to an instance."
+									: "Bind one of the uploaded definitions to an instance to put it in the request path."
+							}
+							framed={false}
+							icon={IconPuzzle}
+							title="Nothing is running"
+						/>
+					) : (
+						<DataTable
+							caption="Extension instances"
+							columns={instanceColumns}
+							pagination={{ pageSize: 10 }}
+							rowKey={(row) => row.id}
+							rows={instanceRows}
+							variant="plain"
+						/>
+					)}
+				</Panel>
+
+				<Panel
+					description={
+						<span className="block max-w-2xl">
+							Uploaded modules, versioned. Uploading the same key adds a version
+							and activates it; older versions stay and can be activated again.
+						</span>
+					}
+					title={<h2>Code</h2>}
+				>
+					{artifactRows.length === 0 ? (
+						<EmptyState
+							description="Upload an ES module that exports a definition; one that does not load is never stored."
+							framed={false}
+							icon={IconCode}
+							title="No modules uploaded"
+						/>
+					) : (
+						<>
 							<DataTable
-								caption="Extension instances"
-								columns={instanceColumns}
+								caption="Extension code"
+								columns={artifactColumns}
 								pagination={{ pageSize: 10 }}
-								rowKey={(row) => row.id}
-								rows={instanceRows}
+								rowKey={(row) => row.key}
+								rows={artifactRows}
 								variant="plain"
 							/>
-						)}
-					</div>
-				</Card>
-
-				<Card className="p-0">
-					<div className="p-5">
-						<div className="pb-4">
-							<h2 className="font-semibold text-fg">Code</h2>
-							<p className="max-w-2xl pt-1 text-fg-muted text-sm">
-								Uploaded modules, versioned. Uploading the same key adds a
-								version and activates it; older versions stay and can be
-								activated again.
-							</p>
-						</div>
-						{artifactRows.length === 0 ? (
-							<EmptyState
-								description="Upload an ES module exporting a definition. It is probed before it is stored, so a module that does not load never reaches a request."
-								title="No modules uploaded"
-							/>
-						) : (
-							<>
-								<DataTable
-									caption="Extension code"
-									columns={artifactColumns}
-									pagination={{ pageSize: 10 }}
-									rowKey={(row) => row.key}
-									rows={artifactRows}
-								/>
-								{versionsOf ? (
-									<div className="pt-4">
-										<h3 className="pb-2 font-medium text-fg text-sm">
-											Versions of {versionsOf}
-										</h3>
-										<ul className="flex flex-col gap-1">
-											{versions.map((version) => (
-												<li
-													className="flex items-center gap-3 text-sm"
-													key={version.version}
+							{versionsOf ? (
+								<div className="pt-4">
+									<h3 className="pb-2 font-medium text-fg text-sm">
+										Versions of {versionsOf}
+									</h3>
+									<ul className="flex flex-col gap-1">
+										{versions.map((version) => (
+											<li
+												className="flex items-center gap-3 text-sm"
+												key={version.version}
+											>
+												<Mono>v{version.version}</Mono>
+												<Status
+													tone={
+														version.status === "active" ? "success" : "muted"
+													}
 												>
-													<Mono>v{version.version}</Mono>
-													<Status
-														tone={
-															version.status === "active" ? "success" : "muted"
+													{version.status}
+												</Status>
+												<span className="text-fg-muted text-xs">
+													{version.contentHash.slice(0, 12)}
+												</span>
+												{editable && version.status !== "active" ? (
+													<Button
+														onClick={() =>
+															void activate(versionsOf, version.version)
 														}
+														size="sm"
+														variant="ghost"
 													>
-														{version.status}
-													</Status>
-													<span className="text-fg-muted text-xs">
-														{version.contentHash.slice(0, 12)}
-													</span>
-													{editable && version.status !== "active" ? (
-														<Button
-															onClick={() =>
-																void activate(versionsOf, version.version)
-															}
-															size="sm"
-															variant="ghost"
-														>
-															Activate
-														</Button>
-													) : null}
-												</li>
-											))}
-										</ul>
-									</div>
-								) : null}
-							</>
-						)}
-					</div>
-				</Card>
+														Activate
+													</Button>
+												) : null}
+											</li>
+										))}
+									</ul>
+								</div>
+							) : null}
+						</>
+					)}
+				</Panel>
 			</div>
 
 			{draft ? (

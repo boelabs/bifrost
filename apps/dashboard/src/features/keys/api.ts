@@ -11,6 +11,7 @@ export async function listKeys(params?: {
 	limit?: number;
 	offset?: number;
 	q?: string;
+	enabled?: boolean;
 }) {
 	return unwrap(await api.GET("/admin/keys", { params: { query: params } }));
 }

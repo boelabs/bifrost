@@ -2,6 +2,8 @@
 
 import { Dialog as BaseDialog } from "@base-ui/react/dialog";
 import type { ComponentProps } from "react";
+import { X as IconX } from "lucide-react";
+import { Button } from "./button";
 import { cn } from "cn";
 
 import {
@@ -105,14 +107,18 @@ export type DialogPopupProps = ComponentProps<typeof BaseDialog.Popup> &
 	AppearanceProps &
 	EffectProps & {
 		layout?: "content" | "sectioned";
+		/** coss's close button at the top right; on by default for sectioned dialogs. */
+		showCloseButton?: boolean;
 	};
 export function DialogPopup({
 	layout = "content",
 	effect = null,
+	showCloseButton = layout === "sectioned",
 	className,
 	style,
 	borderRadius,
 	width,
+	children,
 	...props
 }: DialogPopupProps) {
 	return (
@@ -122,8 +128,20 @@ export function DialogPopup({
 				`${dialogPopupStyles} ${effectClassName(effect)} ${layout === "sectioned" ? "gap-0 overflow-hidden p-0" : ""}`,
 				className,
 			)}
+			data-slot="dialog-popup"
 			style={mergeStyle({ borderRadius, width }, style)}
-		/>
+		>
+			{children}
+			{showCloseButton ? (
+				<BaseDialog.Close
+					aria-label="Close"
+					className="absolute end-2 top-2"
+					render={<Button mode="icon" variant="ghost" />}
+				>
+					<IconX aria-hidden="true" />
+				</BaseDialog.Close>
+			) : null}
+		</BaseDialog.Popup>
 	);
 }
 
@@ -158,7 +176,8 @@ export function DialogBody({
 		<div
 			{...props}
 			className={cn(
-				"scrollbar-gutter-stable min-h-0 min-w-0 flex-1 scroll-p-6 overflow-y-auto overscroll-contain p-6",
+				// coss's DialogPanel: right under its header, the header's own bottom padding is the gap.
+				"scrollbar-gutter-stable min-h-0 min-w-0 flex-1 scroll-p-6 overflow-y-auto overscroll-contain p-6 in-[[data-slot=dialog-popup]:has([data-slot=dialog-header])]:pt-1",
 				className,
 			)}
 			data-slot="dialog-body"

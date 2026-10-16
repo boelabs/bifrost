@@ -10,6 +10,13 @@ export type Role = DashboardUser["role"];
 
 export const ROLES: Role[] = ["owner", "admin", "viewer"];
 
+/** How each role reads on screen; the values above are what the gateway stores. */
+export const ROLE_LABELS: Record<Role, string> = {
+	owner: "Owner",
+	admin: "Admin",
+	viewer: "Viewer",
+};
+
 /**
  * What each role can reach, mirrored from the gateway's auth/roles.ts. Shown while granting a role so
  * an owner can see what they are handing over; the gateway remains the enforcer.
