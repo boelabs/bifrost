@@ -8,8 +8,10 @@ import { Form } from "#/components/ui/form";
 import { useState } from "react";
 
 import {
+	DialogDescription,
 	DialogHeader,
 	DialogFooter,
+	DialogTitle,
 	DialogBody,
 	Dialog,
 	Modal,
@@ -92,13 +94,11 @@ export function FallbackDialog({
 		<Modal isOpen={reason !== null} onOpenChange={(open) => !open && close()}>
 			<Dialog aria-label="Fallback chain" layout="sectioned">
 				<DialogHeader>
-					<h2 className="font-semibold text-foreground text-xl">
-						{kind?.title ?? "Fallback chain"}
-					</h2>
-					<p className="pt-2 text-fg-muted text-sm">
+					<DialogTitle>{kind?.title ?? "Fallback chain"}</DialogTitle>
+					<DialogDescription>
 						{kind?.description} Saving over an existing primary model replaces
 						its chain for this case.
-					</p>
+					</DialogDescription>
 				</DialogHeader>
 
 				<Form className="flex min-h-0 flex-1 flex-col" onSubmit={onSubmit}>

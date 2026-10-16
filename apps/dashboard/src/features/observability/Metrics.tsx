@@ -4,7 +4,9 @@ import { SearchableSelect, Select, SelectItem } from "#/components/ui/select";
 import { type Column, DataTable } from "#/components/ui/datatable";
 import { ContentPanel as Card } from "#/components/ui/card";
 import { cacheReuseRate, tokenCount } from "./cache-usage";
+import { Section } from "#/shared/components/Section";
 import { phaseLabel, kindLabel } from "./trace.ts";
+import { Panel } from "#/shared/components/Panel";
 import { EmptyState } from "#/components/ui/page";
 import { Button } from "#/components/ui/button";
 import { MetricsChart } from "./MetricsChart";
@@ -13,6 +15,14 @@ import type { DetailedMetrics } from "./api";
 import { CacheUsage } from "./CacheUsage";
 import { StatCard } from "./StatCard";
 import { useState } from "react";
+
+import {
+	CircleCheck as IconCircleCheck,
+	Activity as IconActivity,
+	SearchX as IconSearchX,
+	Boxes as IconBoxes,
+	Route as IconRoute,
+} from "lucide-react";
 
 import {
 	type MetricsSearch,
@@ -59,13 +69,12 @@ function Breakdown({ data }: { data: DetailedMetrics }) {
 	];
 	const tokens = data.attempts;
 	return (
-		<div className="grid gap-4 lg:grid-cols-2">
-			<Card className="p-5">
-				<h2 className="font-semibold">Request outcomes</h2>
-				<p className="mt-1 text-fg-muted text-xs">
-					Share of all requests by their latest outcome.
-				</p>
-				<div className="mt-6 flex flex-col gap-4">
+		<div className="grid gap-3 lg:grid-cols-2">
+			<Panel
+				description="Share of all requests by their latest outcome."
+				title={<h2>Request outcomes</h2>}
+			>
+				<div className="flex flex-col gap-4">
 					{outcomes.map((row) => (
 						<div key={row.label}>
 							<div className="mb-2 flex items-center justify-between gap-3 text-xs">
@@ -92,14 +101,12 @@ function Breakdown({ data }: { data: DetailedMetrics }) {
 						</div>
 					))}
 				</div>
-			</Card>
-			<Card className="p-5">
-				<h2 className="font-semibold">Deployment token breakdown</h2>
-				<p className="mt-1 text-fg-muted text-xs">
-					Reported upstream usage, including retries. Reasoning and cache are
-					subsets, not additional totals.
-				</p>
-				<div className="mt-6 flex flex-col gap-4">
+			</Panel>
+			<Panel
+				description="Reported upstream usage, including retries. Reasoning and cache are subsets, not additional totals."
+				title={<h2>Deployment token breakdown</h2>}
+			>
+				<div className="flex flex-col gap-4">
 					{(
 						[
 							["Input", tokens.promptTokens, "bg-chart-1"],
@@ -148,7 +155,7 @@ function Breakdown({ data }: { data: DetailedMetrics }) {
 					{count.format(tokens.attempts)} attempts. Unreported usage is not
 					estimated.
 				</p>
-			</Card>
+			</Panel>
 		</div>
 	);
 }
@@ -519,9 +526,10 @@ export function Metrics({
 						Clear filters
 					</Button>
 				) : null}
-				<p className="mt-3 text-fg-muted text-xs">
+				<p className="mt-3 text-fg-muted text-xs" role="status">
 					{new Date(data.start).toLocaleString("en-US", { timeZone: "UTC" })} –{" "}
 					{new Date(data.end).toLocaleString("en-US", { timeZone: "UTC" })} UTC
+					· retained records, grouped by request start
 				</p>
 			</Card>
 			{search.deploymentId ? (
@@ -572,28 +580,41 @@ export function Metrics({
 			{requests.requests === 0 ? (
 				<EmptyState
 					description="Change the dates or clear filters. Metrics appear after the gateway records traffic."
+					icon={IconActivity}
 					title="No activity in this period"
 				/>
 			) : (
 				<>
-					<div className="grid gap-4 xl:grid-cols-2">
+					<div className="grid gap-3 xl:grid-cols-2">
 						<MetricsChart data={data} />
 						<MetricsChart data={data} upstream />
 					</div>
 					<CacheUsage records={attempts.attempts} upstream usage={attempts} />
 					<Breakdown data={data} />
-					<section className="flex flex-col gap-3">
-						<div>
-							<h2 className="font-semibold">By deployment</h2>
-							<p className="mt-1 text-fg-muted text-xs">
-								An executable route to a provider. Select one to inspect its
-								consumption and failures. Error rates use finished attempts.
-							</p>
-						</div>
+					<Section
+						description="Select one to inspect its consumption and failures. Error rates use finished attempts; deleted deployments stay while their history is retained."
+						title="By deployment"
+					>
 						<DataTable
 							caption="Deployment metrics"
 							columns={deployments}
-							emptyMessage="No upstream attempts. Requests may have been cached or rejected before routing."
+							emptyMessage={
+								data.deployments.length === 0 ? (
+									<EmptyState
+										description="Requests may have been cached or rejected before routing."
+										framed={false}
+										icon={IconRoute}
+										title="No upstream attempts"
+									/>
+								) : (
+									<EmptyState
+										description="Try another name, adapter or ID."
+										framed={false}
+										icon={IconSearchX}
+										title="No deployments match"
+									/>
+								)
+							}
 							pagination={{ pageSize: 10 }}
 							rowKey={(row) => row.key ?? "none"}
 							rows={[...data.deployments].sort(
@@ -604,18 +625,31 @@ export function Metrics({
 								placeholder: "Search deployments…",
 							}}
 						/>
-					</section>
-					<section className="flex flex-col gap-3">
-						<div>
-							<h2 className="font-semibold">By public model</h2>
-							<p className="mt-1 text-fg-muted text-xs">
-								The model name clients request. Each request is counted once,
-								even if it required several attempts.
-							</p>
-						</div>
+					</Section>
+					<Section
+						description="The model name clients request. Each request is counted once, even if it required several attempts."
+						title="By public model"
+					>
 						<DataTable
 							caption="Public model metrics"
 							columns={models}
+							emptyMessage={
+								data.models.length === 0 ? (
+									<EmptyState
+										description="Requests in this period named no public model."
+										framed={false}
+										icon={IconBoxes}
+										title="No public models"
+									/>
+								) : (
+									<EmptyState
+										description="Try another public model name."
+										framed={false}
+										icon={IconSearchX}
+										title="No public models match"
+									/>
+								)
+							}
 							pagination={{ pageSize: 10 }}
 							rowKey={(row) => row.key ?? "none"}
 							rows={data.models}
@@ -624,19 +658,22 @@ export function Metrics({
 								placeholder: "Search public models…",
 							}}
 						/>
-					</section>
-					<section className="flex flex-col gap-3">
-						<div>
-							<h2 className="font-semibold">Deployment failures</h2>
-							<p className="mt-1 text-fg-muted text-xs">
-								Failed attempts, including failures recovered by retries or
-								fallback.
-							</p>
-						</div>
+					</Section>
+					<Section
+						description="Failed attempts, including failures recovered by retries or fallback."
+						title="Deployment failures"
+					>
 						<DataTable
 							caption="Deployment failure breakdown"
 							columns={failures}
-							emptyMessage="No deployment errors recorded in this period."
+							emptyMessage={
+								<EmptyState
+									description="Every deployment attempt in this period finished without an error."
+									framed={false}
+									icon={IconCircleCheck}
+									title="No deployment errors"
+								/>
+							}
 							pagination={{ pageSize: 10 }}
 							rowKey={(row) =>
 								JSON.stringify([
@@ -648,14 +685,9 @@ export function Metrics({
 							}
 							rows={[...data.failures].sort((a, b) => b.count - a.count)}
 						/>
-					</section>
+					</Section>
 				</>
 			)}
-			<p className="text-fg-muted text-xs" role="status">
-				Based on retained records, grouped by request start in UTC. Deleted
-				deployments remain visible while their history is retained. Refresh to
-				include new traffic and completed requests.
-			</p>
 		</div>
 	);
 }

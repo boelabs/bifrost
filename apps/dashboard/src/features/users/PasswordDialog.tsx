@@ -7,8 +7,10 @@ import { Form } from "#/components/ui/form";
 import { useState } from "react";
 
 import {
+	DialogDescription,
 	DialogHeader,
 	DialogFooter,
+	DialogTitle,
 	DialogBody,
 	Dialog,
 	Modal,
@@ -52,13 +54,11 @@ export function PasswordDialog({
 		<Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
 			<Dialog aria-label={`Reset password for ${username}`} layout="sectioned">
 				<DialogHeader>
-					<h2 className="font-semibold text-foreground text-xl">
-						Reset password for {username}
-					</h2>
-					<p className="pt-2 text-fg-muted text-sm">
+					<DialogTitle>Reset password for {username}</DialogTitle>
+					<DialogDescription>
 						They must change it the next time they sign in, and every session
 						they have open is revoked.
-					</p>
+					</DialogDescription>
 				</DialogHeader>
 				<Form className="flex min-h-0 flex-1 flex-col" onSubmit={submit}>
 					<DialogBody>

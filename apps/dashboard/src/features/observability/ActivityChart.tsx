@@ -1,11 +1,12 @@
 "use client";
 
 import type { UsageBucket, UsagePoint } from "./overview-data";
-import { ContentPanel as Card } from "#/components/ui/card";
 import { ToggleGroup } from "#/components/ui/toggle-group";
 import { TimeSeriesChart } from "#/components/ui/chart";
+import { Panel } from "#/shared/components/Panel";
 import { Toggle } from "#/components/ui/toggle";
-import { useId, useState } from "react";
+import { FILL_PANEL } from "./ChartSkeleton";
+import { useState } from "react";
 
 const metrics = {
 	requests: { label: "Requests" },
@@ -26,6 +27,12 @@ const currency = new Intl.NumberFormat("en-US", {
 	maximumFractionDigits: 4,
 });
 const hour = new Intl.DateTimeFormat("en-US", {
+	hour: "2-digit",
+	minute: "2-digit",
+	hourCycle: "h23",
+	timeZone: "UTC",
+});
+const updated = new Intl.DateTimeFormat("en-US", {
 	hour: "2-digit",
 	minute: "2-digit",
 	hourCycle: "h23",
@@ -58,11 +65,13 @@ function intervalLabel(row: UsagePoint, bucket: UsageBucket) {
 export function ActivityChart({
 	rows,
 	bucket = "hour",
+	updatedAt,
 }: {
 	rows: UsagePoint[];
 	bucket?: UsageBucket;
+	/** When these numbers were read: the end of the window, which a refresh moves. */
+	updatedAt: string;
 }) {
-	const titleId = useId();
 	const [metric, setMetric] = useState<Metric>("totalTokens");
 	const series =
 		metric === "totalTokens"
@@ -79,19 +88,8 @@ export function ActivityChart({
 				];
 	const total = rows.reduce((sum, row) => sum + row[metric], 0);
 	return (
-		<Card
-			aria-labelledby={titleId}
-			className="flex min-w-0 flex-col overflow-hidden p-0"
-		>
-			<div className="flex flex-wrap items-center justify-between gap-4 border-border/50 border-b px-5 py-4">
-				<div>
-					<h2 className="font-semibold text-sm" id={titleId}>
-						Activity
-					</h2>
-					<p className="mt-1 text-fg-muted text-xs">
-						{bucket === "day" ? "Daily" : "Hourly"} usage · UTC
-					</p>
-				</div>
+		<Panel
+			action={
 				<ToggleGroup
 					aria-label="Activity metric"
 					onValueChange={(values) => {
@@ -107,33 +105,42 @@ export function ActivityChart({
 						</Toggle>
 					))}
 				</ToggleGroup>
-			</div>
-			<div className="flex flex-1 flex-col p-5">
-				<p className="mb-6 font-semibold text-2xl tabular-nums">
-					{formatValue(total, metric, true)}{" "}
-					<span className="font-normal text-fg-muted text-xs">
-						{metrics[metric].label.toLowerCase()} in this period
+			}
+			className={FILL_PANEL}
+			description={
+				<>
+					{bucket === "day" ? "Daily" : "Hourly"} usage · UTC ·{" "}
+					<span role="status">
+						updated {updated.format(new Date(updatedAt))}
 					</span>
-				</p>
-				<TimeSeriesChart
-					bucket={bucket}
-					formatTick={(value) => formatValue(value, metric, true)}
-					formatValue={(value) => formatValue(value, metric)}
-					intervalLabel={(timestamp) => {
-						const row = rows.find((point) => point.timestamp === timestamp);
-						return row ? intervalLabel(row, bucket) : "";
-					}}
-					label={`${metrics[metric].label} over time`}
-					rows={rows.map((row) => ({
-						timestamp: row.timestamp,
-						promptTokens: row.promptTokens,
-						completionTokens: row.completionTokens,
-						requests: row.requests,
-						consumerCostCents: row.consumerCostCents,
-					}))}
-					series={series}
-				/>
-			</div>
-		</Card>
+				</>
+			}
+			title={<h2>Activity</h2>}
+		>
+			<p className="mb-6 font-semibold text-2xl tabular-nums">
+				{formatValue(total, metric, true)}{" "}
+				<span className="font-normal text-fg-muted text-xs">
+					{metrics[metric].label.toLowerCase()} in this period
+				</span>
+			</p>
+			<TimeSeriesChart
+				bucket={bucket}
+				formatTick={(value) => formatValue(value, metric, true)}
+				formatValue={(value) => formatValue(value, metric)}
+				intervalLabel={(timestamp) => {
+					const row = rows.find((point) => point.timestamp === timestamp);
+					return row ? intervalLabel(row, bucket) : "";
+				}}
+				label={`${metrics[metric].label} over time`}
+				rows={rows.map((row) => ({
+					timestamp: row.timestamp,
+					promptTokens: row.promptTokens,
+					completionTokens: row.completionTokens,
+					requests: row.requests,
+					consumerCostCents: row.consumerCostCents,
+				}))}
+				series={series}
+			/>
+		</Panel>
 	);
 }

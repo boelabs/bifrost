@@ -1,5 +1,6 @@
+import { AuditToolbar, AuditRows } from "#/features/audit/AuditToolbar.tsx";
 import { RouteBoundary } from "#/shared/components/RouteBoundary.tsx";
-import { AuditToolbar } from "#/features/audit/AuditToolbar.tsx";
+import { TableSkeleton } from "#/shared/components/Skeleton.tsx";
 import { AuditTable } from "#/features/audit/AuditTable.tsx";
 import { AUDIT_HEADERS } from "#/features/audit/common.ts";
 import { listAudit } from "#/features/audit/api.ts";
@@ -13,11 +14,6 @@ import {
 	DEFAULT_PERIOD,
 	PAGE_SIZE,
 } from "#/features/audit/filters.ts";
-
-import {
-	ToolbarSkeleton,
-	TableSkeleton,
-} from "#/shared/components/Skeleton.tsx";
 
 type Params = PageProps<"/audit">["searchParams"];
 
@@ -35,26 +31,23 @@ export default function AuditPage(props: PageProps<"/audit">) {
 				description="Who changed the gateway's configuration, and who read a retained prompt or completion. Append-only: nothing here can be edited or removed from the dashboard."
 				title="Audit"
 			/>
-			<Suspense
-				fallback={<ToolbarSkeleton widths={["11rem", "16rem", "16rem"]} />}
-			>
-				<Filters searchParams={props.searchParams} />
-			</Suspense>
-
-			<RouteBoundary title="The audit trail could not be loaded">
+			<AuditRows>
 				<Suspense
-					fallback={
-						<TableSkeleton
-							headers={AUDIT_HEADERS}
-							pagination
-							rows={10}
-							toolbar
-						/>
-					}
+					fallback={<AuditToolbar filters={{ period: undefined }} loading />}
 				>
-					<Trail searchParams={props.searchParams} />
+					<Filters searchParams={props.searchParams} />
 				</Suspense>
-			</RouteBoundary>
+
+				<RouteBoundary title="The audit trail could not be loaded">
+					<Suspense
+						fallback={
+							<TableSkeleton headers={AUDIT_HEADERS} pagination rows={10} />
+						}
+					>
+						<Trail searchParams={props.searchParams} />
+					</Suspense>
+				</RouteBoundary>
+			</AuditRows>
 		</>
 	);
 }

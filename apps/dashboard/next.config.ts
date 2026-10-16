@@ -43,6 +43,9 @@ const nextConfig: NextConfig = {
 	 */
 	output: "standalone",
 	outputFileTracingRoot: join(here, "../.."),
+
+	// Development only: the default corner covers the operator at the foot of the sidebar.
+	devIndicators: { position: "bottom-right" },
 };
 
 export default nextConfig;

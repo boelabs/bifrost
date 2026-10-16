@@ -113,7 +113,10 @@ Icon-only buttons are square (`mode="icon"`) and always have an `aria-label`.
 - **`Card`** is for standalone, self-contained flows: sign-in, confirmations.
 - **`Dialog`** only for short create/edit forms (**six fields or fewer**), confirmations and
   show-once secrets. Longer or multi-section editors get their own page. Records are inspected and
-  edited on their own pages with real URLs, never in a modal or side sheet.
+  edited on their own pages with real URLs, never in a modal or side sheet. A dialog is coss's:
+  `DialogTitle` (20px, `leading-none`) and `DialogDescription` 8px under it, never a hand-written
+  heading; the body starts 4px under the header; the close ✕ sits at the top right; the footer is
+  the muted strip with *Cancel* (outline) and the single primary submit.
 - Never nest a `Frame` inside a `Frame` or a `Card` inside a `Card`. Tables and empty states inside
   an existing panel use their plain variant. No decorative fieldsets.
 
@@ -147,9 +150,16 @@ Billete's shell, value for value (`src/features/shell`):
   (`aria-current="page"`) and is active on every page nested under it (`/models/new`,
   `/models/<id>`). Group captions are `text-xs font-medium text-muted-foreground`. A new page joins
   the group of its area; a new group is for a new area.
-- **UserMenu** at the sidebar's foot: avatar initial, name and a chevron; it opens upward with
-  name and role, the theme (*Light theme*, *Dark theme*, *Automatic*), *Keyboard shortcuts* and
-  *Sign out*.
+- **Create menu:** a quiet square "+" beside the search, in the sidebar and the mobile bar. Its menu
+  (*Create*) lists what the role can create (`CREATE_ACTIONS`), each with its shortcut as a
+  `MenuShortcut` (`C D`); items navigate, never mutate. A role that creates nothing gets no button.
+- **UserMenu** at the sidebar's foot: a 24px round initial (`bg-primary/10 text-primary`), the name
+  in `font-medium` and a chevron; it opens upward, as wide as its trigger, with name and role, the
+  theme as radio items with the check on the left (*Light theme*, *Dark theme*, *Automatic*),
+  *Settings* (`G ,`), *Keyboard shortcuts* (`?`) and *Sign out* (destructive). Built on the coss
+  menu primitives, not the adapter, so it renders exactly as Billete's.
+- The Next.js dev indicator sits bottom-right (`next.config.ts`): the default corner covers the
+  operator at the sidebar's foot.
 - **Command palette:** the search button beside the logo (and in the mobile bar) or Ctrl/⌘+K opens
   one coss `CommandDialog` with the pages and the create actions the role allows. The trigger has
   no visible text; its accessible name and title carry the action and shortcut. Triggers reach the
@@ -158,8 +168,8 @@ Billete's shell, value for value (`src/features/shell`):
 - **Keyboard shortcuts:** `g` then a letter goes to a page (`NavItem.key`), `c` then a letter
   creates (`CREATE_ACTIONS`), `?` lists them (`Kbd` keycaps, uppercase). Keys typed in a field, an
   editable area, a menu, a list or a dialog are never shortcuts, nor any with Ctrl, ⌘ or Alt.
-- **Phones:** a slim `MobileBar` (menu button, logo, search) opens the same sidebar as a left
-  `Sheet`.
+- **Phones:** a slim `MobileBar` — menu button, logo, then search and "+" right beside the logo —
+  opens the same sidebar as a left `Sheet`.
 - The shell never reads the pathname outside a `<Suspense>` boundary (it would block prerendering
   every dynamic route). A page that scrolls its own content (the playground) marks its root
   `data-fill-viewport` and gets the main column's exact height.
@@ -175,9 +185,15 @@ Every page is built from the same pieces, in this order:
 3. A toolbar row for lists (search and filters on one row that wraps), then the content: `Frame`s,
    `Panel`s, tables, charts, `StatCard` grids.
 
-**List pages:** `PageHeader` with the create action as its primary button → toolbar (search,
-filters, *Columns*) → table with pagination and a visible result count → empty state that says what
-the list is for and offers the primary action. A narrowed list that comes back empty says so and
+**List pages:** `PageHeader` with the create action as its primary button → `ListToolbar` → table
+with pagination and a visible result count → empty state that says what the list is for and offers
+the primary action. The toolbar has two sides: on the left the segment select (`ListSelect
+kind="segment"`, filter icon: *All keys, Enabled, Disabled*) and the order select (`kind="sort"`,
+arrows icon), 11rem each; on the right the search (16rem, icon inside), the other filters and the
+buttons (*Export*, *Columns*, *Refresh*), all at the default control size. They share a row when the
+toolbar fits them and wrap otherwise (a 40rem container query, not the window). Order is never a
+header click: column headers are plain muted text, and a table that sorts locally shows the arrow
+only on the sorted column. A narrowed list that comes back empty says so and
 offers to clear the filters, never the first-use empty state. Filters live in the URL so a filtered
 list survives reload, back and sharing. Table rows that have a page are links: the first column's
 link stretches over the row (`after:absolute after:inset-0`), and the row's own controls (its menu)
@@ -215,7 +231,8 @@ chart and table `Frame`s.
 | Status of a resource | `#/components/ui/status` → `Status` (tone `success`, `warning`, `danger`, `neutral`, `muted`) |
 | Tables | `#/components/ui/datatable` → `DataTable` (`rowHref` makes each row open its record); `#/components/ui/table` for bespoke ones |
 | A row's secondary actions | `#/shared/components/RowActions` → `RowActions` (one "…" menu, destructive items set apart) |
-| Nothing to show | `#/components/ui/page` → `EmptyState` |
+| Nothing to show | `#/components/ui/page` → `EmptyState` (`icon`, title, description, action) |
+| A list's toolbar | `#/shared/components/ListToolbar` → `ListToolbar` (`selects`, `controls`), `ListSelect` |
 | Errors of a form or a page | `#/components/ui/page` → `ErrorNote`; route failures `RouteBoundary` |
 | A list's search | `#/shared/components/SearchField` (icon inside, asks after a 300 ms pause, × clears; the term goes to the URL) |
 | A group of settings saved together | `#/features/settings/SettingsCard` → `SettingsCard`, `SettingRow`, `SettingsCardSkeleton` |
@@ -249,10 +266,10 @@ width. Build it from the page's own components and layout:
 - **One primary submit** per form, showing `loading` while pending. A submit that leads to another
   page keeps loading until that page is on screen (navigate inside a transition and pass
   `pending || navigating`). A failure never navigates, so the button unlocks with the error.
-- Full-page forms are a column of `Panel`s, one per group of related fields, then `FormActions`.
-  Forms whose fields read better narrow use a bounded column (`w-full max-w-3xl`), skeleton
-  included. Required panels come first; optional groups follow in their own panels, labelled
-  *(optional)* field by field.
+- Full-page forms are a column of `Panel`s, one per group of related fields, then `FormActions`,
+  across the content's full width like Billete's product form (two-column grids inside panels).
+  Required panels come first; optional groups follow in their own panels, labelled *(optional)*
+  field by field.
 - Labels are sentence case; optional fields say "(optional)" in the label.
 - Creation selects for providers, models and roles start with a placeholder and require an explicit
   choice; editing preserves stored values; filters may default to *All*.
@@ -271,9 +288,15 @@ width. Build it from the page's own components and layout:
 - Optional table columns live in a *Columns* menu; tables have row pagination and a visible count.
 - Repeat identifying context in each row rather than inserting group banners or nested tables.
 - Dates in tables: date over time, UTC, `tabular-nums`; exact timestamp on hover.
-- Statuses always through `Status`: success = enabled/succeeded, warning = degraded/retried,
-  danger = failed/revoked, neutral = disabled.
-- Numbers right-aligned in tables; text left-aligned.
+- Statuses always through `Status`, in sentence case (*Enabled*, *Success*, *Deprecated*; never the
+  raw lowercase value): success = enabled/succeeded, warning = degraded/retried, danger =
+  failed/revoked, neutral = disabled.
+- Numbers right-aligned in tables with `tabular-nums` (`align: "end"`); text left-aligned; the
+  record's identity is the first column.
+- An empty table or chart shows `EmptyState` with an icon tile, a title and one sentence, inside
+  its panel (`framed={false}`), never a bare line of text.
+- On phones a table of more than three columns reads as cards (`DataTable` sets `data-stack`): the
+  first cell is the title, every other cell sits beside its header.
 
 ## 8. Charts
 

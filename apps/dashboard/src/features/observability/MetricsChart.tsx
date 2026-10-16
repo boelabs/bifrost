@@ -1,11 +1,12 @@
 "use client";
 
-import { ContentPanel as Card } from "#/components/ui/card";
 import { ToggleGroup } from "#/components/ui/toggle-group";
 import { metricSeries, duration } from "./metrics-data";
+import { Panel } from "#/shared/components/Panel";
 import { Toggle } from "#/components/ui/toggle";
+import { FILL_PANEL } from "./ChartSkeleton";
 import type { DetailedMetrics } from "./api";
-import { useId, useState } from "react";
+import { useState } from "react";
 
 import {
 	type ChartSeries,
@@ -81,7 +82,6 @@ export function MetricsChart({
 	data: DetailedMetrics;
 	upstream?: boolean;
 }) {
-	const id = useId();
 	const options: View[] = upstream
 		? ["tokens", "cache", "writes", "errors"]
 		: ["requests", "latency", "errors"];
@@ -105,17 +105,8 @@ export function MetricsChart({
 		timeZone: "UTC",
 	});
 	return (
-		<Card aria-labelledby={id} className="min-w-0 overflow-hidden p-0">
-			<div className="flex flex-wrap items-start justify-between gap-4 border-border/50 border-b px-5 py-4">
-				<div>
-					<h2 className="font-semibold" id={id}>
-						{upstream ? "Deployment activity" : "Request activity"}
-					</h2>
-					<p className="mt-1 text-fg-muted text-xs">
-						{data.bucket === "hour" ? "Hourly" : "Daily"} · UTC
-						{upstream ? " · includes retries" : ""}
-					</p>
-				</div>
+		<Panel
+			action={
 				<ToggleGroup
 					aria-label={
 						upstream ? "Deployment chart metric" : "Request chart metric"
@@ -134,28 +125,30 @@ export function MetricsChart({
 						</Toggle>
 					))}
 				</ToggleGroup>
-			</div>
-			<div className="p-5">
-				<TimeSeriesChart
-					bucket={data.bucket}
-					formatTick={view === "latency" ? duration : undefined}
-					formatValue={view === "latency" ? duration : undefined}
-					intervalLabel={(timestamp) => {
-						const end = Math.min(
-							timestamp + (data.bucket === "day" ? 86_400_000 : 3_600_000),
-							Date.parse(data.end),
-						);
-						return `${date.format(timestamp)} – ${date.format(end)} UTC`;
-					}}
-					key={view}
-					kind={config.kind}
-					label={
-						config.label + (upstream ? " by deployment attempt" : " by request")
-					}
-					rows={[...points.values()]}
-					series={config.series}
-				/>
-			</div>
-		</Card>
+			}
+			className={FILL_PANEL}
+			description={`${data.bucket === "hour" ? "Hourly" : "Daily"} · UTC${upstream ? " · includes retries" : ""}`}
+			title={<h2>{upstream ? "Deployment activity" : "Request activity"}</h2>}
+		>
+			<TimeSeriesChart
+				bucket={data.bucket}
+				formatTick={view === "latency" ? duration : undefined}
+				formatValue={view === "latency" ? duration : undefined}
+				intervalLabel={(timestamp) => {
+					const end = Math.min(
+						timestamp + (data.bucket === "day" ? 86_400_000 : 3_600_000),
+						Date.parse(data.end),
+					);
+					return `${date.format(timestamp)} – ${date.format(end)} UTC`;
+				}}
+				key={view}
+				kind={config.kind}
+				label={
+					config.label + (upstream ? " by deployment attempt" : " by request")
+				}
+				rows={[...points.values()]}
+				series={config.series}
+			/>
+		</Panel>
 	);
 }

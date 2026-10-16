@@ -1,13 +1,12 @@
 "use client";
 
 import { type Column, DataTable, Dash, Mono } from "#/components/ui/datatable";
+import { outcomeLabel, usePublishLogRows } from "./LogsToolbar.tsx";
 import { useSearchWriter } from "#/shared/lib/useSearchWriter.ts";
 import { Pagination } from "#/shared/components/Pagination.tsx";
 import { Status, outcomeTone } from "#/components/ui/status";
 import { causeLabel, formatDuration } from "./trace.ts";
-import { Download as IconDownload } from "lucide-react";
 import { EmptyState } from "#/components/ui/page";
-import { downloadCsv } from "#/shared/lib/csv.ts";
 import { Button } from "#/components/ui/button";
 import type { OperationRow } from "./api.ts";
 
@@ -17,6 +16,11 @@ import {
 	isFiltered,
 	PAGE_SIZE,
 } from "./logFilters.ts";
+
+import {
+	ScrollText as IconScrollText,
+	SearchX as IconSearchX,
+} from "lucide-react";
 
 function errorCode(row: OperationRow): string | null {
 	const { error } = row as {
@@ -69,7 +73,8 @@ export function LogsTable({
 	total: number;
 	filters: LogsFilters;
 }) {
-	const { set } = useSearchWriter(filters);
+	const { set, clear } = useSearchWriter(filters);
+	usePublishLogRows(rows);
 	const filtered = isFiltered(filters);
 	// When the window is already "Everything", widening it is not the advice to give.
 	const everything = (filters.period ?? DEFAULT_PERIOD) === "all";
@@ -103,7 +108,7 @@ export function LogsTable({
 			header: "Outcome",
 			render: (row) => (
 				<Status tone={outcomeTone(row.outcome)}>
-					{row.outcome ?? row.lifecycleState}
+					{outcomeLabel(row.outcome ?? row.lifecycleState)}
 				</Status>
 			),
 		},
@@ -129,8 +134,8 @@ export function LogsTable({
 			render: (row) => (
 				<div className="flex items-center gap-1.5">
 					{row.httpStatus === null ? <Dash /> : <Mono>{row.httpStatus}</Mono>}
-					{row.stream ? <Status tone="muted">stream</Status> : null}
-					{row.cacheHit ? <Status tone="success">cached</Status> : null}
+					{row.stream ? <Status tone="muted">Stream</Status> : null}
+					{row.cacheHit ? <Status tone="success">Cached</Status> : null}
 				</div>
 			),
 		},
@@ -193,16 +198,37 @@ export function LogsTable({
 		},
 	];
 
-	return rows.length === 0 ? (
-		<EmptyState
-			description={
-				filtered || !everything
-					? "Widen the time range or clear the filters — traffic older than the window is not shown."
-					: "Traffic through /v1 appears here within seconds."
-			}
-			title="No operations match"
-		/>
-	) : (
+	if (rows.length === 0) {
+		if (filtered) {
+			return (
+				<EmptyState
+					description="Nothing in this time range matches the filters you chose."
+					icon={IconSearchX}
+					title="No operations match"
+				>
+					<Button
+						onClick={() => clear(["period", "from", "to"])}
+						variant="secondary"
+					>
+						Clear filters
+					</Button>
+				</EmptyState>
+			);
+		}
+		return (
+			<EmptyState
+				description={
+					everything
+						? "Traffic through /v1 appears here within seconds."
+						: "Nothing ran in this time range. Widen it to see older traffic."
+				}
+				icon={IconScrollText}
+				title={everything ? "No operations yet" : "No operations in this range"}
+			/>
+		);
+	}
+
+	return (
 		<>
 			<DataTable
 				caption="Gateway operations"
@@ -210,42 +236,6 @@ export function LogsTable({
 				rowHref={(row) => `/logs/${row.id}`}
 				rowKey={(row) => row.id}
 				rows={rows}
-				toolbar={
-					<Button
-						onClick={() =>
-							downloadCsv(
-								`operations-${new Date().toISOString().slice(0, 10)}.csv`,
-								rows,
-								[
-									["id", (row) => row.id],
-									["requestId", (row) => row.requestId],
-									["startedAt", (row) => row.startedAt],
-									["outcome", (row) => row.outcome ?? row.lifecycleState],
-									["httpStatus", (row) => row.httpStatus],
-									["publicModel", (row) => row.publicModel],
-									["callType", (row) => row.callType],
-									["servedBy", (row) => row.servedBy],
-									["actor", (row) => row.actor],
-									["attempts", (row) => row.attemptCount],
-									[
-										"cause",
-										(row) =>
-											row.lastFailure ? causeLabel(row.lastFailure) : null,
-									],
-									["firstOutputMs", (row) => row.firstOutputMs],
-									["durationMs", (row) => row.durationMs],
-									["totalTokens", (row) => row.totalTokens],
-									["stream", (row) => row.stream],
-									["cacheHit", (row) => row.cacheHit],
-								],
-							)
-						}
-						variant="secondary"
-					>
-						<IconDownload aria-hidden className="size-4" />
-						CSV
-					</Button>
-				}
 			/>
 			<Pagination
 				label="operations"

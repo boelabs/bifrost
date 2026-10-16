@@ -12,8 +12,10 @@ import { Form } from "#/components/ui/form";
 import { useState } from "react";
 
 import {
+	DialogDescription,
 	DialogHeader,
 	DialogFooter,
+	DialogTitle,
 	DialogBody,
 	Dialog,
 	Modal,
@@ -119,13 +121,13 @@ export function InstanceDialog({
 		<Modal isOpen={draft !== null} onOpenChange={(open) => !open && onClose()}>
 			<Dialog aria-label="Extension instance" layout="sectioned">
 				<DialogHeader>
-					<h2 className="font-semibold text-foreground text-xl">
+					<DialogTitle>
 						{editing ? "Edit instance" : "New instance"}
-					</h2>
-					<p className="pt-2 text-fg-muted text-sm">
+					</DialogTitle>
+					<DialogDescription>
 						An instance is one definition, running with one configuration. The
 						same definition can run several times with different matches.
-					</p>
+					</DialogDescription>
 				</DialogHeader>
 
 				<Form className="flex min-h-0 flex-1 flex-col" onSubmit={onSubmit}>

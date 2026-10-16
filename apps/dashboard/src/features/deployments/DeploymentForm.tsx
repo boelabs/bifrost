@@ -201,7 +201,7 @@ export function DeploymentForm({
 	}
 
 	return (
-		<Form className="flex w-full max-w-3xl flex-col gap-3" onSubmit={onSubmit}>
+		<Form className="flex flex-col gap-3" onSubmit={onSubmit}>
 			<Panel
 				description="The name clients send, and the provider model behind it."
 				title="Model"
@@ -268,7 +268,7 @@ export function DeploymentForm({
 								<>
 									{id}
 									{catalog.find((model) => model.id === id)?.deprecated ? (
-										<Status tone="warning">deprecated</Status>
+										<Status tone="warning">Deprecated</Status>
 									) : null}
 								</>
 							)}

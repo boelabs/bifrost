@@ -224,7 +224,7 @@ function KeyFields({
 	}
 
 	return (
-		<Form className="flex w-full max-w-3xl flex-col gap-3" onSubmit={onSubmit}>
+		<Form className="flex flex-col gap-3" onSubmit={onSubmit}>
 			<fieldset className="contents" disabled={disabled}>
 				<Panel
 					description={

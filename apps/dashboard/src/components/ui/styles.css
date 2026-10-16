@@ -260,6 +260,74 @@ body {
 }
 
 /**
+ * Phones have no room for a table of more than three columns (`DataTable` marks it `data-stack`):
+ * each row reads as a card, its first cell as the title and every other one below it beside its
+ * header (`data-label`). The markup is the table's own, so its skeleton, empty state and the link
+ * that opens a row stay the same. Outside any layer, like the rule above, to win over the card
+ * table's cell utilities.
+ */
+@media (width < 48rem) {
+	[data-stack] > thead {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+	[data-stack],
+	[data-stack] > tbody,
+	[data-stack] > tbody > tr,
+	[data-stack] > tbody > tr > td {
+		display: block;
+	}
+	[data-stack] > tbody {
+		border: 1px solid var(--border);
+		background-color: var(--card);
+	}
+	[data-stack] > tbody > tr {
+		display: flex;
+		flex-direction: column;
+		gap: --spacing(2);
+		padding: --spacing(3);
+	}
+	[data-stack] > tbody > tr:not(:last-child) {
+		border-bottom: 1px solid var(--border);
+	}
+	[data-stack] > tbody > tr > td {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: --spacing(4);
+		padding: 0;
+		border: 0;
+		border-radius: 0;
+		background-color: transparent;
+		white-space: normal;
+		line-height: 1.25;
+		text-align: end;
+	}
+	[data-stack] > tbody > tr > td:first-child,
+	[data-stack] > tbody > tr[data-empty] > td[colspan] {
+		justify-content: flex-start;
+		text-align: start;
+	}
+	/* A cell without a header holds the row's actions: at its end, as in the table. */
+	[data-stack] > tbody > tr > td:not(:first-child)[data-label=""] {
+		justify-content: flex-end;
+	}
+	[data-stack] > tbody > tr > td > * {
+		min-width: 0;
+	}
+	[data-stack] > tbody > tr > td:not(:first-child, [data-label=""])::before {
+		content: attr(data-label);
+		flex-shrink: 0;
+		color: var(--muted-foreground);
+		text-align: start;
+	}
+}
+
+/**
  * Shiny edge: inner highlight with light/dark-aware hairlines.
  *
  * Replicates the "shiny" effect used by inputs, selects, tables, and frame panels:

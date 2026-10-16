@@ -6,18 +6,17 @@ import { Combobox } from "./combobox";
 import { Field } from "./field";
 
 import {
-	ChevronDown as IconChevronDown,
-	ChevronsUpDown as IconSelector,
-	Check as IconCheck,
-} from "lucide-react";
-
-import {
 	type AppearanceProps,
 	type ControlProps,
 	mergeClassName,
 	itemStyles,
 	mergeStyle,
 } from "./appearance";
+
+import {
+	ChevronsUpDown as IconSelector,
+	Check as IconCheck,
+} from "lucide-react";
 
 import {
 	selectTriggerVariants,
@@ -126,9 +125,12 @@ export interface SelectProps<Value = string>
 	style?: BaseSelect.Trigger.Props["style"];
 	popoverClassName?: BaseSelect.Popup.Props["className"];
 	"aria-label"?: string;
+	/** An icon before the value, as Billete's toolbar selects (the period's calendar). */
+	icon?: ReactNode;
 }
 export function Select<Value = string>({
 	children,
+	icon,
 	label,
 	description,
 	errorMessage,
@@ -167,12 +169,13 @@ export function Select<Value = string>({
 					style={style}
 					variant={variant}
 				>
+					{icon}
 					<BaseSelect.Value
-						className="truncate data-placeholder:text-fg-muted"
+						className="flex-1 truncate text-start data-placeholder:text-fg-muted"
 						placeholder={placeholder}
 					/>
 					<BaseSelect.Icon>
-						<IconChevronDown className="size-4 shrink-0 text-fg-muted" />
+						<IconSelector className="-me-1 size-4.5 shrink-0 opacity-80 sm:size-4" />
 					</BaseSelect.Icon>
 				</Trigger>
 				<BaseSelect.Portal>

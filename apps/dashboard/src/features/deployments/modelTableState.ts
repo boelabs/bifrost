@@ -6,7 +6,19 @@ export interface ModelFilters {
 	state: string;
 }
 
-export type ModelSort = "publicModel" | "createdAt" | "updatedAt";
+/** The list's orders, as its order select offers them; the first is the default. */
+export const MODEL_ORDERS = [
+	{ value: "model", label: "Model (A–Z)" },
+	{ value: "newest", label: "Newest" },
+	{ value: "oldest", label: "Oldest" },
+	{ value: "updated", label: "Recently updated" },
+] as const;
+
+export type ModelOrder = (typeof MODEL_ORDERS)[number]["value"];
+
+export function isModelOrder(value: string): value is ModelOrder {
+	return MODEL_ORDERS.some((order) => order.value === value);
+}
 
 export function filterModelRows(rows: Deployment[], filters: ModelFilters) {
 	const query = filters.query.trim().toLocaleLowerCase();
@@ -25,20 +37,25 @@ export function filterModelRows(rows: Deployment[], filters: ModelFilters) {
 	);
 }
 
-export function sortModelRows(
-	rows: Deployment[],
-	key: ModelSort,
-	descending: boolean,
-) {
-	return [...rows].sort((a, b) => {
-		const comparison =
-			key === "publicModel"
-				? a.publicModel.localeCompare(b.publicModel) ||
-					a.upstreamModel.localeCompare(b.upstreamModel) ||
-					a.adapterKey.localeCompare(b.adapterKey)
-				: Date.parse(a[key]) - Date.parse(b[key]);
-		return (comparison || a.id.localeCompare(b.id)) * (descending ? -1 : 1);
-	});
+function byName(a: Deployment, b: Deployment) {
+	return (
+		a.publicModel.localeCompare(b.publicModel) ||
+		a.upstreamModel.localeCompare(b.upstreamModel) ||
+		a.adapterKey.localeCompare(b.adapterKey)
+	);
+}
+
+const COMPARE: Record<ModelOrder, (a: Deployment, b: Deployment) => number> = {
+	model: byName,
+	newest: (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
+	oldest: (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
+	updated: (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
+};
+
+/** A sorted copy; ties fall back to the id, so the order is stable across reloads. */
+export function sortModelRows(rows: Deployment[], order: ModelOrder) {
+	const compare = COMPARE[order];
+	return [...rows].sort((a, b) => compare(a, b) || a.id.localeCompare(b.id));
 }
 
 export function modelRowPage<T>(

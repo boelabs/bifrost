@@ -1,7 +1,7 @@
 "use client";
 
-import { ContentPanel as Card } from "#/components/ui/card";
 import type { getOverviewMetrics } from "./overview-data";
+import { Panel } from "#/shared/components/Panel";
 
 type Metrics = ReturnType<typeof getOverviewMetrics>;
 
@@ -53,12 +53,11 @@ export function RequestOutcomes({ metrics }: { metrics: Metrics }) {
 	);
 
 	return (
-		<Card className="flex min-w-0 flex-col p-5">
-			<h2 className="font-semibold">Request outcomes</h2>
-			<p className="mt-1 text-fg-muted text-xs">
-				Reliability across finished requests
-			</p>
-			<div className="mt-5 flex items-baseline gap-2">
+		<Panel
+			description="Reliability across finished requests"
+			title={<h2>Request outcomes</h2>}
+		>
+			<div className="flex items-baseline gap-2">
 				<span className="font-semibold text-[2rem] tabular-nums leading-none tracking-tight">
 					{share(metrics.successRate)}
 				</span>
@@ -100,13 +99,11 @@ export function RequestOutcomes({ metrics }: { metrics: Metrics }) {
 					</div>
 				))}
 			</dl>
-			<div className="mt-auto pt-5">
-				<div className="flex flex-wrap items-center justify-between gap-2 border-border/50 border-t pt-3 text-fg-muted text-xs tabular-nums">
-					<span>{count.format(metrics.finishedRequests)} finished</span>
-					<span>{count.format(metrics.outcomes.inProgress)} in progress</span>
-				</div>
+			<div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-border/50 border-t pt-3 text-fg-muted text-xs tabular-nums">
+				<span>{count.format(metrics.finishedRequests)} finished</span>
+				<span>{count.format(metrics.outcomes.inProgress)} in progress</span>
 			</div>
-		</Card>
+		</Panel>
 	);
 }
 
@@ -133,15 +130,14 @@ export function Reliability({ metrics }: { metrics: Metrics }) {
 		{ label: "Protocol errors", value: count.format(metrics.protocolErrors) },
 	];
 	return (
-		<Card className="flex min-w-0 flex-col p-5">
-			<h2 className="font-semibold">Delivery</h2>
-			<p className="mt-1 text-fg-muted text-xs">
-				What it took to finish them, across all attempts
-			</p>
-			<dl className="mt-4 divide-y divide-border/50 text-sm">
+		<Panel
+			description="What it took to finish them, across all attempts"
+			title={<h2>Delivery</h2>}
+		>
+			<dl className="divide-y divide-border/50 text-sm">
 				{rows.map((row) => (
 					<div
-						className="flex items-center justify-between gap-3 py-2.5"
+						className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0"
 						key={row.label}
 					>
 						<dt className="text-fg-muted">{row.label}</dt>
@@ -154,6 +150,6 @@ export function Reliability({ metrics }: { metrics: Metrics }) {
 					</div>
 				))}
 			</dl>
-		</Card>
+		</Panel>
 	);
 }

@@ -14,7 +14,7 @@ export const PAGE_SIZE = 50;
 export const ALL = "all";
 
 export const KINDS = {
-	admin: "Configuration changes",
+	admin: "Config changes",
 	payload_access: "Payload reads",
 } as const;
 

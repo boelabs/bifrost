@@ -129,6 +129,11 @@ bun test --preload ./tests/support/unitSetup.ts src/router/strategies.test.ts
   (`billete/apps/dashboard/DESIGN.md`): same tokens, primitives, shell (268px sidebar, no header,
   search beside the logo, operator at the foot) and page anatomy. Before adding a screen, study the
   existing ones and Billete's equivalent; a screen that would look out of place in Billete is wrong.
+- **Check parity against Billete running, not against memory or the docs.** Before calling a screen
+  done, open Billete's equivalent at the same viewport and theme (desktop and phone, light and dark)
+  and compare them side by side: control sizes, paddings, gaps, radii, icon choices, label case,
+  header and toolbar layout, empty and loading states. When the two disagree, port Billete's
+  component or classes rather than approximating them.
 - Page and toolbar controls (search, filters, export, header buttons) use the default size, matching
   the inputs beside them. Compact sizes belong inside table rows and popups.
 - **Dialogs only for short forms (six fields or fewer), confirmations and show-once secrets.**

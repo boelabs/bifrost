@@ -54,7 +54,7 @@ export default function ExtensionsPage() {
 async function RuntimeBadge() {
 	const status = await runtimeStatus();
 	return (
-		<Status tone={runtimeTone(status.status)}>runtime {status.status}</Status>
+		<Status tone={runtimeTone(status.status)}>Runtime {status.status}</Status>
 	);
 }
 

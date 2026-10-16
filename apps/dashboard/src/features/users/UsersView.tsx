@@ -1,8 +1,8 @@
 "use client";
 
+import { type DashboardUser, type Role, ROLE_LABELS, ROLES } from "./common.ts";
 import { type Column, DataTable, Dash, Mono } from "#/components/ui/datatable";
 import { useMutation, useRowActions } from "#/shared/lib/mutation.ts";
-import { type DashboardUser, type Role, ROLES } from "./common.ts";
 import { useSearchWriter } from "#/shared/lib/useSearchWriter.ts";
 import { RowActions } from "#/shared/components/RowActions.tsx";
 import { Pagination } from "#/shared/components/Pagination.tsx";
@@ -14,9 +14,11 @@ import { SessionsDialog } from "./SessionsDialog.tsx";
 import { PasswordDialog } from "./PasswordDialog.tsx";
 import { EmptyState } from "#/components/ui/page";
 import { Status } from "#/components/ui/status";
+import { Button } from "#/components/ui/button";
 import { useState } from "react";
 
 import {
+	SearchX as IconSearchX,
 	Trash2 as IconTrash,
 	KeyRound as IconKey,
 	Check as IconCheck,
@@ -39,7 +41,7 @@ export function UsersTable({
 	total: number;
 	filters: UsersFilters;
 }) {
-	const { set } = useSearchWriter(filters);
+	const { set, clear } = useSearchWriter(filters);
 	const { identity } = useSession();
 	const confirm = useConfirm();
 	const { pending, run } = useMutation();
@@ -118,7 +120,7 @@ export function UsersTable({
 				>
 					{ROLES.map((role) => (
 						<SelectItem key={role} value={role}>
-							{role}
+							{ROLE_LABELS[role]}
 						</SelectItem>
 					))}
 				</Select>
@@ -128,8 +130,8 @@ export function UsersTable({
 			key: "state",
 			header: "State",
 			render: (user) => (
-				<Status tone={user.enabled ? "success" : "muted"}>
-					{user.enabled ? "enabled" : "disabled"}
+				<Status tone={user.enabled ? "success" : "neutral"}>
+					{user.enabled ? "Enabled" : "Disabled"}
 				</Status>
 			),
 		},
@@ -138,7 +140,7 @@ export function UsersTable({
 			header: "Password",
 			render: (user) =>
 				user.mustChangePassword ? (
-					<Status tone="warning">must change</Status>
+					<Status tone="warning">Must change</Status>
 				) : (
 					<Dash />
 				),
@@ -214,13 +216,18 @@ export function UsersTable({
 				<EmptyState
 					description={
 						searched
-							? "Only usernames are searched."
+							? "Nothing matches the search. Only usernames are searched."
 							: "Only the root operator can sign in. It lives in the environment, not here, so it never appears in this list."
 					}
-					title={
-						searched ? "No operators match that search" : "No operators yet"
-					}
-				/>
+					icon={searched ? IconSearchX : IconUsers}
+					title={searched ? "No operators match" : "No operators yet"}
+				>
+					{searched ? (
+						<Button onClick={() => clear()} variant="secondary">
+							Clear search
+						</Button>
+					) : null}
+				</EmptyState>
 			) : (
 				<>
 					<DataTable
