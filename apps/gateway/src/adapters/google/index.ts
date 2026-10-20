@@ -153,10 +153,18 @@ function dataUrlToInline(
 	return { mimeType, data };
 }
 
+interface GeminiInlinePart extends Record<string, unknown> {
+	inlineData: { mimeType: string; data: string };
+}
+
+type CanonicalMediaPart = Exclude<CanonicalContentPart, { type: "text" }>;
+
 function partToGemini(p: CanonicalContentPart): Record<string, unknown> {
+	return p.type === "text" ? { text: p.text } : mediaPartToGemini(p);
+}
+
+function mediaPartToGemini(p: CanonicalMediaPart): GeminiInlinePart {
 	switch (p.type) {
-		case "text":
-			return { text: p.text };
 		case "image": {
 			const inline = dataUrlToInline(p.url);
 			if (!inline) {
@@ -211,6 +219,39 @@ function contentToParts(
 	return content.map(partToGemini);
 }
 
+/** Separates a tool result's text, which becomes the JSON response, from its binary media. */
+function splitToolResultContent(content: CanonicalMessage["content"]): {
+	text: string;
+	media: GeminiInlinePart[];
+} {
+	if (content === null) {
+		return { text: "", media: [] };
+	}
+	if (typeof content === "string") {
+		return { text: content, media: [] };
+	}
+	const texts: string[] = [];
+	const media: GeminiInlinePart[] = [];
+	for (const part of content) {
+		if (part.type === "text") {
+			texts.push(part.text);
+			continue;
+		}
+		media.push(mediaPartToGemini(part));
+	}
+	return { text: texts.join("\n"), media };
+}
+
+// MIME types Gemini 3 accepts inside FunctionResponse.parts; anything else stays a sibling part.
+function isFunctionResponseMedia({ inlineData }: GeminiInlinePart): boolean {
+	const { mimeType } = inlineData;
+	return (
+		mimeType.startsWith("image/") ||
+		mimeType === "application/pdf" ||
+		mimeType === "text/plain"
+	);
+}
+
 function googleToolCallExtra(toolCall: {
 	extraContent?: Record<string, unknown>;
 }): Record<string, unknown> | undefined {
@@ -245,6 +286,12 @@ function requiresThoughtSignature(ctx: AdapterContext): boolean {
 	return (
 		ctx.meta.reasoning?.kind === "gemini_level" || isGemini3OrNewerModel(ctx)
 	);
+}
+
+// Gemini 3 is the first generation whose FunctionResponse carries media parts; earlier models
+// answer 400 "Multimodal function responses are not supported for this model".
+function supportsMultimodalFunctionResponses(ctx: AdapterContext): boolean {
+	return requiresThoughtSignature(ctx);
 }
 
 function supportsStrictToolCalling(ctx: AdapterContext): boolean {
@@ -405,10 +452,7 @@ function buildGeminiBody(
 			const name = m.toolCallId
 				? (toolNameById.get(m.toolCallId) ?? "tool")
 				: "tool";
-			const text =
-				typeof m.content === "string"
-					? m.content
-					: JSON.stringify(m.content ?? "");
+			const { text, media } = splitToolResultContent(m.content);
 			let response: Record<string, unknown>;
 			try {
 				const parsed: unknown = JSON.parse(text);
@@ -420,6 +464,13 @@ function buildGeminiBody(
 			if (m.toolResultError === true) {
 				response = { error: response.error ?? response };
 			}
+			// Media travels as binary parts, never inside the JSON response: serialized base64 would
+			// be billed as text tokens. Gemini 3 nests it in the function response; older models
+			// reject that, so it follows the function response in the same turn instead.
+			const nested = supportsMultimodalFunctionResponses(ctx)
+				? media.filter(isFunctionResponseMedia)
+				: [];
+			const siblings = media.filter((part) => !nested.includes(part));
 			body.contents.push({
 				role: "user",
 				parts: [
@@ -427,9 +478,11 @@ function buildGeminiBody(
 						functionResponse: {
 							name,
 							response,
+							...(nested.length > 0 ? { parts: nested } : {}),
 							...(m.toolCallId ? { id: m.toolCallId } : {}),
 						},
 					},
+					...siblings,
 				],
 			});
 			continue;
