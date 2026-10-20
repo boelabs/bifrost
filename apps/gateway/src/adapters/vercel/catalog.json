@@ -151,7 +151,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -1275,7 +1275,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+						"levels": ["low", "medium", "high", "xhigh", "max"]
 					}
 				}
 			},
@@ -1315,7 +1315,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+						"levels": ["low", "medium", "high", "xhigh", "max"]
 					}
 				}
 			},
@@ -1356,7 +1356,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+						"levels": ["low", "medium", "high", "xhigh", "max"]
 					}
 				}
 			},
@@ -1397,7 +1397,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+						"levels": ["low", "medium", "high", "xhigh", "max"]
 					}
 				}
 			},
@@ -2197,56 +2197,6 @@
 				"cacheWriteCentsPerMTokens": 1000
 			}
 		},
-		"anthropic/claude-sonnet-4": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": true,
-						"reasoning": true,
-						"structuredOutputs": true
-					},
-					"maxInputTokens": 1000000,
-					"maxOutputTokens": 64000,
-					"modalities": {
-						"input": ["image", "pdf", "text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"include_reasoning": true,
-						"max_tokens": true,
-						"reasoning": true,
-						"reasoning_effort": true,
-						"response_format": true,
-						"stop": true,
-						"structured_outputs": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					},
-					"reasoning": {
-						"kind": "openai_effort",
-						"levels": ["none", "high"]
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 300,
-				"outputCentsPerMTokens": 1500,
-				"cacheReadCentsPerMTokens": 30,
-				"cacheWriteCentsPerMTokens": 375,
-				"tiers": [
-					{
-						"aboveInputTokens": 200001,
-						"inputCentsPerMTokens": 600,
-						"outputCentsPerMTokens": 2250,
-						"cacheReadCentsPerMTokens": 60,
-						"cacheWriteCentsPerMTokens": 750
-					}
-				]
-			}
-		},
 		"anthropic/claude-sonnet-4.5": {
 			"operations": {
 				"text.generate": {
@@ -2684,6 +2634,17 @@
 			}
 		},
 		"bfl/flux-3-image": {
+			"operations": {
+				"image.generate": {
+					"outputFormats": ["png", "jpeg", "webp"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"nativeOutputFormat": false,
+					"nativeOutputCompression": false
+				}
+			}
+		},
+		"bfl/flux-3-image-klein": {
 			"operations": {
 				"image.generate": {
 					"outputFormats": ["png", "jpeg", "webp"],
@@ -3432,6 +3393,46 @@
 					"maxInputTokens": 1048576,
 					"maxOutputTokens": 32768,
 					"modalities": {
+						"input": ["image", "pdf", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "high", "max"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 7.5,
+				"outputCentsPerMTokens": 30,
+				"cacheReadCentsPerMTokens": 0.15
+			}
+		},
+		"deepseek/deepseek-v4.1-flash-1017": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 1048576,
+					"modalities": {
 						"input": ["image", "text"],
 						"output": ["text"]
 					},
@@ -3455,9 +3456,49 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 30,
-				"outputCentsPerMTokens": 120,
-				"cacheReadCentsPerMTokens": 0.7
+				"inputCentsPerMTokens": 7.5,
+				"outputCentsPerMTokens": 30,
+				"cacheReadCentsPerMTokens": 0.15
+			}
+		},
+		"deepseek/deepseek-v4.1-flash-1017-fast": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 262144,
+					"modalities": {
+						"input": ["image", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 60,
+				"outputCentsPerMTokens": 240,
+				"cacheReadCentsPerMTokens": 1.4
 			}
 		},
 		"deepseek/deepseek-v4.1-flash-fast": {
@@ -3498,6 +3539,42 @@
 				"inputCentsPerMTokens": 60,
 				"outputCentsPerMTokens": 240,
 				"cacheReadCentsPerMTokens": 1.4
+			}
+		},
+		"elorian/glimpse": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 220000,
+					"maxOutputTokens": 4096,
+					"modalities": {
+						"input": ["image", "text", "video"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"stop": true,
+						"temperature": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "xhigh"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 60,
+				"outputCentsPerMTokens": 300,
+				"cacheReadCentsPerMTokens": 6
 			}
 		},
 		"fireworks/ember-1": {
@@ -6706,6 +6783,46 @@
 				"cacheReadCentsPerMTokens": 0.4
 			}
 		},
+		"inception/mercury-3": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 131072,
+					"modalities": {
+						"input": ["text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 10,
+				"outputCentsPerMTokens": 35,
+				"cacheReadCentsPerMTokens": 1
+			}
+		},
 		"inception/mercury-coder-small": {
 			"operations": {
 				"text.generate": {
@@ -7551,6 +7668,46 @@
 				"cacheReadCentsPerMTokens": 0.2
 			}
 		},
+		"meta/muse-spark-open": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 1048576,
+					"modalities": {
+						"input": ["audio", "image", "text", "video"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high", "xhigh"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 125,
+				"outputCentsPerMTokens": 425,
+				"cacheReadCentsPerMTokens": 15
+			}
+		},
 		"meta/muse-wonder-1.0": {
 			"operations": {
 				"text.generate": {
@@ -7948,6 +8105,45 @@
 				"cacheReadCentsPerMTokens": 6
 			}
 		},
+		"minimax/minimax-m3.1-flash": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 524288,
+					"modalities": {
+						"input": ["image", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high", "xhigh", "max"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 0,
+				"outputCentsPerMTokens": 0
+			}
+		},
 		"mistral/codestral": {
 			"operations": {
 				"text.generate": {
@@ -8169,9 +8365,9 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 68,
-				"outputCentsPerMTokens": 209,
-				"cacheReadCentsPerMTokens": 7
+				"inputCentsPerMTokens": 136,
+				"outputCentsPerMTokens": 418,
+				"cacheReadCentsPerMTokens": 14
 			}
 		},
 		"mistral/mistral-medium-3.5": {
@@ -8372,7 +8568,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -8530,7 +8726,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "high", "max"]
+						"levels": ["low", "high", "max"]
 					}
 				}
 			},
@@ -8665,7 +8861,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -8705,7 +8901,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -8744,7 +8940,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "medium", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -8784,7 +8980,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -8833,6 +9029,46 @@
 				"outputCentsPerMTokens": 0
 			}
 		},
+		"nvidia/nemotron-3.5-super-vl": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 1048576,
+					"modalities": {
+						"input": ["image", "text", "video"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 20,
+				"outputCentsPerMTokens": 50,
+				"cacheReadCentsPerMTokens": 4
+			}
+		},
 		"nvidia/nemotron-nano-12b-v2-vl": {
 			"operations": {
 				"text.generate": {
@@ -8861,7 +9097,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -8898,7 +9134,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -12893,17 +13129,6 @@
 				}
 			}
 		},
-		"quiverai/arrow-1.1": {
-			"operations": {
-				"image.generate": {
-					"outputFormats": ["png", "jpeg", "webp"],
-					"responseFormats": ["b64_json"],
-					"autoSize": {},
-					"nativeOutputFormat": false,
-					"nativeOutputCompression": false
-				}
-			}
-		},
 		"quiverai/arrow-2": {
 			"operations": {
 				"text.generate": {
@@ -13109,6 +13334,84 @@
 				}
 			}
 		},
+		"reflection/beam": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 131072,
+					"modalities": {
+						"input": ["text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high", "xhigh", "max"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 0,
+				"outputCentsPerMTokens": 0
+			}
+		},
+		"reflection/beam-free": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 131072,
+					"modalities": {
+						"input": ["text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high", "xhigh", "max"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 0,
+				"outputCentsPerMTokens": 0
+			}
+		},
 		"sakana/fugu-max": {
 			"operations": {
 				"text.generate": {
@@ -13139,7 +13442,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["high", "xhigh"]
+						"levels": ["high", "xhigh", "max"]
 					}
 				}
 			},
@@ -13179,7 +13482,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["high", "xhigh"]
+						"levels": ["high", "xhigh", "max"]
 					}
 				}
 			},
@@ -13227,7 +13530,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["high", "xhigh"]
+						"levels": ["high", "xhigh", "max"]
 					}
 				}
 			},
@@ -13275,7 +13578,15 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high"]
+						"levels": [
+							"none",
+							"minimal",
+							"low",
+							"medium",
+							"high",
+							"xhigh",
+							"max"
+						]
 					}
 				}
 			},
@@ -13283,6 +13594,64 @@
 				"inputCentsPerMTokens": 95,
 				"outputCentsPerMTokens": 400,
 				"cacheReadCentsPerMTokens": 15
+			}
+		},
+		"scaledown/scaledown-extract-1": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 1000000,
+					"modalities": {
+						"input": ["text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"max_tokens": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 5,
+				"outputCentsPerMTokens": 0
+			}
+		},
+		"scaledown/scaledown-summarize-1": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": false,
+						"reasoning": false,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 1000,
+					"modalities": {
+						"input": ["text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"max_tokens": true,
+						"stop": true,
+						"temperature": true
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 5,
+				"outputCentsPerMTokens": 0
 			}
 		},
 		"spacexai/grok-4.1-fast-non-reasoning": {
@@ -14188,15 +14557,15 @@
 			"operations": {
 				"text.generate": {
 					"capabilities": {
-						"tools": false,
+						"tools": true,
 						"vision": true,
 						"reasoning": true,
 						"structuredOutputs": true
 					},
-					"maxInputTokens": 1000000,
-					"maxOutputTokens": 1000000,
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 1048576,
 					"modalities": {
-						"input": ["image", "text"],
+						"input": ["image", "text", "video"],
 						"output": ["text"]
 					},
 					"contracts": ["chat.completions", "responses"],
@@ -14208,7 +14577,9 @@
 						"response_format": true,
 						"stop": true,
 						"structured_outputs": true,
-						"temperature": true
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
 					},
 					"reasoning": {
 						"kind": "openai_effort",
@@ -14219,7 +14590,7 @@
 			"pricing": {
 				"inputCentsPerMTokens": 100,
 				"outputCentsPerMTokens": 270,
-				"cacheReadCentsPerMTokens": 5
+				"cacheReadCentsPerMTokens": 10
 			}
 		},
 		"tencent/hy-mt2-lite": {
@@ -14731,9 +15102,9 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 43.5,
-				"outputCentsPerMTokens": 87,
-				"cacheReadCentsPerMTokens": 0.36
+				"inputCentsPerMTokens": 30.45,
+				"outputCentsPerMTokens": 60.9,
+				"cacheReadCentsPerMTokens": 0.28
 			}
 		},
 		"xiaomi/mimo-v2.6-flash": {
@@ -15046,7 +15417,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -15085,7 +15456,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -15122,7 +15493,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -15162,7 +15533,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -15199,7 +15570,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -15239,7 +15610,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
@@ -15519,7 +15890,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "high"]
+						"levels": ["none", "low", "medium", "high"]
 					}
 				}
 			},
