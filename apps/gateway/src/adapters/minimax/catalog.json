@@ -8,6 +8,66 @@
 		"docs": ["https://platform.minimax.io/docs/guides/pricing-paygo"]
 	},
 	"models": {
+		"MiniMax-M3.1-Flash": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 524288,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high", "xhigh", "max"]
+					},
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": false,
+						"temperature": {
+							"mode": "ignored",
+							"notes": "MiniMax does not support temperature yet; any value has no effect."
+						},
+						"tool_choice": {
+							"mode": "supported",
+							"values": ["auto"],
+							"notes": "MiniMax documents only auto."
+						},
+						"tools": true,
+						"top_p": {
+							"mode": "ignored",
+							"notes": "Fixed at 0.95 upstream; values outside (0, 1] are still rejected."
+						},
+						"stop": false,
+						"top_k": false,
+						"repetition_penalty": false,
+						"frequency_penalty": {
+							"mode": "ignored",
+							"notes": "MiniMax's OpenAI-compatible API ignores this parameter."
+						},
+						"presence_penalty": {
+							"mode": "ignored",
+							"notes": "MiniMax's OpenAI-compatible API ignores this parameter."
+						},
+						"seed": false,
+						"structured_outputs": false,
+						"logprobs": false,
+						"top_logprobs": false
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 15,
+				"outputCentsPerMTokens": 60,
+				"cacheReadCentsPerMTokens": 1.5
+			},
+			"notes": "Thinking cannot be turned off (thinking disabled or effort none returns 400); effort defaults to max upstream. No priority tier."
+		},
 		"MiniMax-M3": {
 			"operations": {
 				"text.generate": {
@@ -104,7 +164,7 @@
 				"cacheWriteCentsPerMTokens": 37.5
 			},
 			"deprecated": true,
-			"notes": "MiniMax retires MiniMax-M2.7 on 2026-11-18 (closed to new users from 2026-10-19); no pay-as-you-go replacement is named, and M Plan/Token Plan requests are routed to MiniMax-M3.1-Flash-Preview."
+			"notes": "MiniMax retires MiniMax-M2.7 on 2026-11-18 (closed to new users from 2026-10-19); no pay-as-you-go replacement is named, and M Plan/Token Plan requests are routed to MiniMax-M3.1-Flash."
 		},
 		"MiniMax-M2.7-highspeed": {
 			"operations": {
@@ -139,7 +199,7 @@
 				"cacheWriteCentsPerMTokens": 37.5
 			},
 			"deprecated": true,
-			"notes": "MiniMax retires MiniMax-M2.7-highspeed on 2026-11-18 (closed to new users from 2026-10-19); no pay-as-you-go replacement is named, and M Plan/Token Plan requests are routed to MiniMax-M3.1-Flash-Preview."
+			"notes": "MiniMax retires MiniMax-M2.7-highspeed on 2026-11-18 (closed to new users from 2026-10-19); no pay-as-you-go replacement is named, and M Plan/Token Plan requests are routed to MiniMax-M3.1-Flash."
 		},
 		"MiniMax-M2.5": {
 			"operations": {
@@ -187,7 +247,7 @@
 				"cacheWriteCentsPerMTokens": 37.5
 			},
 			"deprecated": true,
-			"notes": "MiniMax retires MiniMax-M2.5 on 2026-11-18 (closed to new users from 2026-10-19); no pay-as-you-go replacement is named, and M Plan/Token Plan requests are routed to MiniMax-M3.1-Flash-Preview."
+			"notes": "MiniMax retires MiniMax-M2.5 on 2026-11-18 (closed to new users from 2026-10-19); no pay-as-you-go replacement is named, and M Plan/Token Plan requests are routed to MiniMax-M3.1-Flash."
 		},
 		"MiniMax-M2.5-highspeed": {
 			"operations": {
@@ -222,7 +282,7 @@
 				"cacheWriteCentsPerMTokens": 37.5
 			},
 			"deprecated": true,
-			"notes": "MiniMax retires MiniMax-M2.5-highspeed on 2026-11-18 (closed to new users from 2026-10-19); no pay-as-you-go replacement is named, and M Plan/Token Plan requests are routed to MiniMax-M3.1-Flash-Preview."
+			"notes": "MiniMax retires MiniMax-M2.5-highspeed on 2026-11-18 (closed to new users from 2026-10-19); no pay-as-you-go replacement is named, and M Plan/Token Plan requests are routed to MiniMax-M3.1-Flash."
 		},
 		"MiniMax-M2.1": {
 			"operations": {
@@ -274,7 +334,9 @@
 				"outputCentsPerMTokens": 120,
 				"cacheReadCentsPerMTokens": 3,
 				"cacheWriteCentsPerMTokens": 37.5
-			}
+			},
+			"deprecated": true,
+			"notes": "MiniMax lists MiniMax-M2.1 as retired; requests to it no longer work."
 		},
 		"MiniMax-M2.1-highspeed": {
 			"operations": {
@@ -293,7 +355,9 @@
 				"inputCentsPerMTokens": 60,
 				"outputCentsPerMTokens": 240,
 				"cacheReadCentsPerMTokens": 3
-			}
+			},
+			"deprecated": true,
+			"notes": "MiniMax lists MiniMax-M2.1-highspeed as retired; requests to it no longer work."
 		},
 		"MiniMax-M2": {
 			"operations": {
@@ -345,7 +409,9 @@
 				"outputCentsPerMTokens": 120,
 				"cacheReadCentsPerMTokens": 3,
 				"cacheWriteCentsPerMTokens": 37.5
-			}
+			},
+			"deprecated": true,
+			"notes": "MiniMax lists MiniMax-M2 as retired; requests to it no longer work."
 		}
 	}
 }

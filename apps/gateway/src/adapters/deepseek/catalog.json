@@ -83,7 +83,7 @@
 				"cacheReadCentsPerMTokens": 0.6
 			},
 			"deprecated": true,
-			"notes": "DeepSeek retired deepseek-v4-flash on 2026-09-10; the name is still accepted, served by DeepSeek-V4.1-Flash and billed at the Flash price (replacement: deepseek-flash)."
+			"notes": "DeepSeek retired deepseek-v4-flash on 2026-09-10; the name is still accepted, served by DeepSeek-V4.1-Flash-1017 and billed at the Flash price (replacement: deepseek-flash)."
 		},
 		"deepseek-v4-pro": {
 			"operations": {
@@ -225,13 +225,16 @@
 		"deepseek-flash": {
 			"operations": {
 				"text.generate": {
-					"maxOutputTokens": 384000,
+					"maxOutputTokens": 393216,
 					"parameters": {
 						"max_tokens": true,
 						"temperature": true,
 						"stop": true,
 						"tools": true,
-						"tool_choice": true,
+						"tool_choice": {
+							"mode": "supported",
+							"notes": "required and named tool choices return 400 in thinking mode."
+						},
 						"reasoning": true,
 						"include_reasoning": true,
 						"top_p": true,
@@ -246,15 +249,40 @@
 						"logprobs": true,
 						"top_logprobs": true,
 						"response_format": true,
-						"reasoning_effort": true
+						"reasoning_effort": {
+							"mode": "mapped",
+							"values": ["low", "high", "max"],
+							"notes": "DeepSeek accepts none/low/high/max natively; canonical medium and xhigh snap to high."
+						},
+						"thinking": {
+							"mode": "supported",
+							"upstreamField": "thinking",
+							"values": ["enabled", "disabled"],
+							"notes": "Thinking defaults to enabled upstream; the gateway emits disabled when public effort is none."
+						}
 					},
 					"capabilities": {
 						"tools": true,
 						"vision": true,
 						"structuredOutputs": false,
-						"strictTools": true
+						"strictTools": true,
+						"reasoning": true
 					},
-					"maxInputTokens": 1000000
+					"maxInputTokens": 1000000,
+					"reasoning": {
+						"kind": "openai_body",
+						"levels": ["none", "low", "high", "max"],
+						"bodyField": {
+							"param": "thinking",
+							"onValue": {
+								"type": "enabled"
+							},
+							"offValue": {
+								"type": "disabled"
+							}
+						},
+						"effortField": "reasoning_effort"
+					}
 				}
 			},
 			"pricing": {
@@ -262,7 +290,7 @@
 				"outputCentsPerMTokens": 120,
 				"cacheReadCentsPerMTokens": 0.6
 			},
-			"notes": "Published alias for DeepSeek-V4.1-Flash (deepseek-v4.1-flash)."
+			"notes": "Published alias for DeepSeek-V4.1-Flash-1017 (upgraded 2026-10-17; same API and price)."
 		},
 		"deepseek-v4-flash-vision-exp": {
 			"operations": {
@@ -308,7 +336,7 @@
 				"cacheReadCentsPerMTokens": 0.6
 			},
 			"deprecated": true,
-			"notes": "DeepSeek retired deepseek-v4-flash-vision-exp on 2026-09-10; the name is still accepted, served by DeepSeek-V4.1-Flash and billed at the Flash price (replacement: deepseek-flash)."
+			"notes": "DeepSeek retired deepseek-v4-flash-vision-exp on 2026-09-10; the name is still accepted, served by DeepSeek-V4.1-Flash-1017 and billed at the Flash price (replacement: deepseek-flash)."
 		}
 	}
 }
