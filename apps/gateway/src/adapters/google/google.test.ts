@@ -608,6 +608,128 @@ test("google.buildRequest: Gemini 3 recovers unsigned Responses history", async 
 	);
 });
 
+const PNG_BASE64 =
+	"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+
+async function multimodalToolOutputBody(
+	adapterCtx: AdapterContext,
+	output: unknown[],
+) {
+	const { responsesRequestSchema } = await import(
+		"#contracts/openai/responses.ts"
+	);
+	const { responsesRequestToCanonical } = await import(
+		"#contracts/openai/responsesRender.ts"
+	);
+	const canonical = responsesRequestToCanonical(
+		responsesRequestSchema.parse({
+			model: "gemini",
+			tools: [
+				{
+					type: "function",
+					name: "view",
+					parameters: { type: "object", properties: {} },
+				},
+			],
+			input: [
+				{
+					role: "user",
+					content: [{ type: "input_text", text: "Describe the image." }],
+				},
+				{ type: "function_call", call_id: "c1", name: "view", arguments: "{}" },
+				{ type: "function_call_output", call_id: "c1", output },
+			],
+		}),
+	);
+	return JSON.parse(
+		must(googleAdapter, "chat").buildRequest(canonical, adapterCtx).body!,
+	);
+}
+
+test("google.buildRequest: Gemini 3 nests tool output media in the function response", async () => {
+	const body = await multimodalToolOutputBody(geminiLevelCtx, [
+		{ type: "input_text", text: "Page 1" },
+		{ type: "input_image", image_url: `data:image/png;base64,${PNG_BASE64}` },
+		{
+			type: "input_file",
+			filename: "report.pdf",
+			file_data: "data:application/pdf;base64,JVBERi0x",
+		},
+	]);
+	assert.deepEqual(body.contents[2], {
+		role: "user",
+		parts: [
+			{
+				functionResponse: {
+					name: "view",
+					response: { result: "Page 1" },
+					parts: [
+						{ inlineData: { mimeType: "image/png", data: PNG_BASE64 } },
+						{ inlineData: { mimeType: "application/pdf", data: "JVBERi0x" } },
+					],
+					id: "c1",
+				},
+			},
+		],
+	});
+});
+
+test("google.buildRequest: older Gemini models get tool output media beside the function response", async () => {
+	const body = await multimodalToolOutputBody(ctx, [
+		{ type: "input_text", text: "Page 1" },
+		{ type: "input_image", image_url: `data:image/png;base64,${PNG_BASE64}` },
+	]);
+	assert.deepEqual(body.contents[2], {
+		role: "user",
+		parts: [
+			{
+				functionResponse: {
+					name: "view",
+					response: { result: "Page 1" },
+					id: "c1",
+				},
+			},
+			{ inlineData: { mimeType: "image/png", data: PNG_BASE64 } },
+		],
+	});
+});
+
+test("google.buildRequest: tool output media Gemini cannot nest stays beside the function response", () => {
+	const body = JSON.parse(
+		must(googleAdapter, "chat").buildRequest(
+			{
+				...req,
+				messages: [
+					{
+						role: "assistant",
+						content: null,
+						toolCalls: [{ id: "c1", name: "listen", arguments: "{}" }],
+					},
+					{
+						role: "tool",
+						toolCallId: "c1",
+						content: [
+							{ type: "text", text: '{"seconds":3}' },
+							{ type: "audio", format: "mp3", data: "SUQz" },
+						],
+					},
+				],
+			},
+			geminiLevelCtx,
+		).body!,
+	);
+	assert.deepEqual(body.contents[1].parts, [
+		{
+			functionResponse: {
+				name: "listen",
+				response: { seconds: 3 },
+				id: "c1",
+			},
+		},
+		{ inlineData: { mimeType: "audio/mpeg", data: "SUQz" } },
+	]);
+});
+
 test("google.buildRequest: older Gemini models do not receive synthetic signatures", () => {
 	const body = JSON.parse(
 		must(googleAdapter, "chat").buildRequest(
