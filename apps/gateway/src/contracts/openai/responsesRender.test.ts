@@ -2070,3 +2070,69 @@ test("request fidelity: native-only items are retained instead of silently dropp
 	assert.equal(canonical.requiresNativeWire, true);
 	assert.deepEqual(canonical.responsesTransport?.rawInput, input);
 });
+
+test("request fidelity: unmapped function_call_output parts are retained instead of silently dropped", () => {
+	for (const part of [
+		{ type: "input_video", video_url: "https://example.com/clip.mp4" },
+		{ type: "input_image", detail: "auto" },
+	]) {
+		const input = [
+			{
+				type: "function_call",
+				call_id: "call-1",
+				name: "view",
+				arguments: "{}",
+			},
+			{
+				type: "function_call_output",
+				call_id: "call-1",
+				output: [{ type: "input_text", text: "Page 1" }, part],
+			},
+		];
+		const canonical = responsesRequestToCanonical(
+			parse({ model: "response-model", input }),
+		);
+		assert.equal(canonical.requiresNativeWire, true, part.type);
+		assert.deepEqual(canonical.responsesTransport?.rawInput, input);
+	}
+});
+
+test("request fidelity: fully mapped function_call_output parts keep any transport", () => {
+	const canonical = responsesRequestToCanonical(
+		parse({
+			model: "response-model",
+			input: [
+				{
+					type: "function_call",
+					call_id: "call-1",
+					name: "view",
+					arguments: "{}",
+				},
+				{
+					type: "function_call_output",
+					call_id: "call-1",
+					output: [
+						{ type: "input_text", text: "Page 1" },
+						{ type: "input_image", image_url: "data:image/png;base64,AA==" },
+						{
+							type: "input_file",
+							filename: "a.pdf",
+							file_data: "data:application/pdf;base64,JVBERi0x",
+						},
+					],
+				},
+			],
+		}),
+	);
+	assert.equal(canonical.requiresNativeWire, undefined);
+	assert.equal(canonical.responsesTransport?.rawInput, undefined);
+	assert.deepEqual(canonical.messages[1]?.content, [
+		{ type: "text", text: "Page 1" },
+		{ type: "image", url: "data:image/png;base64,AA==" },
+		{
+			type: "file",
+			fileData: "data:application/pdf;base64,JVBERi0x",
+			filename: "a.pdf",
+		},
+	]);
+});

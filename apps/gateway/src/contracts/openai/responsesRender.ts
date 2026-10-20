@@ -500,10 +500,21 @@ export function responsesRequestToCanonical(
 				}
 				case "function_call_output": {
 					const out = item.output;
+					const content =
+						typeof out === "string" ? out : mapMessageContent(out);
+					// Parts the canonical form cannot hold reach a native upstream verbatim, which
+					// accepts or rejects them, instead of disappearing from the tool result.
+					if (
+						Array.isArray(out) &&
+						Array.isArray(content) &&
+						content.length !== out.length
+					) {
+						requiresNativeInput = true;
+					}
 					messages.push({
 						role: "tool",
 						toolCallId: stripThoughtSignatureId(String(item.call_id ?? "")),
-						content: typeof out === "string" ? out : mapMessageContent(out),
+						content,
 					});
 					break;
 				}
