@@ -1529,7 +1529,9 @@
 				"outputCentsPerMTokens": 800,
 				"cacheReadCentsPerMTokens": 50,
 				"cacheWriteCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-4.1 (gpt-4.1-2025-04-14); it shuts down on 2027-01-14 (replacement: gpt-6-luna)."
 		},
 		"gpt-4.1-mini": {
 			"operations": {
@@ -1561,7 +1563,9 @@
 				"outputCentsPerMTokens": 160,
 				"cacheReadCentsPerMTokens": 10,
 				"cacheWriteCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-4.1-mini (gpt-4.1-mini-2025-04-14); it shuts down on 2027-01-14 (replacement: gpt-6-luna)."
 		},
 		"gpt-4o-mini": {
 			"operations": {
