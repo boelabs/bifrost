@@ -24,6 +24,7 @@
 	},
 	"overrides": {
 		"@grpc/grpc-js": "1.14.5",
+		"@modelcontextprotocol/sdk": "1.32.1",
 		"esbuild": "0.28.1",
 		"nanoid": "3.3.18",
 		"postcss": "8.5.26",
