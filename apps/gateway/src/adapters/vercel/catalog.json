@@ -15792,7 +15792,7 @@
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 131000,
 					"modalities": {
-						"input": ["image", "text"],
+						"input": ["image", "text", "video"],
 						"output": ["text"]
 					},
 					"contracts": ["chat.completions", "responses"],
