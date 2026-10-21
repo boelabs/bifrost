@@ -15062,9 +15062,9 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 14,
-				"outputCentsPerMTokens": 28,
-				"cacheReadCentsPerMTokens": 0.28
+				"inputCentsPerMTokens": 11.9,
+				"outputCentsPerMTokens": 23.8,
+				"cacheReadCentsPerMTokens": 0.25
 			}
 		},
 		"xiaomi/mimo-v2.5-pro": {
