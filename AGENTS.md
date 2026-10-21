@@ -76,9 +76,9 @@ Dashboard-only: `bun run --filter @boelabs/dashboard <script>` — `dev`, `build
 `typecheck`, `test`, `api:types`.
 
 Gateway-only: `bun run --filter @boelabs/bifrost <script>` — `dev`, `start`, `db:generate`,
-`db:migrate`, `db:studio`, `test:integration`, `test:all`, `catalog:validate`,
-`catalog:sync[:verify]`, `catalog:sync:vercel[:write|:verify]`, `encryption:rotate`,
-`openapi:generate`.
+`db:migrate`, `db:studio`, `test:integration`, `test:all`, `catalog:validate`, `catalog:guard`,
+`catalog:sync[:verify]`, `catalog:sync:vercel[:write|:verify]`,
+`catalog:sync:openrouter[:write|:verify]`, `encryption:rotate`, `openapi:generate`.
 
 **Before finishing any change**: `bun run check`, `bun run typecheck`, `bun run test`. If you
 touched the database, router, rate limiting, or admin endpoints, also `test:integration` (needs a
@@ -218,13 +218,23 @@ consumes) plus `deprecated`, `notes`, and `needsHumanReview`. The loader rejects
 not add descriptive metadata (names, lifecycle dates, modality lists, provenance); it was removed on
 purpose.
 
-**Catalog sync.** `apps/gateway/src/catalog/sync/` (CLI: `catalog:sync[:verify]`) is a **local,
-report-only** tool — it never writes to any `catalog.json` and has no CI automation. It
-cross-references Vercel AI Gateway and OpenRouter (plus models.dev for enrichment) and writes
+**Catalog sync.** `apps/gateway/src/catalog/sync/` (CLI: `catalog:sync[:verify]`) is a
+**report-only** tool — it never writes to any `catalog.json`. It cross-references Vercel AI Gateway
+and OpenRouter (plus models.dev for enrichment) and writes
 `apps/gateway/.source/catalog-sync/REPORT.md` + `report.json` (gitignored): drafted entries for new
 models, stale pricing/context/limit essentials, models no longer listed upstream, and numeric
-conflicts between sources. A human applies what they agree with; `operations` details are always
-human work. `--mode verify` exits non-zero when the report is non-empty.
+conflicts between sources. The report is a worksheet, not a source: every value applied to a
+catalog is verified against the provider's own docs. `--mode verify` exits non-zero when the report
+is non-empty.
+
+**The catalog agent.** A scheduled cloud agent applies the sync twice a day (10:00 and 22:00
+America/Caracas): it researches new models and deprecations on the providers' own pages, edits the
+catalogs, opens a `chore/catalog-sync-*` pull request and squash-merges it when CI is green. Its
+procedure and limits are in [the catalog agent runbook](apps/gateway/src/catalog/sync/RUNBOOK.md),
+which also applies to anyone syncing catalogs by hand. Its merge gate is `catalog:guard`: only
+`catalog.json` files may change, no model may disappear from a hand-maintained catalog, no
+deprecation may be undone (all three block), and a price that moves by 1.5x or more, or disappears,
+leaves the pull request open for a human.
 
 Reasoning specs are a special case: no source expresses *how* a model controls reasoning
 (`ReasoningSpec.kind`/`levels`/`budgets`), so drafts built from models.dev carry
@@ -236,6 +246,23 @@ deterministically generates `src/adapters/vercel/catalog.json` from Vercel's pub
 Use `catalog:sync:vercel` for a candidate, `:write` to update the snapshot, `:verify` for drift.
 
 ## 8. Git workflow
+
+### Before you start — every task
+
+Do this before reading code for a change, not after writing it:
+
+1. **Look at the checkout.** `git status` and `git branch --show-current`. Uncommitted work you did
+   not make belongs to someone: never discard, stash or overwrite it; ask.
+2. **Sync with `main`.** `git fetch origin`, then:
+   - on `main`: `git pull --ff-only origin main`;
+   - on a feature branch that continues the task: merge `origin/main` into it (`git merge
+     origin/main`) and resolve conflicts before going on;
+   - otherwise switch to `main`, pull, and branch from there.
+3. **Check what is in flight.** `gh pr list --state open`. Do not duplicate or collide with an open
+   pull request; if yours would touch the same files, say so before starting. The catalog agent
+   (§7) rewrites `apps/gateway/src/adapters/*/catalog.json` twice a day, so pull again right before
+   editing a catalog, and expect to merge `main` again before yours lands.
+4. **One task, one branch,** in the main checkout. No git worktrees.
 
 ### Branches
 
@@ -282,9 +309,11 @@ broken Dockerfile fails on the pull request. `latest` and the semver tags belong
 [`release.yml`](.github/workflows/release.yml) alone, because a registry tag that moves with every
 commit is not the promise `latest` is supposed to make.
 
+Agents never create a tag or a release unless a person asks for that specific release.
+
 ### Merging — the hard rule
 
-**Never merge to `main` while CI is not green.** `main` is branch-protected; auto-merge is disabled
+Merging to `main` deploys production. **Never merge to `main` while CI is not green.** `main` is branch-protected; auto-merge is disabled
 and admin bypass is off-limits. The required checks are the three CI jobs in
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml): *Lint, typecheck & unit tests*,
 *Integration tests*, and *Build container images*.

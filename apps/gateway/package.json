@@ -29,6 +29,7 @@
 		"#*": "./src/*"
 	},
 	"scripts": {
+		"catalog:guard": "bun scripts/catalog-guard.ts",
 		"catalog:sync": "bun scripts/catalog-sync.ts",
 		"catalog:sync:openrouter": "bun scripts/openrouter-catalog-sync.ts --mode report",
 		"catalog:sync:openrouter:verify": "bun scripts/openrouter-catalog-sync.ts --mode verify",
