@@ -62,6 +62,18 @@
 				"searchUnitCents": 0
 			}
 		},
+		"nvidia/nemotron-3.5-rerank-8b:free": {
+			"operations": {
+				"rerank": {
+					"documentModalities": ["text"],
+					"maxDocuments": 1000,
+					"maxTokensPerDocument": 32768
+				}
+			},
+			"pricing": {
+				"searchUnitCents": 0
+			}
+		},
 		"qwen/qwen3-reranker-8b": {
 			"operations": {
 				"rerank": {
