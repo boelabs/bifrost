@@ -1311,7 +1311,9 @@
 				"outputCentsPerMTokens": 1000,
 				"cacheReadCentsPerMTokens": 12.5,
 				"cacheWriteCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-5; it shuts down on 2026-12-11 (replacement: gpt-5.6-sol)."
 		},
 		"gpt-5-mini": {
 			"operations": {
@@ -1350,7 +1352,9 @@
 				"outputCentsPerMTokens": 200,
 				"cacheReadCentsPerMTokens": 2.5,
 				"cacheWriteCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-5-mini; it shuts down on 2026-12-11 (replacement: gpt-5.6-terra)."
 		},
 		"gpt-5-nano": {
 			"operations": {
@@ -1389,7 +1393,9 @@
 				"outputCentsPerMTokens": 40,
 				"cacheReadCentsPerMTokens": 0.5,
 				"cacheWriteCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-5-nano; it shuts down on 2026-12-11 (replacement: gpt-5.6-luna)."
 		},
 		"gpt-5-pro": {
 			"operations": {
@@ -1425,7 +1431,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 1500,
 				"outputCentsPerMTokens": 12000
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated gpt-5-pro; it shuts down on 2026-12-11 (replacement: gpt-5.6-sol with reasoning.mode: pro)."
 		},
 		"o3-pro": {
 			"operations": {
@@ -1460,7 +1468,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 2000,
 				"outputCentsPerMTokens": 8000
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated o3-pro; it shuts down on 2026-12-11 (replacement: gpt-5.6-sol with reasoning.mode: pro)."
 		},
 		"o3": {
 			"operations": {
@@ -1497,7 +1507,9 @@
 				"outputCentsPerMTokens": 800,
 				"cacheReadCentsPerMTokens": 50,
 				"cacheWriteCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "OpenAI deprecated o3; it shuts down on 2026-12-11 (replacement: gpt-5.6-sol)."
 		},
 		"gpt-4.1": {
 			"operations": {

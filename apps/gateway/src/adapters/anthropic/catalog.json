@@ -470,6 +470,48 @@
 				}
 			}
 		},
+		"claude-mythos-5-1": {
+			"operations": {
+				"text.generate": {
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 128000,
+					"parameters": {
+						"max_tokens": true,
+						"temperature": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true,
+						"structured_outputs": true,
+						"response_format": true,
+						"verbosity": true,
+						"reasoning_effort": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"structuredOutputs": true,
+						"reasoning": true,
+						"strictTools": true
+					},
+					"reasoning": {
+						"kind": "anthropic_adaptive",
+						"levels": ["low", "medium", "high", "xhigh", "max"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 1000,
+				"outputCentsPerMTokens": 5000,
+				"cacheReadCentsPerMTokens": 25,
+				"cacheWriteCentsPerMTokens": 1250,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 1250,
+					"3600": 2000
+				}
+			}
+		},
 		"claude-sonnet-4-5": {
 			"operations": {
 				"text.generate": {
