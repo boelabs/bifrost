@@ -80,6 +80,10 @@ export const AZURE_LISTING_UNSERVED: Readonly<
 		"mistral-ocr-4-0": "Document parsing; Bifrost has no OCR operation.",
 		"Microsoft-Decision-1":
 			"Decision scoring; Bifrost has no classification operation.",
+		"MAI-Thinking-1":
+			"Served on /mai/v1, not the /openai/v1 surface the adapter calls.",
+		"model-router":
+			"Billed as the model it routes to, so it has no price of its own.",
 	},
 };
 
