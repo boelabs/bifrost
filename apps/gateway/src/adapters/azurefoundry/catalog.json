@@ -10,6 +10,28 @@
 		]
 	},
 	"models": {
+		"Cohere-command-a-plus-05-2026": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"reasoning": {
+						"kind": "fixed",
+						"levels": ["high"]
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 64000
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 80,
+				"outputCentsPerMTokens": 320
+			}
+		},
 		"Cohere-command-a": {
 			"operations": {
 				"text.generate": {
@@ -32,7 +54,7 @@
 			"operations": {
 				"text.generate": {
 					"capabilities": {
-						"tools": false,
+						"tools": true,
 						"vision": false,
 						"reasoning": true,
 						"structuredOutputs": false
@@ -44,13 +66,18 @@
 					"maxInputTokens": 1000000,
 					"maxOutputTokens": 384000
 				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 174,
+				"outputCentsPerMTokens": 348,
+				"cacheReadCentsPerMTokens": 14.5
 			}
 		},
 		"DeepSeek-V4-Flash": {
 			"operations": {
 				"text.generate": {
 					"capabilities": {
-						"tools": false,
+						"tools": true,
 						"vision": false,
 						"reasoning": true,
 						"structuredOutputs": false
@@ -69,11 +96,34 @@
 				"cacheReadCentsPerMTokens": 2.8
 			}
 		},
+		"DeepSeek-V4-Flash-0731": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "high", "max"]
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 384000
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 44,
+				"outputCentsPerMTokens": 132,
+				"cacheReadCentsPerMTokens": 1.4
+			}
+		},
 		"DeepSeek-V3.2-Speciale": {
 			"operations": {
 				"text.generate": {
 					"capabilities": {
-						"tools": false,
+						"tools": true,
 						"vision": false,
 						"reasoning": true,
 						"structuredOutputs": false
@@ -87,7 +137,7 @@
 			"operations": {
 				"text.generate": {
 					"capabilities": {
-						"tools": false,
+						"tools": true,
 						"vision": false,
 						"reasoning": true,
 						"structuredOutputs": false
@@ -217,6 +267,47 @@
 				}
 			}
 		},
+		"mistral-medium-3-5": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": true,
+						"reasoning": false,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 128000
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 150,
+				"outputCentsPerMTokens": 750
+			}
+		},
+		"Kimi-K2.7-Code": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"reasoning": {
+						"kind": "fixed",
+						"levels": ["high"]
+					},
+					"maxInputTokens": 262144,
+					"maxOutputTokens": 262144
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 95,
+				"outputCentsPerMTokens": 400,
+				"cacheReadCentsPerMTokens": 19
+			}
+		},
 		"Kimi-K2.6": {
 			"operations": {
 				"text.generate": {
@@ -233,6 +324,11 @@
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 262144
 				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 95,
+				"outputCentsPerMTokens": 400,
+				"cacheReadCentsPerMTokens": 16
 			}
 		},
 		"Kimi-K2.5": {
@@ -251,6 +347,83 @@
 					"maxInputTokens": 262144,
 					"maxOutputTokens": 262144
 				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 60,
+				"outputCentsPerMTokens": 300,
+				"cacheReadCentsPerMTokens": 10
+			}
+		},
+		"grok-4.7": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high", "xhigh"]
+					},
+					"maxInputTokens": 500000,
+					"maxOutputTokens": 500000,
+					"parameters": {
+						"presence_penalty": false,
+						"frequency_penalty": false,
+						"stop": false
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 600,
+				"cacheReadCentsPerMTokens": 50,
+				"tiers": [
+					{
+						"aboveInputTokens": 199999,
+						"inputCentsPerMTokens": 400,
+						"outputCentsPerMTokens": 1200,
+						"cacheReadCentsPerMTokens": 100
+					}
+				]
+			}
+		},
+		"grok-4.6": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "medium", "high", "xhigh"]
+					},
+					"maxInputTokens": 200000,
+					"maxOutputTokens": 128000,
+					"parameters": {
+						"presence_penalty": false,
+						"frequency_penalty": false,
+						"stop": false
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 600,
+				"cacheReadCentsPerMTokens": 50,
+				"tiers": [
+					{
+						"aboveInputTokens": 199999,
+						"inputCentsPerMTokens": 400,
+						"outputCentsPerMTokens": 1200,
+						"cacheReadCentsPerMTokens": 100
+					}
+				]
 			}
 		},
 		"grok-4.3": {
@@ -265,6 +438,19 @@
 					"maxInputTokens": 200000,
 					"maxOutputTokens": 8192
 				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 125,
+				"outputCentsPerMTokens": 250,
+				"cacheReadCentsPerMTokens": 20,
+				"tiers": [
+					{
+						"aboveInputTokens": 199999,
+						"inputCentsPerMTokens": 250,
+						"outputCentsPerMTokens": 500,
+						"cacheReadCentsPerMTokens": 40
+					}
+				]
 			}
 		},
 		"grok-4-20-reasoning": {
@@ -361,6 +547,10 @@
 					"maxInputTokens": 256000,
 					"maxOutputTokens": 8192
 				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 20,
+				"outputCentsPerMTokens": 150
 			}
 		}
 	}
