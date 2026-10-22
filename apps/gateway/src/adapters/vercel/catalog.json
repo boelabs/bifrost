@@ -2575,7 +2575,8 @@
 			},
 			"pricing": {
 				"inputCentsPerMTokens": 25,
-				"outputCentsPerMTokens": 80
+				"outputCentsPerMTokens": 80,
+				"cacheReadCentsPerMTokens": 6
 			}
 		},
 		"bfl/flux-2-flex": {
@@ -3028,6 +3029,32 @@
 			},
 			"pricing": {
 				"searchUnitCents": 0.25
+			}
+		},
+		"cohere/rerank-v5-fast": {
+			"operations": {
+				"rerank": {
+					"documentModalities": ["text"],
+					"maxDocuments": 1000,
+					"maxTokensPerDocument": 32768,
+					"documentsPerSearchUnit": 100
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 2
+			}
+		},
+		"cohere/rerank-v5-pro": {
+			"operations": {
+				"rerank": {
+					"documentModalities": ["text"],
+					"maxDocuments": 1000,
+					"maxTokensPerDocument": 32768,
+					"documentsPerSearchUnit": 100
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 5
 			}
 		},
 		"deepseek/deepseek-r1": {
