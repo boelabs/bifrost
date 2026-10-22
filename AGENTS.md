@@ -223,7 +223,9 @@ purpose.
 and OpenRouter (plus models.dev for enrichment) and writes
 `apps/gateway/.source/catalog-sync/REPORT.md` + `report.json` (gitignored): drafted entries for new
 models, stale pricing/context/limit essentials, models no longer listed upstream, and numeric
-conflicts between sources. The report is a worksheet, not a source: every value applied to a
+conflicts between sources. The aggregators never list Azure deployment ids, so it also compares
+Microsoft's own model list with both Azure catalogs (`src/catalog/sync/azureListing.ts`); an id
+Bifrost cannot serve is listed in `AZURE_LISTING_UNSERVED` with its reason. The report is a worksheet, not a source: every value applied to a
 catalog is verified against the provider's own docs. `--mode verify` exits non-zero when the report
 is non-empty.
 

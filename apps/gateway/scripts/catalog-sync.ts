@@ -15,6 +15,12 @@ import type {
 } from "#catalog/sync/types.ts";
 
 import {
+	type AzureListingFindings,
+	checkAzureListing,
+	AZURE_LISTING_URL,
+} from "#catalog/sync/azureListing.ts";
+
+import {
 	ACTIVE_ENRICHMENT_SOURCES,
 	ACTIVE_EXISTENCE_SOURCES,
 } from "#catalog/sync/sources/index.ts";
@@ -223,6 +229,8 @@ interface RunSummary {
 		modelsDevId: string;
 	}>;
 	deprecations: DeprecationCandidate[];
+	/** Microsoft's own model list compared with the Azure catalogs; absent when filtered out by --sources. */
+	azureListing?: AzureListingFindings;
 }
 
 async function run(): Promise<void> {
@@ -398,6 +406,9 @@ async function run(): Promise<void> {
 		existenceResults,
 		history.confirmed,
 	);
+	if (!filter || filter.has("azure-listing")) {
+		summary.azureListing = await checkAzureListing(catalogsByAdapter);
+	}
 
 	logSummary(summary);
 	if (runMode === "report") {
@@ -409,7 +420,11 @@ async function run(): Promise<void> {
 		(summary.newEntries.length > 0 ||
 			summary.updatedEntries.length > 0 ||
 			summary.deprecations.length > 0 ||
-			summary.conflicts.length > 0)
+			summary.conflicts.length > 0 ||
+			(summary.azureListing !== undefined &&
+				(!summary.azureListing.complete ||
+					summary.azureListing.missing.length > 0 ||
+					summary.azureListing.retiredNotDeprecated.length > 0)))
 	) {
 		process.exitCode = 1;
 	}
@@ -427,6 +442,14 @@ function logSummary(summary: RunSummary): void {
 		console.log(
 			`  ${source.key}: ${source.attempted - source.failed}/${source.attempted} fetched` +
 				(source.complete ? "" : " (INCOMPLETE - deprecation skipped this run)"),
+		);
+	}
+	const azure = summary.azureListing;
+	if (azure) {
+		console.log(
+			azure.complete
+				? `  azure listing: ${azure.missing.length} missing, ${azure.retiredNotDeprecated.length} retired but not deprecated`
+				: `  azure listing: UNREADABLE (${azure.error})`,
 		);
 	}
 }
@@ -456,6 +479,7 @@ function writeReport(summary: RunSummary): void {
 		`- ${summary.deprecations.length} model(s) no longer listed upstream (deprecation candidates)`,
 		`- ${summary.conflicts.length} numeric conflict(s) between sources, needs a human`,
 		`- ${summary.lowConfidence.length} single-source candidate(s), listed for awareness only`,
+		...azureListingSummary(summary.azureListing),
 		"",
 	];
 	if (summary.newEntries.length > 0) {
@@ -524,8 +548,65 @@ function writeReport(summary: RunSummary): void {
 			"",
 		);
 	}
+	lines.push(...azureListingSection(summary.azureListing));
 	writeFileSync(new URL("REPORT.md", dir), lines.join("\n"));
 	console.log(`wrote ${new URL("REPORT.md", dir).pathname}`);
+}
+
+function azureListingSummary(
+	azure: AzureListingFindings | undefined,
+): string[] {
+	if (!azure) {
+		return [];
+	}
+	return azure.complete
+		? [
+				`- ${azure.missing.length} model(s) Azure lists that no Azure catalog carries`,
+				`- ${azure.retiredNotDeprecated.length} model(s) Azure marks retired, not deprecated here`,
+			]
+		: [`- Azure's model list could not be read: ${azure.error}`];
+}
+
+/** Azure models are only ever discovered here: the aggregators never list Azure deployment ids. */
+function azureListingSection(
+	azure: AzureListingFindings | undefined,
+): string[] {
+	if (!azure) {
+		return [];
+	}
+	const lines: string[] = [];
+	if (!azure.complete) {
+		lines.push(
+			"## ⚠️ Azure's model list could not be read",
+			"",
+			`${AZURE_LISTING_URL} failed: ${azure.error}. Read it by hand (both tabs) this run.`,
+			"",
+		);
+	}
+	if (azure.missing.length > 0) {
+		lines.push(
+			"## Listed by Azure, missing from the catalog",
+			"",
+			`From ${AZURE_LISTING_URL}. Add each one, or list it in \`AZURE_LISTING_UNSERVED\``,
+			"(src/catalog/sync/azureListing.ts) with the reason Bifrost does not serve it.",
+			"",
+			...azure.missing.map(
+				(item) => `- \`${item.adapterKey}/${item.id}\` (${item.section})`,
+			),
+			"",
+		);
+	}
+	if (azure.retiredNotDeprecated.length > 0) {
+		lines.push(
+			"## Retired by Azure, not deprecated here",
+			"",
+			...azure.retiredNotDeprecated.map(
+				(item) => `- \`${item.adapterKey}/${item.id}\` (${item.section})`,
+			),
+			"",
+		);
+	}
+	return lines;
 }
 
 await run();
