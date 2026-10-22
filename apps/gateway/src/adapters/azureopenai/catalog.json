@@ -126,7 +126,12 @@
 					"nativeResponseFormat": false
 				}
 			},
-			"notes": "Azure lists this model but has not published a price for it yet; pricing is left out rather than assumed from the OpenAI rate."
+			"pricing": {
+				"inputCentsPerMTokens": 500,
+				"cacheReadCentsPerMTokens": 125,
+				"imageInputCentsPerMTokens": 800,
+				"imageOutputCentsPerMTokens": 3000
+			}
 		},
 		"gpt-image-2.5-flare": {
 			"operations": {
@@ -189,7 +194,239 @@
 					"nativeResponseFormat": false
 				}
 			},
-			"notes": "Azure lists this model but has not published a price for it yet; pricing is left out rather than assumed from the OpenAI rate."
+			"pricing": {
+				"inputCentsPerMTokens": 500,
+				"cacheReadCentsPerMTokens": 125,
+				"imageInputCentsPerMTokens": 800,
+				"imageOutputCentsPerMTokens": 3000
+			}
+		},
+		"gpt-image-2": {
+			"operations": {
+				"image.generate": {
+					"maxPromptChars": 4000,
+					"maxInputImages": 16,
+					"maxImageBytes": 50000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"supportsInputFidelity": true,
+					"supportsModeration": true,
+					"supportsNativeStreaming": true,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["low", "medium", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {},
+						"1024x1536": {},
+						"1536x1024": {}
+					},
+					"arbitrarySize": {
+						"divisibleBy": 16,
+						"minAspectRatio": 0.3333333333333333,
+						"maxAspectRatio": 3,
+						"maxWidth": 3840,
+						"maxHeight": 3840,
+						"maxPixels": 8294400
+					},
+					"nativeResponseFormat": false
+				},
+				"image.edit": {
+					"maxPromptChars": 4000,
+					"maxInputImages": 16,
+					"maxImageBytes": 50000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"supportsInputFidelity": true,
+					"supportsModeration": true,
+					"supportsNativeStreaming": true,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["low", "medium", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {},
+						"1024x1536": {},
+						"1536x1024": {}
+					},
+					"arbitrarySize": {
+						"divisibleBy": 16,
+						"minAspectRatio": 0.3333333333333333,
+						"maxAspectRatio": 3,
+						"maxWidth": 3840,
+						"maxHeight": 3840,
+						"maxPixels": 8294400
+					},
+					"nativeResponseFormat": false
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 500,
+				"cacheReadCentsPerMTokens": 125,
+				"imageInputCentsPerMTokens": 800,
+				"imageOutputCentsPerMTokens": 3000
+			}
+		},
+		"gpt-image-1.5": {
+			"operations": {
+				"image.generate": {
+					"maxPromptChars": 4000,
+					"maxInputImages": 16,
+					"maxImageBytes": 50000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"supportsInputFidelity": true,
+					"supportsModeration": true,
+					"supportsTransparentBackground": true,
+					"supportsNativeStreaming": true,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["low", "medium", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {},
+						"1024x1536": {},
+						"1536x1024": {}
+					},
+					"nativeResponseFormat": false
+				},
+				"image.edit": {
+					"maxPromptChars": 4000,
+					"maxInputImages": 16,
+					"maxImageBytes": 50000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"supportsInputFidelity": true,
+					"supportsModeration": true,
+					"supportsTransparentBackground": true,
+					"supportsNativeStreaming": true,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["low", "medium", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {},
+						"1024x1536": {},
+						"1536x1024": {}
+					},
+					"nativeResponseFormat": false
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 500,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 125,
+				"imageInputCentsPerMTokens": 800,
+				"imageOutputCentsPerMTokens": 3200
+			},
+			"deprecated": true,
+			"notes": "Microsoft retires Azure OpenAI gpt-image-1.5 (version 2025-12-16) on 2026-12-16 and names no replacement yet."
+		},
+		"gpt-image-1-mini": {
+			"operations": {
+				"image.generate": {
+					"maxPromptChars": 4000,
+					"maxInputImages": 16,
+					"maxImageBytes": 50000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"supportsInputFidelity": false,
+					"supportsModeration": true,
+					"supportsTransparentBackground": true,
+					"supportsNativeStreaming": true,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["low", "medium", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {},
+						"1024x1536": {},
+						"1536x1024": {}
+					},
+					"nativeResponseFormat": false
+				},
+				"image.edit": {
+					"maxPromptChars": 4000,
+					"maxInputImages": 16,
+					"maxImageBytes": 50000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"supportsInputFidelity": false,
+					"supportsModeration": true,
+					"supportsTransparentBackground": true,
+					"supportsNativeStreaming": true,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["low", "medium", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {},
+						"1024x1536": {},
+						"1536x1024": {}
+					},
+					"nativeResponseFormat": false
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"cacheReadCentsPerMTokens": 20,
+				"imageInputCentsPerMTokens": 250,
+				"imageOutputCentsPerMTokens": 800
+			}
+		},
+		"gpt-image-1": {
+			"operations": {
+				"image.generate": {
+					"maxPromptChars": 4000,
+					"maxInputImages": 16,
+					"maxImageBytes": 50000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"supportsInputFidelity": true,
+					"supportsModeration": true,
+					"supportsTransparentBackground": true,
+					"supportsNativeStreaming": true,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["low", "medium", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {},
+						"1024x1536": {},
+						"1536x1024": {}
+					},
+					"nativeResponseFormat": false
+				},
+				"image.edit": {
+					"maxPromptChars": 4000,
+					"maxInputImages": 16,
+					"maxImageBytes": 50000000,
+					"maxN": 10,
+					"supportsMask": true,
+					"supportsInputFidelity": true,
+					"supportsModeration": true,
+					"supportsTransparentBackground": true,
+					"supportsNativeStreaming": true,
+					"outputFormats": ["png", "jpeg", "webp"],
+					"qualities": ["low", "medium", "high"],
+					"responseFormats": ["b64_json"],
+					"autoSize": {},
+					"sizes": {
+						"1024x1024": {},
+						"1024x1536": {},
+						"1536x1024": {}
+					},
+					"nativeResponseFormat": false
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 500,
+				"cacheReadCentsPerMTokens": 125,
+				"imageInputCentsPerMTokens": 1000,
+				"imageOutputCentsPerMTokens": 4000
+			},
+			"deprecated": true,
+			"notes": "Microsoft retires Azure OpenAI gpt-image-1 (version 2025-04-15, preview) on 2026-10-23 and names no replacement."
 		},
 		"gpt-transcribe": {
 			"operations": {
@@ -217,6 +454,19 @@
 			"deprecated": true,
 			"notes": "Azure retires gpt-4o-transcribe 2025-03-20, its only version, on 2026-10-15 and names no replacement; gpt-4o-mini-transcribe 2025-12-15 stays available until 2027-06-15."
 		},
+		"gpt-4o-transcribe-diarize": {
+			"operations": {
+				"audio.transcribe": {
+					"responseFormats": ["json", "text"],
+					"supportsStreaming": false,
+					"maxFileBytes": 26214400
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 250,
+				"outputCentsPerMTokens": 1000
+			}
+		},
 		"gpt-4o-mini-transcribe": {
 			"operations": {
 				"audio.transcribe": {
@@ -229,6 +479,17 @@
 				"inputCentsPerMTokens": 125,
 				"outputCentsPerMTokens": 500
 			}
+		},
+		"whisper": {
+			"operations": {
+				"audio.transcribe": {
+					"responseFormats": ["json", "text", "srt", "verbose_json", "vtt"],
+					"supportsStreaming": false,
+					"maxFileBytes": 26214400
+				}
+			},
+			"deprecated": true,
+			"notes": "Microsoft retires Azure OpenAI whisper (version 001) on 2026-12-15 and names no replacement yet. Azure bills it per audio hour, which the catalog cannot express, so it is unpriced."
 		},
 		"gpt-chat-latest": {
 			"operations": {
@@ -1495,6 +1756,28 @@
 			},
 			"deprecated": true,
 			"notes": "Microsoft lists Azure OpenAI o1 (version 2024-12-17) as deprecated (closed to new customers); it retires on 2026-11-19 (replacement: gpt-5.6-sol)."
+		},
+		"o1-mini": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": false,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 128000,
+					"maxOutputTokens": 65536,
+					"parameters": {
+						"reasoning_effort": false
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 110,
+				"outputCentsPerMTokens": 440,
+				"cacheReadCentsPerMTokens": 55
+			}
 		},
 		"gpt-4o": {
 			"operations": {
