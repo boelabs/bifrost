@@ -263,7 +263,9 @@ local approximate tokenization.
 ## Catalog sync
 
 The cross-provider sync (`catalog:sync` and `catalog:sync:verify`) compares Vercel AI Gateway,
-OpenRouter, and models.dev. It is report-only: it writes under
+OpenRouter, and models.dev, and checks both Azure catalogs against Microsoft's list of
+[Foundry Models sold by Azure](https://learn.microsoft.com/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure),
+which the aggregators do not cover. It is report-only: it writes under
 `apps/gateway/.source/catalog-sync/` and never modifies a provider catalog. Use it to investigate
 new models and conflicts before making reviewed, provider-specific edits.
 

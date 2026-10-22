@@ -215,7 +215,7 @@ Se requiere `documentModalities`. `imageSources` (`url` o `data_url`) está rese
 
 ## Sincronización del catálogo [#catalog-sync]
 
-La sincronización entre proveedores (`catalog:sync` y `catalog:sync:verify`) compara Vercel AI Gateway, OpenRouter y models.dev. Es solo para informes: escribe en `apps/gateway/.source/catalog-sync/` y nunca modifica un catálogo de proveedores. Úselo para investigar nuevos modelos y conflictos antes de realizar ediciones revisadas y específicas del proveedor.
+La sincronización entre proveedores (`catalog:sync` y `catalog:sync:verify`) compara Vercel AI Gateway, OpenRouter y models.dev, y contrasta ambos catálogos de Azure con la lista de [modelos de Foundry vendidos por Azure](https://learn.microsoft.com/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure) de Microsoft, que los agregadores no cubren. Es solo para informes: escribe en `apps/gateway/.source/catalog-sync/` y nunca modifica un catálogo de proveedores. Úselo para investigar nuevos modelos y conflictos antes de realizar ediciones revisadas y específicas del proveedor.
 
 La clave del catálogo se envía al proveedor como nombre del modelo, así que debe ser un id que acepte la API del propio proveedor. Los slugs de los agregadores no siempre lo son: algunos renombran un modelo (el `gpt-5-chat` de OpenRouter es el `gpt-5-chat-latest` de OpenAI) y otros listan variantes exclusivas del revendedor o preajustes de esfuerzo de razonamiento. La sincronización corrige o descarta esos slugs mediante `SOURCE_MODEL_ID_CORRECTIONS` en `apps/gateway/src/catalog/sync/providerIdentity.ts`, y una prueba unitaria falla si un slug descartado vuelve como clave del catálogo. Compruebe un modelo nuevo contra la lista de modelos del proveedor antes de añadirlo.
 

@@ -34,10 +34,28 @@ export class FetchRetryError extends Error {
 }
 
 /** GET `url` as JSON, retrying with exponential backoff + jitter on 429/5xx and on network errors. */
-export async function fetchJsonWithRetry<T>(
+export function fetchJsonWithRetry<T>(
 	url: string,
 	init?: RequestInit,
 	retries: number = DEFAULT_RETRIES,
+): Promise<T> {
+	return fetchWithRetry(url, init, retries, (r) => r.json() as Promise<T>);
+}
+
+/** GET `url` as text, with the same retry policy as fetchJsonWithRetry. */
+export function fetchTextWithRetry(
+	url: string,
+	init?: RequestInit,
+	retries: number = DEFAULT_RETRIES,
+): Promise<string> {
+	return fetchWithRetry(url, init, retries, (r) => r.text());
+}
+
+async function fetchWithRetry<T>(
+	url: string,
+	init: RequestInit | undefined,
+	retries: number,
+	read: (response: Response) => Promise<T>,
 ): Promise<T> {
 	let lastError: unknown;
 	let lastStatus: number | undefined;
@@ -45,7 +63,7 @@ export async function fetchJsonWithRetry<T>(
 		try {
 			const response = await fetch(url, init);
 			if (response.ok) {
-				return (await response.json()) as T;
+				return await read(response);
 			}
 			lastStatus = response.status;
 			// 4xx other than 429 is not going to succeed on retry (bad request/not found) - fail fast.

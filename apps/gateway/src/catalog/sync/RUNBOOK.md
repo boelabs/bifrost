@@ -111,7 +111,7 @@ provider in parallel when you can:
 |---|---|
 | anthropic | `https://platform.claude.com/docs/en/release-notes/api`, `.../about-claude/models/overview`, `.../about-claude/model-deprecations` |
 | openai | `https://developers.openai.com/api/docs/changelog`, `.../docs/models`, `.../docs/deprecations` |
-| azureopenai, azurefoundry | `https://learn.microsoft.com/azure/ai-foundry/openai/concepts/models`, `.../concepts/model-retirements`, Foundry's models-sold-directly-by-azure page |
+| azureopenai, azurefoundry | The report's Azure sections (below), `https://learn.microsoft.com/azure/foundry/openai/concepts/model-retirement-schedule`, and for each model the page's own section or how-to |
 | googleaistudio | `https://ai.google.dev/gemini-api/docs/changelog`, `.../docs/models`, `.../docs/deprecations` |
 | deepseek | `https://api-docs.deepseek.com/updates`, `.../news/`, `.../quick_start/pricing` |
 | moonshot | `https://platform.kimi.ai/docs/platform-changelog.md`, `.../docs/models.md` |
@@ -120,6 +120,14 @@ provider in parallel when you can:
 
 Pages move; follow redirects and the provider's own navigation. A provider you could not read is
 reported as such, never as "nothing new".
+
+**Azure is read for you.** The aggregators never list Azure's deployment ids, so `catalog:sync` reads
+Microsoft's own list (`https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure`,
+both tabs) and reports "Listed by Azure, missing from the catalog" and "Retired by Azure, not
+deprecated here". Every id in those sections is a candidate. One you leave out because Bifrost cannot
+serve it (no operation or transport for it) goes under "Out of scope" with the reason, so a human adds
+it to `AZURE_LISTING_UNSERVED`. If the report says the list could not be read, read the page by hand
+this run.
 
 Candidates are: new models in the report, models the providers announced, deprecations the
 providers announced, and "stale essentials" in the report. Most stale essentials are aggregator
