@@ -26,7 +26,8 @@ credentials and choose a model available to your provider account. See
 - **Signed thinking round-trips on `/v1/responses`.** When the request includes
   `reasoning.encrypted_content`, each turn's content (thinking, text and tool calls, in order) is
   sealed into a `reasoning` item that standard clients replay, and the next request sends the turn
-  back exactly as Claude returned it. See
+  back exactly as Claude returned it. On `/v1/messages` the blocks stay native, in Claude's order.
+  See
   [Provider-specific fields](/docs/provider-specific-fields#anthropic-thinking-blocks-message-bound).
 - Claude Opus 5 enables adaptive thinking upstream when `thinking` is omitted. The adapter sends
   `thinking: { "type": "disabled" }` when canonical reasoning resolves to `none`, preserving the

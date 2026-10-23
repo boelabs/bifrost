@@ -247,6 +247,40 @@ export function providerFieldsWithAnthropicContentBlocks(
 	return { anthropic: { content_blocks: structuredClone(blocks) } };
 }
 
+function toolInput(args: string): Record<string, unknown> {
+	try {
+		return recordValue(JSON.parse(args)) ?? {};
+	} catch {
+		return {};
+	}
+}
+
+/**
+ * Whether native Anthropic content still says what the canonical turn says: the same text and the
+ * same tool calls in the same order. Anthropic binds thinking to the content before it, so native
+ * blocks stand in for the canonical turn only while the two agree.
+ */
+export function anthropicContentMatches(
+	blocks: Record<string, unknown>[],
+	content: CanonicalMessage["content"][],
+	toolCalls: { id: string; name: string; arguments: string }[],
+): boolean {
+	const nativeText = blocks
+		.filter((block) => block.type === "text")
+		.map((block) => String(block.text ?? ""))
+		.join("");
+	const nativeCalls = blocks
+		.filter((block) => block.type === "tool_use")
+		.map((block) => JSON.stringify([block.id, block.name, block.input ?? {}]));
+	const calls = toolCalls.map((call) =>
+		JSON.stringify([call.id, call.name, toolInput(call.arguments)]),
+	);
+	return (
+		content.map(canonicalContentText).join("") === nativeText &&
+		JSON.stringify(calls) === JSON.stringify(nativeCalls)
+	);
+}
+
 /* ================================================== MESSAGE-BOUND STATE ===
  * Opaque provider state bound to an assistant turn rather than to one of its tool calls: the Gemini
  * parts that carry a thought signature next to the text, and Anthropic's signed thinking blocks
@@ -266,9 +300,10 @@ export function isGatewayState(value: unknown): value is string {
  * - `google`: the turn's parts without function calls, bound to its message item.
  * - `anthropic`: the turn's whole native content (thinking, text and tool_use blocks in order),
  *   because Anthropic binds each signature to the exact content before it.
+ * - `openai`: the turn's encrypted reasoning items, on surfaces with no native item for them.
  */
 export interface MessageState {
-	provider: "google" | "anthropic";
+	provider: "google" | "anthropic" | "openai";
 	state: Record<string, unknown>[];
 }
 
@@ -305,22 +340,38 @@ function hasThoughtSignature(part: Record<string, unknown>): boolean {
 }
 
 /**
- * Message-bound state of an assistant turn, if any. Gemini function-call parts are left out: their
- * signatures already travel in the tool call id, and the calls themselves in their own items.
+ * Message-bound state of an assistant turn, if any, among the providers a surface carries itself.
+ * Gemini function-call parts are left out: their signatures already travel in the tool call id, and
+ * the calls themselves in their own items or blocks.
  */
 export function messageStateFromProviderFields(
 	fields: Record<string, unknown> | undefined,
+	providers: readonly MessageState["provider"][],
 ): MessageState | undefined {
-	const parts = googleContentPartsFromProviderFields(fields)?.filter(
-		(part) => part.functionCall === undefined,
-	);
-	if (parts?.some(hasThoughtSignature) === true) {
-		return { provider: "google", state: parts };
+	for (const provider of providers) {
+		if (provider === "google") {
+			const parts = googleContentPartsFromProviderFields(fields)?.filter(
+				(part) => part.functionCall === undefined,
+			);
+			if (parts?.some(hasThoughtSignature) === true) {
+				return { provider, state: parts };
+			}
+		} else if (provider === "anthropic") {
+			const blocks = anthropicContentBlocksFromProviderFields(fields);
+			if (blocks?.some(isAnthropicThinkingBlock) === true) {
+				return { provider, state: blocks };
+			}
+		} else {
+			const items = openaiReasoningFromProviderFields(fields);
+			if (items !== undefined) {
+				return {
+					provider,
+					state: items as unknown as Record<string, unknown>[],
+				};
+			}
+		}
 	}
-	const blocks = anthropicContentBlocksFromProviderFields(fields);
-	return blocks?.some(isAnthropicThinkingBlock) === true
-		? { provider: "anthropic", state: blocks }
-		: undefined;
+	return undefined;
 }
 
 /**
@@ -338,16 +389,24 @@ export function messageStateMatchesContent(
 }
 
 function stateProviderFields(state: MessageState): Record<string, unknown> {
-	return state.provider === "google"
-		? providerFieldsWithGoogleContentParts(state.state)
-		: {
-				anthropic: {
-					content_blocks: structuredClone(state.state),
-					thinking_blocks: state.state
-						.filter(isAnthropicThinkingBlock)
-						.map((block) => structuredClone(block)),
-				},
-			};
+	if (state.provider === "google") {
+		return providerFieldsWithGoogleContentParts(state.state);
+	}
+	if (state.provider === "openai") {
+		return providerFieldsWithOpenAIReasoning(
+			openaiReasoningFromProviderFields({
+				openai: { reasoning: state.state },
+			}) ?? [],
+		);
+	}
+	return {
+		anthropic: {
+			content_blocks: structuredClone(state.state),
+			thinking_blocks: state.state
+				.filter(isAnthropicThinkingBlock)
+				.map((block) => structuredClone(block)),
+		},
+	};
 }
 
 /** Restores message-bound state onto canonical provider fields; it replaces any older copy. */
@@ -372,6 +431,8 @@ export function withoutMessageState(
 	if (namespace !== undefined) {
 		if (provider === "google") {
 			delete namespace.content_parts;
+		} else if (provider === "openai") {
+			delete namespace.reasoning;
 		} else {
 			delete namespace.content_blocks;
 			delete namespace.thinking_blocks;

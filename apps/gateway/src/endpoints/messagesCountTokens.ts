@@ -5,6 +5,7 @@ import type { MessageTokenCountResponse } from "#adapters/types.ts";
 import { candidateMetadata } from "#gateway/candidateMetadata.ts";
 import { executeMessageTokenCount } from "#gateway/executor.ts";
 import { completedTerminal } from "#gateway/streamLifecycle.ts";
+import { messageStateCodec } from "./runtime/messageState.ts";
 import { OperationLogDraft } from "./runtime/operationLog.ts";
 import { route, type RouteResult } from "#router/index.ts";
 import { GatewayError } from "#core/errors.ts";
@@ -58,6 +59,7 @@ export async function messagesCountTokensHandler(
 				max_tokens: 1,
 				stream: false,
 			}),
+			{ messageState: messageStateCodec },
 		);
 		const candidates = await listDeploymentCandidates(canonical.model, "chat");
 		if (candidates.length === 0) {

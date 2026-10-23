@@ -1050,7 +1050,8 @@ function messageStateItem(
 	) {
 		return undefined;
 	}
-	const state = messageStateFromProviderFields(fields);
+	// OpenAI reasoning has native items of its own on this surface.
+	const state = messageStateFromProviderFields(fields, ["google", "anthropic"]);
 	// Gemini state belongs to the message's own text: without a message there is nothing to sign.
 	if (
 		state === undefined ||

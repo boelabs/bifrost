@@ -22,9 +22,9 @@ has one:
 | Provider state | `/v1/responses` | `/v1/chat/completions` | `/v1/messages` |
 | --- | --- | --- | --- |
 | Gemini: signature on a function call | `call_id` suffix | `tool_calls[].id` suffix | `tool_use.id` suffix |
-| Gemini: signature on a text response | gateway `reasoning` item | `provider_specific_fields` only | not carried |
-| OpenAI: encrypted reasoning | native `reasoning` item | `provider_specific_fields` only | not carried |
-| Anthropic: signed `thinking` blocks | gateway `reasoning` item | `provider_specific_fields` only | native `thinking` blocks |
+| Gemini: signature on a text response | gateway `reasoning` item | `provider_specific_fields` only | gateway `redacted_thinking` block |
+| OpenAI: encrypted reasoning | native `reasoning` item | `provider_specific_fields` only | gateway `redacted_thinking` block |
+| Anthropic: signed `thinking` blocks | gateway `reasoning` item | `provider_specific_fields` only | native blocks, in their original order |
 
 `provider_specific_fields` is a LiteLLM-style extension that standard clients (Vercel AI SDK, the
 OpenAI SDKs, the Agents SDK) drop, so state that only travels there is lost for them. Use
@@ -103,8 +103,8 @@ Per surface:
   `provider_specific_fields: { "openai": { "reasoning": [{ "id", "encrypted_content", "summary" }] } }`
   on the assistant message (and streaming delta). Standard clients drop this field, so encrypted
   reasoning does not round-trip for them on this surface — same limitation as LiteLLM.
-- **`/v1/messages`** — not supported: the Anthropic wire format has no message-level extension field
-  that clients echo.
+- **`/v1/messages`** — carried in a gateway `redacted_thinking` block; see
+  [On `/v1/messages`](#on-v1messages).
 
 ## Gemini signatures on text responses (message-bound)
 
@@ -166,6 +166,22 @@ names the turn's first `call_id` instead of a message item.
 - The message item mirrors `provider_specific_fields.anthropic.thinking_blocks` and
   `content_blocks` for LiteLLM-style clients, and `/v1/chat/completions` carries the same fields. A
   turn that only calls tools has no message item to mirror them on.
+
+## On `/v1/messages`
+
+Anthropic clients send every content block back verbatim, `redacted_thinking` included, so that is
+the carrier here.
+
+- **Other providers' state.** When Gemini signs a text response or OpenAI returns encrypted
+  reasoning, the response ends with one more block,
+  `{ "type": "redacted_thinking", "data": "bfrs_1.…" }`, sealed like the `/v1/responses` item. The
+  gateway opens it when the client sends the message back and restores the state onto that same
+  message; Claude never receives it, and a turn holding one can still be served by any provider.
+  Gemini state whose text was edited is dropped.
+- **Claude's own blocks** stay native, in the order Claude returned them, including `thinking`
+  blocks with no visible text, whose signature carries the reasoning. The gateway sends an
+  assistant turn back to Anthropic exactly as the client holds it, as long as its text and tool
+  calls still match.
 
 ## Storage
 

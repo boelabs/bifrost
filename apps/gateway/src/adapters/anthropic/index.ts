@@ -17,7 +17,7 @@ import {
 	providerFieldsWithAnthropicThinking,
 	anthropicThinkingFromProviderFields,
 	type AnthropicThinkingBlock,
-	canonicalContentText,
+	anthropicContentMatches,
 	mergeProviderFields,
 } from "#core/providerSpecificFields.ts";
 
@@ -276,9 +276,9 @@ function assistantBlocks(message: CanonicalMessage): Record<string, unknown>[] {
 
 /**
  * The turn's content as Anthropic returned it, when the client replayed it (`content_blocks`) and
- * the turn still says the same: same text, same tool calls in the same order. Anthropic rejects
- * thinking whose preceding content changed, block order included, so an edited turn falls back to
- * the canonical rebuild.
+ * the turn still says the same. Anthropic rejects thinking whose preceding content changed, block
+ * order included, so an edited turn falls back to the canonical rebuild. So does a turn whose cache
+ * breakpoints the native blocks do not carry.
  */
 function replayedTurnContent(
 	turn: CanonicalMessage[],
@@ -286,34 +286,32 @@ function replayedTurnContent(
 	const native = anthropicContentBlocksFromProviderFields(
 		turn[0]?.providerFields,
 	);
+	if (native === undefined) {
+		return undefined;
+	}
+	const cacheMarked = turn.some(
+		(message) =>
+			message.cacheControl !== undefined ||
+			message.toolCalls?.some((call) => call.cacheControl !== undefined) ||
+			(Array.isArray(message.content) &&
+				message.content.some((part) => part.cacheControl !== undefined)),
+	);
+	const nonText = turn.some(
+		(message) =>
+			Array.isArray(message.content) &&
+			message.content.some((part) => part.type !== "text"),
+	);
 	if (
-		native === undefined ||
-		turn.some(
-			(message) =>
-				message.cacheControl !== undefined ||
-				message.toolCalls?.some((call) => call.cacheControl !== undefined) ||
-				(Array.isArray(message.content) &&
-					message.content.some(
-						(part) => part.type !== "text" || part.cacheControl !== undefined,
-					)),
-		)
+		nonText ||
+		(cacheMarked && !native.some((block) => block.cache_control !== undefined))
 	) {
 		return undefined;
 	}
-	const text = turn.map((message) => canonicalContentText(message.content));
-	const nativeText = native
-		.filter((block) => block.type === "text")
-		.map((block) => String(block.text ?? ""));
-	const calls = turn
-		.flatMap((message) => message.toolCalls ?? [])
-		.map((call) =>
-			JSON.stringify([call.id, call.name, parseToolArguments(call.arguments)]),
-		);
-	const nativeCalls = native
-		.filter((block) => block.type === "tool_use")
-		.map((block) => JSON.stringify([block.id, block.name, block.input ?? {}]));
-	return text.join("") === nativeText.join("") &&
-		JSON.stringify(calls) === JSON.stringify(nativeCalls)
+	return anthropicContentMatches(
+		native,
+		turn.map((message) => message.content),
+		turn.flatMap((message) => message.toolCalls ?? []),
+	)
 		? native
 		: undefined;
 }

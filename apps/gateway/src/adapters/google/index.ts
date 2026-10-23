@@ -466,9 +466,6 @@ function buildGeminiBody(
 			}
 			for (const tc of m.toolCalls ?? []) {
 				toolNameById.set(tc.id, tc.name);
-				if (nativeParts !== undefined) {
-					continue;
-				}
 				let args: unknown = {};
 				try {
 					args = tc.arguments ? JSON.parse(tc.arguments) : {};
@@ -485,7 +482,10 @@ function buildGeminiBody(
 				if (thoughtSignature !== undefined) {
 					part.thoughtSignature = thoughtSignature;
 				}
-				parts.push(part);
+				// Replayed native parts already hold their calls; message state carriers do not.
+				if (!repeatsFunctionCall(parts, part)) {
+					parts.push(part);
+				}
 			}
 			// /v1/responses splits one model turn into a message item and function_call items;
 			// Gemini gets it back as the single turn it produced, signatures where they were.

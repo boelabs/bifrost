@@ -922,6 +922,11 @@ test("request->canonical: thinking and redacted blocks remain message-bound stat
 				{ type: "thinking", thinking: "plan", signature: "sig-1" },
 				{ type: "redacted_thinking", data: "opaque-1" },
 			],
+			content_blocks: [
+				{ type: "thinking", thinking: "plan", signature: "sig-1" },
+				{ type: "redacted_thinking", data: "opaque-1" },
+				{ type: "tool_use", id: "toolu_1", name: "f", input: {} },
+			],
 		},
 	});
 	assert.equal(canonical.requiresNativeWire, true);
