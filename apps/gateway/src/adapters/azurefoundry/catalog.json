@@ -30,7 +30,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 80,
 				"outputCentsPerMTokens": 320
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft retired Cohere-command-a-plus-05-2026 (preview) in Foundry on 2026-10-16; the replacements are Hugging Face collection models for managed compute, not serverless."
 		},
 		"Cohere-command-a": {
 			"operations": {
@@ -235,7 +237,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 25,
 				"outputCentsPerMTokens": 100
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists Llama-4-Maverick-17B-128E-Instruct-FP8 for retirement on 2026-11-19 in its partner models table, with no replacement listed."
 		},
 		"Llama-3.3-70B-Instruct": {
 			"operations": {

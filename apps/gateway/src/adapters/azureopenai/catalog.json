@@ -1816,7 +1816,9 @@
 				"outputCentsPerMTokens": 1000,
 				"cacheReadCentsPerMTokens": 125,
 				"cacheWriteCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists Azure OpenAI gpt-4o as deprecated (version 2024-05-13 retires on 2026-12-09, replacement gpt-5.6-sol; version 2024-08-06 retires on 2027-04-14, replacement gpt-5.1; version 2024-11-20 is legacy and retires on 2027-04-14)."
 		},
 		"gpt-4o-mini": {
 			"operations": {
