@@ -1134,9 +1134,9 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 30,
-				"outputCentsPerMTokens": 250,
-				"cacheReadCentsPerMTokens": 7.5
+				"inputCentsPerMTokens": 33,
+				"outputCentsPerMTokens": 275,
+				"cacheReadCentsPerMTokens": 8.25
 			}
 		},
 		"amazon/nova-lite": {
@@ -1168,7 +1168,8 @@
 			},
 			"pricing": {
 				"inputCentsPerMTokens": 6,
-				"outputCentsPerMTokens": 24
+				"outputCentsPerMTokens": 24,
+				"cacheReadCentsPerMTokens": 1.5
 			}
 		},
 		"amazon/nova-micro": {
@@ -1200,7 +1201,8 @@
 			},
 			"pricing": {
 				"inputCentsPerMTokens": 3.5,
-				"outputCentsPerMTokens": 14
+				"outputCentsPerMTokens": 14,
+				"cacheReadCentsPerMTokens": 0.87
 			}
 		},
 		"amazon/nova-pro": {
@@ -1232,7 +1234,8 @@
 			},
 			"pricing": {
 				"inputCentsPerMTokens": 80,
-				"outputCentsPerMTokens": 320
+				"outputCentsPerMTokens": 320,
+				"cacheReadCentsPerMTokens": 20
 			}
 		},
 		"amazon/titan-embed-text-v2": {
@@ -8141,8 +8144,8 @@
 						"reasoning": true,
 						"structuredOutputs": true
 					},
-					"maxInputTokens": 1000000,
-					"maxOutputTokens": 524288,
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 1048576,
 					"modalities": {
 						"input": ["image", "text"],
 						"output": ["text"]
@@ -8167,8 +8170,9 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 0,
-				"outputCentsPerMTokens": 0
+				"inputCentsPerMTokens": 15,
+				"outputCentsPerMTokens": 60,
+				"cacheReadCentsPerMTokens": 1.5
 			}
 		},
 		"mistral/codestral": {
@@ -13679,86 +13683,6 @@
 			"pricing": {
 				"inputCentsPerMTokens": 5,
 				"outputCentsPerMTokens": 0
-			}
-		},
-		"spacexai/grok-4.1-fast-non-reasoning": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": true,
-						"reasoning": true,
-						"structuredOutputs": true
-					},
-					"maxInputTokens": 1000000,
-					"maxOutputTokens": 1000000,
-					"modalities": {
-						"input": ["image", "pdf", "text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"include_reasoning": true,
-						"max_tokens": true,
-						"reasoning": true,
-						"reasoning_effort": true,
-						"response_format": true,
-						"stop": true,
-						"structured_outputs": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					},
-					"reasoning": {
-						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high"]
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 20,
-				"outputCentsPerMTokens": 50,
-				"cacheReadCentsPerMTokens": 5
-			}
-		},
-		"spacexai/grok-4.1-fast-reasoning": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": true,
-						"reasoning": true,
-						"structuredOutputs": true
-					},
-					"maxInputTokens": 1000000,
-					"maxOutputTokens": 1000000,
-					"modalities": {
-						"input": ["image", "pdf", "text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"include_reasoning": true,
-						"max_tokens": true,
-						"reasoning": true,
-						"reasoning_effort": true,
-						"response_format": true,
-						"stop": true,
-						"structured_outputs": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					},
-					"reasoning": {
-						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high"]
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 20,
-				"outputCentsPerMTokens": 50,
-				"cacheReadCentsPerMTokens": 5
 			}
 		},
 		"spacexai/grok-4.20-multi-agent": {
