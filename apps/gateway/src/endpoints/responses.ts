@@ -5,6 +5,7 @@ import { candidateMetadata } from "#gateway/candidateMetadata.ts";
 import { hasContentInputs } from "#files/requestContentInputs.ts";
 import type { CanonicalChatRequest } from "#core/canonical.ts";
 import { OperationLogDraft } from "./runtime/operationLog.ts";
+import { messageStateCodec } from "./runtime/messageState.ts";
 import type { EffectiveSettings } from "#router/settings.ts";
 import { RouteLifecycle } from "./runtime/routeLifecycle.ts";
 import { getEffectiveSettings } from "#router/settings.ts";
@@ -23,6 +24,20 @@ import { env } from "#config/env.ts";
 import type { Context } from "hono";
 
 import {
+	canonicalChunksToResponsesEvents,
+	canonicalToResponsesResponse,
+	responsesRequestToCanonical,
+	withoutGatewayStateItems,
+	responseEventForClient,
+	normalizeResponseInput,
+	type ResponseInputItem,
+	expandInputReferences,
+	type RenderOptions,
+	responseForClient,
+	toResponsesUsage,
+} from "#contracts/openai/responsesRender.ts";
+
+import {
 	finishDownstreamWriteObservation,
 	type DownstreamWriteObservation,
 	markDownstreamSemanticWritten,
@@ -35,19 +50,6 @@ import {
 	writeSSEHeartbeat,
 	writeSSE,
 } from "./runtime/sse.ts";
-
-import {
-	canonicalChunksToResponsesEvents,
-	canonicalToResponsesResponse,
-	responsesRequestToCanonical,
-	responseEventForClient,
-	normalizeResponseInput,
-	type ResponseInputItem,
-	expandInputReferences,
-	type RenderOptions,
-	responseForClient,
-	toResponsesUsage,
-} from "#contracts/openai/responsesRender.ts";
 
 import {
 	applyCanonicalResponseExtensions,
@@ -216,7 +218,9 @@ export async function compactResponseHandler(
 			store: false,
 		});
 		const prepared = await prepareResponsesRequest(request, auth);
-		let canonical = responsesRequestToCanonical(prepared.req);
+		let canonical = responsesRequestToCanonical(prepared.req, {
+			messageState: messageStateCodec,
+		});
 		await preflight(c, canonical.model);
 		canonical = await applyCanonicalRequestExtensions(c, "chat", canonical);
 		log.publicModel = canonical.model;
@@ -393,6 +397,7 @@ function streamResponses(
 				req: pipelineReq,
 				publicModel: routing.candidate.row.publicModel,
 				reasoningEffort: reasoning?.effective ?? null,
+				messageState: messageStateCodec,
 			};
 			metadata = {
 				...candidateMetadata(routing.candidate),
@@ -645,7 +650,9 @@ export async function responsesHandler(c: Context<AppEnv>): Promise<Response> {
 
 		const prepared = await prepareResponsesRequest(req, auth);
 		const pipelineReq = prepared.req;
-		let canonical = responsesRequestToCanonical(pipelineReq);
+		let canonical = responsesRequestToCanonical(pipelineReq, {
+			messageState: messageStateCodec,
+		});
 		await preflight(c, canonical.model);
 		canonical = await applyCanonicalRequestExtensions(c, "chat", canonical);
 		log.publicModel = canonical.model;
@@ -706,6 +713,7 @@ export async function responsesHandler(c: Context<AppEnv>): Promise<Response> {
 			req: pipelineReq,
 			publicModel: routing.candidate.row.publicModel,
 			reasoningEffort: reasoning?.effective ?? null,
+			messageState: messageStateCodec,
 		};
 		const metadata: Record<string, unknown> = {
 			...candidateMetadata(routing.candidate),
@@ -1029,7 +1037,9 @@ async function executeResponsesWebSocketTurn(
 		c.set("auth", auth);
 		const prepared = await prepareResponsesRequest(req, auth, session.state);
 		const pipelineReq = prepared.req;
-		let canonical = responsesRequestToCanonical(pipelineReq);
+		let canonical = responsesRequestToCanonical(pipelineReq, {
+			messageState: messageStateCodec,
+		});
 		canonical = { ...canonical, stream: true };
 		await preflight(c, canonical.model, { writeHeaders: false });
 		canonical = await applyCanonicalRequestExtensions(c, "chat", canonical);
@@ -1047,7 +1057,9 @@ async function executeResponsesWebSocketTurn(
 					: {}),
 				execute: (candidate, ctx, candidateRequest) =>
 					session.upstreams.execute(candidate, ctx, candidateRequest, {
-						currentRawInput: prepared.currentInput as Record<string, unknown>[],
+						currentRawInput: withoutGatewayStateItems(
+							prepared.currentInput as Record<string, unknown>[],
+						),
 						previousPublicResponseId: referencedPreviousId,
 						generate: parsed.generate,
 					}),
@@ -1067,6 +1079,7 @@ async function executeResponsesWebSocketTurn(
 			req: pipelineReq,
 			publicModel: routing.candidate.row.publicModel,
 			reasoningEffort: reasoning?.effective ?? null,
+			messageState: messageStateCodec,
 		};
 		const metadata: Record<string, unknown> = {
 			...candidateMetadata(routing.candidate),

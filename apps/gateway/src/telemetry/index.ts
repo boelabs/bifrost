@@ -63,6 +63,9 @@ interface Instruments {
 	persistenceLosses: ReturnType<
 		ReturnType<typeof metrics.getMeter>["createCounter"]
 	>;
+	messageStateDiscards: ReturnType<
+		ReturnType<typeof metrics.getMeter>["createCounter"]
+	>;
 	activeOperations: ReturnType<
 		ReturnType<typeof metrics.getMeter>["createUpDownCounter"]
 	>;
@@ -128,6 +131,13 @@ function createInstruments(): Instruments {
 		persistenceLosses: meter.createCounter("bifrost_persistence_losses_total", {
 			description: "Operation finalizations dropped or failed after retries.",
 		}),
+		messageStateDiscards: meter.createCounter(
+			"bifrost_message_state_discarded_total",
+			{
+				description:
+					"Client-replayed provider state the gateway could not restore, by reason.",
+			},
+		),
 		activeOperations: meter.createUpDownCounter("bifrost_active_operations", {
 			description: "Operations active in this gateway process.",
 		}),
@@ -193,6 +203,10 @@ export function recordPersistenceQueueDelta(delta: number): void {
 
 export function recordPersistenceLoss(kind: "dropped" | "failed"): void {
 	inst?.persistenceLosses.add(1, { kind });
+}
+
+export function recordMessageStateDiscard(reason: string): void {
+	inst?.messageStateDiscards.add(1, { reason });
 }
 
 export interface OperationChildTelemetrySpan {

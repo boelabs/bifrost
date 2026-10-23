@@ -5,7 +5,20 @@ description: "Conserva las firmas y el estado opaco necesarios para continuar un
 Algunos proveedores devuelven estado opaco que debe reenviarse sin cambios en el siguiente turno. Bifrost lo conserva **a través del cliente, sin almacenarlo en el servidor**. Hay dos tipos:
 
 - **Estado vinculado a la llamada de herramienta**: firmas de pensamiento de Gemini. Gemini 3 rechaza una solicitud de seguimiento cuyas llamadas de función reproducidas carecen de su `thoughtSignature` (`400 INVALID_ARGUMENT`).
-- **Estado vinculado al mensaje**: reasoning cifrado OpenAI (elementos `reasoning` con `encrypted_content`), que mejora la calidad del uso de herramientas de múltiples turnos cuando se reproduce.
+- **Estado vinculado al mensaje**: reasoning cifrado OpenAI (elementos `reasoning` con `encrypted_content`), que mejora la calidad del uso de herramientas de múltiples turnos cuando se reproduce; firmas de Gemini en respuestas de texto, que Google recomienda reenviar para mantener la continuidad del razonamiento entre turnos; y los bloques `thinking` firmados de Anthropic.
+
+## Portadores por superficie [#carriers-by-surface]
+
+Cada tipo de estado viaja en un portador que los clientes estándar reenvían sin cambios, cuando la superficie tiene uno:
+
+| Estado del proveedor | `/v1/responses` | `/v1/chat/completions` | `/v1/messages` |
+| --- | --- | --- | --- |
+| Gemini: firma en una llamada de función | sufijo de `call_id` | sufijo de `tool_calls[].id` | sufijo de `tool_use.id` |
+| Gemini: firma en una respuesta de texto | elemento `reasoning` del gateway | sólo `provider_specific_fields` | no se transporta |
+| OpenAI: reasoning cifrado | elemento `reasoning` nativo | sólo `provider_specific_fields` | no se transporta |
+| Anthropic: bloques `thinking` firmados | sólo `provider_specific_fields` | sólo `provider_specific_fields` | bloques `thinking` nativos |
+
+`provider_specific_fields` es una extensión al estilo de LiteLLM que los clientes estándar (Vercel AI SDK, los SDK de OpenAI, el Agents SDK) descartan, así que el estado que sólo viaja ahí se pierde para ellos. Usa `/v1/responses` para conversaciones de varios turnos con modelos de razonamiento.
 
 ## Firmas de pensamiento (vinculadas a llamadas de herramientas) [#thought-signatures-tool-call-bound]
 
@@ -54,9 +67,34 @@ Para los modelos OpenAI con capacidad de reasoning, el gateway solicita `include
 
 Por superficie:
 
-- **`/v1/responses`**: el reasoning cifrado se representa como elementos de salida nativos `reasoning` (`encrypted_content` incluido incluso sin un `include` explícito, por lo que la reproducción predeterminada es `store:false` flujos de trabajo). Los clientes que reproducen elementos de salida (lo hace el Vercel AI SDK) lo reproducen automáticamente; en la entrada, los elementos `reasoning` con `encrypted_content` se reproducen en sentido upstream antes de las llamadas a funciones que preceden.
+- **`/v1/responses`**: el reasoning cifrado se representa como elementos de salida nativos `reasoning`, con `encrypted_content` cuando la solicitud incluye `reasoning.encrypted_content`, igual que en OpenAI. Los clientes que reproducen elementos de salida (lo hace el Vercel AI SDK) lo reproducen automáticamente; en la entrada, los elementos `reasoning` con `encrypted_content` se reproducen en sentido upstream antes de las llamadas a funciones que preceden.
 - **`/v1/chat/completions`**: transportado como `provider_specific_fields: { "openai": { "reasoning": [{ "id", "encrypted_content", "summary" }] } }` a nivel de mensaje en el mensaje del asistente (y delta de streaming). Los clientes estándar eliminan este campo, por lo que el reasoning cifrado no los utiliza en esta superficie, la misma limitación que LiteLLM.
 - **`/v1/messages`**: no compatible: el formato del protocolo de Anthropic no tiene ningún campo de extensión a nivel de mensaje que los clientes hagan eco.
+
+## Firmas de Gemini en respuestas de texto (vinculadas al mensaje) [#gemini-signatures-on-text-responses-message-bound]
+
+Gemini también puede firmar una respuesta sin llamada de función. La firma llega en la última parte, a menudo una parte de texto vacía al final del stream:
+
+```json
+[
+  { "text": "**Defining the goal**…", "thought": true },
+  { "text": "Hello!" },
+  { "text": "", "thoughtSignature": "EsAKCr0KAWkU…" }
+]
+```
+
+En `/v1/responses`, cuando la solicitud incluye `reasoning.encrypted_content`, el gateway sella esas partes en un elemento `reasoning` adicional, justo después del mensaje al que pertenecen:
+
+```json
+{ "type": "reasoning", "id": "rs_…", "summary": [], "encrypted_content": "bfrs_1.eyJ2Ijo…" }
+```
+
+- **Sellado, no almacenado.** El valor se cifra con el keyring de cifrado del gateway (AES-256-GCM): los clientes no pueden leerlo ni alterarlo, y no se guarda nada en el servidor. Aparece aunque Gemini no haya devuelto un resumen de pensamiento visible, y el elemento de resumen, si existe, no cambia.
+- **Reenviado por clientes estándar.** Los clientes que devuelven los elementos de salida (el Vercel AI SDK con `store: false`, el OpenAI Agents SDK) lo reenvían sin saber qué es.
+- **Restaurado en su propio mensaje.** El gateway abre el elemento en el borde y restaura las partes en el mensaje del asistente con el que se emitió: el elemento de mensaje cuyo `id` nombra o, si el cliente descarta los ids, el mensaje del asistente inmediatamente anterior. Nunca se reenvía upstream; si el enrutamiento recurre a otro proveedor, éste lo ignora.
+- **Los mensajes editados lo pierden.** Si el texto del mensaje ya no coincide con las partes firmadas, el gateway envía el texto del cliente sin firmas.
+- **Sin caducidad ni errores.** Las conversaciones duran meses, así que los elementos no caducan. Uno que no se puede abrir (su clave se retiró de `ENCRYPTION_KEYRING`, fue manipulado o su versión es desconocida) se descarta con un aviso y la solicitud sigue sin él. Los descartes se cuentan en `bifrost_message_state_discarded_total` por `reason`.
+- El elemento de mensaje conserva `provider_specific_fields.google.content_parts` para los clientes al estilo de LiteLLM. Si llegan ambos, gana el elemento `reasoning`.
 
 ## Almacenamiento [#storage]
 

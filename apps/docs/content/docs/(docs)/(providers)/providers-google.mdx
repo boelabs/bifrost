@@ -36,6 +36,11 @@ credentials and choose a model available to your provider account. See
   `provider_specific_fields.thought_signature` and `extra_content.google.thought_signature` on the
   rendered tool call, and all three inbound forms are accepted. See
   [Provider-specific fields](/docs/provider-specific-fields).
+- **Signatures on text responses round-trip on `/v1/responses`.** Gemini also signs responses that
+  have no function call. When the request includes `reasoning.encrypted_content`, the gateway seals
+  that state into a `reasoning` item right after the message, which standard clients replay; on
+  the next turn Gemini receives each signature on its own model turn. See
+  [Provider-specific fields](/docs/provider-specific-fields#gemini-signatures-on-text-responses-message-bound).
 - **Embeddings** accept text input and float vectors only through this gateway — no tokenized input,
   no `base64` encoding — regardless of what the catalog profile might otherwise allow.
 - **Image `quality` maps to native thinking** on the models that expose the control (Gemini 3.1 Flash
