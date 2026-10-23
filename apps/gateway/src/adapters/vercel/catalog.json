@@ -9174,66 +9174,6 @@
 				"outputCentsPerMTokens": 23
 			}
 		},
-		"openai/gpt-3.5-turbo": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": false,
-						"reasoning": false,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 16385,
-					"maxOutputTokens": 4096,
-					"modalities": {
-						"input": ["text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"max_tokens": true,
-						"stop": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 50,
-				"outputCentsPerMTokens": 150
-			}
-		},
-		"openai/gpt-4-turbo": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": true,
-						"reasoning": false,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 128000,
-					"maxOutputTokens": 4096,
-					"modalities": {
-						"input": ["image", "text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"max_tokens": true,
-						"stop": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 1000,
-				"outputCentsPerMTokens": 3000
-			}
-		},
 		"openai/gpt-4.1": {
 			"operations": {
 				"text.generate": {
@@ -9462,73 +9402,7 @@
 			"pricing": {
 				"inputCentsPerMTokens": 10,
 				"outputCentsPerMTokens": 40,
-				"cacheReadCentsPerMTokens": 2.5
-			}
-		},
-		"openai/gpt-4.1-nano-batch": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": true,
-						"reasoning": false,
-						"structuredOutputs": true
-					},
-					"maxInputTokens": 1047576,
-					"maxOutputTokens": 32768,
-					"modalities": {
-						"input": ["image", "pdf", "text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"max_tokens": true,
-						"response_format": true,
-						"stop": true,
-						"structured_outputs": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 5,
-				"outputCentsPerMTokens": 20,
-				"cacheReadCentsPerMTokens": 1.25
-			}
-		},
-		"openai/gpt-4.1-nano-fast": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": true,
-						"reasoning": false,
-						"structuredOutputs": true
-					},
-					"maxInputTokens": 1047576,
-					"maxOutputTokens": 32768,
-					"modalities": {
-						"input": ["image", "pdf", "text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"max_tokens": true,
-						"response_format": true,
-						"stop": true,
-						"structured_outputs": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 20,
-				"outputCentsPerMTokens": 80,
-				"cacheReadCentsPerMTokens": 5
+				"cacheReadCentsPerMTokens": 3
 			}
 		},
 		"openai/gpt-4o": {
@@ -12334,38 +12208,6 @@
 				]
 			}
 		},
-		"openai/gpt-image-1": {
-			"operations": {
-				"image.generate": {
-					"outputFormats": ["png", "jpeg", "webp"],
-					"responseFormats": ["b64_json"],
-					"autoSize": {},
-					"nativeOutputFormat": false,
-					"nativeOutputCompression": false,
-					"maxPromptChars": 32000,
-					"maxInputImages": 16,
-					"maxImageBytes": 50000000,
-					"maxN": 10,
-					"supportsMask": true,
-					"supportsInputFidelity": true,
-					"supportsModeration": true,
-					"supportsTransparentBackground": true,
-					"qualities": ["low", "medium", "high"],
-					"sizes": {
-						"1024x1024": {},
-						"1024x1536": {},
-						"1536x1024": {}
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 500,
-				"outputCentsPerMTokens": 4000,
-				"cacheReadCentsPerMTokens": 125,
-				"imageInputCentsPerMTokens": 1000,
-				"imageOutputCentsPerMTokens": 4000
-			}
-		},
 		"openai/gpt-image-1-mini": {
 			"operations": {
 				"image.generate": {
@@ -12938,45 +12780,6 @@
 				"inputCentsPerMTokens": 110,
 				"outputCentsPerMTokens": 440,
 				"cacheReadCentsPerMTokens": 27.5
-			}
-		},
-		"openai/o4-mini-fast": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": true,
-						"reasoning": true,
-						"structuredOutputs": true
-					},
-					"maxInputTokens": 200000,
-					"maxOutputTokens": 100000,
-					"modalities": {
-						"input": ["image", "pdf", "text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"include_reasoning": true,
-						"max_tokens": true,
-						"reasoning": true,
-						"reasoning_effort": true,
-						"response_format": true,
-						"stop": true,
-						"structured_outputs": true,
-						"tool_choice": true,
-						"tools": true
-					},
-					"reasoning": {
-						"kind": "openai_effort",
-						"levels": ["low", "medium", "high"]
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 200,
-				"outputCentsPerMTokens": 800,
-				"cacheReadCentsPerMTokens": 50
 			}
 		},
 		"openai/text-embedding-3-large": {
@@ -15686,9 +15489,9 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 140,
-				"outputCentsPerMTokens": 440,
-				"cacheReadCentsPerMTokens": 14
+				"inputCentsPerMTokens": 120,
+				"outputCentsPerMTokens": 400,
+				"cacheReadCentsPerMTokens": 20
 			}
 		},
 		"zai/glm-5.3-fast": {
