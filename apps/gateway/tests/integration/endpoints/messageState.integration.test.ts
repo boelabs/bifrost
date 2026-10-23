@@ -1,8 +1,8 @@
 import { createDeployment, deleteDeployment } from "#db/repos/deployments.ts";
 import { redisAvailable, pgAvailable } from "#test-support/infra.ts";
 import { makeOpenAIContractTestApp } from "#test-support/app.ts";
-import { withStubbedFetch } from "#test-support/fetch.ts";
 import { responsesHandler } from "#endpoints/responses.ts";
+import { withStubbedFetch } from "#test-support/fetch.ts";
 import { randomUUID } from "node:crypto";
 import assert from "node:assert/strict";
 import { env } from "#config/env.ts";
@@ -25,7 +25,10 @@ function geminiStream(text: string, signature: string): Response {
 	const chunks = [
 		{ parts: [{ text: "Thinking it over.", thought: true }] },
 		{ parts: [{ text }] },
-		{ parts: [{ text: "", thoughtSignature: signature }], finishReason: "STOP" },
+		{
+			parts: [{ text: "", thoughtSignature: signature }],
+			finishReason: "STOP",
+		},
 	];
 	return new Response(
 		chunks
