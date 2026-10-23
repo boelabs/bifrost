@@ -149,7 +149,7 @@ function geminiBody(
 	return { canonical, body: jsonBody(chat.buildRequest(canonical, ctx)) };
 }
 
-test("message state: rendered after the message, with or without a thought summary", () => {
+test("message state: rendered after the turn, with or without a thought summary", () => {
 	const withSummary = outputOf(
 		render(geminiTurn("¡Hola!", "sig-a", "Defining")),
 	);
@@ -477,7 +477,7 @@ test("message state: the carrier and the mirror of the same state apply once", (
 	const output = outputOf(render(raw));
 	assert.deepEqual(
 		output.map((item) => item.type),
-		["message", "reasoning", "function_call"],
+		["message", "function_call", "reasoning"],
 	);
 	const replay = aiSdkReplay(output);
 	const message = {
@@ -488,7 +488,7 @@ test("message state: the carrier and the mirror of the same state apply once", (
 		user("uno"),
 		message,
 		...replay.slice(1),
-		{ type: "function_call_output", call_id: replay[2]?.call_id, output: "{}" },
+		{ type: "function_call_output", call_id: replay[1]?.call_id, output: "{}" },
 	]);
 	assert.deepEqual(body.contents[1], {
 		role: "model",

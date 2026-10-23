@@ -81,6 +81,16 @@ function replay(output: Item[]): Item[] {
 		if (item.type === "message") {
 			return [{ role: "assistant", id: item.id, content: item.content }];
 		}
+		if (item.type === "function_call") {
+			return [
+				{
+					type: "function_call",
+					call_id: item.call_id,
+					name: item.name,
+					arguments: item.arguments,
+				},
+			];
+		}
 		return item.type === "reasoning" &&
 			typeof item.encrypted_content === "string"
 			? [
@@ -145,6 +155,129 @@ test("Gemini text signatures round-trip through a standard Responses client", {
 				{ text: "Thinking it over.", thought: true },
 				{ text: "Answer 1." },
 				{ text: "", thoughtSignature: "sig-1" },
+			],
+		});
+	} finally {
+		await deleteDeployment(row.id);
+	}
+});
+
+/** An Anthropic stream that thinks, then calls a tool. */
+function claudeToolStream(): Response {
+	const events = [
+		{ type: "message_start", message: { id: "msg_up", model: "claude" } },
+		{
+			type: "content_block_start",
+			index: 0,
+			content_block: { type: "thinking", thinking: "", signature: "" },
+		},
+		{
+			type: "content_block_delta",
+			index: 0,
+			delta: { type: "thinking_delta", thinking: "Search first." },
+		},
+		{
+			type: "content_block_delta",
+			index: 0,
+			delta: { type: "signature_delta", signature: "sig-claude" },
+		},
+		{ type: "content_block_stop", index: 0 },
+		{
+			type: "content_block_start",
+			index: 1,
+			content_block: {
+				type: "tool_use",
+				id: "toolu_1",
+				name: "search",
+				input: {},
+			},
+		},
+		{
+			type: "content_block_delta",
+			index: 1,
+			delta: { type: "input_json_delta", partial_json: '{"q":"x"}' },
+		},
+		{ type: "content_block_stop", index: 1 },
+		{
+			type: "message_delta",
+			delta: { stop_reason: "tool_use" },
+			usage: { input_tokens: 4, output_tokens: 6 },
+		},
+		{ type: "message_stop" },
+	];
+	return new Response(
+		events
+			.map(
+				(event) => `event: ${event.type}
+data: ${JSON.stringify(event)}
+
+`,
+			)
+			.join(""),
+		{ headers: { "content-type": "text/event-stream" } },
+	);
+}
+
+test("Claude thinking survives a standard Responses client's tool loop", {
+	skip,
+}, async () => {
+	const row = await createDeployment({
+		publicModel: `message-state-${randomUUID()}`,
+		adapterKey: "anthropic",
+		upstreamModel: "claude-sonnet-4-5",
+		credentials: { apiKey: "test-key" },
+	});
+	const upstreamBodies: Item[] = [];
+	try {
+		await withStubbedFetch(
+			(_url, init) => {
+				upstreamBodies.push(JSON.parse(String(init?.body)) as Item);
+				return claudeToolStream();
+			},
+			async () => {
+				const request = {
+					model: row.publicModel,
+					stream: true,
+					store: false,
+					include: ["reasoning.encrypted_content"],
+					reasoning: { effort: "high" },
+					tools: [
+						{
+							type: "function",
+							name: "search",
+							parameters: { type: "object", properties: {} },
+						},
+					],
+				};
+				const first = await send({ ...request, input: "find x" });
+				assert.deepEqual(
+					first.map((item) => item.type),
+					["reasoning", "function_call", "reasoning"],
+				);
+				await send({
+					...request,
+					input: [
+						{ role: "user", content: [{ type: "input_text", text: "find x" }] },
+						...replay(first),
+						{
+							type: "function_call_output",
+							call_id: "toolu_1",
+							output: "found",
+						},
+					],
+				});
+			},
+		);
+		const messages = upstreamBodies[1]?.messages as Item[];
+		assert.deepEqual(messages[1], {
+			role: "assistant",
+			content: [
+				{
+					type: "thinking",
+					thinking: "Search first.",
+					signature: "sig-claude",
+				},
+				{ type: "tool_use", id: "toolu_1", name: "search", input: { q: "x" } },
 			],
 		});
 	} finally {

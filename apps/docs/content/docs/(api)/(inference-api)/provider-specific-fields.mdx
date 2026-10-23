@@ -24,7 +24,7 @@ has one:
 | Gemini: signature on a function call | `call_id` suffix | `tool_calls[].id` suffix | `tool_use.id` suffix |
 | Gemini: signature on a text response | gateway `reasoning` item | `provider_specific_fields` only | not carried |
 | OpenAI: encrypted reasoning | native `reasoning` item | `provider_specific_fields` only | not carried |
-| Anthropic: signed `thinking` blocks | `provider_specific_fields` only | `provider_specific_fields` only | native `thinking` blocks |
+| Anthropic: signed `thinking` blocks | gateway `reasoning` item | `provider_specific_fields` only | native `thinking` blocks |
 
 `provider_specific_fields` is a LiteLLM-style extension that standard clients (Vercel AI SDK, the
 OpenAI SDKs, the Agents SDK) drop, so state that only travels there is lost for them. Use
@@ -120,7 +120,7 @@ often an empty text part at the end of the stream:
 ```
 
 On `/v1/responses`, when the request includes `reasoning.encrypted_content`, the gateway seals those
-parts into one more `reasoning` item, placed right after the message it belongs to:
+parts into one more `reasoning` item, placed after the last item of its turn:
 
 ```json
 { "type": "reasoning", "id": "rs_…", "summary": [], "encrypted_content": "bfrs_1.eyJ2Ijo…" }
@@ -143,6 +143,29 @@ parts into one more `reasoning` item, placed right after the message it belongs 
   `bifrost_message_state_discarded_total` by `reason`.
 - The message item keeps `provider_specific_fields.google.content_parts` for LiteLLM-style clients.
   When both arrive, the `reasoning` item wins.
+
+## Anthropic thinking blocks (message-bound)
+
+Claude returns signed `thinking` and `redacted_thinking` blocks. Anthropic requires the thinking of
+a tool-use turn to come back with the tool results, and on Claude Fable 5.1, Opus 5.5, Sonnet 5.5
+and Haiku 5.5 it binds every block to all the content before it: an assistant turn must come back
+exactly as returned, block order included, or a later request fails with `400` ("The block is
+bound to a different conversation").
+
+On `/v1/responses`, when the request includes `reasoning.encrypted_content`, the gateway seals the
+turn's whole content — thinking, text and `tool_use` blocks, in order — into the same kind of
+`reasoning` item, after the last item of the turn. A turn that only calls tools gets one too: it
+names the turn's first `call_id` instead of a message item.
+
+- **Replayed as returned.** On replay the gateway sends the turn to Anthropic as one assistant
+  message with the original blocks, as long as its text and tool calls are unchanged. A turn the
+  client edited is rebuilt from the client's items, thinking first, as before.
+- **No gaps.** Anthropic accepts thinking trimmed from the start of a conversation, not a gap in
+  the middle. When a carrier cannot be opened, the gateway also drops the thinking of every turn
+  before it.
+- The message item mirrors `provider_specific_fields.anthropic.thinking_blocks` and
+  `content_blocks` for LiteLLM-style clients, and `/v1/chat/completions` carries the same fields. A
+  turn that only calls tools has no message item to mirror them on.
 
 ## Storage
 

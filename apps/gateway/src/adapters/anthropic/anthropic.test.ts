@@ -628,6 +628,11 @@ test("anthropic thinking state: signed and redacted blocks survive parse and rep
 				{ type: "thinking", thinking: "plan", signature: "sig-1" },
 				{ type: "redacted_thinking", data: "opaque-1" },
 			],
+			content_blocks: [
+				{ type: "thinking", thinking: "plan", signature: "sig-1" },
+				{ type: "redacted_thinking", data: "opaque-1" },
+				{ type: "tool_use", id: "toolu_1", name: "lookup", input: {} },
+			],
 		},
 	});
 	const replay = must(anthropicAdapter, "chat").buildRequest(
@@ -858,4 +863,34 @@ test("anthropic.parseStream: a stream cut mid-answer is still a failure", async 
 		(error: unknown) =>
 			GatewayError.is(error) && error.code === "upstream_stream_truncated",
 	);
+});
+
+test("anthropic.buildRequest: consecutive assistant messages are one turn", () => {
+	const built = must(anthropicAdapter, "chat").buildRequest(
+		{
+			...req,
+			messages: [
+				{ role: "user", content: "find x" },
+				{ role: "assistant", content: "Searching." },
+				{
+					role: "assistant",
+					content: null,
+					toolCalls: [
+						{ id: "toolu_1", name: "search", arguments: '{"q":"x"}' },
+					],
+				},
+				{ role: "tool", toolCallId: "toolu_1", content: "found" },
+			],
+		},
+		ctx,
+	);
+	assert.deepEqual(jsonBody(built).messages.slice(1, 2), [
+		{
+			role: "assistant",
+			content: [
+				{ type: "text", text: "Searching." },
+				{ type: "tool_use", id: "toolu_1", name: "search", input: { q: "x" } },
+			],
+		},
+	]);
 });

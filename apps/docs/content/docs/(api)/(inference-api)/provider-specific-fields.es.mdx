@@ -16,7 +16,7 @@ Cada tipo de estado viaja en un portador que los clientes estándar reenvían si
 | Gemini: firma en una llamada de función | sufijo de `call_id` | sufijo de `tool_calls[].id` | sufijo de `tool_use.id` |
 | Gemini: firma en una respuesta de texto | elemento `reasoning` del gateway | sólo `provider_specific_fields` | no se transporta |
 | OpenAI: reasoning cifrado | elemento `reasoning` nativo | sólo `provider_specific_fields` | no se transporta |
-| Anthropic: bloques `thinking` firmados | sólo `provider_specific_fields` | sólo `provider_specific_fields` | bloques `thinking` nativos |
+| Anthropic: bloques `thinking` firmados | elemento `reasoning` del gateway | sólo `provider_specific_fields` | bloques `thinking` nativos |
 
 `provider_specific_fields` es una extensión al estilo de LiteLLM que los clientes estándar (Vercel AI SDK, los SDK de OpenAI, el Agents SDK) descartan, así que el estado que sólo viaja ahí se pierde para ellos. Usa `/v1/responses` para conversaciones de varios turnos con modelos de razonamiento.
 
@@ -83,7 +83,7 @@ Gemini también puede firmar una respuesta sin llamada de función. La firma lle
 ]
 ```
 
-En `/v1/responses`, cuando la solicitud incluye `reasoning.encrypted_content`, el gateway sella esas partes en un elemento `reasoning` adicional, justo después del mensaje al que pertenecen:
+En `/v1/responses`, cuando la solicitud incluye `reasoning.encrypted_content`, el gateway sella esas partes en un elemento `reasoning` adicional, después del último elemento de su turno:
 
 ```json
 { "type": "reasoning", "id": "rs_…", "summary": [], "encrypted_content": "bfrs_1.eyJ2Ijo…" }
@@ -95,6 +95,16 @@ En `/v1/responses`, cuando la solicitud incluye `reasoning.encrypted_content`, e
 - **Los mensajes editados lo pierden.** Si el texto del mensaje ya no coincide con las partes firmadas, el gateway envía el texto del cliente sin firmas.
 - **Sin caducidad ni errores.** Las conversaciones duran meses, así que los elementos no caducan. Uno que no se puede abrir (su clave se retiró de `ENCRYPTION_KEYRING`, fue manipulado o su versión es desconocida) se descarta con un aviso y la solicitud sigue sin él. Los descartes se cuentan en `bifrost_message_state_discarded_total` por `reason`.
 - El elemento de mensaje conserva `provider_specific_fields.google.content_parts` para los clientes al estilo de LiteLLM. Si llegan ambos, gana el elemento `reasoning`.
+
+## Bloques de pensamiento de Anthropic (vinculados al mensaje) [#anthropic-thinking-blocks-message-bound]
+
+Claude devuelve bloques `thinking` y `redacted_thinking` firmados. Anthropic exige que el razonamiento de un turno con herramientas vuelva junto con los resultados, y en Claude Fable 5.1, Opus 5.5, Sonnet 5.5 y Haiku 5.5 vincula cada bloque a todo el contenido anterior: un turno del asistente debe volver exactamente como se devolvió, incluido el orden de los bloques, o una solicitud posterior falla con `400` ("The block is bound to a different conversation").
+
+En `/v1/responses`, cuando la solicitud incluye `reasoning.encrypted_content`, el gateway sella el contenido completo del turno (bloques de pensamiento, texto y `tool_use`, en orden) en el mismo tipo de elemento `reasoning`, después del último elemento del turno. Un turno que sólo llama herramientas también lo recibe: nombra el primer `call_id` del turno en lugar de un elemento de mensaje.
+
+- **Reenviado tal como se devolvió.** Al reenviarlo, el gateway manda el turno a Anthropic como un único mensaje del asistente con los bloques originales, siempre que su texto y sus llamadas de herramienta no hayan cambiado. Un turno que el cliente editó se reconstruye a partir de los elementos del cliente, con el pensamiento primero, como antes.
+- **Sin huecos.** Anthropic acepta pensamiento recortado desde el inicio de una conversación, no un hueco en medio. Cuando un portador no se puede abrir, el gateway también descarta el pensamiento de todos los turnos anteriores.
+- El elemento de mensaje refleja `provider_specific_fields.anthropic.thinking_blocks` y `content_blocks` para los clientes al estilo de LiteLLM, y `/v1/chat/completions` lleva los mismos campos. Un turno que sólo llama herramientas no tiene elemento de mensaje donde reflejarlos.
 
 ## Almacenamiento [#storage]
 
