@@ -4,6 +4,7 @@ import { log } from "#logging/log.ts";
 import {
 	type MessageStateDiscardReason,
 	type DecodedMessageState,
+	type MessageStateAnchor,
 	type MessageStateCodec,
 	GATEWAY_STATE_PREFIX,
 	type MessageState,
@@ -25,10 +26,9 @@ import {
 const VERSION = 1;
 const PREFIX = `${GATEWAY_STATE_PREFIX}${VERSION}.`;
 
-interface MessageStatePayload {
+interface MessageStatePayload extends MessageStateAnchor {
 	version: typeof VERSION;
-	provider: "google";
-	messageId: string;
+	provider: MessageState["provider"];
 	state: Record<string, unknown>[];
 }
 
@@ -65,29 +65,46 @@ function decode(
 		discard("malformed");
 		return undefined;
 	}
-	const { version, provider, messageId, state } =
+	const { version, provider, messageId, callId, state } =
 		decoded as Partial<MessageStatePayload>;
-	if (version !== VERSION || provider !== "google") {
+	if (
+		version !== VERSION ||
+		(provider !== "google" && provider !== "anthropic")
+	) {
 		discard("unsupported");
 		return undefined;
 	}
+	const anchored =
+		typeof messageId === "string" ||
+		(provider === "anthropic" && typeof callId === "string");
 	if (
-		typeof messageId !== "string" ||
+		!anchored ||
+		(messageId !== undefined && typeof messageId !== "string") ||
+		(callId !== undefined && typeof callId !== "string") ||
 		!Array.isArray(state) ||
 		!state.every(isRecord)
 	) {
 		discard("malformed");
 		return undefined;
 	}
-	return { provider, messageId, state };
+	return {
+		provider,
+		state,
+		...(messageId === undefined ? {} : { messageId }),
+		...(callId === undefined ? {} : { callId }),
+	};
 }
 
-function encode(messageId: string, { provider, state }: MessageState): string {
+function encode(
+	{ messageId, callId }: MessageStateAnchor,
+	{ provider, state }: MessageState,
+): string {
 	const envelope = encryptJson(
 		{
 			version: VERSION,
 			provider,
-			messageId,
+			...(messageId === undefined ? {} : { messageId }),
+			...(callId === undefined ? {} : { callId }),
 			state,
 		} satisfies MessageStatePayload,
 		"reasoning-state",

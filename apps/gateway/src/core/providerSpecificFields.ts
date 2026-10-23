@@ -225,11 +225,34 @@ export function canonicalContentText(
 		.join("");
 }
 
+/** Native Anthropic assistant content, every block in the order the API returned it. */
+export function anthropicContentBlocksFromProviderFields(
+	fields: Record<string, unknown> | undefined,
+): Record<string, unknown>[] | undefined {
+	const anthropic = recordValue(fields?.anthropic);
+	const blocks = anthropic?.content_blocks;
+	return Array.isArray(blocks)
+		? blocks
+				.filter(
+					(block): block is Record<string, unknown> =>
+						recordValue(block) !== undefined,
+				)
+				.map((block) => structuredClone(block))
+		: undefined;
+}
+
+export function providerFieldsWithAnthropicContentBlocks(
+	blocks: Record<string, unknown>[],
+): Record<string, unknown> {
+	return { anthropic: { content_blocks: structuredClone(blocks) } };
+}
+
 /* ================================================== MESSAGE-BOUND STATE ===
- * Opaque provider state bound to an assistant message rather than to one of its tool calls: today
- * the Gemini parts that carry a thought signature next to the text. Surfaces without a native
- * carrier for it wrap it in a gateway-encrypted `reasoning` item (`GATEWAY_STATE_PREFIX`), which
- * standard clients replay verbatim. The encryption lives outside core (`MessageStateCodec`).
+ * Opaque provider state bound to an assistant turn rather than to one of its tool calls: the Gemini
+ * parts that carry a thought signature next to the text, and Anthropic's signed thinking blocks
+ * with the content around them. Surfaces without a native carrier for it wrap it in a
+ * gateway-encrypted `reasoning` item (`GATEWAY_STATE_PREFIX`), which standard clients replay
+ * verbatim. The encryption lives outside core (`MessageStateCodec`).
  */
 
 /** Prefix of every gateway-issued `encrypted_content`; no provider issues values with it. */
@@ -239,15 +262,25 @@ export function isGatewayState(value: unknown): value is string {
 	return typeof value === "string" && value.startsWith(GATEWAY_STATE_PREFIX);
 }
 
+/**
+ * - `google`: the turn's parts without function calls, bound to its message item.
+ * - `anthropic`: the turn's whole native content (thinking, text and tool_use blocks in order),
+ *   because Anthropic binds each signature to the exact content before it.
+ */
 export interface MessageState {
-	provider: "google";
+	provider: "google" | "anthropic";
 	state: Record<string, unknown>[];
 }
 
-export interface DecodedMessageState extends MessageState {
-	/** Public id of the message item the state was issued with. */
-	messageId: string;
+/** Public ids of the turn's first items, which the carrier is anchored to on replay. */
+export interface MessageStateAnchor {
+	/** The turn's message item. */
+	messageId?: string;
+	/** The turn's first function call, for turns without a message item. */
+	callId?: string;
 }
+
+export type DecodedMessageState = MessageState & MessageStateAnchor;
 
 export type MessageStateDiscardReason =
 	| "malformed"
@@ -261,7 +294,7 @@ export type MessageStateDiscardReason =
  * through `discard` and the request continues without it.
  */
 export interface MessageStateCodec {
-	encode: (messageId: string, state: MessageState) => string;
+	encode: (anchor: MessageStateAnchor, state: MessageState) => string;
 	decode: (value: string) => DecodedMessageState | undefined;
 	discard: (reason: MessageStateDiscardReason) => void;
 }
@@ -272,7 +305,7 @@ function hasThoughtSignature(part: Record<string, unknown>): boolean {
 }
 
 /**
- * Message-bound state of an assistant message, if any. Function-call parts are left out: their
+ * Message-bound state of an assistant turn, if any. Gemini function-call parts are left out: their
  * signatures already travel in the tool call id, and the calls themselves in their own items.
  */
 export function messageStateFromProviderFields(
@@ -281,17 +314,40 @@ export function messageStateFromProviderFields(
 	const parts = googleContentPartsFromProviderFields(fields)?.filter(
 		(part) => part.functionCall === undefined,
 	);
-	return parts?.some(hasThoughtSignature) === true
-		? { provider: "google", state: parts }
+	if (parts?.some(hasThoughtSignature) === true) {
+		return { provider: "google", state: parts };
+	}
+	const blocks = anthropicContentBlocksFromProviderFields(fields);
+	return blocks?.some(isAnthropicThinkingBlock) === true
+		? { provider: "anthropic", state: blocks }
 		: undefined;
 }
 
-/** Whether the state was issued for exactly this visible content (it was not edited since). */
+/**
+ * Whether Gemini state was issued for exactly this visible content (it was not edited since).
+ * Anthropic content is checked against the whole turn by its adapter instead.
+ */
 export function messageStateMatchesContent(
 	state: MessageState,
 	content: CanonicalMessage["content"],
 ): boolean {
-	return googleVisibleText(state.state) === canonicalContentText(content);
+	return (
+		state.provider !== "google" ||
+		googleVisibleText(state.state) === canonicalContentText(content)
+	);
+}
+
+function stateProviderFields(state: MessageState): Record<string, unknown> {
+	return state.provider === "google"
+		? providerFieldsWithGoogleContentParts(state.state)
+		: {
+				anthropic: {
+					content_blocks: structuredClone(state.state),
+					thinking_blocks: state.state
+						.filter(isAnthropicThinkingBlock)
+						.map((block) => structuredClone(block)),
+				},
+			};
 }
 
 /** Restores message-bound state onto canonical provider fields; it replaces any older copy. */
@@ -299,28 +355,29 @@ export function providerFieldsWithMessageState(
 	fields: Record<string, unknown> | undefined,
 	state: MessageState,
 ): Record<string, unknown> {
-	const merged = withoutMessageState(fields) ?? {};
-	return (
-		mergeProviderFields(
-			merged,
-			providerFieldsWithGoogleContentParts(state.state),
-		) ?? merged
-	);
+	const merged = withoutMessageState(fields, state.provider) ?? {};
+	return mergeProviderFields(merged, stateProviderFields(state)) ?? merged;
 }
 
-/** Drops message-bound state, e.g. when the message no longer matches it. */
+/** Drops one provider's message-bound state, e.g. when the message no longer matches it. */
 export function withoutMessageState(
 	fields: Record<string, unknown> | undefined,
+	provider: MessageState["provider"],
 ): Record<string, unknown> | undefined {
 	if (fields === undefined) {
 		return undefined;
 	}
 	const copy = structuredClone(fields);
-	const google = recordValue(copy.google);
-	if (google !== undefined) {
-		delete google.content_parts;
-		if (Object.keys(google).length === 0) {
-			delete copy.google;
+	const namespace = recordValue(copy[provider]);
+	if (namespace !== undefined) {
+		if (provider === "google") {
+			delete namespace.content_parts;
+		} else {
+			delete namespace.content_blocks;
+			delete namespace.thinking_blocks;
+		}
+		if (Object.keys(namespace).length === 0) {
+			delete copy[provider];
 		}
 	}
 	return Object.keys(copy).length > 0 ? copy : undefined;

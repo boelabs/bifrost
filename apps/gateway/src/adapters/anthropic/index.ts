@@ -11,6 +11,16 @@ import type { Usage } from "#core/usage.ts";
 import { randomUUID } from "node:crypto";
 import { parseSSE } from "#core/sse.ts";
 
+import {
+	anthropicContentBlocksFromProviderFields,
+	providerFieldsWithAnthropicContentBlocks,
+	providerFieldsWithAnthropicThinking,
+	anthropicThinkingFromProviderFields,
+	type AnthropicThinkingBlock,
+	canonicalContentText,
+	mergeProviderFields,
+} from "#core/providerSpecificFields.ts";
+
 import type {
 	CanonicalChatStreamChunk,
 	CanonicalChatResponse,
@@ -19,13 +29,6 @@ import type {
 	CanonicalContentPart,
 	CanonicalMessage,
 } from "#core/canonical.ts";
-
-import {
-	providerFieldsWithAnthropicThinking,
-	anthropicThinkingFromProviderFields,
-	type AnthropicThinkingBlock,
-	mergeProviderFields,
-} from "#core/providerSpecificFields.ts";
 
 import type {
 	MessageTokenCountRequest,
@@ -241,6 +244,86 @@ function parseToolArguments(args: string): Record<string, unknown> {
 	}
 }
 
+function assistantBlocks(message: CanonicalMessage): Record<string, unknown>[] {
+	const blocks: Record<string, unknown>[] = [];
+	blocks.push(
+		...(anthropicThinkingFromProviderFields(message.providerFields) ?? []),
+	);
+	const content = contentToAnthropic(message.content);
+	if (typeof content === "string" && content.length > 0) {
+		blocks.push({ type: "text", text: content });
+	} else if (Array.isArray(content)) {
+		blocks.push(...content);
+	}
+	for (const toolCall of message.toolCalls ?? []) {
+		const block = {
+			type: "tool_use",
+			id: toolCall.id,
+			name: toolCall.name,
+			input: parseToolArguments(toolCall.arguments),
+			...(toolCall.cacheControl === undefined
+				? {}
+				: { cache_control: toolCall.cacheControl }),
+		};
+		if (toolCall.contentIndex === undefined) {
+			blocks.push(block);
+		} else {
+			blocks.splice(toolCall.contentIndex, 0, block);
+		}
+	}
+	return blocks;
+}
+
+/**
+ * The turn's content as Anthropic returned it, when the client replayed it (`content_blocks`) and
+ * the turn still says the same: same text, same tool calls in the same order. Anthropic rejects
+ * thinking whose preceding content changed, block order included, so an edited turn falls back to
+ * the canonical rebuild.
+ */
+function replayedTurnContent(
+	turn: CanonicalMessage[],
+): Record<string, unknown>[] | undefined {
+	const native = anthropicContentBlocksFromProviderFields(
+		turn[0]?.providerFields,
+	);
+	if (
+		native === undefined ||
+		turn.some(
+			(message) =>
+				message.cacheControl !== undefined ||
+				message.toolCalls?.some((call) => call.cacheControl !== undefined) ||
+				(Array.isArray(message.content) &&
+					message.content.some(
+						(part) => part.type !== "text" || part.cacheControl !== undefined,
+					)),
+		)
+	) {
+		return undefined;
+	}
+	const text = turn.map((message) => canonicalContentText(message.content));
+	const nativeText = native
+		.filter((block) => block.type === "text")
+		.map((block) => String(block.text ?? ""));
+	const calls = turn
+		.flatMap((message) => message.toolCalls ?? [])
+		.map((call) =>
+			JSON.stringify([call.id, call.name, parseToolArguments(call.arguments)]),
+		);
+	const nativeCalls = native
+		.filter((block) => block.type === "tool_use")
+		.map((block) => JSON.stringify([block.id, block.name, block.input ?? {}]));
+	return text.join("") === nativeText.join("") &&
+		JSON.stringify(calls) === JSON.stringify(nativeCalls)
+		? native
+		: undefined;
+}
+
+function assistantTurnBlocks(
+	turn: CanonicalMessage[],
+): Record<string, unknown>[] {
+	return replayedTurnContent(turn) ?? turn.flatMap(assistantBlocks);
+}
+
 function buildMessages(req: CanonicalChatRequest): {
 	system?: string | Record<string, unknown>[];
 	messages: Array<{ role: "user" | "assistant"; content: unknown }>;
@@ -250,6 +333,16 @@ function buildMessages(req: CanonicalChatRequest): {
 	const systemBlocks: Record<string, unknown>[] = [];
 	let systemHasCacheControl = false;
 	const messages: Array<{ role: "user" | "assistant"; content: unknown }> = [];
+	// Consecutive assistant messages are one turn: /v1/responses splits a turn into a message item
+	// and function_call items, and Anthropic binds thinking to the turn as it was returned.
+	let turn: CanonicalMessage[] = [];
+	const flushTurn = (): void => {
+		const blocks = assistantTurnBlocks(turn);
+		if (blocks.length > 0) {
+			messages.push({ role: "assistant", content: blocks });
+		}
+		turn = [];
+	};
 
 	for (const message of req.messages) {
 		if (message.role === "system" || message.role === "developer") {
@@ -271,6 +364,7 @@ function buildMessages(req: CanonicalChatRequest): {
 		}
 
 		if (message.role === "tool") {
+			flushTurn();
 			messages.push({
 				role: "user",
 				content: [
@@ -291,43 +385,17 @@ function buildMessages(req: CanonicalChatRequest): {
 		}
 
 		if (message.role === "assistant") {
-			const blocks: Record<string, unknown>[] = [];
-			blocks.push(
-				...(anthropicThinkingFromProviderFields(message.providerFields) ?? []),
-			);
-			const content = contentToAnthropic(message.content);
-			if (typeof content === "string" && content.length > 0) {
-				blocks.push({ type: "text", text: content });
-			} else if (Array.isArray(content)) {
-				blocks.push(...content);
-			}
-			for (const toolCall of message.toolCalls ?? []) {
-				const block = {
-					type: "tool_use",
-					id: toolCall.id,
-					name: toolCall.name,
-					input: parseToolArguments(toolCall.arguments),
-					...(toolCall.cacheControl === undefined
-						? {}
-						: { cache_control: toolCall.cacheControl }),
-				};
-				if (toolCall.contentIndex === undefined) {
-					blocks.push(block);
-				} else {
-					blocks.splice(toolCall.contentIndex, 0, block);
-				}
-			}
-			if (blocks.length > 0) {
-				messages.push({ role: "assistant", content: blocks });
-			}
+			turn.push(message);
 			continue;
 		}
 
+		flushTurn();
 		messages.push({
 			role: "user",
 			content: contentToAnthropic(message.content),
 		});
 	}
+	flushTurn();
 
 	let system: string | Record<string, unknown>[] | undefined;
 	if (systemBlocks.length > 0) {
@@ -625,6 +693,14 @@ function parseResponse(
 			outMessage.providerFields = providerFields;
 		}
 	}
+	const contentBlocks = replayableContent(
+		(message.content ?? []) as Record<string, unknown>[],
+	);
+	if (contentBlocks !== undefined) {
+		const fields = providerFieldsWithAnthropicContentBlocks(contentBlocks);
+		outMessage.providerFields =
+			mergeProviderFields(outMessage.providerFields, fields) ?? fields;
+	}
 	if (toolCalls.length > 0) {
 		outMessage.toolCalls = toolCalls;
 	}
@@ -706,6 +782,114 @@ function mergeStreamUsage(
 	return merged;
 }
 
+const REPLAYABLE_BLOCK_TYPES = new Set([
+	"text",
+	"thinking",
+	"redacted_thinking",
+	"tool_use",
+]);
+
+/**
+ * The assistant content exactly as Anthropic returned it, when it carries thinking. Anthropic binds
+ * each thinking signature to the content before it (block order included), so a later turn must
+ * replay these blocks as they were. Content with blocks the canonical form cannot hold is skipped.
+ */
+function replayableContent(
+	blocks: Record<string, unknown>[],
+): Record<string, unknown>[] | undefined {
+	return blocks.every((block) =>
+		REPLAYABLE_BLOCK_TYPES.has(String(block.type)),
+	) &&
+		blocks.some(
+			(block) =>
+				block.type === "thinking" || block.type === "redacted_thinking",
+		)
+		? structuredClone(blocks)
+		: undefined;
+}
+
+/** Rebuilds streamed content blocks for `replayableContent`. */
+interface StreamedContent {
+	blocks: Map<number, Record<string, unknown>>;
+	json: Map<number, string>;
+	/** False once the stream carried something these blocks cannot reproduce (citations). */
+	exact: boolean;
+}
+
+function startStreamedBlock(
+	content: StreamedContent,
+	index: number,
+	block: AnthropicContentBlock | undefined,
+): void {
+	if (block?.type === "text") {
+		content.blocks.set(index, { type: "text", text: block.text ?? "" });
+	} else if (block?.type === "tool_use") {
+		content.blocks.set(index, {
+			type: "tool_use",
+			id: block.id,
+			name: block.name,
+			input: {},
+		});
+		content.json.set(index, "");
+	} else if (block?.type === "redacted_thinking") {
+		content.blocks.set(index, { type: block.type, data: block.data });
+	} else {
+		// Thinking blocks are recorded whole when they stop; others are kept to fail the check.
+		content.blocks.set(index, { type: block?.type ?? "unknown" });
+	}
+}
+
+function streamedDelta(
+	content: StreamedContent,
+	index: number,
+	delta: NonNullable<AnthropicStreamEvent["delta"]>,
+): void {
+	const block = content.blocks.get(index);
+	if (delta.type === "text_delta" && block?.type === "text") {
+		block.text = `${String(block.text)}${delta.text ?? ""}`;
+	} else if (delta.type === "input_json_delta") {
+		content.json.set(
+			index,
+			`${content.json.get(index) ?? ""}${delta.partial_json ?? ""}`,
+		);
+	} else if (delta.type === "citations_delta") {
+		content.exact = false;
+	}
+}
+
+function stopStreamedBlock(
+	content: StreamedContent,
+	index: number,
+	thinking: AnthropicThinkingBlock | undefined,
+): void {
+	if (thinking !== undefined) {
+		content.blocks.set(index, structuredClone(thinking));
+		return;
+	}
+	const block = content.blocks.get(index);
+	const json = content.json.get(index);
+	if (block?.type !== "tool_use" || json === undefined) {
+		return;
+	}
+	try {
+		block.input = json.trim() === "" ? {} : (JSON.parse(json) as unknown);
+	} catch {
+		content.exact = false;
+	}
+}
+
+function streamedContent(
+	content: StreamedContent,
+): Record<string, unknown>[] | undefined {
+	return content.exact
+		? replayableContent(
+				[...content.blocks.entries()]
+					.sort(([left], [right]) => left - right)
+					.map(([, block]) => block),
+			)
+		: undefined;
+}
+
 async function* parseStream(
 	stream: ReadableStream<Uint8Array>,
 	ctx: AdapterContext,
@@ -725,6 +909,11 @@ async function* parseStream(
 		| undefined;
 	let messageStopped = false;
 	const thinkingBlocks = new Map<number, AnthropicThinkingBlock>();
+	const native: StreamedContent = {
+		blocks: new Map(),
+		json: new Map(),
+		exact: true,
+	};
 	const toolCallIndexes = new Map<number, number>();
 	let nextToolCallIndex = 0;
 	const toolCallIndex = (blockIndex: number): number => {
@@ -778,6 +967,9 @@ async function* parseStream(
 				},
 			);
 			continue;
+		}
+		if (event.type === "content_block_start") {
+			startStreamedBlock(native, event.index ?? 0, event.content_block);
 		}
 		if (
 			event.type === "content_block_start" &&
@@ -867,6 +1059,9 @@ async function* parseStream(
 			}
 		}
 		if (event.type === "content_block_delta") {
+			if (event.delta !== undefined) {
+				streamedDelta(native, event.index ?? 0, event.delta);
+			}
 			if (
 				event.delta?.type === "text_delta" &&
 				event.delta.text !== undefined
@@ -941,6 +1136,7 @@ async function* parseStream(
 		if (event.type === "content_block_stop") {
 			const index = event.index ?? 0;
 			const block = thinkingBlocks.get(index);
+			stopStreamedBlock(native, index, block);
 			if (block !== undefined) {
 				thinkingBlocks.delete(index);
 				yield {
@@ -994,6 +1190,24 @@ async function* parseStream(
 				originalTerminalReason: "unknown",
 				usage: mapUsage(streamUsage),
 			};
+			const contentBlocks = streamedContent(native);
+			if (contentBlocks !== undefined) {
+				yield {
+					id,
+					created,
+					model,
+					choices: [
+						{
+							index: 0,
+							delta: {
+								providerFields:
+									providerFieldsWithAnthropicContentBlocks(contentBlocks),
+							},
+							finishReason: null,
+						},
+					],
+				};
+			}
 			yield terminalChunk(pendingTerminal);
 			continue;
 		}

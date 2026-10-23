@@ -118,8 +118,8 @@ types and their Transport. Do not use **Unified**.
 
 ## Message State
 
-Opaque provider state bound to an assistant message rather than to one of its tool calls, such as a
-Gemini signature on a text response. Where a public endpoint has no native carrier for it, the
+Opaque provider state bound to an assistant turn rather than to one of its tool calls, such as a
+Gemini signature on a text response or Claude's signed `thinking` blocks. Where a public endpoint has no native carrier for it, the
 gateway seals it into a `reasoning` item whose `encrypted_content` starts with `bfrs_`; clients
 replay it and nothing is stored. See [Provider-specific fields](/docs/provider-specific-fields).
 

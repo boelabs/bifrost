@@ -25,6 +25,7 @@ import {
 	decodeThoughtSignatureId,
 	encodeThoughtSignatureId,
 	stripThoughtSignatureId,
+	type MessageStateAnchor,
 	type MessageStateCodec,
 	withoutMessageState,
 	mergeProviderFields,
@@ -427,30 +428,99 @@ export interface ResponsesCanonicalOptions {
 
 interface PendingMessageState {
 	state: DecodedMessageState;
-	/** The assistant message right before the carrier, for clients that drop item ids. */
-	fallback: CanonicalMessage | undefined;
+	/** The message item right before the carrier, for clients that drop item ids. */
+	fallbackMessage: CanonicalMessage | undefined;
+	/** The first message of the assistant turn right before the carrier, likewise. */
+	fallbackTurn: CanonicalMessage | undefined;
+	/** How many canonical messages preceded the carrier. */
+	position: number;
 }
 
 /**
- * Restores message-bound state onto the assistant message it was issued with: the message item
- * whose id it names, else the assistant message right before the carrier. State whose message
- * was edited since is discarded along with any other copy of it, so a signature never reaches
- * the provider next to text that is not its own.
+ * Assistant turns of the input as canonical messages: Responses splits one turn into a message item
+ * and function_call items, and a carrier may name either.
+ */
+interface AssistantTurns {
+	byMessageId: Map<string, CanonicalMessage>;
+	byCallId: Map<string, CanonicalMessage>;
+	/** Each assistant message's turn, by the turn's first message. */
+	turnOf: Map<CanonicalMessage, CanonicalMessage>;
+	/** The current turn's latest message item and first message. */
+	lastMessage: CanonicalMessage | undefined;
+	start: CanonicalMessage | undefined;
+}
+
+function joinTurn(turns: AssistantTurns, message: CanonicalMessage): void {
+	turns.start ??= message;
+	turns.turnOf.set(message, turns.start);
+}
+
+function endTurn(turns: AssistantTurns): void {
+	turns.lastMessage = undefined;
+	turns.start = undefined;
+}
+
+function stateTarget(
+	{ state, fallbackMessage, fallbackTurn }: PendingMessageState,
+	turns: AssistantTurns,
+): CanonicalMessage | undefined {
+	const named =
+		state.messageId === undefined
+			? undefined
+			: turns.byMessageId.get(state.messageId);
+	if (state.provider === "google") {
+		return named ?? fallbackMessage;
+	}
+	// Anthropic state covers the whole turn; the adapter replays it as one message.
+	const found =
+		named ??
+		(state.callId === undefined ? undefined : turns.byCallId.get(state.callId));
+	return found === undefined
+		? fallbackTurn
+		: (turns.turnOf.get(found) ?? found);
+}
+
+/** Drops Anthropic thinking from every assistant message before `position`. */
+function trimAnthropicStateBefore(
+	messages: CanonicalMessage[],
+	position: number,
+): void {
+	for (const message of messages.slice(0, position)) {
+		const fields = withoutMessageState(message.providerFields, "anthropic");
+		if (fields === undefined) {
+			delete message.providerFields;
+		} else {
+			message.providerFields = fields;
+		}
+	}
+}
+
+/**
+ * Restores message-bound state onto the turn it was issued with: the item whose id it names, else
+ * the assistant turn right before the carrier. Gemini state whose message was edited since is
+ * discarded along with any other copy of it, so a signature never reaches the provider next to text
+ * that is not its own. A carrier that cannot be restored leaves a gap; Anthropic accepts thinking
+ * trimmed from the start of a conversation but not a gap, so earlier thinking goes with it.
  */
 function restoreMessageStates(
-	states: PendingMessageState[],
-	messagesById: Map<string, CanonicalMessage>,
+	pending: PendingMessageState[],
+	turns: AssistantTurns,
+	messages: CanonicalMessage[],
+	gapBefore: number,
 	codec: MessageStateCodec,
 ): void {
-	for (const { state, fallback } of states) {
-		const target = messagesById.get(state.messageId) ?? fallback;
+	let gap = gapBefore;
+	for (const entry of pending) {
+		const { state } = entry;
+		const target = stateTarget(entry, turns);
 		if (target === undefined) {
 			codec.discard("unanchored");
+			gap = Math.max(gap, entry.position);
 			continue;
 		}
 		if (!messageStateMatchesContent(state, target.content)) {
 			codec.discard("content_mismatch");
-			const fields = withoutMessageState(target.providerFields);
+			const fields = withoutMessageState(target.providerFields, state.provider);
 			if (fields === undefined) {
 				delete target.providerFields;
 			} else {
@@ -464,6 +534,7 @@ function restoreMessageStates(
 			state,
 		);
 	}
+	trimAnthropicStateBefore(messages, gap);
 }
 
 export function responsesRequestToCanonical(
@@ -483,10 +554,16 @@ export function responsesRequestToCanonical(
 		// OpenAI reasoning state items precede the assistant items they belong to; buffer them and
 		// attach to the next assistant-derived message.
 		let pendingReasoning: OpenAIReasoningStateItem[] = [];
-		// Gateway state carriers follow the message they belong to; they are anchored after the loop.
+		// Gateway state carriers follow the turn they belong to; they are anchored after the loop.
 		const messageStates: PendingMessageState[] = [];
-		const assistantMessagesById = new Map<string, CanonicalMessage>();
-		let lastAssistantMessage: CanonicalMessage | undefined;
+		const turns: AssistantTurns = {
+			byMessageId: new Map(),
+			byCallId: new Map(),
+			turnOf: new Map(),
+			lastMessage: undefined,
+			start: undefined,
+		};
+		let gapBefore = 0;
 		const attachPendingReasoning = (message: CanonicalMessage): void => {
 			if (pendingReasoning.length === 0) {
 				return;
@@ -532,13 +609,14 @@ export function responsesRequestToCanonical(
 					}
 					if (role === "assistant") {
 						attachPendingReasoning(message);
-						lastAssistantMessage = message;
+						joinTurn(turns, message);
+						turns.lastMessage = message;
 						const id = itemId(item);
 						if (id !== null) {
-							assistantMessagesById.set(id, message);
+							turns.byMessageId.set(id, message);
 						}
 					} else {
-						lastAssistantMessage = undefined;
+						endTurn(turns);
 					}
 					messages.push(message);
 					break;
@@ -572,6 +650,8 @@ export function responsesRequestToCanonical(
 						],
 					};
 					attachPendingReasoning(message);
+					joinTurn(turns, message);
+					turns.byCallId.set(decoded.id, message);
 					messages.push(message);
 					break;
 				}
@@ -593,7 +673,7 @@ export function responsesRequestToCanonical(
 						toolCallId: stripThoughtSignatureId(String(item.call_id ?? "")),
 						content,
 					});
-					lastAssistantMessage = undefined;
+					endTurn(turns);
 					break;
 				}
 				case "reasoning": {
@@ -604,8 +684,15 @@ export function responsesRequestToCanonical(
 					if (isGatewayState(encrypted)) {
 						// Never OpenAI state: it would reach an OpenAI upstream as unreadable reasoning.
 						const state = options.messageState?.decode(encrypted);
-						if (state !== undefined) {
-							messageStates.push({ state, fallback: lastAssistantMessage });
+						if (state === undefined) {
+							gapBefore = messages.length;
+						} else {
+							messageStates.push({
+								state,
+								fallbackMessage: turns.lastMessage,
+								fallbackTurn: turns.start,
+								position: messages.length,
+							});
 						}
 						break;
 					}
@@ -647,7 +734,9 @@ export function responsesRequestToCanonical(
 		if (options.messageState !== undefined) {
 			restoreMessageStates(
 				messageStates,
-				assistantMessagesById,
+				turns,
+				messages,
+				gapBefore,
 				options.messageState,
 			);
 		}
@@ -945,13 +1034,14 @@ function messageItem(
 }
 
 /**
- * Carrier for message-bound provider state, placed right after its message: Gemini completes the
- * state only with the message, which has streamed by then. Rendered only when the client asked for
- * encrypted reasoning, like OpenAI's own `encrypted_content`.
+ * Carrier for message-bound provider state, placed after the last item of its turn: providers
+ * complete the state only with the turn (Gemini signs the text at the end). It names the turn's
+ * message item, else its first function call. Rendered only when the client asked for encrypted
+ * reasoning, like OpenAI's own `encrypted_content`.
  */
 function messageStateItem(
 	fields: Record<string, unknown> | undefined,
-	messageId: string,
+	anchor: MessageStateAnchor,
 	opts: RenderOptions,
 ): Record<string, unknown> | undefined {
 	if (
@@ -961,14 +1051,20 @@ function messageStateItem(
 		return undefined;
 	}
 	const state = messageStateFromProviderFields(fields);
-	return state === undefined
-		? undefined
-		: {
-				type: "reasoning",
-				id: `rs_${randomUUID()}`,
-				summary: [],
-				encrypted_content: opts.messageState.encode(messageId, state),
-			};
+	// Gemini state belongs to the message's own text: without a message there is nothing to sign.
+	if (
+		state === undefined ||
+		(state.provider === "google" && anchor.messageId === undefined) ||
+		(anchor.messageId === undefined && anchor.callId === undefined)
+	) {
+		return undefined;
+	}
+	return {
+		type: "reasoning",
+		id: `rs_${randomUUID()}`,
+		summary: [],
+		encrypted_content: opts.messageState.encode(anchor, state),
+	};
 }
 
 function reasoningItem(summary: string, id: string): Record<string, unknown> {
@@ -1161,8 +1257,8 @@ export function canonicalToResponsesResponse(
 				reasoningItem(choice.message.reasoning, `rs_${randomUUID()}`),
 			);
 		}
-		if (content) {
-			const messageId = `msg_${randomUUID()}`;
+		const messageId = content ? `msg_${randomUUID()}` : undefined;
+		if (messageId !== undefined) {
 			output.push(
 				messageItem(
 					content,
@@ -1171,17 +1267,21 @@ export function canonicalToResponsesResponse(
 					withoutOpenAIResponsesReasoningState(choice?.message.providerFields),
 				),
 			);
-			const stateItem = messageStateItem(
-				choice?.message.providerFields,
-				messageId,
-				opts,
-			);
-			if (stateItem !== undefined) {
-				output.push(stateItem);
-			}
 		}
 		for (const tc of choice?.message.toolCalls ?? []) {
 			output.push(functionCallItem(tc, `fc_${randomUUID()}`));
+		}
+		const [firstCall] = choice?.message.toolCalls ?? [];
+		const stateItem = messageStateItem(
+			choice?.message.providerFields,
+			{
+				...(messageId === undefined ? {} : { messageId }),
+				...(firstCall === undefined ? {} : { callId: firstCall.id }),
+			},
+			opts,
+		);
+		if (stateItem !== undefined) {
+			output.push(stateItem);
 		}
 	} else {
 		output.push(...mirrorReasoningOutput(nativeOutput));
@@ -1720,19 +1820,6 @@ export async function* canonicalChunksToResponsesEvents(
 			output_index: msgIndex,
 			item,
 		});
-		const stateItem = messageStateItem(messageProviderFields, msgId, opts);
-		if (stateItem !== undefined) {
-			const stateIndex = nextOutputIndex++;
-			yield sse("response.output_item.added", next(), {
-				output_index: stateIndex,
-				item: stateItem,
-			});
-			yield sse("response.output_item.done", next(), {
-				output_index: stateIndex,
-				item: stateItem,
-			});
-			output.push(stateItem);
-		}
 	}
 
 	// Reasoning that arrived after the message opened (unusual interleave):
@@ -1819,6 +1906,28 @@ export async function* canonicalChunksToResponsesEvents(
 			item,
 		});
 		output.push(item);
+	}
+
+	const [firstCall] = toolCalls.values();
+	const stateItem = messageStateItem(
+		messageProviderFields,
+		{
+			...(messageStarted ? { messageId: msgId } : {}),
+			...(firstCall === undefined ? {} : { callId: firstCall.id }),
+		},
+		opts,
+	);
+	if (stateItem !== undefined) {
+		const stateIndex = nextOutputIndex++;
+		yield sse("response.output_item.added", next(), {
+			output_index: stateIndex,
+			item: stateItem,
+		});
+		yield sse("response.output_item.done", next(), {
+			output_index: stateIndex,
+			item: stateItem,
+		});
+		output.push(stateItem);
 	}
 
 	const { status, incomplete } = statusFor(finish);
