@@ -72,6 +72,10 @@ La categoría interna que conecta las operaciones ejecutables con el router y lo
 
 La representación interna independiente del proveedor en `src/core/canonical.ts`, `images.ts`, `audio.ts`, `embeddings.ts` y `rerank.ts`. Los contratos públicos se convierten a tipos canonical; los adapters convierten entre esos tipos y su transport. Evita el término anterior **Unified**.
 
+## Message State [#message-state]
+
+Estado opaco del proveedor ligado a un mensaje del asistente y no a una de sus llamadas de herramienta, como la firma de Gemini en una respuesta de texto. Cuando un public endpoint no tiene un portador nativo para él, el gateway lo sella en un elemento `reasoning` cuyo `encrypted_content` empieza por `bfrs_`; los clientes lo reenvían y no se almacena nada. Consulta [Estado específico del proveedor](/es/docs/provider-specific-fields).
+
 ## Fallback Policy [#fallback-policy]
 
 Una cadena ordenada de public models identificados por `(primaryModel, reason)`. `reason` es `general`, `context_window` o `content_policy`; no es una operación. Cada destino representa su deployment pool y recibe el mismo presupuesto de reintento en todo el grupo que el principal.

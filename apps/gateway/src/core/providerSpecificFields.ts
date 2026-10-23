@@ -1,7 +1,9 @@
+import type { CanonicalMessage } from "./canonical.ts";
+
 /**
  * Provider-specific opaque state that must round-trip through clients.
  *
- * Two carriers exist, both stateless:
+ * Three carriers exist, all stateless:
  *
  * - Tool-call-bound state (Gemini thought signatures): embedded in the public tool call id as
  *   `<id>__thought__<signature>` (LiteLLM-compatible), so any client that echoes tool call ids
@@ -11,6 +13,8 @@
  *   record on the canonical assistant message (`providerFields.openai.reasoning`), rendered as
  *   native `reasoning` output items on /v1/responses and as message-level
  *   `provider_specific_fields` on /v1/chat/completions.
+ * - Message-bound state of other providers (Gemini signatures next to text): rendered on
+ *   /v1/responses as a gateway-encrypted `reasoning` item (see MESSAGE-BOUND STATE below).
  *
  * Encoding/decoding happens exclusively in the contracts layer; canonical ids are always clean
  * and adapters stay signature-agnostic.
@@ -199,6 +203,127 @@ export function providerFieldsWithGoogleContentParts(
 	parts: Record<string, unknown>[],
 ): Record<string, unknown> {
 	return { google: { content_parts: structuredClone(parts) } };
+}
+
+/** Concatenated visible (non-thought) text of native Gemini parts. */
+export function googleVisibleText(parts: Record<string, unknown>[]): string {
+	return parts
+		.filter((part) => part.thought !== true && typeof part.text === "string")
+		.map((part) => part.text as string)
+		.join("");
+}
+
+/** Concatenated text of canonical message content, the counterpart of `googleVisibleText`. */
+export function canonicalContentText(
+	content: CanonicalMessage["content"],
+): string {
+	if (typeof content === "string") {
+		return content;
+	}
+	return (content ?? [])
+		.map((part) => (part.type === "text" ? part.text : ""))
+		.join("");
+}
+
+/* ================================================== MESSAGE-BOUND STATE ===
+ * Opaque provider state bound to an assistant message rather than to one of its tool calls: today
+ * the Gemini parts that carry a thought signature next to the text. Surfaces without a native
+ * carrier for it wrap it in a gateway-encrypted `reasoning` item (`GATEWAY_STATE_PREFIX`), which
+ * standard clients replay verbatim. The encryption lives outside core (`MessageStateCodec`).
+ */
+
+/** Prefix of every gateway-issued `encrypted_content`; no provider issues values with it. */
+export const GATEWAY_STATE_PREFIX = "bfrs_";
+
+export function isGatewayState(value: unknown): value is string {
+	return typeof value === "string" && value.startsWith(GATEWAY_STATE_PREFIX);
+}
+
+export interface MessageState {
+	provider: "google";
+	state: Record<string, unknown>[];
+}
+
+export interface DecodedMessageState extends MessageState {
+	/** Public id of the message item the state was issued with. */
+	messageId: string;
+}
+
+export type MessageStateDiscardReason =
+	| "malformed"
+	| "undecryptable"
+	| "unsupported"
+	| "unanchored"
+	| "content_mismatch";
+
+/**
+ * Seals and opens gateway state carriers. Decoding never throws: an unusable carrier is reported
+ * through `discard` and the request continues without it.
+ */
+export interface MessageStateCodec {
+	encode: (messageId: string, state: MessageState) => string;
+	decode: (value: string) => DecodedMessageState | undefined;
+	discard: (reason: MessageStateDiscardReason) => void;
+}
+
+function hasThoughtSignature(part: Record<string, unknown>): boolean {
+	const signature = part.thoughtSignature ?? part.thought_signature;
+	return typeof signature === "string" && signature.length > 0;
+}
+
+/**
+ * Message-bound state of an assistant message, if any. Function-call parts are left out: their
+ * signatures already travel in the tool call id, and the calls themselves in their own items.
+ */
+export function messageStateFromProviderFields(
+	fields: Record<string, unknown> | undefined,
+): MessageState | undefined {
+	const parts = googleContentPartsFromProviderFields(fields)?.filter(
+		(part) => part.functionCall === undefined,
+	);
+	return parts?.some(hasThoughtSignature) === true
+		? { provider: "google", state: parts }
+		: undefined;
+}
+
+/** Whether the state was issued for exactly this visible content (it was not edited since). */
+export function messageStateMatchesContent(
+	state: MessageState,
+	content: CanonicalMessage["content"],
+): boolean {
+	return googleVisibleText(state.state) === canonicalContentText(content);
+}
+
+/** Restores message-bound state onto canonical provider fields; it replaces any older copy. */
+export function providerFieldsWithMessageState(
+	fields: Record<string, unknown> | undefined,
+	state: MessageState,
+): Record<string, unknown> {
+	const merged = withoutMessageState(fields) ?? {};
+	return (
+		mergeProviderFields(
+			merged,
+			providerFieldsWithGoogleContentParts(state.state),
+		) ?? merged
+	);
+}
+
+/** Drops message-bound state, e.g. when the message no longer matches it. */
+export function withoutMessageState(
+	fields: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+	if (fields === undefined) {
+		return undefined;
+	}
+	const copy = structuredClone(fields);
+	const google = recordValue(copy.google);
+	if (google !== undefined) {
+		delete google.content_parts;
+		if (Object.keys(google).length === 0) {
+			delete copy.google;
+		}
+	}
+	return Object.keys(copy).length > 0 ? copy : undefined;
 }
 
 /* ===================================================== THOUGHT SIGNATURES ===

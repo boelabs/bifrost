@@ -16,12 +16,19 @@ import {
 	responsesOutputFromProviderFields,
 	providerFieldsWithOpenAIReasoning,
 	openaiReasoningFromProviderFields,
+	messageStateFromProviderFields,
+	providerFieldsWithMessageState,
 	type OpenAIReasoningStateItem,
+	messageStateMatchesContent,
 	mergeProviderExtraContent,
+	type DecodedMessageState,
 	decodeThoughtSignatureId,
 	encodeThoughtSignatureId,
 	stripThoughtSignatureId,
+	type MessageStateCodec,
+	withoutMessageState,
 	mergeProviderFields,
+	isGatewayState,
 } from "#core/providerSpecificFields.ts";
 
 import type {
@@ -401,8 +408,67 @@ export async function expandInputReferences(
 }
 
 /** Translates an OpenResponses request to the canonical chat request. */
+/** No upstream can read a gateway state carrier, so one is never forwarded. */
+function isGatewayStateItem(item: unknown): boolean {
+	const record = extraContent(item);
+	return (
+		record?.type === "reasoning" && isGatewayState(record.encrypted_content)
+	);
+}
+
+export function withoutGatewayStateItems<T>(items: T[]): T[] {
+	return items.filter((item) => !isGatewayStateItem(item));
+}
+
+export interface ResponsesCanonicalOptions {
+	/** Opens gateway state carriers. Without it they are dropped. */
+	messageState?: MessageStateCodec;
+}
+
+interface PendingMessageState {
+	state: DecodedMessageState;
+	/** The assistant message right before the carrier, for clients that drop item ids. */
+	fallback: CanonicalMessage | undefined;
+}
+
+/**
+ * Restores message-bound state onto the assistant message it was issued with: the message item
+ * whose id it names, else the assistant message right before the carrier. State whose message
+ * was edited since is discarded along with any other copy of it, so a signature never reaches
+ * the provider next to text that is not its own.
+ */
+function restoreMessageStates(
+	states: PendingMessageState[],
+	messagesById: Map<string, CanonicalMessage>,
+	codec: MessageStateCodec,
+): void {
+	for (const { state, fallback } of states) {
+		const target = messagesById.get(state.messageId) ?? fallback;
+		if (target === undefined) {
+			codec.discard("unanchored");
+			continue;
+		}
+		if (!messageStateMatchesContent(state, target.content)) {
+			codec.discard("content_mismatch");
+			const fields = withoutMessageState(target.providerFields);
+			if (fields === undefined) {
+				delete target.providerFields;
+			} else {
+				target.providerFields = fields;
+			}
+			continue;
+		}
+		// The carrier wins over a `provider_specific_fields` copy of the same state.
+		target.providerFields = providerFieldsWithMessageState(
+			target.providerFields,
+			state,
+		);
+	}
+}
+
 export function responsesRequestToCanonical(
 	input: ResponsesRequest,
+	options: ResponsesCanonicalOptions = {},
 ): CanonicalChatRequest {
 	const req = normalizePromptCacheRequest(input);
 	const messages: CanonicalMessage[] = [];
@@ -417,6 +483,10 @@ export function responsesRequestToCanonical(
 		// OpenAI reasoning state items precede the assistant items they belong to; buffer them and
 		// attach to the next assistant-derived message.
 		let pendingReasoning: OpenAIReasoningStateItem[] = [];
+		// Gateway state carriers follow the message they belong to; they are anchored after the loop.
+		const messageStates: PendingMessageState[] = [];
+		const assistantMessagesById = new Map<string, CanonicalMessage>();
+		let lastAssistantMessage: CanonicalMessage | undefined;
 		const attachPendingReasoning = (message: CanonicalMessage): void => {
 			if (pendingReasoning.length === 0) {
 				return;
@@ -462,6 +532,13 @@ export function responsesRequestToCanonical(
 					}
 					if (role === "assistant") {
 						attachPendingReasoning(message);
+						lastAssistantMessage = message;
+						const id = itemId(item);
+						if (id !== null) {
+							assistantMessagesById.set(id, message);
+						}
+					} else {
+						lastAssistantMessage = undefined;
 					}
 					messages.push(message);
 					break;
@@ -516,6 +593,7 @@ export function responsesRequestToCanonical(
 						toolCallId: stripThoughtSignatureId(String(item.call_id ?? "")),
 						content,
 					});
+					lastAssistantMessage = undefined;
 					break;
 				}
 				case "reasoning": {
@@ -523,6 +601,14 @@ export function responsesRequestToCanonical(
 					// it into canonical state would hand every transport a half the provider never
 					// sent. Both representations are restored on the way out.
 					const encrypted = item.encrypted_content;
+					if (isGatewayState(encrypted)) {
+						// Never OpenAI state: it would reach an OpenAI upstream as unreadable reasoning.
+						const state = options.messageState?.decode(encrypted);
+						if (state !== undefined) {
+							messageStates.push({ state, fallback: lastAssistantMessage });
+						}
+						break;
+					}
 					if (typeof encrypted === "string" && encrypted.length > 0) {
 						pendingReasoning.push({
 							encrypted_content: encrypted,
@@ -557,6 +643,13 @@ export function responsesRequestToCanonical(
 			if (last !== undefined) {
 				attachPendingReasoning(last);
 			}
+		}
+		if (options.messageState !== undefined) {
+			restoreMessageStates(
+				messageStates,
+				assistantMessagesById,
+				options.messageState,
+			);
 		}
 	}
 
@@ -715,7 +808,7 @@ export function responsesRequestToCanonical(
 				? {}
 				: { contextManagement: req.context_management }),
 			...(requiresNativeInput && Array.isArray(req.input)
-				? { rawInput: structuredClone(req.input) }
+				? { rawInput: withoutGatewayStateItems(structuredClone(req.input)) }
 				: {}),
 		};
 	}
@@ -792,6 +885,8 @@ export interface RenderOptions {
 	 * reason. Reported in `reasoning.effort` instead of the requested value.
 	 */
 	reasoningEffort: ReasoningEffort | null;
+	/** Seals message-bound provider state into a replayable `reasoning` item. */
+	messageState?: MessageStateCodec;
 }
 
 export function toResponsesUsage(usage: Usage): Record<string, unknown> {
@@ -847,6 +942,33 @@ function messageItem(
 			: { provider_specific_fields: providerFields }),
 		content: [{ type: "output_text", text: content, annotations: [] }],
 	};
+}
+
+/**
+ * Carrier for message-bound provider state, placed right after its message: Gemini completes the
+ * state only with the message, which has streamed by then. Rendered only when the client asked for
+ * encrypted reasoning, like OpenAI's own `encrypted_content`.
+ */
+function messageStateItem(
+	fields: Record<string, unknown> | undefined,
+	messageId: string,
+	opts: RenderOptions,
+): Record<string, unknown> | undefined {
+	if (
+		opts.messageState === undefined ||
+		opts.req.include?.includes(ENCRYPTED_REASONING_INCLUDE) !== true
+	) {
+		return undefined;
+	}
+	const state = messageStateFromProviderFields(fields);
+	return state === undefined
+		? undefined
+		: {
+				type: "reasoning",
+				id: `rs_${randomUUID()}`,
+				summary: [],
+				encrypted_content: opts.messageState.encode(messageId, state),
+			};
 }
 
 function reasoningItem(summary: string, id: string): Record<string, unknown> {
@@ -1040,14 +1162,23 @@ export function canonicalToResponsesResponse(
 			);
 		}
 		if (content) {
+			const messageId = `msg_${randomUUID()}`;
 			output.push(
 				messageItem(
 					content,
-					`msg_${randomUUID()}`,
+					messageId,
 					choice?.message.phase,
 					withoutOpenAIResponsesReasoningState(choice?.message.providerFields),
 				),
 			);
+			const stateItem = messageStateItem(
+				choice?.message.providerFields,
+				messageId,
+				opts,
+			);
+			if (stateItem !== undefined) {
+				output.push(stateItem);
+			}
 		}
 		for (const tc of choice?.message.toolCalls ?? []) {
 			output.push(functionCallItem(tc, `fc_${randomUUID()}`));
@@ -1589,6 +1720,19 @@ export async function* canonicalChunksToResponsesEvents(
 			output_index: msgIndex,
 			item,
 		});
+		const stateItem = messageStateItem(messageProviderFields, msgId, opts);
+		if (stateItem !== undefined) {
+			const stateIndex = nextOutputIndex++;
+			yield sse("response.output_item.added", next(), {
+				output_index: stateIndex,
+				item: stateItem,
+			});
+			yield sse("response.output_item.done", next(), {
+				output_index: stateIndex,
+				item: stateItem,
+			});
+			output.push(stateItem);
+		}
 	}
 
 	// Reasoning that arrived after the message opened (unusual interleave):

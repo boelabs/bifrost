@@ -33,6 +33,13 @@ import type {
 	CanonicalMessage,
 } from "#core/canonical.ts";
 
+import {
+	providerFieldsWithGoogleContentParts,
+	googleContentPartsFromProviderFields,
+	canonicalContentText,
+	googleVisibleText,
+} from "#core/providerSpecificFields.ts";
+
 import type {
 	EmbeddingsHandler,
 	AdapterContext,
@@ -42,11 +49,6 @@ import type {
 	ChatHandler,
 	Adapter,
 } from "#adapters/types.ts";
-
-import {
-	providerFieldsWithGoogleContentParts,
-	googleContentPartsFromProviderFields,
-} from "#core/providerSpecificFields.ts";
 
 import type {
 	CanonicalEmbeddingsResponse,
@@ -315,6 +317,49 @@ function ensureFirstFunctionCallSignature(
 	}
 }
 
+/**
+ * The native parts a client replayed for an assistant message, used instead of its canonical
+ * content. Parts whose visible text no longer matches that content (the client edited the
+ * message) are ignored: a signature must never travel with text that is not its own.
+ */
+function nativeAssistantParts(
+	message: CanonicalMessage,
+): Record<string, unknown>[] | undefined {
+	const parts = googleContentPartsFromProviderFields(message.providerFields);
+	return parts !== undefined &&
+		googleVisibleText(parts) === canonicalContentText(message.content)
+		? parts
+		: undefined;
+}
+
+/** Whether `part` is a function call `parts` already holds, as replayed native parts do. */
+function repeatsFunctionCall(
+	parts: Record<string, unknown>[],
+	part: Record<string, unknown>,
+): boolean {
+	const call = part.functionCall as
+		| { id?: unknown; name?: unknown; args?: unknown }
+		| undefined;
+	if (call === undefined) {
+		return false;
+	}
+	return parts.some((existing) => {
+		const native = existing.functionCall as
+			| { id?: unknown; name?: unknown; args?: unknown }
+			| undefined;
+		if (native === undefined) {
+			return false;
+		}
+		if (typeof native.id === "string") {
+			return native.id === call.id;
+		}
+		return (
+			native.name === call.name &&
+			JSON.stringify(native.args ?? {}) === JSON.stringify(call.args ?? {})
+		);
+	});
+}
+
 interface GeminiBody extends Record<string, unknown> {
 	contents: Array<{ role: "user" | "model"; parts: Record<string, unknown>[] }>;
 	systemInstruction?: { parts: Record<string, unknown>[] };
@@ -406,9 +451,7 @@ function buildGeminiBody(
 			continue;
 		}
 		if (m.role === "assistant") {
-			const nativeParts = googleContentPartsFromProviderFields(
-				m.providerFields,
-			);
+			const nativeParts = nativeAssistantParts(m);
 			const parts: Record<string, unknown>[] = nativeParts ?? [];
 			for (const part of nativeParts ?? []) {
 				const call = part.functionCall as
@@ -443,6 +486,16 @@ function buildGeminiBody(
 					part.thoughtSignature = thoughtSignature;
 				}
 				parts.push(part);
+			}
+			// /v1/responses splits one model turn into a message item and function_call items;
+			// Gemini gets it back as the single turn it produced, signatures where they were.
+			const previous = body.contents.at(-1);
+			if (previous?.role === "model") {
+				previous.parts.push(
+					...parts.filter((part) => !repeatsFunctionCall(previous.parts, part)),
+				);
+				ensureFirstFunctionCallSignature(previous.parts, ctx);
+				continue;
 			}
 			ensureFirstFunctionCallSignature(parts, ctx);
 			body.contents.push({ role: "model", parts });

@@ -116,6 +116,13 @@ The provider-agnostic internal representation in `src/core/canonical.ts`, `image
 `embeddings.ts`, and `rerank.ts`. Public contracts are converted to canonical types; adapters convert between those
 types and their Transport. Do not use **Unified**.
 
+## Message State
+
+Opaque provider state bound to an assistant message rather than to one of its tool calls, such as a
+Gemini signature on a text response. Where a public endpoint has no native carrier for it, the
+gateway seals it into a `reasoning` item whose `encrypted_content` starts with `bfrs_`; clients
+replay it and nothing is stored. See [Provider-specific fields](/docs/provider-specific-fields).
+
 ## Fallback Policy
 
 An ordered chain of Public Models identified by `(primaryModel, reason)`. `reason` is `general`,

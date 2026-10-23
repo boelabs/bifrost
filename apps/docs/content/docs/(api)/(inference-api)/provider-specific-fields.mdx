@@ -10,7 +10,25 @@ kinds exist today:
 - **Tool-call-bound state** — Gemini thought signatures. Gemini 3 rejects a follow-up request whose
   replayed function calls lack their `thoughtSignature` (`400 INVALID_ARGUMENT`).
 - **Message-bound state** — OpenAI encrypted reasoning (`reasoning` items with `encrypted_content`),
-  which improves multi-turn tool-use quality when replayed.
+  which improves multi-turn tool-use quality when replayed; Gemini signatures on text responses,
+  which Google recommends sending back to keep reasoning continuous across turns; and Anthropic's
+  signed `thinking` blocks.
+
+## Carriers by surface
+
+Each kind of state rides on a carrier that standard clients send back unchanged, where the surface
+has one:
+
+| Provider state | `/v1/responses` | `/v1/chat/completions` | `/v1/messages` |
+| --- | --- | --- | --- |
+| Gemini: signature on a function call | `call_id` suffix | `tool_calls[].id` suffix | `tool_use.id` suffix |
+| Gemini: signature on a text response | gateway `reasoning` item | `provider_specific_fields` only | not carried |
+| OpenAI: encrypted reasoning | native `reasoning` item | `provider_specific_fields` only | not carried |
+| Anthropic: signed `thinking` blocks | `provider_specific_fields` only | `provider_specific_fields` only | native `thinking` blocks |
+
+`provider_specific_fields` is a LiteLLM-style extension that standard clients (Vercel AI SDK, the
+OpenAI SDKs, the Agents SDK) drop, so state that only travels there is lost for them. Use
+`/v1/responses` for multi-turn conversations with reasoning models.
 
 ## Thought signatures (tool-call-bound)
 
@@ -76,17 +94,55 @@ previous-response cache, but public and upstream response ids remain separate.
 
 Per surface:
 
-- **`/v1/responses`** — encrypted reasoning is rendered as native `reasoning` output items
-  (`encrypted_content` included even without an explicit `include`, so default `store:false` replay
-  flows work). Clients that replay output items — the Vercel AI SDK does — round-trip it
-  automatically; on input, `reasoning` items with `encrypted_content` are replayed upstream before
-  the function calls they precede.
+- **`/v1/responses`** — encrypted reasoning is rendered as native `reasoning` output items, with
+  `encrypted_content` when the request includes `reasoning.encrypted_content`, as on OpenAI. Clients
+  that replay output items — the Vercel AI SDK does — round-trip it automatically; on input,
+  `reasoning` items with `encrypted_content` are replayed upstream before the function calls they
+  precede.
 - **`/v1/chat/completions`** — carried as message-level
   `provider_specific_fields: { "openai": { "reasoning": [{ "id", "encrypted_content", "summary" }] } }`
   on the assistant message (and streaming delta). Standard clients drop this field, so encrypted
   reasoning does not round-trip for them on this surface — same limitation as LiteLLM.
 - **`/v1/messages`** — not supported: the Anthropic wire format has no message-level extension field
   that clients echo.
+
+## Gemini signatures on text responses (message-bound)
+
+Gemini can also sign a response that has no function call. The signature arrives on the last part,
+often an empty text part at the end of the stream:
+
+```json
+[
+  { "text": "**Defining the goal**…", "thought": true },
+  { "text": "Hello!" },
+  { "text": "", "thoughtSignature": "EsAKCr0KAWkU…" }
+]
+```
+
+On `/v1/responses`, when the request includes `reasoning.encrypted_content`, the gateway seals those
+parts into one more `reasoning` item, placed right after the message it belongs to:
+
+```json
+{ "type": "reasoning", "id": "rs_…", "summary": [], "encrypted_content": "bfrs_1.eyJ2Ijo…" }
+```
+
+- **Sealed, not stored.** The value is encrypted with the gateway's encryption keyring
+  (AES-256-GCM): clients cannot read or alter it, and nothing is kept server-side. It appears even
+  when Gemini returned no visible thought summary, and the summary item, if any, is unchanged.
+- **Replayed by standard clients.** Clients that send output items back — the Vercel AI SDK with
+  `store: false`, the OpenAI Agents SDK — round-trip it without knowing what it is.
+- **Restored onto its own message.** The gateway opens the item at the edge and restores the parts
+  onto the assistant message it was issued with: the message item whose `id` it names or, when the
+  client drops ids, the assistant message right before it. It is never forwarded upstream; when
+  routing falls back to another provider, that provider ignores it.
+- **Edited messages lose it.** If the message's text no longer matches the signed parts, the
+  gateway sends the client's text without signatures.
+- **No expiry, no errors.** Conversations last for months, so items do not expire. One that cannot
+  be opened — its key was removed from `ENCRYPTION_KEYRING`, it was tampered with, or its version is
+  unknown — is dropped with a warning and the request continues without it. Drops are counted in
+  `bifrost_message_state_discarded_total` by `reason`.
+- The message item keeps `provider_specific_fields.google.content_parts` for LiteLLM-style clients.
+  When both arrive, the `reasoning` item wins.
 
 ## Storage
 

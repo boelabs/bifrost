@@ -11,6 +11,7 @@ export type EncryptionPurpose =
 	| "deployment-credentials"
 	| "extension-source"
 	| "observability-payload"
+	| "reasoning-state"
 	| "response-compaction";
 
 function parseKeyring(raw: string): ReadonlyMap<string, Buffer> {
@@ -58,6 +59,7 @@ export function parseEncryptedEnvelope(value: unknown): EncEnvelope {
 			"deployment-credentials",
 			"extension-source",
 			"observability-payload",
+			"reasoning-state",
 			"response-compaction",
 		].includes(candidate.purpose ?? "") ||
 		typeof candidate.iv !== "string" ||

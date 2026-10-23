@@ -1318,3 +1318,115 @@ test("google content signatures: complete native parts survive replay", () => {
 		{ text: "answer" },
 	]);
 });
+
+test("google.buildRequest: replayed native parts never ride on edited text", () => {
+	const built = must(googleAdapter, "chat").buildRequest(
+		{
+			...req,
+			messages: [
+				{ role: "user", content: "hi" },
+				{
+					role: "assistant",
+					content: "edited",
+					providerFields: {
+						google: {
+							content_parts: [
+								{ text: "original" },
+								{ text: "", thoughtSignature: "sig-a" },
+							],
+						},
+					},
+				},
+				{ role: "user", content: "again" },
+			],
+		},
+		geminiLevelCtx,
+	);
+	assert.deepEqual(jsonBody(built).contents[1].parts, [{ text: "edited" }]);
+});
+
+async function responsesGeminiBody(input: unknown[]) {
+	const { responsesRequestSchema } = await import(
+		"#contracts/openai/responses.ts"
+	);
+	const { responsesRequestToCanonical } = await import(
+		"#contracts/openai/responsesRender.ts"
+	);
+	const canonical = responsesRequestToCanonical(
+		responsesRequestSchema.parse({ model: "gemini", input }),
+	);
+	return jsonBody(
+		must(googleAdapter, "chat").buildRequest(canonical, geminiLevelCtx),
+	);
+}
+
+test("google.buildRequest: Responses parallel calls return as one model turn", async () => {
+	const body = await responsesGeminiBody([
+		{ role: "user", content: "weather in two cities" },
+		{
+			type: "function_call",
+			call_id: "c1__thought__sig-1",
+			name: "weather",
+			arguments: '{"city":"Paris"}',
+		},
+		{
+			type: "function_call",
+			call_id: "c2",
+			name: "weather",
+			arguments: '{"city":"Rome"}',
+		},
+		{
+			type: "function_call_output",
+			call_id: "c1__thought__sig-1",
+			output: "{}",
+		},
+		{ type: "function_call_output", call_id: "c2", output: "{}" },
+	]);
+	assert.deepEqual(
+		body.contents.map((content: { role: string }) => content.role),
+		["user", "model", "user", "user"],
+	);
+	assert.deepEqual(body.contents[1].parts, [
+		{
+			functionCall: { id: "c1", name: "weather", args: { city: "Paris" } },
+			thoughtSignature: "sig-1",
+		},
+		{ functionCall: { id: "c2", name: "weather", args: { city: "Rome" } } },
+	]);
+});
+
+test("google.buildRequest: a replayed native turn does not repeat its function calls", async () => {
+	const body = await responsesGeminiBody([
+		{ role: "user", content: "search" },
+		{
+			type: "message",
+			role: "assistant",
+			content: [{ type: "output_text", text: "Searching." }],
+			provider_specific_fields: {
+				google: {
+					content_parts: [
+						{ text: "Searching." },
+						{
+							functionCall: { name: "search", args: { q: "x" } },
+							thoughtSignature: "sig-fc",
+						},
+					],
+				},
+			},
+		},
+		{
+			type: "function_call",
+			call_id: "call_0_1__thought__sig-fc",
+			name: "search",
+			arguments: '{"q":"x"}',
+		},
+		{ type: "function_call_output", call_id: "call_0_1", output: "{}" },
+	]);
+	assert.deepEqual(body.contents[1].parts, [
+		{ text: "Searching." },
+		{
+			functionCall: { name: "search", args: { q: "x" } },
+			thoughtSignature: "sig-fc",
+		},
+	]);
+});
