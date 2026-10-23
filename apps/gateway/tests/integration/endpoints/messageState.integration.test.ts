@@ -1,8 +1,9 @@
 import { createDeployment, deleteDeployment } from "#db/repos/deployments.ts";
+import { jsonResponse, withStubbedFetch } from "#test-support/fetch.ts";
 import { redisAvailable, pgAvailable } from "#test-support/infra.ts";
 import { makeOpenAIContractTestApp } from "#test-support/app.ts";
 import { responsesHandler } from "#endpoints/responses.ts";
-import { withStubbedFetch } from "#test-support/fetch.ts";
+import { messagesHandler } from "#endpoints/messages.ts";
 import { randomUUID } from "node:crypto";
 import assert from "node:assert/strict";
 import { env } from "#config/env.ts";
@@ -16,6 +17,7 @@ const skip =
 		: "Postgres/Redis unavailable";
 const app = makeOpenAIContractTestApp((instance) => {
 	instance.post("/v1/responses", responsesHandler);
+	instance.post("/v1/messages", messagesHandler);
 });
 
 type Item = Record<string, unknown>;
@@ -279,6 +281,81 @@ test("Claude thinking survives a standard Responses client's tool loop", {
 				},
 				{ type: "tool_use", id: "toolu_1", name: "search", input: { q: "x" } },
 			],
+		});
+	} finally {
+		await deleteDeployment(row.id);
+	}
+});
+
+test("Gemini text signatures round-trip through an Anthropic Messages client", {
+	skip,
+}, async () => {
+	const row = await createDeployment({
+		publicModel: `message-state-${randomUUID()}`,
+		adapterKey: "googleaistudio",
+		upstreamModel: "gemini-3.1-pro-preview",
+		credentials: { apiKey: "test-key" },
+	});
+	const upstreamBodies: Item[] = [];
+	const message = async (messages: Item[]): Promise<Item[]> => {
+		const response = await app.request("/v1/messages", {
+			method: "POST",
+			headers: {
+				authorization: `Bearer ${env.MASTER_KEY}`,
+				"content-type": "application/json",
+			},
+			body: JSON.stringify({
+				model: row.publicModel,
+				max_tokens: 200,
+				messages,
+			}),
+		});
+		const body = (await response.json()) as Item;
+		assert.equal(response.status, 200, JSON.stringify(body));
+		return body.content as Item[];
+	};
+	try {
+		await withStubbedFetch(
+			(_url, init) => {
+				upstreamBodies.push(JSON.parse(String(init?.body)) as Item);
+				return jsonResponse({
+					candidates: [
+						{
+							index: 0,
+							finishReason: "STOP",
+							content: {
+								role: "model",
+								parts: [
+									{ text: "Hola." },
+									{ text: "", thoughtSignature: "sig-m" },
+								],
+							},
+						},
+					],
+					usageMetadata: {
+						promptTokenCount: 2,
+						candidatesTokenCount: 1,
+						totalTokenCount: 3,
+					},
+				});
+			},
+			async () => {
+				const first = await message([{ role: "user", content: "uno" }]);
+				assert.deepEqual(
+					first.map((block) => block.type),
+					["text", "redacted_thinking"],
+				);
+				await message([
+					{ role: "user", content: "uno" },
+					{ role: "assistant", content: first },
+					{ role: "user", content: "dos" },
+				]);
+			},
+		);
+		const contents = upstreamBodies[1]?.contents as Item[];
+		assert.deepEqual(contents[1], {
+			role: "model",
+			parts: [{ text: "Hola." }, { text: "", thoughtSignature: "sig-m" }],
 		});
 	} finally {
 		await deleteDeployment(row.id);

@@ -6,6 +6,26 @@ import type { Usage } from "#core/usage.ts";
 import { randomUUID } from "node:crypto";
 
 import {
+	anthropicContentBlocksFromProviderFields,
+	providerFieldsWithAnthropicContentBlocks,
+	googleContentPartsFromProviderFields,
+	providerFieldsWithGoogleContentParts,
+	providerFieldsWithAnthropicThinking,
+	anthropicThinkingFromProviderFields,
+	openaiReasoningFromProviderFields,
+	providerFieldsWithOpenAIReasoning,
+	messageStateFromProviderFields,
+	providerFieldsWithMessageState,
+	type OpenAIReasoningStateItem,
+	type AnthropicThinkingBlock,
+	messageStateMatchesContent,
+	anthropicContentMatches,
+	type MessageStateCodec,
+	mergeProviderFields,
+	isGatewayState,
+} from "#core/providerSpecificFields.ts";
+
+import {
 	providerSpecificFieldsFromExtraContent,
 	extraContentFromProviderSpecificFields,
 	mergeProviderExtraContent,
@@ -25,12 +45,6 @@ import type {
 } from "#core/canonical.ts";
 
 import {
-	providerFieldsWithAnthropicThinking,
-	anthropicThinkingFromProviderFields,
-	type AnthropicThinkingBlock,
-} from "#core/providerSpecificFields.ts";
-
-import {
 	effortFromBudgetTokens,
 	type ReasoningEffort,
 	isReasoningEffort,
@@ -43,6 +57,48 @@ import {
 
 export interface MessagesRenderOptions {
 	publicModel: string;
+	/** Seals other providers' message-bound state into a `redacted_thinking` block. */
+	messageState?: MessageStateCodec;
+}
+
+export interface MessagesCanonicalOptions {
+	/** Opens gateway state carriers. Without it they are dropped. */
+	messageState?: MessageStateCodec;
+}
+
+/** A gateway state carrier: Anthropic clients replay `thinking` blocks verbatim. */
+function gatewayStateOf(block: Block): string | undefined {
+	if (block.type === "redacted_thinking" && isGatewayState(block.data)) {
+		return block.data;
+	}
+	return block.type === "thinking" && isGatewayState(block.signature)
+		? block.signature
+		: undefined;
+}
+
+/**
+ * Restores carriers onto the assistant message that holds them. Gemini state whose text was edited
+ * since is discarded, so a signature never reaches the provider next to text that is not its own.
+ */
+function restoreMessageStates(
+	message: CanonicalMessage,
+	carriers: string[],
+	codec: MessageStateCodec | undefined,
+): void {
+	for (const carrier of carriers) {
+		const state = codec?.decode(carrier);
+		if (state === undefined || codec === undefined) {
+			continue;
+		}
+		if (!messageStateMatchesContent(state, message.content)) {
+			codec.discard("content_mismatch");
+			continue;
+		}
+		message.providerFields = providerFieldsWithMessageState(
+			message.providerFields,
+			state,
+		);
+	}
 }
 
 const MESSAGES_EXTRA_BODY_MANAGED_KEYS = [
@@ -285,6 +341,7 @@ function reasoningEffortFromMessages(
 
 export function messagesRequestToCanonical(
 	req: MessagesRequest,
+	options: MessagesCanonicalOptions = {},
 ): CanonicalChatRequest {
 	const messages: CanonicalMessage[] = [];
 	if (req.system) {
@@ -305,8 +362,12 @@ export function messagesRequestToCanonical(
 			const parts: CanonicalContentPart[] = [];
 			const toolCalls: NonNullable<CanonicalMessage["toolCalls"]> = [];
 			const thinkingBlocks: AnthropicThinkingBlock[] = [];
+			const carriers: string[] = [];
 			for (const [blockIndex, b] of blocks.entries()) {
-				if (
+				const carrier = gatewayStateOf(b);
+				if (carrier !== undefined) {
+					carriers.push(carrier);
+				} else if (
 					b.type === "thinking" &&
 					typeof b.thinking === "string" &&
 					typeof b.signature === "string" &&
@@ -355,9 +416,19 @@ export function messagesRequestToCanonical(
 				msg.toolCalls = toolCalls;
 			}
 			if (thinkingBlocks.length > 0) {
+				// The turn exactly as the client holds it: Anthropic binds thinking to block order.
+				const native = providerFieldsWithAnthropicContentBlocks(
+					blocks.filter(
+						(block) => gatewayStateOf(block) === undefined,
+					) as Record<string, unknown>[],
+				);
 				msg.providerFields =
-					providerFieldsWithAnthropicThinking(thinkingBlocks);
+					mergeProviderFields(
+						providerFieldsWithAnthropicThinking(thinkingBlocks),
+						native,
+					) ?? native;
 			}
+			restoreMessageStates(msg, carriers, options.messageState);
 			messages.push(msg);
 			continue;
 		}
@@ -585,27 +656,45 @@ function parseArgs(args: string): unknown {
 	}
 }
 
-export function canonicalToMessagesResponse(
-	resp: CanonicalChatResponse,
-	opts: MessagesRenderOptions,
-): Record<string, unknown> {
-	const [choice] = resp.choices;
-	const content = choice?.message.content;
+type ResponseMessage = CanonicalChatResponse["choices"][number]["message"];
+
+/**
+ * Claude's content exactly as returned — thinking between text and tool calls stays where it was,
+ * since Anthropic binds each signature to the content before it — while it still says what the
+ * canonical message says (a response extension may have rewritten it).
+ */
+function nativeContent(
+	message: ResponseMessage | undefined,
+): Record<string, unknown>[] | undefined {
+	const native = anthropicContentBlocksFromProviderFields(
+		message?.providerFields,
+	);
+	return native !== undefined &&
+		message !== undefined &&
+		anthropicContentMatches(native, [message.content], message.toolCalls ?? [])
+		? native
+		: undefined;
+}
+
+function canonicalBlocks(
+	message: ResponseMessage | undefined,
+): Record<string, unknown>[] {
+	const content = message?.content;
 	const blocks: Record<string, unknown>[] = [];
 	const nativeThinking =
-		anthropicThinkingFromProviderFields(choice?.message.providerFields) ?? [];
+		anthropicThinkingFromProviderFields(message?.providerFields) ?? [];
 	blocks.push(...nativeThinking);
-	if (nativeThinking.length === 0 && choice?.message.reasoning) {
+	if (nativeThinking.length === 0 && message?.reasoning) {
 		blocks.push({
 			type: "thinking",
-			thinking: choice.message.reasoning,
+			thinking: message.reasoning,
 			signature: "",
 		});
 	}
 	if (content) {
 		blocks.push({ type: "text", text: content });
 	}
-	for (const tc of choice?.message.toolCalls ?? []) {
+	for (const tc of message?.toolCalls ?? []) {
 		const providerSpecificFields = providerSpecificFieldsFromExtraContent(
 			tc.extraContent,
 		);
@@ -619,6 +708,35 @@ export function canonicalToMessagesResponse(
 				? {}
 				: { provider_specific_fields: providerSpecificFields }),
 		});
+	}
+	return blocks;
+}
+
+/**
+ * Carrier for other providers' message-bound state (Gemini signatures next to text, OpenAI
+ * encrypted reasoning): a trailing `redacted_thinking` block, which Anthropic clients replay
+ * verbatim and the gateway opens before any upstream sees it.
+ */
+function messageStateBlock(
+	fields: Record<string, unknown> | undefined,
+	opts: MessagesRenderOptions,
+): Record<string, unknown> | undefined {
+	const state = messageStateFromProviderFields(fields, ["google", "openai"]);
+	return state === undefined || opts.messageState === undefined
+		? undefined
+		: { type: "redacted_thinking", data: opts.messageState.encode({}, state) };
+}
+
+export function canonicalToMessagesResponse(
+	resp: CanonicalChatResponse,
+	opts: MessagesRenderOptions,
+): Record<string, unknown> {
+	const [choice] = resp.choices;
+	const blocks =
+		nativeContent(choice?.message) ?? canonicalBlocks(choice?.message);
+	const carrier = messageStateBlock(choice?.message.providerFields, opts);
+	if (carrier !== undefined) {
+		blocks.push(carrier);
 	}
 	return {
 		id: messagesResponseId(resp.id),
@@ -656,6 +774,9 @@ export async function* canonicalChunksToMessagesEvents(
 	let textIndex = 0;
 	let thinkingIndex = 0;
 	const toolBlock = new Map<number, number>(); // canonical toolCall index -> anthropic block index
+	// Other providers' message-bound state, sealed into one trailing block once the turn is done.
+	let googleParts: Record<string, unknown>[] | undefined;
+	const openaiReasoning: OpenAIReasoningStateItem[] = [];
 
 	yield sse("message_start", {
 		message: {
@@ -692,16 +813,51 @@ export async function* canonicalChunksToMessagesEvents(
 			({ stopSequence } = choice);
 		}
 		const { delta } = choice;
+		googleParts =
+			googleContentPartsFromProviderFields(delta.providerFields) ?? googleParts;
+		for (const item of openaiReasoningFromProviderFields(
+			delta.providerFields,
+		) ?? []) {
+			if (
+				item.id === undefined ||
+				!openaiReasoning.some((existing) => existing.id === item.id)
+			) {
+				openaiReasoning.push(item);
+			}
+		}
 		for (const block of anthropicThinkingFromProviderFields(
 			delta.providerFields,
 		) ?? []) {
-			if (block.type === "thinking") {
-				if (thinkingOpen && block.signature.length > 0) {
+			if (block.type === "thinking" && thinkingOpen) {
+				if (block.signature.length > 0) {
 					yield sse("content_block_delta", {
 						index: thinkingIndex,
 						delta: { type: "signature_delta", signature: block.signature },
 					});
 				}
+			} else if (block.type === "thinking") {
+				// Thinking without visible text (display "omitted") streams no deltas; the signature
+				// carries the reasoning and must still reach the client, in its place.
+				if (textOpen) {
+					yield sse("content_block_stop", { index: textIndex });
+					textOpen = false;
+				}
+				const index = nextIndex++;
+				yield sse("content_block_start", {
+					index,
+					content_block: { type: "thinking", thinking: "", signature: "" },
+				});
+				if (block.thinking.length > 0) {
+					yield sse("content_block_delta", {
+						index,
+						delta: { type: "thinking_delta", thinking: block.thinking },
+					});
+				}
+				yield sse("content_block_delta", {
+					index,
+					delta: { type: "signature_delta", signature: block.signature },
+				});
+				yield sse("content_block_stop", { index });
 			} else {
 				if (thinkingOpen) {
 					yield sse("content_block_stop", { index: thinkingIndex });
@@ -801,6 +957,22 @@ export async function* canonicalChunksToMessagesEvents(
 	}
 	for (const blockIndex of toolBlock.values()) {
 		yield sse("content_block_stop", { index: blockIndex });
+	}
+	const carrier = messageStateBlock(
+		mergeProviderFields(
+			googleParts === undefined
+				? undefined
+				: providerFieldsWithGoogleContentParts(googleParts),
+			openaiReasoning.length === 0
+				? undefined
+				: providerFieldsWithOpenAIReasoning(openaiReasoning),
+		),
+		opts,
+	);
+	if (carrier !== undefined) {
+		const index = nextIndex++;
+		yield sse("content_block_start", { index, content_block: carrier });
+		yield sse("content_block_stop", { index });
 	}
 
 	yield sse("message_delta", {

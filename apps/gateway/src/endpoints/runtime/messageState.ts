@@ -69,16 +69,13 @@ function decode(
 		decoded as Partial<MessageStatePayload>;
 	if (
 		version !== VERSION ||
-		(provider !== "google" && provider !== "anthropic")
+		(provider !== "google" && provider !== "anthropic" && provider !== "openai")
 	) {
 		discard("unsupported");
 		return undefined;
 	}
-	const anchored =
-		typeof messageId === "string" ||
-		(provider === "anthropic" && typeof callId === "string");
+	// Carriers inside the message they belong to (/v1/messages) need no anchor.
 	if (
-		!anchored ||
 		(messageId !== undefined && typeof messageId !== "string") ||
 		(callId !== undefined && typeof callId !== "string") ||
 		!Array.isArray(state) ||

@@ -3,6 +3,7 @@ import { candidateMetadata } from "#gateway/candidateMetadata.ts";
 import { hasContentInputs } from "#files/requestContentInputs.ts";
 import type { CanonicalChatRequest } from "#core/canonical.ts";
 import { OperationLogDraft } from "./runtime/operationLog.ts";
+import { messageStateCodec } from "./runtime/messageState.ts";
 import type { EffectiveSettings } from "#router/settings.ts";
 import { RouteLifecycle } from "./runtime/routeLifecycle.ts";
 import { getEffectiveSettings } from "#router/settings.ts";
@@ -97,6 +98,7 @@ function streamMessages(
 			const { meta } = routing.candidate;
 			const renderOpts: MessagesRenderOptions = {
 				publicModel: routing.candidate.row.publicModel,
+				messageState: messageStateCodec,
 			};
 			metadata = {
 				...candidateMetadata(routing.candidate),
@@ -257,7 +259,9 @@ export async function messagesHandler(c: Context<AppEnv>): Promise<Response> {
 		log.requestBody = json;
 		const req = parseBody(messagesRequestSchema, json);
 		log.publicModel = req.model;
-		let canonical = messagesRequestToCanonical(req);
+		let canonical = messagesRequestToCanonical(req, {
+			messageState: messageStateCodec,
+		});
 		await preflight(c, canonical.model);
 		canonical = await applyCanonicalRequestExtensions(c, "chat", canonical);
 		log.publicModel = canonical.model;
@@ -302,6 +306,7 @@ export async function messagesHandler(c: Context<AppEnv>): Promise<Response> {
 		const { meta } = routing.candidate;
 		const renderOpts: MessagesRenderOptions = {
 			publicModel: routing.candidate.row.publicModel,
+			messageState: messageStateCodec,
 		};
 		const metadata: Record<string, unknown> = {
 			...candidateMetadata(routing.candidate),

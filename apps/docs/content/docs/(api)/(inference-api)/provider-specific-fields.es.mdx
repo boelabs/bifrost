@@ -14,9 +14,9 @@ Cada tipo de estado viaja en un portador que los clientes estándar reenvían si
 | Estado del proveedor | `/v1/responses` | `/v1/chat/completions` | `/v1/messages` |
 | --- | --- | --- | --- |
 | Gemini: firma en una llamada de función | sufijo de `call_id` | sufijo de `tool_calls[].id` | sufijo de `tool_use.id` |
-| Gemini: firma en una respuesta de texto | elemento `reasoning` del gateway | sólo `provider_specific_fields` | no se transporta |
-| OpenAI: reasoning cifrado | elemento `reasoning` nativo | sólo `provider_specific_fields` | no se transporta |
-| Anthropic: bloques `thinking` firmados | elemento `reasoning` del gateway | sólo `provider_specific_fields` | bloques `thinking` nativos |
+| Gemini: firma en una respuesta de texto | elemento `reasoning` del gateway | sólo `provider_specific_fields` | bloque `redacted_thinking` del gateway |
+| OpenAI: reasoning cifrado | elemento `reasoning` nativo | sólo `provider_specific_fields` | bloque `redacted_thinking` del gateway |
+| Anthropic: bloques `thinking` firmados | elemento `reasoning` del gateway | sólo `provider_specific_fields` | bloques nativos, en su orden original |
 
 `provider_specific_fields` es una extensión al estilo de LiteLLM que los clientes estándar (Vercel AI SDK, los SDK de OpenAI, el Agents SDK) descartan, así que el estado que sólo viaja ahí se pierde para ellos. Usa `/v1/responses` para conversaciones de varios turnos con modelos de razonamiento.
 
@@ -69,7 +69,7 @@ Por superficie:
 
 - **`/v1/responses`**: el reasoning cifrado se representa como elementos de salida nativos `reasoning`, con `encrypted_content` cuando la solicitud incluye `reasoning.encrypted_content`, igual que en OpenAI. Los clientes que reproducen elementos de salida (lo hace el Vercel AI SDK) lo reproducen automáticamente; en la entrada, los elementos `reasoning` con `encrypted_content` se reproducen en sentido upstream antes de las llamadas a funciones que preceden.
 - **`/v1/chat/completions`**: transportado como `provider_specific_fields: { "openai": { "reasoning": [{ "id", "encrypted_content", "summary" }] } }` a nivel de mensaje en el mensaje del asistente (y delta de streaming). Los clientes estándar eliminan este campo, por lo que el reasoning cifrado no los utiliza en esta superficie, la misma limitación que LiteLLM.
-- **`/v1/messages`**: no compatible: el formato del protocolo de Anthropic no tiene ningún campo de extensión a nivel de mensaje que los clientes hagan eco.
+- **`/v1/messages`**: viaja en un bloque `redacted_thinking` del gateway; consulta [En `/v1/messages`](#on-v1messages).
 
 ## Firmas de Gemini en respuestas de texto (vinculadas al mensaje) [#gemini-signatures-on-text-responses-message-bound]
 
@@ -105,6 +105,13 @@ En `/v1/responses`, cuando la solicitud incluye `reasoning.encrypted_content`, e
 - **Reenviado tal como se devolvió.** Al reenviarlo, el gateway manda el turno a Anthropic como un único mensaje del asistente con los bloques originales, siempre que su texto y sus llamadas de herramienta no hayan cambiado. Un turno que el cliente editó se reconstruye a partir de los elementos del cliente, con el pensamiento primero, como antes.
 - **Sin huecos.** Anthropic acepta pensamiento recortado desde el inicio de una conversación, no un hueco en medio. Cuando un portador no se puede abrir, el gateway también descarta el pensamiento de todos los turnos anteriores.
 - El elemento de mensaje refleja `provider_specific_fields.anthropic.thinking_blocks` y `content_blocks` para los clientes al estilo de LiteLLM, y `/v1/chat/completions` lleva los mismos campos. Un turno que sólo llama herramientas no tiene elemento de mensaje donde reflejarlos.
+
+## En `/v1/messages` [#on-v1messages]
+
+Los clientes de Anthropic reenvían cada bloque de contenido tal cual, incluido `redacted_thinking`, así que ése es el portador aquí.
+
+- **Estado de otros proveedores.** Cuando Gemini firma una respuesta de texto u OpenAI devuelve reasoning cifrado, la respuesta termina con un bloque más, `{ "type": "redacted_thinking", "data": "bfrs_1.…" }`, sellado igual que el elemento de `/v1/responses`. El gateway lo abre cuando el cliente reenvía el mensaje y restaura el estado en ese mismo mensaje; Claude nunca lo recibe, y un turno que lo contiene puede atenderlo cualquier proveedor. El estado de Gemini cuyo texto se editó se descarta.
+- **Los bloques propios de Claude** siguen siendo nativos, en el orden en que Claude los devolvió, incluidos los bloques `thinking` sin texto visible, cuya firma transporta el razonamiento. El gateway devuelve a Anthropic un turno del asistente exactamente como lo tiene el cliente, siempre que su texto y sus llamadas de herramienta coincidan.
 
 ## Almacenamiento [#storage]
 
