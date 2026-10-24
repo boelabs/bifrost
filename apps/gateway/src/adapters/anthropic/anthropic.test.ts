@@ -1,4 +1,5 @@
-import { responsesRequestToCanonical } from "#contracts/openai/responsesRender.ts";
+import { messagesRequestToCanonical } from "#contracts/anthropic/messagesRender.ts";
+import { messagesRequestSchema } from "#contracts/anthropic/messages.ts";
 import { responsesRequestSchema } from "#contracts/openai/responses.ts";
 import { jsonBody, must, streamOf } from "#test-support/adapters.ts";
 import { observeChatStream } from "#gateway/streamLifecycle.ts";
@@ -10,10 +11,20 @@ import type { Usage } from "#core/usage.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import {
+	canonicalToResponsesResponse,
+	responsesRequestToCanonical,
+} from "#contracts/openai/responsesRender.ts";
+
 import type {
 	CanonicalChatStreamChunk,
 	CanonicalChatRequest,
 } from "#core/canonical.ts";
+
+import {
+	toCanonicalChatRequest,
+	chatRequestSchema,
+} from "#contracts/openai/chat.ts";
 
 const ctx: AdapterContext = {
 	upstreamModel: "claude-sonnet-4-5",
@@ -366,6 +377,124 @@ test("anthropic.buildRequest: cache_control is emitted in system (array), conten
 		{ type: "text", text: "Hi", cache_control: { type: "ephemeral" } },
 	]);
 	assert.deepEqual(body.tools[0].cache_control, { type: "ephemeral" });
+});
+
+test("anthropic.buildRequest: Responses and Chat Completions requests enable automatic caching", () => {
+	const responses = responsesRequestToCanonical(
+		responsesRequestSchema.parse({
+			model: "claude",
+			instructions: "Be concise.",
+			input: "Hello",
+		}),
+	);
+	const chat = toCanonicalChatRequest(
+		chatRequestSchema.parse({
+			model: "claude",
+			messages: [{ role: "user", content: "Hello" }],
+		}),
+	);
+	for (const canonical of [responses, chat]) {
+		const body = jsonBody(
+			must(anthropicAdapter, "chat").buildRequest(canonical, ctx),
+		);
+		assert.deepEqual(body.cache_control, { type: "ephemeral" });
+	}
+});
+
+test("anthropic.buildRequest: native /v1/messages requests keep their own cache placement", () => {
+	const marker = { type: "ephemeral", ttl: "1h" };
+	for (const cacheControl of [undefined, marker]) {
+		const canonical = messagesRequestToCanonical(
+			messagesRequestSchema.parse({
+				model: "claude",
+				max_tokens: 20,
+				...(cacheControl === undefined ? {} : { cache_control: cacheControl }),
+				messages: [{ role: "user", content: "Hello" }],
+			}),
+		);
+		const body = jsonBody(
+			must(anthropicAdapter, "chat").buildRequest(canonical, ctx),
+		);
+		assert.deepEqual(body.cache_control, cacheControl);
+	}
+});
+
+test("anthropic.buildRequest: explicit breakpoints suppress automatic caching", () => {
+	const marker = { type: "ephemeral" };
+	const requests: CanonicalChatRequest[] = [
+		{
+			...req,
+			messages: [
+				{
+					role: "user",
+					content: [{ type: "text", text: "Hi", cacheControl: marker }],
+				},
+			],
+		},
+		{
+			...req,
+			messages: [
+				{ role: "user", content: "Hi" },
+				{
+					role: "assistant",
+					content: null,
+					toolCalls: [
+						{
+							id: "call_1",
+							name: "lookup",
+							arguments: "{}",
+							cacheControl: marker,
+						},
+					],
+				},
+			],
+		},
+		{
+			...req,
+			tools: [
+				{
+					name: "lookup",
+					parameters: { type: "object" },
+					cacheControl: marker,
+				},
+			],
+		},
+	];
+	for (const canonical of requests) {
+		const body = jsonBody(
+			must(anthropicAdapter, "chat").buildRequest(canonical, ctx),
+		);
+		assert.equal(body.cache_control, undefined);
+	}
+});
+
+test("anthropic usage reaches the Responses API with OpenAI input semantics", () => {
+	const parsed = must(anthropicAdapter, "chat").parseResponse(
+		{
+			id: "msg_1",
+			model: "claude-sonnet-4-5",
+			stop_reason: "end_turn",
+			content: [{ type: "text", text: "Hi" }],
+			usage: {
+				input_tokens: 10,
+				output_tokens: 5,
+				cache_read_input_tokens: 1200,
+				cache_creation_input_tokens: 300,
+			},
+		},
+		ctx,
+	);
+	const response = canonicalToResponsesResponse(parsed, {
+		req: responsesRequestSchema.parse({ model: "claude", input: "Hello" }),
+		publicModel: "claude",
+		reasoningEffort: null,
+	});
+	const usage = response.usage as Record<string, any>;
+	// input_tokens includes cached reads and writes, as OpenAI reports it.
+	assert.equal(usage.input_tokens, 1510);
+	assert.equal(usage.input_tokens_details.cached_tokens, 1200);
+	assert.equal(usage.input_tokens_details.cache_write_tokens, 300);
+	assert.equal(usage.total_tokens, 1515);
 });
 
 test("anthropic.buildRequest: system without cache_control still flattens to string", () => {

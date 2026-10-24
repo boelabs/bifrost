@@ -38,6 +38,11 @@ credentials and choose a model available to your provider account. See
 - Native `/v1/messages` requests pass through with minimal translation; `/v1/chat/completions` and
   `/v1/responses` requests are rendered onto the same canonical reasoning/tool/format machinery as
   every other provider.
+- **Prompt caching is automatic on `/v1/chat/completions` and `/v1/responses`.** The adapter sends
+  Anthropic's top-level `cache_control: { "type": "ephemeral" }` (5-minute TTL), so repeated prefixes
+  are cached as they are on OpenAI and Gemini and reported in `cached_tokens`. To control caching
+  yourself, use `/v1/messages`: those requests are sent with exactly the `cache_control` you write,
+  or none.
 - Models that declare `capabilities.strictTools: true` preserve Anthropic's native top-level
   `strict: true` tool flag. Native `output_config.format` is schema-adherent and is treated as strict
   structured output by the gateway.
