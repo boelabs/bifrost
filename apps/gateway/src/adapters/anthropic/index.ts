@@ -275,6 +275,16 @@ function assistantBlocks(message: CanonicalMessage): Record<string, unknown>[] {
 	return blocks;
 }
 
+function cacheMarked(messages: CanonicalMessage[]): boolean {
+	return messages.some(
+		(message) =>
+			message.cacheControl !== undefined ||
+			message.toolCalls?.some((call) => call.cacheControl !== undefined) ||
+			(Array.isArray(message.content) &&
+				message.content.some((part) => part.cacheControl !== undefined)),
+	);
+}
+
 /**
  * The turn's content as Anthropic returned it, when the client replayed it (`content_blocks`) and
  * the turn still says the same. Anthropic rejects thinking whose preceding content changed, block
@@ -290,13 +300,6 @@ function replayedTurnContent(
 	if (native === undefined) {
 		return undefined;
 	}
-	const cacheMarked = turn.some(
-		(message) =>
-			message.cacheControl !== undefined ||
-			message.toolCalls?.some((call) => call.cacheControl !== undefined) ||
-			(Array.isArray(message.content) &&
-				message.content.some((part) => part.cacheControl !== undefined)),
-	);
 	const nonText = turn.some(
 		(message) =>
 			Array.isArray(message.content) &&
@@ -304,7 +307,8 @@ function replayedTurnContent(
 	);
 	if (
 		nonText ||
-		(cacheMarked && !native.some((block) => block.cache_control !== undefined))
+		(cacheMarked(turn) &&
+			!native.some((block) => block.cache_control !== undefined))
 	) {
 		return undefined;
 	}
@@ -509,6 +513,14 @@ function buildBody(
 	}
 	if (req.messagesTransport?.cacheControl !== undefined) {
 		body.cache_control = req.messagesTransport.cacheControl;
+	} else if (
+		req.publicWire !== "messages" &&
+		!cacheMarked(req.messages) &&
+		!req.tools?.some((tool) => tool.cacheControl !== undefined)
+	) {
+		// OpenAI-shaped clients expect the provider to cache prefixes on its own; Anthropic only caches
+		// marked ones. Native Messages clients and explicit breakpoints keep their own placement.
+		body.cache_control = { type: "ephemeral" };
 	}
 	if (req.messagesTransport?.metadata !== undefined) {
 		body.metadata = req.messagesTransport.metadata;
