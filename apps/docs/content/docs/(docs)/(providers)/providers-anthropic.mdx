@@ -41,6 +41,12 @@ credentials and choose a model available to your provider account. See
 - Models that declare `capabilities.strictTools: true` preserve Anthropic's native top-level
   `strict: true` tool flag. Native `output_config.format` is schema-adherent and is treated as strict
   structured output by the gateway.
+- Anthropic compiles strict tool schemas and `json_schema` response formats from a subset of JSON
+  Schema and rejects constraints outside it (`maxItems`, `minLength`, `minimum`, …) that OpenAI's
+  strict mode accepts. For `/v1/chat/completions` and `/v1/responses` requests the adapter keeps
+  the supported keywords and moves the rest into the field's `description`, as Anthropic's SDKs do;
+  clients keep validating against their original schema. Native `/v1/messages` tools are sent as
+  written.
 - Catalog: `src/adapters/anthropic/catalog.json`.
 
 ## Next steps
