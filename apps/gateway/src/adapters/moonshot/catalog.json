@@ -75,6 +75,55 @@
 				}
 			}
 		},
+		"kimi-k3.1-pro": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true,
+						"strictTools": true
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 1048576,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "high", "max"]
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"frequency_penalty": false,
+						"include_reasoning": true,
+						"max_completion_tokens": true,
+						"max_tokens": true,
+						"n": false,
+						"parallel_tool_calls": false,
+						"presence_penalty": false,
+						"prompt_cache_key": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"safety_identifier": true,
+						"seed": false,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": false,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": false,
+						"user": false,
+						"logprobs": true,
+						"top_logprobs": true,
+						"top_k": false,
+						"min_p": false,
+						"repetition_penalty": false,
+						"logit_bias": false
+					}
+				}
+			},
+			"notes": "Moonshot publishes no price for kimi-k3.1-pro yet, so it is left unpriced."
+		},
 		"kimi-k2.7-code": {
 			"operations": {
 				"text.generate": {

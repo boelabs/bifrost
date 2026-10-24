@@ -1153,7 +1153,7 @@
 			"pricing": {
 				"inputCentsPerMTokens": 125,
 				"outputCentsPerMTokens": 1000,
-				"cacheReadCentsPerMTokens": 13
+				"cacheReadCentsPerMTokens": 12.5
 			}
 		},
 		"gpt-5.1-codex-mini": {
@@ -1187,7 +1187,7 @@
 			"pricing": {
 				"inputCentsPerMTokens": 25,
 				"outputCentsPerMTokens": 200,
-				"cacheReadCentsPerMTokens": 3
+				"cacheReadCentsPerMTokens": 2.5
 			}
 		},
 		"gpt-5.1-codex-max": {
@@ -1267,7 +1267,7 @@
 			"pricing": {
 				"inputCentsPerMTokens": 125,
 				"outputCentsPerMTokens": 1000,
-				"cacheReadCentsPerMTokens": 13,
+				"cacheReadCentsPerMTokens": 12.5,
 				"cacheWriteCentsPerMTokens": 0
 			}
 		},
@@ -1412,7 +1412,7 @@
 			"pricing": {
 				"inputCentsPerMTokens": 125,
 				"outputCentsPerMTokens": 1000,
-				"cacheReadCentsPerMTokens": 13,
+				"cacheReadCentsPerMTokens": 12.5,
 				"cacheWriteCentsPerMTokens": 0
 			}
 		},
