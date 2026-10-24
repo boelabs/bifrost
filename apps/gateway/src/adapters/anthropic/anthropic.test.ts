@@ -1,3 +1,5 @@
+import { responsesRequestToCanonical } from "#contracts/openai/responsesRender.ts";
+import { responsesRequestSchema } from "#contracts/openai/responses.ts";
 import { jsonBody, must, streamOf } from "#test-support/adapters.ts";
 import { observeChatStream } from "#gateway/streamLifecycle.ts";
 import { adapterDiagnostics } from "#adapters/diagnostics.ts";
@@ -155,6 +157,104 @@ test("anthropic.buildRequest: emits native strict tool schemas", () => {
 		ctx,
 	);
 	assert.equal(jsonBody(built).tools[0].strict, true);
+});
+
+const constrainedSchema = {
+	type: "object",
+	properties: {
+		ids: {
+			type: "array",
+			minItems: 1,
+			maxItems: 5,
+			items: { type: "string", maxLength: 12 },
+		},
+	},
+	required: ["ids"],
+	additionalProperties: false,
+};
+
+test("anthropic.buildRequest: strict tools drop schema keywords Anthropic rejects", () => {
+	const built = must(anthropicAdapter, "chat").buildRequest(
+		{
+			...req,
+			tools: [{ name: "lookup", strict: true, parameters: constrainedSchema }],
+		},
+		ctx,
+	);
+	const [tool] = jsonBody(built).tools;
+	assert.equal(tool.strict, true);
+	assert.deepEqual(tool.input_schema, {
+		type: "object",
+		properties: {
+			ids: {
+				type: "array",
+				minItems: 1,
+				items: { type: "string", description: "{maxLength: 12}" },
+				description: "{maxItems: 5}",
+			},
+		},
+		required: ["ids"],
+		additionalProperties: false,
+	});
+});
+
+test("anthropic.buildRequest: non-strict tools keep their schema intact", () => {
+	const built = must(anthropicAdapter, "chat").buildRequest(
+		{
+			...req,
+			tools: [
+				{ name: "lookup", parameters: constrainedSchema },
+				{ name: "search", strict: false, parameters: constrainedSchema },
+			],
+		},
+		ctx,
+	);
+	const [lookup, search] = jsonBody(built).tools;
+	assert.deepEqual(lookup, { name: "lookup", input_schema: constrainedSchema });
+	assert.deepEqual(search, {
+		name: "search",
+		input_schema: constrainedSchema,
+		strict: false,
+	});
+});
+
+test("anthropic.buildRequest: a strict Responses function tool reaches Anthropic without maxItems", () => {
+	const canonical = responsesRequestToCanonical(
+		responsesRequestSchema.parse({
+			model: "claude",
+			input: "pick some ids",
+			tools: [
+				{
+					type: "function",
+					name: "lookup",
+					strict: true,
+					parameters: constrainedSchema,
+				},
+			],
+		}),
+	);
+	const [tool] = jsonBody(
+		must(anthropicAdapter, "chat").buildRequest(canonical, ctx),
+	).tools;
+	assert.equal(tool.strict, true);
+	assert.equal(tool.input_schema.properties.ids.maxItems, undefined);
+	assert.equal(tool.input_schema.properties.ids.minItems, 1);
+});
+
+test("anthropic.buildRequest: native /v1/messages tools pass through untouched", () => {
+	const rawTools = [
+		{ name: "lookup", strict: true, input_schema: constrainedSchema },
+		{ type: "web_search_20260209", name: "web_search" },
+	];
+	const built = must(anthropicAdapter, "chat").buildRequest(
+		{
+			...req,
+			tools: [{ name: "lookup", strict: true, parameters: constrainedSchema }],
+			messagesTransport: { rawTools },
+		},
+		ctx,
+	);
+	assert.deepEqual(jsonBody(built).tools, rawTools);
 });
 
 test("anthropic token count preserves input fields and removes generation controls", () => {
@@ -427,7 +527,43 @@ test("anthropic.buildRequest: structured output merges with output_config.effort
 	);
 	assert.deepEqual(jsonBody(built).output_config, {
 		effort: "high",
-		format: { type: "json_schema", schema },
+		format: {
+			type: "json_schema",
+			schema: { ...schema, additionalProperties: false },
+		},
+	});
+});
+
+test("anthropic.buildRequest: structured output drops constraints Anthropic cannot compile", () => {
+	const built = must(anthropicAdapter, "chat").buildRequest(
+		{
+			...req,
+			responseFormat: {
+				type: "json_schema",
+				strict: true,
+				schema: {
+					type: "object",
+					properties: {
+						items: { type: "array", maxItems: 3, items: { type: "string" } },
+					},
+					required: ["items"],
+					additionalProperties: false,
+				},
+			},
+		},
+		ctx,
+	);
+	assert.deepEqual(jsonBody(built).output_config.format.schema, {
+		type: "object",
+		properties: {
+			items: {
+				type: "array",
+				items: { type: "string" },
+				description: "{maxItems: 3}",
+			},
+		},
+		required: ["items"],
+		additionalProperties: false,
 	});
 });
 

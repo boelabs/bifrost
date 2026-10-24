@@ -5,6 +5,7 @@ import { assertNoPrefixCachePolicy } from "#core/promptCache.ts";
 import { looksLikeContextWindowError } from "#core/httpError.ts";
 import { resolveAdapterReasoning } from "#adapters/reasoning.ts";
 import type { ReasoningControlKind } from "#core/reasoning.ts";
+import { toAnthropicStrictSchema } from "./schema.ts";
 import { mergeExtraBody } from "#core/extraBody.ts";
 import { GatewayError } from "#core/errors.ts";
 import type { Usage } from "#core/usage.ts";
@@ -463,8 +464,11 @@ function applyResponseFormat(
 	if (format === undefined || format.type === "text") {
 		return;
 	}
+	// Anthropic always decodes `output_config.format` under strict-mode schema limits.
 	const schema =
-		format.type === "json_schema" ? format.schema : { type: "object" };
+		format.type === "json_schema"
+			? toAnthropicStrictSchema(format.schema)
+			: { type: "object" };
 	const outputConfig = (body.output_config ?? {}) as Record<string, unknown>;
 	body.output_config = {
 		...outputConfig,
@@ -515,17 +519,21 @@ function buildBody(
 	if (req.messagesTransport?.rawTools) {
 		body.tools = structuredClone(req.messagesTransport.rawTools);
 	} else if (req.tools) {
-		body.tools = req.tools.map((tool) => ({
-			name: tool.name,
-			...(tool.description === undefined
-				? {}
-				: { description: tool.description }),
-			input_schema: tool.parameters ?? { type: "object", properties: {} },
-			...(tool.strict === undefined ? {} : { strict: tool.strict }),
-			...(tool.cacheControl === undefined
-				? {}
-				: { cache_control: tool.cacheControl }),
-		}));
+		body.tools = req.tools.map((tool) => {
+			const schema = tool.parameters ?? { type: "object", properties: {} };
+			return {
+				name: tool.name,
+				...(tool.description === undefined
+					? {}
+					: { description: tool.description }),
+				input_schema:
+					tool.strict === true ? toAnthropicStrictSchema(schema) : schema,
+				...(tool.strict === undefined ? {} : { strict: tool.strict }),
+				...(tool.cacheControl === undefined
+					? {}
+					: { cache_control: tool.cacheControl }),
+			};
+		});
 	}
 	if (req.toolChoice !== undefined) {
 		if (req.toolChoice === "auto") {
