@@ -545,7 +545,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 300,
 				"outputCentsPerMTokens": 1500
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists grok-4 for retirement on 2027-01-31 in its model retirement schedule, with no replacement listed."
 		},
 		"grok-code-fast-1": {
 			"operations": {
@@ -563,7 +565,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 20,
 				"outputCentsPerMTokens": 150
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists grok-code-fast-1 for retirement on 2027-01-31 in its model retirement schedule, with no replacement listed."
 		}
 	}
 }
