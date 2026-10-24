@@ -206,7 +206,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 15,
 				"outputCentsPerMTokens": 0
-			}
+			},
+			"deprecated": true,
+			"notes": "Google deprecated gemini-embedding-001; it shuts down on 2028-05-14 (replacement: gemini-embedding-2)."
 		},
 		"gemini-nano-banana-2.1": {
 			"operations": {
@@ -1927,7 +1929,9 @@
 				"outputCentsPerMTokens": 300,
 				"cacheReadCentsPerMTokens": 5,
 				"cacheWriteCentsPerMTokens": 4.166667
-			}
+			},
+			"deprecated": true,
+			"notes": "Google deprecated gemini-3-flash-preview; no shutdown date is published yet (replacement: gemini-3.6-flash)."
 		},
 		"gemini-3.1-flash-lite": {
 			"operations": {
@@ -1966,7 +1970,9 @@
 				"outputCentsPerMTokens": 150,
 				"cacheReadCentsPerMTokens": 2.5,
 				"cacheWriteCentsPerMTokens": 4.166667
-			}
+			},
+			"deprecated": true,
+			"notes": "Google deprecated gemini-3.1-flash-lite; it shuts down on 2027-05-07 (replacement: gemini-3.5-flash-lite)."
 		},
 		"gemini-2.5-pro": {
 			"operations": {

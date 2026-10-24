@@ -50,7 +50,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 250,
 				"outputCentsPerMTokens": 1000
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists Cohere-command-a for retirement on 2027-02-15 in its model retirement schedule, with no replacement listed."
 		},
 		"DeepSeek-V4-Pro": {
 			"operations": {
@@ -119,7 +121,9 @@
 				"inputCentsPerMTokens": 44,
 				"outputCentsPerMTokens": 132,
 				"cacheReadCentsPerMTokens": 1.4
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists DeepSeek-V4-Flash-0731 for retirement on 2026-12-03 in its model retirement schedule, with no replacement listed."
 		},
 		"DeepSeek-V3.2-Speciale": {
 			"operations": {
@@ -257,7 +261,9 @@
 			"pricing": {
 				"inputCentsPerMTokens": 71,
 				"outputCentsPerMTokens": 71
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists Llama-3.3-70B-Instruct for retirement on 2027-01-31 in its model retirement schedule, with no replacement listed."
 		},
 		"Mistral-Large-3": {
 			"operations": {
@@ -356,7 +362,9 @@
 				"inputCentsPerMTokens": 60,
 				"outputCentsPerMTokens": 300,
 				"cacheReadCentsPerMTokens": 10
-			}
+			},
+			"deprecated": true,
+			"notes": "Microsoft lists Kimi-K2.5 for retirement on 2027-01-26 in its model retirement schedule, with no replacement listed."
 		},
 		"grok-4.7": {
 			"operations": {
