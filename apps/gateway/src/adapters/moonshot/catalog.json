@@ -122,7 +122,73 @@
 					}
 				}
 			},
-			"notes": "Moonshot publishes no price for kimi-k3.1-pro yet, so it is left unpriced."
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 20,
+				"cacheWriteCentsPerMTokens": 200,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 200,
+					"3600": 400
+				}
+			}
+		},
+		"kimi-k3.1-pro-highspeed": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true,
+						"strictTools": true
+					},
+					"maxInputTokens": 1048576,
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["low", "high", "max"]
+					},
+					"contracts": ["chat.completions"],
+					"parameters": {
+						"frequency_penalty": false,
+						"include_reasoning": true,
+						"max_completion_tokens": true,
+						"max_tokens": true,
+						"n": false,
+						"parallel_tool_calls": false,
+						"presence_penalty": false,
+						"prompt_cache_key": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"safety_identifier": true,
+						"seed": false,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": false,
+						"tool_choice": true,
+						"tools": true,
+						"top_p": false,
+						"user": false,
+						"logprobs": true,
+						"top_logprobs": true,
+						"top_k": false,
+						"min_p": false,
+						"repetition_penalty": false,
+						"logit_bias": false
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 400,
+				"outputCentsPerMTokens": 2000,
+				"cacheReadCentsPerMTokens": 20,
+				"cacheWriteCentsPerMTokens": 400,
+				"cacheWriteCentsPerMTokensByTtl": {
+					"300": 400,
+					"3600": 800
+				}
+			}
 		},
 		"kimi-k2.7-code": {
 			"operations": {
