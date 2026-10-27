@@ -2875,6 +2875,53 @@
 				]
 			}
 		},
+		"gpt-6.1-terra": {
+			"operations": {
+				"text.generate": {
+					"maxInputTokens": 1050000,
+					"maxOutputTokens": 128000,
+					"parameters": {
+						"max_tokens": true,
+						"stop": true,
+						"tools": true,
+						"tool_choice": true,
+						"reasoning": true,
+						"include_reasoning": true,
+						"seed": true,
+						"response_format": true,
+						"structured_outputs": true,
+						"reasoning_effort": true,
+						"verbosity": true
+					},
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"structuredOutputs": true,
+						"reasoning": true,
+						"strictTools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 100,
+				"outputCentsPerMTokens": 500,
+				"cacheReadCentsPerMTokens": 5,
+				"cacheWriteCentsPerMTokens": 125,
+				"tiers": [
+					{
+						"aboveInputTokens": 272000,
+						"inputCentsPerMTokens": 200,
+						"outputCentsPerMTokens": 750,
+						"cacheReadCentsPerMTokens": 10,
+						"cacheWriteCentsPerMTokens": 250
+					}
+				]
+			}
+		},
 		"gpt-6-sol": {
 			"operations": {
 				"text.generate": {
