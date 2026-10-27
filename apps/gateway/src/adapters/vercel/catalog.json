@@ -12290,6 +12290,106 @@
 				]
 			}
 		},
+		"openai/gpt-6.1-terra": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1050000,
+					"maxOutputTokens": 128000,
+					"modalities": {
+						"input": ["image", "pdf", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 100,
+				"outputCentsPerMTokens": 500,
+				"cacheReadCentsPerMTokens": 5,
+				"cacheWriteCentsPerMTokens": 125,
+				"tiers": [
+					{
+						"aboveInputTokens": 272001,
+						"inputCentsPerMTokens": 200,
+						"outputCentsPerMTokens": 750,
+						"cacheReadCentsPerMTokens": 10,
+						"cacheWriteCentsPerMTokens": 250
+					}
+				]
+			}
+		},
+		"openai/gpt-6.1-terra-fast": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": true
+					},
+					"maxInputTokens": 1050000,
+					"maxOutputTokens": 128000,
+					"modalities": {
+						"input": ["image", "pdf", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"response_format": true,
+						"stop": true,
+						"structured_outputs": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high", "xhigh", "max"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 1000,
+				"cacheReadCentsPerMTokens": 10,
+				"cacheWriteCentsPerMTokens": 250,
+				"tiers": [
+					{
+						"aboveInputTokens": 272001,
+						"inputCentsPerMTokens": 400,
+						"outputCentsPerMTokens": 1500,
+						"cacheReadCentsPerMTokens": 20,
+						"cacheWriteCentsPerMTokens": 500
+					}
+				]
+			}
+		},
 		"openai/gpt-image-1-mini": {
 			"operations": {
 				"image.generate": {
@@ -15546,7 +15646,7 @@
 						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
-					"maxOutputTokens": 1000000,
+					"maxOutputTokens": 262144,
 					"modalities": {
 						"input": ["text"],
 						"output": ["text"]
