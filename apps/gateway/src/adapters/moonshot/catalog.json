@@ -251,7 +251,9 @@
 				"inputCentsPerMTokens": 95,
 				"outputCentsPerMTokens": 400,
 				"cacheReadCentsPerMTokens": 19
-			}
+			},
+			"deprecated": true,
+			"notes": "Moonshot will stop offering the K2 series to new users on 2026-10-31 and plans to retire all K2 models by the end of December 2026 (replacement: kimi-k3.1-pro)."
 		},
 		"kimi-k2.7-code-highspeed": {
 			"operations": {
@@ -303,7 +305,9 @@
 				"inputCentsPerMTokens": 190,
 				"outputCentsPerMTokens": 800,
 				"cacheReadCentsPerMTokens": 38
-			}
+			},
+			"deprecated": true,
+			"notes": "Moonshot will stop offering the K2 series to new users on 2026-10-31 and plans to retire all K2 models by the end of December 2026 (replacement: kimi-k3.1-pro)."
 		},
 		"kimi-k2.6": {
 			"operations": {
@@ -369,7 +373,9 @@
 				"inputCentsPerMTokens": 95,
 				"outputCentsPerMTokens": 400,
 				"cacheReadCentsPerMTokens": 16
-			}
+			},
+			"deprecated": true,
+			"notes": "Moonshot will stop offering the K2 series to new users on 2026-10-31 and plans to retire all K2 models by the end of December 2026 (replacement: kimi-k3.1-pro)."
 		},
 		"kimi-k2.5": {
 			"operations": {
