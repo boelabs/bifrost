@@ -179,6 +179,17 @@ function ensureOperations(
 		return;
 	}
 	const model = anySourceModel(candidate);
+	// Audio in, text out reads like a chat model; the source's model family says otherwise.
+	if (model?.modelType === "transcription") {
+		entry.operations["audio.transcribe"] = {
+			responseFormats: ["json", "text"],
+		};
+		return;
+	}
+	// Live audio and speech synthesis have no operation a draft can guess; a human scopes them.
+	if (model?.modelType === "realtime" || model?.modelType === "speech") {
+		return;
+	}
 	const outputModalities = model?.outputModalities ?? [];
 	if (
 		!entry.operations["text.generate"] &&

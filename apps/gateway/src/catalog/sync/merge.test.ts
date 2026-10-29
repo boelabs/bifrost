@@ -207,6 +207,37 @@ test("ensureOperations creates text.generate on a stub when output modalities al
 	assert.ok(result.entry.operations["text.generate"]);
 });
 
+test("ensureOperations drafts audio.transcribe, not text.generate, for a transcription model", () => {
+	const source = (modelType: string) =>
+		candidate({
+			"vercel-ai-gateway": {
+				model: {
+					source: "vercel-ai-gateway",
+					id: "google/gemini-3.5-transcribe",
+					modelType,
+					inputModalities: ["audio"],
+					outputModalities: ["text"],
+					endpoints: [],
+				},
+				endpoint: undefined,
+			},
+		});
+	const transcription = mergeCatalogEntry(
+		stub(),
+		source("transcription"),
+		undefined,
+	).entry.operations;
+	assert.deepEqual(transcription, {
+		"audio.transcribe": { responseFormats: ["json", "text"] },
+	});
+	for (const modelType of ["realtime", "speech"]) {
+		assert.deepEqual(
+			mergeCatalogEntry(stub(), source(modelType), undefined).entry.operations,
+			{},
+		);
+	}
+});
+
 test("ensureOperations never adds text.generate to an entry that already declares a different operation", () => {
 	// Regression test: a real bug shipped where this added a phantom text.generate to every
 	// embedding/image/audio-transcription model whose matched source reported empty outputModalities

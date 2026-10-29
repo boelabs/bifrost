@@ -27,10 +27,11 @@ export const transcriptionFieldsSchema = z
 		prompt: z.string().optional(),
 		temperature: z.number().min(0).max(1).optional(),
 		response_format: z
-			.enum(["json", "text", "srt", "verbose_json", "vtt"])
+			.enum(["json", "text", "srt", "verbose_json", "vtt", "diarized_json"])
 			.default("json"),
 		timestamp_granularities: z.array(z.enum(["word", "segment"])).optional(),
 		include: z.array(z.string()).optional(),
+		transcription_mode: z.enum(["verbatim", "smart"]).optional(),
 		stream: z.boolean().optional(),
 		extra_body: z.record(z.string(), z.unknown()).optional(),
 	})
@@ -65,6 +66,9 @@ export function transcriptionToCanonical(
 			? {}
 			: { timestampGranularities: fields.timestamp_granularities }),
 		...(fields.include === undefined ? {} : { include: fields.include }),
+		...(fields.transcription_mode === undefined
+			? {}
+			: { mode: fields.transcription_mode }),
 		...(fields.extra_body === undefined
 			? {}
 			: { extraBody: fields.extra_body }),
@@ -109,6 +113,15 @@ export function toOpenAITranscriptionResponse(
 ): Record<string, unknown> | string {
 	if (format === "text" || format === "srt" || format === "vtt") {
 		return resp.text;
+	}
+	if (format === "diarized_json") {
+		return {
+			task: "transcribe",
+			...(resp.duration === undefined ? {} : { duration: resp.duration }),
+			text: resp.text,
+			segments: resp.segments ?? [],
+			...(resp.usage ? { usage: renderUsage(resp.usage) } : {}),
+		};
 	}
 	if (format === "verbose_json") {
 		return {

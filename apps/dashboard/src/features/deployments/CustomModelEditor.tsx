@@ -386,7 +386,7 @@ function OperationFields({
 	if (id === "audio.transcribe") {
 		return (
 			<ListInput
-				description="Comma-separated: json, text, srt, verbose_json, vtt."
+				description="Comma-separated: json, text, srt, verbose_json, vtt, diarized_json."
 				label="Transcription response formats"
 				onChange={(responseFormats) => onChange({ responseFormats })}
 				value={profile.responseFormats}

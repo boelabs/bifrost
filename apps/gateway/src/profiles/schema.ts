@@ -315,12 +315,32 @@ const transcriptionOperationProfileSchema = z
 	.object({
 		...transportField,
 		responseFormats: z
-			.array(z.enum(["json", "text", "srt", "verbose_json", "vtt"]))
+			.array(
+				z.enum(["json", "text", "srt", "verbose_json", "vtt", "diarized_json"]),
+			)
 			.min(1),
 		supportsStreaming: z.boolean().optional(),
 		supportsTimestampGranularities: z.boolean().optional(),
+		timestampGranularities: z
+			.array(z.enum(["word", "segment"]))
+			.min(1)
+			.optional(),
 		supportsKeywords: z.boolean().optional(),
+		maxKeywords: z.int().positive().optional(),
 		supportsLanguageHints: z.boolean().optional(),
+		modes: z
+			.array(z.enum(["verbatim", "smart"]))
+			.min(1)
+			.optional(),
+		incompatibleFeatures: z
+			.array(
+				z
+					.array(
+						z.enum(["keywords", "timestamps", "diarization", "smart_mode"]),
+					)
+					.min(2),
+			)
+			.optional(),
 		maxFileBytes: z.int().positive().optional(),
 	})
 	.strict();

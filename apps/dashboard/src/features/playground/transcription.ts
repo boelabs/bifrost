@@ -4,15 +4,16 @@ import { z } from "zod";
 /**
  * Transcription: one audio file in, text out.
  *
- * The endpoint is multipart, and the response format decides the shape of the answer — `json` and
- * `verbose_json` come back as JSON, `text`, `srt` and `vtt` as the file you would save. The
- * playground reads all five, because which one a caller should ask for is exactly what an operator
- * comes here to find out.
+ * The endpoint is multipart, and the response format decides the shape of the answer — `json`,
+ * `verbose_json` and `diarized_json` come back as JSON, `text`, `srt` and `vtt` as the file you
+ * would save. The playground reads all six, because which one a caller should ask for is exactly
+ * what an operator comes here to find out.
  */
 
 export const RESPONSE_FORMATS = [
 	"json",
 	"verbose_json",
+	"diarized_json",
 	"text",
 	"srt",
 	"vtt",
@@ -125,7 +126,7 @@ export function transcriptionForm(
 }
 
 /**
- * The answer, whichever of the five shapes it arrived in.
+ * The answer, whichever of the six shapes it arrived in.
  *
  * `text`, `srt` and `vtt` are plain text: the subtitle formats are kept verbatim rather than parsed,
  * because what an operator is checking there is the file itself.

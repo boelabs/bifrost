@@ -8,7 +8,8 @@
 		"docs": [
 			"https://ai.google.dev/gemini-api/docs/models",
 			"https://ai.google.dev/gemini-api/docs/pricing",
-			"https://ai.google.dev/gemini-api/docs/thinking"
+			"https://ai.google.dev/gemini-api/docs/thinking",
+			"https://ai.google.dev/gemini-api/docs/transcribe"
 		]
 	},
 	"models": {
@@ -172,6 +173,38 @@
 			},
 			"deprecated": true,
 			"notes": "Google's deprecations page schedules veo-3.1-lite-generate-preview for shutdown on 2026-10-22; replacement gemini-omni-1.1-flash."
+		},
+		"gemini-3.5-transcribe": {
+			"operations": {
+				"audio.transcribe": {
+					"responseFormats": [
+						"json",
+						"text",
+						"verbose_json",
+						"diarized_json",
+						"srt",
+						"vtt"
+					],
+					"supportsTimestampGranularities": true,
+					"timestampGranularities": ["word"],
+					"supportsKeywords": true,
+					"maxKeywords": 1000,
+					"supportsLanguageHints": true,
+					"modes": ["verbatim", "smart"],
+					"incompatibleFeatures": [
+						["keywords", "timestamps"],
+						["keywords", "diarization"],
+						["smart_mode", "timestamps"],
+						["smart_mode", "diarization"]
+					],
+					"maxFileBytes": 26214400
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 200,
+				"outputCentsPerMTokens": 1200
+			},
+			"notes": "Interactions API. Audio up to 1 hour, 30 minutes with diarization or word timestamps (srt/vtt request word timestamps); Google enforces the duration. Diarization attributes up to 8 speakers."
 		},
 		"gemini-embedding-2": {
 			"operations": {

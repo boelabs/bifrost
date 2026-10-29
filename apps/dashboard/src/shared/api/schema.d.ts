@@ -463,7 +463,7 @@ export interface paths {
 		put?: never;
 		/**
 		 * Transcribe audio (OpenAI-compatible multipart contract)
-		 * @description Accepts one audio file plus transcription controls. JSON and verbose_json return JSON, text/srt/vtt return text, and stream=true returns OpenAI-compatible transcription SSE events.
+		 * @description Accepts one audio file plus transcription controls. JSON, verbose_json and diarized_json return JSON, text/srt/vtt return text, and stream=true returns OpenAI-compatible transcription SSE events.
 		 */
 		post: operations["createTranscription"];
 		delete?: never;
@@ -2780,9 +2780,17 @@ export interface components {
 			 * @default json
 			 * @enum {string}
 			 */
-			response_format: "json" | "text" | "srt" | "verbose_json" | "vtt";
+			response_format:
+				| "json"
+				| "text"
+				| "srt"
+				| "verbose_json"
+				| "vtt"
+				| "diarized_json";
 			timestamp_granularities?: ("word" | "segment")[];
 			include?: string[];
+			/** @enum {string} */
+			transcription_mode?: "verbatim" | "smart";
 			stream?: boolean;
 			extra_body?: {
 				[key: string]: unknown;

@@ -508,7 +508,7 @@ export function TranscriptionWorkspace({
 					</DialogHeader>
 					<DialogBody>
 						<Select
-							description="json and verbose_json answer with JSON; text, srt and vtt answer with the file you would save."
+							description="json, verbose_json and diarized_json answer with JSON; text, srt and vtt answer with the file you would save."
 							label="Response format"
 							onValueChange={(value) =>
 								set(

@@ -33,6 +33,19 @@ function ctx(): AdapterContext {
 	};
 }
 
+/** A request for parsers, which only read its format. */
+const jsonReq: CanonicalTranscriptionRequest = {
+	model: "gpt-4o-transcribe",
+	file: {
+		path: "unused",
+		filename: "speech.mp3",
+		mimeType: "audio/mpeg",
+		sizeBytes: 3,
+	},
+	responseFormat: "json",
+	stream: false,
+};
+
 function withAudioFile(): {
 	req: CanonicalTranscriptionRequest;
 	cleanup: () => void;
@@ -187,7 +200,10 @@ test("audio: detected languages survive JSON and final SSE responses, including 
 	for (const languages of [[{ code: "es" }, { code: "en" }], []]) {
 		const body = { text: "Hola", languages };
 		assert.deepEqual(
-			toOpenAITranscriptionResponse(handler.parseResponse(body, ctx()), "json"),
+			toOpenAITranscriptionResponse(
+				handler.parseResponse(body, ctx(), jsonReq),
+				"json",
+			),
 			body,
 		);
 		const event = { type: "transcript.text.done", ...body };
@@ -202,7 +218,7 @@ test("audio: detected languages survive JSON and final SSE responses, including 
 
 test("audio.parseResponse: plain text -> {text}; json -> text+usage; verbose_json -> segments", () => {
 	const cap = must(openaicompatibleAdapter, "audioTranscription");
-	assert.deepEqual(cap.parseResponse("hello world", ctx()), {
+	assert.deepEqual(cap.parseResponse("hello world", ctx(), jsonReq), {
 		text: "hello world",
 	});
 
@@ -217,6 +233,7 @@ test("audio.parseResponse: plain text -> {text}; json -> text+usage; verbose_jso
 			},
 		},
 		ctx(),
+		jsonReq,
 	);
 	assert.equal(json.text, "hi");
 	assert.equal(json.usage?.type, "tokens");
@@ -230,6 +247,7 @@ test("audio.parseResponse: plain text -> {text}; json -> text+usage; verbose_jso
 			segments: [{ id: 0, text: "hi" }],
 		},
 		ctx(),
+		jsonReq,
 	);
 	assert.equal(verbose.language, "english");
 	assert.equal(verbose.duration, 1.2);

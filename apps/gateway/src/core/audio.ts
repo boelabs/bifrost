@@ -11,8 +11,25 @@ export type TranscriptionResponseFormat =
 	| "text"
 	| "srt"
 	| "verbose_json"
-	| "vtt";
-type TimestampGranularity = "word" | "segment";
+	| "vtt"
+	| "diarized_json";
+export type TimestampGranularity = "word" | "segment";
+
+/**
+ * How literally the model transcribes. `verbatim` keeps what was said (the default everywhere);
+ * `smart` removes fillers and formats numbers and alphanumerics in context.
+ */
+export type TranscriptionMode = "verbatim" | "smart";
+
+/**
+ * Request features a provider may refuse to combine. `timestamps` covers word/segment granularities
+ * and the subtitle formats (srt/vtt) that need them; `diarization` is `response_format=diarized_json`.
+ */
+export type TranscriptionFeature =
+	| "keywords"
+	| "timestamps"
+	| "diarization"
+	| "smart_mode";
 
 /** Formats whose upstream response body is plain text (not JSON). */
 export const TEXT_TRANSCRIPTION_FORMATS: readonly TranscriptionResponseFormat[] =
@@ -37,6 +54,7 @@ export interface CanonicalTranscriptionRequest {
 	responseFormat: TranscriptionResponseFormat;
 	timestampGranularities?: TimestampGranularity[];
 	include?: string[];
+	mode?: TranscriptionMode;
 	stream: boolean;
 	extraBody?: Record<string, unknown>;
 }
@@ -94,12 +112,47 @@ export interface TranscriptionProfile {
 	supportsStreaming?: boolean;
 	/** Accepts `timestamp_granularities[]` (only with verbose_json). */
 	supportsTimestampGranularities?: boolean;
+	/** The granularities it can produce. Absent = every granularity. */
+	timestampGranularities?: TimestampGranularity[];
 	/** Accepts literal vocabulary hints; otherwise the gateway drops them. */
 	supportsKeywords?: boolean;
+	/** Most vocabulary hints one request may carry. */
+	maxKeywords?: number;
 	/** Accepts multiple language hints instead of the singular language field. */
 	supportsLanguageHints?: boolean;
+	/** Accepted `transcription_mode` values. Absent = verbatim only. */
+	modes?: TranscriptionMode[];
+	/** Groups of features the provider rejects when they appear together in one request. */
+	incompatibleFeatures?: TranscriptionFeature[][];
 	/** Maximum audio file size. */
 	maxFileBytes?: number;
+}
+
+/** The features a request uses, in the vocabulary of `incompatibleFeatures`. */
+export function transcriptionFeatures(
+	req: Pick<
+		CanonicalTranscriptionRequest,
+		"keywords" | "timestampGranularities" | "responseFormat" | "mode"
+	>,
+): Set<TranscriptionFeature> {
+	const features = new Set<TranscriptionFeature>();
+	if (req.keywords && req.keywords.length > 0) {
+		features.add("keywords");
+	}
+	if (
+		(req.timestampGranularities && req.timestampGranularities.length > 0) ||
+		req.responseFormat === "srt" ||
+		req.responseFormat === "vtt"
+	) {
+		features.add("timestamps");
+	}
+	if (req.responseFormat === "diarized_json") {
+		features.add("diarization");
+	}
+	if (req.mode === "smart") {
+		features.add("smart_mode");
+	}
+	return features;
 }
 
 /** Converts the transcription usage to the core `Usage` (cost). */
