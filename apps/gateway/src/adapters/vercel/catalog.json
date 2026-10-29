@@ -12997,6 +12997,44 @@
 				"inputCentsPerMTokens": 10
 			}
 		},
+		"particle/particle-1": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": true,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 1048576,
+					"maxOutputTokens": 131072,
+					"modalities": {
+						"input": ["image", "text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"stop": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 12.5,
+				"outputCentsPerMTokens": 50,
+				"cacheReadCentsPerMTokens": 1.5
+			}
+		},
 		"perplexity/pplx-embed-v1-0.6b": {
 			"operations": {
 				"embedding.create": {
@@ -15646,7 +15684,7 @@
 						"structuredOutputs": true
 					},
 					"maxInputTokens": 1000000,
-					"maxOutputTokens": 262144,
+					"maxOutputTokens": 1000000,
 					"modalities": {
 						"input": ["text"],
 						"output": ["text"]
@@ -15671,9 +15709,9 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 120,
-				"outputCentsPerMTokens": 400,
-				"cacheReadCentsPerMTokens": 20
+				"inputCentsPerMTokens": 140,
+				"outputCentsPerMTokens": 440,
+				"cacheReadCentsPerMTokens": 14
 			}
 		},
 		"zai/glm-5.3-fast": {
