@@ -2071,6 +2071,42 @@ test("request fidelity: native-only items are retained instead of silently dropp
 	assert.deepEqual(canonical.responsesTransport?.rawInput, input);
 });
 
+test("request fidelity: replayed reasoning drops content the gateway mirrored from summary", () => {
+	const summary = [{ type: "summary_text", text: "thinking" }];
+	const input = [
+		{
+			type: "reasoning",
+			id: "rs_1",
+			encrypted_content: "enc",
+			summary,
+			content: [{ type: "reasoning_text", text: "thinking" }],
+		},
+		{
+			type: "reasoning",
+			id: "rs_2",
+			encrypted_content: "enc",
+			summary: [],
+			content: [{ type: "reasoning_text", text: "provider's own" }],
+		},
+		{
+			type: "computer_call_output",
+			call_id: "call-1",
+			output: {
+				type: "computer_screenshot",
+				image_url: "data:image/png;base64,AA==",
+			},
+		},
+	];
+	const canonical = responsesRequestToCanonical(
+		parse({ model: "response-model", input }),
+	);
+	assert.deepEqual(canonical.responsesTransport?.rawInput, [
+		{ type: "reasoning", id: "rs_1", encrypted_content: "enc", summary },
+		input[1],
+		input[2],
+	]);
+});
+
 test("request fidelity: unmapped function_call_output parts are retained instead of silently dropped", () => {
 	for (const part of [
 		{ type: "input_video", video_url: "https://example.com/clip.mp4" },
