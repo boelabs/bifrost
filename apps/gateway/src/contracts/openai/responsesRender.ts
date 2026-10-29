@@ -45,17 +45,18 @@ import type {
 } from "#core/canonical.ts";
 
 import {
+	reasoningInputForUpstream,
+	mirrorReasoningEventData,
+	mirrorReasoningOutput,
+	mirrorReasoningItem,
+} from "./responsesReasoning.ts";
+
+import {
 	type ReasoningSummary,
 	type ReasoningEffort,
 	isReasoningEffort,
 	summaryForEffort,
 } from "#core/reasoning.ts";
-
-import {
-	mirrorReasoningEventData,
-	mirrorReasoningOutput,
-	mirrorReasoningItem,
-} from "./responsesReasoning.ts";
 
 import {
 	normalizePromptCacheRequest,
@@ -417,8 +418,11 @@ function isGatewayStateItem(item: unknown): boolean {
 	);
 }
 
+/** Client input as forwarded verbatim: no gateway state carriers, no mirrored reasoning content. */
 export function withoutGatewayStateItems<T>(items: T[]): T[] {
-	return items.filter((item) => !isGatewayStateItem(item));
+	return items
+		.filter((item) => !isGatewayStateItem(item))
+		.map(reasoningInputForUpstream);
 }
 
 export interface ResponsesCanonicalOptions {

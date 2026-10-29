@@ -88,6 +88,32 @@ export function reasoningItemForRequest(
 	};
 }
 
+/**
+ * Undoes `mirrorReasoningItem` on a client-replayed input item before it is forwarded verbatim.
+ *
+ * Clients such as Codex send reasoning items back exactly as the gateway returned them, so the
+ * `content` mirrored from `summary` reaches the upstream, which rejects any non-empty `content`
+ * (`array_above_max_length`). Content that differs from the summary is the provider's own and is
+ * kept.
+ */
+export function reasoningInputForUpstream<T>(item: T): T {
+	const record = recordValue(item);
+	if (record?.type !== "reasoning" || !Array.isArray(record.content)) {
+		return item;
+	}
+	const contentTexts = reasoningTexts(record.content);
+	const summaryTexts = reasoningTexts(record.summary);
+	if (
+		contentTexts.length > 0 &&
+		(contentTexts.length !== summaryTexts.length ||
+			contentTexts.some((text, index) => text !== summaryTexts[index]))
+	) {
+		return item;
+	}
+	const { content: _mirrored, ...rest } = record;
+	return rest as T;
+}
+
 export function mirrorReasoningOutput(
 	output: Record<string, unknown>[],
 ): Record<string, unknown>[] {

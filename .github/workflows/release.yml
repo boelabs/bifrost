@@ -28,14 +28,19 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish:
-    name: ${{ matrix.name }}
-    runs-on: ubuntu-latest
+  # Each architecture builds on a runner of its own: arm64 used to be emulated with QEMU, which made
+  # the Next.js images take 10-13 minutes. Every build pushes by digest only; `publish` then names
+  # the pair with the release tags, so a tag never points at a single-architecture image.
+  build:
+    name: ${{ matrix.name }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
     strategy:
       # One failing image must not cancel the others: a half-published release is easier to finish
       # than to reason about.
       fail-fast: false
       matrix:
+        name: [gateway, dashboard, docs]
+        arch: [amd64, arm64]
         include:
           - name: gateway
             dockerfile: apps/gateway/Dockerfile
@@ -46,13 +51,93 @@ jobs:
           - name: docs
             dockerfile: apps/docs/Dockerfile
             image: bifrost-docs
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
-      # arm64 is emulated here. It is slow, and it is what lets the same tag run on an Apple laptop,
-      # a Graviton instance and an x86 server without three sets of instructions.
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: Log in to GHCR
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Labels only; the tags are applied once both architectures exist.
+      - name: Derive labels
+        id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/${{ matrix.arch }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=image,name=ghcr.io/${{ github.repository_owner }}/${{ matrix.image }},push-by-digest=true,name-canonical=true,push=true
+          # Per image and architecture, shared with later releases; a rebuild of an unchanged layer
+          # costs nothing.
+          cache-from: type=gha,scope=${{ matrix.name }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}-${{ matrix.arch }}
+
+      - name: Export digest
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: digest-${{ matrix.name }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: ${{ matrix.name }}
+    needs: [build]
+    # An image whose two builds succeeded is published even when another image failed.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: gateway
+            image: bifrost-gateway
+          - name: dashboard
+            image: bifrost-dashboard
+          - name: docs
+            image: bifrost-docs
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digest-${{ matrix.name }}-*
+          merge-multiple: true
+
+      # Both architectures or nothing: a tag that resolves to amd64 alone would break every arm64
+      # host that pulls it.
+      - name: Require both architectures
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          count=$(find . -type f | wc -l)
+          if [ "$count" -ne 2 ]; then
+            echo "::error::Expected 2 digests for ${{ matrix.name }}, found $count; not publishing it."
+            exit 1
+          fi
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
@@ -77,16 +162,18 @@ jobs:
             type=raw,value=${{ inputs.tag }},enable=${{ github.event_name == 'workflow_dispatch' }}
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-') }}
 
-      - name: Build and push
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
-        with:
-          context: .
-          file: ${{ matrix.dockerfile }}
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          # Shared with the other images in the matrix and with later releases; a rebuild of an
-          # unchanged layer costs nothing.
-          cache-from: type=gha,scope=${{ matrix.name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+      - name: Create the multi-architecture manifest
+        working-directory: ${{ runner.temp }}/digests
+        env:
+          IMAGE: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+        run: |
+          set -euo pipefail
+          tags=$(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+          # shellcheck disable=SC2046,SC2086
+          docker buildx imagetools create $tags $(printf "$IMAGE@sha256:%s " *)
+
+      - name: Inspect
+        env:
+          IMAGE: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: docker buildx imagetools inspect "$IMAGE:$VERSION"
