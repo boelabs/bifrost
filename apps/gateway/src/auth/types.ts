@@ -26,9 +26,22 @@ export interface SessionAuth {
 	isRoot: boolean;
 }
 
+/**
+ * A realtime client secret (`ek_…`) stands in for the key that minted it, for one purpose only:
+ * opening `/v1/realtime` sessions, starting from the session configuration attached to it.
+ */
+export interface RealtimeSecretGrant {
+	/** The `session` given when the secret was minted, or null. */
+	session: Record<string, unknown> | null;
+}
+
 export type Auth =
-	| { type: "master" }
-	| { type: "virtual"; key: VirtualKeyAuth }
+	| { type: "master"; realtimeSecret?: RealtimeSecretGrant }
+	| {
+			type: "virtual";
+			key: VirtualKeyAuth;
+			realtimeSecret?: RealtimeSecretGrant;
+	  }
 	| { type: "session"; session: SessionAuth };
 
 /**

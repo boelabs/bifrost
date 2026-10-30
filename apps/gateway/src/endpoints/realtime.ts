@@ -15,7 +15,12 @@ import { randomUUID } from "node:crypto";
 import type { WSEvents } from "hono/ws";
 import type { Context } from "hono";
 
+import { realtimeConversationSessionSchema } from "#contracts/openai/realtimeConversation.ts";
+import { z } from "zod/v4";
+
 import {
+	realtimeTranscriptionSessionSchema,
+	type RealtimeSessionUpdate,
 	type RealtimeSessionState,
 	RealtimeClientEventError,
 	parseRealtimeClientEvent,
@@ -418,6 +423,7 @@ async function closeConnection(connection: RealtimeConnection): Promise<void> {
 function realtimeTranscriptionSocket(
 	c: Context<AppEnv>,
 	scopeKey: string,
+	preset: RealtimeSessionUpdate | null,
 ): WSEvents {
 	let connection: RealtimeConnection;
 	const entry: RealtimeSocketEntry = {
@@ -430,7 +436,9 @@ function realtimeTranscriptionSocket(
 	connection = {
 		c,
 		entry,
-		state: newRealtimeSessionState(),
+		state: preset
+			? applySessionUpdate(newRealtimeSessionState(), preset)
+			: newRealtimeSessionState(),
 		queue: Promise.resolve(),
 		queued: 0,
 		run: null,
@@ -473,12 +481,36 @@ function realtimeTranscriptionSocket(
 	};
 }
 
+const secretSessionSchema = z.discriminatedUnion("type", [
+	realtimeConversationSessionSchema,
+	realtimeTranscriptionSessionSchema,
+]);
+
+/** The session a client secret was minted with (validated then; parsed again for its types). */
+function parseSecretSession(
+	session: Record<string, unknown> | null,
+): z.infer<typeof secretSessionSchema> | null {
+	if (!session) {
+		return null;
+	}
+	const parsed = secretSessionSchema.safeParse(session);
+	return parsed.success ? parsed.data : null;
+}
+
 export const realtimeWebSocketHandler = upgradeWebSocket(
 	(c) => {
-		const intent = c.req.query("intent");
-		const model = c.req.query("model");
 		const auth = getAuth(c);
 		const scopeKey = auth.type === "virtual" ? auth.key.id : "master";
+		// A client secret's session applies unless the URL says otherwise, as with OpenAI.
+		const secret = parseSecretSession(
+			auth.type === "session" ? null : (auth.realtimeSecret?.session ?? null),
+		);
+		const intent =
+			c.req.query("intent") ??
+			(secret?.type === "transcription" ? "transcription" : undefined);
+		const model =
+			c.req.query("model") ??
+			(secret?.type === "realtime" ? secret.model : undefined);
 		if (intent === "transcription") {
 			if (model !== undefined) {
 				const message =
@@ -491,7 +523,11 @@ export const realtimeWebSocketHandler = upgradeWebSocket(
 					param: "model",
 				});
 			}
-			return realtimeTranscriptionSocket(c, scopeKey);
+			return realtimeTranscriptionSocket(
+				c,
+				scopeKey,
+				secret?.type === "transcription" ? secret : null,
+			);
 		}
 		if ((intent !== undefined && intent !== "realtime") || !model) {
 			const message =
@@ -508,7 +544,12 @@ export const realtimeWebSocketHandler = upgradeWebSocket(
 					intent !== undefined && intent !== "realtime" ? "intent" : "model",
 			});
 		}
-		return realtimeConversationSocket(c, scopeKey, model);
+		return realtimeConversationSocket(
+			c,
+			scopeKey,
+			model,
+			secret?.type === "realtime" ? { ...secret, model: undefined } : null,
+		);
 	},
 	{
 		onError(error) {

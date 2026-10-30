@@ -26,6 +26,7 @@ import {
 } from "#contracts/openai/realtime.ts";
 
 import {
+	type RealtimeConversationSessionUpdate,
 	type RealtimeConversationClientEvent,
 	applyConversationSessionUpdate,
 	parseRealtimeConversationEvent,
@@ -503,8 +504,15 @@ export function realtimeConversationSocket(
 	c: Context<AppEnv>,
 	scopeKey: string,
 	model: string,
+	preset: RealtimeConversationSessionUpdate | null,
 ): WSEvents {
-	const state = newRealtimeConversationState(model);
+	const state = preset
+		? applyConversationSessionUpdate(
+				newRealtimeConversationState(model),
+				preset,
+				null,
+			)
+		: newRealtimeConversationState(model);
 	let connection: ConversationConnection;
 	const entry: RealtimeSocketEntry = {
 		scopeKey,
