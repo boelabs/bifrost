@@ -10,16 +10,16 @@ import type { MetadataRoute } from "next";
  */
 export default function manifest(): MetadataRoute.Manifest {
 	return {
-		name: "Bifrost",
-		short_name: "Bifrost",
+		name: "Bifrozz",
+		short_name: "Bifrozz",
 		description:
-			"Bifrost by Boelabs: a provider-agnostic artificial intelligence gateway with OpenAI and Anthropic-compatible APIs.",
+			"Bifrozz by Boelabs: a provider-agnostic artificial intelligence gateway with OpenAI and Anthropic-compatible APIs.",
 		start_url: "/",
 		display: "standalone",
-		// The mark is black ink, so its ground is white in both themes; an installed icon has no
-		// theme to follow anyway.
-		background_color: "#ffffff",
-		theme_color: "#ffffff",
+		// The icons are the brand kit's dark tile, so the splash ground matches it; an installed icon
+		// has no theme to follow anyway.
+		background_color: "#1d1d1d",
+		theme_color: "#1d1d1d",
 		icons: [
 			{ src: "/icon-192.png", sizes: "192x192", type: "image/png" },
 			{ src: "/icon-512.png", sizes: "512x512", type: "image/png" },

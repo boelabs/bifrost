@@ -2,7 +2,7 @@
 title: "Reranking"
 description: "Ordena documentos por relevancia con el contrato compatible con OpenRouter."
 ---
-Bifrost expone una superficie de reranking: `POST /v1/rerank`. El contrato sigue a OpenRouter, mientras que el núcleo canonical puede enrutar la solicitud a la API Rerank nativa de OpenRouter o a la API Rerank compatible con Cohere de Vercel AI Gateway.
+Bifrozz expone una superficie de reranking: `POST /v1/rerank`. El contrato sigue a OpenRouter, mientras que el núcleo canonical puede enrutar la solicitud a la API Rerank nativa de OpenRouter o a la API Rerank compatible con Cohere de Vercel AI Gateway.
 
 ```bash
 curl -X POST "$GATEWAY/v1/rerank" \
@@ -76,7 +76,7 @@ Cuando `provider` está presente, solo los deployments respaldados por OpenRoute
 }
 ```
 
-`model` es siempre el nombre público solicitado. El gateway reconstruye cada `document` devuelto a partir de la solicitud original de `index`; nunca confía en el eco de un documento upstream. `id` y `provider` se incluyen solo con evidencia upstream confiable, por lo que las respuestas de Vercel no inventan el proveedor final. `usage.cost` es el costo al consumidor contabilizado de Bifrost en USD, no un valor upstream sin procesar.
+`model` es siempre el nombre público solicitado. El gateway reconstruye cada `document` devuelto a partir de la solicitud original de `index`; nunca confía en el eco de un documento upstream. `id` y `provider` se incluyen solo con evidencia upstream confiable, por lo que las respuestas de Vercel no inventan el proveedor final. `usage.cost` es el costo al consumidor contabilizado de Bifrozz en USD, no un valor upstream sin procesar.
 
 Antes de aceptar una respuesta, el gateway requiere exactamente la cantidad esperada de resultados, índices enteros únicos dentro del rango, puntuaciones finitas en orden descendente y un uso consistente no negativo. Las puntuaciones no se limitan a `[0,1]`. Una infracción se convierte en un `upstream_protocol_error` reintentable, penaliza ese deployment y permite otro intento o fallback.
 
@@ -141,7 +141,7 @@ Los precios de catálogo o deployment pueden utilizar tarifas por token, `search
 
 El routing basado en precios compara candidatos solo cuando cada candidato tiene un precio conocido sobre la misma base. Un grupo mixto de token/unidad de búsqueda, o un grupo con precios desconocidos, recurre a la selección ponderada. Las unidades de búsqueda cuentan para el gasto y los presupuestos incluso sin tokens, pero no incrementan el TPM. Las RPM todavía se aplican normalmente.
 
-Los registros normales solo conservan el modelo, el recuento de documentos y los bytes, `top_n`, los nombres de las opciones del proveedor, el recuento de resultados, los índices, el uso y el costo. Las consultas y el contenido de los documentos no persisten. Están disponibles las unidades de búsqueda en registros de operación e intento, `/admin/usage` y el contador OpenTelemetry `bifrost_search_units_total`.
+Los registros normales solo conservan el modelo, el recuento de documentos y los bytes, `top_n`, los nombres de las opciones del proveedor, el recuento de resultados, los índices, el uso y el costo. Las consultas y el contenido de los documentos no persisten. Están disponibles las unidades de búsqueda en registros de operación e intento, `/admin/usage` y el contador OpenTelemetry `bifrozz_search_units_total`.
 
 ## Próximos pasos [#next-steps]
 

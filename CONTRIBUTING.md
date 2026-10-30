@@ -1,4 +1,4 @@
-# Contributing to Bifrost
+# Contributing to Bifrozz
 
 Thanks for your interest in contributing! This document describes how to set up the project, the
 conventions we follow, and what we expect in a pull request.
@@ -11,7 +11,7 @@ By participating in this project you agree to abide by our [Code of Conduct](COD
 
 This is a [Turborepo](https://turborepo.com) on [Bun](https://bun.sh) workspaces:
 
-- `apps/gateway` — the Bifrost service (runs on Bun).
+- `apps/gateway` — the Bifrozz service (runs on Bun).
 - `apps/dashboard` — the optional operator dashboard (Next.js App Router, runs on Bun).
 - `apps/docs` — the documentation site (Next.js App Router + Fumadocs, MDX), built and served on Bun.
 - `packages/tsconfig` — shared TypeScript configuration.
@@ -34,8 +34,8 @@ Postgres/Redis certificates — see the docs' Known errors page.
 bun install
 docker compose -f docker/compose.yaml -f docker/compose.local.yaml up -d postgres redis
 cp apps/gateway/.env.example apps/gateway/.env    # then fill in the master key and encryption keyring
-bun run --filter @boelabs/bifrost db:migrate
-bun run --filter @boelabs/bifrost dev
+bun run --filter @boelabs/bifrozz db:migrate
+bun run --filter @boelabs/bifrozz dev
 ```
 
 Generate a 32-byte hex value for each `ENCRYPTION_KEYRING` entry with:
@@ -58,7 +58,7 @@ If your change touches database access, the router, rate limiting, or admin endp
 integration suite (needs Postgres + Redis running):
 
 ```bash
-bun run --filter @boelabs/bifrost test:integration
+bun run --filter @boelabs/bifrozz test:integration
 ```
 
 ## Conventions

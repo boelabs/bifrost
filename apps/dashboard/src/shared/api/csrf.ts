@@ -8,7 +8,7 @@
  * gateway, and the playground's streaming fetch reads it out of `document.cookie` in the browser.
  * They live here so neither has to import the other's module.
  */
-export const CSRF_COOKIE = "bifrost_csrf";
+export const CSRF_COOKIE = "bifrozz_csrf";
 export const CSRF_HEADER = "x-csrf-token";
 
 /** Methods the gateway treats as side-effect free, and therefore exempt from the CSRF header. */

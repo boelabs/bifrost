@@ -232,7 +232,7 @@ export const env = createEnv({
 			.default(60),
 
 		OTEL_ENABLED: boolString.default(false),
-		OTEL_SERVICE_NAME: z.string().min(1).default("bifrost"),
+		OTEL_SERVICE_NAME: z.string().min(1).default("bifrozz"),
 		OTEL_METRIC_EXPORT_INTERVAL_MS: z.coerce
 			.number()
 			.int()

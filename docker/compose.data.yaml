@@ -8,6 +8,8 @@
 # not it: they are published with self-signed certificates, which Bun's TLS client rejects.
 #
 # Use compose.images.yaml instead to run everything — apps included — as one stack.
+# The project keeps its pre-rename name: volumes and container names derive from it, so renaming
+# it would start an existing stack on empty volumes.
 name: bifrost-data
 
 services:

@@ -3,7 +3,7 @@ title: "Operations"
 description: "Health probes, secrets, data lifecycle, backups, and shutdown."
 ---
 
-Operational runbook for running Bifrost in production: health probes, rotating secrets,
+Operational runbook for running Bifrozz in production: health probes, rotating secrets,
 managing operation retention, backups, and graceful shutdown. If you are still getting the
 gateway running locally, start with the [Quickstart](/docs/quickstart) instead — this page assumes a
 real deployment. For observability (logs, telemetry, request/usage queries) see
@@ -16,7 +16,7 @@ For **how** to deploy — Docker Compose, Coolify, Portainer, Dokploy, or a Linu
 orchestrator.
 
 The app runs TypeScript directly on **Bun** — there is no build step. Run
-`bun run --filter @boelabs/bifrost db:migrate` as a one-off **before** rolling out new
+`bun run --filter @boelabs/bifrozz db:migrate` as a one-off **before** rolling out new
 instances; migrations are generated from `schema.ts` with drizzle-kit and are forward-only — never
 edit an already-applied migration. See [Upgrades](/docs/upgrades) for the full rollout/rollback story.
 
@@ -83,7 +83,7 @@ export and no downtime:
 1. Add a new random id/value to `ENCRYPTION_KEYRING`, leaving the current active id in place, and roll
    every replica so all can read both keys.
 2. Set `ACTIVE_ENCRYPTION_KEY_ID` to the new id and roll the replicas again.
-3. Run `bun run --filter @boelabs/bifrost encryption:rotate`. It re-encrypts deployments,
+3. Run `bun run --filter @boelabs/bifrozz encryption:rotate`. It re-encrypts deployments,
    extension artifacts, retained payload samples, stored virtual-key secrets, and remembered
    idempotent responses in bounded batches and reports row counts.
 4. Run it again; every reported count must be zero.

@@ -23,13 +23,13 @@ test("the form carries the file and only the settings that were chosen", () => {
 	const full = transcriptionForm("whisper", file, {
 		responseFormat: "verbose_json",
 		language: "es",
-		prompt: "Bifrost, Boelabs",
+		prompt: "Bifrozz, Boelabs",
 		temperature: 0.2,
 		timestampGranularities: ["segment", "word"],
 	});
 	assert.equal(full.get("response_format"), "verbose_json");
 	assert.equal(full.get("language"), "es");
-	assert.equal(full.get("prompt"), "Bifrost, Boelabs");
+	assert.equal(full.get("prompt"), "Bifrozz, Boelabs");
 	assert.equal(full.get("temperature"), "0.2");
 	assert.deepEqual(full.getAll("timestamp_granularities[]"), [
 		"segment",

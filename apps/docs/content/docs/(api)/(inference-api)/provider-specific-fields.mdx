@@ -140,7 +140,7 @@ parts into one more `reasoning` item, placed after the last item of its turn:
 - **No expiry, no errors.** Conversations last for months, so items do not expire. One that cannot
   be opened — its key was removed from `ENCRYPTION_KEYRING`, it was tampered with, or its version is
   unknown — is dropped with a warning and the request continues without it. Drops are counted in
-  `bifrost_message_state_discarded_total` by `reason`.
+  `bifrozz_message_state_discarded_total` by `reason`.
 - The message item keeps `provider_specific_fields.google.content_parts` for LiteLLM-style clients.
   When both arrive, the `reasoning` item wins.
 

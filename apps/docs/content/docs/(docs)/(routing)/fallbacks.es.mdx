@@ -2,7 +2,7 @@
 title: "Fallbacks"
 description: "Prueba otro public model cuando el pool actual no puede atender una solicitud."
 ---
-Configura un fallback para probar otro public model cuando se agote el pool de deployments actual. Bifrost reutiliza la solicitud canonical. Puede recuperarse de fallos compatibles con esta política, pero no garantiza una respuesta si todos los destinos fallan.
+Configura un fallback para probar otro public model cuando se agote el pool de deployments actual. Bifrozz reutiliza la solicitud canonical. Puede recuperarse de fallos compatibles con esta política, pero no garantiza una respuesta si todos los destinos fallan.
 
 Un fallback conecta **nombres de public models**, no deployments individuales. Cada nombre representa un pool de uno o más deployments. El router agota el pool actual antes de pasar al siguiente nombre de la cadena. Consulta [Conceptos básicos](/es/docs/concepts) para conocer esta relación.
 

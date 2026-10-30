@@ -10,7 +10,7 @@ import { gatewayUrl } from "#/shared/config/server.ts";
  * request is checked against the gateway. This must never redirect anyone *away* from the login
  * screen on the strength of one: that locks out exactly the people who need it.
  */
-const SESSION_COOKIE = "bifrost_session";
+const SESSION_COOKIE = "bifrozz_session";
 
 /**
  * `/api/auth` is the sign-in relay itself; gating it would make signing in require a session.

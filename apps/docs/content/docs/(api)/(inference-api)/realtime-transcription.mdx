@@ -31,7 +31,7 @@ Send `session.update` with `session.type: "transcription"`. The model goes in
         "transcription": {
           "model": "transcribe-live",
           "languages": ["es-419", "en-US"],
-          "keywords": ["Bifrost", "AC-42"],
+          "keywords": ["Bifrozz", "AC-42"],
           "transcription_mode": "smart"
         },
         "turn_detection": null
@@ -46,7 +46,7 @@ Send `session.update` with `session.type: "transcription"`. The model goes in
 | `format` | `audio/pcm` at 24 kHz (OpenAI's default) or 16 kHz, `audio/pcmu`, `audio/pcma`. The gateway converts to the provider's format. |
 | `transcription.language` / `languages` | Language hints (BCP-47 for Gemini). Send one or the other. |
 | `transcription.keywords` | Vocabulary hints; up to 1,000 for Gemini. |
-| `transcription.transcription_mode` | Bifrost extension: `verbatim` (default) or `smart`, which removes fillers and formats numbers. |
+| `transcription.transcription_mode` | Bifrozz extension: `verbatim` (default) or `smart`, which removes fillers and formats numbers. |
 | `transcription.prompt`, `delay`, `noise_reduction` | Accepted; Gemini has no equivalent, so they are not sent. |
 | `turn_detection` | `null`: each `input_audio_buffer.commit` ends an utterance. `server_vad` or `semantic_vad`: the provider detects pauses. |
 | `include` | `item.input_audio_transcription.interim` adds the interim event below. |

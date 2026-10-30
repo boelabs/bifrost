@@ -31,11 +31,11 @@ const mono = Google_Sans_Code({
 
 export const metadata: Metadata = {
 	title: {
-		default: "Bifrost",
-		template: "%s · Bifrost",
+		default: "Bifrozz",
+		template: "%s · Bifrozz",
 	},
 	description:
-		"Bifrost by Boelabs: a provider-agnostic artificial intelligence gateway with OpenAI and Anthropic-compatible APIs.",
+		"Bifrozz by Boelabs: a provider-agnostic artificial intelligence gateway with OpenAI and Anthropic-compatible APIs.",
 };
 
 export const viewport: Viewport = {

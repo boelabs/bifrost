@@ -48,7 +48,7 @@ test("gemini live: setup carries vocabulary, languages, smart mode and manual tu
 				model: "public",
 				turnDetection: "manual",
 				languages: ["es-419", "en-US"],
-				keywords: ["Bifrost"],
+				keywords: ["Bifrozz"],
 				mode: "smart",
 			},
 			MODEL,
@@ -60,7 +60,7 @@ test("gemini live: setup carries vocabulary, languages, smart mode and manual tu
 				generationConfig: { responseModalities: ["TEXT"] },
 				inputAudioTranscription: {
 					languageCodes: ["es-419", "en-US"],
-					customVocabulary: ["Bifrost"],
+					customVocabulary: ["Bifrozz"],
 					mode: "SMART",
 				},
 				realtimeInputConfig: {
@@ -190,7 +190,7 @@ test("gemini live: a session streams audio and yields transcripts, then reconnec
 			connection.socket.send(JSON.stringify({ setupComplete: {} })),
 		async (baseUrl, connections) => {
 			const session = await must().connect(
-				{ model: "public", turnDetection: "server_vad", keywords: ["Bifrost"] },
+				{ model: "public", turnDetection: "server_vad", keywords: ["Bifrozz"] },
 				ctx(baseUrl),
 			);
 			const events: CanonicalRealtimeTranscriptionEvent[] = [];
@@ -206,7 +206,7 @@ test("gemini live: a session streams audio and yields transcripts, then reconnec
 			assert.equal(first.messages[0]?.setup.model, `models/${MODEL}`);
 			assert.deepEqual(
 				first.messages[0]?.setup.inputAudioTranscription.customVocabulary,
-				["Bifrost"],
+				["Bifrozz"],
 			);
 
 			// Audio is batched into 100 ms chunks.

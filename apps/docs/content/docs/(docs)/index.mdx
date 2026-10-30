@@ -3,8 +3,8 @@ title: Overview
 description: Connect your application to artificial intelligence providers through one gateway.
 ---
 
-Bifrost exposes OpenAI-compatible and Anthropic-compatible APIs. Your application sends requests
-to Bifrost with a **virtual key** and a **public model** name. Bifrost selects a provider deployment,
+Bifrozz exposes OpenAI-compatible and Anthropic-compatible APIs. Your application sends requests
+to Bifrozz with a **virtual key** and a **public model** name. Bifrozz selects a provider deployment,
 translates the request, and tracks usage and cost.
 
 You control the providers, routing rules, and access limits. Supported operations and parameters
@@ -23,7 +23,7 @@ depend on the deployments configured for each public model.
 
 ## Connect an existing application
 
-If an operator has already configured Bifrost, use its base URL, a virtual key, and an available
+If an operator has already configured Bifrozz, use its base URL, a virtual key, and an available
 public model name. For example, with the OpenAI Python SDK:
 
 ```python title="app.py"
@@ -37,7 +37,7 @@ response = client.chat.completions.create(
 print(response.choices[0].message.content)
 ```
 
-Here, `general` is a name configured in Bifrost. It can route to one or more upstream models
+Here, `general` is a name configured in Bifrozz. It can route to one or more upstream models
 without changing the application's request. See the [API reference](/docs/api-overview) for
 authentication, supported endpoints, and errors.
 
@@ -53,7 +53,7 @@ authentication, supported endpoints, and errors.
   <Card title="Manage access and costs" href="/docs/virtual-keys">
     Give each application its own model scope, rate limits, and budget.
   </Card>
-  <Card title="Deploy Bifrost" href="/docs/deployment">
+  <Card title="Deploy Bifrozz" href="/docs/deployment">
     Choose a deployment platform and prepare Postgres, Redis, and secrets.
   </Card>
   <Card title="Use the dashboard" href="/docs/dashboard">

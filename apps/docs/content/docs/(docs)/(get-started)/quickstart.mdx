@@ -14,7 +14,7 @@ used below. The Compose commands start Postgres 18 and Redis 8 locally.
 
 <Callout type="warn" title="Keep operator credentials private">
 
-The **master key** administers Bifrost. A **provider API key** authenticates Bifrost with the
+The **master key** administers Bifrozz. A **provider API key** authenticates Bifrozz with the
 upstream provider. Your application receives a separate **virtual key**; do not give it either
 operator credential.
 
@@ -46,8 +46,8 @@ REDIS_URL=redis://localhost:6379
 Apply migrations and start it:
 
 ```bash
-bun run --filter @boelabs/bifrost db:migrate
-bun run --filter @boelabs/bifrost dev
+bun run --filter @boelabs/bifrozz db:migrate
+bun run --filter @boelabs/bifrozz dev
 ```
 
 Confirm it is up:

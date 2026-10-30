@@ -2,7 +2,7 @@
 title: "Configuración inicial"
 description: "Requisitos, variables de entorno, secretos y conexiones a Postgres y Redis."
 ---
-Configura el proceso de gateway, los secretos y las conexiones de almacenamiento antes de implementarlo. Utiliza [Inicio rápido](/es/docs/quickstart) para un ejemplo local o [Instalar Bifrost](/es/docs/deployment) para elegir una plataforma de alojamiento.
+Configura el proceso de gateway, los secretos y las conexiones de almacenamiento antes de implementarlo. Utiliza [Inicio rápido](/es/docs/quickstart) para un ejemplo local o [Instalar Bifrozz](/es/docs/deployment) para elegir una plataforma de alojamiento.
 
 ## Requisitos [#requirements]
 
@@ -12,7 +12,7 @@ Configura el proceso de gateway, los secretos y las conexiones de almacenamiento
 
 <Callout>
 
-Bifrost se ejecuta en **Bun**, no en Node. Si planea acceder a una base de datos o Redis a través de TLS con un certificado **autofirmado**, lee primero [Solución de problemas](/es/docs/troubleshooting): es posible que el TLS de Bun no los acepte, y la solución es una elección de configuración que usted realiza aquí.
+Bifrozz se ejecuta en **Bun**, no en Node. Si planea acceder a una base de datos o Redis a través de TLS con un certificado **autofirmado**, lee primero [Solución de problemas](/es/docs/troubleshooting): es posible que el TLS de Bun no los acepte, y la solución es una elección de configuración que usted realiza aquí.
 
 </Callout>
 
@@ -60,7 +60,7 @@ Los procedimientos de rotación se encuentran en [Operaciones → Secretos](/es/
 
 El gateway necesita una base de datos Postgres 18+ y una instancia de Redis 8+. **Cómo** se conecta es importante debido a la restricción TLS Bun:
 
-- **Autohospedado en la misma red privada** (Compose / Coolify / Portainer / Dokploy): conéctese a través de **texto sin formato** — `postgres://…` y `redis://…`. Es seguro gracias al aislamiento de la red y evita el [Solución de problemas](/es/docs/troubleshooting). Este es el valor predeterminado en cada receta de [Instalar Bifrost](/es/docs/deployment).
+- **Autohospedado en la misma red privada** (Compose / Coolify / Portainer / Dokploy): conéctese a través de **texto sin formato** — `postgres://…` y `redis://…`. Es seguro gracias al aislamiento de la red y evita el [Solución de problemas](/es/docs/troubleshooting). Este es el valor predeterminado en cada receta de [Instalar Bifrozz](/es/docs/deployment).
 - **Proveedor administrado** (recomendado para desarrollo o cuando la base de datos se encuentra fuera de la red): elige uno que presente un certificado **CA pública**, al que Bun se conecta limpiamente.
 
 ### Base de datos administrada y Redis [#managed-database-and-redis]

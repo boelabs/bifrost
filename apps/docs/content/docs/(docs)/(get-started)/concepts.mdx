@@ -3,7 +3,7 @@ title: Core concepts
 description: Understand public models, deployments, and the path from your application to a provider.
 ---
 
-A Bifrost configuration connects the model names your application uses to the providers that
+A Bifrozz configuration connects the model names your application uses to the providers that
 serve them. Start with three concepts:
 
 | Concept | Purpose | Example |
@@ -34,7 +34,7 @@ must support the requested operation. Parameter support is governed by
 ## Endpoints, adapters, and transports
 
 A **Public Endpoint** defines the API your client uses, such as `/v1/chat/completions` or
-`/v1/messages`. An **Adapter** translates between Bifrost's provider-independent representation
+`/v1/messages`. An **Adapter** translates between Bifrozz's provider-independent representation
 and an upstream provider. A **Transport** is the upstream protocol the adapter uses.
 
 For example, a client can call Chat Completions while the OpenAI adapter sends the upstream

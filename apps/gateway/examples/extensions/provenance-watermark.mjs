@@ -32,7 +32,7 @@ const configSchema = {
 	safeParse(value) {
 		const config =
 			value && typeof value === "object" && !Array.isArray(value) ? value : {};
-		const tag = config.tag ?? "Bifrost";
+		const tag = config.tag ?? "Bifrozz";
 		if (typeof tag !== "string" || tag.length === 0 || tag.length > 64) {
 			return {
 				success: false,

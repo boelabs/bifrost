@@ -32,7 +32,7 @@ Envía `session.update` con `session.type: "transcription"`. El modelo va en
         "transcription": {
           "model": "transcribe-live",
           "languages": ["es-419", "en-US"],
-          "keywords": ["Bifrost", "AC-42"],
+          "keywords": ["Bifrozz", "AC-42"],
           "transcription_mode": "smart"
         },
         "turn_detection": null
@@ -47,7 +47,7 @@ Envía `session.update` con `session.type: "transcription"`. El modelo va en
 | `format` | `audio/pcm` a 24 kHz (el predeterminado de OpenAI) o 16 kHz, `audio/pcmu`, `audio/pcma`. El gateway convierte al formato del proveedor. |
 | `transcription.language` / `languages` | Pistas de idioma (BCP-47 en Gemini). Envía uno u otro. |
 | `transcription.keywords` | Vocabulario; hasta 1.000 en Gemini. |
-| `transcription.transcription_mode` | Extensión de Bifrost: `verbatim` (predeterminado) o `smart`, que quita muletillas y da formato a los números. |
+| `transcription.transcription_mode` | Extensión de Bifrozz: `verbatim` (predeterminado) o `smart`, que quita muletillas y da formato a los números. |
 | `transcription.prompt`, `delay`, `noise_reduction` | Se aceptan; Gemini no tiene equivalente, así que no se envían. |
 | `turn_detection` | `null`: cada `input_audio_buffer.commit` cierra un enunciado. `server_vad` o `semantic_vad`: el proveedor detecta las pausas. |
 | `include` | `item.input_audio_transcription.interim` añade el evento interim descrito abajo. |

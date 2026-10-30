@@ -152,7 +152,7 @@ test("google transcription: plain request sends inline audio and no config", asy
 
 test("google transcription: keywords and languages map to custom_vocabulary and language_codes", async () => {
 	const body = await bodyFor({
-		keywords: ["Bifrost", "AC-42"],
+		keywords: ["Bifrozz", "AC-42"],
 		languages: ["es-419", "en-US"],
 		prompt: "ignored: Gemini has no prompt",
 		temperature: 0.2,
@@ -160,7 +160,7 @@ test("google transcription: keywords and languages map to custom_vocabulary and 
 	assert.deepEqual(body.generation_config, {
 		transcription_config: {
 			language_codes: ["es-419", "en-US"],
-			custom_vocabulary: ["Bifrost", "AC-42"],
+			custom_vocabulary: ["Bifrozz", "AC-42"],
 		},
 	});
 	assert.equal(

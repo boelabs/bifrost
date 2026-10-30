@@ -88,7 +88,7 @@ La contribución más rápida: sin código, solo JSON:
 
 1. Abre el catálogo del proveedor, p. `src/adapters/deepseek/catalog.json`.
 2. Agrega una clave en `models`, ​​denominada **`upstreamModel`** (la identificación exacta que espera el proveedor). Complete su `operations` (consulta [Reglas](#rules)), `pricing` y cualquier metadato opcional.
-3. Validar: `bun run --filter @boelabs/bifrost catalog:validate`.
+3. Validar: `bun run --filter @boelabs/bifrozz catalog:validate`.
 
 Luego, el modelo se puede solicitar creando un deployment para él (consulta [Crear deployments](/es/docs/creating-deployments)).
 
@@ -129,8 +129,8 @@ export const acmeProvider: ProviderModule = { adapter: acmeAdapter };
 Luego valide y ejecuta la suite:
 
 ```bash
-bun run --filter @boelabs/bifrost catalog:validate
-bun run --filter @boelabs/bifrost test
+bun run --filter @boelabs/bifrozz catalog:validate
+bun run --filter @boelabs/bifrozz test
 ```
 
 <Callout>
@@ -186,7 +186,7 @@ Notas rápidas:
 Para validar todos los catálogos:
 
 ```bash
-bun run --filter @boelabs/bifrost catalog:validate
+bun run --filter @boelabs/bifrozz catalog:validate
 ```
 
 ## Reranking [#reranking]
@@ -225,13 +225,13 @@ Vercel es la excepción porque su respuesta pública `/v1/models` no autenticada
 
 ```bash
 # Draft a candidate and machine-readable report under .source/vercel-catalog-sync/
-bun run --filter @boelabs/bifrost catalog:sync:vercel
+bun run --filter @boelabs/bifrozz catalog:sync:vercel
 
 # Atomically replace src/adapters/vercel/catalog.json with the current snapshot
-bun run --filter @boelabs/bifrost catalog:sync:vercel:write
+bun run --filter @boelabs/bifrozz catalog:sync:vercel:write
 
 # Fetch the live source and fail when the committed snapshot differs
-bun run --filter @boelabs/bifrost catalog:sync:vercel:verify
+bun run --filter @boelabs/bifrozz catalog:sync:vercel:verify
 ```
 
 El escritor rechaza respuestas de fuentes sospechosamente pequeñas e identificaciones duplicadas/no válidas, por lo que una recuperación parcial o rota no puede borrar el catálogo versionado. El informe enumera familias de operaciones no admitidas, precios por imagen que el esquema de fijación de precios por token no puede representar, reranking de la ambigüedad del precio cero y capacidad multimodal retenida, y modelos de reasoning basados ​​únicamente en el presupuesto para los cuales no se inventó ninguna escalera de esfuerzo. También se informan etiquetas de reasoning futuro fuera de la escalera canonical en lugar de aceptarlas silenciosamente o asignarles un alias.
@@ -243,9 +243,9 @@ El catálogo generado incluye solo operaciones que el adapter Vercel puede ejecu
 OpenRouter es la principal fuente funcional y de catálogo para la reranking. Su sincronización determinista dedicada filtra la fuente en vivo por `output_modalities=rerank`, conserva las identificaciones completas del modelo y tiene los mismos modos de informe/escritura/verificación:
 
 ```bash
-bun run --filter @boelabs/bifrost catalog:sync:openrouter
-bun run --filter @boelabs/bifrost catalog:sync:openrouter:write
-bun run --filter @boelabs/bifrost catalog:sync:openrouter:verify
+bun run --filter @boelabs/bifrozz catalog:sync:openrouter
+bun run --filter @boelabs/bifrozz catalog:sync:openrouter:write
+bun run --filter @boelabs/bifrozz catalog:sync:openrouter:verify
 ```
 
 Ningún recuento de modelos está codificado. El informe muestra adiciones/eliminaciones a través de la deriva de instantáneas, capacidad multimodal retenida por la versión de solo texto, precios ambiguos de token cero, anulaciones de unidades de búsqueda revisadas huérfanas y modelos pagos sin un costo de catálogo representable.

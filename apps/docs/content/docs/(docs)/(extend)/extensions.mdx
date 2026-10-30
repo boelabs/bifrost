@@ -3,7 +3,7 @@ title: "Runtime extensions"
 description: "Admin-managed hooks: upload, versioning, hot-reload, the SDK, and failure policy."
 ---
 
-Runtime extensions let an operator attach trusted behavior to Bifrost without forking the
+Runtime extensions let an operator attach trusted behavior to Bifrozz without forking the
 repository or rebuilding the official image. Extension code and configuration live in **Postgres** and
 are managed entirely through the Admin API — there are no files, volumes, or manifests to mount. Upload
 a module once and every replica picks it up automatically.
@@ -137,7 +137,7 @@ README). They cover every hook:
 - `tiered-image-watermark.mjs`: stamps a visible preview watermark on images for non-privileged keys
   (`onImageOutput`).
 
-Because hooks run after each public wire format is translated into Bifrost's canonical request,
+Because hooks run after each public wire format is translated into Bifrozz's canonical request,
 one `callTypes: ["chat"]` instance can affect all text wires: `/v1/chat/completions`,
 `/v1/responses`, and `/v1/messages`. Extension authors do not need separate branches for
 OpenAI-style `messages`, OpenAI Responses `input`/`instructions`, or Anthropic `system`.
@@ -212,6 +212,6 @@ validation, or setup are not eligible (their underlying problem persists) and th
 
 ## Image Outputs
 
-Bifrost re-encodes returned PNG, JPEG, and WebP files to strip upstream metadata by default. It
+Bifrozz re-encodes returned PNG, JPEG, and WebP files to strip upstream metadata by default. It
 does not stamp product or owner metadata in core. Operators that want image post-processing can upload
 a private extension that uses `onImageOutput`.

@@ -178,7 +178,7 @@ jobs:
         run: bun run typecheck
 
       - name: Validate model catalog
-        run: bun run --filter @boelabs/bifrost catalog:validate
+        run: bun run --filter @boelabs/bifrozz catalog:validate
 
       - name: Unit tests (turbo)
         run: bun run test
@@ -242,10 +242,10 @@ jobs:
           exit 1
 
       - name: Run migrations
-        run: bun run --filter @boelabs/bifrost db:migrate
+        run: bun run --filter @boelabs/bifrozz db:migrate
 
       - name: Integration tests
-        run: bun run --filter @boelabs/bifrost test:integration
+        run: bun run --filter @boelabs/bifrozz test:integration
 
   containers:
     name: Build container images
@@ -328,8 +328,8 @@ jobs:
           push: ${{ steps.tags.outputs.publish == 'true' }}
           load: ${{ steps.tags.outputs.publish != 'true' }}
           tags: |
-            ${{ steps.tags.outputs.registry }}/bifrost-gateway:${{ steps.tags.outputs.sha }}
-            ${{ steps.tags.outputs.registry }}/bifrost-gateway:${{ steps.tags.outputs.branch }}
+            ${{ steps.tags.outputs.registry }}/bifrozz-gateway:${{ steps.tags.outputs.sha }}
+            ${{ steps.tags.outputs.registry }}/bifrozz-gateway:${{ steps.tags.outputs.branch }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
@@ -355,8 +355,8 @@ jobs:
           push: ${{ steps.tags.outputs.publish == 'true' }}
           load: ${{ steps.tags.outputs.publish != 'true' }}
           tags: |
-            ${{ steps.tags.outputs.registry }}/bifrost-dashboard:${{ steps.tags.outputs.sha }}
-            ${{ steps.tags.outputs.registry }}/bifrost-dashboard:${{ steps.tags.outputs.branch }}
+            ${{ steps.tags.outputs.registry }}/bifrozz-dashboard:${{ steps.tags.outputs.sha }}
+            ${{ steps.tags.outputs.registry }}/bifrozz-dashboard:${{ steps.tags.outputs.branch }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
@@ -380,8 +380,8 @@ jobs:
           push: ${{ steps.tags.outputs.publish == 'true' }}
           load: ${{ steps.tags.outputs.publish != 'true' }}
           tags: |
-            ${{ steps.tags.outputs.registry }}/bifrost-docs:${{ steps.tags.outputs.sha }}
-            ${{ steps.tags.outputs.registry }}/bifrost-docs:${{ steps.tags.outputs.branch }}
+            ${{ steps.tags.outputs.registry }}/bifrozz-docs:${{ steps.tags.outputs.sha }}
+            ${{ steps.tags.outputs.registry }}/bifrozz-docs:${{ steps.tags.outputs.branch }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}

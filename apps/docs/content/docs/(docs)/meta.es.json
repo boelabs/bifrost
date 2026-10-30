@@ -1,6 +1,6 @@
 {
 	"title": "Documentación",
-	"description": "Conecta una aplicación, configura proveedores y opera Bifrost.",
+	"description": "Conecta una aplicación, configura proveedores y opera Bifrozz.",
 	"root": true,
 	"pages": [
 		"index",

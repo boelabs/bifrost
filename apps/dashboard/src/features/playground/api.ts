@@ -175,7 +175,7 @@ export function modelFor(
 	if (endpoint === "chat.completions") {
 		return wrapLanguageModel({
 			model: createOpenAICompatible({
-				name: "bifrost",
+				name: "bifrozz",
 				baseURL,
 				fetch: sessionFetch,
 				includeUsage: true,

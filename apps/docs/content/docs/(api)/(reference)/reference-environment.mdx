@@ -105,7 +105,7 @@ cleanly when it is false.
 | Variable | Default | Controls |
 |---|---|---|
 | `OTEL_ENABLED` | `false` | Master switch. Metrics/traces are otherwise not exported at all. |
-| `OTEL_SERVICE_NAME` | `bifrost` | Service name attached to exported telemetry. |
+| `OTEL_SERVICE_NAME` | `bifrozz` | Service name attached to exported telemetry. |
 | `OTEL_METRIC_EXPORT_INTERVAL_MS` | `60000` | How often metrics are pushed to the collector. |
 
 These are read by the gateway's own schema. Once `OTEL_ENABLED=true`, the exporters (`OTLPMetricExporter`,

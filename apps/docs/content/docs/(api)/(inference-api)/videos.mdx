@@ -44,14 +44,14 @@ stays accept-compatible with OpenAI's Sora shape:
 Every parameter is validated against the model profile before routing, so unsupported parameters fail
 fast with `unsupported_parameter` instead of a provider error mid-pool.
 
-Image, audio, and video references accept either public HTTPS URLs or base64 `data:` URLs. Bifrost
+Image, audio, and video references accept either public HTTPS URLs or base64 `data:` URLs. Bifrozz
 downloads every HTTPS reference with SSRF protection, validates its MIME type and binary limits, and
 sends a `data:` URL to the selected upstream; remote URLs are never delegated to providers. The
 combined decoded media limit is 50 MB. Large data URLs are redacted before the request body is
 persisted. Multipart uploads (the OpenAI SDK's file-typed `input_reference`) are not supported — use
 the JSON reference forms.
 
-Image generation itself has no attachment field. Image edits accept multipart image files; Bifrost
+Image generation itself has no attachment field. Image edits accept multipart image files; Bifrozz
 streams those files into request-scoped temporary storage, validates them as PNG/JPEG/WebP, and only
 then invokes an upstream adapter.
 
@@ -87,13 +87,13 @@ use `transportOverrides` when a model needs another transport.
 - Editing and extension require `task: "edit"` or `task: "extend"` plus exactly one `video_url`.
 
 The integration intentionally does not use Google's Files API. Inputs are materialized as validated
-inline data, and completed output is fetched inline directly into Bifrost object storage without
+inline data, and completed output is fetched inline directly into Bifrozz object storage without
 being persisted in Postgres. Consequently, the stock profile exposes 360p and 720p only, rejects
 `file_id`, and limits each input asset to 20 MB. Uploaded videos for edit/extend remain subject to
 Google's 10-second and regional restrictions.
 
 Stateful continuation is also intentionally unavailable. `previous_interaction_id` is blocked in
-`extra_body`; accepting a raw provider id would bypass Bifrost ownership and deployment-affinity
+`extra_body`; accepting a raw provider id would bypass Bifrozz ownership and deployment-affinity
 checks. A future implementation should expose a local source video id instead.
 
 The stock Omni profile omits pricing until terminal async video usage can be reconciled with the

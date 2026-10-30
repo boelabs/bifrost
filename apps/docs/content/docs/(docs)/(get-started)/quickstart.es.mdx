@@ -10,7 +10,7 @@ Instala Bun 1.4+ y Docker Compose. Necesitas una API key de OpenAI con acceso al
 
 <Callout type="warn" title="Mantén privadas las credenciales del operador">
 
-La **master key** permite administrar Bifrost. La **API key del proveedor** autentica al gateway ante ese proveedor. Tu aplicación recibe una **virtual key** distinta; no le entregues ninguna de las credenciales del operador.
+La **master key** permite administrar Bifrozz. La **API key del proveedor** autentica al gateway ante ese proveedor. Tu aplicación recibe una **virtual key** distinta; no le entregues ninguna de las credenciales del operador.
 
 </Callout>
 
@@ -40,8 +40,8 @@ REDIS_URL=redis://localhost:6379
 Aplica las migraciones e inicia el gateway:
 
 ```bash
-bun run --filter @boelabs/bifrost db:migrate
-bun run --filter @boelabs/bifrost dev
+bun run --filter @boelabs/bifrozz db:migrate
+bun run --filter @boelabs/bifrozz dev
 ```
 
 Confirma que está activo:

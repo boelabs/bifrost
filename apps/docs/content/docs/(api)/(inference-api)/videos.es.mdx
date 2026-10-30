@@ -37,9 +37,9 @@ No existe un estándar industrial para la generación de video, por lo que el ga
 
 Cada parámetro se valida con el perfil del modelo antes del routing, por lo que los parámetros no admitidos fallan rápidamente con `unsupported_parameter` en lugar de un error del proveedor en mitad del grupo.
 
-Las referencias de imágenes, audio y vídeo aceptan URL HTTPS públicas o URL base64 `data:`. Bifrost descarga cada referencia HTTPS con protección SSRF, valida su tipo MIME y límites binarios y envía una URL `data:` al canal upstream seleccionado; las URL remotas nunca se delegan a proveedores. El límite combinado de medios decodificados es de 50 MB. Las URL de datos grandes se ocultan antes de guardar el cuerpo de la solicitud. No se admiten cargas de varias partes (el archivo tipo `input_reference` del SDK de OpenAI); utiliza los formularios de referencia JSON.
+Las referencias de imágenes, audio y vídeo aceptan URL HTTPS públicas o URL base64 `data:`. Bifrozz descarga cada referencia HTTPS con protección SSRF, valida su tipo MIME y límites binarios y envía una URL `data:` al canal upstream seleccionado; las URL remotas nunca se delegan a proveedores. El límite combinado de medios decodificados es de 50 MB. Las URL de datos grandes se ocultan antes de guardar el cuerpo de la solicitud. No se admiten cargas de varias partes (el archivo tipo `input_reference` del SDK de OpenAI); utiliza los formularios de referencia JSON.
 
-La generación de imágenes en sí no tiene campo adjunto. Las ediciones de imágenes aceptan archivos de imágenes de varias partes; Bifrost transmite esos archivos a un almacenamiento temporal con alcance de solicitud, los valida como PNG/JPEG/WebP y solo entonces invoca un adapter upstream.
+La generación de imágenes en sí no tiene campo adjunto. Las ediciones de imágenes aceptan archivos de imágenes de varias partes; Bifrozz transmite esos archivos a un almacenamiento temporal con alcance de solicitud, los valida como PNG/JPEG/WebP y solo entonces invoca un adapter upstream.
 
 ## Almacenamiento [#storage]
 
@@ -60,9 +60,9 @@ Los adapters exponen la generación de video a través de transports: `videos` (
 - La referencia a vídeo utiliza `task: "reference_to_video"` y referencias de imagen/vídeo.
 - La edición y extensión requieren `task: "edit"` o `task: "extend"` más exactamente un `video_url`.
 
-La integración no utiliza intencionalmente la API de Archivos de Google. Las entradas se materializan como datos en línea validados y la salida completa se recupera en línea directamente en el almacenamiento de objetos Bifrost sin persistir en Postgres. En consecuencia, el perfil de acciones expone solo 360p y 720p, rechaza `file_id` y limita cada activo de entrada a 20 MB. Los videos subidos para edición/ampliación permanecen sujetos a las restricciones regionales y de 10 segundos de Google.
+La integración no utiliza intencionalmente la API de Archivos de Google. Las entradas se materializan como datos en línea validados y la salida completa se recupera en línea directamente en el almacenamiento de objetos Bifrozz sin persistir en Postgres. En consecuencia, el perfil de acciones expone solo 360p y 720p, rechaza `file_id` y limita cada activo de entrada a 20 MB. Los videos subidos para edición/ampliación permanecen sujetos a las restricciones regionales y de 10 segundos de Google.
 
-La continuación con estado tampoco está disponible intencionalmente. `previous_interaction_id` está bloqueado en `extra_body`; Aceptar una identificación de proveedor sin procesar evitaría la propiedad de Bifrost y las comprobaciones de afinidad de deployment. En su lugar, una futura implementación debería exponer una identificación de video de fuente local.
+La continuación con estado tampoco está disponible intencionalmente. `previous_interaction_id` está bloqueado en `extra_body`; Aceptar una identificación de proveedor sin procesar evitaría la propiedad de Bifrozz y las comprobaciones de afinidad de deployment. En su lugar, una futura implementación debería exponer una identificación de video de fuente local.
 
 El perfil Omni estándar omite los precios hasta que el uso de video asíncrono del terminal pueda conciliarse con la operación y el ciclo de vida contable de la virtual key. El uso se conserva en el trabajo de vídeo, pero las virtual keys con límite de presupuesto no se cierran con `budget_pricing_unavailable` en lugar de aceptar una solicitud no reservada.
 

@@ -102,8 +102,8 @@ The image is published to GHCR alongside the gateway and the dashboard, and the 
 it. To build it yourself:
 
 ```bash
-docker build -f apps/docs/Dockerfile -t bifrost-docs .
-docker run --rm -p 3000:3000 bifrost-docs
+docker build -f apps/docs/Dockerfile -t bifrozz-docs .
+docker run --rm -p 3000:3000 bifrozz-docs
 ```
 
 It carries no configuration: the same image runs anywhere, and no database, Redis instance,
@@ -112,7 +112,7 @@ provider key, or gateway environment file is required to serve the documentation
 Set `DOCS_SITE_URL` to the public origin to publish a sitemap at `/sitemap.xml`:
 
 ```bash
-docker run --rm -p 3000:3000 -e DOCS_SITE_URL=https://docs.example.com bifrost-docs
+docker run --rm -p 3000:3000 -e DOCS_SITE_URL=https://docs.example.com bifrozz-docs
 ```
 
 It is read at run time, not baked in, so one image can serve staging and production. Without it the

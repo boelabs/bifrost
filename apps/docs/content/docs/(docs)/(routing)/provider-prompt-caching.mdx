@@ -3,7 +3,7 @@ title: "Provider prompt caching"
 description: "Cache controls, token accounting, provider support, and diagnosis."
 ---
 
-Provider prompt caching reuses computation at the model provider. It is separate from Bifrost's
+Provider prompt caching reuses computation at the model provider. It is separate from Bifrozz's
 [Redis response cache](/docs/caching). A streamed request can use provider caching even though it is
 ineligible for the Redis response cache. `cacheHit` and the response-cache headers describe Redis;
 use token counters to measure provider caching.
@@ -11,7 +11,7 @@ use token counters to measure provider caching.
 ## Supported paths
 
 The public endpoint and upstream transport are independent. For example, a client using
-`/v1/chat/completions` can reach Azure through `/responses`. Bifrost normalizes provider usage before
+`/v1/chat/completions` can reach Azure through `/responses`. Bifrozz normalizes provider usage before
 rendering JSON, SSE, or Responses WebSocket events. Public model aliases are replaced with the
 selected deployment's upstream model name.
 
@@ -36,7 +36,7 @@ The Google Interactions implementation in this repository is for video, not a se
 
 ## OpenAI and Azure
 
-Bifrost preserves `prompt_cache_key`, `prompt_cache_options`, `prompt_cache_retention`, and eligible
+Bifrozz preserves `prompt_cache_key`, `prompt_cache_options`, `prompt_cache_retention`, and eligible
 content `prompt_cache_breakpoint` markers. Marked instruction blocks remain ordered blocks when
 translating Chat to Responses. File materialization preserves their markers too.
 
@@ -99,12 +99,12 @@ For Anthropic, `/v1/messages` accepts top-level automatic `cache_control` and ex
 system/content/tool blocks, including `tool_use` and `tool_result`. Native markers require a Messages
 upstream. OpenAI-shaped clients targeting Anthropic can request automatic caching through
 `extra_body: { cache_control: { type: "ephemeral" } }`. TTLs of `5m` and `1h` have different write
-prices. Bifrost merges cumulative initial/final stream usage, adds the three disjoint input buckets,
+prices. Bifrozz merges cumulative initial/final stream usage, adds the three disjoint input buckets,
 and retains native `cache_creation` detail. See
 [Anthropic prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching).
 
 For Vercel, top-level REST `providerOptions: { gateway: { caching: "auto" } }` and its `extra_body`
-equivalent are forwarded. Bifrost does not silently enable a paid write policy. The adapter implements
+equivalent are forwarded. Bifrozz does not silently enable a paid write policy. The adapter implements
 Chat and Responses, not Vercel's Messages endpoint. See
 [Vercel automatic caching](https://vercel.com/docs/ai-gateway/models-and-providers/automatic-caching).
 
@@ -125,7 +125,7 @@ DeepSeek, Moonshot, MiniMax, and Z.AI retain their provider-managed caching beha
 | Responses JSON/SSE/WebSocket | `usage.input_tokens_details.cached_tokens` | `usage.input_tokens_details.cache_write_tokens` |
 | Messages JSON/SSE | `usage.cache_read_input_tokens` | `usage.cache_creation_input_tokens` |
 
-Chat clients must request `stream_options.include_usage: true` to receive stream usage. Bifrost always
+Chat clients must request `stream_options.include_usage: true` to receive stream usage. Bifrozz always
 requests usage from Chat upstreams for its own accounting. Responses stream accounting uses the
 canonical chunks directly, so rendering cannot erase counters or turn an absent provider metric into
 an observed zero. Messages may carry the final input/cache totals in `message_delta`; consumers must
@@ -136,7 +136,7 @@ reads minus writes. Anthropic's `input_tokens` instead excludes both cache bucke
 them when normalizing, and the Messages renderer subtracts them again.
 
 `cacheWriteTokensByTtl` records write subsets by lifetime in seconds. Messages exposes the native
-`cache_creation` object; OpenAI-shaped responses use the optional Bifrost extension
+`cache_creation` object; OpenAI-shaped responses use the optional Bifrozz extension
 `cache_write_tokens_by_ttl` within input details. Operation metadata retains these buckets. Configure
 `cacheWriteCentsPerMTokensByTtl` in catalog or deployment pricing for distinct lifetime rates, e.g.
 `{"300": 625, "3600": 1000}`. Context tiers can override these rates. Unknown lifetime prices fall back
@@ -157,9 +157,9 @@ pricing object, so include all needed rates. The Anthropic catalog includes both
 5. If upstream reports zero, check prefix identity, eligibility, lifetime, write policy, provider
    project/region, deployment changes, fallback and load. More context alone does not guarantee reuse.
 
-Bifrost's HTTP router does not pin a prompt cache key to a deployment. Different cache scopes or
+Bifrozz's HTTP router does not pin a prompt cache key to a deployment. Different cache scopes or
 fallbacks can therefore reduce reuse. Use one compatible deployment while diagnosing; do not disable
-health fallback merely to increase a cache metric. A stable key is not a request for Bifrost to store
+health fallback merely to increase a cache metric. A stable key is not a request for Bifrozz to store
 provider KV state, and neither transport preservation nor a test suite guarantees a production hit
 percentage.
 
@@ -182,6 +182,6 @@ estimated, and older gateways without these additional fields display unavailabl
 
 Metrics shows provider cache usage across deployment attempts, including retries and fallbacks,
 with separate time-series controls and per-deployment reuse and reporting coverage. Request totals
-count each request once. Response-cache hits refer to Bifrost's own response cache, not provider
+count each request once. Response-cache hits refer to Bifrozz's own response cache, not provider
 prompt-cache hits. These surfaces use the retained operation and attempt records; changes do not
 backfill missing historical provider usage.

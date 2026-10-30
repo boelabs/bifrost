@@ -20,7 +20,7 @@ import {
 
 let sdk: NodeSDK | null = null;
 
-const tracer = trace.getTracer("bifrost");
+const tracer = trace.getTracer("bifrozz");
 const operationContexts = new Map<string, Context>();
 
 /**
@@ -88,76 +88,76 @@ interface Instruments {
 let inst: Instruments | null = null;
 
 function createInstruments(): Instruments {
-	const meter = metrics.getMeter("bifrost");
+	const meter = metrics.getMeter("bifrozz");
 	return {
-		requestCounter: meter.createCounter("bifrost_requests_total", {
+		requestCounter: meter.createCounter("bifrozz_requests_total", {
 			description: "Total completed gateway operations.",
 		}),
-		errorCounter: meter.createCounter("bifrost_errors_total", {
+		errorCounter: meter.createCounter("bifrozz_errors_total", {
 			description: "Total failed gateway operations.",
 		}),
-		requestDuration: meter.createHistogram("bifrost_request_duration_ms", {
+		requestDuration: meter.createHistogram("bifrozz_request_duration_ms", {
 			description: "Gateway request duration in milliseconds.",
 			unit: "ms",
 		}),
-		upstreamDuration: meter.createHistogram("bifrost_upstream_ttft_ms", {
+		upstreamDuration: meter.createHistogram("bifrozz_upstream_ttft_ms", {
 			description:
 				"Upstream time-to-first-token in milliseconds (winning attempt).",
 			unit: "ms",
 		}),
-		tokenCounter: meter.createCounter("bifrost_tokens_total", {
+		tokenCounter: meter.createCounter("bifrozz_tokens_total", {
 			description: "Total tokens reported by upstream providers.",
 		}),
-		searchUnitCounter: meter.createCounter("bifrost_search_units_total", {
+		searchUnitCounter: meter.createCounter("bifrozz_search_units_total", {
 			description:
 				"Total reranking search units reported by upstream providers.",
 		}),
-		costCounter: meter.createCounter("bifrost_cost_cents_total", {
+		costCounter: meter.createCounter("bifrozz_cost_cents_total", {
 			description: "Total estimated request cost in USD cents.",
 		}),
-		outcomeCounter: meter.createCounter("bifrost_outcomes_total", {
+		outcomeCounter: meter.createCounter("bifrozz_outcomes_total", {
 			description: "Completed gateway operations by semantic outcome.",
 		}),
-		retryCounter: meter.createCounter("bifrost_retries_total", {
+		retryCounter: meter.createCounter("bifrozz_retries_total", {
 			description: "Upstream retries beyond the first attempt.",
 		}),
-		fallbackCounter: meter.createCounter("bifrost_fallbacks_total", {
+		fallbackCounter: meter.createCounter("bifrozz_fallbacks_total", {
 			description: "Operations that selected a configured fallback model.",
 		}),
 		persistenceQueueDepth: meter.createUpDownCounter(
-			"bifrost_persistence_queue_depth",
+			"bifrozz_persistence_queue_depth",
 			{ description: "Pending operation finalizations in this process." },
 		),
-		persistenceLosses: meter.createCounter("bifrost_persistence_losses_total", {
+		persistenceLosses: meter.createCounter("bifrozz_persistence_losses_total", {
 			description: "Operation finalizations dropped or failed after retries.",
 		}),
 		messageStateDiscards: meter.createCounter(
-			"bifrost_message_state_discarded_total",
+			"bifrozz_message_state_discarded_total",
 			{
 				description:
 					"Client-replayed provider state the gateway could not restore, by reason.",
 			},
 		),
-		activeOperations: meter.createUpDownCounter("bifrost_active_operations", {
+		activeOperations: meter.createUpDownCounter("bifrozz_active_operations", {
 			description: "Operations active in this gateway process.",
 		}),
 		activeAttempts: meter.createUpDownCounter(
-			"bifrost_active_upstream_attempts",
+			"bifrozz_active_upstream_attempts",
 			{ description: "Upstream attempts active in this gateway process." },
 		),
-		firstEvent: meter.createHistogram("bifrost_first_event_ms", {
+		firstEvent: meter.createHistogram("bifrozz_first_event_ms", {
 			description: "Time from ingress to first upstream event.",
 			unit: "ms",
 		}),
-		firstReasoning: meter.createHistogram("bifrost_first_reasoning_ms", {
+		firstReasoning: meter.createHistogram("bifrozz_first_reasoning_ms", {
 			description: "Time from ingress to first reasoning output.",
 			unit: "ms",
 		}),
-		firstOutput: meter.createHistogram("bifrost_first_output_ms", {
+		firstOutput: meter.createHistogram("bifrozz_first_output_ms", {
 			description: "Time from ingress to first useful output.",
 			unit: "ms",
 		}),
-		maxEventGap: meter.createHistogram("bifrost_max_event_gap_ms", {
+		maxEventGap: meter.createHistogram("bifrozz_max_event_gap_ms", {
 			description: "Largest observed gap between upstream stream events.",
 			unit: "ms",
 		}),
@@ -220,7 +220,7 @@ export function startOperationChildTelemetry(
 ): OperationChildTelemetrySpan {
 	return {
 		span: tracer.startSpan(
-			`bifrost.${name}`,
+			`bifrozz.${name}`,
 			undefined,
 			operationContexts.get(operationId) ?? context.active(),
 		),
@@ -270,7 +270,7 @@ export function startRequestTelemetry(input: {
 }): RequestTelemetrySpan {
 	const parent = context.active();
 	const span = tracer.startSpan(
-		"bifrost.operation",
+		"bifrozz.operation",
 		{
 			attributes: {
 				"request.id": input.requestId,
@@ -304,7 +304,7 @@ export function finishRequestTelemetry(
 			message: String(input.error?.code ?? "gateway_error"),
 		});
 	}
-	handle.span.addEvent("bifrost.operation.finished", {
+	handle.span.addEvent("bifrozz.operation.finished", {
 		"error.code": String(input.error?.code ?? ""),
 		"terminal.verified": Boolean(
 			(input.metadata.terminal as unknown) ??
@@ -340,7 +340,7 @@ export function startUpstreamAttemptTelemetry(input: {
 	});
 	return {
 		span: tracer.startSpan(
-			"bifrost.upstream_attempt",
+			"bifrozz.upstream_attempt",
 			{
 				startTime: input.startedAt,
 				attributes: {

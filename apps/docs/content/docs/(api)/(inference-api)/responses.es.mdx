@@ -49,9 +49,9 @@ Se asigna al mismo `responseFormat` canonical que Chat Completions' `response_fo
 
 `reasoning: { "effort": "high", "summary": "auto" }`: la forma de objeto del mismo mando canonical descrito en [Reasoning](/es/docs/reasoning). `summary` controla si el reasoning del modelo vuelve a aparecer (`auto`, `none`, `concise`, `detailed`).
 
-Los proveedores pueden mostrar razonamientos visibles como `summary[].summary_text` o `content[].reasoning_text`. Cuando una representación está vacía o ausente, Bifrost refleja la otra en el mismo elemento de reasoning. Las transmisiones exponen juntos el resumen correspondiente y los eventos delta/hecho de contenido; esto se aplica igualmente a los giros WebSocket SSE y Responses.
+Los proveedores pueden mostrar razonamientos visibles como `summary[].summary_text` o `content[].reasoning_text`. Cuando una representación está vacía o ausente, Bifrozz refleja la otra en el mismo elemento de reasoning. Las transmisiones exponen juntos el resumen correspondiente y los eventos delta/hecho de contenido; esto se aplica igualmente a los giros WebSocket SSE y Responses.
 
-El reflejo da forma a lo que Bifrost **devuelve**. Un elemento `reasoning` reproducido en la entrada se envía en sentido upstream solo con lo que produjo el proveedor (su identificación, `encrypted_content` y un resumen) porque los esquemas de solicitud aceptan `content` en un elemento de reasoning únicamente como una matriz vacía. Los clientes pueden devolver el artículo reflejado sin tocar; la mitad extra se les cae.
+El reflejo da forma a lo que Bifrozz **devuelve**. Un elemento `reasoning` reproducido en la entrada se envía en sentido upstream solo con lo que produjo el proveedor (su identificación, `encrypted_content` y un resumen) porque los esquemas de solicitud aceptan `content` en un elemento de reasoning únicamente como una matriz vacía. Los clientes pueden devolver el artículo reflejado sin tocar; la mitad extra se les cae.
 
 ## `responsesTransport` paso a través [#responsestransport-passthrough]
 

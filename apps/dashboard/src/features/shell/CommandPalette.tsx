@@ -73,7 +73,7 @@ export function CommandPalette({ children }: { children: ReactNode }) {
 			{children}
 			<CommandDialog handle={palette} onOpenChange={setOpen} open={open}>
 				<CommandDialogPopup>
-					<DialogTitle className="sr-only">Search Bifrost</DialogTitle>
+					<DialogTitle className="sr-only">Search Bifrozz</DialogTitle>
 					{open ? (
 						<Suspense fallback={null}>
 							<PaletteContent onNavigate={() => setOpen(false)} />
@@ -93,10 +93,10 @@ export function CommandPaletteTrigger() {
 			render={
 				<Button
 					aria-keyshortcuts="Control+k Meta+k"
-					aria-label="Search Bifrost"
+					aria-label="Search Bifrozz"
 					className="text-muted-foreground"
 					mode="icon"
-					title="Search Bifrost (Ctrl/⌘+K)"
+					title="Search Bifrozz (Ctrl/⌘+K)"
 					variant="ghost"
 				/>
 			}

@@ -21,7 +21,7 @@ export async function GET(): Promise<Response> {
 		return Response.json(
 			{
 				status: "misconfigured",
-				service: "Bifrost dashboard",
+				service: "Bifrozz dashboard",
 				error: error instanceof Error ? error.message : String(error),
 				time: new Date().toISOString(),
 			},
@@ -31,7 +31,7 @@ export async function GET(): Promise<Response> {
 	return Response.json(
 		{
 			status: "ok",
-			service: "Bifrost dashboard",
+			service: "Bifrozz dashboard",
 			time: new Date().toISOString(),
 		},
 		{ headers: { "cache-control": "no-store" } },

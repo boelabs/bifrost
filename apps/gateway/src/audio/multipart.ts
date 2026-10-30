@@ -127,7 +127,7 @@ export async function parseTranscriptionMultipart(
 		throw badMultipart("Missing multipart body", null);
 	}
 
-	const dir = await mkdtemp(join(tmpdir(), "bifrost-audio-"));
+	const dir = await mkdtemp(join(tmpdir(), "bifrozz-audio-"));
 	const cleanup = () => rm(dir, { recursive: true, force: true });
 	const scalars: Record<string, string> = {};
 	const arrays: Record<string, string[]> = {};

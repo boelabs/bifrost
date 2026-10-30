@@ -2,13 +2,13 @@
 title: "Operación del gateway"
 description: "Health checks, secretos, retención de datos, backups y apagado ordenado."
 ---
-Runbook operativo para ejecutar Bifrost en producción: sondeos de estado, secretos rotativos, gestión de retención de operaciones, copias de seguridad y cierre ordenado. Si aún está ejecutando el gateway localmente, comienza con el [Inicio rápido](/es/docs/quickstart); esta página asume un deployment real. Para conocer la observabilidad (registros, telemetría, consultas de solicitud/uso), consulta [Observabilidad](/es/docs/observability); para conocer precios y gastos, consulta [Contabilidad de costos](/es/docs/cost-accounting).
+Runbook operativo para ejecutar Bifrozz en producción: sondeos de estado, secretos rotativos, gestión de retención de operaciones, copias de seguridad y cierre ordenado. Si aún está ejecutando el gateway localmente, comienza con el [Inicio rápido](/es/docs/quickstart); esta página asume un deployment real. Para conocer la observabilidad (registros, telemetría, consultas de solicitud/uso), consulta [Observabilidad](/es/docs/observability); para conocer precios y gastos, consulta [Contabilidad de costos](/es/docs/cost-accounting).
 
 ## Salud y ciclo de vida [#health-and-lifecycle]
 
-Para **cómo** implementar (Docker Compose, Coolify, Portainer, Dokploy o un VPS de Linux), consulta [Instalar Bifrost](/es/docs/deployment). Esta sección cubre el comportamiento en runtime que usted conecta a su orquestador.
+Para **cómo** implementar (Docker Compose, Coolify, Portainer, Dokploy o un VPS de Linux), consulta [Instalar Bifrozz](/es/docs/deployment). Esta sección cubre el comportamiento en runtime que usted conecta a su orquestador.
 
-La aplicación ejecuta TypeScript directamente en **Bun**; no hay ningún paso de compilación. Ejecuta `bun run --filter @boelabs/bifrost db:migrate` de forma única **antes** de implementar nuevas instancias; las migraciones se generan desde `schema.ts` con drizzle-kit y son solo hacia adelante; nunca edite una migración ya aplicada. Consulta [Actualizaciones](/es/docs/upgrades) para conocer la historia completa de deployment/reversión.
+La aplicación ejecuta TypeScript directamente en **Bun**; no hay ningún paso de compilación. Ejecuta `bun run --filter @boelabs/bifrozz db:migrate` de forma única **antes** de implementar nuevas instancias; las migraciones se generan desde `schema.ts` con drizzle-kit y son solo hacia adelante; nunca edite una migración ya aplicada. Consulta [Actualizaciones](/es/docs/upgrades) para conocer la historia completa de deployment/reversión.
 
 **Sondas de salud**: dos sondas con trabajos diferentes; conecta cada uno a la sonda del orquestador correspondiente:
 
@@ -59,7 +59,7 @@ Cada sobre registra su identificación clave y su propósito; las nuevas escritu
 
 1. Agrega una nueva identificación/valor aleatorio a `ENCRYPTION_KEYRING`, dejando la identificación activa actual en su lugar y ejecuta cada réplica para que todos puedan leer ambas claves.
 2. Configura `ACTIVE_ENCRYPTION_KEY_ID` con la nueva identificación y vuelva a ejecutar las réplicas.
-3. Ejecuta `bun run --filter @boelabs/bifrost encryption:rotate`. Vuelve a cifrar deployments, artefactos de extensión, muestras de carga útil retenida, secretos almacenados de virtual keys y respuestas idempotentes recordadas en lotes limitados e informa el recuento de filas.
+3. Ejecuta `bun run --filter @boelabs/bifrozz encryption:rotate`. Vuelve a cifrar deployments, artefactos de extensión, muestras de carga útil retenida, secretos almacenados de virtual keys y respuestas idempotentes recordadas en lotes limitados e informa el recuento de filas.
 4. Ejecútelo nuevamente; cada recuento reportado debe ser cero.
 5. Guarda la llave antigua durante al menos 14 días para que las cápsulas de compactación sin estado Responses emitidas antes de la rotación sigan siendo legibles, luego retírela y enróllela una vez más.
 

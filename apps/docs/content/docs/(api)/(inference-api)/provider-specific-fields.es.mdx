@@ -2,7 +2,7 @@
 title: "Estado específico del proveedor"
 description: "Conserva las firmas y el estado opaco necesarios para continuar una conversación."
 ---
-Algunos proveedores devuelven estado opaco que debe reenviarse sin cambios en el siguiente turno. Bifrost lo conserva **a través del cliente, sin almacenarlo en el servidor**. Hay dos tipos:
+Algunos proveedores devuelven estado opaco que debe reenviarse sin cambios en el siguiente turno. Bifrozz lo conserva **a través del cliente, sin almacenarlo en el servidor**. Hay dos tipos:
 
 - **Estado vinculado a la llamada de herramienta**: firmas de pensamiento de Gemini. Gemini 3 rechaza una solicitud de seguimiento cuyas llamadas de función reproducidas carecen de su `thoughtSignature` (`400 INVALID_ARGUMENT`).
 - **Estado vinculado al mensaje**: reasoning cifrado OpenAI (elementos `reasoning` con `encrypted_content`), que mejora la calidad del uso de herramientas de múltiples turnos cuando se reproduce; firmas de Gemini en respuestas de texto, que Google recomienda reenviar para mantener la continuidad del razonamiento entre turnos; y los bloques `thinking` firmados de Anthropic.
@@ -93,7 +93,7 @@ En `/v1/responses`, cuando la solicitud incluye `reasoning.encrypted_content`, e
 - **Reenviado por clientes estándar.** Los clientes que devuelven los elementos de salida (el Vercel AI SDK con `store: false`, el OpenAI Agents SDK) lo reenvían sin saber qué es.
 - **Restaurado en su propio mensaje.** El gateway abre el elemento en el borde y restaura las partes en el mensaje del asistente con el que se emitió: el elemento de mensaje cuyo `id` nombra o, si el cliente descarta los ids, el mensaje del asistente inmediatamente anterior. Nunca se reenvía upstream; si el enrutamiento recurre a otro proveedor, éste lo ignora.
 - **Los mensajes editados lo pierden.** Si el texto del mensaje ya no coincide con las partes firmadas, el gateway envía el texto del cliente sin firmas.
-- **Sin caducidad ni errores.** Las conversaciones duran meses, así que los elementos no caducan. Uno que no se puede abrir (su clave se retiró de `ENCRYPTION_KEYRING`, fue manipulado o su versión es desconocida) se descarta con un aviso y la solicitud sigue sin él. Los descartes se cuentan en `bifrost_message_state_discarded_total` por `reason`.
+- **Sin caducidad ni errores.** Las conversaciones duran meses, así que los elementos no caducan. Uno que no se puede abrir (su clave se retiró de `ENCRYPTION_KEYRING`, fue manipulado o su versión es desconocida) se descarta con un aviso y la solicitud sigue sin él. Los descartes se cuentan en `bifrozz_message_state_discarded_total` por `reason`.
 - El elemento de mensaje conserva `provider_specific_fields.google.content_parts` para los clientes al estilo de LiteLLM. Si llegan ambos, gana el elemento `reasoning`.
 
 ## Bloques de pensamiento de Anthropic (vinculados al mensaje) [#anthropic-thinking-blocks-message-bound]

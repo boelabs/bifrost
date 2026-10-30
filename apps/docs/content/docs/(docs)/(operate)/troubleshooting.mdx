@@ -3,7 +3,7 @@ title: "Troubleshooting"
 description: "Error shape, status codes, and known issues with their exact symptoms and fixes."
 ---
 
-Bifrost returns errors in the **exact shape of the endpoint you called**. OpenAI-style endpoints
+Bifrozz returns errors in the **exact shape of the endpoint you called**. OpenAI-style endpoints
 (`/v1/chat/completions`, `/v1/responses`, `/v1/images/*`, `/v1/embeddings`,
 `/v1/audio/transcriptions`) return the OpenAI error body; `/v1/messages` returns the Anthropic one and
 `/v1/rerank` returns the OpenRouter one. Your
@@ -116,7 +116,7 @@ error:1000009a:SSL routines:OPENSSL_internal:HANDSHAKE_FAILURE_ON_CLIENT_HELLO
 It fails at the **ClientHello** — before any certificate verification — so `sslmode=require`,
 `rejectUnauthorized: false` and `NODE_TLS_REJECT_UNAUTHORIZED=0` make no difference.
 
-**Cause.** Bifrost runs on the **Bun** runtime, whose bundled TLS library (BoringSSL) **can**
+**Cause.** Bifrozz runs on the **Bun** runtime, whose bundled TLS library (BoringSSL) **can**
 reject the handshake against some self-signed endpoints (reproduced with Coolify's self-signed
 Postgres and Redis certificates; it does not necessarily affect every self-signed setup). The same
 URLs connect fine under Node/OpenSSL and `openssl s_client`, and Bun's TLS works against **public-CA**

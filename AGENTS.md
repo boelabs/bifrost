@@ -27,7 +27,7 @@ Read this file top to bottom before your first change. The rules here override d
 
 ## 2. What this is
 
-Bifrost — a backend-only, provider-agnostic AI gateway. Public endpoints are OpenAI-shaped
+Bifrozz — a backend-only, provider-agnostic AI gateway. Public endpoints are OpenAI-shaped
 (`/v1/chat/completions`, `/v1/responses`, `/v1/images/*`, `/v1/embeddings`,
 `/v1/audio/transcriptions`, `/v1/realtime` for voice conversations and transcription, `/v1/videos`,
 `/v1/rerank`) plus an
@@ -42,7 +42,7 @@ See [Model discovery](apps/docs/content/docs/(api)/(inference-api)/models-discov
 
 Monorepo — Turborepo on Bun workspaces:
 
-- `apps/gateway` — the service, **runs on Bun**. Package `@boelabs/bifrost`.
+- `apps/gateway` — the service, **runs on Bun**. Package `@boelabs/bifrozz`.
 - `apps/dashboard` — operator dashboard (Next.js App Router + Base UI with coss UI styling),
   **runs on Bun**. Package `@boelabs/dashboard`. Optional at deployment (`DASH_ENABLED`). Its own
   component kit lives at `src/components/ui`. See [its README](apps/dashboard/README.md).
@@ -77,7 +77,7 @@ From the repo root:
 Dashboard-only: `bun run --filter @boelabs/dashboard <script>` — `dev`, `build`, `start`,
 `typecheck`, `test`, `api:types`.
 
-Gateway-only: `bun run --filter @boelabs/bifrost <script>` — `dev`, `start`, `db:generate`,
+Gateway-only: `bun run --filter @boelabs/bifrozz <script>` — `dev`, `start`, `db:generate`,
 `db:migrate`, `db:studio`, `test:integration`, `test:all`, `catalog:validate`, `catalog:guard`,
 `catalog:sync[:verify]`, `catalog:sync:vercel[:write|:verify]`,
 `catalog:sync:openrouter[:write|:verify]`, `encryption:rotate`, `openapi:generate`.
@@ -192,8 +192,8 @@ against the adapter. Model metadata (capabilities, limits, reasoning spec, prici
 `apps/gateway/src/db/schema.ts` is the source of truth. Change it, then:
 
 ```bash
-bun run --filter @boelabs/bifrost db:generate   # drizzle-kit, emits a migration
-bun run --filter @boelabs/bifrost db:migrate    # applies pending
+bun run --filter @boelabs/bifrozz db:generate   # drizzle-kit, emits a migration
+bun run --filter @boelabs/bifrozz db:migrate    # applies pending
 ```
 
 - Migrations are **forward-only** — never edit an applied migration; add a new one.
@@ -227,7 +227,7 @@ and OpenRouter (plus models.dev for enrichment) and writes
 models, stale pricing/context/limit essentials, models no longer listed upstream, and numeric
 conflicts between sources. The aggregators never list Azure deployment ids, so it also compares
 Microsoft's own model list with both Azure catalogs (`src/catalog/sync/azureListing.ts`); an id
-Bifrost cannot serve is listed in `AZURE_LISTING_UNSERVED` with its reason. The report is a worksheet, not a source: every value applied to a
+Bifrozz cannot serve is listed in `AZURE_LISTING_UNSERVED` with its reason. The report is a worksheet, not a source: every value applied to a
 catalog is verified against the provider's own docs. `--mode verify` exits non-zero when the report
 is non-empty.
 

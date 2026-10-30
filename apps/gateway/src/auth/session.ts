@@ -18,8 +18,8 @@ const CACHE_TTL_SECONDS = 30;
 /** `lastSeenAt` is only written when it is at least this old, so idle tracking is not a write per request. */
 const TOUCH_INTERVAL_MS = 60_000;
 
-export const SESSION_COOKIE = "bifrost_session";
-export const CSRF_COOKIE = "bifrost_csrf";
+export const SESSION_COOKIE = "bifrozz_session";
+export const CSRF_COOKIE = "bifrozz_csrf";
 export const CSRF_HEADER = "x-csrf-token";
 
 function cacheKey(hash: string): string {

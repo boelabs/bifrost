@@ -77,7 +77,7 @@ test("gemini live conversation: setup maps instructions, voice, VAD, tools, tran
 				interruptResponse: false,
 				createResponse: true,
 			},
-			inputTranscription: { languages: ["es-419"], keywords: ["Bifrost"] },
+			inputTranscription: { languages: ["es-419"], keywords: ["Bifrozz"] },
 			tools: [
 				{
 					name: "lookup",
@@ -130,7 +130,7 @@ test("gemini live conversation: setup maps instructions, voice, VAD, tools, tran
 	});
 	assert.deepEqual(setup.inputAudioTranscription, {
 		languageCodes: ["es-419"],
-		customVocabulary: ["Bifrost"],
+		customVocabulary: ["Bifrozz"],
 	});
 	assert.deepEqual(setup.outputAudioTranscription, {});
 	assert.deepEqual(setup.sessionResumption, { handle: "handle-1" });

@@ -54,7 +54,7 @@ async function geminiStub() {
 				);
 				socket.send(
 					JSON.stringify({
-						serverContent: { inputTranscription: { text: "Hola Bifrost." } },
+						serverContent: { inputTranscription: { text: "Hola Bifrozz." } },
 						usageMetadata: {
 							promptTokenCount: 5,
 							responseTokenCount: 4,
@@ -167,7 +167,7 @@ test("GET /v1/realtime transcribes a manual turn through Gemini Live and logs it
 							format: { type: "audio/pcm", rate: 24_000 },
 							transcription: {
 								model: publicModel,
-								keywords: ["Bifrost"],
+								keywords: ["Bifrozz"],
 								languages: ["es-419"],
 							},
 							turn_detection: null,
@@ -180,7 +180,7 @@ test("GET /v1/realtime transcribes a manual turn through Gemini Live and logs it
 		assert.equal(updated.session.audio.input.turn_detection, null);
 		assert.deepEqual(stub.setups[0]?.inputAudioTranscription, {
 			languageCodes: ["es-419"],
-			customVocabulary: ["Bifrost"],
+			customVocabulary: ["Bifrozz"],
 		});
 
 		// 200 ms at 24 kHz becomes 200 ms at 16 kHz upstream.
@@ -194,7 +194,7 @@ test("GET /v1/realtime transcribes a manual turn through Gemini Live and logs it
 		const completed = await next(
 			"conversation.item.input_audio_transcription.completed",
 		);
-		assert.equal(completed.transcript, "Hola Bifrost.");
+		assert.equal(completed.transcript, "Hola Bifrozz.");
 		assert.deepEqual(completed.usage, {
 			type: "tokens",
 			input_tokens: 5,
@@ -218,7 +218,7 @@ test("GET /v1/realtime transcribes a manual turn through Gemini Live and logs it
 			)
 			.map((event) => event.delta)
 			.join("");
-		assert.equal(deltas, "Hola Bifrost.");
+		assert.equal(deltas, "Hola Bifrozz.");
 
 		// A model the key may not use is refused without touching the session.
 		socket.send(

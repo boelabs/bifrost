@@ -8,7 +8,7 @@
 
 - [ ] `bun run check`, `bun run typecheck`, and `bun run test` pass locally
 - [ ] Integration tests run if DB, router, rate limiting, or admin endpoints changed
-      (`bun run --filter @boelabs/bifrost test:integration`)
+      (`bun run --filter @boelabs/bifrozz test:integration`)
 - [ ] Tests added or updated for the change
 - [ ] `openapi.yaml` regenerated if any OpenAPI Zod schema changed (`openapi:generate`)
 - [ ] Migration added instead of edited if the schema changed (forward-only)

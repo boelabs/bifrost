@@ -2,7 +2,7 @@
 title: "Solución de problemas"
 description: "Relaciona síntomas y códigos de error con comprobaciones y soluciones concretas."
 ---
-Bifrost devuelve errores en la **forma exacta del endpoint al que llamó**. Los endpoints de estilo OpenAI (`/v1/chat/completions`, `/v1/responses`, `/v1/images/*`, `/v1/embeddings`, `/v1/audio/transcriptions`) devuelven el cuerpo del error de OpenAI; `/v1/messages` devuelve el Anthropic y `/v1/rerank` devuelve el OpenRouter. El manejo de errores de su cliente existente funciona sin cambios.
+Bifrozz devuelve errores en la **forma exacta del endpoint al que llamó**. Los endpoints de estilo OpenAI (`/v1/chat/completions`, `/v1/responses`, `/v1/images/*`, `/v1/embeddings`, `/v1/audio/transcriptions`) devuelven el cuerpo del error de OpenAI; `/v1/messages` devuelve el Anthropic y `/v1/rerank` devuelve el OpenRouter. El manejo de errores de su cliente existente funciona sin cambios.
 
 Forma de OpenAI:
 
@@ -93,17 +93,17 @@ error:1000009a:SSL routines:OPENSSL_internal:HANDSHAKE_FAILURE_ON_CLIENT_HELLO
 
 Falla en **ClientHello**, antes de cualquier verificación de certificado, por lo que `sslmode=require`, `rejectUnauthorized: false` y `NODE_TLS_REJECT_UNAUTHORIZED=0` no hacen ninguna diferencia.
 
-**Causa.** Bifrost se ejecuta en el runtime **Bun**, cuya biblioteca TLS incluida (BoringSSL) **puede** rechazar el protocolo de enlace contra algunos endpoints autofirmados (reproducidos con los certificados autofirmados Postgres y Redis de Coolify; no necesariamente afecta cada configuración autofirmada). Las mismas URL se conectan bien en Node/OpenSSL y `openssl s_client`, y el TLS de Bun funciona contra endpoints **CA públicos** (OpenAI, bases de datos administradas), por lo que cuando ocurre, es específico de los certificados autofirmados, no de TLS en general.
+**Causa.** Bifrozz se ejecuta en el runtime **Bun**, cuya biblioteca TLS incluida (BoringSSL) **puede** rechazar el protocolo de enlace contra algunos endpoints autofirmados (reproducidos con los certificados autofirmados Postgres y Redis de Coolify; no necesariamente afecta cada configuración autofirmada). Las mismas URL se conectan bien en Node/OpenSSL y `openssl s_client`, y el TLS de Bun funciona contra endpoints **CA públicos** (OpenAI, bases de datos administradas), por lo que cuando ocurre, es específico de los certificados autofirmados, no de TLS en general.
 
 **Solución: mantén TLS fuera del camino de Bun. Elige uno:**
 
-- **Red privada, sin TLS (recomendado para autohospedaje).** Ejecuta el gateway en la misma red privada que Postgres/Redis y conéctese a través de texto sin formato: `postgres://…` (no `sslmode`) y `redis://…` (no `rediss://`). En una red aislada, el enlace está protegido por aislamiento de red, no por TLS. Esto es lo que cada [Instalar Bifrost](/es/docs/deployment) hace de forma inmediata.
+- **Red privada, sin TLS (recomendado para autohospedaje).** Ejecuta el gateway en la misma red privada que Postgres/Redis y conéctese a través de texto sin formato: `postgres://…` (no `sslmode`) y `redis://…` (no `rediss://`). En una red aislada, el enlace está protegido por aislamiento de red, no por TLS. Esto es lo que cada [Instalar Bifrozz](/es/docs/deployment) hace de forma inmediata.
 - **Base de datos administrada con un certificado de CA pública.** Proveedores como Neon, Aiven, Supabase (Postgres) y Upstash (Redis) presentan certificados de confianza pública, a los que Bun se conecta sin problemas. Consulta [Configuración → Base de datos administrada y Redis](/es/docs/setup#managed-database-and-redis).
 - **Proxy de terminación TLS (stunnel).** Si debe llegar a un endpoint autofirmado a través de una red que no es de confianza desde su propia máquina, ejecuta un `stunnel` local que hable TLS en sentido upstream y exponga texto sin formato en `localhost`, luego apunta el gateway a `localhost`.
 
 <Callout>
 
-**Nota de autohospedaje.** Coolify y Dokploy exponen bases de datos independientes con un certificado autofirmado. La solución más sencilla es **deshabilitar SSL en los servicios Postgres y Redis** (desmarque **Habilitar SSL**) y conectarse a través de la red privada con `postgres://…` y `redis://…` (sin `sslmode`, no `rediss://`). Dentro de la red privada de la plataforma, esto es más sencillo y rápido que TLS. Consulta las páginas de la plataforma en [Instalar Bifrost](/es/docs/deployment).
+**Nota de autohospedaje.** Coolify y Dokploy exponen bases de datos independientes con un certificado autofirmado. La solución más sencilla es **deshabilitar SSL en los servicios Postgres y Redis** (desmarque **Habilitar SSL**) y conectarse a través de la red privada con `postgres://…` y `redis://…` (sin `sslmode`, no `rediss://`). Dentro de la red privada de la plataforma, esto es más sencillo y rápido que TLS. Consulta las páginas de la plataforma en [Instalar Bifrozz](/es/docs/deployment).
 
 </Callout>
 

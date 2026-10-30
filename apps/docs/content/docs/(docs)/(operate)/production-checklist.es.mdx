@@ -2,7 +2,7 @@
 title: "Lista de verificación para producción"
 description: "Comprueba seguridad, salud, datos y observabilidad antes de publicar."
 ---
-Comprueba estos puntos antes de poner Bifrost en producción. Los enlaces amplían cada procedimiento.
+Comprueba estos puntos antes de poner Bifrozz en producción. Los enlaces amplían cada procedimiento.
 
 ## Secretos [#secrets]
 
@@ -12,7 +12,7 @@ Comprueba estos puntos antes de poner Bifrost en producción. Los enlaces amplí
 ## Red y TLS [#network-and-tls]
 
 - [ ] Postgres y Redis usan un certificado emitido por una CA pública o una red privada sin TLS. **El cliente TLS de Bun rechaza certificados autofirmados**, frecuentes al exponer directamente puertos de Coolify o Dokploy. Consulta [Solución de problemas](/es/docs/troubleshooting#bun-may-fail-to-connect-to-postgresredis-over-self-signed-tls).
-- [ ] El reverse proxy expone solo los servicios públicos necesarios; Postgres y Redis permanecen en la red interna. Consulta [Instalar Bifrost](/es/docs/deployment).
+- [ ] El reverse proxy expone solo los servicios públicos necesarios; Postgres y Redis permanecen en la red interna. Consulta [Instalar Bifrozz](/es/docs/deployment).
 
 ## Salud y escalamiento [#health-and-scaling]
 

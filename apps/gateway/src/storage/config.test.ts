@@ -12,9 +12,9 @@ test("file: keeps the path exactly as written, relative or absolute", () => {
 		backend: "local",
 		root: ".source/object-storage",
 	});
-	assert.deepEqual(parseObjectStorage("file:///var/lib/bifrost"), {
+	assert.deepEqual(parseObjectStorage("file:///var/lib/bifrozz"), {
 		backend: "local",
-		root: "/var/lib/bifrost",
+		root: "/var/lib/bifrozz",
 	});
 });
 

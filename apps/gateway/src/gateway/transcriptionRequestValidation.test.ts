@@ -99,7 +99,7 @@ const geminiTranscribe = resolveModelMetadata(
 
 test("gating: Gemini Transcribe accepts each feature on its own", () => {
 	for (const overrides of [
-		{ keywords: ["Bifrost"] },
+		{ keywords: ["Bifrozz"] },
 		{ responseFormat: "diarized_json" as const },
 		{
 			responseFormat: "verbose_json" as const,

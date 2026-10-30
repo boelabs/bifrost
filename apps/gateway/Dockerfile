@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
 #
-# Monorepo image for the Bifrost service. The BUILD CONTEXT is the repo ROOT (it needs the
+# Monorepo image for the Bifrozz service. The BUILD CONTEXT is the repo ROOT (it needs the
 # workspace manifests and lockfile), so build from the root with:
 #
-#   docker build -f apps/gateway/Dockerfile -t bifrost .
+#   docker build -f apps/gateway/Dockerfile -t bifrozz .
 #
 # Both the dependency install and the service runtime are Bun (fast, deterministic). Bun runs
 # TypeScript directly, so there is no compile step. NOTE: Bun's TLS client can fail against self-signed
@@ -20,7 +20,7 @@ COPY patches ./patches
 COPY apps/gateway/package.json ./apps/gateway/package.json
 COPY apps/docs/package.json ./apps/docs/package.json
 COPY packages/tsconfig/package.json ./packages/tsconfig/package.json
-RUN bun install --frozen-lockfile --production --filter @boelabs/bifrost
+RUN bun install --frozen-lockfile --production --filter @boelabs/bifrozz
 
 # ---- runtime: Bun ----
 FROM oven/bun:1.4 AS runtime

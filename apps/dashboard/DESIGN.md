@@ -1,4 +1,4 @@
-# Bifrost Dashboard — Design Guidelines
+# Bifrozz Dashboard — Design Guidelines
 
 Source of truth for how the operator dashboard looks and is built. Read it before adding a screen
 or component; follow it exactly. When something is missing here, extend this document in the same
@@ -7,7 +7,7 @@ change instead of improvising.
 The dashboard is a sibling of Billete's (`billete/apps/dashboard/DESIGN.md`): same tokens, same
 vendored coss UI primitives, same shell, same page anatomy. A screen that would look out of place in
 Billete is wrong here too. Product behavior, permissions, API contracts and server boundaries remain
-Bifrost's own; the shared appearance never introduces a dependency on Billete.
+Bifrozz's own; the shared appearance never introduces a dependency on Billete.
 
 The visual language is **quiet, dense and precise**: neutral surfaces, one accent (the primary
 neutral), soft hairline borders, rounded panels, tabular numbers. Color only carries meaning
@@ -27,7 +27,7 @@ neutral), soft hairline borders, rounded panels, tabular numbers. Color only car
   and accessibility. Only build from scratch when coss has nothing suitable, following its geometry,
   states, focus and keyboard patterns.
 - **Icons:** `lucide-react` only, `aria-hidden` when decorative, sized with `size-*` classes. The
-  Bifrost mark (`BifrostMark`) is the one brand asset.
+  Bifrozz mark (`BifrozzMark`) is the one brand asset.
 - **Charts:** `recharts` through `src/components/ui/chart.tsx`.
 - **Font:** Google Sans Flex, the only UI font, headings included (`src/shared/fonts`). Google Sans
   Code for identifiers and code. Never set a font family anywhere else.
@@ -126,7 +126,7 @@ Billete's shell, value for value (`src/features/shell`):
 
 ```
 ┌ Sidebar (268px) ──┬──────────────────────────────────────────────────┐
-│ ◠ Bifrost      🔍 │                                                  │
+│ ◠ Bifrozz      🔍 │                                                  │
 │ ───────────────── │  main: centered max-w-6xl, p-4 sm:p-6, gap-6     │
 │ Overview          │                                                  │
 │ Metrics           │                                                  │

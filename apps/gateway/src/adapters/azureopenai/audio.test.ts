@@ -175,11 +175,11 @@ test("azure audio: keyword and language hints reach both transcription transport
 				azureopenaiAdapter,
 				"audioTranscription",
 			).buildRequest(
-				{ ...req, keywords: ["Bifrost", "AC-42"], language: "es" },
+				{ ...req, keywords: ["Bifrozz", "AC-42"], language: "es" },
 				context,
 			);
 			const form = r.body as FormData;
-			assert.deepEqual(form.getAll("keywords[]"), ["Bifrost", "AC-42"]);
+			assert.deepEqual(form.getAll("keywords[]"), ["Bifrozz", "AC-42"]);
 			assert.deepEqual(form.getAll("languages[]"), ["es"]);
 			assert.equal(form.has("language"), false);
 			context.meta = resolveModelMetadata("azureopenai", "gpt-4o-transcribe");
@@ -187,7 +187,7 @@ test("azure audio: keyword and language hints reach both transcription transport
 				azureopenaiAdapter,
 				"audioTranscription",
 			).buildRequest(
-				{ ...req, keywords: ["Bifrost"], languages: ["es", "en"] },
+				{ ...req, keywords: ["Bifrozz"], languages: ["es", "en"] },
 				context,
 			);
 			assert.equal((older.body as FormData).has("keywords[]"), false);

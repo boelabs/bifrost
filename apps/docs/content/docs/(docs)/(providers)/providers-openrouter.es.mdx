@@ -28,10 +28,10 @@ Envía este cuerpo a `POST /admin/deployments` con credencial de operador. Reemp
 Flujo de trabajo del catálogo:
 
 ```bash
-bun run --filter @boelabs/bifrost catalog:sync:openrouter
-bun run --filter @boelabs/bifrost catalog:sync:openrouter:verify
+bun run --filter @boelabs/bifrozz catalog:sync:openrouter
+bun run --filter @boelabs/bifrozz catalog:sync:openrouter:verify
 # To update the committed snapshot after review:
-bun run --filter @boelabs/bifrost catalog:sync:openrouter:write
+bun run --filter @boelabs/bifrozz catalog:sync:openrouter:write
 ```
 
 El informe señala la capacidad multimodal aún no habilitada, precios cero ambiguos, anulaciones revisadas huérfanas y modelos pagos sin un costo local representable.
