@@ -14,8 +14,8 @@ import type {
  * The public contract stays OpenAI's /v1/audio/transcriptions: `keywords` become
  * `custom_vocabulary`, `language`/`languages` become `language_codes`, `diarized_json` turns on
  * speaker diarization, word granularity turns on word timestamps, and `transcription_mode=smart`
- * selects Gemini's smart mode. srt/vtt are built from word timestamps, which Gemini only returns
- * when asked for, so those formats request them too.
+ * selects Gemini's smart mode. srt, vtt and diarized segments are built from word timestamps, which
+ * Gemini only returns when asked for, so those formats request them too.
  */
 
 /** Gemini's audio `mime_type` enum, keyed by the MIME the multipart parser assigns. */
@@ -45,11 +45,13 @@ function record(value: unknown): Record<string, unknown> | undefined {
 		: undefined;
 }
 
+/** srt, vtt and diarized segments are timed from word timestamps, so those formats ask for them. */
 function wantsWordTimestamps(req: CanonicalTranscriptionRequest): boolean {
 	return (
 		(req.timestampGranularities ?? []).includes("word") ||
 		req.responseFormat === "srt" ||
-		req.responseFormat === "vtt"
+		req.responseFormat === "vtt" ||
+		req.responseFormat === "diarized_json"
 	);
 }
 
@@ -152,6 +154,29 @@ function nonNegativeInt(value: unknown): number | undefined {
 		: undefined;
 }
 
+/**
+ * Gemini's `start_index`/`end_index` count UTF-8 bytes; JavaScript strings index UTF-16 code units.
+ * Returns the code-unit index for each byte offset that falls on a character boundary.
+ */
+function utf8ToUtf16Offsets(text: string): Map<number, number> {
+	const offsets = new Map<number, number>([[0, 0]]);
+	let bytes = 0;
+	let units = 0;
+	for (const char of text) {
+		bytes += Buffer.byteLength(char, "utf8");
+		units += char.length;
+		offsets.set(bytes, units);
+	}
+	return offsets;
+}
+
+/** Gemini numbers speakers `spk:0`, `spk:1`, …; OpenAI's diarization labels them `A`, `B`, …. */
+function speakerLabel(speaker: string): string {
+	const match = /^spk[:_](\d+)$/.exec(speaker);
+	const index = match ? Number(match[1]) : Number.NaN;
+	return index >= 0 && index < 26 ? String.fromCharCode(65 + index) : speaker;
+}
+
 interface GeminiTranscript {
 	text: string;
 	words: GeminiTranscriptWord[];
@@ -173,6 +198,7 @@ function geminiTranscript(raw: Record<string, unknown>): GeminiTranscript {
 				continue;
 			}
 			const offset = text.length;
+			const unitOffsets = utf8ToUtf16Offsets(content.text);
 			text += content.text;
 			const annotations = Array.isArray(content.annotations)
 				? content.annotations
@@ -187,19 +213,28 @@ function geminiTranscript(raw: Record<string, unknown>): GeminiTranscript {
 				if (typeof annotation.text !== "string" || start === undefined) {
 					continue;
 				}
-				const startIndex = nonNegativeInt(annotation.start_index);
-				const endIndex = nonNegativeInt(annotation.end_index);
+				const startByte = nonNegativeInt(annotation.start_index);
+				const endByte = nonNegativeInt(annotation.end_index);
+				const startIndex =
+					startByte === undefined ? undefined : unitOffsets.get(startByte);
+				const endIndex =
+					endByte === undefined ? undefined : unitOffsets.get(endByte);
+				// Indices that do not frame the word's own text are dropped; spans then join word texts.
+				const located =
+					startIndex !== undefined &&
+					endIndex !== undefined &&
+					content.text.slice(startIndex, endIndex).trim() ===
+						annotation.text.trim();
 				words.push({
 					text: annotation.text,
 					start,
 					end: end ?? start,
 					...(typeof annotation.speaker === "string"
-						? { speaker: annotation.speaker }
+						? { speaker: speakerLabel(annotation.speaker) }
 						: {}),
-					...(startIndex === undefined
-						? {}
-						: { startIndex: startIndex + offset }),
-					...(endIndex === undefined ? {} : { endIndex: endIndex + offset }),
+					...(located
+						? { startIndex: startIndex + offset, endIndex: endIndex + offset }
+						: {}),
 				});
 			}
 		}

@@ -204,7 +204,7 @@
 				"inputCentsPerMTokens": 200,
 				"outputCentsPerMTokens": 1200
 			},
-			"notes": "Interactions API. Audio up to 1 hour, 30 minutes with diarization or word timestamps (srt/vtt request word timestamps); Google enforces the duration. Diarization attributes up to 8 speakers."
+			"notes": "Interactions API. Audio up to 1 hour, 30 minutes with diarization or word timestamps (srt, vtt and diarized_json request word timestamps); Google enforces the duration. Diarization attributes up to 8 speakers."
 		},
 		"gemini-embedding-2": {
 			"operations": {
