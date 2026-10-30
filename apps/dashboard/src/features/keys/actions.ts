@@ -1,9 +1,21 @@
 "use server";
 
-import type { CreateKeyInput, UpdateKeyInput } from "./common.ts";
-import { createKey, deleteKey, updateKey } from "./api.ts";
 import { attempt } from "#/shared/lib/action.ts";
 import { revalidatePath } from "next/cache";
+
+import {
+	getKeySecret,
+	createKey,
+	deleteKey,
+	rotateKey,
+	updateKey,
+} from "./api.ts";
+
+import type {
+	CreateKeyInput,
+	RotateKeyInput,
+	UpdateKeyInput,
+} from "./common.ts";
 
 /**
  * Every write the keys page can make.
@@ -40,6 +52,25 @@ export async function updateKeyAction(id: string, body: UpdateKeyInput) {
 	const result = await attempt(
 		() => updateKey(id, body),
 		"The key could not be updated.",
+	);
+	if (result.ok) {
+		revalidateKeys();
+	}
+	return result;
+}
+
+/**
+ * The secret, for the clipboard and nothing else. Reading it changes nothing, so nothing is
+ * revalidated: the page does not re-render around a value it must never show.
+ */
+export async function copyKeyAction(id: string) {
+	return await attempt(() => getKeySecret(id), "The key could not be copied.");
+}
+
+export async function rotateKeyAction(id: string, body: RotateKeyInput) {
+	const result = await attempt(
+		() => rotateKey(id, body),
+		"The key could not be regenerated.",
 	);
 	if (result.ok) {
 		revalidateKeys();

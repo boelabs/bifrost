@@ -143,8 +143,9 @@ API calls would come back 403. See [Security → Roles](/docs/security#roles).
 - **Metrics** — the same numbers in more detail, filtered by model, deployment or operation.
 - **Models** — public models and the deployment pool behind each one. Creating or editing a
   deployment validates the whole configuration against the adapter before it is written.
-- **API keys** — issuing, scoping, limiting and budgeting virtual keys. The secret is shown once, at
-  creation, because only its hash is stored.
+- **API keys** — issuing, scoping, limiting and budgeting virtual keys. **Copy key** puts a key on
+  the clipboard without showing it, and **Regenerate** replaces its secret. A key created
+  **private** is shown once and never stored.
 - **Playground** — real inference against a real deployment, billed and logged like any other
   request, attributed to the operator who sent it.
 - **Logs** — one row per operation with its outcome, timing and cost; opening one shows every

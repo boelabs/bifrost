@@ -36,7 +36,9 @@ La especificación se genera a partir de los mismos esquemas Zod con los que val
 |---|---|
 | `GET /admin/keys` | Lista de claves. Consulta: `limit`, `offset`, `enabled`, `publicModel`, `q` (nombre/prefijo de búsqueda). |
 | `POST /admin/keys` | Crea una virtual key (consulta [Virtual keys](/es/docs/virtual-keys)). |
-| `PATCH /admin/keys/:id` | Actualizar alcance, límites, presupuesto o estado habilitado; envía `null` para borrar un límite. |
+| `PATCH /admin/keys/:id` | Actualizar alcance, límites, presupuesto o estado habilitado; envía `null` para borrar un límite. `{"private": true}` borra el secreto almacenado. |
+| `GET /admin/keys/:id/secret` | Volver a copiar una clave (`keys:write`, auditado). Consulta [Volver a copiar una clave](/es/docs/virtual-keys#copy-a-key-again). |
+| `POST /admin/keys/:id/rotate` | Nuevo secreto para la misma clave; el anterior deja de funcionar de inmediato. Cuerpo opcional: `{"private": bool}`. |
 | `DELETE /admin/keys/:id` | Eliminar permanentemente una clave. |
 
 ## Router y alternativas [#router-and-fallbacks]
@@ -73,7 +75,7 @@ La especificación se genera a partir de los mismos esquemas Zod con los que val
 
 Ambas tablas se leen y se intercalan, por lo que `offset + limit` tiene un límite de 5000 entradas: a las más antiguas se accede con un rango de fechas o un filtro más estrecho en lugar de una página más profunda. Las entradas de configuración se conservan para `ADMIN_AUDIT_RETENTION_DAYS` (365 de forma predeterminada) y las entradas de lectura de carga útil mientras duren los metadatos de operación a los que apuntan.
 
-Las lecturas no se auditan: constituyen la inmensa mayoría del tráfico del panel y enterrarían las entradas importantes. La excepción deliberada es `GET /admin/logs/:id/payload`: es una lectura, pero revela prompts y respuestas reales, por lo que llega aquí como una entrada `payload_access`. La ruta es sólo para agregar; no hay ninguna ruta de escritura o eliminación para ello.
+Las lecturas no se auditan: constituyen la inmensa mayoría del tráfico del panel y enterrarían las entradas importantes. Las excepciones deliberadas son las lecturas que revelan un secreto: `GET /admin/logs/:id/payload` revela prompts y respuestas reales, por lo que llega aquí como una entrada `payload_access`, y `GET /admin/keys/:id/secret` revela una clave, por lo que cada copia, rechazada o no, llega aquí como una entrada de configuración. La ruta es sólo para agregar; no hay ninguna ruta de escritura o eliminación para ello.
 
 ## Idempotente crea [#idempotent-creates]
 

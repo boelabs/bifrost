@@ -13,7 +13,8 @@ export type EncryptionPurpose =
 	| "idempotency-response"
 	| "observability-payload"
 	| "reasoning-state"
-	| "response-compaction";
+	| "response-compaction"
+	| "virtual-key-secret";
 
 function parseKeyring(raw: string): ReadonlyMap<string, Buffer> {
 	const parsed = JSON.parse(raw) as Record<string, string>;
@@ -63,6 +64,7 @@ export function parseEncryptedEnvelope(value: unknown): EncEnvelope {
 			"observability-payload",
 			"reasoning-state",
 			"response-compaction",
+			"virtual-key-secret",
 		].includes(candidate.purpose ?? "") ||
 		typeof candidate.iv !== "string" ||
 		typeof candidate.tag !== "string" ||

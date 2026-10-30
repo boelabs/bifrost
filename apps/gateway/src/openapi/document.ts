@@ -1165,7 +1165,9 @@ export function buildOpenApiDocument() {
 				},
 				post: {
 					tags: ["Admin"],
-					summary: "Create virtual key (returns the plaintext key ONCE)",
+					summary: "Create virtual key (returns the plaintext key)",
+					description:
+						"The key is stored encrypted and can be copied again with GET /admin/keys/{id}/secret, unless `private` is true: then this response is the only place it ever appears.",
 					parameters: [
 						{ $ref: "#/components/parameters/IdempotencyKeyHeader" },
 					],
@@ -1180,12 +1182,50 @@ export function buildOpenApiDocument() {
 							},
 						},
 						unlimited: { value: { name: "full-access", allowedModels: [] } },
+						private: { value: { name: "ci-deploy", private: true } },
 					}),
 					responses: {
-						"201": dataResponse(
+						"201": dataResponse(c.CreatedVirtualKey, "Virtual key created"),
+					},
+				},
+			},
+			"/admin/keys/{id}/secret": {
+				get: {
+					tags: ["Admin"],
+					operationId: "copyKey",
+					summary: "Copy a virtual key again",
+					description:
+						"Requires `keys:write`, answers with `Cache-Control: no-store`, and every call is written to the admin audit trail, refusals included. 403 `virtual_key_secret_sealed` means the deployment runs with VIRTUAL_KEY_SECRET_ACCESS=sealed. 409 `virtual_key_private` means the key never stored its secret; 409 `virtual_key_secret_unreadable` means it was sealed with a key the keyring no longer has. Either way the key keeps working, and rotating it stores a new one. Read `copyable` on the key first to know which to expect.",
+					parameters: [{ $ref: "#/components/parameters/IdPath" }],
+					responses: {
+						"200": dataResponse(c.VirtualKeySecret, "The plaintext key"),
+						"403": errorResponse,
+						"404": errorResponse,
+						"409": errorResponse,
+					},
+				},
+			},
+			"/admin/keys/{id}/rotate": {
+				post: {
+					tags: ["Admin"],
+					operationId: "rotateKey",
+					summary: "Rotate a virtual key's secret",
+					description:
+						"Issues a new secret for the same key: its id, limits, spend and logs stay. The old secret stops authenticating immediately, and realtime client secrets minted from it stop with it. The body is optional; without `private` the key stays as private as it was.",
+					parameters: [{ $ref: "#/components/parameters/IdPath" }],
+					requestBody: {
+						...jsonBody(c.RotateKey, {
+							keep: { value: {} },
+							makeCopyable: { value: { private: false } },
+						}),
+						required: false,
+					},
+					responses: {
+						"200": dataResponse(
 							c.CreatedVirtualKey,
-							"Virtual key created; the plaintext key is returned only here",
+							"Key rotated; the new plaintext key",
 						),
+						"404": errorResponse,
 					},
 				},
 			},
@@ -1208,6 +1248,7 @@ export function buildOpenApiDocument() {
 						disable: { value: { enabled: false } },
 						raiseBudget: { value: { maxBudgetCents: 2000 } },
 						resetSpend: { value: { resetSpend: true } },
+						makePrivate: { value: { private: true } },
 					}),
 					responses: {
 						"200": dataResponse(c.VirtualKey, "Virtual key"),

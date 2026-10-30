@@ -237,7 +237,7 @@ test("audit: the trail records the create and can be filtered", {
 		"audit_offset_too_deep",
 	);
 
-	/* ---- reads are deliberately not audited ---- */
+	/* ---- reads are deliberately not audited (only those that reveal a secret are) ---- */
 
 	const listed = await app.request("/admin/keys?limit=1", { headers: auth });
 	assert.equal(listed.status, 200);
@@ -246,7 +246,7 @@ test("audit: the trail records the create and can be filtered", {
 	});
 	const reads = (await afterRead.json()) as { data: { action: string }[] };
 	assert.equal(
-		reads.data.some((row) => row.action.startsWith("GET /admin/keys")),
+		reads.data.some((row) => row.action === "GET /admin/keys"),
 		false,
 	);
 });

@@ -1,6 +1,6 @@
 import { IDEMPOTENCY_PURPOSE } from "#db/repos/idempotency.ts";
 import { closeDb, db } from "#db/client.ts";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNotNull, sql } from "drizzle-orm";
 
 import {
 	activeEncryptionKeyId,
@@ -16,6 +16,7 @@ import {
 	modelDeployments,
 	idempotencyKeys,
 	payloadSamples,
+	virtualKeys,
 } from "#db/schema.ts";
 
 const BATCH_SIZE = 100;
@@ -172,13 +173,58 @@ async function rotateIdempotencyResponses(): Promise<number> {
 	}
 }
 
+async function rotateVirtualKeySecrets(): Promise<number> {
+	let rotated = 0;
+	while (true) {
+		// A private key has no envelope, and NULL is distinct from every key id: without the
+		// IS NOT NULL the same private rows would come back forever.
+		const rows = await db
+			.select({ id: virtualKeys.id, envelope: virtualKeys.secret })
+			.from(virtualKeys)
+			.where(
+				and(
+					isNotNull(virtualKeys.secret),
+					sql`${virtualKeys.secret}->>'kid' IS DISTINCT FROM ${activeEncryptionKeyId()}`,
+				),
+			)
+			.limit(BATCH_SIZE);
+		if (rows.length === 0) {
+			return rotated;
+		}
+		const batchRotated = await db.transaction(async (tx) => {
+			let updatedCount = 0;
+			for (const row of rows) {
+				if (row.envelope === null) {
+					continue;
+				}
+				const value = decryptString(row.envelope, "virtual-key-secret");
+				const updated = await tx
+					.update(virtualKeys)
+					.set({ secret: encryptJson(value, "virtual-key-secret") })
+					.where(
+						and(
+							eq(virtualKeys.id, row.id),
+							eq(virtualKeys.secret, row.envelope),
+						),
+					)
+					.returning({ id: virtualKeys.id });
+				updatedCount += updated.length;
+			}
+			return updatedCount;
+		});
+		rotated += batchRotated;
+	}
+}
+
 async function run(): Promise<void> {
-	const [deployments, extensions, samples, idempotency] = await Promise.all([
-		rotateDeployments(),
-		rotateExtensions(),
-		rotatePayloadSamples(),
-		rotateIdempotencyResponses(),
-	]);
+	const [deployments, extensions, samples, idempotency, keys] =
+		await Promise.all([
+			rotateDeployments(),
+			rotateExtensions(),
+			rotatePayloadSamples(),
+			rotateIdempotencyResponses(),
+			rotateVirtualKeySecrets(),
+		]);
 	console.log(
 		JSON.stringify({
 			activeKeyId: activeEncryptionKeyId(),
@@ -187,6 +233,7 @@ async function run(): Promise<void> {
 				extensions,
 				payloadSamples: samples,
 				idempotencyResponses: idempotency,
+				virtualKeys: keys,
 			},
 		}),
 	);

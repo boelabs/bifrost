@@ -91,7 +91,7 @@ curl -X POST $BASE/admin/keys \
   }'
 ```
 
-La respuesta muestra el secreto **una sola vez**. Guárdalo antes de continuar:
+La respuesta incluye el secreto. Guárdalo antes de continuar; podrás volver a copiarlo desde la API de administración o el dashboard, salvo que crees la clave con `"private": true`:
 
 ```json
 { "data": { "id": "…", "keyPrefix": "sk-abcdefg", "key": "sk-…", "allowedModels": ["general"] } }

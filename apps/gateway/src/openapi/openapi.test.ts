@@ -1,9 +1,22 @@
-import { CreateDeployment, UpdateDeployment } from "./components.ts";
 import { buildOpenApiDocument } from "./document.ts";
 import assert from "node:assert/strict";
 import { parse, stringify } from "yaml";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+
+import {
+	CreateDeployment,
+	UpdateDeployment,
+	CreateKey,
+	RotateKey,
+	UpdateKey,
+} from "./components.ts";
+
+import {
+	createKeySchema,
+	rotateKeySchema,
+	updateKeySchema,
+} from "#admin/keySchemas.ts";
 
 import {
 	createDeploymentSchema,
@@ -35,7 +48,7 @@ test("openapi: committed openapi.yaml is up to date with the generator", () => {
 
 test("openapi: document is a structurally valid 3.1 spec with resolving refs", () => {
 	assert.equal(doc.openapi, "3.1.0");
-	assert.equal(Object.keys(doc.paths).length, 54);
+	assert.equal(Object.keys(doc.paths).length, 56);
 
 	// Every local $ref must resolve to a defined component.
 	const text = JSON.stringify(doc);
@@ -70,6 +83,22 @@ test("openapi: CreateDeployment/UpdateDeployment stay in sync with the runtime s
 		runtimeKeys(updateDeploymentSchema as never),
 		"UpdateDeployment doc schema drifted from updateDeploymentSchema",
 	);
+});
+
+test("openapi: CreateKey/UpdateKey/RotateKey stay in sync with the runtime schemas", () => {
+	const keys = (schema: { shape: Record<string, unknown> }) =>
+		Object.keys(schema.shape).sort();
+	for (const [published, runtime, name] of [
+		[CreateKey, createKeySchema, "CreateKey"],
+		[UpdateKey, updateKeySchema, "UpdateKey"],
+		[RotateKey, rotateKeySchema, "RotateKey"],
+	] as const) {
+		assert.deepEqual(
+			keys(published as never),
+			keys(runtime as never),
+			`${name} doc schema drifted from the admin route's schema`,
+		);
+	}
 });
 
 test("openapi: committed file parses as YAML", () => {

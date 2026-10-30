@@ -32,6 +32,7 @@ El gateway valida su entorno al inicio y sale si falta una variable requerida o 
 | Variables | Predeterminado | Controles |
 |---|---|---|
 | `OBSERVABILITY_PAYLOAD_ACCESS` | `open` | Quién puede leer una muestra retenida. `open`: un rol con `payloads:read`, auditado. `sealed`: nadie, a través de ninguna credencial; las muestras aún se capturan y cifran, y el intento rechazado se audita. |
+| `VIRTUAL_KEY_SECRET_ACCESS` | `open` | Quién puede volver a copiar una virtual key. `open`: un rol con `keys:write`, auditado. `sealed`: nadie, con ninguna credencial; las claves almacenadas siguen cifradas y el intento rechazado se audita. Consulta [Virtual keys](/es/docs/virtual-keys#copy-a-key-again). |
 | `OBSERVABILITY_PAYLOAD_RETENTION_DAYS` | `7` | Retención de carga útil forense cifrada. |
 | `OBSERVABILITY_METADATA_RETENTION_DAYS` | `30` | Retención de metadatos de operación completada y intentos ascendentes. |
 | `ADMIN_AUDIT_RETENTION_DAYS` | `365` | Retención del registro de auditoría `/admin`. Sobrevive a los metadatos de operación: una fila por cambio de configuración, consultado meses después. |

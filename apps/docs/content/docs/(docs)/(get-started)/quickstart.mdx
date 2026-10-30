@@ -99,7 +99,8 @@ curl -X POST $BASE/admin/keys \
   }'
 ```
 
-The response contains the plaintext key **once** — store it now, it is never shown again:
+The response contains the plaintext key. Store it now; you can copy it again later from the admin
+API or the dashboard, unless the key is created with `"private": true`:
 
 ```json
 { "data": { "id": "…", "keyPrefix": "sk-abcdefg", "key": "sk-…", "allowedModels": ["general"] } }

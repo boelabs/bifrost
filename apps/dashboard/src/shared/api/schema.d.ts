@@ -1280,7 +1280,10 @@ export interface paths {
 			};
 		};
 		put?: never;
-		/** Create virtual key (returns the plaintext key ONCE) */
+		/**
+		 * Create virtual key (returns the plaintext key)
+		 * @description The key is stored encrypted and can be copied again with GET /admin/keys/{id}/secret, unless `private` is true: then this response is the only place it ever appears.
+		 */
 		post: {
 			parameters: {
 				query?: never;
@@ -1297,7 +1300,7 @@ export interface paths {
 				};
 			};
 			responses: {
-				/** @description Virtual key created; the plaintext key is returned only here */
+				/** @description Virtual key created */
 				201: {
 					headers: {
 						[name: string]: unknown;
@@ -1310,6 +1313,46 @@ export interface paths {
 				};
 			};
 		};
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/admin/keys/{id}/secret": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Copy a virtual key again
+		 * @description Requires `keys:write`, answers with `Cache-Control: no-store`, and every call is written to the admin audit trail, refusals included. 403 `virtual_key_secret_sealed` means the deployment runs with VIRTUAL_KEY_SECRET_ACCESS=sealed. 409 `virtual_key_private` means the key never stored its secret; 409 `virtual_key_secret_unreadable` means it was sealed with a key the keyring no longer has. Either way the key keeps working, and rotating it stores a new one. Read `copyable` on the key first to know which to expect.
+		 */
+		get: operations["copyKey"];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	"/admin/keys/{id}/rotate": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Rotate a virtual key's secret
+		 * @description Issues a new secret for the same key: its id, limits, spend and logs stay. The old secret stops authenticating immediately, and realtime client secrets minted from it stop with it. The body is optional; without `private` the key stays as private as it was.
+		 */
+		post: operations["rotateKey"];
 		delete?: never;
 		options?: never;
 		head?: never;
@@ -3246,6 +3289,12 @@ export interface components {
 			tpm?: number | null;
 			rpm?: number | null;
 			expiresAt?: string | null;
+			/** @description true never stores the plaintext: it is returned once, here, and only rotating the key replaces it. Default false: the key is stored encrypted and can be copied again with GET /admin/keys/{id}/secret. */
+			private?: boolean;
+		};
+		RotateKey: {
+			/** @description Whether to store the new secret for copying. Omitted keeps the key's current setting; false is the only way to make a private key copyable. */
+			private?: boolean;
 		};
 		UpdateKey: {
 			name?: string;
@@ -3258,6 +3307,11 @@ export interface components {
 			expiresAt?: string | null;
 			/** @description true resets spend for the current period */
 			resetSpend?: boolean;
+			/**
+			 * @description Erases the stored secret; it cannot be copied again. One way: a private key becomes copyable only by rotating it with private: false.
+			 * @constant
+			 */
+			private?: true;
 		};
 		RouterSettings: {
 			executionPolicies?: {
@@ -3718,6 +3772,10 @@ export interface components {
 			createdAt: string;
 			/** Format: date-time */
 			updatedAt: string;
+			/** @description true when the plaintext is not stored: it was shown once, and only rotating replaces it. Keys issued before keys could be copied are private. */
+			private: boolean;
+			/** @description Whether GET /admin/keys/{id}/secret can return the key right now: not private, and VIRTUAL_KEY_SECRET_ACCESS is open. */
+			copyable: boolean;
 		};
 		CreatedVirtualKey: {
 			/** Format: uuid */
@@ -3738,7 +3796,15 @@ export interface components {
 			createdAt: string;
 			/** Format: date-time */
 			updatedAt: string;
-			/** @description The plaintext key. Returned ONLY here, at creation; it is stored hashed and cannot be retrieved again. */
+			/** @description true when the plaintext is not stored: it was shown once, and only rotating replaces it. Keys issued before keys could be copied are private. */
+			private: boolean;
+			/** @description Whether GET /admin/keys/{id}/secret can return the key right now: not private, and VIRTUAL_KEY_SECRET_ACCESS is open. */
+			copyable: boolean;
+			/** @description The plaintext key. For a private key this is the only time it is returned; otherwise GET /admin/keys/{id}/secret returns it again. */
+			key: string;
+		};
+		VirtualKeySecret: {
+			/** @description The plaintext key. */
 			key: string;
 		};
 		CacheInvalidation: {
@@ -4795,6 +4861,62 @@ export interface operations {
 				content: {
 					"application/json": {
 						data: components["schemas"]["Deployment"];
+					};
+				};
+			};
+			404: components["responses"]["Error"];
+		};
+	};
+	copyKey: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: components["parameters"]["IdPath"];
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description The plaintext key */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						data: components["schemas"]["VirtualKeySecret"];
+					};
+				};
+			};
+			403: components["responses"]["Error"];
+			404: components["responses"]["Error"];
+			409: components["responses"]["Error"];
+		};
+	};
+	rotateKey: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				id: components["parameters"]["IdPath"];
+			};
+			cookie?: never;
+		};
+		requestBody?: {
+			content: {
+				"application/json": components["schemas"]["RotateKey"];
+			};
+		};
+		responses: {
+			/** @description Key rotated; the new plaintext key */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": {
+						data: components["schemas"]["CreatedVirtualKey"];
 					};
 				};
 			};

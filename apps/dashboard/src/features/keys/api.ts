@@ -3,6 +3,7 @@ import { api, unwrap } from "#/shared/api/client.ts";
 import type {
 	CreatedVirtualKey,
 	CreateKeyInput,
+	RotateKeyInput,
 	UpdateKeyInput,
 	VirtualKey,
 } from "./common.ts";
@@ -28,7 +29,33 @@ export async function getKey(id: string): Promise<VirtualKey | null> {
 }
 
 /**
- * The plaintext key comes back exactly once, here.
+ * The plaintext key of a key that is not private. Every call is audited by the gateway, so this is
+ * only ever fetched for the click that asked to copy it — never to render a page.
+ */
+export async function getKeySecret(id: string): Promise<string> {
+	return unwrap(
+		await api.GET("/admin/keys/{id}/secret", {
+			params: { path: { id } },
+			cache: "no-store",
+		}),
+	).data.key;
+}
+
+/** A new secret for the same key; the old one stops working at once. */
+export async function rotateKey(
+	id: string,
+	body: RotateKeyInput,
+): Promise<CreatedVirtualKey> {
+	return unwrap(
+		await api.POST("/admin/keys/{id}/rotate", {
+			params: { path: { id } },
+			body,
+		}),
+	).data;
+}
+
+/**
+ * The plaintext key always comes back here, and for a private key only here.
  *
  * `idempotencyKey` is what makes a retry safe: without it, a create that timed out after the gateway
  * had already issued the key leaves an operator with a second key they never wanted and a secret they

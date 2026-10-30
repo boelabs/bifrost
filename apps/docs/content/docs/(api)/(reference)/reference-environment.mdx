@@ -35,6 +35,7 @@ deployment. Gateway and dashboard processes read separate environment files.
 | Variable | Default | Controls |
 |---|---|---|
 | `OBSERVABILITY_PAYLOAD_ACCESS` | `open` | Who may read a retained sample. `open`: a role with `payloads:read`, audited. `sealed`: nobody, through any credential — samples are still captured and encrypted, and the refused attempt is audited. |
+| `VIRTUAL_KEY_SECRET_ACCESS` | `open` | Who may copy a virtual key again. `open`: a role with `keys:write`, audited. `sealed`: nobody, through any credential — stored keys stay encrypted, and the refused attempt is audited. See [Virtual keys](/docs/virtual-keys#copy-a-key-again). |
 | `OBSERVABILITY_PAYLOAD_RETENTION_DAYS` | `7` | Encrypted forensic payload retention. |
 | `OBSERVABILITY_METADATA_RETENTION_DAYS` | `30` | Retention for completed operation and upstream-attempt metadata. |
 | `ADMIN_AUDIT_RETENTION_DAYS` | `365` | Retention for the `/admin` audit trail. Outlives operation metadata: one row per configuration change, asked about months later. |

@@ -1,3 +1,4 @@
+import { type EncEnvelope, encryptJson } from "#db/crypto.ts";
 import type { Page, PageResult } from "./deployments.ts";
 import { createHash, randomBytes } from "node:crypto";
 import { nextResetAt } from "#ratelimit/period.ts";
@@ -7,16 +8,35 @@ import { db } from "#db/client.ts";
 
 import {
 	sql as drizzleSql,
+	getTableColumns,
 	type SQL,
 	ilike,
 	count,
 	and,
-	or,
 	lte,
+	or,
 	eq,
 } from "drizzle-orm";
 
-export type VirtualKeyRow = typeof virtualKeys.$inferSelect;
+/**
+ * Every column but the sealed secret, plus whether there is one.
+ *
+ * The envelope leaves this module only through `getVirtualKeySecret`: listing a page of keys, or
+ * authenticating a request, never reads it, so no other code path can hand it to a caller by
+ * accident and the hot path does not carry a few hundred bytes per key it has no use for.
+ */
+const { secret: _sealed, ...readableColumns } = getTableColumns(virtualKeys);
+const columns = {
+	...readableColumns,
+	hasSecret: drizzleSql<boolean>`${virtualKeys.secret} IS NOT NULL`.as(
+		"has_secret",
+	),
+};
+
+export type VirtualKeyRow = Omit<typeof virtualKeys.$inferSelect, "secret"> & {
+	/** False for a private key, whose plaintext was shown once and never stored. */
+	hasSecret: boolean;
+};
 
 export interface VirtualKeyListFilter {
 	enabled?: boolean;
@@ -53,7 +73,7 @@ export async function listVirtualKeysPage(
 	const where = conds.length > 0 ? and(...conds) : undefined;
 	const [rows, totalRow] = await Promise.all([
 		db
-			.select()
+			.select(columns)
 			.from(virtualKeys)
 			.where(where)
 			.orderBy(virtualKeys.createdAt)
@@ -76,11 +96,13 @@ export interface CreateVirtualKeyInput {
 	tpm?: number | null;
 	rpm?: number | null;
 	expiresAt?: Date | null;
+	/** Never store the plaintext: the key is shown once and can only be regenerated. */
+	private?: boolean;
 }
 
 export interface CreatedVirtualKey {
 	row: VirtualKeyRow;
-	/** Plaintext key. Only returned here, on creation; not persisted. */
+	/** Plaintext key. Persisted only encrypted, and only for a key that is not private. */
 	rawKey: string;
 }
 
@@ -102,6 +124,19 @@ function generateRawKey(): string {
 	return `sk-${randomBytes(24).toString("base64url")}`;
 }
 
+/** The three columns that are the key itself; everything else about it survives a rotation. */
+function keyMaterial(rawKey: string, keepSecret: boolean) {
+	return {
+		keyHash: hashVirtualKey(rawKey),
+		keyPrefix: rawKey.slice(0, 10),
+		secret: keepSecret ? sealSecret(rawKey) : null,
+	};
+}
+
+function sealSecret(rawKey: string): EncEnvelope {
+	return encryptJson(rawKey, "virtual-key-secret");
+}
+
 export async function createVirtualKey(
 	input: CreateVirtualKeyInput,
 ): Promise<CreatedVirtualKey> {
@@ -109,8 +144,7 @@ export async function createVirtualKey(
 	const [row] = await db
 		.insert(virtualKeys)
 		.values({
-			keyHash: hashVirtualKey(rawKey),
-			keyPrefix: rawKey.slice(0, 10),
+			...keyMaterial(rawKey, input.private !== true),
 			name: input.name,
 			createdBy: input.createdBy ?? null,
 			allowedModels: input.allowedModels ?? [],
@@ -122,15 +156,71 @@ export async function createVirtualKey(
 			rpm: input.rpm ?? null,
 			expiresAt: input.expiresAt ?? null,
 		})
-		.returning();
+		.returning(columns);
 	return { row: writtenRow(row, "createVirtualKey"), rawKey };
+}
+
+export interface RotatedVirtualKey extends CreatedVirtualKey {
+	/** The hash the old key authenticated with, for the caller to evict from every cache. */
+	previousHash: string;
+}
+
+/**
+ * Replaces a key's secret and keeps everything else: its id, limits, spend and history.
+ *
+ * The row is locked for the read-then-write, so two rotations racing each other each evict the hash
+ * they actually replaced rather than both evicting the original one. `private` defaults to the
+ * key's current setting: regenerating never starts storing a secret the operator chose not to keep.
+ */
+export async function rotateVirtualKey(
+	id: string,
+	options: { private?: boolean } = {},
+): Promise<RotatedVirtualKey | undefined> {
+	return await db.transaction(async (tx) => {
+		const [current] = await tx
+			.select({ keyHash: virtualKeys.keyHash, hasSecret: columns.hasSecret })
+			.from(virtualKeys)
+			.where(eq(virtualKeys.id, id))
+			.for("update");
+		if (!current) {
+			return;
+		}
+		const rawKey = generateRawKey();
+		const keepSecret =
+			options.private === undefined ? current.hasSecret : !options.private;
+		const [row] = await tx
+			.update(virtualKeys)
+			.set({ ...keyMaterial(rawKey, keepSecret), updatedAt: new Date() })
+			.where(eq(virtualKeys.id, id))
+			.returning(columns);
+		return {
+			row: writtenRow(row, "rotateVirtualKey"),
+			rawKey,
+			previousHash: current.keyHash,
+		};
+	});
+}
+
+/**
+ * The sealed secret and the hash it must match, for the one route that reveals it. Nothing here
+ * decrypts: whether this caller may see it is the route's decision, not the repository's.
+ */
+export async function getVirtualKeySecret(
+	id: string,
+): Promise<{ keyHash: string; secret: EncEnvelope | null } | undefined> {
+	const [row] = await db
+		.select({ keyHash: virtualKeys.keyHash, secret: virtualKeys.secret })
+		.from(virtualKeys)
+		.where(eq(virtualKeys.id, id))
+		.limit(1);
+	return row;
 }
 
 export async function getVirtualKeyByHash(
 	hash: string,
 ): Promise<VirtualKeyRow | undefined> {
 	const [row] = await db
-		.select()
+		.select(columns)
 		.from(virtualKeys)
 		.where(eq(virtualKeys.keyHash, hash))
 		.limit(1);
@@ -147,7 +237,7 @@ export async function getVirtualKeyById(
 	id: string,
 ): Promise<VirtualKeyRow | undefined> {
 	const [row] = await db
-		.select()
+		.select(columns)
 		.from(virtualKeys)
 		.where(eq(virtualKeys.id, id))
 		.limit(1);
@@ -165,6 +255,8 @@ export interface UpdateVirtualKeyInput {
 	enabled?: boolean;
 	expiresAt?: Date | null;
 	resetSpend?: boolean;
+	/** Erases the stored secret. One way: a private key becomes copyable only by rotating it. */
+	private?: true;
 }
 
 export async function updateVirtualKey(
@@ -204,12 +296,15 @@ export async function updateVirtualKey(
 	if (input.resetSpend) {
 		set.spendCents = "0";
 	}
+	if (input.private) {
+		set.secret = null;
+	}
 
 	const [row] = await db
 		.update(virtualKeys)
 		.set(set)
 		.where(eq(virtualKeys.id, id))
-		.returning();
+		.returning(columns);
 	return row;
 }
 

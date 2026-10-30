@@ -952,8 +952,21 @@ export const CreateKey = z
 		tpm: nullableInteger.optional(),
 		rpm: nullableInteger.optional(),
 		expiresAt: z.union([z.iso.datetime(), z.null()]).optional(),
+		private: z.boolean().optional().meta({
+			description:
+				"true never stores the plaintext: it is returned once, here, and only rotating the key replaces it. Default false: the key is stored encrypted and can be copied again with GET /admin/keys/{id}/secret.",
+		}),
 	})
 	.meta({ id: "CreateKey" });
+
+export const RotateKey = z
+	.object({
+		private: z.boolean().optional().meta({
+			description:
+				"Whether to store the new secret for copying. Omitted keeps the key's current setting; false is the only way to make a private key copyable.",
+		}),
+	})
+	.meta({ id: "RotateKey" });
 
 export const UpdateKey = z
 	.object({
@@ -969,6 +982,10 @@ export const UpdateKey = z
 			.boolean()
 			.optional()
 			.meta({ description: "true resets spend for the current period" }),
+		private: z.literal(true).optional().meta({
+			description:
+				"Erases the stored secret; it cannot be copied again. One way: a private key becomes copyable only by rotating it with private: false.",
+		}),
 	})
 	.meta({ id: "UpdateKey" });
 
@@ -1205,7 +1222,7 @@ export const VirtualKey = z
 	.object({
 		id: z.uuid(),
 		name: z.string(),
-		/** Display/search prefix. The key itself is returned only once, at creation. */
+		/** Display/search prefix. The key itself is never part of this object. */
 		keyPrefix: z.string(),
 		createdBy: nullableString,
 		allowedModels: z.array(z.string()),
@@ -1222,15 +1239,27 @@ export const VirtualKey = z
 		expiresAt: nullableTimestamp,
 		createdAt: timestamp,
 		updatedAt: timestamp,
+		private: z.boolean().meta({
+			description:
+				"true when the plaintext is not stored: it was shown once, and only rotating replaces it. Keys issued before keys could be copied are private.",
+		}),
+		copyable: z.boolean().meta({
+			description:
+				"Whether GET /admin/keys/{id}/secret can return the key right now: not private, and VIRTUAL_KEY_SECRET_ACCESS is open.",
+		}),
 	})
 	.meta({ id: "VirtualKey" });
 
 export const CreatedVirtualKey = VirtualKey.extend({
 	key: z.string().meta({
 		description:
-			"The plaintext key. Returned ONLY here, at creation; it is stored hashed and cannot be retrieved again.",
+			"The plaintext key. For a private key this is the only time it is returned; otherwise GET /admin/keys/{id}/secret returns it again.",
 	}),
 }).meta({ id: "CreatedVirtualKey" });
+
+export const VirtualKeySecret = z
+	.object({ key: z.string().meta({ description: "The plaintext key." }) })
+	.meta({ id: "VirtualKeySecret" });
 
 export const DashboardUser = z
 	.object({

@@ -462,8 +462,13 @@ export const virtualKeys = pgTable(
 	"virtual_keys",
 	{
 		id: uuid("id").defaultRandom().primaryKey(),
-		/** SHA-256 (hex) of the key. The plaintext key is only shown when created. */
+		/** SHA-256 (hex) of the key: the only column authentication reads. */
 		keyHash: text("key_hash").notNull(),
+		/**
+		 * The plaintext key, sealed with the keyring ("virtual-key-secret"), so an operator can copy it
+		 * again. NULL for a private key — and for every key issued before keys could be copied.
+		 */
+		secret: jsonb("secret").$type<EncEnvelope>(),
 		/** Readable head of the key, for searching and for logs, e.g. "sk-AbCdEfG". */
 		keyPrefix: text("key_prefix").notNull(),
 		name: text("name").notNull(),

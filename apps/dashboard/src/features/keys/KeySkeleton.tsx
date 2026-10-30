@@ -45,6 +45,8 @@ export function KeyPageSkeleton() {
 					<>
 						<ButtonSkeleton label={6} size="md" />
 						<ButtonSkeleton label={7} size="md" />
+						<ButtonSkeleton label={10} size="md" />
+						<ButtonSkeleton label={8} size="md" />
 					</>
 				}
 				badge={

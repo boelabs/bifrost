@@ -149,6 +149,7 @@ test("dashboard auth: root session, roles, CSRF, and revocation", {
 
 	for (const [path, method] of [
 		["/admin/keys", "GET"],
+		[`/admin/keys/${crypto.randomUUID()}/secret`, "GET"],
 		["/admin/logs", "GET"],
 		["/admin/users", "GET"],
 	] as const) {

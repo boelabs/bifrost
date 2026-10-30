@@ -15,6 +15,7 @@ const MUTATING = ["POST", "PUT", "PATCH", "DELETE"];
  *
  * `/admin/logs/:id/payload` is the deliberate exception in the other direction: it is a GET, but it
  * reveals real prompts and completions, and `payload_access_audit` already records it separately.
+ * Other reads that reveal a secret mount `auditRevealMiddleware()` on their own route.
  */
 export function auditMiddleware(): MiddlewareHandler<AppEnv> {
 	return async (c, next) => {
@@ -24,6 +25,23 @@ export function auditMiddleware(): MiddlewareHandler<AppEnv> {
 		}
 		// Never audit a call that was rejected before it identified anyone.
 		if (c.res.status === 401 || c.res.status === 403) {
+			return;
+		}
+		void record(c);
+	};
+}
+
+/**
+ * The same trail for a read that reveals a secret, such as copying a virtual key again.
+ *
+ * Refusals are recorded too — a sealed gateway's 403 included — because an attempt to read a secret
+ * is worth knowing about whether or not it succeeded. Only an unauthenticated call is skipped: it
+ * names nobody, and the route never ran.
+ */
+export function auditRevealMiddleware(): MiddlewareHandler<AppEnv> {
+	return async (c, next) => {
+		await next();
+		if (c.res.status === 401) {
 			return;
 		}
 		void record(c);
