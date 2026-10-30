@@ -81,6 +81,8 @@ function interaction(
 	words: [string, string, string, string?][],
 ): Record<string, unknown> {
 	let cursor = 0;
+	// Gemini's indices count UTF-8 bytes.
+	const bytes = (value: string) => Buffer.byteLength(value, "utf8");
 	const annotations = words.map(([word, start, end, speaker]) => {
 		const startIndex = text.indexOf(word, cursor);
 		cursor = startIndex + word.length;
@@ -89,8 +91,8 @@ function interaction(
 			text: word,
 			start_offset: start,
 			end_offset: end,
-			start_index: startIndex,
-			end_index: cursor,
+			start_index: bytes(text.slice(0, startIndex)),
+			end_index: bytes(text.slice(0, cursor)),
 			...(speaker ? { speaker } : {}),
 		};
 	});
@@ -180,7 +182,13 @@ test("google transcription: modes, diarization and word timestamps follow Google
 	assert.deepEqual(
 		(await bodyFor({ responseFormat: "diarized_json" })).generation_config
 			.transcription_config,
-		{ mode: { type: "verbatim", diarization_mode: "speaker" } },
+		{
+			mode: {
+				type: "verbatim",
+				diarization_mode: "speaker",
+				timestamp_granularities: ["word"],
+			},
+		},
 	);
 	for (const overrides of [
 		{
@@ -273,13 +281,13 @@ test("google transcription: verbose_json carries OpenAI word objects", () => {
 });
 
 test("google transcription: diarized_json groups speaker turns into OpenAI segments", () => {
-	const raw = interaction("Hi, Ana. Hello! How are you?", [
-		["Hi,", "0.0s", "0.3s", "spk_1"],
-		["Ana.", "0.3s", "0.7s", "spk_1"],
-		["Hello!", "1.0s", "1.4s", "spk_2"],
-		["How", "1.5s", "1.7s", "spk_2"],
-		["are", "1.7s", "1.8s", "spk_2"],
-		["you?", "1.8s", "2.1s", "spk_2"],
+	const raw = interaction("Hola, Ana. ¡Buenos días! ¿Cómo estás?", [
+		["Hola,", "0.0s", "0.3s", "spk:0"],
+		["Ana.", "0.3s", "0.7s", "spk:0"],
+		["¡Buenos", "1.0s", "1.4s", "spk:1"],
+		["días!", "1.5s", "1.7s", "spk:1"],
+		["¿Cómo", "1.7s", "1.8s", "spk:1"],
+		["estás?", "1.8s", "2.1s", "spk:1"],
 	]);
 	const rendered = toOpenAITranscriptionResponse(
 		parse(raw, { responseFormat: "diarized_json" }),
@@ -291,20 +299,20 @@ test("google transcription: diarized_json groups speaker turns into OpenAI segme
 			id: "seg_001",
 			start: 0,
 			end: 0.7,
-			text: "Hi, Ana.",
-			speaker: "spk_1",
+			text: "Hola, Ana.",
+			speaker: "A",
 		},
 		{
 			type: "transcript.text.segment",
 			id: "seg_002",
 			start: 1,
 			end: 2.1,
-			text: "Hello! How are you?",
-			speaker: "spk_2",
+			text: "¡Buenos días! ¿Cómo estás?",
+			speaker: "B",
 		},
 	]);
 	assert.equal(rendered.task, "transcribe");
-	assert.equal(rendered.text, "Hi, Ana. Hello! How are you?");
+	assert.equal(rendered.text, "Hola, Ana. ¡Buenos días! ¿Cómo estás?");
 });
 
 test("google transcription: srt and vtt are built from word timestamps", () => {

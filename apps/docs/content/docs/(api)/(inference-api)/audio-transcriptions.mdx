@@ -32,7 +32,7 @@ catalog profile.
 
 `transcription_mode` is a Bifrost extension: `smart` asks a model that supports it to drop fillers
 and format numbers in context; `verbatim` is every model's default and is always accepted.
-`response_format=diarized_json` returns OpenAI's diarized shape: `segments` with `speaker`, `start`,
+`response_format=diarized_json` returns OpenAI's diarized shape: `segments` with `speaker` (`A`, `B`, …), `start`,
 `end` and `text`.
 
 ### Vocabulary and language hints
@@ -69,7 +69,7 @@ The request stays OpenAI's; the gateway translates it:
 |---|---|
 | `keywords[]` (up to 1,000) | `custom_vocabulary` |
 | `language` / `languages[]` (BCP-47, for example `es-419`) | `language_codes`; none means automatic detection |
-| `response_format=diarized_json` | speaker diarization, up to 8 speakers |
+| `response_format=diarized_json` | speaker diarization (up to 8 speakers) with word timestamps, grouped into timed segments |
 | `timestamp_granularities[]=word` with `verbose_json` | word timestamps, returned as OpenAI `words` |
 | `response_format=srt` or `vtt` | word timestamps, grouped into subtitle cues by the gateway |
 | `transcription_mode=smart` | smart mode |

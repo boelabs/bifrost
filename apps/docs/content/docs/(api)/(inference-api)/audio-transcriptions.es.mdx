@@ -24,7 +24,7 @@ Solo multiparte (campo `file`). El archivo cargado se transmite a un disco tempo
 `transcription_mode` es una extensión de Bifrost: `smart` pide a un modelo que lo admita quitar
 muletillas y dar formato a los números según el contexto; `verbatim` es el comportamiento
 predeterminado de todos los modelos y siempre se acepta. `response_format=diarized_json` devuelve la
-forma diarizada de OpenAI: `segments` con `speaker`, `start`, `end` y `text`.
+forma diarizada de OpenAI: `segments` con `speaker` (`A`, `B`, …), `start`, `end` y `text`.
 
 ### Vocabulario e idiomas [#vocabulary-and-language-hints]
 
@@ -64,7 +64,7 @@ de Gemini. La petición sigue siendo la de OpenAI; el gateway la traduce:
 |---|---|
 | `keywords[]` (hasta 1.000) | `custom_vocabulary` |
 | `language` / `languages[]` (BCP-47, por ejemplo `es-419`) | `language_codes`; sin ninguno, detección automática |
-| `response_format=diarized_json` | diarización de hablantes, hasta 8 |
+| `response_format=diarized_json` | diarización de hablantes (hasta 8) con timestamps por palabra, agrupados en segmentos con tiempos |
 | `timestamp_granularities[]=word` con `verbose_json` | timestamps por palabra, devueltos como `words` de OpenAI |
 | `response_format=srt` o `vtt` | timestamps por palabra, agrupados en subtítulos por el gateway |
 | `transcription_mode=smart` | modo smart |
