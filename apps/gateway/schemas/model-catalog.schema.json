@@ -502,14 +502,19 @@
 				"supportsGoogleSearch": { "type": "boolean" },
 				"reasoningEfforts": {
 					"type": "array",
-					"items": { "enum": ["minimal", "low", "medium", "high"] },
+					"items": { "enum": ["minimal", "low", "medium", "high", "xhigh"] },
 					"minItems": 1,
 					"uniqueItems": true
 				},
 				"defaultReasoningEffort": {
-					"enum": ["minimal", "low", "medium", "high"],
+					"enum": ["minimal", "low", "medium", "high", "xhigh"],
 					"description": "Sent when a session sets no reasoning.effort, for models that refuse to start without one."
 				},
+				"supportsDeferredResponse": {
+					"type": "boolean",
+					"description": "Server VAD can leave answering to the client (create_response: false)."
+				},
+				"supportsSpeed": { "type": "boolean" },
 				"supportsTextInput": { "type": "boolean" },
 				"supportsImageInput": { "type": "boolean" },
 				"supportsInputTranscription": { "type": "boolean" },

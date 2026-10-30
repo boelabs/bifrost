@@ -295,6 +295,8 @@ export interface RealtimeConversationSession {
 	sendTurns: (turns: RealtimeTurn[], complete: boolean) => void;
 	/** Results of the model's function calls; the model continues with them. */
 	sendFunctionResults: (results: RealtimeFunctionResult[]) => void;
+	/** Stops the reply being generated, for providers that can (otherwise it is only dropped). */
+	cancelResponse?: () => void;
 	/**
 	 * Applies a new configuration (same model). Resolves once the provider accepted it; the
 	 * conversation's context survives when the provider can resume sessions.

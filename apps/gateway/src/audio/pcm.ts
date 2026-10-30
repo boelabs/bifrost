@@ -91,7 +91,7 @@ function encodeMuLaw(sample: number): number {
 const MU_LAW = Int16Array.from({ length: 256 }, (_, byte) => decodeMuLaw(byte));
 const A_LAW = Int16Array.from({ length: 256 }, (_, byte) => decodeALaw(byte));
 
-/** Linear-interpolation resampler to the canonical rate, stateful across chunks. */
+/** Linear-interpolation resampler (to the canonical rate by default), stateful across chunks. */
 class Resampler {
 	private readonly step: number;
 	private readonly smooth: boolean;
@@ -99,9 +99,9 @@ class Resampler {
 	private position = 0;
 	private previous: [number, number] | null = null;
 
-	constructor(inputRate: number) {
-		this.step = inputRate / REALTIME_AUDIO_SAMPLE_RATE;
-		this.smooth = inputRate > REALTIME_AUDIO_SAMPLE_RATE;
+	constructor(inputRate: number, outputRate = REALTIME_AUDIO_SAMPLE_RATE) {
+		this.step = inputRate / outputRate;
+		this.smooth = inputRate > outputRate;
 	}
 
 	push(samples: ArrayLike<number>): Buffer {
@@ -189,6 +189,27 @@ export function createAudioInputDecoder(
 		get seconds() {
 			return bytes / 8000;
 		},
+	};
+}
+
+/**
+ * Canonical 16 kHz PCM16 at another rate, for a provider that takes only that rate (OpenAI's
+ * Realtime API: 24 kHz).
+ */
+export function createPcmResampler(
+	outputRate: number,
+): (pcm: Buffer) => Buffer {
+	const resampler = new Resampler(REALTIME_AUDIO_SAMPLE_RATE, outputRate);
+	let carry: Buffer | null = null;
+	return (chunk) => {
+		const data: Buffer = carry ? Buffer.concat([carry, chunk]) : chunk;
+		const even = data.byteLength - (data.byteLength % 2);
+		carry = even < data.byteLength ? data.subarray(even) : null;
+		const samples = new Int16Array(even / 2);
+		for (let index = 0; index < samples.length; index += 1) {
+			samples[index] = data.readInt16LE(index * 2);
+		}
+		return resampler.push(samples);
 	};
 }
 

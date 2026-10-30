@@ -70,7 +70,7 @@ test("realtime conversation: parses the GA session.update and merges it over the
 			prefixPaddingMs: 300,
 			silenceDurationMs: 700,
 		},
-		inputTranscription: { languages: ["es"] },
+		inputTranscription: { model: "gpt-transcribe", languages: ["es"] },
 		tools: [{ name: "lookup", parameters: { type: "object" } }],
 		toolChoice: "auto",
 		googleSearch: true,

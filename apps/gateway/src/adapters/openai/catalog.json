@@ -7,7 +7,9 @@
 		"name": "OpenAI",
 		"docs": [
 			"https://developers.openai.com/api/docs/models",
-			"https://developers.openai.com/api/docs/pricing"
+			"https://developers.openai.com/api/docs/pricing",
+			"https://developers.openai.com/api/docs/guides/realtime",
+			"https://developers.openai.com/api/reference/resources/realtime/client-events"
 		]
 	},
 	"models": {
@@ -3023,6 +3025,153 @@
 					}
 				]
 			}
+		},
+		"gpt-realtime-2.1": {
+			"operations": {
+				"audio.converse.realtime": {
+					"outputModalities": ["audio", "text"],
+					"voices": [
+						"alloy",
+						"ash",
+						"ballad",
+						"coral",
+						"echo",
+						"sage",
+						"shimmer",
+						"verse",
+						"marin",
+						"cedar"
+					],
+					"supportsInstructions": true,
+					"supportsTools": true,
+					"reasoningEfforts": ["minimal", "low", "medium", "high", "xhigh"],
+					"supportsDeferredResponse": true,
+					"supportsSpeed": true,
+					"supportsTextInput": true,
+					"supportsImageInput": true,
+					"supportsInputTranscription": true,
+					"turnDetection": ["server_vad", "semantic_vad", "manual"]
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 400,
+				"outputCentsPerMTokens": 2400,
+				"cacheReadCentsPerMTokens": 40,
+				"audioInputCentsPerMTokens": 3200,
+				"audioOutputCentsPerMTokens": 6400,
+				"imageInputCentsPerMTokens": 500
+			},
+			"notes": "Realtime API (WebSocket). Reasoning model: 128k context, 32k max output. Input transcription runs on a separate transcription model, billed by OpenAI on its own."
+		},
+		"gpt-realtime-2.1-mini": {
+			"operations": {
+				"audio.converse.realtime": {
+					"outputModalities": ["audio", "text"],
+					"voices": [
+						"alloy",
+						"ash",
+						"ballad",
+						"coral",
+						"echo",
+						"sage",
+						"shimmer",
+						"verse",
+						"marin",
+						"cedar"
+					],
+					"supportsInstructions": true,
+					"supportsTools": true,
+					"reasoningEfforts": ["minimal", "low", "medium", "high", "xhigh"],
+					"supportsDeferredResponse": true,
+					"supportsSpeed": true,
+					"supportsTextInput": true,
+					"supportsImageInput": true,
+					"supportsInputTranscription": true,
+					"turnDetection": ["server_vad", "semantic_vad", "manual"]
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 60,
+				"outputCentsPerMTokens": 240,
+				"cacheReadCentsPerMTokens": 30,
+				"audioInputCentsPerMTokens": 1000,
+				"audioOutputCentsPerMTokens": 2000,
+				"imageInputCentsPerMTokens": 80
+			},
+			"notes": "Realtime API (WebSocket). Reasoning model: 128k context, 32k max output. OpenAI prices cached audio at $0.30 and cached text at $0.06 per 1M; the catalog has one cache rate, so the audio one applies."
+		},
+		"gpt-realtime-2": {
+			"operations": {
+				"audio.converse.realtime": {
+					"outputModalities": ["audio", "text"],
+					"voices": [
+						"alloy",
+						"ash",
+						"ballad",
+						"coral",
+						"echo",
+						"sage",
+						"shimmer",
+						"verse",
+						"marin",
+						"cedar"
+					],
+					"supportsInstructions": true,
+					"supportsTools": true,
+					"reasoningEfforts": ["minimal", "low", "medium", "high", "xhigh"],
+					"supportsDeferredResponse": true,
+					"supportsSpeed": true,
+					"supportsTextInput": true,
+					"supportsImageInput": true,
+					"supportsInputTranscription": true,
+					"turnDetection": ["server_vad", "semantic_vad", "manual"]
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 400,
+				"outputCentsPerMTokens": 2400,
+				"cacheReadCentsPerMTokens": 40,
+				"audioInputCentsPerMTokens": 3200,
+				"audioOutputCentsPerMTokens": 6400,
+				"imageInputCentsPerMTokens": 500
+			},
+			"notes": "Realtime API (WebSocket). Reasoning model: 128k context, 32k max output. gpt-realtime-2.1 improves on it."
+		},
+		"gpt-realtime-1.5": {
+			"operations": {
+				"audio.converse.realtime": {
+					"outputModalities": ["audio", "text"],
+					"voices": [
+						"alloy",
+						"ash",
+						"ballad",
+						"coral",
+						"echo",
+						"sage",
+						"shimmer",
+						"verse",
+						"marin",
+						"cedar"
+					],
+					"supportsInstructions": true,
+					"supportsTools": true,
+					"supportsDeferredResponse": true,
+					"supportsSpeed": true,
+					"supportsTextInput": true,
+					"supportsImageInput": true,
+					"supportsInputTranscription": true,
+					"turnDetection": ["server_vad", "semantic_vad", "manual"]
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 400,
+				"outputCentsPerMTokens": 1600,
+				"cacheReadCentsPerMTokens": 40,
+				"audioInputCentsPerMTokens": 3200,
+				"audioOutputCentsPerMTokens": 6400,
+				"imageInputCentsPerMTokens": 500
+			},
+			"notes": "Realtime API (WebSocket). Not a reasoning model: 32k context, 4,096 max output."
 		}
 	}
 }

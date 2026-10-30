@@ -1,3 +1,4 @@
+import { makeOpenAIRealtimeConversationHandler } from "./openaiRealtime.ts";
 import { makeOpenAIResponsesWebSocketHandler } from "./openaiResponsesWebSocket.ts";
 import { upstreamFetch } from "#gateway/instrumentedTransport.ts";
 import { looksLikeContextWindowError } from "#core/httpError.ts";
@@ -130,6 +131,8 @@ export interface OpenAIStyleConfig {
 	>;
 	/** The provider implements POST /audio/transcriptions (multipart). Absent = no audio. */
 	audioTranscriptions?: boolean;
+	/** Serves realtime conversations over the provider's /realtime WebSocket. */
+	realtime?: boolean;
 	/** The provider implements POST /embeddings. Absent = no embeddings. */
 	embeddings?: boolean;
 	/** Async video generation protocols this adapter implements. Absent = no videos. */
@@ -1075,6 +1078,9 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 	if (config.audioTranscriptions) {
 		supportedCallTypes.add("audio.transcriptions");
 	}
+	if (config.realtime) {
+		supportedCallTypes.add("realtime.conversation");
+	}
 	if (config.embeddings) {
 		supportedCallTypes.add("embeddings");
 	}
@@ -1142,6 +1148,23 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 			: {}),
 		...(videoTransportConfig ? { videoGeneration } : {}),
 		...(config.audioTranscriptions ? { audioTranscription } : {}),
+		...(config.realtime
+			? {
+					realtimeConversation: makeOpenAIRealtimeConversationHandler({
+						label: config.label,
+						resolveConnection(ctx) {
+							const credentials = resolveCreds(ctx);
+							return {
+								url: credentials.base,
+								headers: buildAuthHeaders(credentials),
+							};
+						},
+						mapError(err, ctx) {
+							return mapError(err, ctx);
+						},
+					}),
+				}
+			: {}),
 		...(config.embeddings ? { embeddings } : {}),
 		transports: {
 			chat: { supported: chatTransports, default: config.defaultTransport },
@@ -1169,6 +1192,14 @@ export function makeOpenAIStyleAdapter(config: OpenAIStyleConfig): Adapter {
 						embeddings: {
 							supported: ["embeddings"],
 							default: "embeddings",
+						},
+					}
+				: {}),
+			...(config.realtime
+				? {
+						"realtime.conversation": {
+							supported: ["realtime"],
+							default: "realtime",
 						},
 					}
 				: {}),
