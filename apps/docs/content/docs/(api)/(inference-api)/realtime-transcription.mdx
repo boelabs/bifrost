@@ -63,7 +63,7 @@ answers with OpenAI's events:
   `input_audio_buffer.speech_started` and `speech_stopped` around it with server VAD.
 - `conversation.item.input_audio_transcription.delta` while the provider is still listening.
 - `conversation.item.input_audio_transcription.completed` with the final `transcript` and, when the
-  provider reported it, `usage` in tokens.
+  provider reports it, `usage` in tokens.
 
 Gemini revises its running guess; OpenAI's deltas only append. So a delta carries only text that
 extends what was already sent, and `completed` always carries the authoritative transcript. To see
@@ -80,5 +80,7 @@ every revision, include `item.input_audio_transcription.interim`: each
   sessions per process and per key.
 
 Each provider session is logged as one `realtime.transcription` operation with its usage and cost.
-When the provider reports no usage, the gateway estimates input tokens from the audio duration
-(25 tokens per second, Google's published rate) and marks the operation `usageEstimated`.
+Gemini Live reports no usage for transcription sessions, so the gateway estimates it: input tokens
+from the audio duration (25 tokens per second, Google's published rate) and output tokens from the
+transcript length (about 4 characters per token). The operation is marked `usageEstimated`, and
+`completed` events carry no `usage`.

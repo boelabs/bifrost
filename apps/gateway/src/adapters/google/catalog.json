@@ -222,7 +222,7 @@
 				"inputCentsPerMTokens": 350,
 				"outputCentsPerMTokens": 2100
 			},
-			"notes": "Live API (BidiGenerateContent). Gemini ends a session after 10 minutes; the gateway reconnects behind one public session. No diarization or word timestamps live."
+			"notes": "Live API (BidiGenerateContent). Gemini ends a session after 10 minutes; the gateway reconnects behind one public session. No diarization or word timestamps live. Gemini reports no usage for transcription sessions; the gateway estimates it from audio duration and transcript length."
 		},
 		"gemini-embedding-2": {
 			"operations": {

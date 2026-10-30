@@ -152,25 +152,29 @@ test("realtime tracker: manual turns commit an item and complete it with the fin
 	const { instance, events, types } = tracker("manual");
 	assert.equal(instance.beforeAudio(), true);
 	assert.equal(instance.beforeAudio(), false);
+	// An interim's last word is still being revised, so deltas stop before it.
 	instance.provider({ kind: "interim", text: "hola" });
 	instance.provider({ kind: "interim", text: "hola mun" });
+	instance.provider({ kind: "interim", text: "hola mundo cru" });
 	// A revision that does not extend the sent text is withheld.
-	instance.provider({ kind: "interim", text: "ola mundo" });
+	instance.provider({ kind: "interim", text: "ola mundo cruel" });
 	instance.commit(null);
-	instance.provider({ kind: "final", text: "Hola mundo." });
+	instance.provider({ kind: "final", text: "hola mundo cruel." });
 	assert.deepEqual(types(), [
 		"conversation.item.input_audio_transcription.delta",
 		"conversation.item.input_audio_transcription.delta",
 		"input_audio_buffer.committed",
 		"conversation.item.added",
+		"conversation.item.input_audio_transcription.delta",
 		"conversation.item.input_audio_transcription.completed",
 	]);
-	const [first, second, committed, added, completed] = events;
+	const [first, second, committed, added, last, completed] = events;
 	assert.equal(first?.delta, "hola");
-	assert.equal(second?.delta, " mun");
+	assert.equal(second?.delta, " mundo");
 	assert.equal(committed?.previous_item_id, "item_prev");
 	assert.equal(added?.item.role, "user");
-	assert.equal(completed?.transcript, "Hola mundo.");
+	assert.equal(last?.delta, " cruel.");
+	assert.equal(completed?.transcript, "hola mundo cruel.");
 	assert.equal(completed?.item_id, committed?.item_id);
 	assert.equal(completed?.content_index, 0);
 	assert.equal(instance.completedItems, 1);
@@ -255,10 +259,11 @@ test("realtime tracker: server VAD frames each final as a committed utterance", 
 	assert.deepEqual(types(), [
 		"input_audio_buffer.speech_started",
 		"conversation.item.input_audio_transcription.interim",
-		"conversation.item.input_audio_transcription.delta",
 		"input_audio_buffer.speech_stopped",
 		"input_audio_buffer.committed",
 		"conversation.item.added",
+		"conversation.item.input_audio_transcription.interim",
+		"conversation.item.input_audio_transcription.delta",
 		"conversation.item.input_audio_transcription.completed",
 		"input_audio_buffer.speech_started",
 		"input_audio_buffer.speech_stopped",

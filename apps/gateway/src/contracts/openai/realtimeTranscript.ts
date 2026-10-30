@@ -63,6 +63,8 @@ export class RealtimeTranscriptTracker {
 	lastItemId: string | null;
 	firstOutputAt: number | null = null;
 	completedItems = 0;
+	/** Characters across completed transcripts, to estimate output when the provider reports no usage. */
+	transcriptCharacters = 0;
 
 	constructor(options: RealtimeTranscriptTrackerOptions) {
 		this.options = options;
@@ -141,7 +143,7 @@ export class RealtimeTranscriptTracker {
 				return;
 			}
 			if (event.kind === "interim") {
-				this.progress(target, transcriptOf(target, event.text));
+				this.progress(target, transcriptOf(target, event.text), true);
 				return;
 			}
 			target.finals.push(event.text);
@@ -163,7 +165,7 @@ export class RealtimeTranscriptTracker {
 		}
 		const item = this.open;
 		if (event.kind === "interim") {
-			this.progress(item, transcriptOf(item, event.text));
+			this.progress(item, transcriptOf(item, event.text), true);
 			return;
 		}
 		item.finals.push(event.text);
@@ -209,7 +211,11 @@ export class RealtimeTranscriptTracker {
 		});
 	}
 
-	private progress(item: Item, transcript: string): void {
+	/**
+	 * Reports the item's current transcript. A `tentative` one (an interim) is still being revised,
+	 * mostly in its last word, so its deltas stop at the last complete word.
+	 */
+	private progress(item: Item, transcript: string, tentative = false): void {
 		if (item.discarded) {
 			return;
 		}
@@ -223,14 +229,17 @@ export class RealtimeTranscriptTracker {
 				transcript,
 			});
 		}
-		if (!transcript.startsWith(item.emitted)) {
+		const settled = tentative
+			? transcript.slice(0, Math.max(0, transcript.lastIndexOf(" ")))
+			: transcript;
+		if (!settled.startsWith(item.emitted)) {
 			return;
 		}
-		const delta = transcript.slice(item.emitted.length);
+		const delta = settled.slice(item.emitted.length);
 		if (delta === "") {
 			return;
 		}
-		item.emitted = transcript;
+		item.emitted = settled;
 		this.options.emit({
 			type: "conversation.item.input_audio_transcription.delta",
 			event_id: eventId(),
@@ -257,6 +266,7 @@ export class RealtimeTranscriptTracker {
 		const usage = this.pendingUsage;
 		this.pendingUsage = null;
 		this.completedItems += 1;
+		this.transcriptCharacters += transcript.length;
 		this.options.emit({
 			type: "conversation.item.input_audio_transcription.completed",
 			event_id: eventId(),

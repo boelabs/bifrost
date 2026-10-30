@@ -61,8 +61,13 @@ import {
 const REALTIME_MAX_MS = 60 * 60 * 1000;
 const MAX_MESSAGE_BYTES = 16 * 1024 * 1024;
 const MAX_QUEUED_EVENTS = 2000;
-/** Google bills live audio at 25 tokens per second; used only when the provider reports no usage. */
+/**
+ * Usage estimates for providers that report none (Gemini Live sends no `usageMetadata` for
+ * transcription-only sessions): Google bills live audio at 25 tokens per second, and Gemini
+ * Transcribe's text runs about 4 characters per output token.
+ */
 const ESTIMATED_AUDIO_TOKENS_PER_SECOND = 25;
+const ESTIMATED_CHARACTERS_PER_OUTPUT_TOKEN = 4;
 
 interface UpstreamRun {
 	configKey: string;
@@ -199,10 +204,13 @@ async function endRun(
 	const seconds = runSeconds(run);
 	if (!usage && seconds > 0) {
 		const audioTokens = Math.ceil(seconds * ESTIMATED_AUDIO_TOKENS_PER_SECOND);
+		const outputTokens = Math.ceil(
+			run.tracker.transcriptCharacters / ESTIMATED_CHARACTERS_PER_OUTPUT_TOKEN,
+		);
 		usage = {
 			inputTokens: audioTokens,
-			outputTokens: 0,
-			totalTokens: audioTokens,
+			outputTokens,
+			totalTokens: audioTokens + outputTokens,
 			audioTokens,
 		};
 		estimated = true;

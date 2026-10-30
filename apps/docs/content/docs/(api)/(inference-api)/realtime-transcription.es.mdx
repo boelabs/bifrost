@@ -65,7 +65,7 @@ responde con los eventos de OpenAI:
   `input_audio_buffer.speech_started` y `speech_stopped` alrededor de él con VAD del servidor.
 - `conversation.item.input_audio_transcription.delta` mientras el proveedor sigue escuchando.
 - `conversation.item.input_audio_transcription.completed` con el `transcript` final y, si el
-  proveedor lo informó, `usage` en tokens.
+  proveedor lo informa, `usage` en tokens.
 
 Gemini corrige su hipótesis sobre la marcha; los deltas de OpenAI solo agregan texto. Por eso un
 delta solo lleva texto que extiende lo ya enviado, y `completed` siempre trae la transcripción
@@ -82,6 +82,7 @@ definitiva. Para ver cada corrección, incluye `item.input_audio_transcription.i
   sesiones abiertas por proceso y por key.
 
 Cada sesión con el proveedor se registra como una operación `realtime.transcription` con su uso y
-costo. Si el proveedor no informa uso, el gateway estima los tokens de entrada a partir de la duración
-del audio (25 tokens por segundo, la tarifa publicada por Google) y marca la operación con
-`usageEstimated`.
+costo. Gemini Live no informa uso en las sesiones de transcripción, así que el gateway lo estima: los
+tokens de entrada a partir de la duración del audio (25 tokens por segundo, la tarifa publicada por
+Google) y los de salida a partir del largo de la transcripción (unos 4 caracteres por token). La
+operación queda marcada con `usageEstimated` y los eventos `completed` no traen `usage`.
