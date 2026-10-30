@@ -8370,7 +8370,7 @@
 						"reasoning": true,
 						"structuredOutputs": true
 					},
-					"maxInputTokens": 524288,
+					"maxInputTokens": 1048576,
 					"maxOutputTokens": 262144,
 					"modalities": {
 						"input": ["image", "text"],
@@ -8396,9 +8396,9 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 136,
-				"outputCentsPerMTokens": 418,
-				"cacheReadCentsPerMTokens": 14
+				"inputCentsPerMTokens": 70,
+				"outputCentsPerMTokens": 210,
+				"cacheReadCentsPerMTokens": 7
 			}
 		},
 		"mistral/mistral-medium-3.5": {
@@ -13025,7 +13025,7 @@
 					},
 					"reasoning": {
 						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high"]
+						"levels": ["none", "low", "high", "max"]
 					}
 				}
 			},
