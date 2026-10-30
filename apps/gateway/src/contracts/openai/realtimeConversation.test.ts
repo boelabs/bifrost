@@ -250,8 +250,20 @@ test("realtime conversation tracker: barge-in cancels the response with turn_det
 	instance.provider({ kind: "speech_started" });
 	instance.provider({ kind: "interrupted" });
 	instance.provider({ kind: "turn_complete" });
+	// The interrupting speech is still being transcribed after the cut-off turn ends.
+	instance.provider({ kind: "input_transcript", text: "Espera." });
+	instance.provider({ kind: "speech_stopped" });
+	instance.provider({ kind: "output_transcript", text: "Dime." });
+	instance.provider({ kind: "turn_complete" });
+	assert.equal(
+		events.find(
+			(event) =>
+				event.type === "conversation.item.input_audio_transcription.completed",
+		)?.transcript,
+		"Espera.",
+	);
 	const done = events.filter((event) => event.type === "response.done");
-	assert.equal(done.length, 1);
+	assert.equal(done.length, 2);
 	assert.equal(done[0]?.response.status, "cancelled");
 	assert.deepEqual(done[0]?.response.status_details, {
 		type: "cancelled",
@@ -424,5 +436,53 @@ test("realtime conversation tracker: text items, text sessions and cancellation"
 	assert.throws(
 		() => instance.cancelResponse(undefined, null),
 		RealtimeClientEventError,
+	);
+});
+
+test("realtime conversation tracker: content ends at generation_complete, response.done waits for the turn's usage", () => {
+	const { instance, events } = tracker();
+	instance.provider({ kind: "output_transcript", text: "Listo." });
+	instance.provider({ kind: "output_audio", pcm: Buffer.alloc(480) });
+	instance.provider({ kind: "generation_complete" });
+	assert.equal(events.at(-1)?.type, "conversation.item.done");
+	instance.provider({
+		kind: "usage",
+		usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+	});
+	instance.provider({ kind: "turn_complete" });
+	const done = events.at(-1);
+	assert.equal(done?.type, "response.done");
+	assert.equal(done?.response.status, "completed");
+	assert.equal(done?.response.usage.total_tokens, 15);
+
+	// A client that does not wait for the turn to end is not blocked by it.
+	instance.provider({ kind: "output_transcript", text: "Otra." });
+	instance.provider({ kind: "generation_complete" });
+	instance.createResponse(undefined, null);
+	const types = events.map((event) => event.type);
+	assert.deepEqual(types.slice(-2), ["response.done", "response.created"]);
+	assert.equal(events.at(-2)?.response.usage, null);
+});
+
+test("realtime conversation tracker: without voice activity events, transcripts open the user's items", () => {
+	const { instance, types, events } = tracker();
+	instance.provider({ kind: "input_transcript", text: "Hola," });
+	instance.provider({ kind: "output_transcript", text: "Hello," });
+	instance.provider({ kind: "input_transcript", text: " mundo." });
+	instance.provider({ kind: "turn_complete" });
+	assert.deepEqual(types().slice(0, 6), [
+		"input_audio_buffer.speech_started",
+		"conversation.item.input_audio_transcription.delta",
+		"input_audio_buffer.speech_stopped",
+		"input_audio_buffer.committed",
+		"conversation.item.added",
+		"conversation.item.done",
+	]);
+	assert.equal(
+		events.find(
+			(event) =>
+				event.type === "conversation.item.input_audio_transcription.completed",
+		)?.transcript,
+		"Hola, mundo.",
 	);
 });

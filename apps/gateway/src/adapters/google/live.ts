@@ -188,7 +188,8 @@ export function parseGeminiLiveMessage(raw: unknown): GeminiLiveMessage {
  * bad request, outage) applies to it.
  */
 export function closeStatus(code: number, reason: string): number {
-	if (/quota|rate|exhausted/i.test(reason)) {
+	// Word boundaries: "BidiGenerateContent" contains "rate".
+	if (/\bquota\b|\brate.?limit|\bexhausted\b/i.test(reason)) {
 		return 429;
 	}
 	if (/api key|permission|unauthori[sz]ed|forbidden|credential/i.test(reason)) {

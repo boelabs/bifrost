@@ -13,6 +13,8 @@ import { test } from "node:test";
 
 import {
 	parseGeminiConversationMessage,
+	ConversationHistory,
+	pcmLevel,
 	geminiConversationSetup,
 	geminiFunctionResponse,
 	geminiClientContent,
@@ -410,7 +412,7 @@ async function until(condition: () => boolean, label: string): Promise<void> {
 	}
 }
 
-test("gemini live conversation: a new configuration resumes the session on a new connection once the model is idle", async () => {
+test("gemini live conversation: a new configuration opens a new session seeded with the conversation; goAway resumes", async () => {
 	await withStub(async (baseUrl, connections) => {
 		const handler = googleAdapter.realtimeConversation;
 		assert.ok(handler);
@@ -428,6 +430,10 @@ test("gemini live conversation: a new configuration resumes the session on a new
 				sessionResumptionUpdate: { newHandle: "h1", resumable: true },
 			}),
 		);
+		session.sendTurns(
+			[{ role: "user", parts: [{ type: "text", text: "Me llamo Ana." }] }],
+			true,
+		);
 		// The model is speaking: the switch waits for its turn to end.
 		first.socket.send(
 			JSON.stringify({
@@ -439,11 +445,12 @@ test("gemini live conversation: a new configuration resumes the session on a new
 							},
 						],
 					},
+					outputTranscription: { text: "Hola, Ana." },
 				},
 				sessionResumptionUpdate: { newHandle: "h2", resumable: false },
 			}),
 		);
-		await until(() => events.length === 1, "model audio");
+		await until(() => events.length === 2, "model audio");
 		const switched = session.reconfigure(
 			config({ instructions: "Now in Spanish." }),
 		);
@@ -458,20 +465,33 @@ test("gemini live conversation: a new configuration resumes the session on a new
 		await switched;
 		const [, second] = connections;
 		assert.ok(second);
-		assert.deepEqual(second.messages[0]?.setup.sessionResumption, {
-			handle: "h3",
+		// A resumed session would keep its old setup: this is a new one, seeded with the conversation.
+		assert.deepEqual(second.messages[0]?.setup.sessionResumption, {});
+		assert.deepEqual(second.messages[0]?.setup.historyConfig, {
+			initialHistoryInClientContent: true,
 		});
 		assert.deepEqual(second.messages[0]?.setup.systemInstruction, {
 			parts: [{ text: "Now in Spanish." }],
+		});
+		await until(() => second.messages.length === 2, "history seed");
+		assert.deepEqual(second.messages[1]?.clientContent, {
+			turns: [
+				{ role: "user", parts: [{ text: "Me llamo Ana." }] },
+				{ role: "model", parts: [{ text: "Hola, Ana." }] },
+			],
+			turnComplete: true,
 		});
 		// Input after the switch goes to the new connection only.
 		session.sendTurns(
 			[{ role: "user", parts: [{ type: "text", text: "hola" }] }],
 			true,
 		);
-		await until(() => second.messages.length === 2, "client content");
-		assert.equal(second.messages[1]?.clientContent.turnComplete, true);
-		assert.ok(!first.messages.some((message) => message.clientContent));
+		await until(() => second.messages.length === 3, "client content");
+		assert.equal(second.messages[2]?.clientContent.turnComplete, true);
+		assert.equal(
+			first.messages.filter((message) => message.clientContent).length,
+			1,
+		);
 		// goAway rotates with the latest handle and the same configuration.
 		second.socket.send(
 			JSON.stringify({
@@ -486,4 +506,51 @@ test("gemini live conversation: a new configuration resumes the session on a new
 		session.close();
 		await reading;
 	});
+});
+
+test("gemini live conversation: the recorded history flattens function calls for models without historyConfig", () => {
+	const history = new ConversationHistory();
+	history.event({ kind: "input_transcript", text: "Mi pedido 7?" });
+	history.event({
+		kind: "function_calls",
+		calls: [{ id: "fc_1", name: "order_status", arguments: '{"id":"7"}' }],
+	});
+	history.functionResults([
+		{ id: "fc_1", name: "order_status", output: '{"status":"sent"}' },
+	]);
+	history.event({ kind: "output_transcript", text: "Ya salio." });
+	history.event({ kind: "turn_complete" });
+	assert.deepEqual(history.contents(true), [
+		{ role: "user", parts: [{ text: "Mi pedido 7?" }] },
+		{
+			role: "model",
+			parts: [
+				{
+					functionCall: { id: "fc_1", name: "order_status", args: { id: "7" } },
+				},
+			],
+		},
+		{
+			role: "user",
+			parts: [
+				{
+					functionResponse: {
+						id: "fc_1",
+						name: "order_status",
+						response: { status: "sent" },
+					},
+				},
+			],
+		},
+		{ role: "model", parts: [{ text: "Ya salio." }] },
+	]);
+	assert.deepEqual(history.contents(false)[1], {
+		role: "model",
+		parts: [{ text: '[called order_status({"id":"7"})]' }],
+	});
+	assert.deepEqual(history.contents(false)[2], {
+		role: "user",
+		parts: [{ text: '[order_status returned {"status":"sent"}]' }],
+	});
+	assert.ok(pcmLevel(Buffer.alloc(480)) < 1);
 });

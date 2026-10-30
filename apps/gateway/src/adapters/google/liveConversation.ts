@@ -33,10 +33,13 @@ import type {
  * Gemini Live conversations (`BidiGenerateContent`): native-audio models that listen, speak, call
  * functions, and translate.
  *
- * Gemini fixes a session's configuration at setup and ends each connection after about ten minutes.
- * Both are handled the same way: the session keeps the latest resumption handle Gemini hands out,
- * and when the configuration changes or Gemini says `goAway`, it opens a new connection with the new
- * setup and that handle, so the conversation's context carries over.
+ * Gemini ends each connection after about ten minutes and fixes a session's configuration at setup.
+ * - A connection running out (`goAway`, or the catalog's cap) resumes the same session on a new
+ *   connection with the latest resumption handle: everything the model heard carries over.
+ * - A configuration change needs a new session, because a resumed one keeps its old setup (checked
+ *   against the API: new instructions and tools are ignored). The new session is seeded with the
+ *   conversation so far, which the session records as text: transcripts of both sides, client
+ *   items, function calls and their results.
  */
 
 const AUDIO_MIME = `audio/pcm;rate=${REALTIME_AUDIO_SAMPLE_RATE}`;
@@ -46,6 +49,17 @@ const CHUNK_BYTES = (REALTIME_AUDIO_SAMPLE_RATE / 25) * 2;
 const ROTATE_EARLY_MS = 30_000;
 /** A rotation waits for a resumable moment at most this long before `goAway` runs out. */
 const FORCE_BEFORE_GO_AWAY_MS = 3000;
+/**
+ * Translation streams without turns (no `generationComplete`/`turnComplete`): a pause this long in
+ * its output ends one response.
+ */
+const TRANSLATION_PAUSE_MS = 1500;
+/** How long a replaced connection gets to close before its successor opens anyway. */
+const RETIRE_WAIT_MS = 2000;
+/** Translation output quieter than this (RMS of PCM16) between phrases is silence, not speech. */
+const SILENCE_RMS = 300;
+/** The recorded conversation keeps at most this much (text and inline images), oldest dropped. */
+const MAX_HISTORY_BYTES = 8 * 1024 * 1024;
 
 interface LiveDeps {
 	creds: (ctx: AdapterContext) => BaseCreds & { apiKey: string };
@@ -121,10 +135,14 @@ export function geminiConversationSetup(
 	upstreamModel: string,
 	profile: RealtimeConversationProfile | undefined,
 	resumptionHandle: string | null,
+	options: { seedHistory?: boolean } = {},
 ): Record<string, unknown> {
 	const nativeText =
 		config.outputModality === "text" &&
 		(profile?.outputModalities ?? []).includes("text");
+	// Some models refuse to start without a thinking level.
+	const reasoningEffort =
+		config.reasoningEffort ?? profile?.defaultReasoningEffort;
 	const generationConfig: Record<string, unknown> = {
 		responseModalities: [nativeText ? "TEXT" : "AUDIO"],
 		...(config.voice
@@ -137,12 +155,8 @@ export function geminiConversationSetup(
 		...(config.maxOutputTokens === undefined
 			? {}
 			: { maxOutputTokens: config.maxOutputTokens }),
-		...(config.reasoningEffort
-			? {
-					thinkingConfig: {
-						thinkingLevel: config.reasoningEffort.toUpperCase(),
-					},
-				}
+		...(reasoningEffort
+			? { thinkingConfig: { thinkingLevel: reasoningEffort.toUpperCase() } }
 			: {}),
 		...(config.translation
 			? {
@@ -187,18 +201,16 @@ export function geminiConversationSetup(
 				: {}),
 			...(tools.length > 0 ? { tools } : {}),
 			realtimeInputConfig: activityDetection(config),
-			...(transcription
-				? {
-						inputAudioTranscription: {
-							...(transcription.languages?.length
-								? { languageCodes: transcription.languages }
-								: {}),
-							...(transcription.keywords?.length
-								? { customVocabulary: transcription.keywords }
-								: {}),
-						},
-					}
-				: {}),
+			// Always on: the transcript of the user's speech is what a reseeded session remembers of
+			// it. The client only sees it when it asked for input transcription.
+			inputAudioTranscription: {
+				...(transcription?.languages?.length
+					? { languageCodes: transcription.languages }
+					: {}),
+				...(transcription?.keywords?.length
+					? { customVocabulary: transcription.keywords }
+					: {}),
+			},
 			// The transcript of the spoken reply is OpenAI's `output_audio_transcript`, always present.
 			...(nativeText ? {} : { outputAudioTranscription: {} }),
 			...(profile?.supportsSessionResumption
@@ -210,6 +222,9 @@ export function geminiConversationSetup(
 				: {}),
 			...(profile?.supportsContextCompression && config.truncation === "auto"
 				? { contextWindowCompression: { slidingWindow: {} } }
+				: {}),
+			...(options.seedHistory && profile?.supportsHistoryConfig
+				? { historyConfig: { initialHistoryInClientContent: true } }
 				: {}),
 		},
 	};
@@ -300,6 +315,9 @@ export function parseGeminiConversationMessage(
 	}
 	if (content?.interrupted === true) {
 		events.push({ kind: "interrupted" });
+	}
+	if (content?.generationComplete === true) {
+		events.push({ kind: "generation_complete" });
 	}
 	if (content?.turnComplete === true) {
 		events.push({ kind: "turn_complete" });
@@ -392,6 +410,169 @@ export function geminiClientContent(
 	};
 }
 
+type GeminiPart = Record<string, unknown>;
+
+interface GeminiContent {
+	role: "user" | "model";
+	parts: GeminiPart[];
+}
+
+function partsBytes(parts: GeminiPart[]): number {
+	return parts.reduce((total, part) => total + JSON.stringify(part).length, 0);
+}
+
+/**
+ * The conversation as Gemini content, recorded from both directions so a new session can be
+ * seeded with it. Speech is kept as its transcript.
+ */
+export class ConversationHistory {
+	private readonly turns: GeminiContent[] = [];
+	private bytes = 0;
+	private userSpeech = "";
+	private modelSpeech = "";
+
+	private push(role: "user" | "model", parts: GeminiPart[]): void {
+		if (parts.length === 0) {
+			return;
+		}
+		this.turns.push({ role, parts });
+		this.bytes += partsBytes(parts);
+		while (this.bytes > MAX_HISTORY_BYTES && this.turns.length > 1) {
+			const dropped = this.turns.shift();
+			this.bytes -= partsBytes(dropped?.parts ?? []);
+		}
+	}
+
+	private flushUser(): void {
+		const text = this.userSpeech.trim();
+		this.userSpeech = "";
+		if (text) {
+			this.push("user", [{ text }]);
+		}
+	}
+
+	private flushModel(): void {
+		const text = this.modelSpeech.trim();
+		this.modelSpeech = "";
+		if (text) {
+			this.push("model", [{ text }]);
+		}
+	}
+
+	/** Turns the client added (text and images; audio is remembered by its transcript). */
+	clientTurns(turns: RealtimeTurn[]): void {
+		this.flushUser();
+		this.flushModel();
+		for (const turn of turns) {
+			const parts: GeminiPart[] = [];
+			for (const part of turn.parts) {
+				if (part.type === "text") {
+					parts.push({ text: part.text });
+				} else if (part.type === "image") {
+					parts.push({
+						inlineData: { mimeType: part.mimeType, data: part.data },
+					});
+				}
+			}
+			this.push(turn.role, parts);
+		}
+	}
+
+	functionResults(results: RealtimeFunctionResult[]): void {
+		this.flushModel();
+		this.push(
+			"user",
+			results.map((result) => ({
+				functionResponse: geminiFunctionResponse(result),
+			})),
+		);
+	}
+
+	event(event: CanonicalRealtimeConversationEvent): void {
+		switch (event.kind) {
+			case "input_transcript":
+				this.flushModel();
+				this.userSpeech += event.text;
+				return;
+			case "output_transcript":
+			case "output_text":
+				this.flushUser();
+				this.modelSpeech += event.text;
+				return;
+			case "function_calls":
+				this.flushUser();
+				this.flushModel();
+				this.push(
+					"model",
+					event.calls.map((call) => ({
+						functionCall: {
+							id: call.id,
+							name: call.name,
+							args: JSON.parse(call.arguments) as unknown,
+						},
+					})),
+				);
+				return;
+			case "generation_complete":
+			case "turn_complete":
+			case "interrupted":
+				this.flushUser();
+				this.flushModel();
+				return;
+			default:
+				return;
+		}
+	}
+
+	/**
+	 * The recorded turns. Without native function parts, calls and results become text the model
+	 * can still read.
+	 */
+	contents(nativeFunctions: boolean): GeminiContent[] {
+		this.flushUser();
+		this.flushModel();
+		if (nativeFunctions) {
+			return this.turns;
+		}
+		return this.turns.map((turn) => ({
+			role: turn.role,
+			parts: turn.parts.map((part) => {
+				const call = part.functionCall as
+					| { name: string; args: unknown }
+					| undefined;
+				if (call) {
+					return {
+						text: `[called ${call.name}(${JSON.stringify(call.args)})]`,
+					};
+				}
+				const result = part.functionResponse as
+					| { name: string; response: unknown }
+					| undefined;
+				if (result) {
+					return {
+						text: `[${result.name} returned ${JSON.stringify(result.response)}]`,
+					};
+				}
+				return part;
+			}),
+		}));
+	}
+}
+
+/** Root mean square of PCM16 samples. */
+export function pcmLevel(pcm: Buffer): number {
+	const samples = Math.floor(pcm.byteLength / 2);
+	if (samples === 0) {
+		return 0;
+	}
+	let sum = 0;
+	for (let index = 0; index < samples; index += 1) {
+		const sample = pcm.readInt16LE(index * 2);
+		sum += sample * sample;
+	}
+	return Math.sqrt(sum / samples);
+}
+
 interface LiveConnection {
 	socket: WebSocket;
 	send: (message: Record<string, unknown>) => void;
@@ -409,6 +590,9 @@ export function makeGeminiRealtimeConversationHandler(
 			const url = geminiLiveUrl(c.baseUrl);
 			const queue = new EventQueue<CanonicalRealtimeConversationEvent>();
 			let config = initialConfig;
+			const history = new ConversationHistory();
+			/** Translation: a phrase is being spoken (silence between phrases is dropped). */
+			let translating = false;
 			let closed = false;
 			let current: LiveConnection;
 			let handle: string | null = null;
@@ -421,10 +605,16 @@ export function makeGeminiRealtimeConversationHandler(
 			let pending: Buffer[] = [];
 			let pendingBytes = 0;
 			let capTimer: ReturnType<typeof setTimeout> | undefined;
+			let pauseTimer: ReturnType<typeof setTimeout> | undefined;
 			let forceTimer: ReturnType<typeof setTimeout> | undefined;
-			/** A wanted reconnection: the config to open it with and who waits for it. */
+			/**
+			 * A wanted reconnection: the config to open it with, whether it changes the configuration
+			 * (a new session, seeded with the history) or only replaces the connection (resumed), and
+			 * who waits for it.
+			 */
 			let wanted: {
 				config: CanonicalRealtimeConversationConfig;
+				reconfigure: boolean;
 				waiters: Array<{ resolve: () => void; reject: (e: unknown) => void }>;
 			} | null = null;
 			let switching = false;
@@ -440,6 +630,7 @@ export function makeGeminiRealtimeConversationHandler(
 				closed = true;
 				clearTimeout(capTimer);
 				clearTimeout(forceTimer);
+				clearTimeout(pauseTimer);
 				for (const waiter of wanted?.waiters ?? []) {
 					waiter.reject(error);
 				}
@@ -525,6 +716,10 @@ export function makeGeminiRealtimeConversationHandler(
 							({ modelBusy } = message);
 						}
 						for (const event of events) {
+							if (config.translation && !translationEvent(event)) {
+								continue;
+							}
+							history.event(event);
 							queue.push(event);
 						}
 						if (resumption) {
@@ -534,7 +729,7 @@ export function makeGeminiRealtimeConversationHandler(
 							}
 						}
 						if (message.goAwayMs !== undefined) {
-							wantReconnect(config);
+							wantReconnect(config, false);
 							clearTimeout(forceTimer);
 							forceTimer = setTimeout(
 								() => void reconnect(),
@@ -593,32 +788,97 @@ export function makeGeminiRealtimeConversationHandler(
 					return;
 				}
 				capTimer = setTimeout(
-					() => wantReconnect(config),
+					() => wantReconnect(config, false),
 					Math.max(1000, capSeconds * 1000 - ROTATE_EARLY_MS),
 				);
 				capTimer.unref?.();
 			};
 
+			/**
+			 * Translation streams audio continuously, silence included: silent output outside a phrase
+			 * is dropped, and a pause after a phrase ends one response.
+			 */
+			function translationEvent(
+				event: CanonicalRealtimeConversationEvent,
+			): boolean {
+				const speech =
+					event.kind === "output_transcript" ||
+					(event.kind === "output_audio" && pcmLevel(event.pcm) >= SILENCE_RMS);
+				if (event.kind === "output_audio" && !speech && !translating) {
+					return false;
+				}
+				if (speech) {
+					translating = true;
+					clearTimeout(pauseTimer);
+					pauseTimer = setTimeout(() => {
+						translating = false;
+						queue.push({ kind: "turn_complete" });
+					}, TRANSLATION_PAUSE_MS);
+					pauseTimer.unref?.();
+				}
+				return true;
+			}
+
 			function wantReconnect(
 				next: CanonicalRealtimeConversationConfig,
+				reconfigure: boolean,
 				waiter?: { resolve: () => void; reject: (e: unknown) => void },
 			) {
 				wanted = {
 					config: next,
+					reconfigure: reconfigure || (wanted?.reconfigure ?? false),
 					waiters: [...(wanted?.waiters ?? []), ...(waiter ? [waiter] : [])],
 				};
 				maybeReconnect();
 			}
 
-			/** Reconnects at a moment Gemini can resume from: nothing in flight on either side. */
+			/** Reconnects when nothing is in flight on either side (and, to resume, Gemini allows it). */
 			function maybeReconnect() {
 				if (!wanted || switching || closed) {
 					return;
 				}
-				const quiet = resumable && !modelBusy && !userSpeaking && !activityOpen;
-				if (quiet || !profile?.supportsSessionResumption) {
+				const idle = !(modelBusy || userSpeaking || activityOpen);
+				const canResume =
+					resumable && Boolean(profile?.supportsSessionResumption);
+				if (
+					idle &&
+					(wanted.reconfigure ||
+						canResume ||
+						!profile?.supportsSessionResumption)
+				) {
 					void reconnect();
 				}
+			}
+
+			/** Fails the callers waiting on a reconnection the session closed under. */
+			function abandon(
+				waiters: Array<{ reject: (error: unknown) => void }>,
+			): void {
+				for (const waiter of waiters) {
+					waiter.reject(
+						new GatewayError({
+							class: "server",
+							message: "Gemini Live session closed while reconnecting",
+						}),
+					);
+				}
+			}
+
+			/** Closes a replaced connection; resolves once it is closed (or after a short wait). */
+			function retire(connection: LiveConnection): Promise<void> {
+				connection.retired = true;
+				if (connection.socket.readyState === connection.socket.CLOSED) {
+					return Promise.resolve();
+				}
+				return new Promise<void>((resolve) => {
+					const timer = setTimeout(resolve, RETIRE_WAIT_MS);
+					timer.unref?.();
+					connection.socket.once("close", () => {
+						clearTimeout(timer);
+						resolve();
+					});
+					connection.socket.close(1000);
+				});
 			}
 
 			async function reconnect() {
@@ -632,21 +892,55 @@ export function makeGeminiRealtimeConversationHandler(
 				flushAudio();
 				held = [];
 				const previous = current;
+				// A new configuration needs a new session; the same one resumes with its handle.
+				const resumeFrom =
+					!target.reconfigure && profile?.supportsSessionResumption
+						? handle
+						: null;
+				const seed = resumeFrom
+					? []
+					: history.contents(Boolean(profile?.supportsHistoryConfig));
 				try {
 					const textOut =
 						target.config.outputModality === "text" &&
 						(profile?.outputModalities ?? []).includes("text");
+					if (resumeFrom) {
+						// Gemini refuses to resume a session another connection still holds.
+						await retire(previous);
+						if (closed) {
+							abandon(target.waiters);
+							return;
+						}
+					}
 					const next = await open(
 						geminiConversationSetup(
 							target.config,
 							ctx.upstreamModel,
 							profile,
-							profile?.supportsSessionResumption ? handle : null,
+							resumeFrom,
+							{ seedHistory: seed.length > 0 },
 						),
 						textOut,
 					);
-					previous.retired = true;
-					previous.socket.close(1000);
+					if (!resumeFrom) {
+						void retire(previous);
+					}
+					if (closed) {
+						// The session closed while this connection was opening.
+						void retire(next);
+						abandon(target.waiters);
+						return;
+					}
+					if (seed.length > 0) {
+						// With historyConfig the seed does not prompt a reply; without it, an open turn does
+						// not either.
+						next.send({
+							clientContent: {
+								turns: seed,
+								turnComplete: Boolean(profile?.supportsHistoryConfig),
+							},
+						});
+					}
 					current = next;
 					({ config } = target);
 					modelBusy = false;
@@ -719,12 +1013,14 @@ export function makeGeminiRealtimeConversationHandler(
 						return;
 					}
 					flushAudio();
+					history.clientTurns(turns);
 					send(geminiClientContent(turns, complete));
 				},
 				sendFunctionResults(results) {
 					if (closed || results.length === 0) {
 						return;
 					}
+					history.functionResults(results);
 					send({
 						toolResponse: {
 							functionResponses: results.map(geminiFunctionResponse),
@@ -741,7 +1037,7 @@ export function makeGeminiRealtimeConversationHandler(
 						);
 					}
 					return new Promise<void>((resolve, reject) =>
-						wantReconnect(next, { resolve, reject }),
+						wantReconnect(next, true, { resolve, reject }),
 					);
 				},
 				events: queue.iterate(),
@@ -752,6 +1048,7 @@ export function makeGeminiRealtimeConversationHandler(
 					closed = true;
 					clearTimeout(capTimer);
 					clearTimeout(forceTimer);
+					clearTimeout(pauseTimer);
 					for (const waiter of wanted?.waiters ?? []) {
 						waiter.reject(
 							new GatewayError({

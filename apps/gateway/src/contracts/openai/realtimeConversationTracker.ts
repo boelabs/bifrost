@@ -77,6 +77,12 @@ interface ActiveResponse {
 	message: MessageOutput | null;
 	usage: RealtimeUsage | null;
 	metadata: Record<string, string> | null;
+	/**
+	 * The provider finished generating. Its turn may not be over yet (Gemini holds `turnComplete`,
+	 * and the usage that comes with it, for as long as playing the reply would take), so
+	 * `response.done` waits for that, or for whatever the client does next.
+	 */
+	generated: boolean;
 }
 
 function clientError(
@@ -122,6 +128,8 @@ export class RealtimeConversationTracker {
 	/** Function calls the model made, by call id, until their output arrives. */
 	private readonly calls = new Map<string, string>();
 	private userItem: UserAudioItem | null = null;
+	/** The provider reports voice activity; without it, transcripts open the user's items. */
+	private hearsActivity = false;
 	private response: ActiveResponse | null = null;
 	/** After `response.cancel`, the provider's remaining output for that turn is dropped. */
 	private suppressing = false;
@@ -407,6 +415,7 @@ export class RealtimeConversationTracker {
 		params: RealtimeResponseParams | undefined,
 		clientEventId: string | null,
 	): void {
+		this.settleGenerated();
 		if (this.response) {
 			throw clientError(
 				`Conversation already has an active response in progress: ${this.response.id}. Wait until the response is finished before creating a new one.`,
@@ -539,9 +548,11 @@ export class RealtimeConversationTracker {
 	provider(event: CanonicalRealtimeConversationEvent): void {
 		switch (event.kind) {
 			case "speech_started":
+				this.hearsActivity = true;
 				this.speechStarted();
 				return;
 			case "speech_stopped":
+				this.hearsActivity = true;
 				this.speechStopped();
 				return;
 			case "input_transcript_interim":
@@ -565,12 +576,26 @@ export class RealtimeConversationTracker {
 				return;
 			case "interrupted":
 				this.suppressing = false;
-				if (this.response) {
+				if (this.response?.generated) {
+					// Cut off while "playing": the reply itself was complete.
+					this.finishResponse("completed", null);
+				} else if (this.response) {
 					this.finishResponse("cancelled", "turn_detected");
 				}
 				return;
+			case "generation_complete":
+				this.finishUserTranscript(true);
+				if (this.suppressing) {
+					this.suppressing = false;
+					return;
+				}
+				if (this.response && !this.response.generated) {
+					this.closeMessage(this.response, "completed");
+					this.response.generated = true;
+				}
+				return;
 			case "turn_complete":
-				this.finishUserTranscript();
+				this.finishUserTranscript(true);
 				if (this.suppressing) {
 					this.suppressing = false;
 					return;
@@ -605,7 +630,17 @@ export class RealtimeConversationTracker {
 	finish(): void {
 		this.finishUserTranscript();
 		if (this.response) {
-			this.finishResponse("incomplete", null);
+			this.finishResponse(
+				this.response.generated ? "completed" : "incomplete",
+				null,
+			);
+		}
+	}
+
+	/** A generated response still waiting for its turn to end is done once anything else happens. */
+	private settleGenerated(): void {
+		if (this.response?.generated) {
+			this.finishResponse("completed", null);
 		}
 	}
 
@@ -628,6 +663,7 @@ export class RealtimeConversationTracker {
 		if (this.manual) {
 			return;
 		}
+		this.settleGenerated();
 		this.finishUserTranscript();
 		const id = itemId();
 		this.userItem = { id, transcript: "", done: false };
@@ -657,6 +693,13 @@ export class RealtimeConversationTracker {
 	}
 
 	private inputTranscript(text: string): void {
+		if (
+			!(this.manual || this.hearsActivity) &&
+			(!this.userItem || this.userItem.done)
+		) {
+			// No voice activity events (translation streams): the transcript marks the speech.
+			this.speechStarted();
+		}
 		const item = this.userItem;
 		if (!item || item.done || this.state.transcription === null) {
 			return;
@@ -669,9 +712,13 @@ export class RealtimeConversationTracker {
 		});
 	}
 
-	private finishUserTranscript(): void {
+	/**
+	 * Completes the user's transcript. `answered`: the model's turn ended, which only settles speech
+	 * it answered (a committed item); speech that interrupted it is still being transcribed.
+	 */
+	private finishUserTranscript(answered = false): void {
 		const item = this.userItem;
-		if (!item || item.done) {
+		if (!item || item.done || (answered && !this.items.has(item.id))) {
 			return;
 		}
 		item.done = true;
@@ -691,6 +738,7 @@ export class RealtimeConversationTracker {
 	}
 
 	private startResponse(): ActiveResponse {
+		this.settleGenerated();
 		if (this.response) {
 			return this.response;
 		}
@@ -703,6 +751,7 @@ export class RealtimeConversationTracker {
 			message: null,
 			usage: null,
 			metadata: this.nextMetadata,
+			generated: false,
 		};
 		this.nextMetadata = null;
 		this.response = response;

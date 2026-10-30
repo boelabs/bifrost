@@ -3266,6 +3266,7 @@
 					"maxKeywords": 1000,
 					"turnDetection": ["server_vad", "semantic_vad", "manual"],
 					"supportsSessionResumption": true,
+					"supportsHistoryConfig": true,
 					"supportsContextCompression": true,
 					"maxUpstreamSessionSeconds": 600
 				}
@@ -3324,10 +3325,12 @@
 					"maxKeywords": 1000,
 					"turnDetection": ["server_vad", "semantic_vad", "manual"],
 					"supportsSessionResumption": true,
+					"supportsHistoryConfig": true,
 					"supportsContextCompression": true,
 					"maxUpstreamSessionSeconds": 600,
 					"functionCalling": "non_blocking",
-					"reasoningEfforts": ["low", "medium", "high"]
+					"reasoningEfforts": ["low", "medium", "high"],
+					"defaultReasoningEffort": "low"
 				}
 			},
 			"pricing": {
@@ -3337,7 +3340,7 @@
 				"audioOutputCentsPerMTokens": 1200,
 				"imageInputCentsPerMTokens": 100
 			},
-			"notes": "Live API (BidiGenerateContent), native audio with extended reasoning. Function calls run NON_BLOCKING only: the model may keep talking while a call runs. It may speak filler turns while it reasons. Answers in audio only; text sessions are served from the transcript."
+			"notes": "Live API (BidiGenerateContent), native audio with extended reasoning. Function calls run NON_BLOCKING only: the model may keep talking while a call runs. It may speak filler turns while it reasons. Gemini requires a thinking level: without reasoning.effort the gateway sends low, OpenAI's default. Answers in audio only; text sessions are served from the transcript."
 		},
 		"gemini-3.1-flash-live-preview": {
 			"operations": {
@@ -3384,6 +3387,7 @@
 					"maxKeywords": 1000,
 					"turnDetection": ["server_vad", "semantic_vad", "manual"],
 					"supportsSessionResumption": true,
+					"supportsHistoryConfig": true,
 					"supportsContextCompression": true,
 					"maxUpstreamSessionSeconds": 600,
 					"reasoningEfforts": ["minimal", "low", "medium", "high"]
@@ -3470,7 +3474,7 @@
 				"inputCentsPerMTokens": 350,
 				"outputCentsPerMTokens": 2100
 			},
-			"notes": "Live API speech-to-speech translation into 70+ languages; requires session.translation.target_language (Bifrost extension). Audio in, translated audio out; no instructions, tools or text input. The source language is detected. Each connection lasts about 10 minutes; the gateway reconnects without carrying context."
+			"notes": "Live API speech-to-speech translation into 70+ languages; requires session.translation.target_language (Bifrost extension). Audio in, translated audio out; no instructions, tools or text input. The source language is detected. Each connection lasts about 10 minutes; the gateway reconnects without carrying context. Translation streams without turns; the gateway ends a response after 1.5 s without translated output."
 		}
 	}
 }

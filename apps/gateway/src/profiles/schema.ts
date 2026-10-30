@@ -380,6 +380,9 @@ const realtimeConversationOperationProfileSchema = z
 			.array(z.enum(["minimal", "low", "medium", "high"]))
 			.min(1)
 			.optional(),
+		defaultReasoningEffort: z
+			.enum(["minimal", "low", "medium", "high"])
+			.optional(),
 		supportsTextInput: z.boolean().optional(),
 		supportsImageInput: z.boolean().optional(),
 		supportsInputTranscription: z.boolean().optional(),
@@ -390,6 +393,7 @@ const realtimeConversationOperationProfileSchema = z
 			.min(1)
 			.optional(),
 		supportsSessionResumption: z.boolean().optional(),
+		supportsHistoryConfig: z.boolean().optional(),
 		supportsContextCompression: z.boolean().optional(),
 		maxUpstreamSessionSeconds: z.int().positive().optional(),
 	})

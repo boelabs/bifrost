@@ -359,3 +359,14 @@ function must() {
 	assert.ok(handler);
 	return handler;
 }
+
+test("gemini live: a protocol refusal naming BidiGenerateContent is not a rate limit", () => {
+	assert.equal(
+		closeStatus(
+			1008,
+			"BidiGenerateContent session is already connected to an existing client",
+		),
+		400,
+	);
+	assert.equal(closeStatus(1011, "Rate limit exceeded"), 429);
+});

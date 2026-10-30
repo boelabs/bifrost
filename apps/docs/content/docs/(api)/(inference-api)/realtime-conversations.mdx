@@ -55,21 +55,23 @@ The provider session opens with the first event that needs it (audio, an item, o
 | `instructions` | The model's system instruction. |
 | `output_modalities` | `["audio"]` (default) or `["text"]`. Gemini's Live models only speak, so a text session gets the transcript of the spoken reply as `response.output_text.*`; it is billed as audio output. |
 | `audio.input.format` | `audio/pcm` at 24 kHz (default) or 16 kHz, `audio/pcmu`, `audio/pcma`. |
-| `audio.input.transcription` | Turns on the transcript of the user's speech. Gemini transcribes it itself, so `model` is accepted and ignored; `language`/`languages` and `keywords` become its language hints and vocabulary. |
+| `audio.input.transcription` | Turns on the transcript of the user's speech. Gemini transcribes it itself, so `model` is accepted and ignored; `language`/`languages` and `keywords` become its language hints and vocabulary. The gateway has Gemini transcribe the user's speech either way, because that transcript is how a reconfigured session remembers it (see below); it is billed at Gemini's text output rate, a fraction of a cent per minute. |
 | `audio.input.turn_detection` | `server_vad` (`threshold`, `prefix_padding_ms`, `silence_duration_ms`), `semantic_vad` (`eagerness`), or `null` for manual turns. `interrupt_response: false` lets the model finish while the user talks. `create_response: false` and `idle_timeout_ms` are refused: Gemini always answers when a turn ends. |
 | `audio.output.format` | `audio/pcm` at 24 kHz (default), `audio/pcmu`, `audio/pcma`. |
 | `audio.output.voice` | One of Gemini's prebuilt voices (`Kore`, `Puck`, `Charon`, `Zephyr`, …; the full list is in the model's catalog profile). OpenAI's voice names are refused with the list. The voice cannot change once the model has spoken. |
 | `tools` | Function tools, plus the Bifrost extension `{ "type": "google_search" }` for Gemini's web search. MCP tools are refused. |
 | `tool_choice` | `auto` (default) or `none`. |
 | `max_output_tokens` | Per session. |
-| `reasoning.effort` | Only on models that take it: `low`/`medium`/`high` on `gemini-3.8-live-extended-thinking`, `minimal` to `high` on `gemini-3.1-flash-live-preview`. `gemini-3.8-live` reasons on its own and refuses it. |
+| `reasoning.effort` | Only on models that take it: `low`/`medium`/`high` on `gemini-3.8-live-extended-thinking` (which requires one: `low`, OpenAI's default, when unset), `minimal` to `high` on `gemini-3.1-flash-live-preview`. `gemini-3.8-live` reasons on its own and refuses it. |
 | `truncation` | `auto` (default) lets the provider compress old context so a conversation can run past its context window; `disabled` keeps everything (Gemini then ends audio sessions after 15 minutes). |
-| `translation` | Bifrost extension, required by `gemini-3.5-live-translate-preview`: `{ "target_language": "es", "echo_target_language": false }`. The source language is detected. |
+| `translation` | Bifrost extension, required by `gemini-3.5-live-translate-preview`: `{ "target_language": "es", "echo_target_language": false }`. The source language is detected. Translation streams without turns, so each response is one phrase: it ends after 1.5 seconds without translated speech, and the silence between phrases is not sent. |
 
-Changing instructions, tools, voice, turn detection or any other provider setting mid-session
-reconnects the provider session with the new setup and Gemini's resumption handle, so the
-conversation's context carries over. The switch waits until neither the model nor the user is
-speaking.
+Gemini fixes a session's setup when it opens, and a resumed session keeps its old setup. So
+changing instructions, tools, voice, turn detection or any other provider setting mid-session opens
+a new provider session with the new setup, seeded with the conversation so far: the transcripts of
+both sides, the client's text and image items, and function calls with their results. The model
+keeps the content of the conversation, not the audio itself. The switch waits until neither the
+model nor the user is speaking.
 
 ## Turns and responses
 
@@ -94,6 +96,9 @@ speaking.
 Responses stream as OpenAI's events: `response.created`, `response.output_item.added`,
 `response.content_part.added`, `response.output_audio.delta` with
 `response.output_audio_transcript.delta`, then the `.done` events and `response.done` with `usage`.
+Gemini reports a turn over only once playing it would have finished, and its usage comes with that.
+The content's `.done` events arrive when generation ends; `response.done` waits for the usage, or is
+sent at once (with `usage: null`) when the client creates another response or the user speaks.
 
 ### What Gemini cannot do
 

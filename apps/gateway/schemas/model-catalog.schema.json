@@ -506,6 +506,10 @@
 					"minItems": 1,
 					"uniqueItems": true
 				},
+				"defaultReasoningEffort": {
+					"enum": ["minimal", "low", "medium", "high"],
+					"description": "Sent when a session sets no reasoning.effort, for models that refuse to start without one."
+				},
 				"supportsTextInput": { "type": "boolean" },
 				"supportsImageInput": { "type": "boolean" },
 				"supportsInputTranscription": { "type": "boolean" },
@@ -521,6 +525,10 @@
 					"uniqueItems": true
 				},
 				"supportsSessionResumption": { "type": "boolean" },
+				"supportsHistoryConfig": {
+					"type": "boolean",
+					"description": "A new session can be seeded with the conversation so far, function calls included (Gemini historyConfig)."
+				},
 				"supportsContextCompression": { "type": "boolean" },
 				"maxUpstreamSessionSeconds": { "type": "integer", "minimum": 1 }
 			}

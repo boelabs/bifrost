@@ -233,6 +233,8 @@ export type CanonicalRealtimeConversationEvent =
 	| { kind: "function_calls_cancelled"; ids: string[] }
 	/** The user's speech cut the reply short. */
 	| { kind: "interrupted" }
+	/** The model has generated its whole reply (it may still be "playing" it). */
+	| { kind: "generation_complete" }
 	/** The model's turn is over. */
 	| { kind: "turn_complete" }
 	| { kind: "usage"; usage: RealtimeUsage };
@@ -257,6 +259,8 @@ export interface RealtimeConversationProfile {
 	supportsGoogleSearch?: boolean;
 	/** Accepted `reasoning.effort` values. Absent = reasoning is not configurable. */
 	reasoningEfforts?: RealtimeReasoningEffort[];
+	/** Sent when the session sets no effort, for models that refuse to start without one. */
+	defaultReasoningEffort?: RealtimeReasoningEffort;
 	/** Accepts text items from the client. */
 	supportsTextInput?: boolean;
 	supportsImageInput?: boolean;
@@ -267,8 +271,13 @@ export interface RealtimeConversationProfile {
 	translation?: boolean;
 	/** How turns may end. Absent = all. */
 	turnDetection?: Array<"server_vad" | "semantic_vad" | "manual">;
-	/** The provider can resume a session on a new connection (context kept). */
+	/** The provider can resume a session on a new connection (context kept, configuration not). */
 	supportsSessionResumption?: boolean;
+	/**
+	 * A new session can be seeded with the conversation so far (Gemini's `historyConfig`, function
+	 * calls included). Without it, history is sent as plain turns and function calls as text.
+	 */
+	supportsHistoryConfig?: boolean;
 	/** The provider can compress old context so the session outlives its context window. */
 	supportsContextCompression?: boolean;
 	/** The provider ends a single upstream connection after this long; the gateway reconnects. */
