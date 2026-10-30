@@ -44,6 +44,7 @@ const operations = [
 	["image.edit", "Image editing"],
 	["embedding.create", "Embeddings"],
 	["audio.transcribe", "Audio transcription"],
+	["audio.transcribe.realtime", "Realtime transcription"],
 	["video.generate", "Video generation"],
 	["rerank", "Reranking"],
 ] as const;

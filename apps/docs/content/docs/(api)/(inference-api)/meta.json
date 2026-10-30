@@ -9,6 +9,7 @@
 		"images",
 		"videos",
 		"audio-transcriptions",
+		"realtime-transcription",
 		"---Search and vectors---",
 		"embeddings",
 		"reranking",

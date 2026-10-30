@@ -890,6 +890,7 @@ const routerSettingsSchema = z
 				"images.edits",
 				"videos.generations",
 				"audio.transcriptions",
+				"realtime.transcription",
 				"embeddings",
 				"rerank",
 			]),

@@ -160,9 +160,10 @@ For a new model, establish from the provider's own pages, with a URL for each:
 
 For a transcription model, the `audio.transcribe` profile replaces items 3 to 6. Establish:
 
-1. Whether it transcribes files (`/audio/transcriptions`, Gemini's Interactions API) or live audio
-   (a realtime WebSocket, Gemini's Live API). A live-only model needs the realtime transcription
-   operation; until the gateway serves it for that provider, list the model under "Out of scope".
+1. Whether it transcribes files (`/audio/transcriptions`, Gemini's Interactions API; the
+   `audio.transcribe` operation) or live audio (a realtime WebSocket, Gemini's Live API; the
+   `audio.transcribe.realtime` operation, served today by the Google adapter only). A live model on
+   a provider whose adapter has no realtime transcription goes under "Out of scope".
 2. Pricing per 1M tokens for audio input and text output. A model billed per minute has no field
    for it: leave it out and say so.
 3. `responseFormats` it returns, whether it streams (`supportsStreaming`), and the timestamp
@@ -172,6 +173,10 @@ For a transcription model, the `audio.transcribe` profile replaces items 3 to 6.
    diarization (`diarized_json` in `responseFormats`).
 5. Every pair of features the provider documents as rejected together (`incompatibleFeatures`, for
    example vocabulary with diarization), and the upload limit (`maxFileBytes`).
+
+A live model's `audio.transcribe.realtime` profile declares `supportsKeywords`, `maxKeywords`,
+`supportsLanguageHints`, `modes`, the `turnDetection` values it accepts (`server_vad`, `manual`) and
+`maxUpstreamSessionSeconds` when the provider caps one connection.
 
 Copy the closest existing transcription entry of the same provider; the adapter decides how each
 field reaches the provider, so a new id on an adapter that already transcribes needs no code.

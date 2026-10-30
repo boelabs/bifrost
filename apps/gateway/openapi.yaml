@@ -1933,6 +1933,7 @@ paths:
               - image.edit
               - video.generate
               - audio.transcribe
+              - audio.transcribe.realtime
               - embedding.create
               - rerank
       responses:
@@ -3533,6 +3534,7 @@ components:
           - image.edit
           - video.generate
           - audio.transcribe
+          - audio.transcribe.realtime
           - embedding.create
           - rerank
       additionalProperties:
@@ -3546,6 +3548,7 @@ components:
         - image.edit
         - video.generate
         - audio.transcribe
+        - audio.transcribe.realtime
         - embedding.create
         - rerank
     Pricing:
@@ -3630,6 +3633,7 @@ components:
           - image.edit
           - video.generate
           - audio.transcribe
+          - audio.transcribe.realtime
           - embedding.create
           - rerank
       additionalProperties:
@@ -3640,6 +3644,7 @@ components:
         - image.edit
         - video.generate
         - audio.transcribe
+        - audio.transcribe.realtime
         - embedding.create
         - rerank
       description: Advanced operation-to-transport override. Defaults normally come from the adapter.
@@ -3653,6 +3658,7 @@ components:
           - images.edits
           - videos.generations
           - audio.transcriptions
+          - realtime.transcription
           - embeddings
           - rerank
           - all
@@ -3664,6 +3670,7 @@ components:
         - images.edits
         - videos.generations
         - audio.transcriptions
+        - realtime.transcription
         - embeddings
         - rerank
         - all
@@ -4029,6 +4036,16 @@ components:
               required:
                 - json
                 - stream
+            realtime.transcription:
+              type: object
+              properties:
+                json:
+                  $ref: "#/components/schemas/ExecutionPolicy"
+                stream:
+                  $ref: "#/components/schemas/ExecutionPolicy"
+              required:
+                - json
+                - stream
             embeddings:
               type: object
               properties:
@@ -4055,6 +4072,7 @@ components:
             - images.edits
             - videos.generations
             - audio.transcriptions
+            - realtime.transcription
             - embeddings
             - rerank
         routingStrategy:
@@ -6950,6 +6968,7 @@ components:
           - images.edits
           - videos.generations
           - audio.transcriptions
+          - realtime.transcription
           - embeddings
           - rerank
           - all
@@ -6961,6 +6980,7 @@ components:
         - images.edits
         - videos.generations
         - audio.transcriptions
+        - realtime.transcription
         - embeddings
         - rerank
         - all

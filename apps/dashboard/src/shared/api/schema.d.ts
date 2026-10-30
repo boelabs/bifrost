@@ -2127,6 +2127,7 @@ export interface paths {
 						| "image.edit"
 						| "video.generate"
 						| "audio.transcribe"
+						| "audio.transcribe.realtime"
 						| "embedding.create"
 						| "rerank";
 				};
@@ -3239,6 +3240,10 @@ export interface components {
 					stream: components["schemas"]["ExecutionPolicy"];
 				};
 				"audio.transcriptions": {
+					json: components["schemas"]["ExecutionPolicy"];
+					stream: components["schemas"]["ExecutionPolicy"];
+				};
+				"realtime.transcription": {
 					json: components["schemas"]["ExecutionPolicy"];
 					stream: components["schemas"]["ExecutionPolicy"];
 				};

@@ -1,4 +1,5 @@
 import type { TextCapabilities, ReasoningSpec } from "#core/reasoning.ts";
+import type { RealtimeTranscriptionProfile } from "#core/realtime.ts";
 import type { OperationProfiles } from "#profiles/types.ts";
 import type { EmbeddingProfile } from "#core/embeddings.ts";
 import type { UpstreamTransport } from "#core/transport.ts";
@@ -71,6 +72,12 @@ export function transcriptionProfileFor(
 	return meta.operations?.["audio.transcribe"] as
 		| TranscriptionProfile
 		| undefined;
+}
+
+export function realtimeTranscriptionProfileFor(
+	meta: ResolvedModelMetadata,
+): RealtimeTranscriptionProfile | undefined {
+	return meta.operations?.["audio.transcribe.realtime"];
 }
 
 export function videoProfileFor(

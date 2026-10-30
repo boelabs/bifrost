@@ -4,6 +4,7 @@ import type { CallType } from "#core/callType.ts";
 import { decryptRecord } from "#db/crypto.ts";
 
 import {
+	realtimeTranscriptionProfileFor,
 	transcriptionProfileFor,
 	embeddingProfileFor,
 	rerankProfileFor,
@@ -92,6 +93,12 @@ function resolveCandidates(
 			if (
 				callType === "audio.transcriptions" &&
 				!transcriptionProfileFor(meta)
+			) {
+				continue;
+			}
+			if (
+				callType === "realtime.transcription" &&
+				!realtimeTranscriptionProfileFor(meta)
 			) {
 				continue;
 			}

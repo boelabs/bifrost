@@ -87,6 +87,9 @@
 				"image.edit": { "$ref": "#/$defs/imageModelProfile" },
 				"video.generate": { "$ref": "#/$defs/videoModelProfile" },
 				"audio.transcribe": { "$ref": "#/$defs/transcriptionProfile" },
+				"audio.transcribe.realtime": {
+					"$ref": "#/$defs/realtimeTranscriptionProfile"
+				},
 				"embedding.create": { "$ref": "#/$defs/embeddingProfile" },
 				"rerank": { "$ref": "#/$defs/rerankProfile" }
 			},
@@ -443,6 +446,29 @@
 					}
 				},
 				"maxFileBytes": { "type": "integer", "minimum": 1 }
+			}
+		},
+		"realtimeTranscriptionProfile": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"transport": { "type": "string" },
+				"supportsKeywords": { "type": "boolean" },
+				"maxKeywords": { "type": "integer", "minimum": 1 },
+				"supportsLanguageHints": { "type": "boolean" },
+				"modes": {
+					"type": "array",
+					"items": { "enum": ["verbatim", "smart"] },
+					"minItems": 1,
+					"uniqueItems": true
+				},
+				"turnDetection": {
+					"type": "array",
+					"items": { "enum": ["server_vad", "manual"] },
+					"minItems": 1,
+					"uniqueItems": true
+				},
+				"maxUpstreamSessionSeconds": { "type": "integer", "minimum": 1 }
 			}
 		},
 		"embeddingProfile": {

@@ -1,4 +1,5 @@
 import type { TextCapabilities, ReasoningSpec } from "#core/reasoning.ts";
+import type { RealtimeTranscriptionProfile } from "#core/realtime.ts";
 import type { ParameterSupportMap } from "#catalog/parameters.ts";
 import type { EmbeddingProfile } from "#core/embeddings.ts";
 import type { UpstreamTransport } from "#core/transport.ts";
@@ -71,6 +72,8 @@ export interface OperationProfiles {
 	"image.edit"?: ImageModelProfile & OperationTransport;
 	"video.generate"?: VideoModelProfile & OperationTransport;
 	"audio.transcribe"?: TranscriptionProfile & OperationTransport;
+	"audio.transcribe.realtime"?: RealtimeTranscriptionProfile &
+		OperationTransport;
 	"embedding.create"?: EmbeddingProfile & OperationTransport;
 	rerank?: RerankProfile & OperationTransport;
 }

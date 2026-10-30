@@ -19,6 +19,11 @@ import type {
 } from "#core/videos.ts";
 
 import type {
+	CanonicalRealtimeTranscriptionConfig,
+	CanonicalRealtimeTranscriptionEvent,
+} from "#core/realtime.ts";
+
+import type {
 	CanonicalChatStreamChunk,
 	CanonicalChatResponse,
 	CanonicalChatRequest,
@@ -243,6 +248,32 @@ export interface TranscriptionHandler {
 	mapError: (err: unknown, ctx: AdapterContext) => GatewayError;
 }
 
+/**
+ * One live transcription session at the provider. It may span several upstream connections (a
+ * provider that caps a connection's length is reconnected behind it), but the caller sees one
+ * ordered event stream.
+ */
+export interface RealtimeTranscriptionSession {
+	/** 16-bit little-endian mono PCM at `REALTIME_AUDIO_SAMPLE_RATE`. */
+	appendAudio: (pcm: Buffer) => void;
+	/** Manual turns: the client started an utterance. */
+	startUtterance: () => void;
+	/** Ends the open utterance: the client committed it (manual) or flushed it early (VAD). */
+	endUtterance: () => void;
+	/** Ends when the session closes; throws a GatewayError when the provider fails it. */
+	events: AsyncIterable<CanonicalRealtimeTranscriptionEvent>;
+	close: () => void;
+}
+
+/** An adapter's live-audio transcription handler. */
+export interface RealtimeTranscriptionHandler {
+	/** Resolves once the provider accepted the session configuration. */
+	connect: (
+		config: CanonicalRealtimeTranscriptionConfig,
+		ctx: AdapterContext,
+	) => Promise<RealtimeTranscriptionSession>;
+}
+
 /** An adapter's canonical embeddings handler. No streaming. */
 export interface EmbeddingsHandler {
 	buildRequest: (
@@ -321,6 +352,7 @@ export interface Adapter {
 	imageEdit?: ImageHandler;
 	videoGeneration?: VideoHandler;
 	audioTranscription?: TranscriptionHandler;
+	realtimeTranscription?: RealtimeTranscriptionHandler;
 	embeddings?: EmbeddingsHandler;
 	rerank?: RerankHandler;
 	/** Upstream transports per CallType. */

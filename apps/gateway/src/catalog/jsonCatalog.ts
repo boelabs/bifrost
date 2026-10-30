@@ -31,6 +31,7 @@ const OPERATION_IDS = new Set<keyof OperationProfiles>([
 	"image.edit",
 	"video.generate",
 	"audio.transcribe",
+	"audio.transcribe.realtime",
 	"embedding.create",
 	"rerank",
 ]);

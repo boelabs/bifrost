@@ -1,0 +1,84 @@
+---
+title: "Realtime transcription"
+description: "GET /v1/realtime?intent=transcription — OpenAI's Realtime API in transcription mode."
+---
+
+Transcribe live audio over a WebSocket. The endpoint speaks OpenAI's Realtime API in transcription
+mode, so OpenAI's SDKs and clients work unchanged; the public model must support
+`audio.transcribe.realtime` (today `gemini-3.5-transcribe-live`, through Gemini's Live API).
+
+## Connecting
+
+Open a WebSocket to `$GATEWAY/v1/realtime?intent=transcription` with your virtual key in the
+`Authorization: Bearer` header. Only transcription sessions exist: a connection without
+`intent=transcription`, or with a `model` query parameter, is refused with `400` before the upgrade.
+The gateway answers with `session.created`.
+
+## Session
+
+Send `session.update` with `session.type: "transcription"`. The model goes in
+`audio.input.transcription.model`; the provider session opens when it is set:
+
+```json
+{
+  "type": "session.update",
+  "session": {
+    "type": "transcription",
+    "audio": {
+      "input": {
+        "format": { "type": "audio/pcm", "rate": 24000 },
+        "transcription": {
+          "model": "transcribe-live",
+          "languages": ["es-419", "en-US"],
+          "keywords": ["Bifrost", "AC-42"],
+          "transcription_mode": "smart"
+        },
+        "turn_detection": null
+      }
+    }
+  }
+}
+```
+
+| Field | Behavior |
+|---|---|
+| `format` | `audio/pcm` at 24 kHz (OpenAI's default) or 16 kHz, `audio/pcmu`, `audio/pcma`. The gateway converts to the provider's format. |
+| `transcription.language` / `languages` | Language hints (BCP-47 for Gemini). Send one or the other. |
+| `transcription.keywords` | Vocabulary hints; up to 1,000 for Gemini. |
+| `transcription.transcription_mode` | Bifrost extension: `verbatim` (default) or `smart`, which removes fillers and formats numbers. |
+| `transcription.prompt`, `delay`, `noise_reduction` | Accepted; Gemini has no equivalent, so they are not sent. |
+| `turn_detection` | `null`: each `input_audio_buffer.commit` ends an utterance. `server_vad` or `semantic_vad`: the provider detects pauses. |
+| `include` | `item.input_audio_transcription.interim` adds the interim event below. |
+
+Changing the model, languages, keywords, mode or turn detection opens a new provider session, since
+the provider fixes its configuration when a session starts. Changing only the audio format does not.
+
+## Audio and transcripts
+
+Send audio with `input_audio_buffer.append` (base64). With `turn_detection: null`, end each utterance
+with `input_audio_buffer.commit`; `input_audio_buffer.clear` discards the open one. The gateway
+answers with OpenAI's events:
+
+- `input_audio_buffer.committed` and `conversation.item.added` for each utterance;
+  `input_audio_buffer.speech_started` and `speech_stopped` around it with server VAD.
+- `conversation.item.input_audio_transcription.delta` while the provider is still listening.
+- `conversation.item.input_audio_transcription.completed` with the final `transcript` and, when the
+  provider reported it, `usage` in tokens.
+
+Gemini revises its running guess; OpenAI's deltas only append. So a delta carries only text that
+extends what was already sent, and `completed` always carries the authoritative transcript. To see
+every revision, include `item.input_audio_transcription.interim`: each
+`conversation.item.input_audio_transcription.interim` event carries the full current `transcript`.
+
+## Limits
+
+- A connection lasts at most 60 minutes. Gemini ends a provider session after 10 minutes; the gateway
+  reconnects behind the same public session, so audio keeps flowing.
+- Live sessions have no diarization or word timestamps; use
+  [Audio transcriptions](/docs/audio-transcriptions) with `gemini-3.5-transcribe` for those.
+- `REALTIME_WEBSOCKET_MAX_CONNECTIONS` and `REALTIME_WEBSOCKET_MAX_CONNECTIONS_PER_KEY` cap open
+  sessions per process and per key.
+
+Each provider session is logged as one `realtime.transcription` operation with its usage and cost.
+When the provider reports no usage, the gateway estimates input tokens from the audio duration
+(25 tokens per second, Google's published rate) and marks the operation `usageEstimated`.

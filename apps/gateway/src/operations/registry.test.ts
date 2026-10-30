@@ -16,6 +16,7 @@ test("registry separates public operations from internal CallTypes", () => {
 			"image.edit",
 			"video.generate",
 			"audio.transcribe",
+			"audio.transcribe.realtime",
 			"embedding.create",
 			"rerank",
 		],
@@ -24,6 +25,14 @@ test("registry separates public operations from internal CallTypes", () => {
 	assert.equal(callTypeForOperation("video.generate"), "videos.generations");
 	assert.equal(callTypeForOperation("embedding.create"), "embeddings");
 	assert.equal(callTypeForOperation("rerank"), "rerank");
+	assert.equal(
+		callTypeForOperation("audio.transcribe.realtime"),
+		"realtime.transcription",
+	);
+	assert.equal(
+		operationForCallType("realtime.transcription")?.publicEndpoints[0],
+		"/v1/realtime",
+	);
 	assert.equal(operationForCallType("chat")?.id, "text.generate");
 	assert.equal(
 		operationForCallType("embeddings")?.publicEndpoints[0],

@@ -345,6 +345,24 @@ const transcriptionOperationProfileSchema = z
 	})
 	.strict();
 
+const realtimeTranscriptionOperationProfileSchema = z
+	.object({
+		...transportField,
+		supportsKeywords: z.boolean().optional(),
+		maxKeywords: z.int().positive().optional(),
+		supportsLanguageHints: z.boolean().optional(),
+		modes: z
+			.array(z.enum(["verbatim", "smart"]))
+			.min(1)
+			.optional(),
+		turnDetection: z
+			.array(z.enum(["server_vad", "manual"]))
+			.min(1)
+			.optional(),
+		maxUpstreamSessionSeconds: z.int().positive().optional(),
+	})
+	.strict();
+
 const videoOperationProfileSchema = z
 	.object({
 		...transportField,
@@ -481,6 +499,8 @@ export const operationProfilesSchema = z
 		"image.edit": imageOperationProfileSchema.optional(),
 		"video.generate": videoOperationProfileSchema.optional(),
 		"audio.transcribe": transcriptionOperationProfileSchema.optional(),
+		"audio.transcribe.realtime":
+			realtimeTranscriptionOperationProfileSchema.optional(),
 		"embedding.create": embeddingOperationProfileSchema.optional(),
 		rerank: rerankOperationProfileSchema.optional(),
 	})

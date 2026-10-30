@@ -1,6 +1,7 @@
 import { summaryVisible, toUpstreamReasoningEffort } from "#core/reasoning.ts";
 import { mergeExtraBody, mergeExtraBodyDeep } from "#core/extraBody.ts";
 import { type BaseCreds, requireApiKeyCreds } from "#adapters/creds.ts";
+import { makeGeminiRealtimeTranscriptionHandler } from "./live.ts";
 import { mapUpstreamHttpError } from "#adapters/upstreamError.ts";
 import { upstreamFetch } from "#gateway/instrumentedTransport.ts";
 import { assertNoPrefixCachePolicy } from "#core/promptCache.ts";
@@ -2308,6 +2309,7 @@ export const googleAdapter: Adapter = {
 		"images.edits",
 		"videos.generations",
 		"audio.transcriptions",
+		"realtime.transcription",
 		"embeddings",
 	]),
 	chat,
@@ -2315,6 +2317,10 @@ export const googleAdapter: Adapter = {
 	imageEdit: imageHandler,
 	videoGeneration,
 	audioTranscription,
+	realtimeTranscription: makeGeminiRealtimeTranscriptionHandler({
+		creds,
+		mapError: mapGoogleError,
+	}),
 	embeddings,
 	reasoningKinds: new Set<ReasoningControlKind>([
 		"gemini_level",
@@ -2377,6 +2383,10 @@ export const googleAdapter: Adapter = {
 		"audio.transcriptions": {
 			supported: ["interactions"],
 			default: "interactions",
+		},
+		"realtime.transcription": {
+			supported: ["bidi_generate_content"],
+			default: "bidi_generate_content",
 		},
 		embeddings: {
 			supported: ["embed_content"],

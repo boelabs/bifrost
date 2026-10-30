@@ -101,6 +101,10 @@ function addModalitiesForOperation(
 			input.add("file");
 			output.add("text");
 			break;
+		case "audio.transcribe.realtime":
+			input.add("audio");
+			output.add("text");
+			break;
 		case "embedding.create":
 			input.add("text");
 			output.add("embedding");

@@ -9,7 +9,8 @@
 			"https://ai.google.dev/gemini-api/docs/models",
 			"https://ai.google.dev/gemini-api/docs/pricing",
 			"https://ai.google.dev/gemini-api/docs/thinking",
-			"https://ai.google.dev/gemini-api/docs/transcribe"
+			"https://ai.google.dev/gemini-api/docs/transcribe",
+			"https://ai.google.dev/gemini-api/docs/live-api/live-transcribe"
 		]
 	},
 	"models": {
@@ -205,6 +206,23 @@
 				"outputCentsPerMTokens": 1200
 			},
 			"notes": "Interactions API. Audio up to 1 hour, 30 minutes with diarization or word timestamps (srt/vtt request word timestamps); Google enforces the duration. Diarization attributes up to 8 speakers."
+		},
+		"gemini-3.5-transcribe-live": {
+			"operations": {
+				"audio.transcribe.realtime": {
+					"supportsKeywords": true,
+					"maxKeywords": 1000,
+					"supportsLanguageHints": true,
+					"modes": ["verbatim", "smart"],
+					"turnDetection": ["server_vad", "manual"],
+					"maxUpstreamSessionSeconds": 600
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 350,
+				"outputCentsPerMTokens": 2100
+			},
+			"notes": "Live API (BidiGenerateContent). Gemini ends a session after 10 minutes; the gateway reconnects behind one public session. No diarization or word timestamps live."
 		},
 		"gemini-embedding-2": {
 			"operations": {

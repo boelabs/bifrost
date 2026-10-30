@@ -189,6 +189,17 @@ export const env = createEnv({
 			.int()
 			.positive()
 			.default(64),
+		/** Live `/v1/realtime` transcription sessions, per gateway process and per key. */
+		REALTIME_WEBSOCKET_MAX_CONNECTIONS: z.coerce
+			.number()
+			.int()
+			.positive()
+			.default(500),
+		REALTIME_WEBSOCKET_MAX_CONNECTIONS_PER_KEY: z.coerce
+			.number()
+			.int()
+			.positive()
+			.default(20),
 
 		/** One connection string; see storage/config.ts. Unset means no object storage. */
 		OBJECT_STORAGE_URL: z.string().optional(),
