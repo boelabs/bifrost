@@ -1,8 +1,15 @@
-import { getCachedVirtualKey } from "./virtualKeyCache.ts";
+import {
+	REALTIME_SECRET_PREFIX,
+	resolveRealtimeSecret,
+} from "./realtimeSecrets.ts";
+import {
+	getCachedVirtualKeyByHash,
+	getCachedVirtualKey,
+} from "./virtualKeyCache.ts";
 import { createHash, timingSafeEqual } from "node:crypto";
 import type { Context, MiddlewareHandler } from "hono";
 import { type Permission, roleHas } from "./roles.ts";
-import type { AppEnv, Auth } from "./types.ts";
+import type { AppEnv, Auth, VirtualKeyAuth } from "./types.ts";
 import { GatewayError } from "#core/errors.ts";
 import { assertCsrfToken } from "./csrf.ts";
 import { getCookie } from "hono/cookie";
@@ -83,7 +90,18 @@ export async function authenticateRequest(c: Context): Promise<Auth> {
 		return { type: "master" };
 	}
 
+	if (key.startsWith(REALTIME_SECRET_PREFIX)) {
+		return authenticateRealtimeSecret(c, key);
+	}
+
 	const vk = await getCachedVirtualKey(key);
+	return activeVirtualKey(vk);
+}
+
+function activeVirtualKey(vk: VirtualKeyAuth | null): {
+	type: "virtual";
+	key: VirtualKeyAuth;
+} {
 	if (!vk) {
 		throw new GatewayError({ class: "auth", message: "Invalid API key" });
 	}
@@ -94,6 +112,40 @@ export async function authenticateRequest(c: Context): Promise<Auth> {
 		throw new GatewayError({ class: "auth", message: "API key has expired" });
 	}
 	return { type: "virtual", key: vk };
+}
+
+/**
+ * A realtime client secret authenticates as the key that minted it (still checked: a disabled or
+ * expired key takes its secrets with it), and only to open a `/v1/realtime` WebSocket.
+ */
+async function authenticateRealtimeSecret(
+	c: Context,
+	value: string,
+): Promise<Auth> {
+	if (
+		c.req.path !== "/v1/realtime" ||
+		c.req.header("upgrade")?.toLowerCase() !== "websocket"
+	) {
+		throw new GatewayError({
+			class: "auth",
+			message: "Client secrets only open /v1/realtime sessions",
+		});
+	}
+	const secret = await resolveRealtimeSecret(value);
+	if (!secret) {
+		throw new GatewayError({
+			class: "auth",
+			message: "Client secret is invalid or expired",
+		});
+	}
+	const realtimeSecret = { session: secret.session };
+	if (secret.keyHash === null) {
+		return { type: "master", realtimeSecret };
+	}
+	const auth = activeVirtualKey(
+		await getCachedVirtualKeyByHash(secret.keyHash),
+	);
+	return { ...auth, realtimeSecret };
 }
 
 /** Resolves the identity (master key, virtual key, or session) and stores it in c.get('auth'). */

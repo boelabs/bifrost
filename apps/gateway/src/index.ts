@@ -1,3 +1,4 @@
+import { realtimeClientSecretsHandler } from "./endpoints/realtimeClientSecrets.ts";
 import { type WebSocketServerLike, serve } from "@hono/node-server";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { GatewayError } from "./core/errors.ts";
@@ -329,6 +330,7 @@ app.post("/v1/chat/completions", chatCompletionsHandler);
 app.post("/v1/responses", responsesHandler);
 app.get("/v1/responses", responsesWebSocketHandler);
 app.get("/v1/realtime", realtimeWebSocketHandler);
+app.post("/v1/realtime/client_secrets", realtimeClientSecretsHandler);
 app.post("/v1/responses/compact", compactResponseHandler);
 app.get("/v1/responses/:id", retrieveResponseHandler);
 app.delete("/v1/responses/:id", deleteResponseHandler);

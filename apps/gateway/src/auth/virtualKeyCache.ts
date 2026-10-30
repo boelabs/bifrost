@@ -31,10 +31,16 @@ function toAuth(row: VirtualKeyRow): VirtualKeyAuth {
 }
 
 /** Virtual key lookup by its plaintext value, cached in Redis (positive and negative). */
-export async function getCachedVirtualKey(
+export function getCachedVirtualKey(
 	rawKey: string,
 ): Promise<VirtualKeyAuth | null> {
-	const hash = hashVirtualKey(rawKey);
+	return getCachedVirtualKeyByHash(hashVirtualKey(rawKey));
+}
+
+/** Virtual key lookup by the hash of its value (what a realtime client secret remembers). */
+export async function getCachedVirtualKeyByHash(
+	hash: string,
+): Promise<VirtualKeyAuth | null> {
 	const ck = cacheKey(hash);
 
 	const cached = await redis.get(ck);

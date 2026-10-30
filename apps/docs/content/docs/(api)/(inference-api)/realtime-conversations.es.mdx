@@ -16,8 +16,7 @@ modelos Live de Gemini: `gemini-3.8-live`, `gemini-3.8-live-extended-thinking`,
 Abre un WebSocket a `$GATEWAY/v1/realtime?model=<public-model>`. Autentícate con tu virtual key en
 `Authorization: Bearer` o, desde un navegador, que no puede enviar headers, como el subprotocolo
 `openai-insecure-api-key.<key>` junto a `realtime`, igual que los clientes de navegador de OpenAI.
-Cualquiera que cargue la página puede leer una key enviada desde el navegador; usa una limitada a
-este modelo y con presupuesto.
+Un navegador no debería tener tu virtual key: dale un [client secret](#client-secrets).
 
 El gateway responde con `session.created`. Una conexión sin `model`, o con un `intent` distinto de
 `realtime`, se rechaza con `400` antes del upgrade. El modelo no puede cambiar durante la conexión.
@@ -25,6 +24,31 @@ El gateway responde con `session.created`. Una conexión sin `model`, o con un `
 La sesión con el proveedor se abre con el primer evento que la necesita (audio, un item o
 `response.create`), así que los `session.update` que se envían primero la configuran en vez de
 reconectarla.
+
+### Client secrets [#client-secrets]
+
+Tu backend emite una key de corta duración para el navegador con `POST /v1/realtime/client_secrets`,
+igual que con OpenAI:
+
+```bash
+curl $GATEWAY/v1/realtime/client_secrets \
+  -H "Authorization: Bearer $BIFROST_KEY" -H "Content-Type: application/json" \
+  -d '{"expires_after": {"anchor": "created_at", "seconds": 600},
+       "session": {"type": "realtime", "model": "voice-agent", "instructions": "Be brief."}}'
+```
+
+La respuesta trae `value` (`ek_…`), `expires_at` y la `session` resultante. El navegador se conecta
+con `value` en lugar de la key, y no necesita `?model=`: la conexión parte de la sesión con la que se
+emitió el secreto (`type: "transcription"` abre una sesión de transcripción). La URL y
+`session.update` todavía pueden cambiarla.
+
+- `expires_after.seconds` va de 10 a 7200 (600 por defecto). Pasado ese tiempo el secreto ya no abre
+  sesiones; una sesión ya abierta sigue.
+- Un secreto puede abrir varias sesiones hasta que expira. Actúa con los modelos permitidos, el
+  presupuesto y los límites de la key que lo emitió, y deja de funcionar si esa key se deshabilita o
+  expira.
+- Solo abre `/v1/realtime`: cualquier otro endpoint responde `401`.
+- Los modelos de `session` se verifican contra la key al emitirlo (`403` si no están permitidos).
 
 ## Sesión [#session]
 

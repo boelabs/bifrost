@@ -54,7 +54,7 @@ const turnDetectionSchema = z
 	.loose()
 	.nullable();
 
-const sessionSchema = z.object({
+export const realtimeTranscriptionSessionSchema = z.object({
 	type: z.literal("transcription"),
 	audio: z
 		.object({
@@ -75,7 +75,7 @@ const clientEventSchema = z.discriminatedUnion("type", [
 	z.object({
 		type: z.literal("session.update"),
 		event_id: z.string().optional(),
-		session: sessionSchema,
+		session: realtimeTranscriptionSessionSchema,
 	}),
 	z.object({
 		type: z.literal("input_audio_buffer.append"),
@@ -93,7 +93,9 @@ const clientEventSchema = z.discriminatedUnion("type", [
 ]);
 
 export type RealtimeClientEvent = z.infer<typeof clientEventSchema>;
-export type RealtimeSessionUpdate = z.infer<typeof sessionSchema>;
+export type RealtimeSessionUpdate = z.infer<
+	typeof realtimeTranscriptionSessionSchema
+>;
 
 export class RealtimeClientEventError extends Error {
 	readonly code: string;
