@@ -18,6 +18,7 @@
  *   - generate_videos:  Google Veo long-running video generation (:predictLongRunning)
  *   - interactions:     Google Interactions API (/interactions)
  *   - bidi_generate_content: Google Live API (BidiGenerateContent WebSocket)
+ *   - realtime: OpenAI Realtime API (/v1/realtime WebSocket)
  */
 export const UPSTREAM_TRANSPORTS = [
 	"chat_completions",
@@ -36,6 +37,7 @@ export const UPSTREAM_TRANSPORTS = [
 	"generate_videos",
 	"interactions",
 	"bidi_generate_content",
+	"realtime",
 ] as const;
 
 export type UpstreamTransport = (typeof UPSTREAM_TRANSPORTS)[number];

@@ -5,11 +5,18 @@ description: "GET /v1/realtime?model=: la Realtime API de OpenAI para conversaci
 
 Mantén una conversación de voz (o de texto) en vivo por WebSocket. El endpoint habla la Realtime API
 de OpenAI (la interfaz GA, sesión `type: "realtime"`), así que los SDKs y clientes realtime de OpenAI
-funcionan sin cambios; el public model debe admitir `audio.converse.realtime`. Hoy eso son los
-modelos Live de Gemini: `gemini-3.8-live`, `gemini-3.8-live-extended-thinking`,
-`gemini-3.1-flash-live-preview`, `gemini-2.5-flash-native-audio-preview-12-2025` y
-`gemini-3.5-live-translate-preview` para traducción de voz a voz. Para solo transcribir, consulta
-[Transcripción en tiempo real](/es/docs/realtime-transcription).
+funcionan sin cambios; el public model debe admitir `audio.converse.realtime`. Hoy eso son:
+
+- Los modelos Live de Gemini: `gemini-3.8-live`, `gemini-3.8-live-extended-thinking`,
+  `gemini-3.1-flash-live-preview`, `gemini-2.5-flash-native-audio-preview-12-2025` y
+  `gemini-3.5-live-translate-preview` para traducción de voz a voz.
+- Los modelos realtime de OpenAI: `gpt-realtime-2.1`, `gpt-realtime-2.1-mini`, `gpt-realtime-2` y
+  `gpt-realtime-1.5`, a través de la propia Realtime API de OpenAI.
+
+El perfil de catálogo de cada modelo dice qué acepta, y una sesión que pide más se rechaza con un
+`error` que nombra el campo. Casi toda esta página describe Gemini, cuyo protocolo difiere del de
+OpenAI; [Modelos de OpenAI](#openai-models) explica qué cambia con ellos. Para solo transcribir,
+consulta [Transcripción en tiempo real](/es/docs/realtime-transcription).
 
 ## Conexión [#connecting]
 
@@ -57,9 +64,9 @@ reconectarla.
 | `output_modalities` | `["audio"]` (predeterminado) o `["text"]`. Los modelos Live de Gemini solo hablan, así que una sesión de texto recibe la transcripción de la respuesta hablada como `response.output_text.*`; se factura como salida de audio. |
 | `audio.input.format` | `audio/pcm` a 24 kHz (predeterminado) o 16 kHz, `audio/pcmu`, `audio/pcma`. |
 | `audio.input.transcription` | Activa la transcripción de lo que dice el usuario. Gemini la hace él mismo, así que `model` se acepta y se ignora; `language`/`languages` y `keywords` se convierten en sus pistas de idioma y vocabulario. El gateway hace que Gemini transcriba al usuario de todas formas, porque esa transcripción es lo que recuerda una sesión reconfigurada (ver abajo); se factura a la tarifa de salida de texto de Gemini, una fracción de centavo por minuto. |
-| `audio.input.turn_detection` | `server_vad` (`threshold`, `prefix_padding_ms`, `silence_duration_ms`), `semantic_vad` (`eagerness`) o `null` para turnos manuales. `interrupt_response: false` deja que el modelo termine aunque el usuario hable. `create_response: false` e `idle_timeout_ms` se rechazan: Gemini siempre responde al terminar un turno. |
+| `audio.input.turn_detection` | `server_vad` (`threshold`, `prefix_padding_ms`, `silence_duration_ms`), `semantic_vad` (`eagerness`) o `null` para turnos manuales. `interrupt_response: false` deja que el modelo termine aunque el usuario hable. `create_response: false` (solo en modelos de OpenAI: Gemini siempre responde al terminar un turno) e `idle_timeout_ms` (se rechaza) completan la lista. |
 | `audio.output.format` | `audio/pcm` a 24 kHz (predeterminado), `audio/pcmu`, `audio/pcma`. |
-| `audio.output.voice` | Una de las voces predefinidas de Gemini (`Kore`, `Puck`, `Charon`, `Zephyr`…; la lista completa está en el perfil de catálogo del modelo). Las voces de OpenAI se rechazan con la lista. La voz no puede cambiar después de que el modelo haya hablado. |
+| `audio.output.voice` | Una de las voces del modelo: las predefinidas de Gemini (`Kore`, `Puck`, `Charon`, `Zephyr`…) o las de OpenAI (`marin`, `cedar`, `alloy`…); la lista completa está en el perfil de catálogo del modelo, y una voz que el modelo no tiene se rechaza con esa lista. La voz no puede cambiar después de que el modelo haya hablado. |
 | `tools` | Herramientas de función, más la extensión de Bifrost `{ "type": "google_search" }` para la búsqueda web de Gemini. Las herramientas MCP se rechazan. |
 | `tool_choice` | `auto` (predeterminado) o `none`. |
 | `max_output_tokens` | Por sesión. |
@@ -100,6 +107,21 @@ Las respuestas llegan como los eventos de OpenAI: `response.created`, `response.
 Gemini da un turno por terminado solo cuando habría terminado de reproducirse, y su uso llega con eso.
 Los eventos `.done` del contenido llegan al terminar la generación; `response.done` espera el uso, o
 se envía de inmediato (con `usage: null`) si el cliente crea otra respuesta o el usuario habla.
+
+### Modelos de OpenAI [#openai-models]
+
+Los modelos realtime de OpenAI toman la sesión casi como OpenAI la define:
+
+- `session.update` se aplica en la misma conexión, sin sesión nueva.
+- Se aceptan `create_response: false`, `audio.output.speed` y `reasoning.effort` hasta `xhigh` (en
+  los modelos 2.x).
+- `audio.input.transcription.model` elige el modelo de transcripción de OpenAI (`gpt-transcribe`
+  por defecto). OpenAI factura esa transcripción aparte; no entra en el uso registrado de la sesión.
+- `response.cancel` detiene la respuesta en el proveedor.
+- El audio de entrada se remuestrea a 24 kHz, la única tasa que acepta OpenAI.
+
+Lo que el gateway todavía no soporta también se rechaza con ellos: respuestas fuera de banda,
+ajustes por respuesta, `idle_timeout_ms`, borrar items, herramientas MCP y prompts guardados.
 
 ### Lo que Gemini no puede hacer [#gemini-limits]
 

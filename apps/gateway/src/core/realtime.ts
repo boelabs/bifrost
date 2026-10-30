@@ -37,6 +37,8 @@ export interface RealtimeUsage {
 	textTokens?: number;
 	/** Input image tokens. */
 	imageTokens?: number;
+	/** Input tokens served from the provider's cache. */
+	cachedTokens?: number;
 	outputAudioTokens?: number;
 	outputTextTokens?: number;
 }
@@ -71,6 +73,7 @@ const DETAIL_KEYS = [
 	"audioTokens",
 	"textTokens",
 	"imageTokens",
+	"cachedTokens",
 	"outputAudioTokens",
 	"outputTextTokens",
 ] as const;
@@ -114,6 +117,9 @@ export function realtimeUsageToCore(u: RealtimeUsage | null): Usage | null {
 		...(u.imageTokens === undefined
 			? {}
 			: { promptImageTokens: u.imageTokens }),
+		...(u.cachedTokens === undefined
+			? {}
+			: { cacheReadTokens: u.cachedTokens }),
 		...(u.outputAudioTokens === undefined
 			? {}
 			: { completionAudioTokens: u.outputAudioTokens }),
@@ -173,8 +179,15 @@ export interface CanonicalRealtimeConversationConfig {
 	speed?: number;
 	/** `null`: the client ends each turn (`turn_detection: null`). */
 	vad: RealtimeVadConfig | null;
-	/** Transcribe the user's speech; `null` = off. */
-	inputTranscription: { languages?: string[]; keywords?: string[] } | null;
+	/**
+	 * Transcribe the user's speech; `null` = off. `model` is the client's choice of transcription
+	 * model, for providers that take one (OpenAI); others transcribe with the live model itself.
+	 */
+	inputTranscription: {
+		model?: string;
+		languages?: string[];
+		keywords?: string[];
+	} | null;
 	tools: RealtimeFunctionDeclaration[];
 	/** `tool_choice: "none"` keeps the declarations out of the provider session. */
 	toolChoice: "auto" | "none";
@@ -237,6 +250,8 @@ export type CanonicalRealtimeConversationEvent =
 	| { kind: "generation_complete" }
 	/** The model's turn is over. */
 	| { kind: "turn_complete" }
+	/** The provider refused an event; the session goes on. Its message stays private. */
+	| { kind: "provider_error"; code: string | null }
 	| { kind: "usage"; usage: RealtimeUsage };
 
 /**
@@ -261,6 +276,10 @@ export interface RealtimeConversationProfile {
 	reasoningEfforts?: RealtimeReasoningEffort[];
 	/** Sent when the session sets no effort, for models that refuse to start without one. */
 	defaultReasoningEffort?: RealtimeReasoningEffort;
+	/** Server VAD can leave answering to the client (`create_response: false`). */
+	supportsDeferredResponse?: boolean;
+	/** Accepts a speaking speed other than 1. */
+	supportsSpeed?: boolean;
 	/** Accepts text items from the client. */
 	supportsTextInput?: boolean;
 	supportsImageInput?: boolean;

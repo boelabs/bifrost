@@ -1,4 +1,8 @@
-import { createAudioInputDecoder, createAudioOutputEncoder } from "./pcm.ts";
+import {
+	createAudioOutputEncoder,
+	createAudioInputDecoder,
+	createPcmResampler,
+} from "./pcm.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -104,4 +108,14 @@ test("pcm: output PCM passes through and G.711 output round-trips through the de
 		}
 		assert.ok(error < 1200, `${type} max error ${error}`);
 	}
+});
+
+test("pcm: canonical audio resamples to 24 kHz for providers that take only that", () => {
+	const resample = createPcmResampler(24_000);
+	const input = sine(16_000, 1, 300);
+	const out = Buffer.concat([
+		resample(input.subarray(0, 1001)),
+		resample(input.subarray(1001)),
+	]);
+	assert.ok(Math.abs(out.byteLength / 2 - 24_000) <= 4, String(out.byteLength));
 });

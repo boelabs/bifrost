@@ -200,3 +200,41 @@ test("realtime conversation: the model profile gates voices, reasoning, tools an
 		"model",
 	);
 });
+
+test("realtime conversation: OpenAI's realtime models take speed, deferred responses and xhigh", () => {
+	const openai = resolveModelMetadata("openai", "gpt-realtime-2.1");
+	assertRealtimeConversationSupported(
+		conversation({
+			voice: "marin",
+			speed: 1.3,
+			reasoningEffort: "xhigh",
+			vad: {
+				type: "server_vad",
+				interruptResponse: true,
+				createResponse: false,
+			},
+			outputModality: "text",
+		}),
+		openai,
+	);
+	assert.throws(
+		() =>
+			assertRealtimeConversationSupported(
+				conversation({ voice: "Kore" }),
+				openai,
+			),
+		(error: unknown) =>
+			error instanceof GatewayError &&
+			error.param === "session.audio.output.voice",
+	);
+	assert.throws(
+		() =>
+			assertRealtimeConversationSupported(
+				conversation({ reasoningEffort: "low" }),
+				resolveModelMetadata("openai", "gpt-realtime-1.5"),
+			),
+		(error: unknown) =>
+			error instanceof GatewayError &&
+			error.param === "session.reasoning.effort",
+	);
+});

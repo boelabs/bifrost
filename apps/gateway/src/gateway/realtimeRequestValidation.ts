@@ -93,7 +93,7 @@ export function assertRealtimeConversationSupported(
 				: "The selected model's voice cannot be chosen.",
 		);
 	}
-	if (config.speed !== undefined) {
+	if (config.speed !== undefined && !profile.supportsSpeed) {
 		unsupported(
 			"session.audio.output.speed",
 			"The selected model cannot change its speaking speed.",
@@ -106,7 +106,11 @@ export function assertRealtimeConversationSupported(
 			`The selected model does not support turn_detection ${config.vad ? `'${config.vad.type}'` : "null"}.`,
 		);
 	}
-	if (config.vad && !config.vad.createResponse) {
+	if (
+		config.vad &&
+		!config.vad.createResponse &&
+		!profile.supportsDeferredResponse
+	) {
 		unsupported(
 			"session.audio.input.turn_detection.create_response",
 			"The selected model always answers when the user's turn ends; create_response cannot be false.",

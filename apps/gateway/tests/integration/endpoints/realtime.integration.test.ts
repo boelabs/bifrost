@@ -636,3 +636,199 @@ test("GET /v1/realtime?model= holds a spoken conversation with a function call t
 		await stub.close();
 	}
 });
+
+/** An OpenAI Realtime stand-in: answers text turns with speech and one function call. */
+async function openAIRealtimeStub() {
+	const server = new WebSocketServer({ port: 0, host: "127.0.0.1" });
+	await new Promise<void>((resolve) => server.once("listening", resolve));
+	const received: Record<string, any>[] = [];
+	let responses = 0;
+	server.on("connection", (socket) => {
+		socket.send(JSON.stringify({ type: "session.created", session: {} }));
+		socket.on("message", (data) => {
+			const event = JSON.parse(data.toString()) as Record<string, any>;
+			received.push(event);
+			if (event.type === "session.update") {
+				socket.send(
+					JSON.stringify({ type: "session.updated", session: event.session }),
+				);
+			}
+			if (event.type !== "response.create") {
+				return;
+			}
+			responses += 1;
+			const usage = {
+				input_tokens: 40,
+				output_tokens: 20,
+				input_token_details: {
+					text_tokens: 30,
+					audio_tokens: 10,
+					cached_tokens: 8,
+				},
+				output_token_details: { text_tokens: 5, audio_tokens: 15 },
+			};
+			if (responses === 1) {
+				socket.send(
+					JSON.stringify({
+						type: "response.function_call_arguments.done",
+						call_id: "call_1",
+						name: "order_status",
+						arguments: '{"id":"7"}',
+					}),
+				);
+			} else {
+				socket.send(
+					JSON.stringify({
+						type: "response.output_audio.delta",
+						delta: Buffer.alloc(4800).toString("base64"),
+					}),
+				);
+				socket.send(
+					JSON.stringify({
+						type: "response.output_audio_transcript.delta",
+						delta: "Ya salio.",
+					}),
+				);
+			}
+			socket.send(
+				JSON.stringify({
+					type: "response.done",
+					response: { status: "completed", usage },
+				}),
+			);
+		});
+	});
+	const { port } = server.address() as AddressInfo;
+	return {
+		baseUrl: `http://127.0.0.1:${port}/v1`,
+		received,
+		close: () =>
+			new Promise<void>((resolve) => {
+				for (const connection of server.clients) {
+					connection.terminate();
+				}
+				server.close(() => resolve());
+			}),
+	};
+}
+
+test("GET /v1/realtime?model= routes a conversation to OpenAI's Realtime API", {
+	skip,
+	timeout: 30_000,
+}, async () => {
+	const stub = await openAIRealtimeStub();
+	const server = await gateway();
+	const publicModel = `realtime-openai-${randomUUID()}`;
+	let deploymentId: string | undefined;
+	let virtualKey: CreatedVirtualKey | undefined;
+	try {
+		deploymentId = (
+			await createDeployment({
+				publicModel,
+				adapterKey: "openai",
+				upstreamModel: "gpt-realtime-2.1",
+				credentials: { apiKey: "sk-test", baseUrl: stub.baseUrl },
+			})
+		).row.id;
+		virtualKey = await createVirtualKey({
+			name: `realtime-openai-${randomUUID()}`,
+			allowedModels: [publicModel],
+		});
+		const { socket, events, next } = await client(
+			`${server.url}?model=${publicModel}`,
+			virtualKey.rawKey,
+		);
+		await next("session.created");
+		socket.send(
+			JSON.stringify({
+				type: "session.update",
+				session: {
+					type: "realtime",
+					instructions: "Be brief.",
+					audio: { output: { voice: "marin", speed: 1.1 } },
+					tools: [{ type: "function", name: "order_status" }],
+				},
+			}),
+		);
+		await next("session.updated");
+		socket.send(
+			JSON.stringify({
+				type: "conversation.item.create",
+				item: {
+					type: "message",
+					role: "user",
+					content: [{ type: "input_text", text: "Order 7?" }],
+				},
+			}),
+		);
+		socket.send(JSON.stringify({ type: "response.create" }));
+		const call = await next("response.function_call_arguments.done");
+		assert.equal(call.call_id, "call_1");
+		await eventually(
+			() =>
+				events.filter((event) => event.type === "response.done").length === 1
+					? true
+					: null,
+			{ description: "first response" },
+		);
+		socket.send(
+			JSON.stringify({
+				type: "conversation.item.create",
+				item: {
+					type: "function_call_output",
+					call_id: "call_1",
+					output: "sent",
+				},
+			}),
+		);
+		socket.send(JSON.stringify({ type: "response.create" }));
+		const last = await eventually(
+			() => events.filter((event) => event.type === "response.done")[1],
+			{ description: "second response" },
+		);
+		assert.equal(last.response.output[0].content[0].transcript, "Ya salio.");
+		assert.equal(last.response.usage.input_token_details.cached_tokens, 8);
+		const update = stub.received.find(
+			(event) => event.type === "session.update",
+		);
+		assert.equal(update?.session.instructions, "Be brief.");
+		assert.deepEqual(update?.session.audio.output, {
+			format: { type: "audio/pcm", rate: 24_000 },
+			voice: "marin",
+			speed: 1.1,
+		});
+		assert.deepEqual(
+			stub.received
+				.filter((event) => event.type === "conversation.item.create")
+				.map((event) => event.item.type),
+			["message", "function_call_output"],
+		);
+		socket.close();
+		const operation = await eventually(
+			async () => {
+				const page = await listOperationsPage({
+					limit: 1,
+					offset: 0,
+					publicModel,
+					callType: "realtime.conversation",
+				});
+				const [row] = page.rows;
+				const detail = row ? await getOperationDetail(row.id) : null;
+				return detail?.outcome ? detail : null;
+			},
+			{ description: "openai realtime operation", timeoutMs: 8000 },
+		);
+		assert.equal(operation.outcome, "success");
+		assert.equal(operation.promptTokens, 80);
+		assert.equal(operation.completionTokens, 40);
+	} finally {
+		if (virtualKey) {
+			await deleteVirtualKey(virtualKey.row.id);
+		}
+		if (deploymentId) {
+			await deleteDeployment(deploymentId);
+		}
+		await server.close();
+		await stub.close();
+	}
+});

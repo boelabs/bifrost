@@ -597,6 +597,9 @@ export function conversationConfigOf(
 		vad: vadOf(state.turnDetection),
 		inputTranscription: transcription
 			? {
+					...(transcription.model === undefined
+						? {}
+						: { model: transcription.model }),
 					...(languages ? { languages } : {}),
 					...(transcription.keywords?.length
 						? { keywords: transcription.keywords }
@@ -684,7 +687,7 @@ export function renderResponseUsage(
 		input_tokens: usage.inputTokens,
 		output_tokens: usage.outputTokens,
 		input_token_details: {
-			cached_tokens: 0,
+			cached_tokens: usage.cachedTokens ?? 0,
 			text_tokens: usage.textTokens ?? 0,
 			audio_tokens: usage.audioTokens ?? 0,
 			image_tokens: usage.imageTokens ?? 0,

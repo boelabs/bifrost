@@ -133,8 +133,9 @@ embeddings, rerankers, image and video models. Known transcription models today:
 `gemini-3.5-transcribe` and `gemini-3.5-transcribe-live`. Known live voice models: Google
 `gemini-3.8-live`, `gemini-3.8-live-extended-thinking`, `gemini-3.1-flash-live-preview`,
 `gemini-2.5-flash-native-audio-preview-12-2025` and `gemini-3.5-live-translate-preview`; OpenAI
-`gpt-realtime-2.1`, `gpt-realtime-2.1-mini`, `gpt-realtime-2` (out of scope until the OpenAI adapter
-serves realtime conversations).
+`gpt-realtime-2.1`, `gpt-realtime-2.1-mini`, `gpt-realtime-2`, `gpt-realtime-1.5`. OpenAI's per-minute
+`gpt-realtime-translate` and `gpt-realtime-whisper` are out of scope (no per-minute pricing, and no
+realtime transcription or translation on the OpenAI adapter yet).
 
 **Azure is read for you.** The aggregators never list Azure's deployment ids, so `catalog:sync` reads
 Microsoft's own list (`https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure`,
@@ -187,7 +188,7 @@ Copy the closest existing transcription entry of the same provider; the adapter 
 field reaches the provider, so a new id on an adapter that already transcribes needs no code.
 
 For a live voice model (speech in, speech out; the `audio.converse.realtime` operation, served today
-by the Google adapter only), the profile replaces items 3 to 7. Establish:
+by the Google and OpenAI adapters), the profile replaces items 3 to 7. Establish:
 
 1. Pricing per 1M tokens by modality: text, audio and image input (`inputCentsPerMTokens`,
    `audioInputCentsPerMTokens`, `imageInputCentsPerMTokens`), text and audio output

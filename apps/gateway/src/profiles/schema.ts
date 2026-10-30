@@ -377,12 +377,14 @@ const realtimeConversationOperationProfileSchema = z
 		functionCalling: z.enum(["blocking", "non_blocking"]).optional(),
 		supportsGoogleSearch: z.boolean().optional(),
 		reasoningEfforts: z
-			.array(z.enum(["minimal", "low", "medium", "high"]))
+			.array(z.enum(["minimal", "low", "medium", "high", "xhigh"]))
 			.min(1)
 			.optional(),
 		defaultReasoningEffort: z
-			.enum(["minimal", "low", "medium", "high"])
+			.enum(["minimal", "low", "medium", "high", "xhigh"])
 			.optional(),
+		supportsDeferredResponse: z.boolean().optional(),
+		supportsSpeed: z.boolean().optional(),
 		supportsTextInput: z.boolean().optional(),
 		supportsImageInput: z.boolean().optional(),
 		supportsInputTranscription: z.boolean().optional(),

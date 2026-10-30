@@ -47,6 +47,7 @@ export type ConversationProvider = Pick<
 	| "flushAudio"
 	| "sendTurns"
 	| "sendFunctionResults"
+	| "cancelResponse"
 >;
 
 export interface RealtimeConversationTrackerOptions {
@@ -540,6 +541,7 @@ export class RealtimeConversationTracker {
 			);
 		}
 		this.suppressing = true;
+		this.session?.cancelResponse?.();
 		this.finishResponse("cancelled", "client_cancelled");
 	}
 
@@ -568,6 +570,17 @@ export class RealtimeConversationTracker {
 						event.usage,
 					);
 				}
+				return;
+			case "provider_error":
+				this.emit("error", {
+					error: {
+						type: "invalid_request_error",
+						code: event.code ?? "provider_error",
+						message: "The provider refused the last request.",
+						param: null,
+						event_id: null,
+					},
+				});
 				return;
 			case "function_calls_cancelled":
 				for (const id of event.ids) {
