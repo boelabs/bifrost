@@ -9,6 +9,7 @@ import {
 	completeIdempotencyKey,
 	releaseIdempotencyKey,
 	claimIdempotencyKey,
+	storedResponse,
 } from "#db/repos/idempotency.ts";
 
 export const IDEMPOTENCY_HEADER = "idempotency-key";
@@ -109,7 +110,20 @@ export function idempotencyMiddleware(): MiddlewareHandler<AppEnv> {
 						"The first request with this Idempotency-Key is still running. Retry in a moment.",
 				});
 			}
-			return replay(existing.status, existing.response);
+			const stored = storedResponse(existing);
+			if (!stored.readable) {
+				// Replaying anything else would be a lie, and running the request again could create the
+				// thing twice: the honest answer is that this key's outcome can no longer be told.
+				throw new GatewayError({
+					class: "bad_request",
+					status: 409,
+					code: "idempotency_response_unreadable",
+					message: `Idempotency-Key "${key}" completed, but its response was encrypted with a key this gateway no longer has`,
+					publicMessage:
+						"The first request with this Idempotency-Key completed, but its response can no longer be read. Check whether it took effect before retrying with a new key.",
+				});
+			}
+			return replay(existing.status, stored.body);
 		}
 
 		try {
