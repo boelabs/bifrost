@@ -1,11 +1,11 @@
 <div align="center">
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="brand/bifrost-mark-dark.png">
-  <img src="brand/bifrost-mark-light.png" alt="" width="132">
+  <source media="(prefers-color-scheme: dark)" srcset="brand/bifrozz-mark-dark.png">
+  <img src="brand/bifrozz-mark-light.png" alt="" width="132">
 </picture>
 
-# Bifrost
+# Bifrozz
 
 **One contract. Every model provider.**
 
@@ -20,7 +20,7 @@ A backend-only, provider-agnostic artificial intelligence gateway — built and 
 
 ---
 
-Bifrost gives a product team a single, stable, OpenAI-shaped API in front of every model vendor it
+Bifrozz gives a product team a single, stable, OpenAI-shaped API in front of every model vendor it
 uses. Applications keep one integration; the gateway owns authentication, routing, rate limiting,
 budgets, caching, cost accounting, and observability. Swapping providers, adding a model, or failing
 over becomes a configuration change instead of a release.
@@ -30,7 +30,7 @@ shared infrastructure, not a demo.
 
 ## Why teams run a gateway
 
-| Without | With Bifrost |
+| Without | With Bifrozz |
 |---|---|
 | One SDK and auth scheme per vendor | One OpenAI-compatible contract for all of them |
 | Vendor outages reach your users | Weighted pools, cooldowns, retries, dedicated fallbacks |
@@ -81,7 +81,7 @@ A [Turborepo](https://turborepo.com) on [Bun](https://bun.sh) workspaces. Bun ru
 directly, so there is no build step.
 
 ```
-apps/gateway      the Bifrost service (@boelabs/bifrost)
+apps/gateway      the Bifrozz service (@boelabs/bifrozz)
 apps/dashboard    optional operator dashboard (@boelabs/dashboard, Next.js App Router)
 apps/docs         documentation site (@boelabs/docs, Next.js App Router + Fumadocs)
 packages/tsconfig shared strict TypeScript config (@boelabs/tsconfig)
@@ -95,8 +95,8 @@ Requirements: Bun 1.4+, Postgres 18+, Redis 8+ (Docker optional, for local depen
 bun install
 docker compose -f docker/compose.yaml -f docker/compose.local.yaml up -d postgres redis
 cp apps/gateway/.env.example apps/gateway/.env
-bun run --filter @boelabs/bifrost db:migrate
-bun run --filter @boelabs/bifrost dev
+bun run --filter @boelabs/bifrozz db:migrate
+bun run --filter @boelabs/bifrozz dev
 ```
 
 Set `MASTER_KEY`, `ENCRYPTION_KEYRING`, and `ACTIVE_ENCRYPTION_KEY_ID` in `.env` — the gateway
@@ -120,7 +120,7 @@ bun run typecheck    # typecheck every package
 bun run test         # unit tests across packages
 ```
 
-Scope to one package with `--filter`, e.g. `bun run --filter @boelabs/bifrost dev`.
+Scope to one package with `--filter`, e.g. `bun run --filter @boelabs/bifrozz dev`.
 
 ## Production
 
@@ -138,9 +138,9 @@ Postgres and Redis, publishing the docs site on its own, and what a rolling upda
 
 | Image | |
 |---|---|
-| `ghcr.io/boelabs/bifrost-gateway` | the API |
-| `ghcr.io/boelabs/bifrost-dashboard` | the operator UI, on its own domain |
-| `ghcr.io/boelabs/bifrost-docs` | this documentation |
+| `ghcr.io/boelabs/bifrozz-gateway` | the API |
+| `ghcr.io/boelabs/bifrozz-dashboard` | the operator UI, on its own domain |
+| `ghcr.io/boelabs/bifrozz-docs` | this documentation |
 
 The gateway and the dashboard are two independent products with one setting between them:
 `GATEWAY_URL` on the dashboard. The browser never leaves the dashboard's own origin — its server

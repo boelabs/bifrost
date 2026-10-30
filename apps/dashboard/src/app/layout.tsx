@@ -7,8 +7,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-	title: "Bifrost",
-	description: "Operator dashboard for the Bifrost AI gateway.",
+	title: "Bifrozz",
+	description: "Operator dashboard for the Bifrozz AI gateway.",
 	/**
 	 * Never indexed. `robots.ts` asks crawlers not to fetch; this is what keeps a URL someone else
 	 * linked out of the results anyway, which robots.txt cannot do on its own.

@@ -1,4 +1,4 @@
-# Bifrost dashboard
+# Bifrozz dashboard
 
 The operator dashboard. A **separate product** from the gateway — its own image, its own domain, its
 own process — in the same repository. Next.js App Router, Base UI, React 19, Tailwind CSS 4 — all of

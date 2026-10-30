@@ -191,13 +191,13 @@ export interface CanonicalRealtimeConversationConfig {
 	tools: RealtimeFunctionDeclaration[];
 	/** `tool_choice: "none"` keeps the declarations out of the provider session. */
 	toolChoice: "auto" | "none";
-	/** Provider-hosted web search (Bifrost extension tool `{type: "google_search"}`). */
+	/** Provider-hosted web search (Bifrozz extension tool `{type: "google_search"}`). */
 	googleSearch: boolean;
 	maxOutputTokens?: number;
 	reasoningEffort?: RealtimeReasoningEffort;
 	/** `auto`: the provider compresses old context so a long session keeps going. */
 	truncation: "auto" | "disabled";
-	/** Speech-to-speech translation models (Bifrost extension `session.translation`). */
+	/** Speech-to-speech translation models (Bifrozz extension `session.translation`). */
 	translation?: { targetLanguage: string; echoTargetLanguage?: boolean };
 }
 

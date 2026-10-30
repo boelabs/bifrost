@@ -39,7 +39,7 @@ with OpenAI:
 
 ```bash
 curl $GATEWAY/v1/realtime/client_secrets \
-  -H "Authorization: Bearer $BIFROST_KEY" -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $BIFROZZ_KEY" -H "Content-Type: application/json" \
   -d '{"expires_after": {"anchor": "created_at", "seconds": 600},
        "session": {"type": "realtime", "model": "voice-agent", "instructions": "Be brief."}}'
 ```
@@ -68,7 +68,7 @@ the secret was minted with (`type: "transcription"` opens a transcription sessio
     "audio": {
       "input": {
         "format": { "type": "audio/pcm", "rate": 24000 },
-        "transcription": { "model": "gpt-transcribe", "keywords": ["Bifrost"] },
+        "transcription": { "model": "gpt-transcribe", "keywords": ["Bifrozz"] },
         "turn_detection": { "type": "server_vad", "silence_duration_ms": 600 }
       },
       "output": { "format": { "type": "audio/pcm", "rate": 24000 }, "voice": "Kore" }
@@ -90,12 +90,12 @@ the secret was minted with (`type: "transcription"` opens a transcription sessio
 | `audio.input.turn_detection` | `server_vad` (`threshold`, `prefix_padding_ms`, `silence_duration_ms`), `semantic_vad` (`eagerness`), or `null` for manual turns. `interrupt_response: false` lets the model finish while the user talks. `create_response: false` (OpenAI models only: Gemini always answers when a turn ends) and `idle_timeout_ms` (refused) complete the list. |
 | `audio.output.format` | `audio/pcm` at 24 kHz (default), `audio/pcmu`, `audio/pcma`. |
 | `audio.output.voice` | One of the model's voices: Gemini's prebuilt voices (`Kore`, `Puck`, `Charon`, `Zephyr`, …) or OpenAI's (`marin`, `cedar`, `alloy`, …); the full list is in the model's catalog profile, and a voice the model lacks is refused with it. The voice cannot change once the model has spoken. |
-| `tools` | Function tools, plus the Bifrost extension `{ "type": "google_search" }` for Gemini's web search. MCP tools are refused. |
+| `tools` | Function tools, plus the Bifrozz extension `{ "type": "google_search" }` for Gemini's web search. MCP tools are refused. |
 | `tool_choice` | `auto` (default) or `none`. |
 | `max_output_tokens` | Per session. |
 | `reasoning.effort` | Only on models that take it: `low`/`medium`/`high` on `gemini-3.8-live-extended-thinking` (which requires one: `low`, OpenAI's default, when unset), `minimal` to `high` on `gemini-3.1-flash-live-preview`. `gemini-3.8-live` reasons on its own and refuses it. |
 | `truncation` | `auto` (default) lets the provider compress old context so a conversation can run past its context window; `disabled` keeps everything (Gemini then ends audio sessions after 15 minutes). |
-| `translation` | Bifrost extension, required by `gemini-3.5-live-translate-preview`: `{ "target_language": "es", "echo_target_language": false }`. The source language is detected. Translation streams without turns, so each response is one phrase: it ends after 1.5 seconds without translated speech, and the silence between phrases is not sent. |
+| `translation` | Bifrozz extension, required by `gemini-3.5-live-translate-preview`: `{ "target_language": "es", "echo_target_language": false }`. The source language is detected. Translation streams without turns, so each response is one phrase: it ends after 1.5 seconds without translated speech, and the silence between phrases is not sent. |
 
 Gemini fixes a session's setup when it opens, and a resumed session keeps its old setup. So
 changing instructions, tools, voice, turn detection or any other provider setting mid-session opens

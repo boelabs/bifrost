@@ -6,17 +6,17 @@ description: "Unit and integration testing strategy."
 Tests are designed to be **hermetic with respect to providers**:
 
 - They do not need real credentials for OpenAI, Google, Azure, aggregators, or any other provider.
-- `bun run --filter @boelabs/bifrost test`, `bun run --filter @boelabs/bifrost test:unit`, and `bun run --filter @boelabs/bifrost test:integration` import `apps/gateway/tests/support/noRealFetch.ts`, which blocks any real `fetch`.
+- `bun run --filter @boelabs/bifrozz test`, `bun run --filter @boelabs/bifrozz test:unit`, and `bun run --filter @boelabs/bifrozz test:integration` import `apps/gateway/tests/support/noRealFetch.ts`, which blocks any real `fetch`.
 - If a test needs to simulate an upstream, it must use `withStubbedFetch()` from `tests/support/fetch.ts`.
 
 ## Layers
 
 | Layer | Script | External dependencies |
 |---|---|---|
-| Unit / contract | `bun run --filter @boelabs/bifrost test` or `bun run --filter @boelabs/bifrost test:unit` | No real network. Lives next to the code in `apps/gateway/src/**/*.test.ts`. |
-| Integration | `bun run --filter @boelabs/bifrost test:integration` | Local Postgres/Redis if the test needs them; if they are not available, it is skipped. Lives in `apps/gateway/tests/integration/**/*.ts`. Never a real provider. |
-| All | `bun run --filter @boelabs/bifrost test:all` | Unit + integration. |
-| Catalog validation | `bun run --filter @boelabs/bifrost catalog:validate` | No real network; validates local JSON. |
+| Unit / contract | `bun run --filter @boelabs/bifrozz test` or `bun run --filter @boelabs/bifrozz test:unit` | No real network. Lives next to the code in `apps/gateway/src/**/*.test.ts`. |
+| Integration | `bun run --filter @boelabs/bifrozz test:integration` | Local Postgres/Redis if the test needs them; if they are not available, it is skipped. Lives in `apps/gateway/tests/integration/**/*.ts`. Never a real provider. |
+| All | `bun run --filter @boelabs/bifrozz test:all` | Unit + integration. |
+| Catalog validation | `bun run --filter @boelabs/bifrozz catalog:validate` | No real network; validates local JSON. |
 
 ## Common helpers
 
@@ -32,7 +32,7 @@ Tests are designed to be **hermetic with respect to providers**:
 For a one-off manual test against the internet:
 
 ```bash
-ALLOW_TEST_NETWORK=1 bun run --filter @boelabs/bifrost test
+ALLOW_TEST_NETWORK=1 bun run --filter @boelabs/bifrozz test
 ```
 
 Do not use it in CI or in normal tests; if a provider behavior matters, capture the minimal shape and

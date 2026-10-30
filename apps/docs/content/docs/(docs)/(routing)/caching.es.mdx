@@ -2,7 +2,7 @@
 title: "Cache de respuestas"
 description: "Reutiliza respuestas completas en Redis mediante una opción por solicitud."
 ---
-Bifrost puede guardar respuestas completas en Redis y reutilizarlas para solicitudes idénticas, sin contactar al proveedor. Está **desactivado por defecto** y el cliente debe habilitarlo **en cada solicitud**.
+Bifrozz puede guardar respuestas completas en Redis y reutilizarlas para solicitudes idénticas, sin contactar al proveedor. Está **desactivado por defecto** y el cliente debe habilitarlo **en cada solicitud**.
 
 Para conocer la reutilización de solicitudes del proveedor y los contadores de tokens, consulta [Prompt caching del proveedor](/es/docs/provider-prompt-caching).
 
@@ -25,7 +25,7 @@ curl -X POST $BASE/v1/chat/completions \
   }'
 ```
 
-La primera llamada es un cache miss: el proveedor genera la respuesta y Bifrost la almacena. Las llamadas idénticas dentro del TTL son cache hits atendidos desde Redis. Cada hit se registra en `gateway_operations` con `cache_hit = true` y costo cero.
+La primera llamada es un cache miss: el proveedor genera la respuesta y Bifrozz la almacena. Las llamadas idénticas dentro del TTL son cache hits atendidos desde Redis. Cada hit se registra en `gateway_operations` con `cache_hit = true` y costo cero.
 
 ## Cómo se define el alcance de las entradas [#how-entries-are-scoped]
 

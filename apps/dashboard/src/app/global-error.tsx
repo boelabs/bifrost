@@ -35,7 +35,7 @@ export default function GlobalError({
 				}}
 			>
 				<h1 style={{ fontSize: "1.25rem", fontWeight: 600 }}>
-					Bifrost could not be displayed
+					Bifrozz could not be displayed
 				</h1>
 				<p style={{ maxWidth: "32rem", opacity: 0.7 }}>
 					Reload the page. If it keeps happening, the dashboard process is

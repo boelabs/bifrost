@@ -1,7 +1,7 @@
 {
 	"$schema": "https://json-schema.org/draft/2020-12/schema",
-	"$id": "https://bifrost.local/schemas/model-catalog-entry.schema.json",
-	"title": "Bifrost Catalog Entry",
+	"$id": "https://bifrozz.local/schemas/model-catalog-entry.schema.json",
+	"title": "Bifrozz Catalog Entry",
 	"description": "Single CatalogEntry shape for custom model catalogEntry payloads and editor snippets.",
 	"allOf": [
 		{ "$ref": "./model-catalog.schema.json#/$defs/model" },

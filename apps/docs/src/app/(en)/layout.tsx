@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 export { viewport } from "#/components/document.tsx";
 export const metadata: Metadata = {
-	title: { default: "Bifrost", template: "%s · Bifrost" },
+	title: { default: "Bifrozz", template: "%s · Bifrozz" },
 	description:
 		"Connect your application to artificial intelligence providers through one gateway.",
 };

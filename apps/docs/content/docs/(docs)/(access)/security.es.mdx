@@ -50,7 +50,7 @@ Las tres capacidades reservadas para `owner` son las que son peligrosas en lugar
 
 ### CSRF [#csrf]
 
-Un navegador adjunta cookies a las solicitudes entre sitios por sí solo, por lo que una solicitud autenticada por cookies que cambia de estado debe demostrar que proviene de nuestra propia página. El gateway aplica el envío doble: la respuesta de inicio de sesión establece una cookie `bifrost_csrf` legible junto con la cookie de sesión httpOnly, y cada solicitud que no sea `GET` autenticada por esa cookie debe repetirla en `X-CSRF-Token`.
+Un navegador adjunta cookies a las solicitudes entre sitios por sí solo, por lo que una solicitud autenticada por cookies que cambia de estado debe demostrar que proviene de nuestra propia página. El gateway aplica el envío doble: la respuesta de inicio de sesión establece una cookie `bifrozz_csrf` legible junto con la cookie de sesión httpOnly, y cada solicitud que no sea `GET` autenticada por esa cookie debe repetirla en `X-CSRF-Token`.
 
 **La regla es por fuente de credenciales, no por ruta.** Se aplica en `/v1/*` así como en `/admin/*` (la inferencia cuesta dinero real) y nunca se aplica a las credenciales `Bearer`/`x-api-key`, que es un navegador. nunca se adjunta automáticamente.
 

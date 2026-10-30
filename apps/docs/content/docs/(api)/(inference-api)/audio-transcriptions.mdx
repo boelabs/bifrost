@@ -30,7 +30,7 @@ buffered fully in memory — and removed after success, failure, timeout, or cli
 streaming/timestamp granularities are available is declared per model in its `audio.transcribe`
 catalog profile.
 
-`transcription_mode` is a Bifrost extension: `smart` asks a model that supports it to drop fillers
+`transcription_mode` is a Bifrozz extension: `smart` asks a model that supports it to drop fillers
 and format numbers in context; `verbatim` is every model's default and is always accepted.
 `response_format=diarized_json` returns OpenAI's diarized shape: `segments` with `speaker` (`A`, `B`, …), `start`,
 `end` and `text`.
@@ -42,7 +42,7 @@ and format numbers in context; `verbatim` is every model's default and is always
 free-form context. For example, add these fields to the request above:
 
 ```bash
-  -F 'keywords[]=Bifrost' \
+  -F 'keywords[]=Bifrozz' \
   -F 'keywords[]=AC-42' \
   -F 'languages[]=es' \
   -F 'languages[]=en'

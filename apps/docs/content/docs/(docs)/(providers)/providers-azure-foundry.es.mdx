@@ -18,7 +18,7 @@ Envía este cuerpo a `POST /admin/deployments` con credencial de operador. Reemp
 ## Comportamiento y restricciones [#behavior-and-limitations]
 
 - **Credenciales**: `apiKey`, `baseUrl`.
-- Utiliza este adapter, no [Azure OpenAI](/es/docs/providers-azure-openai), para los modelos que Azure vende a través de Foundry, como `DeepSeek-V3.1` o `grok-4.3`. Su transport upstream es Chat Completions; Bifrost todavía muestra todos los contratos de texto públicos (Chat Completions, Responses, Messages) sobre él.
+- Utiliza este adapter, no [Azure OpenAI](/es/docs/providers-azure-openai), para los modelos que Azure vende a través de Foundry, como `DeepSeek-V3.1` o `grok-4.3`. Su transport upstream es Chat Completions; Bifrozz todavía muestra todos los contratos de texto públicos (Chat Completions, Responses, Messages) sobre él.
 - **transport predeterminado**: Chat Completions para texto. Sin transport de incrustación/imagen nativa.
 - Dos proveedores independientes, dos catálogos independientes: un modelo disponible tanto en Azure OpenAI como en Azure Foundry necesita una entrada de catálogo (y un deployment) separada por adapter.
 - Catálogo: `src/adapters/azurefoundry/catalog.json`.

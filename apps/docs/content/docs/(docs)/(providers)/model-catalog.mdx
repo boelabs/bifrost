@@ -120,7 +120,7 @@ The fastest contribution — no code, just JSON:
 1. Open the provider's catalog, e.g. `src/adapters/deepseek/catalog.json`.
 2. Add a key under `models`, named by the **`upstreamModel`** (the exact id the provider expects).
    Fill its `operations` (see [Rules](#rules)), `pricing`, and any optional metadata.
-3. Validate: `bun run --filter @boelabs/bifrost catalog:validate`.
+3. Validate: `bun run --filter @boelabs/bifrozz catalog:validate`.
 
 The model is then requestable by creating a deployment for it (see
 [Creating deployments](/docs/creating-deployments)).
@@ -167,8 +167,8 @@ list, or `catalog:validate` (and CI) will skip it:
 Then validate and run the suite:
 
 ```bash
-bun run --filter @boelabs/bifrost catalog:validate
-bun run --filter @boelabs/bifrost test
+bun run --filter @boelabs/bifrozz catalog:validate
+bun run --filter @boelabs/bifrozz test
 ```
 
 <Callout>
@@ -230,7 +230,7 @@ Quick notes:
 To validate all catalogs:
 
 ```bash
-bun run --filter @boelabs/bifrost catalog:validate
+bun run --filter @boelabs/bifrozz catalog:validate
 ```
 
 ## Reranking
@@ -283,13 +283,13 @@ source for the Vercel adapter itself. Its dedicated sync is deterministic and su
 
 ```bash
 # Draft a candidate and machine-readable report under .source/vercel-catalog-sync/
-bun run --filter @boelabs/bifrost catalog:sync:vercel
+bun run --filter @boelabs/bifrozz catalog:sync:vercel
 
 # Atomically replace src/adapters/vercel/catalog.json with the current snapshot
-bun run --filter @boelabs/bifrost catalog:sync:vercel:write
+bun run --filter @boelabs/bifrozz catalog:sync:vercel:write
 
 # Fetch the live source and fail when the committed snapshot differs
-bun run --filter @boelabs/bifrost catalog:sync:vercel:verify
+bun run --filter @boelabs/bifrozz catalog:sync:vercel:verify
 ```
 
 The writer refuses suspiciously small source responses and duplicate/invalid ids, so a broken or
@@ -313,9 +313,9 @@ sync filters the live source by `output_modalities=rerank`, preserves complete m
 same report/write/verify modes:
 
 ```bash
-bun run --filter @boelabs/bifrost catalog:sync:openrouter
-bun run --filter @boelabs/bifrost catalog:sync:openrouter:write
-bun run --filter @boelabs/bifrost catalog:sync:openrouter:verify
+bun run --filter @boelabs/bifrozz catalog:sync:openrouter
+bun run --filter @boelabs/bifrozz catalog:sync:openrouter:write
+bun run --filter @boelabs/bifrozz catalog:sync:openrouter:verify
 ```
 
 No model count is hard-coded. The report surfaces additions/removals through snapshot drift,

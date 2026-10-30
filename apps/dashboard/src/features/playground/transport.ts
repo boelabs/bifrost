@@ -131,7 +131,7 @@ export function createPlaygroundTransport(
 					if (
 						endpoint !== "chat.completions" ||
 						message.role !== "assistant" ||
-						!metadata?.bifrost?.reasoning
+						!metadata?.bifrozz?.reasoning
 					) {
 						return message;
 					}
@@ -147,7 +147,7 @@ export function createPlaygroundTransport(
 										...part,
 										providerMetadata: {
 											...part.providerMetadata,
-											bifrost: metadata.bifrost,
+											bifrozz: metadata.bifrozz,
 										},
 									}
 								: part,

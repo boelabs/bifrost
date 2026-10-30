@@ -1,6 +1,6 @@
 export type ThemePreference = "system" | "light" | "dark";
 
-export const THEME_STORAGE_KEY = "bifrost.theme";
+export const THEME_STORAGE_KEY = "bifrozz.theme";
 
 export function isThemePreference(value: unknown): value is ThemePreference {
 	return value === "system" || value === "light" || value === "dark";

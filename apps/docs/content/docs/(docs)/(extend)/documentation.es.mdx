@@ -86,8 +86,8 @@ La compilación finaliza verificando cada enlace interno y `#anchor` en el HTML 
 La imagen se publica en GHCR junto con el gateway y el panel, y los archivos de Compose la extraen. Para construirlo usted mismo:
 
 ```bash
-docker build -f apps/docs/Dockerfile -t bifrost-docs .
-docker run --rm -p 3000:3000 bifrost-docs
+docker build -f apps/docs/Dockerfile -t bifrozz-docs .
+docker run --rm -p 3000:3000 bifrozz-docs
 ```
 
 No requiere configuración: la misma imagen se ejecuta en cualquier lugar y no se requiere ninguna base de datos, instancia de Redis, clave de proveedor o archivo de entorno de gateway para entregar la documentación.
@@ -95,7 +95,7 @@ No requiere configuración: la misma imagen se ejecuta en cualquier lugar y no s
 Configura `DOCS_SITE_URL` como origen público para publicar un mapa del sitio en `/sitemap.xml`:
 
 ```bash
-docker run --rm -p 3000:3000 -e DOCS_SITE_URL=https://docs.example.com bifrost-docs
+docker run --rm -p 3000:3000 -e DOCS_SITE_URL=https://docs.example.com bifrozz-docs
 ```
 
 Se lee en runtime, no se integra, por lo que una imagen puede servir para staging y la producción. Sin él, el sitio funciona exactamente igual y no se genera ningún mapa del sitio.

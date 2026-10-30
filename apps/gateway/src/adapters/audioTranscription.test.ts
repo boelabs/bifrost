@@ -123,7 +123,7 @@ test("audio.buildRequest: extra_body cannot overwrite managed fields", async () 
 test("audio: hints follow candidate capabilities without mutating the request", async () => {
 	const { req, cleanup } = withAudioFile();
 	req.model = "public-alias";
-	req.keywords = ["Bifrost", "AC-42"];
+	req.keywords = ["Bifrozz", "AC-42"];
 	req.languages = ["es", "en"];
 	try {
 		for (const model of [
@@ -153,7 +153,7 @@ test("audio: hints follow candidate capabilities without mutating the request", 
 			assert.equal(form.has("language"), false);
 			assert.equal(form.has("prompt"), false);
 		}
-		assert.deepEqual(req.keywords, ["Bifrost", "AC-42"]);
+		assert.deepEqual(req.keywords, ["Bifrozz", "AC-42"]);
 		assert.deepEqual(req.languages, ["es", "en"]);
 		const context = {
 			...ctx(),

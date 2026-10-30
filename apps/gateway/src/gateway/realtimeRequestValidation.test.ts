@@ -122,7 +122,7 @@ test("realtime conversation: the model profile gates voices, reasoning, tools an
 			instructions: "Hi",
 			tools: [{ name: "f" }],
 			googleSearch: true,
-			inputTranscription: { keywords: ["Bifrost"] },
+			inputTranscription: { keywords: ["Bifrozz"] },
 			vad: null,
 		}),
 		conversationModel,

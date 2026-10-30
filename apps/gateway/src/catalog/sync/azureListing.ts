@@ -23,7 +23,7 @@ const SKIPPED_SECTION = /^(fine-tuning|assistants)/i;
 const MODEL_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 /**
- * Listed ids Bifrost deliberately does not carry, with the reason. A listed id that is neither in the
+ * Listed ids Bifrozz deliberately does not carry, with the reason. A listed id that is neither in the
  * adapter's catalog nor here is reported as missing, so deciding not to serve a model is an explicit,
  * reviewed change rather than an oversight.
  */
@@ -32,32 +32,32 @@ export const AZURE_LISTING_UNSERVED: Readonly<
 > = {
 	azureopenai: {
 		"computer-use-preview":
-			"Built for the Responses computer-use tool, which Bifrost does not expose.",
+			"Built for the Responses computer-use tool, which Bifrozz does not expose.",
 		"sora-2": "The azureopenai adapter has no video transport.",
 		"gpt-4o-audio-preview":
-			"Audio output; Bifrost has no audio chat operation.",
+			"Audio output; Bifrozz has no audio chat operation.",
 		"gpt-4o-mini-audio-preview":
-			"Audio output; Bifrost has no audio chat operation.",
-		"gpt-audio": "Audio output; Bifrost has no audio chat operation.",
-		"gpt-audio-mini": "Audio output; Bifrost has no audio chat operation.",
-		"gpt-audio-1.5": "Audio output; Bifrost has no audio chat operation.",
+			"Audio output; Bifrozz has no audio chat operation.",
+		"gpt-audio": "Audio output; Bifrozz has no audio chat operation.",
+		"gpt-audio-mini": "Audio output; Bifrozz has no audio chat operation.",
+		"gpt-audio-1.5": "Audio output; Bifrozz has no audio chat operation.",
 		"gpt-4o-realtime-preview":
-			"Realtime API; Bifrost has no realtime operation.",
+			"Realtime API; Bifrozz has no realtime operation.",
 		"gpt-4o-mini-realtime-preview":
-			"Realtime API; Bifrost has no realtime operation.",
-		"gpt-realtime": "Realtime API; Bifrost has no realtime operation.",
-		"gpt-realtime-mini": "Realtime API; Bifrost has no realtime operation.",
-		"gpt-realtime-1.5": "Realtime API; Bifrost has no realtime operation.",
-		"gpt-realtime-2": "Realtime API; Bifrost has no realtime operation.",
-		"gpt-realtime-2.1": "Realtime API; Bifrost has no realtime operation.",
-		"gpt-realtime-2.1-mini": "Realtime API; Bifrost has no realtime operation.",
+			"Realtime API; Bifrozz has no realtime operation.",
+		"gpt-realtime": "Realtime API; Bifrozz has no realtime operation.",
+		"gpt-realtime-mini": "Realtime API; Bifrozz has no realtime operation.",
+		"gpt-realtime-1.5": "Realtime API; Bifrozz has no realtime operation.",
+		"gpt-realtime-2": "Realtime API; Bifrozz has no realtime operation.",
+		"gpt-realtime-2.1": "Realtime API; Bifrozz has no realtime operation.",
+		"gpt-realtime-2.1-mini": "Realtime API; Bifrozz has no realtime operation.",
 		"gpt-realtime-translate":
-			"Realtime API; Bifrost has no realtime operation.",
-		"gpt-realtime-whisper": "Realtime API; Bifrost has no realtime operation.",
-		"gpt-live-transcribe": "Realtime API; Bifrost has no realtime operation.",
-		tts: "Text to speech; Bifrost has no speech operation.",
-		"tts-hd": "Text to speech; Bifrost has no speech operation.",
-		"gpt-4o-mini-tts": "Text to speech; Bifrost has no speech operation.",
+			"Realtime API; Bifrozz has no realtime operation.",
+		"gpt-realtime-whisper": "Realtime API; Bifrozz has no realtime operation.",
+		"gpt-live-transcribe": "Realtime API; Bifrozz has no realtime operation.",
+		tts: "Text to speech; Bifrozz has no speech operation.",
+		"tts-hd": "Text to speech; Bifrozz has no speech operation.",
+		"gpt-4o-mini-tts": "Text to speech; Bifrozz has no speech operation.",
 	},
 	azurefoundry: {
 		"FLUX.2-flex": "The azurefoundry adapter has no image transport.",
@@ -74,12 +74,12 @@ export const AZURE_LISTING_UNSERVED: Readonly<
 			"The azurefoundry adapter has no rerank transport.",
 		"Cohere-rerank-v4.0-fast":
 			"The azurefoundry adapter has no rerank transport.",
-		"Cohere-parse-v5": "Document parsing; Bifrost has no OCR operation.",
+		"Cohere-parse-v5": "Document parsing; Bifrozz has no OCR operation.",
 		"mistral-document-ai-2512":
-			"Document parsing; Bifrost has no OCR operation.",
-		"mistral-ocr-4-0": "Document parsing; Bifrost has no OCR operation.",
+			"Document parsing; Bifrozz has no OCR operation.",
+		"mistral-ocr-4-0": "Document parsing; Bifrozz has no OCR operation.",
 		"Microsoft-Decision-1":
-			"Decision scoring; Bifrost has no classification operation.",
+			"Decision scoring; Bifrozz has no classification operation.",
 		"MAI-Thinking-1":
 			"Served on /mai/v1, not the /openai/v1 surface the adapter calls.",
 		"model-router":

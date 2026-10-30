@@ -30,7 +30,7 @@ async function moduleSource(
 	files: Record<string, string>,
 	instances: Instances,
 ): Promise<{ source: ExtensionInstanceSource; dir: string }> {
-	const dir = await mkdtemp(join(tmpdir(), "bifrost-ext-"));
+	const dir = await mkdtemp(join(tmpdir(), "bifrozz-ext-"));
 	for (const [name, content] of Object.entries(files)) {
 		await writeFile(join(dir, name), content);
 	}

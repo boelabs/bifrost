@@ -2,7 +2,7 @@
 title: "Extensiones en runtime"
 description: "Añade comportamiento mediante módulos ESM de confianza y hooks sobre el formato canonical."
 ---
-Las extensiones de runtime permiten a un operador adjuntar un comportamiento confiable a Bifrost sin bifurcar el repositorio ni reconstruir la imagen oficial. El código de extensión y la configuración se encuentran en **Postgres** y se administran completamente a través de la API de administración: no hay archivos, volúmenes ni manifiestos que montar. Carga un módulo una vez y cada réplica lo recogerá automáticamente.
+Las extensiones de runtime permiten a un operador adjuntar un comportamiento confiable a Bifrozz sin bifurcar el repositorio ni reconstruir la imagen oficial. El código de extensión y la configuración se encuentran en **Postgres** y se administran completamente a través de la API de administración: no hay archivos, volúmenes ni manifiestos que montar. Carga un módulo una vez y cada réplica lo recogerá automáticamente.
 
 Las extensiones se dividen en dos conceptos:
 
@@ -114,7 +114,7 @@ El repositorio incluye ejemplos listos para cargar en `apps/gateway/examples/ext
 - `provenance-watermark.mjs`: incorpora un marcador de procedencia invisible de ancho cero en el texto asistente (`onCanonicalResponse` + `onStreamEvent`).
 - `tiered-image-watermark.mjs`: imprime una marca de agua de vista previa visible en imágenes para claves sin privilegios (`onImageOutput`).
 
-Debido a que los hooks se ejecutan después de que cada formato del protocolo público se traduce a la solicitud canonical de Bifrost, una instancia de `callTypes: ["chat"]` puede afectar todos los protocolos de texto: `/v1/chat/completions`, `/v1/responses` y `/v1/messages`. Los autores de extensiones no necesitan ramas separadas para `messages` de estilo OpenAI, OpenAI Responses `input`/`instructions` o Anthropic `system`.
+Debido a que los hooks se ejecutan después de que cada formato del protocolo público se traduce a la solicitud canonical de Bifrozz, una instancia de `callTypes: ["chat"]` puede afectar todos los protocolos de texto: `/v1/chat/completions`, `/v1/responses` y `/v1/messages`. Los autores de extensiones no necesitan ramas separadas para `messages` de estilo OpenAI, OpenAI Responses `input`/`instructions` o Anthropic `system`.
 
 hooks disponibles en v1:
 
@@ -164,4 +164,4 @@ Una instancia deshabilitada por el disyuntor se puede reactivar para el proceso 
 
 ## Salidas de imagen [#image-outputs]
 
-Bifrost vuelve a codificar los archivos PNG, JPEG y WebP devueltos para eliminar los metadatos ascendentes de forma predeterminada. No estampa los metadatos del producto o del propietario en el núcleo. Los operadores que quieran posprocesamiento de imágenes pueden cargar una extensión privada que utiliza `onImageOutput`.
+Bifrozz vuelve a codificar los archivos PNG, JPEG y WebP devueltos para eliminar los metadatos ascendentes de forma predeterminada. No estampa los metadatos del producto o del propietario en el núcleo. Los operadores que quieran posprocesamiento de imágenes pueden cargar una extensión privada que utiliza `onImageOutput`.

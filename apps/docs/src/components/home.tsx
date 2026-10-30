@@ -31,13 +31,13 @@ const PATHS = [
 	},
 	{
 		title: "Run it yourself",
-		spanishTitle: "Aloja Bifrost",
+		spanishTitle: "Aloja Bifrozz",
 		spanishDescription:
 			"Ejecuta el gateway con Bun, Postgres y Redis. Mantén el control de las credenciales y las políticas.",
 		icon: Server,
 		description:
 			"Deploy the Bun gateway with Postgres and Redis. Keep credentials and policies under your control.",
-		action: "Deploy Bifrost",
+		action: "Deploy Bifrozz",
 		href: "/docs/deployment",
 	},
 ];
@@ -45,7 +45,7 @@ const PATHS = [
 // The backslashes are escaped: a lone \ before a newline inside a template literal is a JS line
 // continuation, which silently collapses the whole command onto one line.
 const REQUEST = `curl http://localhost:4000/v1/chat/completions \\
-  -H "Authorization: Bearer $BIFROST_API_KEY" \\
+  -H "Authorization: Bearer $BIFROZZ_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"model":"general","messages":[{"role":"user","content":"Hello"}]}'`;
 
@@ -71,7 +71,7 @@ export default async function HomePage({ locale }: { locale: Locale }) {
 			<section className="dot-grid border-fd-border border-b">
 				<div className="mx-auto w-full max-w-5xl px-4 py-24 sm:py-32">
 					<h1 className="font-semibold text-5xl tracking-tight sm:text-6xl">
-						Bifrost
+						Bifrozz
 					</h1>
 					<p className="mt-5 max-w-2xl text-balance text-fd-muted-foreground text-lg">
 						{locale === "es"
@@ -124,8 +124,8 @@ export default async function HomePage({ locale }: { locale: Locale }) {
 				</h2>
 				<p className="mt-2 max-w-2xl text-fd-muted-foreground text-sm">
 					{locale === "es"
-						? "Apunta tu cliente a Bifrost. El public model "
-						: "Point your client at Bifrost. The public model "}
+						? "Apunta tu cliente a Bifrozz. El public model "
+						: "Point your client at Bifrozz. The public model "}
 					<code className="rounded bg-fd-muted px-1.5 py-0.5 font-mono text-xs">
 						general
 					</code>{" "}
@@ -145,7 +145,7 @@ export default async function HomePage({ locale }: { locale: Locale }) {
 					</Link>{" "}
 					<span className="text-fd-muted-foreground">
 						{locale === "es"
-							? "para configurar, integrar y operar Bifrost."
+							? "para configurar, integrar y operar Bifrozz."
 							: "for setup, API contracts, routing, and operations."}
 					</span>
 				</p>

@@ -140,7 +140,7 @@ realtime transcription or translation on the OpenAI adapter yet).
 **Azure is read for you.** The aggregators never list Azure's deployment ids, so `catalog:sync` reads
 Microsoft's own list (`https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure`,
 both tabs) and reports "Listed by Azure, missing from the catalog" and "Retired by Azure, not
-deprecated here". Every id in those sections is a candidate. One you leave out because Bifrost cannot
+deprecated here". Every id in those sections is a candidate. One you leave out because Bifrozz cannot
 serve it (no operation or transport for it) goes under "Out of scope" with the reason, so a human adds
 it to `AZURE_LISTING_UNSERVED`. If the report says the list could not be read, read the page by hand
 this run.
@@ -230,8 +230,8 @@ git status --short            # restore anything that is not a catalog: git chec
 bun run check
 bun run typecheck
 bun run test
-bun run --filter @boelabs/bifrost catalog:validate
-bun run --filter @boelabs/bifrost catalog:guard
+bun run --filter @boelabs/bifrozz catalog:validate
+bun run --filter @boelabs/bifrozz catalog:guard
 ```
 
 `catalog:guard` compares your tree with `origin/main`:

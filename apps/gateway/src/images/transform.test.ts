@@ -102,7 +102,7 @@ test("image transform: strips upstream metadata without stamping gateway brandin
 			assert.equal(metadata.height, 6);
 			assert.doesNotMatch(
 				brandedMetadata,
-				/Google|Gemini|Vendor Artist|C2PA|Bifrost|Boelabs/i,
+				/Google|Gemini|Vendor Artist|C2PA|Bifrozz|Boelabs/i,
 			);
 		}
 	}

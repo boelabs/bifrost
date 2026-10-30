@@ -36,7 +36,7 @@ function readCookies(res: Response): Cookies {
 		assert.ok(header, `expected a ${name} cookie`);
 		return header.slice(name.length + 1).split(";")[0]!;
 	};
-	return { session: find("bifrost_session"), csrf: find("bifrost_csrf") };
+	return { session: find("bifrozz_session"), csrf: find("bifrozz_csrf") };
 }
 
 function asOperator(
@@ -44,7 +44,7 @@ function asOperator(
 	extra: Record<string, string> = {},
 ): Record<string, string> {
 	return {
-		cookie: `bifrost_session=${cookies.session}; bifrost_csrf=${cookies.csrf}`,
+		cookie: `bifrozz_session=${cookies.session}; bifrozz_csrf=${cookies.csrf}`,
 		"x-csrf-token": cookies.csrf,
 		...extra,
 	};
@@ -101,7 +101,7 @@ test("dashboard auth: root session, roles, CSRF, and revocation", {
 	const noCsrf = await app.request("/admin/users", {
 		method: "POST",
 		headers: {
-			cookie: `bifrost_session=${root.session}`,
+			cookie: `bifrozz_session=${root.session}`,
 			"content-type": "application/json",
 		},
 		body: JSON.stringify({

@@ -53,7 +53,7 @@ Expanda primero, contraiga después: agrega la nueva columna y escriba en ambas,
 
 ## Imágenes y versiones [#images-and-versions]
 
-Tres imágenes, una por aplicación: `ghcr.io/<owner>/bifrost-{gateway,dashboard,docs}`. Una etiqueta `v*` publica los tres en la misma versión, incluso cuando solo uno cambia: el cliente API del panel se genera a partir del `openapi.yaml` del gateway, por lo que un número compartido elimina una pregunta de compatibilidad en lugar de responderla. CI también publica `sha-<commit>`, que nunca se mueve y es a lo que se fija una reversión, y `<branch>`, que se mueve y es lo que sigue un entorno, para `main` y para las ramas que realmente están implementadas, no para todas las ramas.
+Tres imágenes, una por aplicación: `ghcr.io/<owner>/bifrozz-{gateway,dashboard,docs}`. Una etiqueta `v*` publica los tres en la misma versión, incluso cuando solo uno cambia: el cliente API del panel se genera a partir del `openapi.yaml` del gateway, por lo que un número compartido elimina una pregunta de compatibilidad en lugar de responderla. CI también publica `sha-<commit>`, que nunca se mueve y es a lo que se fija una reversión, y `<branch>`, que se mueve y es lo que sigue un entorno, para `main` y para las ramas que realmente están implementadas, no para todas las ramas.
 
 ## Deployment desde CI [#deploying-from-ci]
 

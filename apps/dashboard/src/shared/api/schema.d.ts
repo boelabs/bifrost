@@ -881,7 +881,7 @@ export interface paths {
 		put?: never;
 		/**
 		 * Log in and receive an operator session cookie
-		 * @description Sets bifrost_session (httpOnly) and bifrost_csrf (readable, to be echoed in X-CSRF-Token). Rate limited per username and per client IP; the attempt ceiling and lockout are dashboard settings (PUT /admin/dashboard-settings). Mounted only when DASH_ENABLED.
+		 * @description Sets bifrozz_session (httpOnly) and bifrozz_csrf (readable, to be echoed in X-CSRF-Token). Rate limited per username and per client IP; the attempt ceiling and lockout are dashboard settings (PUT /admin/dashboard-settings). Mounted only when DASH_ENABLED.
 		 */
 		post: {
 			parameters: {

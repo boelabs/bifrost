@@ -19,7 +19,7 @@ curl -X POST "$GATEWAY/v1/messages" \
   }'
 ```
 
-El formato nativo de Anthropic usa `stop_sequences` en lugar de `stop`, `system` como campo de nivel superior o mensaje, y `output_config.format` en lugar de `response_format`. Bifrost lo convierte a la misma solicitud canonical que [Chat completions](/es/docs/chat-completions) y [Responses](/es/docs/responses). Este contrato permite acceder a cualquier proveedor compatible, y los modelos de Anthropic también están disponibles mediante los otros dos contratos.
+El formato nativo de Anthropic usa `stop_sequences` en lugar de `stop`, `system` como campo de nivel superior o mensaje, y `output_config.format` en lugar de `response_format`. Bifrozz lo convierte a la misma solicitud canonical que [Chat completions](/es/docs/chat-completions) y [Responses](/es/docs/responses). Este contrato permite acceder a cualquier proveedor compatible, y los modelos de Anthropic también están disponibles mediante los otros dos contratos.
 
 Los bloques `document` de Messages admiten URL, base64 y archivos del proveedor. Se envían de forma nativa en el transport de Anthropic; los demás transports aplican la política compartida de entradas. Consulta [Entradas de contenido](/es/docs/file-inputs).
 
@@ -37,7 +37,7 @@ El router prefiere el transport nativo de Messages cuando está disponible. `top
 
 El bloque `thinking` de Anthropic se obtiene de los mismos campos canonical `reasoning.effort`/`summary` que usan los demás contratos. El catálogo distingue `anthropic_adaptive` (el modelo decide la profundidad según `output_config.effort`) y `anthropic_budget` (un `budget_tokens` explícito por nivel). Consulta [Reasoning](/es/docs/reasoning) para ver los formatos y modelos compatibles. En modelos adaptativos, `output_config.effort: "max"` se conserva como un nivel distinto de `"xhigh"`.
 
-Los bloques de thinking firmados y los bloques ocultos son estado opaco del proveedor. El gateway conserva y reenvía los bloques completos, incluidas las firmas y los datos ocultos. Si otro proveedor solo devuelve un resumen visible de reasoning, Bifrost no fabrica bloques firmados.
+Los bloques de thinking firmados y los bloques ocultos son estado opaco del proveedor. El gateway conserva y reenvía los bloques completos, incluidas las firmas y los datos ocultos. Si otro proveedor solo devuelve un resumen visible de reasoning, Bifrozz no fabrica bloques firmados.
 
 ## Formato de los errores [#error-shape]
 

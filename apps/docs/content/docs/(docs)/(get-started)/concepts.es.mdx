@@ -3,7 +3,7 @@ title: Conceptos básicos
 description: Cómo se relacionan los public models, deployments, adapters y virtual keys.
 ---
 
-Bifrost conecta los nombres de modelo que utiliza tu aplicación con los proveedores que atienden
+Bifrozz conecta los nombres de modelo que utiliza tu aplicación con los proveedores que atienden
 las solicitudes. Estos son los tres conceptos iniciales:
 
 | Concepto | Propósito | Ejemplo |
@@ -34,7 +34,7 @@ Cada deployment debe admitir la operación solicitada. La
 ## Endpoints, adapters y transports [#endpoints-adapters-and-transports]
 
 Un **Public Endpoint** define la API que utiliza el cliente, como `/v1/chat/completions` o
-`/v1/messages`. Un **Adapter** traduce entre la representación interna de Bifrost y el formato
+`/v1/messages`. Un **Adapter** traduce entre la representación interna de Bifrozz y el formato
 del proveedor. Un **Transport** es el protocolo que ese adapter utiliza para comunicarse con el proveedor.
 
 Por ejemplo, el cliente puede utilizar Chat Completions mientras el adapter de OpenAI envía la

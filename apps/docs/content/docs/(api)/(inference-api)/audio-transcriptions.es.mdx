@@ -21,7 +21,7 @@ Solo multiparte (campo `file`). El archivo cargado se transmite a un disco tempo
 
 `model`, `file`, `language`, `languages`, `keywords`, `prompt`, `temperature`, `response_format` (`json`, `text`, `srt`, `verbose_json`, `vtt`, `diarized_json`), `timestamp_granularities` (`word`/`segment`, `verbose_json` solamente), `include`, `transcription_mode` (`verbatim`/`smart`), `stream`. Los formatos de respuesta y si las granularidades de streaming/marca de tiempo están disponibles se declaran por modelo en su perfil de catálogo `audio.transcribe`.
 
-`transcription_mode` es una extensión de Bifrost: `smart` pide a un modelo que lo admita quitar
+`transcription_mode` es una extensión de Bifrozz: `smart` pide a un modelo que lo admita quitar
 muletillas y dar formato a los números según el contexto; `verbatim` es el comportamiento
 predeterminado de todos los modelos y siempre se acepta. `response_format=diarized_json` devuelve la
 forma diarizada de OpenAI: `segments` con `speaker` (`A`, `B`, …), `start`, `end` y `text`.
@@ -33,7 +33,7 @@ forma diarizada de OpenAI: `segments` con `speaker` (`A`, `B`, …), `start`, `e
 contexto libre. Por ejemplo:
 
 ```bash
-  -F 'keywords[]=Bifrost' \
+  -F 'keywords[]=Bifrozz' \
   -F 'keywords[]=AC-42' \
   -F 'languages[]=es' \
   -F 'languages[]=en'

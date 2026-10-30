@@ -41,7 +41,7 @@ export const chatReasoningMiddleware: LanguageModelMiddleware = {
 			}
 			const states = message.content.flatMap((part) => {
 				const parsed = reasoningState.safeParse(
-					part.providerOptions?.bifrost?.reasoning,
+					part.providerOptions?.bifrozz?.reasoning,
 				);
 				return parsed.success ? parsed.data : [];
 			});
@@ -132,8 +132,8 @@ export const chatReasoningMiddleware: LanguageModelMiddleware = {
 								...part,
 								providerMetadata: {
 									...part.providerMetadata,
-									bifrost: {
-										...part.providerMetadata?.bifrost,
+									bifrozz: {
+										...part.providerMetadata?.bifrozz,
 										reasoning: [...states.values()],
 									},
 								},

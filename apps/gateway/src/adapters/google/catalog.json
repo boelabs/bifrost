@@ -3478,7 +3478,7 @@
 				"inputCentsPerMTokens": 350,
 				"outputCentsPerMTokens": 2100
 			},
-			"notes": "Live API speech-to-speech translation into 70+ languages; requires session.translation.target_language (Bifrost extension). Audio in, translated audio out; no instructions, tools or text input. The source language is detected. Each connection lasts about 10 minutes; the gateway reconnects without carrying context. Translation streams without turns; the gateway ends a response after 1.5 s without translated output."
+			"notes": "Live API speech-to-speech translation into 70+ languages; requires session.translation.target_language (Bifrozz extension). Audio in, translated audio out; no instructions, tools or text input. The source language is detected. Each connection lasts about 10 minutes; the gateway reconnects without carrying context. Translation streams without turns; the gateway ends a response after 1.5 s without translated output."
 		}
 	}
 }

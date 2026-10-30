@@ -154,7 +154,7 @@ export function deriveActiveKey(purpose: string): Buffer {
 		hkdfSync(
 			"sha256",
 			keyFor(ACTIVE_KEY_ID),
-			Buffer.from("bifrost-keyring-v2"),
+			Buffer.from("bifrozz-keyring-v2"),
 			Buffer.from(purpose),
 			32,
 		),

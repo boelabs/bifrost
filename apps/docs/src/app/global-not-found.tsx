@@ -1,13 +1,13 @@
 import Document from "#/components/document.tsx";
 import Link from "next/link";
 
-export const metadata = { title: "404 · Bifrost" };
+export const metadata = { title: "404 · Bifrozz" };
 
 export default function GlobalNotFound() {
 	return (
 		<Document locale="en">
 			<main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-8 px-6 py-16">
-				<p className="font-mono text-fd-muted-foreground">404 · Bifrost</p>
+				<p className="font-mono text-fd-muted-foreground">404 · Bifrozz</p>
 				<section lang="en">
 					<h1 className="font-semibold text-2xl">Page not found</h1>
 					<p className="mt-2 text-fd-muted-foreground">

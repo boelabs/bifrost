@@ -3,7 +3,7 @@ title: "Reranking"
 description: "POST /v1/rerank — the OpenRouter-shaped text reranking API."
 ---
 
-Bifrost exposes one reranking surface: `POST /v1/rerank`. The contract follows OpenRouter,
+Bifrozz exposes one reranking surface: `POST /v1/rerank`. The contract follows OpenRouter,
 while the canonical core can route the request to OpenRouter's native Rerank API or Vercel AI
 Gateway's Cohere-compatible Rerank API.
 
@@ -93,7 +93,7 @@ retry, and fallback.
 `model` is always the requested public name. The gateway reconstructs every returned `document` from
 the original request by `index`; it never trusts an upstream document echo. `id` and `provider` are
 included only with reliable upstream evidence, so Vercel responses do not invent the final provider.
-`usage.cost` is Bifrost's accounted consumer cost in USD, not an unprocessed upstream value.
+`usage.cost` is Bifrozz's accounted consumer cost in USD, not an unprocessed upstream value.
 
 Before accepting a response, the gateway requires exactly the expected number of results, unique
 in-range integer indexes, finite scores in descending order, and non-negative consistent usage.
@@ -172,7 +172,7 @@ applies normally.
 Normal logs retain only model, document count and bytes, `top_n`, provider-option names, result count,
 indexes, usage, and cost. Queries and document contents are not persisted. Search units are available
 in operation and attempt records, `/admin/usage`, and the
-`bifrost_search_units_total` OpenTelemetry counter.
+`bifrozz_search_units_total` OpenTelemetry counter.
 
 ## Next steps
 

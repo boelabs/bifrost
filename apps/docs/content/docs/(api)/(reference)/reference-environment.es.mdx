@@ -89,7 +89,7 @@ El panel verifica la dirección antes de aceptar su primera solicitud, por lo qu
 | Variables | Predeterminado | Controles |
 |---|---|---|
 | `OTEL_ENABLED` | `false` | Interruptor maestro. De lo contrario, las métricas/seguimientos no se exportan en absoluto. |
-| `OTEL_SERVICE_NAME` | `bifrost` | Nombre del servicio adjunto a la telemetría exportada. |
+| `OTEL_SERVICE_NAME` | `bifrozz` | Nombre del servicio adjunto a la telemetría exportada. |
 | `OTEL_METRIC_EXPORT_INTERVAL_MS` | `60000` | Con qué frecuencia se envían métricas al recopilador. |
 
 Estos son leídos por el propio esquema del gateway. Una vez `OTEL_ENABLED=true`, los exportadores (`OTLPMetricExporter`, `OTLPTraceExporter`) también leen directamente las variables de entorno **estándar** de OpenTelemetry SDK, en particular `OTEL_EXPORTER_OTLP_ENDPOINT` y `OTEL_EXPORTER_OTLP_HEADERS`: que no son específicos del gateway y, por lo tanto, no están validados por el esquema anterior. Consulta [Observabilidad](/es/docs/observability) para ver un ejemplo práctico.

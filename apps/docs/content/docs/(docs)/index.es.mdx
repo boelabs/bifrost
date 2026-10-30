@@ -3,7 +3,7 @@ title: Introducción
 description: Conecta tu aplicación a proveedores de inteligencia artificial mediante un solo gateway.
 ---
 
-Bifrost ofrece APIs compatibles con OpenAI y Anthropic. Tu aplicación envía solicitudes con una
+Bifrozz ofrece APIs compatibles con OpenAI y Anthropic. Tu aplicación envía solicitudes con una
 **virtual key** y un nombre de **public model**. El gateway selecciona un deployment del proveedor,
 traduce la solicitud y registra el consumo y su costo.
 
@@ -23,7 +23,7 @@ los parámetros disponibles dependen de los deployments de cada public model.
 
 ## Conecta una aplicación existente [#connect-an-existing-application]
 
-Si un operador ya configuró Bifrost, solo necesitas su URL base, una virtual key y el nombre de
+Si un operador ya configuró Bifrozz, solo necesitas su URL base, una virtual key y el nombre de
 un public model disponible. Por ejemplo, con el SDK de OpenAI para Python:
 
 ```python title="app.py"
@@ -37,7 +37,7 @@ response = client.chat.completions.create(
 print(response.choices[0].message.content)
 ```
 
-En este ejemplo, `general` es un nombre configurado en Bifrost. Puede dirigir solicitudes a uno
+En este ejemplo, `general` es un nombre configurado en Bifrozz. Puede dirigir solicitudes a uno
 o varios modelos upstream sin cambiar el código de la aplicación. Consulta la
 [Referencia de la API](/es/docs/api-overview) para conocer la autenticación, los endpoints y los errores.
 
@@ -53,7 +53,7 @@ o varios modelos upstream sin cambiar el código de la aplicación. Consulta la
   <Card title="Gestiona el acceso y los costos" href="/es/docs/virtual-keys">
     Asigna a cada aplicación sus modelos permitidos, rate limits y presupuesto.
   </Card>
-  <Card title="Instala Bifrost" href="/es/docs/deployment">
+  <Card title="Instala Bifrozz" href="/es/docs/deployment">
     Elige una plataforma y prepara Postgres, Redis y los secretos.
   </Card>
   <Card title="Utiliza el dashboard" href="/es/docs/dashboard">

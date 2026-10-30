@@ -4,8 +4,8 @@ import { z } from "zod/v4";
 
 import type {
 	CanonicalRealtimeTranscriptionConfig,
-	RealtimeUsage,
 	RealtimeTurnDetection,
+	RealtimeUsage,
 } from "#core/realtime.ts";
 
 /**
@@ -13,7 +13,7 @@ import type {
  * `session.update` with `session.type: "transcription"`, `input_audio_buffer.*` client events, and
  * `conversation.item.input_audio_transcription.*` server events.
  *
- * Bifrost adds `transcription_mode` (verbatim/smart) beside `keywords`/`languages` in
+ * Bifrozz adds `transcription_mode` (verbatim/smart) beside `keywords`/`languages` in
  * `audio.input.transcription`, and an opt-in `conversation.item.input_audio_transcription.interim`
  * event (`include: ["item.input_audio_transcription.interim"]`) that carries a provider's full
  * revisable hypothesis, which append-only deltas cannot express.

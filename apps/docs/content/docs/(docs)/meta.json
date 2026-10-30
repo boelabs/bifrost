@@ -1,6 +1,6 @@
 {
 	"title": "Documentation",
-	"description": "Connect an application, configure providers, and operate Bifrost.",
+	"description": "Connect an application, configure providers, and operate Bifrozz.",
 	"root": true,
 	"pages": [
 		"index",

@@ -1,6 +1,6 @@
 # Publishes the three images to GitHub Container Registry.
 #
-# This is what makes "deploy Bifrost" a `docker pull` rather than a checkout and a build. Coolify,
+# This is what makes "deploy Bifrozz" a `docker pull` rather than a checkout and a build. Coolify,
 # Dokploy, Portainer and plain Compose all take an image reference; none of them should have to
 # clone this repository to run it.
 #
@@ -44,13 +44,13 @@ jobs:
         include:
           - name: gateway
             dockerfile: apps/gateway/Dockerfile
-            image: bifrost-gateway
+            image: bifrozz-gateway
           - name: dashboard
             dockerfile: apps/dashboard/Dockerfile
-            image: bifrost-dashboard
+            image: bifrozz-dashboard
           - name: docs
             dockerfile: apps/docs/Dockerfile
-            image: bifrost-docs
+            image: bifrozz-docs
           - arch: amd64
             runner: ubuntu-latest
           - arch: arm64
@@ -115,11 +115,11 @@ jobs:
       matrix:
         include:
           - name: gateway
-            image: bifrost-gateway
+            image: bifrozz-gateway
           - name: dashboard
-            image: bifrost-dashboard
+            image: bifrozz-dashboard
           - name: docs
-            image: bifrost-docs
+            image: bifrozz-docs
     steps:
       - name: Download digests
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2

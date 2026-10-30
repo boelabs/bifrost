@@ -154,7 +154,7 @@ export async function parseImageEditMultipart(
 		throw badMultipart("Missing multipart body", null);
 	}
 
-	const dir = await mkdtemp(join(tmpdir(), "bifrost-images-"));
+	const dir = await mkdtemp(join(tmpdir(), "bifrozz-images-"));
 	const cleanup = () => rm(dir, { recursive: true, force: true });
 	const fields: Record<string, string> = {};
 	const pending: PendingUpload[] = [];

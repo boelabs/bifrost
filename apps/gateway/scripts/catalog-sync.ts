@@ -588,7 +588,7 @@ function azureListingSection(
 			"## Listed by Azure, missing from the catalog",
 			"",
 			`From ${AZURE_LISTING_URL}. Add each one, or list it in \`AZURE_LISTING_UNSERVED\``,
-			"(src/catalog/sync/azureListing.ts) with the reason Bifrost does not serve it.",
+			"(src/catalog/sync/azureListing.ts) with the reason Bifrozz does not serve it.",
 			"",
 			...azure.missing.map(
 				(item) => `- \`${item.adapterKey}/${item.id}\` (${item.section})`,

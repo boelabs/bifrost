@@ -1,8 +1,8 @@
 {
 	"$schema": "https://json-schema.org/draft/2020-12/schema",
-	"$id": "https://bifrost.local/schemas/model-catalog.schema.json",
-	"title": "Bifrost Provider Catalog",
-	"description": "Provider-local catalog consumed at boot and indexed in memory by bifrost.",
+	"$id": "https://bifrozz.local/schemas/model-catalog.schema.json",
+	"title": "Bifrozz Provider Catalog",
+	"description": "Provider-local catalog consumed at boot and indexed in memory by bifrozz.",
 	"type": "object",
 	"additionalProperties": false,
 	"required": ["schemaVersion", "provider", "models"],

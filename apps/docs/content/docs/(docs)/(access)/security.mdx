@@ -86,7 +86,7 @@ reason — it is the record of who used those three.
 
 A browser attaches cookies to cross-site requests on its own, so a cookie-authenticated request that
 changes state must prove it came from our own page. The gateway enforces double-submit: the login
-response sets a readable `bifrost_csrf` cookie alongside the httpOnly session cookie, and every
+response sets a readable `bifrozz_csrf` cookie alongside the httpOnly session cookie, and every
 non-`GET` request authenticated by that cookie must echo it in `X-CSRF-Token`.
 
 **The rule is by credential source, not by route.** It applies on `/v1/*` as well as `/admin/*` —

@@ -2,7 +2,7 @@
 title: "Política de parámetros"
 description: "Decide qué hacer cuando un deployment no admite un parámetro solicitado."
 ---
-La política de parámetros controla cómo Bifrost maneja un campo de solicitud que un deployment no admite. El catálogo declara soporte por modelo; la configuración del router elige si descartar el campo, rechazar la solicitud o pasarla.
+La política de parámetros controla cómo Bifrozz maneja un campo de solicitud que un deployment no admite. El catálogo declara soporte por modelo; la configuración del router elige si descartar el campo, rechazar la solicitud o pasarla.
 
 El siguiente mapa `parameters` se aplica a los endpoints **de chat**: `/v1/chat/completions`, `/v1/messages` y `/v1/responses`. Las imágenes, embeddings y transcripciones de audio validan incondicionalmente sus propios parámetros contra el perfil del catálogo (un `400 unsupported_parameter`), con una excepción: `quality` en generación de imágenes y videos, que sigue las mismas tres estrategias. Consulta [Calidad](/es/docs/parameter-policy#quality-on-image-and-video-generation).
 
@@ -35,7 +35,7 @@ La exclusión por candidato de `error` significa que se comporta menos como "rec
 
 ## `quality` sobre generación de imágenes y videos [#quality-on-image-and-video-generation]
 
-Los niveles de calidad varían por modelo: GPT Image 2.5 admite de `low` a `max`; modelos anteriores de GPT Image llegan a `high`; DALL·E usa `standard`/`hd`. Algunos modelos de Gemini traducen la calidad a un nivel de thinking y otros no permiten ajustarla. Bifrost usa una escala común (`low` < `medium` < `high` < `xhigh` < `max`) y la adapta a los niveles declarados por el modelo elegido:
+Los niveles de calidad varían por modelo: GPT Image 2.5 admite de `low` a `max`; modelos anteriores de GPT Image llegan a `high`; DALL·E usa `standard`/`hd`. Algunos modelos de Gemini traducen la calidad a un nivel de thinking y otros no permiten ajustarla. Bifrozz usa una escala común (`low` < `medium` < `high` < `xhigh` < `max`) y la adapta a los niveles declarados por el modelo elegido:
 
 | Estrategia | Comportamiento |
 |---|---|

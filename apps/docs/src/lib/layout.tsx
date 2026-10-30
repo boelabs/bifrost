@@ -1,6 +1,6 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
+import { BifrozzMark } from "#/components/bifrozz-mark.tsx";
 import { localizedPath, type Locale } from "#/lib/i18n.ts";
-import Image from "next/image";
 
 /**
  * Chrome shared by the documentation and the landing page, so the header never shifts between them.
@@ -13,16 +13,8 @@ const baseOptions: BaseLayoutProps = {
 	nav: {
 		title: (
 			<>
-				<Image
-					alt=""
-					// The mark is one colour on transparent, so the theme is a filter rather than a
-					// second file: black ink as drawn, flipped to white on a dark background.
-					className="dark:invert"
-					height={17}
-					src="/logo.svg"
-					width={26}
-				/>
-				<span className="font-medium">Bifrost</span>
+				<BifrozzMark decorative size={17} />
+				<span className="font-medium">Bifrozz</span>
 			</>
 		),
 	},

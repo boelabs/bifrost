@@ -1,10 +1,10 @@
 # syntax=docker/dockerfile:1
 #
-# Monorepo image for the Bifrost operator dashboard (Next.js App Router + Base UI).
+# Monorepo image for the Bifrozz operator dashboard (Next.js App Router + Base UI).
 # The BUILD CONTEXT is the repo ROOT (it needs the workspace manifests and lockfile), so build from
 # the root with:
 #
-#   docker build -f apps/dashboard/Dockerfile -t bifrost-dashboard .
+#   docker build -f apps/dashboard/Dockerfile -t bifrozz-dashboard .
 #
 # Everything here runs on BUN, including the server: `oven/bun` ships no `node` binary, so Next's
 # standalone output is started with `bun server.js`.

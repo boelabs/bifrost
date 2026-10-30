@@ -30,8 +30,8 @@ as many domains as you like:
 
 | | Image | Port |
 |---|---|---|
-| Gateway | `ghcr.io/boelabs/bifrost-gateway` | 4000 |
-| Dashboard | `ghcr.io/boelabs/bifrost-dashboard` | 3001 |
+| Gateway | `ghcr.io/boelabs/bifrozz-gateway` | 4000 |
+| Dashboard | `ghcr.io/boelabs/bifrozz-dashboard` | 3001 |
 
 The dashboard needs one setting, and the gateway needs nothing at all:
 
@@ -89,7 +89,7 @@ The person authenticates; the dashboard carries the answer:
 2.  browser    ──POST /api/auth/session──►  dashboard
 3.  dashboard  ──POST /auth/session─────►  gateway        (passes them on, keeps nothing)
 4.  gateway verifies against DASH_ROOT_USER or the dashboard_users table
-                           ◄──Set-Cookie: bifrost_session=<opaque token>
+                           ◄──Set-Cookie: bifrozz_session=<opaque token>
 5.  dashboard re-emits that cookie to the browser, on its own domain
 6.  every later request carries it, and the dashboard forwards it upstream
 ```

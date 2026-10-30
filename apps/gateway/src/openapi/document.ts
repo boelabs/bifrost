@@ -57,7 +57,7 @@ export function buildOpenApiDocument() {
 	return createDocument({
 		openapi: "3.1.0",
 		info: {
-			title: "Bifrost API",
+			title: "Bifrozz API",
 			version: "1.0.0",
 			description:
 				"Provider-agnostic AI gateway with OpenAI/OpenResponses-compatible public contracts. " +
@@ -94,9 +94,9 @@ export function buildOpenApiDocument() {
 				sessionCookie: {
 					type: "apiKey",
 					in: "cookie",
-					name: "bifrost_session",
+					name: "bifrozz_session",
 					description:
-						"Operator session issued by POST /auth/session (DASH_ENABLED only). Valid on /admin and on /v1. Because a browser attaches it automatically, every non-GET request authenticated this way MUST also send X-CSRF-Token matching the bifrost_csrf cookie.",
+						"Operator session issued by POST /auth/session (DASH_ENABLED only). Valid on /admin and on /v1. Because a browser attaches it automatically, every non-GET request authenticated this way MUST also send X-CSRF-Token matching the bifrozz_csrf cookie.",
 				},
 			},
 			parameters: {
@@ -970,7 +970,7 @@ export function buildOpenApiDocument() {
 					tags: ["Admin"],
 					summary: "Log in and receive an operator session cookie",
 					description:
-						"Sets bifrost_session (httpOnly) and bifrost_csrf (readable, to be echoed in X-CSRF-Token). Rate limited per username and per client IP; the attempt ceiling and lockout are dashboard settings (PUT /admin/dashboard-settings). Mounted only when DASH_ENABLED.",
+						"Sets bifrozz_session (httpOnly) and bifrozz_csrf (readable, to be echoed in X-CSRF-Token). Rate limited per username and per client IP; the attempt ceiling and lockout are dashboard settings (PUT /admin/dashboard-settings). Mounted only when DASH_ENABLED.",
 					security: [],
 					requestBody: jsonBody(c.Login, {
 						root: {

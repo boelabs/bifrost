@@ -19,7 +19,7 @@ that you give us a reasonable window to ship a fix before any public disclosure.
 
 ## Scope and handling of secrets
 
-Bifrost brokers requests to third-party AI providers and stores provider credentials. Keep the
+Bifrozz brokers requests to third-party AI providers and stores provider credentials. Keep the
 following in mind when reporting or operating:
 
 - Provider credentials, extension sources, and forensic samples are encrypted at rest with

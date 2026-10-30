@@ -15,7 +15,7 @@ import { RealtimeClientEventError, eventId } from "./realtime.ts";
  * OpenAI's Realtime API in conversation mode (`/v1/realtime?model=`), the GA shape: a session of
  * `type: "realtime"` that listens, answers in speech or text, and calls functions.
  *
- * Bifrost extensions: a `{type: "google_search"}` tool (the provider's own web search),
+ * Bifrozz extensions: a `{type: "google_search"}` tool (the provider's own web search),
  * `session.translation` for speech-to-speech translation models, and `transcription_mode`/
  * `keywords`/`languages` beside the input transcription settings.
  */

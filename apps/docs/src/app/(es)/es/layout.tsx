@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 export { viewport } from "#/components/document.tsx";
 export const metadata: Metadata = {
 	manifest: "/es/manifest.webmanifest",
-	title: { default: "Bifrost", template: "%s · Bifrost" },
+	title: { default: "Bifrozz", template: "%s · Bifrozz" },
 	description:
 		"Conecta tu aplicación a proveedores de inteligencia artificial mediante un solo gateway.",
 };

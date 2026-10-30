@@ -5,6 +5,8 @@
 # lock, so every replica can do it and only one does.
 #
 # Build contexts are the repository root, one level up from this file.
+# The project keeps its pre-rename name: volumes and container names derive from it, so renaming
+# it would start an existing stack on empty volumes.
 name: bifrost
 
 services:
@@ -39,7 +41,7 @@ services:
     build:
       context: ..
       dockerfile: apps/gateway/Dockerfile
-    image: bifrost:local
+    image: bifrozz:local
     environment:
       # Required at deployment; intentionally empty instead of falling back to known credentials.
       # MASTER_KEY needs >= 32 chars. ENCRYPTION_KEYRING is a JSON id-to-64-hex-key object.
@@ -80,7 +82,7 @@ services:
     build:
       context: ..
       dockerfile: apps/dashboard/Dockerfile
-    image: bifrost-dashboard:local
+    image: bifrozz-dashboard:local
     environment:
       # The only thing this container needs to know. The browser never talks to the gateway, so
       # the gateway does not have to be reachable from outside this network.

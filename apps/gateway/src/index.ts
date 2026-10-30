@@ -239,7 +239,7 @@ app.get("/health/live", (c) =>
 		// container runtime that sees it fail restarts the container — cutting the drain short and
 		// killing exactly the requests the drain exists to protect.
 		status: "ok",
-		service: "Bifrost",
+		service: "Bifrozz",
 		phase: lifecyclePhase(),
 		uptimeSeconds: Math.round(process.uptime()),
 		time: new Date().toISOString(),
@@ -262,7 +262,7 @@ async function readiness(c: Context) {
 		return c.json(
 			{
 				status: "draining",
-				service: "Bifrost",
+				service: "Bifrozz",
 				phase: lifecyclePhase(),
 				time: new Date().toISOString(),
 			},
@@ -279,7 +279,7 @@ async function readiness(c: Context) {
 	return c.json(
 		{
 			status: ok ? "ok" : "degraded",
-			service: "Bifrost",
+			service: "Bifrozz",
 			dependencies: { database, cache },
 			observability,
 			extensions: {

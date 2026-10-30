@@ -38,7 +38,7 @@ stateful half here:
 docker compose -f compose.data.yaml up -d
 ```
 
-The gateway, dashboard and docs then run from `ghcr.io/<owner>/bifrost-{gateway,dashboard,docs}` and
+The gateway, dashboard and docs then run from `ghcr.io/<owner>/bifrozz-{gateway,dashboard,docs}` and
 reach Postgres and Redis over the shared network. What that buys, what it costs, and the settings it
 needs are in [Rollouts](../apps/docs/content/docs/(docs)/(operate)/rollouts.mdx).
 

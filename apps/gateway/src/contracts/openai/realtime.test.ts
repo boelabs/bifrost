@@ -25,7 +25,7 @@ test("realtime: parses the GA transcription session.update", () => {
 					transcription: {
 						model: "transcribe-live",
 						languages: ["es-419"],
-						keywords: ["Bifrost"],
+						keywords: ["Bifrozz"],
 						transcription_mode: "smart",
 						prompt: "ignored by Gemini",
 					},

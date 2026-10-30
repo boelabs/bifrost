@@ -92,7 +92,7 @@ what makes rolling an image *back* safe.
 
 ## Images and versions
 
-Three images, one per app: `ghcr.io/<owner>/bifrost-{gateway,dashboard,docs}`. A `v*` tag publishes
+Three images, one per app: `ghcr.io/<owner>/bifrozz-{gateway,dashboard,docs}`. A `v*` tag publishes
 all three at the same version, even when only one changed — the dashboard's API client is generated
 from the gateway's `openapi.yaml`, so a shared number removes a compatibility question instead of
 answering it. CI also publishes `sha-<commit>`, which never moves and is what a rollback pins to,

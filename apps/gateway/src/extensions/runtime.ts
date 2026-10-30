@@ -317,7 +317,7 @@ function hookError(
 	return new GatewayError({
 		class: "server",
 		message: `Extension "${instance.definitionKey}" instance "${instance.id}" failed in ${hook}: ${err instanceof Error ? err.message : String(err)}`,
-		publicMessage: "A Bifrost extension failed while processing the request.",
+		publicMessage: "A Bifrozz extension failed while processing the request.",
 		code: "extension_hook_failed",
 		failureKind: "gateway",
 		deploymentHealth: "neutral",
@@ -331,7 +331,7 @@ function disabledError(instance: LoadedInstance): GatewayError {
 		class: "server",
 		status: 503,
 		message: `Required extension "${instance.definitionKey}" instance "${instance.id}" is disabled: ${instance.disabledReason ?? "unknown reason"}`,
-		publicMessage: "A required Bifrost extension is disabled.",
+		publicMessage: "A required Bifrozz extension is disabled.",
 		code: "extension_disabled",
 		failureKind: "gateway",
 		deploymentHealth: "neutral",

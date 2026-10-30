@@ -2,7 +2,7 @@
 	"name": "@boelabs/dashboard",
 	"version": "0.0.0",
 	"private": true,
-	"description": "Bifrost operator dashboard (Next.js App Router, Base UI with BaseLayer styling).",
+	"description": "Bifrozz operator dashboard (Next.js App Router, Base UI with BaseLayer styling).",
 	"type": "module",
 	"imports": {
 		"#/*": "./src/*"
