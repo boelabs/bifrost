@@ -126,6 +126,16 @@ export const DEFAULT_EXECUTION_POLICIES: ExecutionPolicies = {
 		json: policy(15 * MINUTE, null, 30 * MINUTE, 2),
 		stream: policy(10 * MINUTE, 5 * MINUTE, 30 * MINUTE, 2),
 	},
+	// A live session: `response` covers connecting and the provider accepting the configuration;
+	// silence is normal, so nothing watches it; `total` is the session's whole life.
+	"realtime.transcription": {
+		json: policy(MINUTE, null, 60 * MINUTE, 2),
+		stream: policy(MINUTE, null, 60 * MINUTE, 2),
+	},
+	"realtime.conversation": {
+		json: policy(MINUTE, null, 60 * MINUTE, 2),
+		stream: policy(MINUTE, null, 60 * MINUTE, 2),
+	},
 	embeddings: {
 		json: policy(2 * MINUTE, null, 5 * MINUTE, 3),
 		stream: policy(2 * MINUTE, null, 5 * MINUTE, 3),

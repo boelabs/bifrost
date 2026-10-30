@@ -19,6 +19,15 @@ import type {
 } from "#core/videos.ts";
 
 import type {
+	CanonicalRealtimeConversationConfig,
+	CanonicalRealtimeConversationEvent,
+	CanonicalRealtimeTranscriptionConfig,
+	CanonicalRealtimeTranscriptionEvent,
+	RealtimeFunctionResult,
+	RealtimeTurn,
+} from "#core/realtime.ts";
+
+import type {
 	CanonicalChatStreamChunk,
 	CanonicalChatResponse,
 	CanonicalChatRequest,
@@ -243,6 +252,68 @@ export interface TranscriptionHandler {
 	mapError: (err: unknown, ctx: AdapterContext) => GatewayError;
 }
 
+/**
+ * One live transcription session at the provider. It may span several upstream connections (a
+ * provider that caps a connection's length is reconnected behind it), but the caller sees one
+ * ordered event stream.
+ */
+export interface RealtimeTranscriptionSession {
+	/** 16-bit little-endian mono PCM at `REALTIME_AUDIO_SAMPLE_RATE`. */
+	appendAudio: (pcm: Buffer) => void;
+	/** Manual turns: the client started an utterance. */
+	startUtterance: () => void;
+	/** Ends the open utterance: the client committed it (manual) or flushed it early (VAD). */
+	endUtterance: () => void;
+	/** Ends when the session closes; throws a GatewayError when the provider fails it. */
+	events: AsyncIterable<CanonicalRealtimeTranscriptionEvent>;
+	close: () => void;
+}
+
+/** An adapter's live-audio transcription handler. */
+export interface RealtimeTranscriptionHandler {
+	/** Resolves once the provider accepted the session configuration. */
+	connect: (
+		config: CanonicalRealtimeTranscriptionConfig,
+		ctx: AdapterContext,
+	) => Promise<RealtimeTranscriptionSession>;
+}
+
+/**
+ * One live conversation with a provider. Like transcription, a provider that caps a connection is
+ * reconnected behind it; here the provider's session resumption keeps the conversation's context.
+ */
+export interface RealtimeConversationSession {
+	/** 16-bit little-endian mono PCM at `REALTIME_AUDIO_SAMPLE_RATE`. */
+	appendAudio: (pcm: Buffer) => void;
+	/** Manual turns: the user started speaking. */
+	startActivity: () => void;
+	/** Manual turns: the user is done; the model answers. */
+	endActivity: () => void;
+	/** VAD turns: the client flushed its audio; the provider should finalize what it heard. */
+	flushAudio: () => void;
+	/** Appends turns to the conversation; `complete` asks the model to answer now. */
+	sendTurns: (turns: RealtimeTurn[], complete: boolean) => void;
+	/** Results of the model's function calls; the model continues with them. */
+	sendFunctionResults: (results: RealtimeFunctionResult[]) => void;
+	/**
+	 * Applies a new configuration (same model). Resolves once the provider accepted it; the
+	 * conversation's context survives when the provider can resume sessions.
+	 */
+	reconfigure: (config: CanonicalRealtimeConversationConfig) => Promise<void>;
+	/** Ends when the session closes; throws a GatewayError when the provider fails it. */
+	events: AsyncIterable<CanonicalRealtimeConversationEvent>;
+	close: () => void;
+}
+
+/** An adapter's live conversation handler. */
+export interface RealtimeConversationHandler {
+	/** Resolves once the provider accepted the session configuration. */
+	connect: (
+		config: CanonicalRealtimeConversationConfig,
+		ctx: AdapterContext,
+	) => Promise<RealtimeConversationSession>;
+}
+
 /** An adapter's canonical embeddings handler. No streaming. */
 export interface EmbeddingsHandler {
 	buildRequest: (
@@ -321,6 +392,8 @@ export interface Adapter {
 	imageEdit?: ImageHandler;
 	videoGeneration?: VideoHandler;
 	audioTranscription?: TranscriptionHandler;
+	realtimeTranscription?: RealtimeTranscriptionHandler;
+	realtimeConversation?: RealtimeConversationHandler;
 	embeddings?: EmbeddingsHandler;
 	rerank?: RerankHandler;
 	/** Upstream transports per CallType. */

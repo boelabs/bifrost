@@ -270,6 +270,31 @@ test("image tokens are charged at their image rates", () => {
 	assert.ok(Math.abs(c.inputCents - 100 * 0.0002) < 1e-9);
 });
 
+test("audio tokens are charged at their audio rates", () => {
+	// Gemini 3.8 Live: $0.75 text / $3 audio input, $4.50 text / $12 audio output per 1M.
+	const c = computeCost(
+		{
+			pricing: {
+				inputCentsPerMTokens: 75,
+				outputCentsPerMTokens: 450,
+				audioInputCentsPerMTokens: 300,
+				audioOutputCentsPerMTokens: 1200,
+			},
+		},
+		{
+			promptTokens: 1100,
+			completionTokens: 550,
+			totalTokens: 1650,
+			promptAudioTokens: 1000,
+			completionAudioTokens: 500,
+		},
+	);
+	assert.ok(Math.abs(c.inputCents - (100 * 0.000_075 + 1000 * 0.0003)) < 1e-9);
+	assert.ok(Math.abs(c.outputCents - (50 * 0.000_45 + 500 * 0.0012)) < 1e-9);
+	assert.ok(Math.abs(c.audioCents - (1000 * 0.0003 + 500 * 0.0012)) < 1e-9);
+	assert.equal(c.imageCents, 0);
+});
+
 test("image input is charged at its rate, cached tokens at the cache rate", () => {
 	// gpt-image-1: $5 text input, $10 image input, $1.25 cached input.
 	const c = computeCost(

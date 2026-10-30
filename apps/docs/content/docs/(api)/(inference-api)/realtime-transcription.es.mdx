@@ -1,0 +1,89 @@
+---
+title: "Transcripción en tiempo real"
+description: "GET /v1/realtime?intent=transcription: la Realtime API de OpenAI en modo transcripción."
+---
+
+Transcribe audio en vivo por WebSocket. El endpoint habla la Realtime API de OpenAI en modo
+transcripción, así que los SDKs y clientes de OpenAI funcionan sin cambios; el public model debe
+admitir `audio.transcribe.realtime` (hoy `gemini-3.5-transcribe-live`, a través de la Live API de
+Gemini).
+
+## Conexión [#connecting]
+
+Abre un WebSocket a `$GATEWAY/v1/realtime?intent=transcription` con tu virtual key en el header
+`Authorization: Bearer` (o, desde un navegador, el subprotocolo `openai-insecure-api-key.<key>`). El
+modelo viene de `session.update`; el parámetro `model` en la URL se rechaza con `400` antes del
+upgrade. El gateway responde con `session.created`. Para conversaciones de voz, conecta con
+`?model=`: consulta [Conversaciones en tiempo real](/es/docs/realtime-conversations).
+
+## Sesión [#session]
+
+Envía `session.update` con `session.type: "transcription"`. El modelo va en
+`audio.input.transcription.model`; la sesión con el proveedor se abre cuando se define:
+
+```json
+{
+  "type": "session.update",
+  "session": {
+    "type": "transcription",
+    "audio": {
+      "input": {
+        "format": { "type": "audio/pcm", "rate": 24000 },
+        "transcription": {
+          "model": "transcribe-live",
+          "languages": ["es-419", "en-US"],
+          "keywords": ["Bifrost", "AC-42"],
+          "transcription_mode": "smart"
+        },
+        "turn_detection": null
+      }
+    }
+  }
+}
+```
+
+| Campo | Comportamiento |
+|---|---|
+| `format` | `audio/pcm` a 24 kHz (el predeterminado de OpenAI) o 16 kHz, `audio/pcmu`, `audio/pcma`. El gateway convierte al formato del proveedor. |
+| `transcription.language` / `languages` | Pistas de idioma (BCP-47 en Gemini). Envía uno u otro. |
+| `transcription.keywords` | Vocabulario; hasta 1.000 en Gemini. |
+| `transcription.transcription_mode` | Extensión de Bifrost: `verbatim` (predeterminado) o `smart`, que quita muletillas y da formato a los números. |
+| `transcription.prompt`, `delay`, `noise_reduction` | Se aceptan; Gemini no tiene equivalente, así que no se envían. |
+| `turn_detection` | `null`: cada `input_audio_buffer.commit` cierra un enunciado. `server_vad` o `semantic_vad`: el proveedor detecta las pausas. |
+| `include` | `item.input_audio_transcription.interim` añade el evento interim descrito abajo. |
+
+Cambiar el modelo, los idiomas, el vocabulario, el modo o la detección de turnos abre una nueva
+sesión con el proveedor, porque este fija su configuración al iniciarla. Cambiar solo el formato de
+audio no.
+
+## Audio y transcripciones [#audio-and-transcripts]
+
+Envía audio con `input_audio_buffer.append` (base64). Con `turn_detection: null`, cierra cada
+enunciado con `input_audio_buffer.commit`; `input_audio_buffer.clear` descarta el abierto. El gateway
+responde con los eventos de OpenAI:
+
+- `input_audio_buffer.committed` y `conversation.item.added` por cada enunciado;
+  `input_audio_buffer.speech_started` y `speech_stopped` alrededor de él con VAD del servidor.
+- `conversation.item.input_audio_transcription.delta` mientras el proveedor sigue escuchando.
+- `conversation.item.input_audio_transcription.completed` con el `transcript` final y, si el
+  proveedor lo informa, `usage` en tokens.
+
+Gemini corrige su hipótesis sobre la marcha; los deltas de OpenAI solo agregan texto. Por eso un
+delta solo lleva texto que extiende lo ya enviado, y `completed` siempre trae la transcripción
+definitiva. Para ver cada corrección, incluye `item.input_audio_transcription.interim`: cada evento
+`conversation.item.input_audio_transcription.interim` trae el `transcript` completo actual.
+
+## Límites [#limits]
+
+- Una conexión dura como máximo 60 minutos. Gemini cierra cada sesión a los 10 minutos; el gateway
+  se reconecta detrás de la misma sesión pública, así que el audio sigue fluyendo.
+- Las sesiones en vivo no tienen diarización ni timestamps por palabra; para eso usa
+  [Transcripción de audio](/es/docs/audio-transcriptions) con `gemini-3.5-transcribe`.
+- `REALTIME_WEBSOCKET_MAX_CONNECTIONS` y `REALTIME_WEBSOCKET_MAX_CONNECTIONS_PER_KEY` limitan las
+  sesiones abiertas por proceso y por key.
+
+Cada sesión con el proveedor se registra como una operación `realtime.transcription` con su uso y
+costo. Gemini Live no informa uso en las sesiones de transcripción, así que el gateway lo estima: los
+tokens de entrada a partir de la duración del audio (25 tokens por segundo, la tarifa publicada por
+Google) y los de salida a partir del largo de la transcripción (unos 4 caracteres por token). La
+operación queda marcada con `usageEstimated` y los eventos `completed` no traen `usage`.

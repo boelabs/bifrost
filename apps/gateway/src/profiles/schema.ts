@@ -16,6 +16,8 @@ export const pricingSchema = z
 			.optional(),
 		imageInputCentsPerMTokens: z.number().nonnegative().optional(),
 		imageOutputCentsPerMTokens: z.number().nonnegative().optional(),
+		audioInputCentsPerMTokens: z.number().nonnegative().optional(),
+		audioOutputCentsPerMTokens: z.number().nonnegative().optional(),
 		searchUnitCents: z.number().nonnegative().optional(),
 		tiers: z
 			.array(
@@ -34,6 +36,8 @@ export const pricingSchema = z
 							.optional(),
 						imageInputCentsPerMTokens: z.number().nonnegative().optional(),
 						imageOutputCentsPerMTokens: z.number().nonnegative().optional(),
+						audioInputCentsPerMTokens: z.number().nonnegative().optional(),
+						audioOutputCentsPerMTokens: z.number().nonnegative().optional(),
 					})
 					.strict(),
 			)
@@ -345,6 +349,56 @@ const transcriptionOperationProfileSchema = z
 	})
 	.strict();
 
+const realtimeTranscriptionOperationProfileSchema = z
+	.object({
+		...transportField,
+		supportsKeywords: z.boolean().optional(),
+		maxKeywords: z.int().positive().optional(),
+		supportsLanguageHints: z.boolean().optional(),
+		modes: z
+			.array(z.enum(["verbatim", "smart"]))
+			.min(1)
+			.optional(),
+		turnDetection: z
+			.array(z.enum(["server_vad", "manual"]))
+			.min(1)
+			.optional(),
+		maxUpstreamSessionSeconds: z.int().positive().optional(),
+	})
+	.strict();
+
+const realtimeConversationOperationProfileSchema = z
+	.object({
+		...transportField,
+		outputModalities: z.array(z.enum(["audio", "text"])).min(1),
+		voices: z.array(z.string().min(1)).min(1).optional(),
+		supportsInstructions: z.boolean().optional(),
+		supportsTools: z.boolean().optional(),
+		functionCalling: z.enum(["blocking", "non_blocking"]).optional(),
+		supportsGoogleSearch: z.boolean().optional(),
+		reasoningEfforts: z
+			.array(z.enum(["minimal", "low", "medium", "high"]))
+			.min(1)
+			.optional(),
+		defaultReasoningEffort: z
+			.enum(["minimal", "low", "medium", "high"])
+			.optional(),
+		supportsTextInput: z.boolean().optional(),
+		supportsImageInput: z.boolean().optional(),
+		supportsInputTranscription: z.boolean().optional(),
+		maxKeywords: z.int().positive().optional(),
+		translation: z.boolean().optional(),
+		turnDetection: z
+			.array(z.enum(["server_vad", "semantic_vad", "manual"]))
+			.min(1)
+			.optional(),
+		supportsSessionResumption: z.boolean().optional(),
+		supportsHistoryConfig: z.boolean().optional(),
+		supportsContextCompression: z.boolean().optional(),
+		maxUpstreamSessionSeconds: z.int().positive().optional(),
+	})
+	.strict();
+
 const videoOperationProfileSchema = z
 	.object({
 		...transportField,
@@ -481,6 +535,10 @@ export const operationProfilesSchema = z
 		"image.edit": imageOperationProfileSchema.optional(),
 		"video.generate": videoOperationProfileSchema.optional(),
 		"audio.transcribe": transcriptionOperationProfileSchema.optional(),
+		"audio.transcribe.realtime":
+			realtimeTranscriptionOperationProfileSchema.optional(),
+		"audio.converse.realtime":
+			realtimeConversationOperationProfileSchema.optional(),
 		"embedding.create": embeddingOperationProfileSchema.optional(),
 		rerank: rerankOperationProfileSchema.optional(),
 	})

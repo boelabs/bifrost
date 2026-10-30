@@ -29,7 +29,9 @@ Read this file top to bottom before your first change. The rules here override d
 
 Bifrost — a backend-only, provider-agnostic AI gateway. Public endpoints are OpenAI-shaped
 (`/v1/chat/completions`, `/v1/responses`, `/v1/images/*`, `/v1/embeddings`,
-`/v1/audio/transcriptions`, `/v1/videos`, `/v1/rerank`) plus an Anthropic-compatible `/v1/messages`.
+`/v1/audio/transcriptions`, `/v1/realtime` for voice conversations and transcription, `/v1/videos`,
+`/v1/rerank`) plus an
+Anthropic-compatible `/v1/messages`.
 Every request is translated through one canonical core and routed to a provider adapter.
 
 `GET /v1/models` and `GET /v1/models/{model}` are deliberately **unauthenticated**, like other

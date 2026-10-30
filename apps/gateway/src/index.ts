@@ -69,6 +69,11 @@ import {
 } from "./logging/operations.ts";
 
 import {
+	realtimeWebSocketHandler,
+	closeRealtimeWebSockets,
+} from "./endpoints/realtime.ts";
+
+import {
 	imageGenerationsHandler,
 	imageEditsHandler,
 } from "./endpoints/images.ts";
@@ -323,6 +328,7 @@ app.use("/v1/*", authMiddleware());
 app.post("/v1/chat/completions", chatCompletionsHandler);
 app.post("/v1/responses", responsesHandler);
 app.get("/v1/responses", responsesWebSocketHandler);
+app.get("/v1/realtime", realtimeWebSocketHandler);
 app.post("/v1/responses/compact", compactResponseHandler);
 app.get("/v1/responses/:id", retrieveResponseHandler);
 app.delete("/v1/responses/:id", deleteResponseHandler);
@@ -358,7 +364,10 @@ const server = serve(
 
 installGracefulShutdown({
 	server,
-	releaseConnections: closeResponsesWebSockets,
+	releaseConnections: async (options) => {
+		closeResponsesWebSockets(options);
+		await closeRealtimeWebSockets(options);
+	},
 	stopJobs: [
 		stopOperationMaintenance,
 		stopResponseStateGc,

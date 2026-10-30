@@ -45,6 +45,8 @@ test("admin mounts the new platform behind master authentication", async () => {
 				"image.edit",
 				"video.generate",
 				"audio.transcribe",
+				"audio.transcribe.realtime",
+				"audio.converse.realtime",
 				"embedding.create",
 				"rerank",
 			].includes(operation.id),

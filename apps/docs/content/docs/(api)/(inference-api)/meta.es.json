@@ -9,6 +9,8 @@
 		"images",
 		"videos",
 		"audio-transcriptions",
+		"realtime-transcription",
+		"realtime-conversations",
 		"---Búsqueda y vectores---",
 		"embeddings",
 		"reranking",

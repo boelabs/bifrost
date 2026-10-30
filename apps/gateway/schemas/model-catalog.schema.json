@@ -87,6 +87,12 @@
 				"image.edit": { "$ref": "#/$defs/imageModelProfile" },
 				"video.generate": { "$ref": "#/$defs/videoModelProfile" },
 				"audio.transcribe": { "$ref": "#/$defs/transcriptionProfile" },
+				"audio.transcribe.realtime": {
+					"$ref": "#/$defs/realtimeTranscriptionProfile"
+				},
+				"audio.converse.realtime": {
+					"$ref": "#/$defs/realtimeConversationProfile"
+				},
 				"embedding.create": { "$ref": "#/$defs/embeddingProfile" },
 				"rerank": { "$ref": "#/$defs/rerankProfile" }
 			},
@@ -445,6 +451,88 @@
 				"maxFileBytes": { "type": "integer", "minimum": 1 }
 			}
 		},
+		"realtimeTranscriptionProfile": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"transport": { "type": "string" },
+				"supportsKeywords": { "type": "boolean" },
+				"maxKeywords": { "type": "integer", "minimum": 1 },
+				"supportsLanguageHints": { "type": "boolean" },
+				"modes": {
+					"type": "array",
+					"items": { "enum": ["verbatim", "smart"] },
+					"minItems": 1,
+					"uniqueItems": true
+				},
+				"turnDetection": {
+					"type": "array",
+					"items": { "enum": ["server_vad", "manual"] },
+					"minItems": 1,
+					"uniqueItems": true
+				},
+				"maxUpstreamSessionSeconds": { "type": "integer", "minimum": 1 }
+			}
+		},
+		"realtimeConversationProfile": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["outputModalities"],
+			"properties": {
+				"transport": { "type": "string" },
+				"outputModalities": {
+					"type": "array",
+					"items": { "enum": ["audio", "text"] },
+					"minItems": 1,
+					"uniqueItems": true,
+					"description": "What the model answers with natively. A text session on an audio-only model is served from the transcript of its spoken reply."
+				},
+				"voices": {
+					"type": "array",
+					"items": { "type": "string", "minLength": 1 },
+					"minItems": 1,
+					"uniqueItems": true
+				},
+				"supportsInstructions": { "type": "boolean" },
+				"supportsTools": { "type": "boolean" },
+				"functionCalling": {
+					"enum": ["blocking", "non_blocking"],
+					"description": "blocking: the model waits for function results (OpenAI's semantics). non_blocking: the only mode the model has; it may keep talking."
+				},
+				"supportsGoogleSearch": { "type": "boolean" },
+				"reasoningEfforts": {
+					"type": "array",
+					"items": { "enum": ["minimal", "low", "medium", "high"] },
+					"minItems": 1,
+					"uniqueItems": true
+				},
+				"defaultReasoningEffort": {
+					"enum": ["minimal", "low", "medium", "high"],
+					"description": "Sent when a session sets no reasoning.effort, for models that refuse to start without one."
+				},
+				"supportsTextInput": { "type": "boolean" },
+				"supportsImageInput": { "type": "boolean" },
+				"supportsInputTranscription": { "type": "boolean" },
+				"maxKeywords": { "type": "integer", "minimum": 1 },
+				"translation": {
+					"type": "boolean",
+					"description": "Speech-to-speech translation model: sessions must set session.translation.target_language."
+				},
+				"turnDetection": {
+					"type": "array",
+					"items": { "enum": ["server_vad", "semantic_vad", "manual"] },
+					"minItems": 1,
+					"uniqueItems": true
+				},
+				"supportsSessionResumption": { "type": "boolean" },
+				"supportsHistoryConfig": {
+					"type": "boolean",
+					"description": "A new session can be seeded with the conversation so far, function calls included (Gemini historyConfig)."
+				},
+				"supportsContextCompression": { "type": "boolean" },
+				"maxUpstreamSessionSeconds": { "type": "integer", "minimum": 1 }
+			}
+		},
 		"embeddingProfile": {
 			"type": "object",
 			"additionalProperties": false,
@@ -516,6 +604,16 @@
 					"minimum": 0,
 					"description": "Image output tokens. Absent: billed at outputCentsPerMTokens."
 				},
+				"audioInputCentsPerMTokens": {
+					"type": "number",
+					"minimum": 0,
+					"description": "Audio input tokens. Absent: billed at inputCentsPerMTokens."
+				},
+				"audioOutputCentsPerMTokens": {
+					"type": "number",
+					"minimum": 0,
+					"description": "Audio output tokens. Absent: billed at outputCentsPerMTokens."
+				},
 				"searchUnitCents": { "type": "number", "minimum": 0 },
 				"tiers": {
 					"type": "array",
@@ -547,6 +645,16 @@
 					"type": "number",
 					"minimum": 0,
 					"description": "Image output tokens. Absent: billed at outputCentsPerMTokens."
+				},
+				"audioInputCentsPerMTokens": {
+					"type": "number",
+					"minimum": 0,
+					"description": "Audio input tokens. Absent: billed at inputCentsPerMTokens."
+				},
+				"audioOutputCentsPerMTokens": {
+					"type": "number",
+					"minimum": 0,
+					"description": "Audio output tokens. Absent: billed at outputCentsPerMTokens."
 				}
 			}
 		}

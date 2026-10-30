@@ -12,6 +12,8 @@ export interface CostBreakdown {
 	outputCents: number;
 	/** The part of `inputCents` and `outputCents` charged at image rates, in USD cents. */
 	imageCents: number;
+	/** The part of `inputCents` and `outputCents` charged at audio rates, in USD cents. */
+	audioCents: number;
 	/** Cost of reranking search units, in USD cents. */
 	searchUnitCents: number;
 	/** Cost reported by the upstream, retained separately for reconciliation. */
@@ -33,9 +35,11 @@ function effectiveRates(p: PricingShape, promptTokens: number): PricingShape {
 	let cacheRead = p.cacheReadCentsPerMTokens ?? p.inputCentsPerMTokens ?? 0;
 	let cacheWrite = p.cacheWriteCentsPerMTokens ?? p.inputCentsPerMTokens ?? 0;
 	let cacheWriteByTtl = p.cacheWriteCentsPerMTokensByTtl;
-	// Image rates are explicit or follow the effective text rates, tier by tier.
+	// Image and audio rates are explicit or follow the effective text rates, tier by tier.
 	let imageInput = p.imageInputCentsPerMTokens;
 	let imageOutput = p.imageOutputCentsPerMTokens;
+	let audioInput = p.audioInputCentsPerMTokens;
+	let audioOutput = p.audioOutputCentsPerMTokens;
 
 	const tiers = [...(p.tiers ?? [])].sort(
 		(a, b) => a.aboveInputTokens - b.aboveInputTokens,
@@ -50,6 +54,8 @@ function effectiveRates(p: PricingShape, promptTokens: number): PricingShape {
 			}
 			imageInput = t.imageInputCentsPerMTokens ?? imageInput;
 			imageOutput = t.imageOutputCentsPerMTokens ?? imageOutput;
+			audioInput = t.audioInputCentsPerMTokens ?? audioInput;
+			audioOutput = t.audioOutputCentsPerMTokens ?? audioOutput;
 			if (t.cacheReadCentsPerMTokens !== undefined) {
 				cacheRead = t.cacheReadCentsPerMTokens;
 			}
@@ -71,6 +77,8 @@ function effectiveRates(p: PricingShape, promptTokens: number): PricingShape {
 		cacheWriteCentsPerMTokens: cacheWrite,
 		imageInputCentsPerMTokens: imageInput ?? input,
 		imageOutputCentsPerMTokens: imageOutput ?? output,
+		audioInputCentsPerMTokens: audioInput ?? input,
+		audioOutputCentsPerMTokens: audioOutput ?? output,
 		...(cacheWriteByTtl === undefined
 			? {}
 			: { cacheWriteCentsPerMTokensByTtl: cacheWriteByTtl }),
@@ -84,8 +92,8 @@ function effectiveRates(p: PricingShape, promptTokens: number): PricingShape {
  * Computes the cost from the model's pricing (cents per 1M tokens) and the usage.
  * `cacheReadTokens` and `cacheWriteTokens` are disjoint subsets of promptTokens: they are subtracted
  * from input and charged at their rate (read -> cacheRead or input; write -> cacheWrite or input).
- * Image tokens are subsets too: uncached image input and image output are charged at their image
- * rates, which default to the text rates. If the model has a context-tiered rate, the tier is applied
+ * Image and audio tokens are subsets too: uncached image/audio input and image/audio output are
+ * charged at their own rates, which default to the text rates. If the model has a context-tiered rate, the tier is applied
  * based on promptTokens. No pricing -> 0.
  */
 export function computeCost(
@@ -119,8 +127,22 @@ export function computeCost(
 	);
 	const imageCents =
 		imagePrompt * imageInputRate + imageCompletion * imageOutputRate;
+	const audioInputRate = (r.audioInputCentsPerMTokens ?? 0) / 1_000_000;
+	const audioOutputRate = (r.audioOutputCentsPerMTokens ?? 0) / 1_000_000;
+	const audioPrompt = Math.min(
+		nonCachedPrompt - imagePrompt,
+		Math.max(0, usage.promptAudioTokens ?? 0),
+	);
+	const audioCompletion = Math.min(
+		usage.completionTokens - imageCompletion,
+		Math.max(0, usage.completionAudioTokens ?? 0),
+	);
+	const audioCents =
+		audioPrompt * audioInputRate + audioCompletion * audioOutputRate;
 	const inputCents =
-		(nonCachedPrompt - imagePrompt) * inputRate + imagePrompt * imageInputRate;
+		(nonCachedPrompt - imagePrompt - audioPrompt) * inputRate +
+		imagePrompt * imageInputRate +
+		audioPrompt * audioInputRate;
 	const cacheReadCents = cacheRead * cacheReadRate;
 	let cacheWriteCents = 0;
 	let remainingWrites = cacheWrite;
@@ -138,8 +160,9 @@ export function computeCost(
 	}
 	cacheWriteCents += remainingWrites * cacheWriteRate;
 	const outputCents =
-		(usage.completionTokens - imageCompletion) * outputRate +
-		imageCompletion * imageOutputRate;
+		(usage.completionTokens - imageCompletion - audioCompletion) * outputRate +
+		imageCompletion * imageOutputRate +
+		audioCompletion * audioOutputRate;
 	const searchUnitCents =
 		(usage.searchUnits ?? 0) * (meta.pricing?.searchUnitCents ?? 0);
 	const providerReportedCents = usage.providerCostCents ?? null;
@@ -153,6 +176,8 @@ export function computeCost(
 			configuredPricing.cacheWriteCentsPerMTokensByTtl !== undefined ||
 			configuredPricing.imageInputCentsPerMTokens !== undefined ||
 			configuredPricing.imageOutputCentsPerMTokens !== undefined ||
+			configuredPricing.audioInputCentsPerMTokens !== undefined ||
+			configuredPricing.audioOutputCentsPerMTokens !== undefined ||
 			configuredPricing.searchUnitCents !== undefined ||
 			(configuredPricing.tiers?.length ?? 0) > 0);
 	const calculatedCents =
@@ -168,6 +193,7 @@ export function computeCost(
 		cacheWriteCents,
 		outputCents,
 		imageCents,
+		audioCents,
 		searchUnitCents,
 		providerReportedCents,
 		totalCents: hasConfiguredPricing
@@ -197,6 +223,8 @@ export function estimateMaximumCostCents(
 		pricing.cacheWriteCentsPerMTokens,
 		pricing.imageInputCentsPerMTokens,
 		pricing.imageOutputCentsPerMTokens,
+		pricing.audioInputCentsPerMTokens,
+		pricing.audioOutputCentsPerMTokens,
 		...Object.values(pricing.cacheWriteCentsPerMTokensByTtl ?? {}),
 		...(pricing.tiers ?? []).flatMap((tier) => [
 			tier.inputCentsPerMTokens,
@@ -205,6 +233,8 @@ export function estimateMaximumCostCents(
 			tier.cacheWriteCentsPerMTokens,
 			tier.imageInputCentsPerMTokens,
 			tier.imageOutputCentsPerMTokens,
+			tier.audioInputCentsPerMTokens,
+			tier.audioOutputCentsPerMTokens,
 			...Object.values(tier.cacheWriteCentsPerMTokensByTtl ?? {}),
 		]),
 	].filter((rate): rate is number => rate !== undefined);

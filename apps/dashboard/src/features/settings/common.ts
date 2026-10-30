@@ -22,6 +22,8 @@ export const EXECUTION_CALL_TYPES = [
 	{ key: "images.generations", label: "Image generation" },
 	{ key: "images.edits", label: "Image edits" },
 	{ key: "audio.transcriptions", label: "Transcription" },
+	{ key: "realtime.transcription", label: "Realtime transcription" },
+	{ key: "realtime.conversation", label: "Realtime conversation" },
 	{ key: "embeddings", label: "Embeddings" },
 	{ key: "rerank", label: "Rerank" },
 	{ key: "videos.generations", label: "Video jobs" },

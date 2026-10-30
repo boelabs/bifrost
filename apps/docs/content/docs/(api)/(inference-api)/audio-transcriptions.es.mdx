@@ -72,7 +72,7 @@ de Gemini. La petición sigue siendo la de OpenAI; el gateway la traduce:
 Google rechaza algunas combinaciones, y el gateway también, antes de llamarlo: vocabulario con
 diarización o timestamps (incluidos `srt`/`vtt`), y modo smart con diarización o timestamps. No
 se ofrecen la granularidad por segmento ni el streaming; para audio en tiempo real usa
-`gemini-3.5-transcribe-live`. `prompt`, `temperature` e `include` no tienen equivalente en Gemini y
+`gemini-3.5-transcribe-live` en [Transcripción en tiempo real](/es/docs/realtime-transcription). `prompt`, `temperature` e `include` no tienen equivalente en Gemini y
 no se envían. El audio puede durar hasta una hora, 30 minutos con diarización o timestamps por
 palabra; Google aplica ese límite. Consulta la
 [guía de transcripción de Google](https://ai.google.dev/gemini-api/docs/transcribe).

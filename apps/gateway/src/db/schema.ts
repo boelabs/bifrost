@@ -132,6 +132,10 @@ export interface RuntimeModelMetadata {
 		imageInputCentsPerMTokens?: number;
 		/** Cost in USD cents per 1M image output tokens. Absent: image output is billed as output. */
 		imageOutputCentsPerMTokens?: number;
+		/** Cost in USD cents per 1M audio input tokens. Absent: audio input is billed as input. */
+		audioInputCentsPerMTokens?: number;
+		/** Cost in USD cents per 1M audio output tokens. Absent: audio output is billed as output. */
+		audioOutputCentsPerMTokens?: number;
 		/** Cost in USD cents per reranking search unit. */
 		searchUnitCents?: number;
 		/**
@@ -150,6 +154,8 @@ export interface RuntimeModelMetadata {
 			cacheWriteCentsPerMTokensByTtl?: Record<string, number>;
 			imageInputCentsPerMTokens?: number;
 			imageOutputCentsPerMTokens?: number;
+			audioInputCentsPerMTokens?: number;
+			audioOutputCentsPerMTokens?: number;
 		}>;
 	};
 	maxInputTokens?: number;

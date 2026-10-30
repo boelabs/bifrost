@@ -15,6 +15,8 @@ export const metricsSearch = z.object({
 			"image.edit",
 			"video.generate",
 			"audio.transcribe",
+			"audio.transcribe.realtime",
+			"audio.converse.realtime",
 			"embedding.create",
 			"rerank",
 		])

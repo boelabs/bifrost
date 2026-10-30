@@ -42,6 +42,8 @@ El gateway valida su entorno al inicio y sale si falta una variable requerida o 
 | `RESPONSES_STATE_RETENTION_DAYS` | `14` | Cuánto tiempo una respuesta almacenada (con `store: true`) permanece recuperable a través de `GET /v1/responses/:id`. |
 | `RESPONSES_WEBSOCKET_MAX_CONNECTIONS` | `1000` | Conexiones WebSocket máximas en vivo Responses por proceso de gateway. |
 | `RESPONSES_WEBSOCKET_MAX_CONNECTIONS_PER_KEY` | `20` | Conexiones WebSocket máximas en vivo Responses para una virtual key (la master key tiene su propio alcance). |
+| `REALTIME_WEBSOCKET_MAX_CONNECTIONS` | `500` | Sesiones de transcripción `/v1/realtime` en vivo máximas por proceso de gateway. |
+| `REALTIME_WEBSOCKET_MAX_CONNECTIONS_PER_KEY` | `20` | Sesiones de transcripción `/v1/realtime` en vivo máximas para una virtual key (la master key tiene su propio alcance). |
 | `RESPONSES_WEBSOCKET_MAX_QUEUED_TURNS` | `64` | Giros máximos de `response.create` en cola por conexión; se procesa un turno a la vez. |
 | `RESPONSE_STATE_GC_INTERVAL_MS` | `3600000` (1h) | Con qué frecuencia el trabajo en proceso elimina el estado de respuesta caducado. |
 

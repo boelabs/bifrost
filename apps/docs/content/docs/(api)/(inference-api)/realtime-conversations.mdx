@@ -1,0 +1,130 @@
+---
+title: "Realtime conversations"
+description: "GET /v1/realtime?model= — OpenAI's Realtime API for speech-to-speech and text conversations."
+---
+
+Hold a live voice (or text) conversation over a WebSocket. The endpoint speaks OpenAI's Realtime API
+(the GA interface, session `type: "realtime"`), so OpenAI's SDKs and realtime clients work unchanged;
+the public model must support `audio.converse.realtime`. Today that means Gemini's Live models:
+`gemini-3.8-live`, `gemini-3.8-live-extended-thinking`, `gemini-3.1-flash-live-preview`,
+`gemini-2.5-flash-native-audio-preview-12-2025`, and `gemini-3.5-live-translate-preview` for
+speech-to-speech translation. For transcription only, see
+[Realtime transcription](/docs/realtime-transcription).
+
+## Connecting
+
+Open a WebSocket to `$GATEWAY/v1/realtime?model=<public-model>`. Authenticate with your virtual key
+in `Authorization: Bearer`, or, from a browser, which cannot set headers, as the subprotocol
+`openai-insecure-api-key.<key>` next to `realtime`, the way OpenAI's browser clients do. Anyone who
+loads the page can read a key sent from a browser; use one scoped to this model with a budget.
+
+The gateway answers with `session.created`. A connection without `model`, or with an `intent` other
+than `realtime`, is refused with `400` before the upgrade. The model cannot change for the life of
+the connection.
+
+The provider session opens with the first event that needs it (audio, an item, or
+`response.create`), so `session.update`s sent first configure it instead of reconnecting it.
+
+## Session
+
+```json
+{
+  "type": "session.update",
+  "session": {
+    "type": "realtime",
+    "instructions": "You are a concise support agent.",
+    "output_modalities": ["audio"],
+    "audio": {
+      "input": {
+        "format": { "type": "audio/pcm", "rate": 24000 },
+        "transcription": { "model": "gpt-transcribe", "keywords": ["Bifrost"] },
+        "turn_detection": { "type": "server_vad", "silence_duration_ms": 600 }
+      },
+      "output": { "format": { "type": "audio/pcm", "rate": 24000 }, "voice": "Kore" }
+    },
+    "tools": [
+      { "type": "function", "name": "order_status", "parameters": { "type": "object", "properties": { "id": { "type": "string" } } } },
+      { "type": "google_search" }
+    ]
+  }
+}
+```
+
+| Field | Behavior |
+|---|---|
+| `instructions` | The model's system instruction. |
+| `output_modalities` | `["audio"]` (default) or `["text"]`. Gemini's Live models only speak, so a text session gets the transcript of the spoken reply as `response.output_text.*`; it is billed as audio output. |
+| `audio.input.format` | `audio/pcm` at 24 kHz (default) or 16 kHz, `audio/pcmu`, `audio/pcma`. |
+| `audio.input.transcription` | Turns on the transcript of the user's speech. Gemini transcribes it itself, so `model` is accepted and ignored; `language`/`languages` and `keywords` become its language hints and vocabulary. The gateway has Gemini transcribe the user's speech either way, because that transcript is how a reconfigured session remembers it (see below); it is billed at Gemini's text output rate, a fraction of a cent per minute. |
+| `audio.input.turn_detection` | `server_vad` (`threshold`, `prefix_padding_ms`, `silence_duration_ms`), `semantic_vad` (`eagerness`), or `null` for manual turns. `interrupt_response: false` lets the model finish while the user talks. `create_response: false` and `idle_timeout_ms` are refused: Gemini always answers when a turn ends. |
+| `audio.output.format` | `audio/pcm` at 24 kHz (default), `audio/pcmu`, `audio/pcma`. |
+| `audio.output.voice` | One of Gemini's prebuilt voices (`Kore`, `Puck`, `Charon`, `Zephyr`, …; the full list is in the model's catalog profile). OpenAI's voice names are refused with the list. The voice cannot change once the model has spoken. |
+| `tools` | Function tools, plus the Bifrost extension `{ "type": "google_search" }` for Gemini's web search. MCP tools are refused. |
+| `tool_choice` | `auto` (default) or `none`. |
+| `max_output_tokens` | Per session. |
+| `reasoning.effort` | Only on models that take it: `low`/`medium`/`high` on `gemini-3.8-live-extended-thinking` (which requires one: `low`, OpenAI's default, when unset), `minimal` to `high` on `gemini-3.1-flash-live-preview`. `gemini-3.8-live` reasons on its own and refuses it. |
+| `truncation` | `auto` (default) lets the provider compress old context so a conversation can run past its context window; `disabled` keeps everything (Gemini then ends audio sessions after 15 minutes). |
+| `translation` | Bifrost extension, required by `gemini-3.5-live-translate-preview`: `{ "target_language": "es", "echo_target_language": false }`. The source language is detected. Translation streams without turns, so each response is one phrase: it ends after 1.5 seconds without translated speech, and the silence between phrases is not sent. |
+
+Gemini fixes a session's setup when it opens, and a resumed session keeps its old setup. So
+changing instructions, tools, voice, turn detection or any other provider setting mid-session opens
+a new provider session with the new setup, seeded with the conversation so far: the transcripts of
+both sides, the client's text and image items, and function calls with their results. The model
+keeps the content of the conversation, not the audio itself. The switch waits until neither the
+model nor the user is speaking.
+
+## Turns and responses
+
+- **Server VAD.** Stream `input_audio_buffer.append`; Gemini detects the turn, the gateway emits
+  `input_audio_buffer.speech_started`/`speech_stopped`/`committed` and the user item, and the model
+  answers on its own.
+- **Manual turns** (`turn_detection: null`). Audio is buffered in the gateway until
+  `input_audio_buffer.commit` (so `input_audio_buffer.clear` really discards it); `response.create`
+  asks the model to answer.
+- **Text and images.** `conversation.item.create` with a `user` message (`input_text`,
+  `input_image` as a base64 PNG/JPEG/WebP data URL, `input_audio`) or an `assistant` message adds it
+  to the conversation; `response.create` asks for an answer. Items can only be appended at the end.
+- **Function calls.** The model's call arrives as a `function_call` item with
+  `response.function_call_arguments.done`, and the response ends there. Reply with a
+  `function_call_output` item, then `response.create`. A JSON object output reaches Gemini as is;
+  anything else is wrapped as `{ "output": "…" }`.
+- **Interruptions.** Speech during a reply cancels it: `response.done` arrives with
+  `status: "cancelled"` and `reason: "turn_detected"`. Stop playback and send
+  `conversation.item.truncate` as usual; the gateway acknowledges it, but Gemini keeps its own record
+  of what it said.
+
+Responses stream as OpenAI's events: `response.created`, `response.output_item.added`,
+`response.content_part.added`, `response.output_audio.delta` with
+`response.output_audio_transcript.delta`, then the `.done` events and `response.done` with `usage`.
+Gemini reports a turn over only once playing it would have finished, and its usage comes with that.
+The content's `.done` events arrive when generation ends; `response.done` waits for the usage, or is
+sent at once (with `usage: null`) when the client creates another response or the user speaks.
+
+### What Gemini cannot do
+
+These are refused with an `error` event naming the field, and the session stays open:
+
+- out-of-band responses (`response.conversation: "none"`, `response.input`) and per-response tools,
+  voice, format, modalities, reasoning or token limits;
+- `system` messages mid-conversation (use `instructions`), client-created `function_call` items, and
+  inserting items anywhere but the end (`previous_item_id`);
+- `conversation.item.delete`: Gemini cannot forget what it heard;
+- `output_audio_buffer.clear`, which is WebRTC-only.
+
+`response.create` with `instructions` and nothing else to answer sends them to the model as a user
+turn, since Gemini has no per-response instructions; this covers the common "greet the user" case.
+`response.cancel` ends the response and drops the rest of the model's turn, but Gemini finishes
+generating it, and it is billed.
+
+## Limits and billing
+
+- A connection lasts at most 60 minutes. Gemini ends each provider connection after about ten
+  minutes; the gateway resumes the session on a new one behind the same socket. The translation
+  model has no resumption and reconnects without context.
+- `REALTIME_WEBSOCKET_MAX_CONNECTIONS` and `REALTIME_WEBSOCKET_MAX_CONNECTIONS_PER_KEY` cap open
+  sessions per process and per key.
+- Each connection is logged as one `realtime.conversation` operation with the usage Gemini reported
+  and its cost. Live models price audio and text separately (`audioInputCentsPerMTokens`,
+  `audioOutputCentsPerMTokens` in the catalog). If the provider reports no usage, the gateway
+  estimates it (25 tokens per second of audio, about 4 characters per text token) and marks the
+  operation `usageEstimated`.

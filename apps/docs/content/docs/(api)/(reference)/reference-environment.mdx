@@ -45,6 +45,8 @@ deployment. Gateway and dashboard processes read separate environment files.
 | `RESPONSES_STATE_RETENTION_DAYS` | `14` | How long a stored Response (with `store: true`) stays retrievable via `GET /v1/responses/:id`. |
 | `RESPONSES_WEBSOCKET_MAX_CONNECTIONS` | `1000` | Maximum live Responses WebSocket connections per gateway process. |
 | `RESPONSES_WEBSOCKET_MAX_CONNECTIONS_PER_KEY` | `20` | Maximum live Responses WebSocket connections for one virtual key (the master key has its own scope). |
+| `REALTIME_WEBSOCKET_MAX_CONNECTIONS` | `500` | Maximum live `/v1/realtime` transcription sessions per gateway process. |
+| `REALTIME_WEBSOCKET_MAX_CONNECTIONS_PER_KEY` | `20` | Maximum live `/v1/realtime` transcription sessions for one virtual key (the master key has its own scope). |
 | `RESPONSES_WEBSOCKET_MAX_QUEUED_TURNS` | `64` | Maximum queued `response.create` turns per connection; one turn is processed at a time. |
 | `RESPONSE_STATE_GC_INTERVAL_MS` | `3600000` (1h) | How often the in-process job deletes expired response state. |
 

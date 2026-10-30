@@ -17,6 +17,10 @@ the input and output rates. Adapters report the split when the provider does (Ge
 counts, OpenAI's `input_tokens_details`/`output_tokens_details`); output of an image endpoint that
 the provider does not split is counted as image output. The Vercel snapshot inherits a first-party
 model's image rates only when Vercel resells it at the provider's own price.
+
+Audio tokens work the same way with `audioInputCentsPerMTokens` and `audioOutputCentsPerMTokens`:
+Gemini's Live models bill audio well above text ($3 against $0.75 per 1M input, $12 against $4.50
+output), and realtime sessions report the split per modality.
 A deployment's own `pricing` field, if set, **overrides** the catalog rate entirely for that deployment
 — useful for a negotiated rate or a custom model with no catalog entry at all. A model with no pricing
 anywhere (no catalog rate, no override) normally bills as **zero cost**, not an error. Reranking has

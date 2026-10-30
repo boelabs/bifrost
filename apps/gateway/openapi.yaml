@@ -1933,6 +1933,8 @@ paths:
               - image.edit
               - video.generate
               - audio.transcribe
+              - audio.transcribe.realtime
+              - audio.converse.realtime
               - embedding.create
               - rerank
       responses:
@@ -3533,6 +3535,8 @@ components:
           - image.edit
           - video.generate
           - audio.transcribe
+          - audio.transcribe.realtime
+          - audio.converse.realtime
           - embedding.create
           - rerank
       additionalProperties:
@@ -3546,6 +3550,8 @@ components:
         - image.edit
         - video.generate
         - audio.transcribe
+        - audio.transcribe.realtime
+        - audio.converse.realtime
         - embedding.create
         - rerank
     Pricing:
@@ -3575,6 +3581,12 @@ components:
           type: number
           minimum: 0
         imageOutputCentsPerMTokens:
+          type: number
+          minimum: 0
+        audioInputCentsPerMTokens:
+          type: number
+          minimum: 0
+        audioOutputCentsPerMTokens:
           type: number
           minimum: 0
         searchUnitCents:
@@ -3615,6 +3627,12 @@ components:
               imageOutputCentsPerMTokens:
                 type: number
                 minimum: 0
+              audioInputCentsPerMTokens:
+                type: number
+                minimum: 0
+              audioOutputCentsPerMTokens:
+                type: number
+                minimum: 0
             required:
               - aboveInputTokens
             additionalProperties: false
@@ -3630,6 +3648,8 @@ components:
           - image.edit
           - video.generate
           - audio.transcribe
+          - audio.transcribe.realtime
+          - audio.converse.realtime
           - embedding.create
           - rerank
       additionalProperties:
@@ -3640,6 +3660,8 @@ components:
         - image.edit
         - video.generate
         - audio.transcribe
+        - audio.transcribe.realtime
+        - audio.converse.realtime
         - embedding.create
         - rerank
       description: Advanced operation-to-transport override. Defaults normally come from the adapter.
@@ -3653,6 +3675,8 @@ components:
           - images.edits
           - videos.generations
           - audio.transcriptions
+          - realtime.transcription
+          - realtime.conversation
           - embeddings
           - rerank
           - all
@@ -3664,6 +3688,8 @@ components:
         - images.edits
         - videos.generations
         - audio.transcriptions
+        - realtime.transcription
+        - realtime.conversation
         - embeddings
         - rerank
         - all
@@ -4029,6 +4055,26 @@ components:
               required:
                 - json
                 - stream
+            realtime.transcription:
+              type: object
+              properties:
+                json:
+                  $ref: "#/components/schemas/ExecutionPolicy"
+                stream:
+                  $ref: "#/components/schemas/ExecutionPolicy"
+              required:
+                - json
+                - stream
+            realtime.conversation:
+              type: object
+              properties:
+                json:
+                  $ref: "#/components/schemas/ExecutionPolicy"
+                stream:
+                  $ref: "#/components/schemas/ExecutionPolicy"
+              required:
+                - json
+                - stream
             embeddings:
               type: object
               properties:
@@ -4055,6 +4101,8 @@ components:
             - images.edits
             - videos.generations
             - audio.transcriptions
+            - realtime.transcription
+            - realtime.conversation
             - embeddings
             - rerank
         routingStrategy:
@@ -6950,6 +6998,8 @@ components:
           - images.edits
           - videos.generations
           - audio.transcriptions
+          - realtime.transcription
+          - realtime.conversation
           - embeddings
           - rerank
           - all
@@ -6961,6 +7011,8 @@ components:
         - images.edits
         - videos.generations
         - audio.transcriptions
+        - realtime.transcription
+        - realtime.conversation
         - embeddings
         - rerank
         - all

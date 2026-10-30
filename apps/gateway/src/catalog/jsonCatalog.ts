@@ -31,6 +31,8 @@ const OPERATION_IDS = new Set<keyof OperationProfiles>([
 	"image.edit",
 	"video.generate",
 	"audio.transcribe",
+	"audio.transcribe.realtime",
+	"audio.converse.realtime",
 	"embedding.create",
 	"rerank",
 ]);
@@ -140,6 +142,8 @@ function validatePricing(value: unknown, path: string): void {
 		"cacheWriteCentsPerMTokens",
 		"imageInputCentsPerMTokens",
 		"imageOutputCentsPerMTokens",
+		"audioInputCentsPerMTokens",
+		"audioOutputCentsPerMTokens",
 		"searchUnitCents",
 	]) {
 		if (value[key] !== undefined) {
@@ -173,6 +177,8 @@ function validatePricing(value: unknown, path: string): void {
 				"cacheWriteCentsPerMTokens",
 				"imageInputCentsPerMTokens",
 				"imageOutputCentsPerMTokens",
+				"audioInputCentsPerMTokens",
+				"audioOutputCentsPerMTokens",
 			]) {
 				if (tier[key] !== undefined) {
 					assertNumber(tier[key], `${path}.tiers[${i}].${key}`);
