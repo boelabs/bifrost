@@ -84,8 +84,8 @@ export and no downtime:
    every replica so all can read both keys.
 2. Set `ACTIVE_ENCRYPTION_KEY_ID` to the new id and roll the replicas again.
 3. Run `bun run --filter @boelabs/bifrost encryption:rotate`. It re-encrypts deployments,
-   extension artifacts, retained payload samples, and stored virtual-key secrets in bounded batches
-   and reports row counts.
+   extension artifacts, retained payload samples, stored virtual-key secrets, and remembered
+   idempotent responses in bounded batches and reports row counts.
 4. Run it again; every reported count must be zero.
 5. Keep the old key for at least 14 days so stateless Responses compaction capsules issued before the
    rotation remain readable, then remove it and roll once more.

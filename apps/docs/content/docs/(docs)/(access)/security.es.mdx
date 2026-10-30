@@ -74,6 +74,8 @@ Una virtual key se autentica por su **hash SHA-256**; se conserva un prefijo de 
 
 Dos controles lo restringen aún más. Una clave **privada** solo almacena su hash, y volver privada una clave borra su secreto almacenado. `VIRTUAL_KEY_SECRET_ACCESS=sealed` rechaza toda copia, con cualquier credencial, como una decisión de despliegue que una cuenta de operador comprometida no puede revertir. Rota una clave con `POST /admin/keys/:id/rotate`: el secreto anterior deja de funcionar de inmediato. Consulta [Virtual keys](/es/docs/virtual-keys#copy-a-key-again).
 
+La respuesta de crear o rotar una clave también se recuerda durante un día cuando la solicitud lleva un `Idempotency-Key`, para que un reintento pueda repetirla; se guarda cifrada con el keyring, como toda respuesta recordada. Un volcado de la base de datos sin el keyring no revela ninguna clave.
+
 ## Credenciales de deployment en reposo [#deployment-credentials-at-rest]
 
 Cada credencial (`apiKey`, `baseUrl`, etc.) se cifra con **AES-256-GCM** antes de almacenarse. Cada sobre versionado registra una identificación de clave y un propósito autenticado como AAD, y obtiene su propio IV aleatorio. La etiqueta de autenticación de GCM significa que la manipulación del texto cifrado almacenado hace que no se pueda descifrar en lugar de devolver basura silenciosamente. **Ninguna respuesta de API de administrador (`GET`, `POST` o `PATCH` en `/admin/deployments`) incluye credenciales**, cifradas o no; se eliminan antes de que se construya la respuesta.

@@ -3446,9 +3446,9 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 7.5,
-				"outputCentsPerMTokens": 30,
-				"cacheReadCentsPerMTokens": 0.15
+				"inputCentsPerMTokens": 30,
+				"outputCentsPerMTokens": 120,
+				"cacheReadCentsPerMTokens": 0.7
 			}
 		},
 		"deepseek/deepseek-v4.1-flash-1017": {
@@ -3461,7 +3461,7 @@
 						"structuredOutputs": true
 					},
 					"maxInputTokens": 1048576,
-					"maxOutputTokens": 1048576,
+					"maxOutputTokens": 262144,
 					"modalities": {
 						"input": ["image", "text"],
 						"output": ["text"]
@@ -3486,9 +3486,9 @@
 				}
 			},
 			"pricing": {
-				"inputCentsPerMTokens": 7.5,
-				"outputCentsPerMTokens": 30,
-				"cacheReadCentsPerMTokens": 0.15
+				"inputCentsPerMTokens": 30,
+				"outputCentsPerMTokens": 120,
+				"cacheReadCentsPerMTokens": 0.7
 			}
 		},
 		"deepseek/deepseek-v4.1-flash-1017-fast": {
@@ -7075,6 +7075,43 @@
 				"inputCentsPerMTokens": 30,
 				"outputCentsPerMTokens": 90,
 				"cacheReadCentsPerMTokens": 6
+			}
+		},
+		"inclusionai/ling-3.1-flash-1019": {
+			"operations": {
+				"text.generate": {
+					"capabilities": {
+						"tools": true,
+						"vision": false,
+						"reasoning": true,
+						"structuredOutputs": false
+					},
+					"maxInputTokens": 1000000,
+					"maxOutputTokens": 262144,
+					"modalities": {
+						"input": ["text"],
+						"output": ["text"]
+					},
+					"contracts": ["chat.completions", "responses"],
+					"parameters": {
+						"include_reasoning": true,
+						"max_tokens": true,
+						"reasoning": true,
+						"reasoning_effort": true,
+						"stop": true,
+						"temperature": true,
+						"tool_choice": true,
+						"tools": true
+					},
+					"reasoning": {
+						"kind": "openai_effort",
+						"levels": ["none", "low", "medium", "high"]
+					}
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 0,
+				"outputCentsPerMTokens": 0
 			}
 		},
 		"inference-net/schematron-v2-small": {

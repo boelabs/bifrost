@@ -133,6 +133,10 @@ credential, as a deployment decision a compromised operator account cannot rever
 `POST /admin/keys/:id/rotate`: the old secret stops working immediately. See
 [Virtual keys](/docs/virtual-keys#copy-a-key-again).
 
+A create or rotate response is also remembered for a day when the request carries an `Idempotency-Key`,
+so a retry can replay it; it is stored encrypted with the keyring, like every remembered response.
+A database dump without the keyring reveals no key.
+
 ## Deployment credentials at rest
 
 Every credential (`apiKey`, `baseUrl`, etc.) is encrypted with **AES-256-GCM** before being stored. Each
