@@ -18,6 +18,8 @@ const RATE_LABELS: Record<PricingRateField, string> = {
 	cacheWriteCentsPerMTokens: "Cache write (cents / 1M tokens)",
 	imageInputCentsPerMTokens: "Image input (cents / 1M tokens)",
 	imageOutputCentsPerMTokens: "Image output (cents / 1M tokens)",
+	audioInputCentsPerMTokens: "Audio input (cents / 1M tokens)",
+	audioOutputCentsPerMTokens: "Audio output (cents / 1M tokens)",
 	searchUnitCents: "Search unit (cents)",
 };
 const TIER_FIELDS = PRICING_RATE_FIELDS.filter(

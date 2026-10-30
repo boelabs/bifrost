@@ -1,5 +1,13 @@
-import { assertRealtimeConfigSupported } from "./realtimeRequestValidation.ts";
-import type { CanonicalRealtimeTranscriptionConfig } from "#core/realtime.ts";
+import type {
+	CanonicalRealtimeConversationConfig,
+	CanonicalRealtimeTranscriptionConfig,
+} from "#core/realtime.ts";
+import { GatewayError } from "#core/errors.ts";
+
+import {
+	assertRealtimeConversationSupported,
+	assertRealtimeConfigSupported,
+} from "./realtimeRequestValidation.ts";
 import { resolveModelMetadata } from "#catalog/index.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -66,5 +74,129 @@ test("realtime gating: too many keywords, unknown modes and file-only models are
 	assert.throws(
 		() => assertRealtimeConfigSupported(config(), verbatimManualOnly),
 		/turn_detection to be null/,
+	);
+});
+
+function conversation(
+	overrides: Partial<CanonicalRealtimeConversationConfig> = {},
+): CanonicalRealtimeConversationConfig {
+	return {
+		model: "live",
+		outputModality: "audio",
+		vad: { type: "server_vad", interruptResponse: true, createResponse: true },
+		inputTranscription: null,
+		tools: [],
+		toolChoice: "auto",
+		googleSearch: false,
+		truncation: "auto",
+		...overrides,
+	};
+}
+
+test("realtime conversation: the model profile gates voices, reasoning, tools and translation", () => {
+	const conversationModel = resolveModelMetadata(
+		"googleaistudio",
+		"gemini-3.8-live",
+	);
+	const thinking = resolveModelMetadata(
+		"googleaistudio",
+		"gemini-3.8-live-extended-thinking",
+	);
+	const translate = resolveModelMetadata(
+		"googleaistudio",
+		"gemini-3.5-live-translate-preview",
+	);
+	const refuses = (
+		candidate: CanonicalRealtimeConversationConfig,
+		meta: ReturnType<typeof resolveModelMetadata>,
+		param: string,
+	) =>
+		assert.throws(
+			() => assertRealtimeConversationSupported(candidate, meta),
+			(error: unknown) =>
+				error instanceof GatewayError && error.param === param,
+		);
+	assertRealtimeConversationSupported(
+		conversation({
+			voice: "Kore",
+			instructions: "Hi",
+			tools: [{ name: "f" }],
+			googleSearch: true,
+			inputTranscription: { keywords: ["Bifrost"] },
+			vad: null,
+		}),
+		conversationModel,
+	);
+	refuses(
+		conversation({ voice: "alloy" }),
+		conversationModel,
+		"session.audio.output.voice",
+	);
+	refuses(
+		conversation({ speed: 1.2 }),
+		conversationModel,
+		"session.audio.output.speed",
+	);
+	refuses(
+		conversation({ reasoningEffort: "low" }),
+		conversationModel,
+		"session.reasoning.effort",
+	);
+	assertRealtimeConversationSupported(
+		conversation({ reasoningEffort: "high" }),
+		thinking,
+	);
+	refuses(
+		conversation({ reasoningEffort: "minimal" }),
+		thinking,
+		"session.reasoning.effort",
+	);
+	refuses(
+		conversation({
+			vad: {
+				type: "server_vad",
+				interruptResponse: true,
+				createResponse: false,
+			},
+		}),
+		conversationModel,
+		"session.audio.input.turn_detection.create_response",
+	);
+	refuses(
+		conversation({
+			vad: {
+				type: "server_vad",
+				interruptResponse: true,
+				createResponse: true,
+				idleTimeoutMs: 6000,
+			},
+		}),
+		conversationModel,
+		"session.audio.input.turn_detection.idle_timeout_ms",
+	);
+	refuses(conversation(), translate, "session.translation");
+	refuses(
+		conversation({ translation: { targetLanguage: "es" } }),
+		conversationModel,
+		"session.translation",
+	);
+	assertRealtimeConversationSupported(
+		conversation({ translation: { targetLanguage: "es" } }),
+		translate,
+	);
+	refuses(
+		conversation({ translation: { targetLanguage: "es" }, instructions: "x" }),
+		translate,
+		"session.instructions",
+	);
+	refuses(
+		conversation({ translation: { targetLanguage: "es" }, vad: null }),
+		translate,
+		"session.audio.input.turn_detection",
+	);
+	refuses(
+		conversation(),
+		resolveModelMetadata("googleaistudio", "gemini-3.5-transcribe-live"),
+		"model",
 	);
 });

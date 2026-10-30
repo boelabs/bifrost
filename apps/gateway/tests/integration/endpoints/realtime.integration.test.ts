@@ -263,7 +263,7 @@ test("GET /v1/realtime transcribes a manual turn through Gemini Live and logs it
 	}
 });
 
-test("GET /v1/realtime refuses conversation sessions before upgrading", {
+test("GET /v1/realtime refuses unknown intents and conversations without a model before upgrading", {
 	skip,
 }, async () => {
 	const server = await gateway();
@@ -272,20 +272,367 @@ test("GET /v1/realtime refuses conversation sessions before upgrading", {
 		virtualKey = await createVirtualKey({
 			name: `realtime-intent-${randomUUID()}`,
 		});
-		const status = await new Promise<number>((resolve, reject) => {
-			const socket = new WebSocket(`${server.url}?model=gpt-realtime`, {
-				headers: { authorization: `Bearer ${virtualKey?.rawKey}` },
+		for (const query of [
+			"?intent=bogus&model=m",
+			"",
+			"?intent=transcription&model=m",
+		]) {
+			const status = await new Promise<number>((resolve, reject) => {
+				const socket = new WebSocket(`${server.url}${query}`, {
+					headers: { authorization: `Bearer ${virtualKey?.rawKey}` },
+				});
+				socket.once("unexpected-response", (_request, response) =>
+					resolve(response.statusCode ?? 0),
+				);
+				socket.once("open", () => reject(new Error(`upgraded ${query}`)));
 			});
-			socket.once("unexpected-response", (_request, response) =>
-				resolve(response.statusCode ?? 0),
-			);
-			socket.once("open", () => reject(new Error("upgraded")));
-		});
-		assert.equal(status, 400);
+			assert.equal(status, 400, query);
+		}
 	} finally {
 		if (virtualKey) {
 			await deleteVirtualKey(virtualKey.row.id);
 		}
 		await server.close();
+	}
+});
+
+/** A Gemini Live conversation stand-in: answers turns with speech, and asks for one function. */
+async function geminiConversationStub() {
+	const server = new WebSocketServer({ port: 0, host: "127.0.0.1" });
+	await new Promise<void>((resolve) => server.once("listening", resolve));
+	const received: Record<string, any>[] = [];
+	const speak = (socket: WebSocket, text: string, tokens: number) => {
+		socket.send(
+			JSON.stringify({
+				serverContent: {
+					modelTurn: {
+						parts: [
+							{
+								inlineData: {
+									mimeType: "audio/pcm;rate=24000",
+									data: Buffer.alloc(4800).toString("base64"),
+								},
+							},
+						],
+					},
+					outputTranscription: { text },
+				},
+			}),
+		);
+		socket.send(
+			JSON.stringify({
+				serverContent: { turnComplete: true },
+				usageMetadata: {
+					promptTokenCount: tokens,
+					responseTokenCount: 10,
+					promptTokensDetails: [{ modality: "AUDIO", tokenCount: tokens }],
+					responseTokensDetails: [{ modality: "AUDIO", tokenCount: 10 }],
+				},
+				sessionResumptionUpdate: { newHandle: "h", resumable: true },
+			}),
+		);
+	};
+	server.on("connection", (socket) => {
+		socket.on("message", (data) => {
+			const message = JSON.parse(data.toString()) as Record<string, any>;
+			received.push(message);
+			if (message.setup) {
+				socket.send(JSON.stringify({ setupComplete: {} }));
+				return;
+			}
+			if (message.realtimeInput?.activityEnd) {
+				socket.send(
+					JSON.stringify({
+						serverContent: { inputTranscription: { text: "Hola" } },
+					}),
+				);
+				speak(socket, "Hola, te ayudo.", 20);
+			}
+			if (message.clientContent?.turnComplete) {
+				socket.send(
+					JSON.stringify({
+						toolCall: {
+							functionCalls: [
+								{ id: "fc_1", name: "order_status", args: { id: "7" } },
+							],
+						},
+					}),
+				);
+			}
+			if (message.toolResponse) {
+				speak(socket, "Tu pedido ya salio.", 30);
+			}
+		});
+	});
+	const { port } = server.address() as AddressInfo;
+	return {
+		baseUrl: `http://127.0.0.1:${port}/v1beta`,
+		received,
+		close: () =>
+			new Promise<void>((resolve) => {
+				for (const connection of server.clients) {
+					connection.terminate();
+				}
+				server.close(() => resolve());
+			}),
+	};
+}
+
+test("GET /v1/realtime?model= reports a refused session once, not once per audio chunk", {
+	skip,
+	timeout: 30_000,
+}, async () => {
+	const stub = await geminiConversationStub();
+	const server = await gateway();
+	const publicModel = `realtime-refused-${randomUUID()}`;
+	let deploymentId: string | undefined;
+	let virtualKey: CreatedVirtualKey | undefined;
+	try {
+		deploymentId = (
+			await createDeployment({
+				publicModel,
+				adapterKey: "googleaistudio",
+				upstreamModel: "gemini-3.8-live",
+				credentials: { apiKey: "gemini-test", baseUrl: stub.baseUrl },
+			})
+		).row.id;
+		virtualKey = await createVirtualKey({
+			name: `realtime-refused-${randomUUID()}`,
+			allowedModels: [publicModel],
+		});
+		const { socket, events, next } = await client(
+			`${server.url}?model=${publicModel}`,
+			virtualKey.rawKey,
+		);
+		await next("session.created");
+		socket.send(
+			JSON.stringify({
+				type: "session.update",
+				session: { type: "realtime", audio: { output: { voice: "alloy" } } },
+			}),
+		);
+		await next("session.updated");
+		for (let index = 0; index < 5; index += 1) {
+			socket.send(
+				JSON.stringify({
+					type: "input_audio_buffer.append",
+					audio: Buffer.alloc(4800).toString("base64"),
+				}),
+			);
+		}
+		const error = await next("error");
+		assert.equal(error.error.param, "session.audio.output.voice");
+		assert.match(error.error.message, /Kore/);
+		await new Promise((resolve) => setTimeout(resolve, 200));
+		assert.equal(events.filter((event) => event.type === "error").length, 1);
+		assert.equal(stub.received.length, 0);
+		socket.close();
+		const page = await listOperationsPage({
+			limit: 10,
+			offset: 0,
+			publicModel,
+			callType: "realtime.conversation",
+		});
+		assert.equal(page.rows.length, 1);
+	} finally {
+		if (virtualKey) {
+			await deleteVirtualKey(virtualKey.row.id);
+		}
+		if (deploymentId) {
+			await deleteDeployment(deploymentId);
+		}
+		await server.close();
+		await stub.close();
+	}
+});
+
+test("GET /v1/realtime?model= holds a spoken conversation with a function call through Gemini Live", {
+	skip,
+	timeout: 30_000,
+}, async () => {
+	const stub = await geminiConversationStub();
+	const server = await gateway();
+	const publicModel = `realtime-conv-${randomUUID()}`;
+	let deploymentId: string | undefined;
+	let virtualKey: CreatedVirtualKey | undefined;
+	try {
+		const created = await createDeployment({
+			publicModel,
+			adapterKey: "googleaistudio",
+			upstreamModel: "gemini-3.8-live",
+			credentials: { apiKey: "gemini-test", baseUrl: stub.baseUrl },
+		});
+		deploymentId = created.row.id;
+		virtualKey = await createVirtualKey({
+			name: `realtime-conv-${randomUUID()}`,
+			allowedModels: [publicModel],
+		});
+
+		// Browser-style authentication: the key travels as a WebSocket subprotocol.
+		const socket = new WebSocket(`${server.url}?model=${publicModel}`, [
+			"realtime",
+			`openai-insecure-api-key.${virtualKey.rawKey}`,
+		]);
+		const events: Record<string, any>[] = [];
+		socket.on("message", (data) => events.push(JSON.parse(data.toString())));
+		await new Promise<void>((resolve, reject) => {
+			socket.once("open", () => resolve());
+			socket.once("unexpected-response", (_request, response) =>
+				reject(new Error(`upgrade refused: ${response.statusCode}`)),
+			);
+			socket.once("error", reject);
+		});
+		assert.equal(socket.protocol, "realtime");
+		const nth = (type: string, n: number) =>
+			eventually(() => events.filter((event) => event.type === type)[n - 1], {
+				description: `${type} #${n}`,
+			});
+		const createdEvent = await nth("session.created", 1);
+		assert.equal(createdEvent.session.type, "realtime");
+		assert.equal(createdEvent.session.model, publicModel);
+
+		socket.send(
+			JSON.stringify({
+				type: "session.update",
+				session: {
+					type: "realtime",
+					instructions: "Eres un asistente de pedidos.",
+					audio: {
+						input: {
+							transcription: { model: "gpt-transcribe" },
+							turn_detection: null,
+						},
+						output: { voice: "Kore" },
+					},
+					tools: [
+						{
+							type: "function",
+							name: "order_status",
+							parameters: {
+								type: "object",
+								properties: { id: { type: "string" } },
+							},
+						},
+					],
+				},
+			}),
+		);
+		await nth("session.updated", 1);
+
+		// A manual voice turn.
+		socket.send(
+			JSON.stringify({
+				type: "input_audio_buffer.append",
+				audio: Buffer.alloc(9600).toString("base64"),
+			}),
+		);
+		socket.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
+		socket.send(JSON.stringify({ type: "response.create" }));
+		const first = await nth("response.done", 1);
+		assert.equal(first.response.status, "completed");
+		assert.equal(
+			first.response.output[0].content[0].transcript,
+			"Hola, te ayudo.",
+		);
+		assert.equal(first.response.usage.input_tokens, 20);
+		const setup = stub.received.find((message) => message.setup)?.setup;
+		assert.deepEqual(setup.systemInstruction, {
+			parts: [{ text: "Eres un asistente de pedidos." }],
+		});
+		assert.equal(
+			setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig
+				.voiceName,
+			"Kore",
+		);
+		assert.deepEqual(setup.realtimeInputConfig, {
+			automaticActivityDetection: { disabled: true },
+		});
+		const audio = events.find(
+			(event) => event.type === "response.output_audio.delta",
+		);
+		assert.equal(Buffer.from(audio?.delta, "base64").byteLength, 4800);
+		const transcript = await nth(
+			"conversation.item.input_audio_transcription.completed",
+			1,
+		);
+		assert.equal(transcript.transcript, "Hola");
+
+		// A text turn that makes the model call a function.
+		socket.send(
+			JSON.stringify({
+				type: "conversation.item.create",
+				item: {
+					type: "message",
+					role: "user",
+					content: [{ type: "input_text", text: "Y mi pedido 7?" }],
+				},
+			}),
+		);
+		socket.send(JSON.stringify({ type: "response.create" }));
+		const call = await nth("response.function_call_arguments.done", 1);
+		assert.equal(call.call_id, "fc_1");
+		assert.equal(call.arguments, '{"id":"7"}');
+		await nth("response.done", 2);
+		socket.send(
+			JSON.stringify({
+				type: "conversation.item.create",
+				item: {
+					type: "function_call_output",
+					call_id: "fc_1",
+					output: '{"status":"shipped"}',
+				},
+			}),
+		);
+		socket.send(JSON.stringify({ type: "response.create" }));
+		const last = await nth("response.done", 3);
+		assert.equal(
+			last.response.output[0].content[0].transcript,
+			"Tu pedido ya salio.",
+		);
+		assert.deepEqual(
+			stub.received.find((message) => message.toolResponse)?.toolResponse,
+			{
+				functionResponses: [
+					{
+						id: "fc_1",
+						name: "order_status",
+						response: { status: "shipped" },
+					},
+				],
+			},
+		);
+		assert.deepEqual(
+			events.filter((event) => event.type === "error"),
+			[],
+		);
+
+		socket.close();
+		const operation = await eventually(
+			async () => {
+				const page = await listOperationsPage({
+					limit: 1,
+					offset: 0,
+					publicModel,
+					callType: "realtime.conversation",
+				});
+				const [row] = page.rows;
+				const detail = row ? await getOperationDetail(row.id) : null;
+				return detail?.outcome ? detail : null;
+			},
+			{ description: "realtime conversation operation", timeoutMs: 8000 },
+		);
+		assert.equal(operation.outcome, "success");
+		assert.equal(operation.promptTokens, 50);
+		assert.equal(operation.completionTokens, 20);
+		assert.ok(operation.firstOutputMs !== null);
+	} finally {
+		if (virtualKey) {
+			await deleteVirtualKey(virtualKey.row.id);
+		}
+		if (deploymentId) {
+			await deleteDeployment(deploymentId);
+		}
+		await server.close();
+		await stub.close();
 	}
 });

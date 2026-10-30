@@ -6,13 +6,13 @@ import { candidateMetadata } from "#gateway/candidateMetadata.ts";
 import { completedTerminal } from "#gateway/streamLifecycle.ts";
 import { OperationLogDraft } from "./runtime/operationLog.ts";
 import { route, type RouteResult } from "#router/index.ts";
+import { realtimeConversationSocket } from "./realtimeConversation.ts";
 import { upgradeWebSocket } from "@hono/node-server";
 import { GatewayError } from "#core/errors.ts";
 import { getAuth } from "#auth/middleware.ts";
 import type { AppEnv } from "#auth/types.ts";
 import { randomUUID } from "node:crypto";
-import type { WSContext } from "hono/ws";
-import { env } from "#config/env.ts";
+import type { WSEvents } from "hono/ws";
 import type { Context } from "hono";
 
 import {
@@ -30,7 +30,7 @@ import {
 
 import {
 	type CanonicalRealtimeTranscriptionConfig,
-	type RealtimeTranscriptionUsage,
+	type RealtimeUsage,
 	realtimeUsageToCore,
 	addRealtimeUsage,
 } from "#core/realtime.ts";
@@ -49,18 +49,30 @@ import {
 	preflight,
 } from "./runtime/pipeline.ts";
 
+import {
+	type RealtimeSocketEntry,
+	unregisterRealtimeSocket,
+	registerRealtimeSocket,
+	eventQueueLimitError,
+	sessionExpiredError,
+	realtimeMessageJson,
+	sendRealtimeEvent,
+	MAX_QUEUED_EVENTS,
+	REALTIME_MAX_MS,
+} from "./realtimeSockets.ts";
+
+export { closeRealtimeWebSockets } from "./realtimeSockets.ts";
+
 /**
- * GET /v1/realtime?intent=transcription with Upgrade: websocket — OpenAI's Realtime API in
- * transcription mode, served by any adapter with a realtime transcription handler.
+ * GET /v1/realtime with Upgrade: websocket — OpenAI's Realtime API. `?model=…` opens a conversation
+ * (see realtimeConversation.ts); `?intent=transcription` a transcription session, served by any
+ * adapter with a realtime transcription handler.
  *
- * Each provider session is one routed operation: it starts when a `session.update` names a model
- * (or changes how that model must be configured) and ends when the configuration changes again or
- * the socket closes. Its usage and cost are logged once, at the end.
+ * Each transcription provider session is one routed operation: it starts when a `session.update`
+ * names a model (or changes how that model must be configured) and ends when the configuration
+ * changes again or the socket closes. Its usage and cost are logged once, at the end.
  */
 
-const REALTIME_MAX_MS = 60 * 60 * 1000;
-const MAX_MESSAGE_BYTES = 16 * 1024 * 1024;
-const MAX_QUEUED_EVENTS = 2000;
 /**
  * Usage estimates for providers that report none (Gemini Live sends no `usageMetadata` for
  * transcription-only sessions): Google bills live audio at 25 tokens per second, and Gemini
@@ -79,7 +91,7 @@ interface UpstreamRun {
 	decoder: AudioInputDecoder;
 	/** Seconds of audio received before the current decoder (a format change replaces it). */
 	secondsBefore: number;
-	usage: RealtimeTranscriptionUsage | null;
+	usage: RealtimeUsage | null;
 	tracker: RealtimeTranscriptTracker;
 	downstream: DownstreamWriteObservation;
 	ended: boolean;
@@ -87,8 +99,7 @@ interface UpstreamRun {
 
 interface RealtimeConnection {
 	c: Context<AppEnv>;
-	scopeKey: string;
-	socket: WSContext | null;
+	entry: RealtimeSocketEntry;
 	state: RealtimeSessionState;
 	queue: Promise<void>;
 	queued: number;
@@ -98,22 +109,12 @@ interface RealtimeConnection {
 	closed: boolean;
 }
 
-const activeRealtimeConnections = new Set<RealtimeConnection>();
-
 function send(
 	connection: RealtimeConnection,
 	value: Record<string, unknown>,
 	downstream?: DownstreamWriteObservation,
 ): void {
-	const ws = connection.socket;
-	if (ws?.readyState !== 1) {
-		return;
-	}
-	const serialized = JSON.stringify(value);
-	ws.send(serialized);
-	if (downstream) {
-		downstream.bytes += Buffer.byteLength(serialized);
-	}
+	sendRealtimeEvent(connection.entry.socket, value, downstream);
 }
 
 function sendError(
@@ -131,28 +132,6 @@ function sendError(
 			param: body.param ?? null,
 			eventId: clientEventId,
 		}),
-	);
-}
-
-function messageText(value: unknown): string {
-	if (typeof value === "string") {
-		return value;
-	}
-	if (value instanceof ArrayBuffer) {
-		return Buffer.from(value).toString("utf8");
-	}
-	if (ArrayBuffer.isView(value)) {
-		return Buffer.from(
-			value.buffer,
-			value.byteOffset,
-			value.byteLength,
-		).toString("utf8");
-	}
-	throw new RealtimeClientEventError(
-		"Realtime messages must be JSON text.",
-		"invalid_event",
-		null,
-		null,
 	);
 }
 
@@ -179,7 +158,7 @@ async function pump(connection: RealtimeConnection, run: UpstreamRun) {
 		const gatewayError = toGatewayError(error, "Realtime transcription failed");
 		sendError(connection, gatewayError);
 		await endRun(connection, run, gatewayError);
-		connection.socket?.close(1011, "upstream session failed");
+		connection.entry.socket?.close(1011, "upstream session failed");
 	}
 }
 
@@ -358,27 +337,7 @@ async function handleMessage(
 ): Promise<void> {
 	let clientEventId: string | null = null;
 	try {
-		const text = messageText(rawMessage);
-		if (Buffer.byteLength(text, "utf8") > MAX_MESSAGE_BYTES) {
-			throw new RealtimeClientEventError(
-				"Realtime message is too large.",
-				"invalid_event",
-				null,
-				null,
-			);
-		}
-		let json: unknown;
-		try {
-			json = JSON.parse(text);
-		} catch {
-			throw new RealtimeClientEventError(
-				"Invalid JSON.",
-				"invalid_json",
-				null,
-				null,
-			);
-		}
-		const event = parseRealtimeClientEvent(json);
+		const event = parseRealtimeClientEvent(realtimeMessageJson(rawMessage));
 		clientEventId = event.event_id ?? null;
 		if (event.type === "session.update") {
 			await updateSession(
@@ -448,107 +407,108 @@ async function closeConnection(connection: RealtimeConnection): Promise<void> {
 	}
 	connection.closed = true;
 	clearTimeout(connection.timer);
-	activeRealtimeConnections.delete(connection);
+	unregisterRealtimeSocket(connection.entry);
 	await connection.queue.catch(() => undefined);
 	if (connection.run) {
 		await endRun(connection, connection.run, null);
 	}
 }
 
+/** Builds the socket handlers for a transcription session. Throws when the socket is refused. */
+function realtimeTranscriptionSocket(
+	c: Context<AppEnv>,
+	scopeKey: string,
+): WSEvents {
+	let connection: RealtimeConnection;
+	const entry: RealtimeSocketEntry = {
+		scopeKey,
+		socket: null,
+		busy: () => connection.run !== null,
+		close: () => closeConnection(connection),
+	};
+	registerRealtimeSocket(entry);
+	connection = {
+		c,
+		entry,
+		state: newRealtimeSessionState(),
+		queue: Promise.resolve(),
+		queued: 0,
+		run: null,
+		lastItemId: null,
+		timer: undefined,
+		closed: false,
+	};
+	return {
+		onOpen(_event, ws) {
+			entry.socket = ws;
+			send(connection, {
+				type: "session.created",
+				event_id: eventId(),
+				session: renderSession(connection.state),
+			});
+			connection.timer = setTimeout(() => {
+				sendError(connection, sessionExpiredError());
+				entry.socket?.close(1000, "60 minute session limit");
+			}, REALTIME_MAX_MS);
+			connection.timer.unref?.();
+		},
+		onMessage(event) {
+			if (connection.queued >= MAX_QUEUED_EVENTS) {
+				sendError(connection, eventQueueLimitError());
+				return;
+			}
+			connection.queued += 1;
+			connection.queue = connection.queue
+				.then(() => handleMessage(connection, event.data))
+				.finally(() => {
+					connection.queued -= 1;
+				});
+		},
+		onClose() {
+			void closeConnection(connection);
+		},
+		onError() {
+			void closeConnection(connection);
+		},
+	};
+}
+
 export const realtimeWebSocketHandler = upgradeWebSocket(
 	(c) => {
 		const intent = c.req.query("intent");
-		if (intent !== "transcription" || c.req.query("model") !== undefined) {
-			const message =
-				"Only transcription sessions are supported: connect with ?intent=transcription and set the model in session.update.";
-			throw new GatewayError({
-				class: "bad_request",
-				code: "unsupported_parameter",
-				message,
-				publicMessage: message,
-				param: intent === "transcription" ? "model" : "intent",
-			});
-		}
+		const model = c.req.query("model");
 		const auth = getAuth(c);
 		const scopeKey = auth.type === "virtual" ? auth.key.id : "master";
-		const forScope = [...activeRealtimeConnections].filter(
-			(active) => active.scopeKey === scopeKey,
-		).length;
-		if (
-			activeRealtimeConnections.size >=
-				env.REALTIME_WEBSOCKET_MAX_CONNECTIONS ||
-			forScope >= env.REALTIME_WEBSOCKET_MAX_CONNECTIONS_PER_KEY
-		) {
+		if (intent === "transcription") {
+			if (model !== undefined) {
+				const message =
+					"Transcription sessions take their model from session.update, not the URL.";
+				throw new GatewayError({
+					class: "bad_request",
+					code: "unsupported_parameter",
+					message,
+					publicMessage: message,
+					param: "model",
+				});
+			}
+			return realtimeTranscriptionSocket(c, scopeKey);
+		}
+		if ((intent !== undefined && intent !== "realtime") || !model) {
+			const message =
+				intent !== undefined && intent !== "realtime"
+					? `Unknown intent '${intent}': use 'realtime' or 'transcription'.`
+					: "Connect with ?model=<model> for a realtime conversation, or ?intent=transcription.";
 			throw new GatewayError({
-				class: "rate_limit",
-				code: "websocket_connection_limit_exceeded",
-				message: "Realtime WebSocket connection concurrency limit exceeded",
-				publicMessage: "Realtime WebSocket connection limit exceeded.",
+				class: "bad_request",
+				code:
+					intent === undefined ? "missing_required_parameter" : "invalid_value",
+				message,
+				publicMessage: message,
+				param:
+					intent !== undefined && intent !== "realtime" ? "intent" : "model",
 			});
 		}
-		const connection: RealtimeConnection = {
-			c,
-			scopeKey,
-			socket: null,
-			state: newRealtimeSessionState(),
-			queue: Promise.resolve(),
-			queued: 0,
-			run: null,
-			lastItemId: null,
-			timer: undefined,
-			closed: false,
-		};
-		activeRealtimeConnections.add(connection);
-		return {
-			onOpen(_event, ws) {
-				connection.socket = ws;
-				send(connection, {
-					type: "session.created",
-					event_id: eventId(),
-					session: renderSession(connection.state),
-				});
-				connection.timer = setTimeout(() => {
-					sendError(
-						connection,
-						new GatewayError({
-							class: "bad_request",
-							code: "session_expired",
-							message: "Realtime session reached 60 minutes",
-							publicMessage:
-								"Your session hit the maximum duration of 60 minutes.",
-						}),
-					);
-					connection.socket?.close(1000, "60 minute session limit");
-				}, REALTIME_MAX_MS);
-				connection.timer.unref?.();
-			},
-			onMessage(event) {
-				if (connection.queued >= MAX_QUEUED_EVENTS) {
-					sendError(
-						connection,
-						new GatewayError({
-							class: "rate_limit",
-							code: "websocket_event_queue_limit_exceeded",
-							message: "Realtime WebSocket queued-event limit exceeded",
-							publicMessage: "Too many queued events.",
-						}),
-					);
-					return;
-				}
-				connection.queued += 1;
-				connection.queue = connection.queue
-					.then(() => handleMessage(connection, event.data))
-					.finally(() => {
-						connection.queued -= 1;
-					});
-			},
-			onClose() {
-				void closeConnection(connection);
-			},
-			onError() {
-				void closeConnection(connection);
-			},
-		};
+		return realtimeConversationSocket(c, scopeKey, model);
 	},
 	{
 		onError(error) {
@@ -556,25 +516,3 @@ export const realtimeWebSocketHandler = upgradeWebSocket(
 		},
 	},
 );
-
-/**
- * Hangs up live realtime sockets during process shutdown. Idle ones (no provider session) go first;
- * the rest get 1012 "service restarting" when the drain window closes, after their usage is logged.
- */
-export async function closeRealtimeWebSockets(
-	options: { idleOnly?: boolean } = {},
-): Promise<void> {
-	const closing: Promise<void>[] = [];
-	for (const connection of activeRealtimeConnections) {
-		if (options.idleOnly && connection.run) {
-			continue;
-		}
-		const { socket } = connection;
-		closing.push(
-			closeConnection(connection).finally(() =>
-				socket?.close(1012, "service restarting"),
-			),
-		);
-	}
-	await Promise.allSettled(closing);
-}

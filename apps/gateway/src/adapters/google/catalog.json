@@ -10,7 +10,12 @@
 			"https://ai.google.dev/gemini-api/docs/pricing",
 			"https://ai.google.dev/gemini-api/docs/thinking",
 			"https://ai.google.dev/gemini-api/docs/transcribe",
-			"https://ai.google.dev/gemini-api/docs/live-api/live-transcribe"
+			"https://ai.google.dev/gemini-api/docs/live-api/live-transcribe",
+			"https://ai.google.dev/api/live",
+			"https://ai.google.dev/gemini-api/docs/live-api/capabilities",
+			"https://ai.google.dev/gemini-api/docs/live-api/tools",
+			"https://ai.google.dev/gemini-api/docs/live-api/session-management",
+			"https://ai.google.dev/gemini-api/docs/live-api/live-translate"
 		]
 	},
 	"models": {
@@ -3215,6 +3220,257 @@
 				"cacheReadCentsPerMTokens": 7.5,
 				"cacheWriteCentsPerMTokens": 2.083333
 			}
+		},
+		"gemini-3.8-live": {
+			"operations": {
+				"audio.converse.realtime": {
+					"outputModalities": ["audio"],
+					"voices": [
+						"Zephyr",
+						"Puck",
+						"Charon",
+						"Kore",
+						"Fenrir",
+						"Leda",
+						"Orus",
+						"Aoede",
+						"Callirrhoe",
+						"Autonoe",
+						"Enceladus",
+						"Iapetus",
+						"Umbriel",
+						"Algieba",
+						"Despina",
+						"Erinome",
+						"Algenib",
+						"Rasalgethi",
+						"Laomedeia",
+						"Achernar",
+						"Alnilam",
+						"Schedar",
+						"Gacrux",
+						"Pulcherrima",
+						"Achird",
+						"Zubenelgenubi",
+						"Vindemiatrix",
+						"Sadachbia",
+						"Sadaltager",
+						"Sulafat"
+					],
+					"supportsInstructions": true,
+					"supportsTools": true,
+					"supportsGoogleSearch": true,
+					"supportsTextInput": true,
+					"supportsImageInput": true,
+					"supportsInputTranscription": true,
+					"maxKeywords": 1000,
+					"turnDetection": ["server_vad", "semantic_vad", "manual"],
+					"supportsSessionResumption": true,
+					"supportsContextCompression": true,
+					"maxUpstreamSessionSeconds": 600
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 75,
+				"outputCentsPerMTokens": 450,
+				"audioInputCentsPerMTokens": 300,
+				"audioOutputCentsPerMTokens": 1200,
+				"imageInputCentsPerMTokens": 100
+			},
+			"notes": "Live API (BidiGenerateContent), native audio. Answers in audio only; text sessions are served from the transcript of the spoken reply (billed as audio output). Function calls are declared BLOCKING to keep OpenAI's semantics. Reasoning is built in and not configurable. Proactive audio is always on. Gemini ends each connection after about 10 minutes; the gateway resumes the session on a new one."
+		},
+		"gemini-3.8-live-extended-thinking": {
+			"operations": {
+				"audio.converse.realtime": {
+					"outputModalities": ["audio"],
+					"voices": [
+						"Zephyr",
+						"Puck",
+						"Charon",
+						"Kore",
+						"Fenrir",
+						"Leda",
+						"Orus",
+						"Aoede",
+						"Callirrhoe",
+						"Autonoe",
+						"Enceladus",
+						"Iapetus",
+						"Umbriel",
+						"Algieba",
+						"Despina",
+						"Erinome",
+						"Algenib",
+						"Rasalgethi",
+						"Laomedeia",
+						"Achernar",
+						"Alnilam",
+						"Schedar",
+						"Gacrux",
+						"Pulcherrima",
+						"Achird",
+						"Zubenelgenubi",
+						"Vindemiatrix",
+						"Sadachbia",
+						"Sadaltager",
+						"Sulafat"
+					],
+					"supportsInstructions": true,
+					"supportsTools": true,
+					"supportsGoogleSearch": true,
+					"supportsTextInput": true,
+					"supportsImageInput": true,
+					"supportsInputTranscription": true,
+					"maxKeywords": 1000,
+					"turnDetection": ["server_vad", "semantic_vad", "manual"],
+					"supportsSessionResumption": true,
+					"supportsContextCompression": true,
+					"maxUpstreamSessionSeconds": 600,
+					"functionCalling": "non_blocking",
+					"reasoningEfforts": ["low", "medium", "high"]
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 75,
+				"outputCentsPerMTokens": 450,
+				"audioInputCentsPerMTokens": 300,
+				"audioOutputCentsPerMTokens": 1200,
+				"imageInputCentsPerMTokens": 100
+			},
+			"notes": "Live API (BidiGenerateContent), native audio with extended reasoning. Function calls run NON_BLOCKING only: the model may keep talking while a call runs. It may speak filler turns while it reasons. Answers in audio only; text sessions are served from the transcript."
+		},
+		"gemini-3.1-flash-live-preview": {
+			"operations": {
+				"audio.converse.realtime": {
+					"outputModalities": ["audio"],
+					"voices": [
+						"Zephyr",
+						"Puck",
+						"Charon",
+						"Kore",
+						"Fenrir",
+						"Leda",
+						"Orus",
+						"Aoede",
+						"Callirrhoe",
+						"Autonoe",
+						"Enceladus",
+						"Iapetus",
+						"Umbriel",
+						"Algieba",
+						"Despina",
+						"Erinome",
+						"Algenib",
+						"Rasalgethi",
+						"Laomedeia",
+						"Achernar",
+						"Alnilam",
+						"Schedar",
+						"Gacrux",
+						"Pulcherrima",
+						"Achird",
+						"Zubenelgenubi",
+						"Vindemiatrix",
+						"Sadachbia",
+						"Sadaltager",
+						"Sulafat"
+					],
+					"supportsInstructions": true,
+					"supportsTools": true,
+					"supportsGoogleSearch": true,
+					"supportsTextInput": true,
+					"supportsImageInput": true,
+					"supportsInputTranscription": true,
+					"maxKeywords": 1000,
+					"turnDetection": ["server_vad", "semantic_vad", "manual"],
+					"supportsSessionResumption": true,
+					"supportsContextCompression": true,
+					"maxUpstreamSessionSeconds": 600,
+					"reasoningEfforts": ["minimal", "low", "medium", "high"]
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 75,
+				"outputCentsPerMTokens": 450,
+				"audioInputCentsPerMTokens": 300,
+				"audioOutputCentsPerMTokens": 1200,
+				"imageInputCentsPerMTokens": 100
+			},
+			"notes": "Live API (BidiGenerateContent), native audio. Legacy: Google recommends gemini-3.8-live. Synchronous function calling only. Answers in audio only; text sessions are served from the transcript."
+		},
+		"gemini-2.5-flash-native-audio-preview-12-2025": {
+			"operations": {
+				"audio.converse.realtime": {
+					"outputModalities": ["audio"],
+					"voices": [
+						"Zephyr",
+						"Puck",
+						"Charon",
+						"Kore",
+						"Fenrir",
+						"Leda",
+						"Orus",
+						"Aoede",
+						"Callirrhoe",
+						"Autonoe",
+						"Enceladus",
+						"Iapetus",
+						"Umbriel",
+						"Algieba",
+						"Despina",
+						"Erinome",
+						"Algenib",
+						"Rasalgethi",
+						"Laomedeia",
+						"Achernar",
+						"Alnilam",
+						"Schedar",
+						"Gacrux",
+						"Pulcherrima",
+						"Achird",
+						"Zubenelgenubi",
+						"Vindemiatrix",
+						"Sadachbia",
+						"Sadaltager",
+						"Sulafat"
+					],
+					"supportsInstructions": true,
+					"supportsTools": true,
+					"supportsGoogleSearch": true,
+					"supportsTextInput": true,
+					"supportsImageInput": true,
+					"supportsInputTranscription": true,
+					"maxKeywords": 1000,
+					"turnDetection": ["server_vad", "semantic_vad", "manual"],
+					"supportsSessionResumption": true,
+					"supportsContextCompression": true,
+					"maxUpstreamSessionSeconds": 600
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 50,
+				"outputCentsPerMTokens": 200,
+				"audioInputCentsPerMTokens": 300,
+				"audioOutputCentsPerMTokens": 1200,
+				"imageInputCentsPerMTokens": 300
+			},
+			"notes": "Live API (BidiGenerateContent), native audio. Google limits 2.5 access to projects that already used it. Answers in audio only; text sessions are served from the transcript."
+		},
+		"gemini-3.5-live-translate-preview": {
+			"operations": {
+				"audio.converse.realtime": {
+					"outputModalities": ["audio"],
+					"supportsInputTranscription": true,
+					"turnDetection": ["server_vad"],
+					"maxUpstreamSessionSeconds": 600,
+					"translation": true
+				}
+			},
+			"pricing": {
+				"inputCentsPerMTokens": 350,
+				"outputCentsPerMTokens": 2100
+			},
+			"notes": "Live API speech-to-speech translation into 70+ languages; requires session.translation.target_language (Bifrost extension). Audio in, translated audio out; no instructions, tools or text input. The source language is detected. Each connection lasts about 10 minutes; the gateway reconnects without carrying context."
 		}
 	}
 }

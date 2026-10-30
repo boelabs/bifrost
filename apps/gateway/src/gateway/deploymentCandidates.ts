@@ -5,6 +5,7 @@ import { decryptRecord } from "#db/crypto.ts";
 
 import {
 	realtimeTranscriptionProfileFor,
+	realtimeConversationProfileFor,
 	transcriptionProfileFor,
 	embeddingProfileFor,
 	rerankProfileFor,
@@ -99,6 +100,12 @@ function resolveCandidates(
 			if (
 				callType === "realtime.transcription" &&
 				!realtimeTranscriptionProfileFor(meta)
+			) {
+				continue;
+			}
+			if (
+				callType === "realtime.conversation" &&
+				!realtimeConversationProfileFor(meta)
 			) {
 				continue;
 			}

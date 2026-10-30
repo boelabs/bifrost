@@ -1,4 +1,4 @@
-import { createAudioInputDecoder } from "./pcm.ts";
+import { createAudioInputDecoder, createAudioOutputEncoder } from "./pcm.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -65,4 +65,43 @@ test("pcm: G.711 mu-law and A-law decode to the standard values and double the r
 	assert.ok(aOut.includes(-8));
 	// 8 kHz -> 16 kHz: about two output samples per input sample.
 	assert.ok(aOut.length >= 7 && aOut.length <= 9, String(aOut.length));
+});
+
+test("pcm: output PCM passes through and G.711 output round-trips through the decoders", () => {
+	const tone = Buffer.alloc(24_000 * 2);
+	for (let index = 0; index < 24_000; index += 1) {
+		tone.writeInt16LE(
+			Math.round(Math.sin((index / 24_000) * 2 * Math.PI * 300) * 12_000),
+			index * 2,
+		);
+	}
+	const pcm = createAudioOutputEncoder({ type: "audio/pcm", rate: 24_000 });
+	assert.deepEqual(
+		Buffer.concat([
+			pcm.push(tone.subarray(0, 101)),
+			pcm.push(tone.subarray(101)),
+		]),
+		tone,
+	);
+	for (const type of ["audio/pcmu", "audio/pcma"] as const) {
+		const encoder = createAudioOutputEncoder({ type });
+		// Odd chunk boundaries must not drop or duplicate samples.
+		const encoded = Buffer.concat([
+			encoder.push(tone.subarray(0, 1001)),
+			encoder.push(tone.subarray(1001)),
+		]);
+		assert.equal(encoded.byteLength, 8000);
+		// Decode back (8 kHz -> 16 kHz) and compare against the tone at 16 kHz.
+		const decoded = createAudioInputDecoder({ type }).push(encoded);
+		let error = 0;
+		const samples = decoded.byteLength / 2;
+		for (let index = 10; index < samples - 10; index += 1) {
+			const expected = Math.sin((index / 16_000) * 2 * Math.PI * 300) * 12_000;
+			error = Math.max(
+				error,
+				Math.abs(decoded.readInt16LE(index * 2) - expected),
+			);
+		}
+		assert.ok(error < 1200, `${type} max error ${error}`);
+	}
 });

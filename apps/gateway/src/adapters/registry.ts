@@ -17,6 +17,7 @@ const HANDLER_KEY: Partial<Record<CallType, keyof Adapter>> = {
 	"videos.generations": "videoGeneration",
 	"audio.transcriptions": "audioTranscription",
 	"realtime.transcription": "realtimeTranscription",
+	"realtime.conversation": "realtimeConversation",
 	embeddings: "embeddings",
 	rerank: "rerank",
 };

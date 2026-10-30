@@ -105,6 +105,12 @@ function addModalitiesForOperation(
 			input.add("audio");
 			output.add("text");
 			break;
+		case "audio.converse.realtime":
+			input.add("audio");
+			input.add("text");
+			output.add("audio");
+			output.add("text");
+			break;
 		case "embedding.create":
 			input.add("text");
 			output.add("embedding");

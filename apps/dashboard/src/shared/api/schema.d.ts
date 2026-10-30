@@ -2128,6 +2128,7 @@ export interface paths {
 						| "video.generate"
 						| "audio.transcribe"
 						| "audio.transcribe.realtime"
+						| "audio.converse.realtime"
 						| "embedding.create"
 						| "rerank";
 				};
@@ -3087,6 +3088,8 @@ export interface components {
 			};
 			imageInputCentsPerMTokens?: number;
 			imageOutputCentsPerMTokens?: number;
+			audioInputCentsPerMTokens?: number;
+			audioOutputCentsPerMTokens?: number;
 			searchUnitCents?: number;
 			tiers?: {
 				aboveInputTokens: number;
@@ -3099,6 +3102,8 @@ export interface components {
 				};
 				imageInputCentsPerMTokens?: number;
 				imageOutputCentsPerMTokens?: number;
+				audioInputCentsPerMTokens?: number;
+				audioOutputCentsPerMTokens?: number;
 			}[];
 		};
 		/** @description Advanced operation-to-transport override. Defaults normally come from the adapter. */
@@ -3244,6 +3249,10 @@ export interface components {
 					stream: components["schemas"]["ExecutionPolicy"];
 				};
 				"realtime.transcription": {
+					json: components["schemas"]["ExecutionPolicy"];
+					stream: components["schemas"]["ExecutionPolicy"];
+				};
+				"realtime.conversation": {
 					json: components["schemas"]["ExecutionPolicy"];
 					stream: components["schemas"]["ExecutionPolicy"];
 				};

@@ -22,6 +22,8 @@ function isMasterKey(value: string): boolean {
 	return timingSafeEqual(candidateDigest, MASTER_KEY_DIGEST);
 }
 
+const INSECURE_KEY_PROTOCOL = "openai-insecure-api-key.";
+
 /** Extracts an API key only from headers, which do not leak through URLs, history, or referrers. */
 function extractKey(c: Context): string | undefined {
 	const auth = c.req.header("authorization");
@@ -33,7 +35,17 @@ function extractKey(c: Context): string | undefined {
 		return auth.trim();
 	}
 	const x = c.req.header("x-api-key");
-	return x ? x.trim() : undefined;
+	if (x) {
+		return x.trim();
+	}
+	// Browsers cannot set headers on a WebSocket; OpenAI's Realtime clients send the key as a
+	// subprotocol instead (`openai-insecure-api-key.<key>`).
+	const protocols = c.req.header("sec-websocket-protocol");
+	const offered = protocols
+		?.split(",")
+		.map((protocol) => protocol.trim())
+		.find((protocol) => protocol.startsWith(INSECURE_KEY_PROTOCOL));
+	return offered ? offered.slice(INSECURE_KEY_PROTOCOL.length) : undefined;
 }
 
 /** Resolves and revalidates request credentials. WebSocket sessions call this before every turn. */

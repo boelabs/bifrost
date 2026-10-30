@@ -9,7 +9,7 @@ import type WebSocket from "ws";
 import {
 	type CanonicalRealtimeTranscriptionConfig,
 	type CanonicalRealtimeTranscriptionEvent,
-	type RealtimeTranscriptionUsage,
+	type RealtimeUsage,
 	REALTIME_AUDIO_SAMPLE_RATE,
 } from "#core/realtime.ts";
 
@@ -124,15 +124,15 @@ function modalityCount(details: unknown, modality: string): number | undefined {
 	return total;
 }
 
-/** Live API `usageMetadata` -> realtime usage. Thinking tokens count as output. */
-export function geminiLiveUsage(
-	raw: unknown,
-): RealtimeTranscriptionUsage | undefined {
+/** Live API `usageMetadata` -> realtime usage. Thinking and tool-use prompt tokens count too. */
+export function geminiLiveUsage(raw: unknown): RealtimeUsage | undefined {
 	const usage = record(raw);
 	if (!usage) {
 		return undefined;
 	}
-	const input = count(usage.promptTokenCount) ?? 0;
+	const input =
+		(count(usage.promptTokenCount) ?? 0) +
+		(count(usage.toolUsePromptTokenCount) ?? 0);
 	const output =
 		(count(usage.responseTokenCount) ??
 			count(usage.candidatesTokenCount) ??
@@ -140,14 +140,22 @@ export function geminiLiveUsage(
 	if (input === 0 && output === 0) {
 		return undefined;
 	}
-	const audioTokens = modalityCount(usage.promptTokensDetails, "AUDIO");
-	const textTokens = modalityCount(usage.promptTokensDetails, "TEXT");
+	const details = {
+		audioTokens: modalityCount(usage.promptTokensDetails, "AUDIO"),
+		textTokens: modalityCount(usage.promptTokensDetails, "TEXT"),
+		imageTokens:
+			modalityCount(usage.promptTokensDetails, "IMAGE") ??
+			modalityCount(usage.promptTokensDetails, "VIDEO"),
+		outputAudioTokens: modalityCount(usage.responseTokensDetails, "AUDIO"),
+		outputTextTokens: modalityCount(usage.responseTokensDetails, "TEXT"),
+	};
 	return {
 		inputTokens: input,
 		outputTokens: output,
 		totalTokens: input + output,
-		...(audioTokens === undefined ? {} : { audioTokens }),
-		...(textTokens === undefined ? {} : { textTokens }),
+		...Object.fromEntries(
+			Object.entries(details).filter(([, value]) => value !== undefined),
+		),
 	};
 }
 
@@ -156,7 +164,7 @@ export interface GeminiLiveMessage {
 	setupComplete: boolean;
 	interim?: string;
 	final?: string;
-	usage?: RealtimeTranscriptionUsage;
+	usage?: RealtimeUsage;
 	goAway: boolean;
 }
 
@@ -195,7 +203,7 @@ export function closeStatus(code: number, reason: string): number {
 	return code === 1011 ? 500 : 502;
 }
 
-function rawText(data: RawData): string {
+export function rawText(data: RawData): string {
 	if (Array.isArray(data)) {
 		return Buffer.concat(data).toString("utf8");
 	}
@@ -205,7 +213,7 @@ function rawText(data: RawData): string {
 	return data.toString("utf8");
 }
 
-class EventQueue<T> {
+export class EventQueue<T> {
 	private readonly values: T[] = [];
 	private waiter: {
 		resolve: (value: IteratorResult<T>) => void;

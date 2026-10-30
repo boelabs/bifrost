@@ -10,6 +10,7 @@ const CALL_TYPES = [
 	"videos.generations",
 	"audio.transcriptions",
 	"realtime.transcription",
+	"realtime.conversation",
 	"embeddings",
 	"rerank",
 ] as const;

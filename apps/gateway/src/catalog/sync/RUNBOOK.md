@@ -14,8 +14,8 @@ pull request: a missing field is a known gap, a wrong one is an incident.
 You may:
 
 - Add a model that the provider's own API accepts under that exact id, including transcription,
-  embedding, rerank, image and video models when the provider's adapter already serves that
-  operation.
+  realtime (live voice), embedding, rerank, image and video models when the provider's adapter
+  already serves that operation.
 - Correct `pricing`, `maxInputTokens`, `maxOutputTokens`, `capabilities`, `parameters` and
   `reasoning` of an existing entry, when the provider's own docs say otherwise.
 - Mark a model `deprecated: true` when the provider announced its deprecation or retirement.
@@ -114,7 +114,7 @@ provider in parallel when you can:
 | anthropic | `https://platform.claude.com/docs/en/release-notes/api`, `.../about-claude/models/overview`, `.../about-claude/model-deprecations` |
 | openai | `https://developers.openai.com/api/docs/changelog`, `.../docs/models`, `.../docs/deprecations` |
 | azureopenai, azurefoundry | The report's Azure sections (below), `https://learn.microsoft.com/azure/foundry/openai/concepts/model-retirement-schedule`, and for each model the page's own section or how-to |
-| googleaistudio | `https://ai.google.dev/gemini-api/docs/changelog`, `.../docs/models`, `.../docs/deprecations`, `.../docs/transcribe`, `.../docs/live-api/live-transcribe` |
+| googleaistudio | `https://ai.google.dev/gemini-api/docs/changelog`, `.../docs/models` (its "Live API" section), `.../docs/deprecations`, `.../docs/transcribe`, `.../docs/live-api/live-transcribe`, `.../docs/live-api/capabilities`, `.../docs/live-api/tools`, `.../docs/live-api/live-translate` |
 | deepseek | `https://api-docs.deepseek.com/updates`, `.../news/`, `.../quick_start/pricing` |
 | moonshot | `https://platform.kimi.ai/docs/platform-changelog.md`, `.../docs/models.md` |
 | zai | `https://docs.z.ai/release-notes/new-released`, `.../guides/overview/pricing` |
@@ -127,9 +127,14 @@ reported as such, never as "nothing new".
 they rarely list transcription models, and never their live or realtime variants. On every run, look
 on each provider's models page and changelog for transcription models (file and live/realtime:
 `*-transcribe`, `*-transcribe-live`, `*-live-transcribe`, `whisper-*`, "speech-to-text"), and the same
-for embeddings, rerankers, image and video models. Known transcription models today: OpenAI
+for live voice models (`*-live`, `*-live-*`, `*-native-audio-*`, `*-realtime*`, `*-live-translate*`),
+embeddings, rerankers, image and video models. Known transcription models today: OpenAI
 `gpt-transcribe`, `gpt-live-transcribe` and the deprecated `gpt-4o-*-transcribe`; Google
-`gemini-3.5-transcribe` and `gemini-3.5-transcribe-live`.
+`gemini-3.5-transcribe` and `gemini-3.5-transcribe-live`. Known live voice models: Google
+`gemini-3.8-live`, `gemini-3.8-live-extended-thinking`, `gemini-3.1-flash-live-preview`,
+`gemini-2.5-flash-native-audio-preview-12-2025` and `gemini-3.5-live-translate-preview`; OpenAI
+`gpt-realtime-2.1`, `gpt-realtime-2.1-mini`, `gpt-realtime-2` (out of scope until the OpenAI adapter
+serves realtime conversations).
 
 **Azure is read for you.** The aggregators never list Azure's deployment ids, so `catalog:sync` reads
 Microsoft's own list (`https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure`,
@@ -180,6 +185,27 @@ A live model's `audio.transcribe.realtime` profile declares `supportsKeywords`, 
 
 Copy the closest existing transcription entry of the same provider; the adapter decides how each
 field reaches the provider, so a new id on an adapter that already transcribes needs no code.
+
+For a live voice model (speech in, speech out; the `audio.converse.realtime` operation, served today
+by the Google adapter only), the profile replaces items 3 to 7. Establish:
+
+1. Pricing per 1M tokens by modality: text, audio and image input (`inputCentsPerMTokens`,
+   `audioInputCentsPerMTokens`, `imageInputCentsPerMTokens`), text and audio output
+   (`outputCentsPerMTokens`, `audioOutputCentsPerMTokens`).
+2. What it answers with natively (`outputModalities`; Gemini's native-audio models: `["audio"]`
+   only), and its prebuilt `voices`.
+3. Whether it takes instructions, function tools, Google Search, text and image input, and input
+   transcription with vocabulary (`supportsInstructions`, `supportsTools`, `supportsGoogleSearch`,
+   `supportsTextInput`, `supportsImageInput`, `supportsInputTranscription`, `maxKeywords`).
+4. How function calls run: `functionCalling: "non_blocking"` when the model only supports
+   asynchronous calls (it errors on BLOCKING); otherwise leave it out.
+5. The `reasoning.effort` values it accepts (`reasoningEfforts`), or none when it must be omitted.
+6. Turn detection it supports (`server_vad`, `semantic_vad`, `manual`), whether it resumes sessions
+   and compresses context (`supportsSessionResumption`, `supportsContextCompression`), and the
+   per-connection cap (`maxUpstreamSessionSeconds`).
+7. For a translation model, `translation: true` (sessions must name a target language).
+
+Copy the closest existing live entry of the same provider.
 
 For a deprecation: the announcement date, the shutdown date, the replacement, and whether requests
 to the old id are routed elsewhere after shutdown.

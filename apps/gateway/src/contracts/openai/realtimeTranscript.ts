@@ -1,6 +1,6 @@
 import {
 	type CanonicalRealtimeTranscriptionEvent,
-	type RealtimeTranscriptionUsage,
+	type RealtimeUsage,
 	type RealtimeTurnDetection,
 	addRealtimeUsage,
 } from "#core/realtime.ts";
@@ -59,7 +59,7 @@ export class RealtimeTranscriptTracker {
 	private readonly options: RealtimeTranscriptTrackerOptions;
 	private open: Item | null = null;
 	private awaiting: Item[] = [];
-	private pendingUsage: RealtimeTranscriptionUsage | null = null;
+	private pendingUsage: RealtimeUsage | null = null;
 	lastItemId: string | null;
 	firstOutputAt: number | null = null;
 	completedItems = 0;

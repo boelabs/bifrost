@@ -1,4 +1,7 @@
-import { REALTIME_AUDIO_SAMPLE_RATE } from "#core/realtime.ts";
+import {
+	REALTIME_OUTPUT_SAMPLE_RATE,
+	REALTIME_AUDIO_SAMPLE_RATE,
+} from "#core/realtime.ts";
 
 /**
  * Streaming conversion of realtime client audio into the canonical 16 kHz PCM16.
@@ -43,7 +46,47 @@ function decodeALaw(byte: number): number {
 	return sign ? sample : -sample;
 }
 
-// biome-ignore-end lint/suspicious/noBitwiseOperators: end of the G.711 decoders.
+const SEG_A_END = [0x1f, 0x3f, 0x7f, 0xff, 0x1_ff, 0x3_ff, 0x7_ff, 0xf_ff];
+const SEG_U_END = [0x3f, 0x7f, 0xff, 0x1_ff, 0x3_ff, 0x7_ff, 0xf_ff, 0x1f_ff];
+
+function segment(value: number, ends: number[]): number {
+	const index = ends.findIndex((end) => value <= end);
+	return index === -1 ? ends.length : index;
+}
+
+/** ITU-T G.711 A-law, after the CCITT reference implementation (`linear2alaw`). */
+function encodeALaw(sample: number): number {
+	let value = sample >> 3;
+	let mask = 0xd5;
+	if (value < 0) {
+		mask = 0x55;
+		value = -value - 1;
+	}
+	const seg = segment(value, SEG_A_END);
+	if (seg >= 8) {
+		return 0x7f ^ mask;
+	}
+	const quantized = seg < 2 ? (value >> 1) & 0x0f : (value >> seg) & 0x0f;
+	return ((seg << 4) | quantized) ^ mask;
+}
+
+/** ITU-T G.711 mu-law, after the CCITT reference implementation (`linear2ulaw`). */
+function encodeMuLaw(sample: number): number {
+	let value = sample >> 2;
+	let mask = 0xff;
+	if (value < 0) {
+		value = -value;
+		mask = 0x7f;
+	}
+	value = Math.min(value, 8159) + (0x84 >> 2);
+	const seg = segment(value, SEG_U_END);
+	if (seg >= 8) {
+		return 0x7f ^ mask;
+	}
+	return ((seg << 4) | ((value >> (seg + 1)) & 0x0f)) ^ mask;
+}
+
+// biome-ignore-end lint/suspicious/noBitwiseOperators: end of the G.711 codecs.
 
 const MU_LAW = Int16Array.from({ length: 256 }, (_, byte) => decodeMuLaw(byte));
 const A_LAW = Int16Array.from({ length: 256 }, (_, byte) => decodeALaw(byte));
@@ -145,6 +188,74 @@ export function createAudioInputDecoder(
 		},
 		get seconds() {
 			return bytes / 8000;
+		},
+	};
+}
+
+/* ------------------------------------------------------------------ output */
+
+export type RealtimeOutputAudioFormat =
+	| { type: "audio/pcm"; rate: number }
+	| { type: "audio/pcmu" }
+	| { type: "audio/pcma" };
+
+export interface AudioOutputEncoder {
+	/** 24 kHz PCM16 from the provider in, the client's format out. */
+	push: (pcm: Buffer) => Buffer;
+}
+
+/** Sample index -> G.711 byte, built on first use. */
+const encodeTables = new Map<"audio/pcmu" | "audio/pcma", Uint8Array>();
+
+function encodeTable(type: "audio/pcmu" | "audio/pcma"): Uint8Array {
+	let table = encodeTables.get(type);
+	if (!table) {
+		const encode = type === "audio/pcmu" ? encodeMuLaw : encodeALaw;
+		table = Uint8Array.from({ length: 65_536 }, (_, index) =>
+			encode(index - 32_768),
+		);
+		encodeTables.set(type, table);
+	}
+	return table;
+}
+
+/**
+ * Provider speech (24 kHz PCM16) in the client's output format. PCM passes through; G.711 needs
+ * 8 kHz, so every three samples are averaged into one (a box filter is enough for speech) and
+ * companded.
+ */
+export function createAudioOutputEncoder(
+	format: RealtimeOutputAudioFormat,
+): AudioOutputEncoder {
+	if (format.type === "audio/pcm") {
+		let carry: Buffer | null = null;
+		return {
+			push(chunk) {
+				const data: Buffer = carry ? Buffer.concat([carry, chunk]) : chunk;
+				const even = data.byteLength - (data.byteLength % 2);
+				carry = even < data.byteLength ? data.subarray(even) : null;
+				return data.subarray(0, even);
+			},
+		};
+	}
+	const table = encodeTable(format.type);
+	const factor = REALTIME_OUTPUT_SAMPLE_RATE / 8000;
+	let carry = Buffer.alloc(0);
+	return {
+		push(chunk) {
+			const data = carry.byteLength > 0 ? Buffer.concat([carry, chunk]) : chunk;
+			const frameBytes = factor * 2;
+			const frames = Math.floor(data.byteLength / frameBytes);
+			const out = Buffer.alloc(frames);
+			for (let frame = 0; frame < frames; frame += 1) {
+				let total = 0;
+				for (let index = 0; index < factor; index += 1) {
+					total += data.readInt16LE((frame * factor + index) * 2);
+				}
+				out[frame] = table[Math.round(total / factor) + 32_768] ?? 0;
+			}
+			carry = Buffer.from(data.subarray(frames * frameBytes));
+			return out;
 		},
 	};
 }

@@ -10,6 +10,7 @@
 		"videos",
 		"audio-transcriptions",
 		"realtime-transcription",
+		"realtime-conversations",
 		"---Search and vectors---",
 		"embeddings",
 		"reranking",

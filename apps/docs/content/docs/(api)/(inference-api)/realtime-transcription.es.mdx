@@ -11,9 +11,10 @@ Gemini).
 ## Conexión [#connecting]
 
 Abre un WebSocket a `$GATEWAY/v1/realtime?intent=transcription` con tu virtual key en el header
-`Authorization: Bearer`. Solo existen sesiones de transcripción: una conexión sin
-`intent=transcription`, o con el parámetro `model`, se rechaza con `400` antes del upgrade. El
-gateway responde con `session.created`.
+`Authorization: Bearer` (o, desde un navegador, el subprotocolo `openai-insecure-api-key.<key>`). El
+modelo viene de `session.update`; el parámetro `model` en la URL se rechaza con `400` antes del
+upgrade. El gateway responde con `session.created`. Para conversaciones de voz, conecta con
+`?model=`: consulta [Conversaciones en tiempo real](/es/docs/realtime-conversations).
 
 ## Sesión [#session]
 

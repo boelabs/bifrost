@@ -28,7 +28,7 @@ Authorization: Bearer $MASTER_KEY
 | `upstreamModel` | yes | The real id at the provider (catalog key, or the deployment name on Azure). |
 | `credentials` | yes | `{ apiKey, baseUrl?, ... }` depending on the adapter (see table). Encrypted at rest. On `PATCH`, the object is **merged** over the stored one — send only the fields you are changing, and `null` to remove one. |
 | `catalogEntry` | custom only | Inline catalog entry for a model **not** present in the catalog. Uses the same shape as `catalog.json`; for catalog models it **must be omitted**. |
-| `pricing` | no | `{ inputCentsPerMTokens?, outputCentsPerMTokens?, cacheReadCentsPerMTokens?, cacheWriteCentsPerMTokens?, imageInputCentsPerMTokens?, imageOutputCentsPerMTokens?, searchUnitCents? }`. |
+| `pricing` | no | `{ inputCentsPerMTokens?, outputCentsPerMTokens?, cacheReadCentsPerMTokens?, cacheWriteCentsPerMTokens?, imageInputCentsPerMTokens?, imageOutputCentsPerMTokens?, audioInputCentsPerMTokens?, audioOutputCentsPerMTokens?, searchUnitCents? }`. |
 | `transportOverrides` | no | Per-operation transport override. The adapter default applies to every public endpoint. |
 | `label` | no | Human identifier to tell deployments of the same `publicModel` apart (e.g. which API key). Snapshotted into each operation log so you can see *which* deployment served a request. `null` clears it. |
 | `metadata` | no | Free-form operator annotations (`team`, `environment`, key alias, rotation date, notes…). A JSON object up to 16 KiB; stored and returned verbatim. |

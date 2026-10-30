@@ -4,7 +4,7 @@ import { z } from "zod/v4";
 
 import type {
 	CanonicalRealtimeTranscriptionConfig,
-	RealtimeTranscriptionUsage,
+	RealtimeUsage,
 	RealtimeTurnDetection,
 } from "#core/realtime.ts";
 
@@ -274,7 +274,7 @@ export function renderSession(
 }
 
 export function renderRealtimeUsage(
-	usage: RealtimeTranscriptionUsage,
+	usage: RealtimeUsage,
 ): Record<string, unknown> {
 	return {
 		type: "tokens",

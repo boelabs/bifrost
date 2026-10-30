@@ -1934,6 +1934,7 @@ paths:
               - video.generate
               - audio.transcribe
               - audio.transcribe.realtime
+              - audio.converse.realtime
               - embedding.create
               - rerank
       responses:
@@ -3535,6 +3536,7 @@ components:
           - video.generate
           - audio.transcribe
           - audio.transcribe.realtime
+          - audio.converse.realtime
           - embedding.create
           - rerank
       additionalProperties:
@@ -3549,6 +3551,7 @@ components:
         - video.generate
         - audio.transcribe
         - audio.transcribe.realtime
+        - audio.converse.realtime
         - embedding.create
         - rerank
     Pricing:
@@ -3578,6 +3581,12 @@ components:
           type: number
           minimum: 0
         imageOutputCentsPerMTokens:
+          type: number
+          minimum: 0
+        audioInputCentsPerMTokens:
+          type: number
+          minimum: 0
+        audioOutputCentsPerMTokens:
           type: number
           minimum: 0
         searchUnitCents:
@@ -3618,6 +3627,12 @@ components:
               imageOutputCentsPerMTokens:
                 type: number
                 minimum: 0
+              audioInputCentsPerMTokens:
+                type: number
+                minimum: 0
+              audioOutputCentsPerMTokens:
+                type: number
+                minimum: 0
             required:
               - aboveInputTokens
             additionalProperties: false
@@ -3634,6 +3649,7 @@ components:
           - video.generate
           - audio.transcribe
           - audio.transcribe.realtime
+          - audio.converse.realtime
           - embedding.create
           - rerank
       additionalProperties:
@@ -3645,6 +3661,7 @@ components:
         - video.generate
         - audio.transcribe
         - audio.transcribe.realtime
+        - audio.converse.realtime
         - embedding.create
         - rerank
       description: Advanced operation-to-transport override. Defaults normally come from the adapter.
@@ -3659,6 +3676,7 @@ components:
           - videos.generations
           - audio.transcriptions
           - realtime.transcription
+          - realtime.conversation
           - embeddings
           - rerank
           - all
@@ -3671,6 +3689,7 @@ components:
         - videos.generations
         - audio.transcriptions
         - realtime.transcription
+        - realtime.conversation
         - embeddings
         - rerank
         - all
@@ -4046,6 +4065,16 @@ components:
               required:
                 - json
                 - stream
+            realtime.conversation:
+              type: object
+              properties:
+                json:
+                  $ref: "#/components/schemas/ExecutionPolicy"
+                stream:
+                  $ref: "#/components/schemas/ExecutionPolicy"
+              required:
+                - json
+                - stream
             embeddings:
               type: object
               properties:
@@ -4073,6 +4102,7 @@ components:
             - videos.generations
             - audio.transcriptions
             - realtime.transcription
+            - realtime.conversation
             - embeddings
             - rerank
         routingStrategy:
@@ -6969,6 +6999,7 @@ components:
           - videos.generations
           - audio.transcriptions
           - realtime.transcription
+          - realtime.conversation
           - embeddings
           - rerank
           - all
@@ -6981,6 +7012,7 @@ components:
         - videos.generations
         - audio.transcriptions
         - realtime.transcription
+        - realtime.conversation
         - embeddings
         - rerank
         - all

@@ -985,6 +985,7 @@ export const RouterSettings = z
 				"videos.generations": OperationExecutionPolicy,
 				"audio.transcriptions": OperationExecutionPolicy,
 				"realtime.transcription": OperationExecutionPolicy,
+				"realtime.conversation": OperationExecutionPolicy,
 				embeddings: OperationExecutionPolicy,
 				rerank: OperationExecutionPolicy,
 			})

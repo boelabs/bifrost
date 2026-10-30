@@ -10,9 +10,10 @@ mode, so OpenAI's SDKs and clients work unchanged; the public model must support
 ## Connecting
 
 Open a WebSocket to `$GATEWAY/v1/realtime?intent=transcription` with your virtual key in the
-`Authorization: Bearer` header. Only transcription sessions exist: a connection without
-`intent=transcription`, or with a `model` query parameter, is refused with `400` before the upgrade.
-The gateway answers with `session.created`.
+`Authorization: Bearer` header (or, from a browser, the `openai-insecure-api-key.<key>` subprotocol).
+The model comes from `session.update`; a `model` query parameter is refused with `400` before the
+upgrade. The gateway answers with `session.created`. For voice conversations, connect with
+`?model=` instead: see [Realtime conversations](/docs/realtime-conversations).
 
 ## Session
 

@@ -1,6 +1,7 @@
 import { summaryVisible, toUpstreamReasoningEffort } from "#core/reasoning.ts";
 import { mergeExtraBody, mergeExtraBodyDeep } from "#core/extraBody.ts";
 import { type BaseCreds, requireApiKeyCreds } from "#adapters/creds.ts";
+import { makeGeminiRealtimeConversationHandler } from "./liveConversation.ts";
 import { makeGeminiRealtimeTranscriptionHandler } from "./live.ts";
 import { mapUpstreamHttpError } from "#adapters/upstreamError.ts";
 import { upstreamFetch } from "#gateway/instrumentedTransport.ts";
@@ -2310,6 +2311,7 @@ export const googleAdapter: Adapter = {
 		"videos.generations",
 		"audio.transcriptions",
 		"realtime.transcription",
+		"realtime.conversation",
 		"embeddings",
 	]),
 	chat,
@@ -2318,6 +2320,10 @@ export const googleAdapter: Adapter = {
 	videoGeneration,
 	audioTranscription,
 	realtimeTranscription: makeGeminiRealtimeTranscriptionHandler({
+		creds,
+		mapError: mapGoogleError,
+	}),
+	realtimeConversation: makeGeminiRealtimeConversationHandler({
 		creds,
 		mapError: mapGoogleError,
 	}),
@@ -2385,6 +2391,10 @@ export const googleAdapter: Adapter = {
 			default: "interactions",
 		},
 		"realtime.transcription": {
+			supported: ["bidi_generate_content"],
+			default: "bidi_generate_content",
+		},
+		"realtime.conversation": {
 			supported: ["bidi_generate_content"],
 			default: "bidi_generate_content",
 		},
