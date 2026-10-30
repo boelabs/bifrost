@@ -126,6 +126,10 @@ display and search in `GET /admin/keys`) are persisted. The raw key is returned 
 creation — there is no way to retrieve it again afterward. Rotate by creating a new key and disabling
 or deleting the old one.
 
+The creation response is also remembered for a day when the request carries an `Idempotency-Key`,
+so a retry can replay it; it is stored encrypted with the keyring, like every remembered response.
+A database dump without the keyring reveals no key.
+
 ## Deployment credentials at rest
 
 Every credential (`apiKey`, `baseUrl`, etc.) is encrypted with **AES-256-GCM** before being stored. Each

@@ -1,8 +1,10 @@
+import { IDEMPOTENCY_PURPOSE } from "#db/repos/idempotency.ts";
 import { closeDb, db } from "#db/client.ts";
 import { and, eq, sql } from "drizzle-orm";
 
 import {
 	activeEncryptionKeyId,
+	type EncEnvelope,
 	decryptRecord,
 	decryptString,
 	decryptJson,
@@ -12,6 +14,7 @@ import {
 import {
 	extensionArtifacts,
 	modelDeployments,
+	idempotencyKeys,
 	payloadSamples,
 } from "#db/schema.ts";
 
@@ -125,16 +128,66 @@ async function rotatePayloadSamples(): Promise<number> {
 	}
 }
 
+/**
+ * Rows live a day, but a key retired within that day would leave their replays unreadable. Only
+ * sealed responses are selected: an empty body is NULL, and a row from before responses were sealed
+ * has no `kid` to rotate.
+ */
+async function rotateIdempotencyResponses(): Promise<number> {
+	let rotated = 0;
+	while (true) {
+		const rows = await db
+			.select({ id: idempotencyKeys.id, envelope: idempotencyKeys.response })
+			.from(idempotencyKeys)
+			.where(
+				and(
+					sql`${idempotencyKeys.response}->>'purpose' = ${IDEMPOTENCY_PURPOSE}`,
+					sql`${idempotencyKeys.response}->>'kid' IS DISTINCT FROM ${activeEncryptionKeyId()}`,
+				),
+			)
+			.limit(BATCH_SIZE);
+		if (rows.length === 0) {
+			return rotated;
+		}
+		const batchRotated = await db.transaction(async (tx) => {
+			let updatedCount = 0;
+			for (const row of rows) {
+				const envelope = row.envelope as EncEnvelope;
+				const value = decryptJson(envelope, IDEMPOTENCY_PURPOSE);
+				const updated = await tx
+					.update(idempotencyKeys)
+					.set({ response: encryptJson(value, IDEMPOTENCY_PURPOSE) })
+					.where(
+						and(
+							eq(idempotencyKeys.id, row.id),
+							eq(idempotencyKeys.response, envelope),
+						),
+					)
+					.returning({ id: idempotencyKeys.id });
+				updatedCount += updated.length;
+			}
+			return updatedCount;
+		});
+		rotated += batchRotated;
+	}
+}
+
 async function run(): Promise<void> {
-	const [deployments, extensions, samples] = await Promise.all([
+	const [deployments, extensions, samples, idempotency] = await Promise.all([
 		rotateDeployments(),
 		rotateExtensions(),
 		rotatePayloadSamples(),
+		rotateIdempotencyResponses(),
 	]);
 	console.log(
 		JSON.stringify({
 			activeKeyId: activeEncryptionKeyId(),
-			rotated: { deployments, extensions, payloadSamples: samples },
+			rotated: {
+				deployments,
+				extensions,
+				payloadSamples: samples,
+				idempotencyResponses: idempotency,
+			},
 		}),
 	);
 }

@@ -108,6 +108,10 @@ the header behaves exactly as it always has.
 - A retry that arrives while the first request is still running is `409 idempotency_key_in_progress`.
 - Only successful responses are remembered. A rejected or failed call releases the key, so the
   corrected request can reuse it.
+- The remembered response is encrypted with the keyring, because some carry a secret (a new virtual
+  key's plaintext). If the key that encrypted it has been retired, a retry gets
+  `409 idempotency_response_unreadable`: check whether the first call took effect before retrying
+  with a new key.
 
 ## Operators and sessions
 

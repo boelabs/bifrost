@@ -1,8 +1,11 @@
+import { type EncEnvelope, decryptJson, encryptJson } from "#db/crypto.ts";
 import { idempotencyKeys } from "#db/schema.ts";
 import { and, eq, lt } from "drizzle-orm";
 import { db } from "#db/client.ts";
 
 export type IdempotencyRow = typeof idempotencyKeys.$inferSelect;
+
+export const IDEMPOTENCY_PURPOSE = "idempotency-response";
 
 export interface ClaimInput {
 	actor: string;
@@ -53,6 +56,14 @@ export async function claimIdempotencyKey(
 	return { claimed: false, existing: row };
 }
 
+/**
+ * Remembers the response to replay, encrypted.
+ *
+ * A response can carry a secret — creating or rotating a virtual key returns its plaintext — and this
+ * table keeps it for a day. Sealing every response with the keyring, rather than only the ones known
+ * to hold a secret, means a new route that returns one is covered without anyone remembering to opt
+ * it in. An empty body stays NULL: there is nothing to protect.
+ */
 export async function completeIdempotencyKey(
 	actor: string,
 	key: string,
@@ -61,8 +72,47 @@ export async function completeIdempotencyKey(
 ): Promise<void> {
 	await db
 		.update(idempotencyKeys)
-		.set({ status, response, completedAt: new Date() })
+		.set({
+			status,
+			response:
+				response === null ? null : encryptJson(response, IDEMPOTENCY_PURPOSE),
+			completedAt: new Date(),
+		})
 		.where(and(eq(idempotencyKeys.actor, actor), eq(idempotencyKeys.key, key)));
+}
+
+export type StoredResponse =
+	| { readable: true; body: unknown }
+	/** Sealed with a key the keyring no longer has. */
+	| { readable: false };
+
+/**
+ * The body a completed row replays.
+ *
+ * A row written before responses were encrypted holds its body as plain JSON. Rows expire after
+ * IDEMPOTENCY_TTL_MS (a day), so that branch only matters for the first day after upgrading and can
+ * go in the release after. An admin response is always `{ data }` or empty, so it is never mistaken
+ * for an envelope.
+ */
+export function storedResponse(row: IdempotencyRow): StoredResponse {
+	const { response } = row;
+	if (!isSealed(response)) {
+		return { readable: true, body: response ?? null };
+	}
+	try {
+		return { readable: true, body: decryptJson(response, IDEMPOTENCY_PURPOSE) };
+	} catch {
+		return { readable: false };
+	}
+}
+
+function isSealed(value: unknown): value is EncEnvelope {
+	return (
+		value !== null &&
+		typeof value === "object" &&
+		(value as Partial<EncEnvelope>).v === 2 &&
+		(value as Partial<EncEnvelope>).purpose === IDEMPOTENCY_PURPOSE
+	);
 }
 
 /**

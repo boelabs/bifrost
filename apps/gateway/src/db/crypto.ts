@@ -10,6 +10,7 @@ import {
 export type EncryptionPurpose =
 	| "deployment-credentials"
 	| "extension-source"
+	| "idempotency-response"
 	| "observability-payload"
 	| "reasoning-state"
 	| "response-compaction";
@@ -58,6 +59,7 @@ export function parseEncryptedEnvelope(value: unknown): EncEnvelope {
 		![
 			"deployment-credentials",
 			"extension-source",
+			"idempotency-response",
 			"observability-payload",
 			"reasoning-state",
 			"response-compaction",

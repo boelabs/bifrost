@@ -6,8 +6,11 @@ import "#adapters/index.ts";
 import { pgAvailable, redisAvailable } from "#test-support/infra.ts";
 import { releaseIdempotencyKey } from "#db/repos/idempotency.ts";
 import { makeGatewayTestApp } from "#test-support/app.ts";
+import { idempotencyKeys } from "#db/schema.ts";
 import { adminApp } from "#admin/index.ts";
+import { and, eq } from "drizzle-orm";
 import { env } from "#config/env.ts";
+import { db } from "#db/client.ts";
 
 const skip =
 	(await pgAvailable()) && (await redisAvailable())
@@ -88,6 +91,99 @@ test("idempotency: a repeated create replays instead of creating twice", {
 	const secondBody = (await second.json()) as { data: { id: string } };
 	createdIds.push(secondBody.data.id);
 	assert.notEqual(secondBody.data.id, firstBody.data.id);
+});
+
+/** A create remembered under a fresh Idempotency-Key, for the tests that tamper with its row. */
+async function rememberedCreate(t: {
+	after: (fn: () => Promise<void>) => void;
+}): Promise<{
+	idempotencyKey: string;
+	name: string;
+	body: { data: { id: string; key: string } };
+}> {
+	const idempotencyKey = `itest-${crypto.randomUUID()}`;
+	const name = `itest-idem-${crypto.randomUUID()}`;
+	const res = await createKey(name, idempotencyKey);
+	assert.equal(res.status, 201);
+	const body = (await res.json()) as { data: { id: string; key: string } };
+	t.after(async () => {
+		await app.request(`/admin/keys/${body.data.id}`, {
+			method: "DELETE",
+			headers: auth,
+		});
+		await releaseIdempotencyKey("master-key", idempotencyKey);
+	});
+	return { idempotencyKey, name, body };
+}
+
+async function storedRow(idempotencyKey: string) {
+	const [row] = await db
+		.select({ response: idempotencyKeys.response })
+		.from(idempotencyKeys)
+		.where(
+			and(
+				eq(idempotencyKeys.actor, "master-key"),
+				eq(idempotencyKeys.key, idempotencyKey),
+			),
+		);
+	assert.ok(row);
+	return row;
+}
+
+test("idempotency: the remembered response is encrypted, never the plaintext key", {
+	skip,
+}, async (t) => {
+	const { idempotencyKey, body } = await rememberedCreate(t);
+	const row = await storedRow(idempotencyKey);
+	const raw = JSON.stringify(row.response);
+	assert.equal(raw.includes(body.data.key), false, "plaintext key at rest");
+	assert.equal(raw.includes(body.data.id), false, "plaintext body at rest");
+	assert.equal(
+		(row.response as { purpose?: string }).purpose,
+		"idempotency-response",
+	);
+});
+
+test("idempotency: a row stored before responses were encrypted still replays", {
+	skip,
+}, async (t) => {
+	const { idempotencyKey, name, body } = await rememberedCreate(t);
+	// What a previous release left behind: the body itself, as plain JSON.
+	await db
+		.update(idempotencyKeys)
+		.set({ response: body })
+		.where(
+			and(
+				eq(idempotencyKeys.actor, "master-key"),
+				eq(idempotencyKeys.key, idempotencyKey),
+			),
+		);
+
+	const replay = await createKey(name, idempotencyKey);
+	assert.equal(replay.status, 201);
+	assert.equal(replay.headers.get("idempotent-replay"), "true");
+	assert.deepEqual(await replay.json(), body);
+});
+
+test("idempotency: a response the keyring can no longer open is refused, not replayed", {
+	skip,
+}, async (t) => {
+	const { idempotencyKey, name } = await rememberedCreate(t);
+	const row = await storedRow(idempotencyKey);
+	await db
+		.update(idempotencyKeys)
+		.set({ response: { ...(row.response as object), kid: "retired" } })
+		.where(
+			and(
+				eq(idempotencyKeys.actor, "master-key"),
+				eq(idempotencyKeys.key, idempotencyKey),
+			),
+		);
+
+	const replay = await createKey(name, idempotencyKey);
+	assert.equal(replay.status, 409);
+	const error = (await replay.json()) as { error: { code: string | null } };
+	assert.equal(error.error.code, "idempotency_response_unreadable");
 });
 
 test("audit: the trail records the create and can be filtered", {

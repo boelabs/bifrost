@@ -72,6 +72,8 @@ Las operaciones de inferencia llevan la misma identidad en `gateway_operations.a
 
 Una virtual key nunca se almacena en texto sin formato: solo se conserva su **hash SHA-256** y un prefijo de 10 caracteres (para visualización y búsqueda en `GET /admin/keys`). La clave sin formato se devuelve exactamente una vez, en el momento de la creación; no hay forma de recuperarla nuevamente después. Gire creando una nueva clave y deshabilitando o eliminando la anterior.
 
+La respuesta de creación también se recuerda durante un día cuando la solicitud lleva un `Idempotency-Key`, para que un reintento pueda repetirla; se guarda cifrada con el keyring, como toda respuesta recordada. Un volcado de la base de datos sin el keyring no revela ninguna clave.
+
 ## Credenciales de deployment en reposo [#deployment-credentials-at-rest]
 
 Cada credencial (`apiKey`, `baseUrl`, etc.) se cifra con **AES-256-GCM** antes de almacenarse. Cada sobre versionado registra una identificación de clave y un propósito autenticado como AAD, y obtiene su propio IV aleatorio. La etiqueta de autenticación de GCM significa que la manipulación del texto cifrado almacenado hace que no se pueda descifrar en lugar de devolver basura silenciosamente. **Ninguna respuesta de API de administrador (`GET`, `POST` o `PATCH` en `/admin/deployments`) incluye credenciales**, cifradas o no; se eliminan antes de que se construya la respuesta.
