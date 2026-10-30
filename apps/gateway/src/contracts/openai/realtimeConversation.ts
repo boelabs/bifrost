@@ -90,7 +90,7 @@ const toolChoiceSchema = z.union([
 	z.object({ type: z.literal("mcp") }).loose(),
 ]);
 
-const sessionSchema = z.object({
+export const realtimeConversationSessionSchema = z.object({
 	type: z.literal("realtime"),
 	model: z.string().min(1).optional(),
 	instructions: z.string().optional(),
@@ -231,7 +231,7 @@ const clientEventSchema = z.discriminatedUnion("type", [
 	z.object({
 		type: z.literal("session.update"),
 		...withEventId,
-		session: sessionSchema,
+		session: realtimeConversationSessionSchema,
 	}),
 	z.object({
 		type: z.literal("input_audio_buffer.append"),
@@ -277,7 +277,9 @@ const clientEventSchema = z.discriminatedUnion("type", [
 ]);
 
 export type RealtimeConversationClientEvent = z.infer<typeof clientEventSchema>;
-export type RealtimeConversationSessionUpdate = z.infer<typeof sessionSchema>;
+export type RealtimeConversationSessionUpdate = z.infer<
+	typeof realtimeConversationSessionSchema
+>;
 export type RealtimeConversationItem = z.infer<typeof itemSchema>;
 export type RealtimeResponseParams = NonNullable<
 	z.infer<typeof responseSchema>
@@ -347,7 +349,7 @@ export interface RealtimeConversationState {
 	toolChoice: z.infer<typeof toolChoiceSchema>;
 	maxOutputTokens: number | "inf";
 	reasoningEffort: "minimal" | "low" | "medium" | "high" | "xhigh" | null;
-	truncation: z.infer<typeof sessionSchema>["truncation"];
+	truncation: z.infer<typeof realtimeConversationSessionSchema>["truncation"];
 	tracing: unknown;
 	prompt: unknown;
 	include: string[];

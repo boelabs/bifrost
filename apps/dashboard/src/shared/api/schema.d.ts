@@ -472,6 +472,26 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	"/v1/realtime/client_secrets": {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Mint a short-lived key for /v1/realtime (OpenAI-compatible)
+		 * @description Returns an ek_… key that opens /v1/realtime WebSocket sessions with the calling key's permissions and limits, and nothing else. Browsers send it as the openai-insecure-api-key.<key> subprotocol. The secret expires after expires_after.seconds (default 600); sessions opened before then keep running.
+		 */
+		post: operations["createRealtimeClientSecret"];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	"/v1/rerank": {
 		parameters: {
 			query?: never;
@@ -2800,6 +2820,19 @@ export interface components {
 			/** Format: binary */
 			file: string;
 		};
+		RealtimeClientSecretRequest: {
+			expires_after?: {
+				/** @constant */
+				anchor?: "created_at";
+				seconds: number;
+			};
+			/** @description The session the secret starts from: a realtime session ({"type": "realtime", "model": …}) or a transcription session ({"type": "transcription", …}). */
+			session?: {
+				[key: string]: unknown;
+			};
+		} & {
+			[key: string]: unknown;
+		};
 		/** @description Strict OpenRouter-shaped text reranking request. Image documents are reserved for a future contract version. */
 		RerankRequest: {
 			model: string;
@@ -3453,6 +3486,17 @@ export interface components {
 				[key: string]: unknown;
 			}[];
 			usage?: {
+				[key: string]: unknown;
+			};
+		} & {
+			[key: string]: unknown;
+		};
+		RealtimeClientSecret: {
+			/** @description The ek_… key the client connects with. */
+			value: string;
+			/** @description Unix seconds. */
+			expires_at: number;
+			session: {
 				[key: string]: unknown;
 			};
 		} & {
@@ -4315,6 +4359,33 @@ export interface operations {
 			403: components["responses"]["Error"];
 			413: components["responses"]["Error"];
 			429: components["responses"]["Error"];
+		};
+	};
+	createRealtimeClientSecret: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				"application/json": components["schemas"]["RealtimeClientSecretRequest"];
+			};
+		};
+		responses: {
+			/** @description The client secret and the session it starts from */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					"application/json": components["schemas"]["RealtimeClientSecret"];
+				};
+			};
+			400: components["responses"]["Error"];
+			401: components["responses"]["Error"];
+			403: components["responses"]["Error"];
 		};
 	};
 	rerank: {

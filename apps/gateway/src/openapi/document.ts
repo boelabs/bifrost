@@ -499,6 +499,33 @@ export function buildOpenApiDocument() {
 					},
 				},
 			},
+			"/v1/realtime/client_secrets": {
+				post: {
+					operationId: "createRealtimeClientSecret",
+					tags: ["Inference"],
+					summary:
+						"Mint a short-lived key for /v1/realtime (OpenAI-compatible)",
+					description:
+						"Returns an ek_… key that opens /v1/realtime WebSocket sessions with the calling key's permissions and limits, and nothing else. Browsers send it as the openai-insecure-api-key.<key> subprotocol. The secret expires after expires_after.seconds (default 600); sessions opened before then keep running.",
+					requestBody: {
+						required: true,
+						content: {
+							"application/json": { schema: c.RealtimeClientSecretRequest },
+						},
+					},
+					responses: {
+						"200": {
+							description: "The client secret and the session it starts from",
+							content: {
+								"application/json": { schema: c.RealtimeClientSecret },
+							},
+						},
+						"400": errorResponse,
+						"401": errorResponse,
+						"403": errorResponse,
+					},
+				},
+			},
 			"/v1/rerank": {
 				post: {
 					operationId: "rerank",

@@ -22,8 +22,8 @@ OpenAI's; [OpenAI models](#openai-models) lists what changes for them. For trans
 
 Open a WebSocket to `$GATEWAY/v1/realtime?model=<public-model>`. Authenticate with your virtual key
 in `Authorization: Bearer`, or, from a browser, which cannot set headers, as the subprotocol
-`openai-insecure-api-key.<key>` next to `realtime`, the way OpenAI's browser clients do. Anyone who
-loads the page can read a key sent from a browser; use one scoped to this model with a budget.
+`openai-insecure-api-key.<key>` next to `realtime`, the way OpenAI's browser clients do. A browser
+should not hold your virtual key: give it a [client secret](#client-secrets) instead.
 
 The gateway answers with `session.created`. A connection without `model`, or with an `intent` other
 than `realtime`, is refused with `400` before the upgrade. The model cannot change for the life of
@@ -31,6 +31,30 @@ the connection.
 
 The provider session opens with the first event that needs it (audio, an item, or
 `response.create`), so `session.update`s sent first configure it instead of reconnecting it.
+
+### Client secrets
+
+Your backend mints a short-lived key for the browser with `POST /v1/realtime/client_secrets`, as
+with OpenAI:
+
+```bash
+curl $GATEWAY/v1/realtime/client_secrets \
+  -H "Authorization: Bearer $BIFROST_KEY" -H "Content-Type: application/json" \
+  -d '{"expires_after": {"anchor": "created_at", "seconds": 600},
+       "session": {"type": "realtime", "model": "voice-agent", "instructions": "Be brief."}}'
+```
+
+The answer carries `value` (`ek_…`), `expires_at` and the rendered `session`. The browser connects
+with `value` in place of the key, and needs no `?model=`: the connection starts from the session
+the secret was minted with (`type: "transcription"` opens a transcription session). The URL and
+`session.update` can still change it.
+
+- `expires_after.seconds` runs from 10 to 7200 (default 600). The secret stops opening sessions
+  then; a session already open keeps going.
+- A secret can open several sessions until it expires. It acts with the minting key's allowed
+  models, budget and rate limits, and it stops working if that key is disabled or expires.
+- It opens `/v1/realtime` and nothing else: any other endpoint answers `401`.
+- The models in `session` are checked against the key when minting (`403` if not allowed).
 
 ## Session
 

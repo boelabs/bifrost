@@ -1,5 +1,6 @@
 import { redisAvailable, pgAvailable } from "#test-support/infra.ts";
 import { type WebSocketServerLike, serve } from "@hono/node-server";
+import { realtimeClientSecretsHandler } from "#endpoints/realtimeClientSecrets.ts";
 import { realtimeWebSocketHandler } from "#endpoints/realtime.ts";
 import { makeOpenAIContractTestApp } from "#test-support/app.ts";
 import { deleteDeployment } from "#db/repos/deployments.ts";
@@ -82,6 +83,7 @@ async function geminiStub() {
 async function gateway() {
 	const app = makeOpenAIContractTestApp((testApp) => {
 		testApp.get("/v1/realtime", realtimeWebSocketHandler);
+		testApp.post("/v1/realtime/client_secrets", realtimeClientSecretsHandler);
 	});
 	const webSocketServer = new WebSocketServer({ noServer: true });
 	const server = serve({
@@ -94,6 +96,7 @@ async function gateway() {
 	const { port } = server.address() as AddressInfo;
 	return {
 		url: `ws://127.0.0.1:${port}/v1/realtime`,
+		app,
 		close: () =>
 			new Promise<void>((resolve) => {
 				for (const socket of webSocketServer.clients) {
@@ -631,6 +634,163 @@ test("GET /v1/realtime?model= holds a spoken conversation with a function call t
 		}
 		if (deploymentId) {
 			await deleteDeployment(deploymentId);
+		}
+		await server.close();
+		await stub.close();
+	}
+});
+
+test("POST /v1/realtime/client_secrets mints a key that only opens realtime sessions, preconfigured", {
+	skip,
+	timeout: 30_000,
+}, async () => {
+	const stub = await geminiConversationStub();
+	const server = await gateway();
+	const publicModel = `realtime-secret-${randomUUID()}`;
+	const transcriptionModel = `realtime-secret-tx-${randomUUID()}`;
+	const deploymentIds: string[] = [];
+	let virtualKey: CreatedVirtualKey | undefined;
+	try {
+		deploymentIds.push(
+			(
+				await createDeployment({
+					publicModel,
+					adapterKey: "googleaistudio",
+					upstreamModel: "gemini-3.8-live",
+					credentials: { apiKey: "gemini-test", baseUrl: stub.baseUrl },
+				})
+			).row.id,
+			(
+				await createDeployment({
+					publicModel: transcriptionModel,
+					adapterKey: "googleaistudio",
+					upstreamModel: "gemini-3.5-transcribe-live",
+					credentials: { apiKey: "gemini-test", baseUrl: stub.baseUrl },
+				})
+			).row.id,
+		);
+		virtualKey = await createVirtualKey({
+			name: `realtime-secret-${randomUUID()}`,
+			allowedModels: [publicModel, transcriptionModel],
+		});
+		const mint = (body: unknown, key = virtualKey?.rawKey) =>
+			server.app.request("/v1/realtime/client_secrets", {
+				method: "POST",
+				headers: {
+					authorization: `Bearer ${key}`,
+					"content-type": "application/json",
+				},
+				body: JSON.stringify(body),
+			});
+
+		const response = await mint({
+			expires_after: { anchor: "created_at", seconds: 120 },
+			session: {
+				type: "realtime",
+				model: publicModel,
+				instructions: "Eres breve.",
+				audio: { output: { voice: "Kore" } },
+			},
+		});
+		assert.equal(response.status, 200);
+		const secret = (await response.json()) as Record<string, any>;
+		assert.match(secret.value, /^ek_/);
+		assert.ok(
+			Math.abs(secret.expires_at - (Date.now() / 1000 + 120)) < 5,
+			String(secret.expires_at),
+		);
+		assert.equal(secret.session.model, publicModel);
+		assert.equal(secret.session.audio.output.voice, "Kore");
+
+		// The secret opens nothing but /v1/realtime.
+		assert.equal((await mint({}, secret.value)).status, 401);
+		// A model the key may not use is refused when minting.
+		assert.equal(
+			(await mint({ session: { type: "realtime", model: "another-model" } }))
+				.status,
+			403,
+		);
+		// So is a voice-less nonsense session shape.
+		assert.equal(
+			(await mint({ session: { type: "realtime", tools: [{ type: "x" }] } }))
+				.status,
+			400,
+		);
+
+		// A browser connects with the secret alone: the session starts from what was minted.
+		const socket = new WebSocket(server.url, [
+			"realtime",
+			`openai-insecure-api-key.${secret.value}`,
+		]);
+		const events: Record<string, any>[] = [];
+		socket.on("message", (data) => events.push(JSON.parse(data.toString())));
+		await new Promise<void>((resolve, reject) => {
+			socket.once("open", () => resolve());
+			socket.once("unexpected-response", (_request, res) =>
+				reject(new Error(`upgrade refused: ${res.statusCode}`)),
+			);
+			socket.once("error", reject);
+		});
+		const created = await eventually(
+			() => events.find((event) => event.type === "session.created"),
+			{ description: "session.created" },
+		);
+		assert.equal(created.session.model, publicModel);
+		assert.equal(created.session.instructions, "Eres breve.");
+		socket.send(
+			JSON.stringify({
+				type: "conversation.item.create",
+				item: {
+					type: "message",
+					role: "user",
+					content: [{ type: "input_text", text: "Hola" }],
+				},
+			}),
+		);
+		socket.send(JSON.stringify({ type: "response.create" }));
+		await eventually(
+			() =>
+				events.find((event) => event.type === "response.done") ??
+				events.find((event) => event.type === "error"),
+			{ description: "first answer" },
+		);
+		const setup = stub.received.find((message) => message.setup)?.setup;
+		assert.deepEqual(setup.systemInstruction, {
+			parts: [{ text: "Eres breve." }],
+		});
+		assert.equal(
+			setup.generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig
+				.voiceName,
+			"Kore",
+		);
+		socket.close();
+
+		// A transcription secret opens a transcription session without ?intent.
+		const transcription = (await (
+			await mint({
+				session: {
+					type: "transcription",
+					audio: { input: { transcription: { model: transcriptionModel } } },
+				},
+			})
+		).json()) as Record<string, any>;
+		const { socket: txSocket, next } = await client(
+			server.url,
+			transcription.value,
+		);
+		const txCreated = await next("session.created");
+		assert.equal(txCreated.session.type, "transcription");
+		assert.equal(
+			txCreated.session.audio.input.transcription.model,
+			transcriptionModel,
+		);
+		txSocket.close();
+	} finally {
+		if (virtualKey) {
+			await deleteVirtualKey(virtualKey.row.id);
+		}
+		for (const id of deploymentIds) {
+			await deleteDeployment(id);
 		}
 		await server.close();
 		await stub.close();

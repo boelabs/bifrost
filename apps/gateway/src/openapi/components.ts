@@ -62,6 +62,33 @@ export const AudioTranscriptionResponse = loose(
 	{ id: "AudioTranscriptionResponse" },
 );
 
+export const RealtimeClientSecretRequest = loose(
+	{
+		expires_after: z
+			.object({
+				anchor: z.literal("created_at").optional(),
+				seconds: z.int().min(10).max(7200),
+			})
+			.optional(),
+		session: z
+			.record(z.string(), z.unknown())
+			.optional()
+			.describe(
+				'The session the secret starts from: a realtime session ({"type": "realtime", "model": …}) or a transcription session ({"type": "transcription", …}).',
+			),
+	},
+	{ id: "RealtimeClientSecretRequest" },
+);
+
+export const RealtimeClientSecret = loose(
+	{
+		value: z.string().describe("The ek_… key the client connects with."),
+		expires_at: z.int().describe("Unix seconds."),
+		session: z.record(z.string(), z.unknown()),
+	},
+	{ id: "RealtimeClientSecret" },
+);
+
 /* ------------------------------------------------------------------ shared */
 
 export const ErrorSchema = z
