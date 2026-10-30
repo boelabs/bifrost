@@ -91,3 +91,134 @@ test("gating: file above the model limit is rejected", () => {
 	assert.ok(GatewayError.is(err));
 	assert.equal((err as GatewayError).param, "file");
 });
+
+const geminiTranscribe = resolveModelMetadata(
+	"googleaistudio",
+	"gemini-3.5-transcribe",
+);
+
+test("gating: Gemini Transcribe accepts each feature on its own", () => {
+	for (const overrides of [
+		{ keywords: ["Bifrost"] },
+		{ responseFormat: "diarized_json" as const },
+		{
+			responseFormat: "verbose_json" as const,
+			timestampGranularities: ["word" as const],
+		},
+		{ responseFormat: "srt" as const },
+		{ responseFormat: "vtt" as const },
+		{ mode: "smart" as const },
+		{ mode: "verbatim" as const },
+		{ languages: ["es-419", "en-US"] },
+	]) {
+		assert.doesNotThrow(() =>
+			assertTranscriptionRequestSupported(req(overrides), geminiTranscribe),
+		);
+	}
+	// Diarization and word timestamps combine; only vocabulary and smart mode exclude them.
+	assert.doesNotThrow(() =>
+		assertTranscriptionRequestSupported(
+			req({ responseFormat: "diarized_json", mode: "verbatim" }),
+			geminiTranscribe,
+		),
+	);
+});
+
+test("gating: Gemini Transcribe rejects the combinations Google rejects", () => {
+	const cases: [Partial<CanonicalTranscriptionRequest>, string][] = [
+		[{ keywords: ["a"], responseFormat: "diarized_json" }, "response_format"],
+		[{ keywords: ["a"], responseFormat: "srt" }, "timestamp_granularities"],
+		[
+			{
+				keywords: ["a"],
+				responseFormat: "verbose_json",
+				timestampGranularities: ["word"],
+			},
+			"timestamp_granularities",
+		],
+		[{ mode: "smart", responseFormat: "diarized_json" }, "response_format"],
+		[{ mode: "smart", responseFormat: "vtt" }, "timestamp_granularities"],
+	];
+	for (const [overrides, param] of cases) {
+		assert.throws(
+			() =>
+				assertTranscriptionRequestSupported(req(overrides), geminiTranscribe),
+			(error: unknown) =>
+				GatewayError.is(error) &&
+				error.code === "unsupported_parameter" &&
+				error.param === param &&
+				/cannot combine/.test(error.message),
+		);
+	}
+});
+
+test("gating: Gemini Transcribe limits granularity, vocabulary size, and streaming", () => {
+	assert.throws(
+		() =>
+			assertTranscriptionRequestSupported(
+				req({
+					responseFormat: "verbose_json",
+					timestampGranularities: ["segment"],
+				}),
+				geminiTranscribe,
+			),
+		/timestamp_granularities=segment/,
+	);
+	assert.throws(
+		() =>
+			assertTranscriptionRequestSupported(
+				req({ keywords: Array.from({ length: 1001 }, (_, i) => `k${i}`) }),
+				geminiTranscribe,
+			),
+		/at most 1000 keywords/,
+	);
+	assert.doesNotThrow(() =>
+		assertTranscriptionRequestSupported(
+			req({ keywords: Array.from({ length: 1000 }, (_, i) => `k${i}`) }),
+			geminiTranscribe,
+		),
+	);
+	assert.throws(
+		() =>
+			assertTranscriptionRequestSupported(
+				req({ stream: true }),
+				geminiTranscribe,
+			),
+		/streaming/,
+	);
+});
+
+test("gating: smart mode and diarization are refused by models that do not declare them", () => {
+	assert.throws(
+		() => assertTranscriptionRequestSupported(req({ mode: "smart" }), gpt4o),
+		/transcription_mode=smart/,
+	);
+	assert.doesNotThrow(() =>
+		assertTranscriptionRequestSupported(req({ mode: "verbatim" }), gpt4o),
+	);
+	assert.throws(
+		() =>
+			assertTranscriptionRequestSupported(
+				req({ responseFormat: "diarized_json" }),
+				gpt4o,
+			),
+		/response_format=diarized_json/,
+	);
+});
+
+test("gating: dropped keywords never conflict", () => {
+	const noKeywords = resolveModelMetadata("openaicompatible", "custom-stt", {
+		operations: {
+			"audio.transcribe": {
+				responseFormats: ["json", "diarized_json"],
+				incompatibleFeatures: [["keywords", "diarization"]],
+			},
+		},
+	});
+	assert.doesNotThrow(() =>
+		assertTranscriptionRequestSupported(
+			req({ keywords: ["a"], responseFormat: "diarized_json" }),
+			noKeywords,
+		),
+	);
+});

@@ -60,6 +60,7 @@ test("normalizeModel: model-level pricing uses input/output field names, convert
 		endpoints: [sampleEndpoint],
 	});
 	assert.equal(model.id, "google/gemini-3.1-pro-preview");
+	assert.equal(model.modelType, "language");
 	assert.deepEqual(model.inputModalities, ["text", "image", "pdf"]);
 	assert.deepEqual(model.outputModalities, ["text"]);
 	assert.deepEqual(model.supportedParameters, [

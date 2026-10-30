@@ -171,6 +171,7 @@ function normalizeModel(
 		source: "vercel-ai-gateway",
 		id: model.id,
 		...(model.name === undefined ? {} : { name: model.name }),
+		...(model.type === undefined ? {} : { modelType: model.type }),
 		inputModalities:
 			model.modalities?.input ?? detail?.architecture?.input_modalities ?? [],
 		outputModalities:

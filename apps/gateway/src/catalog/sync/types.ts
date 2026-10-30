@@ -23,6 +23,8 @@ export interface SourceModel {
 	/** "creator/model", the id convention both existence sources share. */
 	id: string;
 	name?: string;
+	/** The source's own model family (Vercel's `type`: language, transcription, realtime...). */
+	modelType?: string;
 	inputModalities: string[];
 	outputModalities: string[];
 	contextWindow?: number;

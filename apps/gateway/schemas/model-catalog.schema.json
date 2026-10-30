@@ -401,12 +401,47 @@
 			"properties": {
 				"responseFormats": {
 					"type": "array",
-					"items": { "enum": ["json", "text", "srt", "verbose_json", "vtt"] },
+					"items": {
+						"enum": [
+							"json",
+							"text",
+							"srt",
+							"verbose_json",
+							"vtt",
+							"diarized_json"
+						]
+					},
 					"minItems": 1,
 					"uniqueItems": true
 				},
 				"supportsStreaming": { "type": "boolean" },
 				"supportsTimestampGranularities": { "type": "boolean" },
+				"timestampGranularities": {
+					"type": "array",
+					"items": { "enum": ["word", "segment"] },
+					"minItems": 1,
+					"uniqueItems": true
+				},
+				"supportsKeywords": { "type": "boolean" },
+				"maxKeywords": { "type": "integer", "minimum": 1 },
+				"supportsLanguageHints": { "type": "boolean" },
+				"modes": {
+					"type": "array",
+					"items": { "enum": ["verbatim", "smart"] },
+					"minItems": 1,
+					"uniqueItems": true
+				},
+				"incompatibleFeatures": {
+					"type": "array",
+					"items": {
+						"type": "array",
+						"items": {
+							"enum": ["keywords", "timestamps", "diarization", "smart_mode"]
+						},
+						"minItems": 2,
+						"uniqueItems": true
+					}
+				},
 				"maxFileBytes": { "type": "integer", "minimum": 1 }
 			}
 		},

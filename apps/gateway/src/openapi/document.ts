@@ -475,7 +475,7 @@ export function buildOpenApiDocument() {
 					tags: ["Inference"],
 					summary: "Transcribe audio (OpenAI-compatible multipart contract)",
 					description:
-						"Accepts one audio file plus transcription controls. JSON and verbose_json return JSON, text/srt/vtt return text, and stream=true returns OpenAI-compatible transcription SSE events.",
+						"Accepts one audio file plus transcription controls. JSON, verbose_json and diarized_json return JSON, text/srt/vtt return text, and stream=true returns OpenAI-compatible transcription SSE events.",
 					requestBody: {
 						required: true,
 						content: {

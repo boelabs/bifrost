@@ -325,7 +325,7 @@ paths:
       tags:
         - Inference
       summary: Transcribe audio (OpenAI-compatible multipart contract)
-      description: Accepts one audio file plus transcription controls. JSON and verbose_json return JSON, text/srt/vtt return text, and stream=true returns OpenAI-compatible transcription SSE events.
+      description: Accepts one audio file plus transcription controls. JSON, verbose_json and diarized_json return JSON, text/srt/vtt return text, and stream=true returns OpenAI-compatible transcription SSE events.
       requestBody:
         required: true
         content:
@@ -2833,6 +2833,7 @@ components:
             - srt
             - verbose_json
             - vtt
+            - diarized_json
         timestamp_granularities:
           type: array
           items:
@@ -2844,6 +2845,11 @@ components:
           type: array
           items:
             type: string
+        transcription_mode:
+          type: string
+          enum:
+            - verbatim
+            - smart
         stream:
           type: boolean
         extra_body:

@@ -227,10 +227,14 @@ export interface TranscriptionHandler {
 	) =>
 		| UpstreamHttpRequest<UpstreamBody>
 		| Promise<UpstreamHttpRequest<UpstreamBody>>;
-	/** `raw` is a JSON object (json/verbose_json) or a raw string (text/srt/vtt). */
+	/**
+	 * `raw` is a JSON object (json/verbose_json) or a raw string (text/srt/vtt). `req` lets an adapter
+	 * whose upstream has one response shape render the requested format itself.
+	 */
 	parseResponse: (
 		raw: unknown,
 		ctx: AdapterContext,
+		req: CanonicalTranscriptionRequest,
 	) => CanonicalTranscriptionResponse;
 	parseStream?: (
 		stream: ReadableStream<Uint8Array>,

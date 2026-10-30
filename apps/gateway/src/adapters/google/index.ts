@@ -1,7 +1,6 @@
 import { summaryVisible, toUpstreamReasoningEffort } from "#core/reasoning.ts";
 import { mergeExtraBody, mergeExtraBodyDeep } from "#core/extraBody.ts";
 import { type BaseCreds, requireApiKeyCreds } from "#adapters/creds.ts";
-import { imageProfileFor, videoProfileFor } from "#catalog/types.ts";
 import { mapUpstreamHttpError } from "#adapters/upstreamError.ts";
 import { upstreamFetch } from "#gateway/instrumentedTransport.ts";
 import { assertNoPrefixCachePolicy } from "#core/promptCache.ts";
@@ -41,6 +40,7 @@ import {
 } from "#core/providerSpecificFields.ts";
 
 import type {
+	TranscriptionHandler,
 	EmbeddingsHandler,
 	AdapterContext,
 	ProviderModule,
@@ -66,6 +66,17 @@ import {
 	adapterContextDiagnostics,
 	attachAdapterDiagnostics,
 } from "#adapters/diagnostics.ts";
+
+import {
+	transcriptionProfileFor,
+	imageProfileFor,
+	videoProfileFor,
+} from "#catalog/types.ts";
+
+import {
+	parseGeminiTranscription,
+	geminiTranscriptionBody,
+} from "./transcription.ts";
 
 /**
  * Adapter for Google AI Studio (Gemini, generateContent API). A protocol quite different from
@@ -2251,6 +2262,43 @@ const embeddings: EmbeddingsHandler = {
 	},
 };
 
+const audioTranscription: TranscriptionHandler = {
+	async buildRequest(req, ctx) {
+		if (ctx.transport !== "interactions") {
+			throw new GatewayError({
+				class: "bad_request",
+				message: `Google: transport "${ctx.transport}" cannot transcribe audio`,
+			});
+		}
+		const c = creds(ctx);
+		const base = (c.baseUrl ?? DEFAULT_BASE).replace(/\/+$/, "");
+		const audio = (await readFile(req.file.path)).toString("base64");
+		return {
+			method: "POST",
+			url: `${base}/interactions`,
+			headers: {
+				"content-type": "application/json",
+				"x-goog-api-key": c.apiKey,
+				...(c.headers ?? {}),
+			},
+			body: JSON.stringify(
+				geminiTranscriptionBody(
+					req,
+					ctx.upstreamModel,
+					audio,
+					transcriptionProfileFor(ctx.meta),
+				),
+			),
+		};
+	},
+	parseResponse(raw, _ctx, req) {
+		return parseGeminiTranscription(raw, req);
+	},
+	mapError(err, ctx) {
+		return mapGoogleError(err, ctx);
+	},
+};
+
 export const googleAdapter: Adapter = {
 	key: "googleaistudio",
 	credentials: { required: ["apiKey"] },
@@ -2259,12 +2307,14 @@ export const googleAdapter: Adapter = {
 		"images.generations",
 		"images.edits",
 		"videos.generations",
+		"audio.transcriptions",
 		"embeddings",
 	]),
 	chat,
 	imageGeneration: imageHandler,
 	imageEdit: imageHandler,
 	videoGeneration,
+	audioTranscription,
 	embeddings,
 	reasoningKinds: new Set<ReasoningControlKind>([
 		"gemini_level",
@@ -2323,6 +2373,10 @@ export const googleAdapter: Adapter = {
 		"videos.generations": {
 			supported: ["generate_videos", "interactions"],
 			default: "generate_videos",
+		},
+		"audio.transcriptions": {
+			supported: ["interactions"],
+			default: "interactions",
 		},
 		embeddings: {
 			supported: ["embed_content"],

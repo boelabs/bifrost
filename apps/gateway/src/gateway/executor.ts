@@ -445,7 +445,7 @@ export async function executeTranscription(
 			observation: observed.observation,
 		};
 	}
-	const response = handler.parseResponse(await readBody(res, ctx), ctx);
+	const response = handler.parseResponse(await readBody(res, ctx), ctx, req);
 	return {
 		kind: "json",
 		response,

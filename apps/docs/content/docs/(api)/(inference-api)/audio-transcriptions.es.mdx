@@ -19,7 +19,12 @@ Solo multiparte (campo `file`). El archivo cargado se transmite a un disco tempo
 
 ## Campos [#fields]
 
-`model`, `file`, `language`, `languages`, `keywords`, `prompt`, `temperature`, `response_format` (`json`, `text`, `srt`, `verbose_json`, `vtt`), `timestamp_granularities` (`word`/`segment`, `verbose_json` solamente), `include`, `stream`. Los formatos de respuesta y si las granularidades de streaming/marca de tiempo están disponibles se declaran por modelo en su perfil de catálogo `audio.transcribe`.
+`model`, `file`, `language`, `languages`, `keywords`, `prompt`, `temperature`, `response_format` (`json`, `text`, `srt`, `verbose_json`, `vtt`, `diarized_json`), `timestamp_granularities` (`word`/`segment`, `verbose_json` solamente), `include`, `transcription_mode` (`verbatim`/`smart`), `stream`. Los formatos de respuesta y si las granularidades de streaming/marca de tiempo están disponibles se declaran por modelo en su perfil de catálogo `audio.transcribe`.
+
+`transcription_mode` es una extensión de Bifrost: `smart` pide a un modelo que lo admita quitar
+muletillas y dar formato a los números según el contexto; `verbatim` es el comportamiento
+predeterminado de todos los modelos y siempre se acepta. `response_format=diarized_json` devuelve la
+forma diarizada de OpenAI: `segments` con `speaker` (`A`, `B`, …), `start`, `end` y `text`.
 
 ### Vocabulario e idiomas [#vocabulary-and-language-hints]
 
@@ -49,6 +54,28 @@ Consulta la [guía de contexto de transcripción de OpenAI](https://developers.o
 Si el proveedor informa idiomas detectados, la respuesta JSON y el evento SSE final
 `transcript.text.done` conservan `languages: [{ "code": "es" }]`. Una lista vacía significa que no se
 detectó un idioma con suficiente confianza; un campo ausente permanece ausente.
+
+## Gemini Transcribe [#gemini-transcribe]
+
+`gemini-3.5-transcribe` (Google AI Studio) responde en este endpoint a través de la Interactions API
+de Gemini. La petición sigue siendo la de OpenAI; el gateway la traduce:
+
+| Petición | Se envía a Gemini |
+|---|---|
+| `keywords[]` (hasta 1.000) | `custom_vocabulary` |
+| `language` / `languages[]` (BCP-47, por ejemplo `es-419`) | `language_codes`; sin ninguno, detección automática |
+| `response_format=diarized_json` | diarización de hablantes (hasta 8) con timestamps por palabra, agrupados en segmentos con tiempos |
+| `timestamp_granularities[]=word` con `verbose_json` | timestamps por palabra, devueltos como `words` de OpenAI |
+| `response_format=srt` o `vtt` | timestamps por palabra, agrupados en subtítulos por el gateway |
+| `transcription_mode=smart` | modo smart |
+
+Google rechaza algunas combinaciones, y el gateway también, antes de llamarlo: vocabulario con
+diarización o timestamps (incluidos `srt`/`vtt`), y modo smart con diarización o timestamps. No
+se ofrecen la granularidad por segmento ni el streaming; para audio en tiempo real usa
+`gemini-3.5-transcribe-live`. `prompt`, `temperature` e `include` no tienen equivalente en Gemini y
+no se envían. El audio puede durar hasta una hora, 30 minutos con diarización o timestamps por
+palabra; Google aplica ese límite. Consulta la
+[guía de transcripción de Google](https://ai.google.dev/gemini-api/docs/transcribe).
 
 ## Formato de respuesta [#response-format]
 

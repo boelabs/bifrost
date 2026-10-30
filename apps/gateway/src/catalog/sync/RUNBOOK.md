@@ -13,7 +13,9 @@ pull request: a missing field is a known gap, a wrong one is an incident.
 
 You may:
 
-- Add a model that the provider's own API accepts under that exact id.
+- Add a model that the provider's own API accepts under that exact id, including transcription,
+  embedding, rerank, image and video models when the provider's adapter already serves that
+  operation.
 - Correct `pricing`, `maxInputTokens`, `maxOutputTokens`, `capabilities`, `parameters` and
   `reasoning` of an existing entry, when the provider's own docs say otherwise.
 - Mark a model `deprecated: true` when the provider announced its deprecation or retirement.
@@ -112,7 +114,7 @@ provider in parallel when you can:
 | anthropic | `https://platform.claude.com/docs/en/release-notes/api`, `.../about-claude/models/overview`, `.../about-claude/model-deprecations` |
 | openai | `https://developers.openai.com/api/docs/changelog`, `.../docs/models`, `.../docs/deprecations` |
 | azureopenai, azurefoundry | The report's Azure sections (below), `https://learn.microsoft.com/azure/foundry/openai/concepts/model-retirement-schedule`, and for each model the page's own section or how-to |
-| googleaistudio | `https://ai.google.dev/gemini-api/docs/changelog`, `.../docs/models`, `.../docs/deprecations` |
+| googleaistudio | `https://ai.google.dev/gemini-api/docs/changelog`, `.../docs/models`, `.../docs/deprecations`, `.../docs/transcribe`, `.../docs/live-api/live-transcribe` |
 | deepseek | `https://api-docs.deepseek.com/updates`, `.../news/`, `.../quick_start/pricing` |
 | moonshot | `https://platform.kimi.ai/docs/platform-changelog.md`, `.../docs/models.md` |
 | zai | `https://docs.z.ai/release-notes/new-released`, `.../guides/overview/pricing` |
@@ -120,6 +122,14 @@ provider in parallel when you can:
 
 Pages move; follow redirects and the provider's own navigation. A provider you could not read is
 reported as such, never as "nothing new".
+
+**Sweep every modality, not just chat models.** Speech-to-text is the family aggregators miss most:
+they rarely list transcription models, and never their live or realtime variants. On every run, look
+on each provider's models page and changelog for transcription models (file and live/realtime:
+`*-transcribe`, `*-transcribe-live`, `*-live-transcribe`, `whisper-*`, "speech-to-text"), and the same
+for embeddings, rerankers, image and video models. Known transcription models today: OpenAI
+`gpt-transcribe`, `gpt-live-transcribe` and the deprecated `gpt-4o-*-transcribe`; Google
+`gemini-3.5-transcribe` and `gemini-3.5-transcribe-live`.
 
 **Azure is read for you.** The aggregators never list Azure's deployment ids, so `catalog:sync` reads
 Microsoft's own list (`https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure`,
@@ -147,6 +157,24 @@ For a new model, establish from the provider's own pages, with a URL for each:
 6. Each request parameter: accepted, ignored, or rejected; allowed values where the API restricts
    them (for example `tool_choice`).
 7. Which API the model is served on, if the provider splits them (Chat Completions vs Responses).
+
+For a transcription model, the `audio.transcribe` profile replaces items 3 to 6. Establish:
+
+1. Whether it transcribes files (`/audio/transcriptions`, Gemini's Interactions API) or live audio
+   (a realtime WebSocket, Gemini's Live API). A live-only model needs the realtime transcription
+   operation; until the gateway serves it for that provider, list the model under "Out of scope".
+2. Pricing per 1M tokens for audio input and text output. A model billed per minute has no field
+   for it: leave it out and say so.
+3. `responseFormats` it returns, whether it streams (`supportsStreaming`), and the timestamp
+   granularities it produces (`timestampGranularities`).
+4. Vocabulary hints (`supportsKeywords`, and `maxKeywords` when the provider caps them), multiple
+   language hints (`supportsLanguageHints`), modes beyond verbatim (`modes`), and speaker
+   diarization (`diarized_json` in `responseFormats`).
+5. Every pair of features the provider documents as rejected together (`incompatibleFeatures`, for
+   example vocabulary with diarization), and the upload limit (`maxFileBytes`).
+
+Copy the closest existing transcription entry of the same provider; the adapter decides how each
+field reaches the provider, so a new id on an adapter that already transcribes needs no code.
 
 For a deprecation: the announcement date, the shutdown date, the replacement, and whether requests
 to the old id are routed elsewhere after shutdown.
