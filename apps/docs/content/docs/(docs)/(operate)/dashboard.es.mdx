@@ -110,7 +110,7 @@ Las sesiones son tokens opacos en las cookies httpOnly y cada mutación hace eco
 - **Descripción general**: tráfico, gasto, tokens y confiabilidad en un rango que usted elige, además de si Postgres, Redis y el runtime de la extensión están respondiendo. Se refresca por sí solo; el interruptor lo detiene.
 - **Métricas**: los mismos números con más detalle, filtrados por modelo, deployment u operación.
 - **Modelos**: public models y el deployment pool detrás de cada uno. La creación o edición de un deployment valida toda la configuración con respecto al adapter antes de escribirla.
-- **Claves API**: emisión, alcance, limitación y presupuestación de virtual keys. El secreto se muestra una vez, en el momento de la creación, porque sólo se almacena su hash.
+- **Claves API**: emisión, alcance, limitación y presupuestación de virtual keys. **Copy key** copia una clave al portapapeles sin mostrarla y **Regenerate** reemplaza su secreto. Una clave creada como **privada** se muestra una sola vez y nunca se almacena.
 - **Playground**: inferencia real frente a un deployment real, facturada y registrada como cualquier otra solicitud, atribuida al operador que la envió.
 - **Registros**: una fila por operación con su resultado, tiempo y costo; abrir uno muestra cada intento upstream. Se ofrece una carga útil retenida solo cuando hay una para abrir y el deployment lo permite, y su lectura se registra en el registro de auditoría.
 - **Extensiones**: módulos cargados y las instancias que los ejecutan, con estado en vivo desde la réplica que responde a la página.

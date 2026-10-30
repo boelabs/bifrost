@@ -66,7 +66,7 @@ wording nor the timing discloses whether an account exists.
 | | viewer | admin | owner |
 |---|---|---|---|
 | Deployments | read | read/write | read/write |
-| Virtual keys | — | read/write | read/write |
+| Virtual keys (copying included) | — | read/write | read/write |
 | Usage and summaries | read | read | read |
 | Operation logs | — | read | read |
 | Retained payload samples | — | read | read |
@@ -121,10 +121,17 @@ of appearing as unattributed spend.
 
 ## Virtual keys at rest
 
-A virtual key is never stored in plaintext: only its **SHA-256 hash** and a 10-character prefix (for
-display and search in `GET /admin/keys`) are persisted. The raw key is returned exactly once, at
-creation — there is no way to retrieve it again afterward. Rotate by creating a new key and disabling
-or deleting the old one.
+A virtual key authenticates by its **SHA-256 hash**; a 10-character prefix is kept for display and
+search in `GET /admin/keys`. So that an operator can copy it again, the key is also stored
+**encrypted with the keyring** (AES-256-GCM, purpose `virtual-key-secret`) — never in plaintext, and
+never in any response but `GET /admin/keys/:id/secret`, which takes `keys:write` and is audited on
+every call.
+
+Two controls narrow that further. A **private** key stores nothing but its hash, and making a key
+private erases its stored secret. `VIRTUAL_KEY_SECRET_ACCESS=sealed` refuses every copy, through any
+credential, as a deployment decision a compromised operator account cannot reverse. Rotate a key with
+`POST /admin/keys/:id/rotate`: the old secret stops working immediately. See
+[Virtual keys](/docs/virtual-keys#copy-a-key-again).
 
 ## Deployment credentials at rest
 

@@ -12,7 +12,7 @@ Authorization: Bearer $MASTER_KEY
 
 <Callout>
 
-Las claves se almacenan como un hash SHA-256. El valor de texto sin formato `sk-…` se devuelve **solo una vez**, en el momento de la creación. No hay forma de recuperarla más tarde; si se pierde, elimina la clave y emita una nueva.
+Una clave se autentica por su hash SHA-256. Su valor en texto plano `sk-…` también se conserva, cifrado con el keyring, para que un operador pueda [volver a copiarla](#copy-a-key-again), salvo que la clave sea [privada](#private-keys): entonces la creación es la única vez que se devuelve.
 
 </Callout>
 
@@ -30,7 +30,7 @@ curl -X POST $BASE/admin/keys \
   }'
 ```
 
-La respuesta incluye la clave de texto plano una vez:
+La respuesta incluye la clave en texto plano:
 
 ```json
 {
@@ -45,7 +45,9 @@ La respuesta incluye la clave de texto plano una vez:
     "rpm": 600,
     "tpm": 200000,
     "spendCents": "0",
-    "enabled": true
+    "enabled": true,
+    "private": false,
+    "copyable": true
   }
 }
 ```
@@ -61,6 +63,7 @@ La respuesta incluye la clave de texto plano una vez:
 | `rpm` | `null` (ninguno) | Solicitudes máximas por minuto. |
 | `tpm` | `null` (ninguno) | Tokens máximos por minuto. |
 | `expiresAt` | `null` (nunca) | Marca de tiempo ISO después de la cual se rechaza la clave. |
+| `private` | `false` | `true` nunca almacena el texto plano: se devuelve una sola vez, al crearla. Consulta [Claves privadas](#private-keys). |
 
 `null` siempre significa "sin límite". Los límites y el presupuesto se aplican en Redis y se reflejan en Postgres para una contabilidad duradera.
 
@@ -93,8 +96,48 @@ PATCH /admin/keys/:id   { "resetSpend": true }
 DELETE /admin/keys/:id
 ```
 
-La API de administración nunca devuelve el hash de clave o el valor de texto sin formato en las lecturas; solo `keyPrefix`, que es suficiente para identificar una clave en registros y paneles.
+Las lecturas nunca devuelven el hash ni el texto plano de la clave; solo `keyPrefix`, que basta para identificarla en registros y paneles, además de `private` y `copyable`.
+
+## Volver a copiar una clave [#copy-a-key-again]
+
+```bash
+GET /admin/keys/:id/secret      →  { "data": { "key": "sk-…" } }
+```
+
+Es la única ruta que devuelve una clave después de crearla. Requiere `keys:write` (una clave copiada vale tanto como una escrita), responde con `Cache-Control: no-store` y **cada llamada queda en el [registro de auditoría](/es/docs/reference-admin-api#audit-trail)**, incluidas las rechazadas. El campo `copyable` de la clave indica si funcionará:
+
+| Respuesta | Significado |
+|---|---|
+| `200` | La clave en texto plano. |
+| `409 virtual_key_private` | La clave es privada: no hay nada almacenado. |
+| `409 virtual_key_secret_unreadable` | Se cifró con una clave que el keyring ya no tiene. La clave sigue funcionando. |
+| `403 virtual_key_secret_sealed` | El deployment usa `VIRTUAL_KEY_SECRET_ACCESS=sealed`. |
+
+El valor descifrado se verifica contra el hash con el que la clave se autentica, así que lo que copias es siempre la clave que funciona hoy. El dashboard la copia directamente al portapapeles y nunca la muestra en la página.
+
+## Claves privadas [#private-keys]
+
+Una clave creada con `"private": true` solo guarda su hash: el texto plano está en la respuesta de creación y en ningún otro lugar. Úsala para credenciales que nunca deban poder recuperarse del gateway, como una clave de despliegue de larga duración.
+
+```bash
+# Erase a key's stored secret. One way: the plaintext no longer exists anywhere.
+PATCH /admin/keys/:id   { "private": true }
+```
+
+`{"private": false}` se rechaza: solo [rotarla](#rotation-and-leaks) puede volver copiable una clave privada, porque solo un secreto nuevo puede almacenarse. Las claves emitidas antes de que se pudieran copiar son privadas.
+
+Para impedir las copias en todo el gateway a la vez, define `VIRTUAL_KEY_SECRET_ACCESS=sealed` y reinicia: ninguna credencial puede copiar una clave, ni siquiera la master key. Los secretos almacenados siguen cifrados en reposo, así que reabrir el acceso no requiere claves nuevas. Sellar es una política de acceso; una clave que nunca debe almacenarse se crea privada.
 
 ## Rotación y fugas [#rotation-and-leaks]
 
-Las virtual keys son independientes de `MASTER_KEY`, por lo que rotar la master key **no** las invalida. Para rotar una clave de cliente, emita una nueva, migre el cliente y luego `DELETE` la anterior. Si se filtra una clave, `DELETE` inmediatamente (o `PATCH … {"enabled": false}` para cortar el acceso mientras investiga) y audite `gateway_operations` y los registros estructurados de acceso de administrador. Para fugas de master key y credenciales de proveedor, consulta [Operación del gateway](/es/docs/operations).
+Las virtual keys son independientes de `MASTER_KEY`, por lo que rotar la master key **no** las invalida.
+
+```bash
+# New secret, same key: id, scope, limits, spend and logs stay.
+POST /admin/keys/:id/rotate                         # keeps the key as private as it was
+POST /admin/keys/:id/rotate   { "private": false }  # and stores the new secret for copying
+```
+
+La respuesta trae la nueva clave en texto plano, igual que una creación. El secreto anterior deja de autenticar de inmediato, en todas las réplicas, y los client secrets de realtime emitidos con él dejan de funcionar también; así que actualiza los clientes justo después de rotar, o emite una segunda clave y migra primero si importa el tiempo sin servicio.
+
+Si se filtra una clave, rótala (o usa `PATCH … {"enabled": false}` para cortar el acceso mientras investigas) y audita `gateway_operations` y los registros estructurados de acceso de administrador. Para fugas de master key y credenciales de proveedor, consulta [Operación del gateway](/es/docs/operations).

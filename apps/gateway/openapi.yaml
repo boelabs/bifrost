@@ -1174,7 +1174,8 @@ paths:
     post:
       tags:
         - Admin
-      summary: Create virtual key (returns the plaintext key ONCE)
+      summary: Create virtual key (returns the plaintext key)
+      description: "The key is stored encrypted and can be copied again with GET /admin/keys/{id}/secret, unless `private` is true: then this response is the only place it ever appears."
       parameters:
         - $ref: "#/components/parameters/IdempotencyKeyHeader"
       requestBody:
@@ -1197,9 +1198,13 @@ paths:
                 value:
                   name: full-access
                   allowedModels: []
+              private:
+                value:
+                  name: ci-deploy
+                  private: true
       responses:
         "201":
-          description: Virtual key created; the plaintext key is returned only here
+          description: Virtual key created
           content:
             application/json:
               schema:
@@ -1210,6 +1215,66 @@ paths:
                 required:
                   - data
                 additionalProperties: false
+  /admin/keys/{id}/secret:
+    get:
+      tags:
+        - Admin
+      operationId: copyKey
+      summary: Copy a virtual key again
+      description: "Requires `keys:write`, answers with `Cache-Control: no-store`, and every call is written to the admin audit trail, refusals included. 403 `virtual_key_secret_sealed` means the deployment runs with VIRTUAL_KEY_SECRET_ACCESS=sealed. 409 `virtual_key_private` means the key never stored its secret; 409 `virtual_key_secret_unreadable` means it was sealed with a key the keyring no longer has. Either way the key keeps working, and rotating it stores a new one. Read `copyable` on the key first to know which to expect."
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: The plaintext key
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/VirtualKeySecret"
+                required:
+                  - data
+                additionalProperties: false
+        "403": *a1
+        "404": *a1
+        "409": *a1
+  /admin/keys/{id}/rotate:
+    post:
+      tags:
+        - Admin
+      operationId: rotateKey
+      summary: Rotate a virtual key's secret
+      description: "Issues a new secret for the same key: its id, limits, spend and logs stay. The old secret stops authenticating immediately, and realtime client secrets minted from it stop with it. The body is optional; without `private` the key stays as private as it was."
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RotateKey"
+            examples:
+              keep:
+                value: {}
+              makeCopyable:
+                value:
+                  private: false
+      responses:
+        "200":
+          description: Key rotated; the new plaintext key
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CreatedVirtualKey"
+                required:
+                  - data
+                additionalProperties: false
+        "404": *a1
   /admin/keys/{id}:
     get:
       tags:
@@ -1254,6 +1319,9 @@ paths:
               resetSpend:
                 value:
                   resetSpend: true
+              makePrivate:
+                value:
+                  private: true
       responses:
         "200":
           description: Virtual key
@@ -3995,8 +4063,17 @@ components:
               format: date-time
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
             - type: "null"
+        private:
+          description: "true never stores the plaintext: it is returned once, here, and only rotating the key replaces it. Default false: the key is stored encrypted and can be copied again with GET /admin/keys/{id}/secret."
+          type: boolean
       required:
         - name
+    RotateKey:
+      type: object
+      properties:
+        private:
+          description: Whether to store the new secret for copying. Omitted keeps the key's current setting; false is the only way to make a private key copyable.
+          type: boolean
     UpdateKey:
       type: object
       properties:
@@ -4044,6 +4121,10 @@ components:
         resetSpend:
           description: true resets spend for the current period
           type: boolean
+        private:
+          description: "Erases the stored secret; it cannot be copied again. One way: a private key becomes copyable only by rotating it with private: false."
+          type: boolean
+          const: true
     RouterSettings:
       type: object
       properties:
@@ -5372,6 +5453,12 @@ components:
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+        private:
+          type: boolean
+          description: "true when the plaintext is not stored: it was shown once, and only rotating replaces it. Keys issued before keys could be copied are private."
+        copyable:
+          type: boolean
+          description: "Whether GET /admin/keys/{id}/secret can return the key right now: not private, and VIRTUAL_KEY_SECRET_ACCESS is open."
       required:
         - id
         - name
@@ -5388,6 +5475,8 @@ components:
         - expiresAt
         - createdAt
         - updatedAt
+        - private
+        - copyable
       additionalProperties: false
     CreatedVirtualKey:
       type: object
@@ -5459,9 +5548,15 @@ components:
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$
+        private:
+          type: boolean
+          description: "true when the plaintext is not stored: it was shown once, and only rotating replaces it. Keys issued before keys could be copied are private."
+        copyable:
+          type: boolean
+          description: "Whether GET /admin/keys/{id}/secret can return the key right now: not private, and VIRTUAL_KEY_SECRET_ACCESS is open."
         key:
           type: string
-          description: The plaintext key. Returned ONLY here, at creation; it is stored hashed and cannot be retrieved again.
+          description: The plaintext key. For a private key this is the only time it is returned; otherwise GET /admin/keys/{id}/secret returns it again.
       required:
         - id
         - name
@@ -5478,6 +5573,17 @@ components:
         - expiresAt
         - createdAt
         - updatedAt
+        - private
+        - copyable
+        - key
+      additionalProperties: false
+    VirtualKeySecret:
+      type: object
+      properties:
+        key:
+          type: string
+          description: The plaintext key.
+      required:
         - key
       additionalProperties: false
     CacheInvalidation:

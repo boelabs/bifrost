@@ -14,6 +14,7 @@ import { EmptyState } from "#/components/ui/page";
 import { NewKeyButton } from "./KeysToolbar.tsx";
 import { Button } from "#/components/ui/button";
 import { Status } from "#/components/ui/status";
+import { useCopyKey } from "./useCopyKey.ts";
 import { useRouter } from "next/navigation";
 
 import {
@@ -22,6 +23,7 @@ import {
 	Pencil as IconPencil,
 	Trash2 as IconTrash,
 	Check as IconCheck,
+	Copy as IconCopy,
 	Ban as IconBan,
 } from "lucide-react";
 
@@ -61,6 +63,7 @@ export function KeysTable({
 	const router = useRouter();
 	const confirm = useConfirm();
 	const { rows: keys, act } = useRowActions(loaded, (key) => key.id);
+	const { copy, copying } = useCopyKey();
 	const filtered = isFiltered(filters);
 	const offset = filters.offset ?? 0;
 	const writable = can("keys:write");
@@ -181,6 +184,16 @@ export function KeysTable({
 				writable ? (
 					<RowActions
 						actions={[
+							...(key.copyable
+								? [
+										{
+											label: "Copy key",
+											icon: <IconCopy aria-hidden className="size-4" />,
+											disabled: copying === key.id,
+											onSelect: () => copy(key),
+										},
+									]
+								: []),
 							{
 								label: key.enabled ? "Disable" : "Enable",
 								icon: key.enabled ? (

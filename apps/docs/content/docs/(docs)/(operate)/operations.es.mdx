@@ -59,7 +59,7 @@ Cada sobre registra su identificación clave y su propósito; las nuevas escritu
 
 1. Agrega una nueva identificación/valor aleatorio a `ENCRYPTION_KEYRING`, dejando la identificación activa actual en su lugar y ejecuta cada réplica para que todos puedan leer ambas claves.
 2. Configura `ACTIVE_ENCRYPTION_KEY_ID` con la nueva identificación y vuelva a ejecutar las réplicas.
-3. Ejecuta `bun run --filter @boelabs/bifrost encryption:rotate`. Vuelve a cifrar deployments, artefactos de extensión y muestras de carga útil retenida en lotes limitados e informa el recuento de filas.
+3. Ejecuta `bun run --filter @boelabs/bifrost encryption:rotate`. Vuelve a cifrar deployments, artefactos de extensión, muestras de carga útil retenida y secretos almacenados de virtual keys en lotes limitados e informa el recuento de filas.
 4. Ejecútelo nuevamente; cada recuento reportado debe ser cero.
 5. Guarda la llave antigua durante al menos 14 días para que las cápsulas de compactación sin estado Responses emitidas antes de la rotación sigan siendo legibles, luego retírela y enróllela una vez más.
 

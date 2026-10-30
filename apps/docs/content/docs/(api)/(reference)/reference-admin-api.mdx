@@ -50,7 +50,9 @@ the API.
 |---|---|
 | `GET /admin/keys` | List keys. Query: `limit`, `offset`, `enabled`, `publicModel`, `q` (search name/prefix). |
 | `POST /admin/keys` | Create a virtual key (see [Virtual keys](/docs/virtual-keys)). |
-| `PATCH /admin/keys/:id` | Update scope, limits, budget, or enabled state; send `null` to clear a limit. |
+| `PATCH /admin/keys/:id` | Update scope, limits, budget, or enabled state; send `null` to clear a limit. `{"private": true}` erases the stored secret. |
+| `GET /admin/keys/:id/secret` | Copy a key again (`keys:write`, audited). See [Copy a key again](/docs/virtual-keys#copy-a-key-again). |
+| `POST /admin/keys/:id/rotate` | New secret for the same key; the old one stops working immediately. Body optional: `{"private": bool}`. |
 | `DELETE /admin/keys/:id` | Permanently delete a key. |
 
 ## Router and fallbacks
@@ -91,8 +93,10 @@ kept for `ADMIN_AUDIT_RETENTION_DAYS` (365 by default) and payload-read entries 
 operation metadata they point at.
 
 Reads are not audited — they are the overwhelming majority of dashboard traffic and would bury the
-entries that matter. The deliberate exception is `GET /admin/logs/:id/payload`: it is a read, but it
-reveals real prompts and completions, so it lands here as a `payload_access` entry. The trail is
+entries that matter. The deliberate exceptions are the reads that reveal a secret:
+`GET /admin/logs/:id/payload` reveals real prompts and completions, so it lands here as a
+`payload_access` entry, and `GET /admin/keys/:id/secret` reveals a key, so every copy — refused or
+not — lands here as a configuration entry. The trail is
 append-only; there is no write or delete route for it.
 
 ## Idempotent creates

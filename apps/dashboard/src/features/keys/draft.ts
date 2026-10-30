@@ -18,6 +18,11 @@ export interface KeyDraft {
 	/** `datetime-local` value, in the operator's own timezone. */
 	expiresAt: string;
 	enabled: boolean;
+	/**
+	 * Chosen once, at creation. Making an existing key private erases its stored secret, which is a
+	 * confirmed action of its own rather than a field a save could carry by accident.
+	 */
+	private: boolean;
 }
 
 export const EMPTY_DRAFT: KeyDraft = {
@@ -29,6 +34,7 @@ export const EMPTY_DRAFT: KeyDraft = {
 	tpm: "",
 	expiresAt: "",
 	enabled: true,
+	private: false,
 };
 
 export function draftFromKey(key: VirtualKey): KeyDraft {
@@ -41,6 +47,7 @@ export function draftFromKey(key: VirtualKey): KeyDraft {
 		tpm: key.tpm === null ? "" : String(key.tpm),
 		expiresAt: isoToLocal(key.expiresAt),
 		enabled: key.enabled,
+		private: key.private,
 	};
 }
 
@@ -117,6 +124,7 @@ export function toCreateBody(draft: KeyDraft): CreateKeyInput {
 		...(rpm === null ? {} : { rpm }),
 		...(tpm === null ? {} : { tpm }),
 		...(expiresAt === null ? {} : { expiresAt }),
+		...(draft.private ? { private: true } : {}),
 	};
 }
 

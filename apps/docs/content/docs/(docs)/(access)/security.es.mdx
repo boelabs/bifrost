@@ -36,7 +36,7 @@ Los **inicios de sesión fallidos** se cuentan por nombre de usuario *y* por IP 
 | | visor | administrador | propietario |
 |---|---|---|---|
 | deployments | leer | leer/escribir | leer/escribir |
-| virtual keys | — | leer/escribir | leer/escribir |
+| virtual keys (incluida la copia) | — | leer/escribir | leer/escribir |
 | Uso y resúmenes | leer | leer | leer |
 | Registros de operaciones | — | leer | leer |
 | Muestras de carga útil retenidas | — | leer | leer |
@@ -70,7 +70,9 @@ Las operaciones de inferencia llevan la misma identidad en `gateway_operations.a
 
 ## Virtual keys en reposo [#virtual-keys-at-rest]
 
-Una virtual key nunca se almacena en texto sin formato: solo se conserva su **hash SHA-256** y un prefijo de 10 caracteres (para visualización y búsqueda en `GET /admin/keys`). La clave sin formato se devuelve exactamente una vez, en el momento de la creación; no hay forma de recuperarla nuevamente después. Gire creando una nueva clave y deshabilitando o eliminando la anterior.
+Una virtual key se autentica por su **hash SHA-256**; se conserva un prefijo de 10 caracteres para mostrarla y buscarla en `GET /admin/keys`. Para que un operador pueda volver a copiarla, la clave también se almacena **cifrada con el keyring** (AES-256-GCM, propósito `virtual-key-secret`): nunca en texto plano, y nunca en otra respuesta que `GET /admin/keys/:id/secret`, que requiere `keys:write` y se audita en cada llamada.
+
+Dos controles lo restringen aún más. Una clave **privada** solo almacena su hash, y volver privada una clave borra su secreto almacenado. `VIRTUAL_KEY_SECRET_ACCESS=sealed` rechaza toda copia, con cualquier credencial, como una decisión de despliegue que una cuenta de operador comprometida no puede revertir. Rota una clave con `POST /admin/keys/:id/rotate`: el secreto anterior deja de funcionar de inmediato. Consulta [Virtual keys](/es/docs/virtual-keys#copy-a-key-again).
 
 ## Credenciales de deployment en reposo [#deployment-credentials-at-rest]
 

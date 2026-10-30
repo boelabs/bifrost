@@ -1,5 +1,7 @@
 import { EXECUTION_POLICY_MAX_TOTAL_MS } from "#core/executionPolicy.ts";
+import { keySecretAccessIsOpen, revealKeySecret } from "./keySecrets.ts";
 import { invalidateRouterSettingsCache } from "#router/settings.ts";
+import { auditRevealMiddleware, auditMiddleware } from "./audit.ts";
 import { Hono, type MiddlewareHandler, type Context } from "hono";
 import { invalidateVirtualKey } from "#auth/virtualKeyCache.ts";
 import { idempotencyMiddleware } from "#http/idempotency.ts";
@@ -17,7 +19,6 @@ import { GatewayError } from "#core/errors.ts";
 import { dashboardUsersApp } from "./users.ts";
 import { writtenRow } from "#db/returning.ts";
 import { parseJsonBody } from "#http/body.ts";
-import { auditMiddleware } from "./audit.ts";
 import { env } from "#config/env.ts";
 import { z } from "zod/v4";
 
@@ -42,6 +43,7 @@ import {
 	getVirtualKeyById,
 	createVirtualKey,
 	deleteVirtualKey,
+	rotateVirtualKey,
 	updateVirtualKey,
 } from "#db/repos/virtualKeys.ts";
 
@@ -90,10 +92,39 @@ import {
 	invalidateResponseCache,
 } from "#cache/responseCache.ts";
 
-/** Strips the hash before returning a virtual key. */
+import {
+	createKeySchema,
+	rotateKeySchema,
+	updateKeySchema,
+} from "./keySchemas.ts";
+
+/**
+ * A virtual key as the admin API shows it: never the hash, never the secret.
+ *
+ * `private` is what the key is; `copyable` is the question a client actually has — can it be copied
+ * right now — answered here rather than left to infer from a gateway-wide setting.
+ */
 function publicKey(row: VirtualKeyRow) {
-	const { keyHash: _omit, ...rest } = row;
-	return rest;
+	const { keyHash: _hash, hasSecret, ...rest } = row;
+	return {
+		...rest,
+		private: !hasSecret,
+		copyable: hasSecret && keySecretAccessIsOpen(),
+	};
+}
+
+/** The key an `:id` route names, or a 404 — a malformed id too, which Postgres would reject as a 500. */
+async function requireKey(id: string): Promise<VirtualKeyRow> {
+	const row = z.uuid().safeParse(id).success
+		? await getVirtualKeyById(id)
+		: undefined;
+	if (!row) {
+		throw new GatewayError({
+			class: "not_found",
+			message: `Virtual key "${id}" does not exist`,
+		});
+	}
+	return row;
 }
 
 const DEFAULT_LIMIT = 50;
@@ -221,34 +252,6 @@ function parsePage(c: import("hono").Context): {
 	return { limit, offset };
 }
 
-const createKeySchema = z.object({
-	name: z.string().min(1),
-	allowedModels: z.array(z.string()).optional(),
-	maxBudgetCents: z.int().min(0).nullable().optional(),
-	budgetReset: z
-		.enum(["hourly", "daily", "weekly", "monthly"])
-		.nullable()
-		.optional(),
-	tpm: z.int().min(0).nullable().optional(),
-	rpm: z.int().min(0).nullable().optional(),
-	expiresAt: z.iso.datetime().nullable().optional(),
-});
-
-const updateKeySchema = z.object({
-	name: z.string().min(1).optional(),
-	allowedModels: z.array(z.string()).optional(),
-	maxBudgetCents: z.int().min(0).nullable().optional(),
-	budgetReset: z
-		.enum(["hourly", "daily", "weekly", "monthly"])
-		.nullable()
-		.optional(),
-	tpm: z.int().min(0).nullable().optional(),
-	rpm: z.int().min(0).nullable().optional(),
-	enabled: z.boolean().optional(),
-	expiresAt: z.iso.datetime().nullable().optional(),
-	resetSpend: z.boolean().optional(),
-});
-
 /** Reads are viewer-visible for a resource; writes need the corresponding :write permission. */
 function methodPermission(
 	resource: "deployments" | "keys" | "settings",
@@ -293,6 +296,13 @@ adminApp.use("/deployments/*", methodPermission("deployments"));
 adminApp.use("/deployments", methodPermission("deployments"));
 adminApp.use("/keys/*", methodPermission("keys"));
 adminApp.use("/keys", methodPermission("keys"));
+// A copied key is as good as a written one, so reading it takes what writing takes. It is audited,
+// refusals included, which is why the audit is mounted ahead of the gate.
+adminApp.use(
+	"/keys/:id/secret",
+	auditRevealMiddleware(),
+	requirePermission("keys:write"),
+);
 adminApp.use("/logs/:id/payload", requirePermission("payloads:read"));
 adminApp.use("/logs/*", requirePermission("logs:read"));
 adminApp.use("/logs", requirePermission("logs:read"));
@@ -371,34 +381,84 @@ adminApp.post("/keys", async (c) => {
 		...(input.expiresAt !== undefined && input.expiresAt !== null
 			? { expiresAt: new Date(input.expiresAt) }
 			: {}),
+		...(input.private === undefined ? {} : { private: input.private }),
 	});
-	// The plaintext key is returned ONLY once.
+	// The plaintext rides in this response; afterwards only GET /keys/:id/secret reveals it.
 	return ok(c, { ...publicKey(row), key: rawKey }, 201);
 });
 
-adminApp.get("/keys/:id", async (c) => {
+adminApp.get("/keys/:id", async (c) =>
+	ok(c, publicKey(await requireKey(c.req.param("id")))),
+);
+
+adminApp.get("/keys/:id/secret", async (c) => {
 	const id = c.req.param("id");
-	// The column is a UUID: anything else names no key, and Postgres would reject it as a 500.
-	const row = z.uuid().safeParse(id).success
-		? await getVirtualKeyById(id)
-		: undefined;
-	if (!row) {
+	// Nothing between here and the operator may keep a copy: not a proxy, not the browser.
+	c.header("Cache-Control", "no-store");
+	const read = z.uuid().safeParse(id).success
+		? await revealKeySecret(id)
+		: ({ outcome: "not_found" } as const);
+	// The admin error handler republishes `message` to the operator, so each branch carries its whole
+	// explanation; a separate publicMessage would be dropped.
+	switch (read.outcome) {
+		case "revealed":
+			return ok(c, { key: read.key });
+		case "sealed":
+			throw new GatewayError({
+				class: "permission",
+				message:
+					"Copying keys is sealed on this gateway (VIRTUAL_KEY_SECRET_ACCESS=sealed). Stored keys stay encrypted at rest; no credential can copy one until the deployment opens access.",
+				code: "virtual_key_secret_sealed",
+			});
+		case "not_found":
+			throw new GatewayError({
+				class: "not_found",
+				message: `Virtual key "${id}" does not exist`,
+			});
+		case "private":
+			throw new GatewayError({
+				class: "bad_request",
+				status: 409,
+				message: `Virtual key "${id}" is private: its secret was shown once and never stored. Rotate it to issue a new one.`,
+				code: "virtual_key_private",
+			});
+		case "unreadable":
+			throw new GatewayError({
+				class: "not_found",
+				status: 409,
+				message: `The stored secret of virtual key "${id}" cannot be read with this gateway's keyring. The key still works; rotate it to store a new one.`,
+				code: "virtual_key_secret_unreadable",
+			});
+		default:
+			return read satisfies never;
+	}
+});
+
+adminApp.post("/keys/:id/rotate", async (c) => {
+	const existing = await requireKey(c.req.param("id"));
+	// The body is optional: a bare POST keeps the key exactly as private as it was.
+	const input =
+		c.req.raw.body === null || c.req.header("content-length") === "0"
+			? {}
+			: await parseJsonBody(c, rotateKeySchema);
+	const rotated = await rotateVirtualKey(
+		existing.id,
+		input.private === undefined ? {} : { private: input.private },
+	);
+	if (!rotated) {
 		throw new GatewayError({
 			class: "not_found",
-			message: `Virtual key "${id}" does not exist`,
+			message: `Virtual key "${existing.id}" does not exist`,
 		});
 	}
-	return ok(c, publicKey(row));
+	// The old key stops authenticating now, not when its cache entry would have expired. Realtime
+	// client secrets minted from it are bound to its hash, so they stop with it.
+	await invalidateVirtualKey(rotated.previousHash);
+	return ok(c, { ...publicKey(rotated.row), key: rotated.rawKey });
 });
 
 adminApp.patch("/keys/:id", async (c) => {
-	const existing = await getVirtualKeyById(c.req.param("id"));
-	if (!existing) {
-		throw new GatewayError({
-			class: "not_found",
-			message: `Virtual key "${c.req.param("id")}" does not exist`,
-		});
-	}
+	const existing = await requireKey(c.req.param("id"));
 	const input = await parseJsonBody(c, updateKeySchema);
 	let row = await updateVirtualKey(existing.id, {
 		...(input.name === undefined ? {} : { name: input.name }),
@@ -420,6 +480,7 @@ adminApp.patch("/keys/:id", async (c) => {
 					expiresAt:
 						input.expiresAt === null ? null : new Date(input.expiresAt),
 				}),
+		...(input.private ? { private: true } : {}),
 	});
 	await invalidateVirtualKey(existing.keyHash);
 	if (input.resetSpend) {

@@ -95,6 +95,16 @@ export const env = createEnv({
 		 * not a cryptographic guarantee against the gateway itself.
 		 */
 		OBSERVABILITY_PAYLOAD_ACCESS: z.enum(["open", "sealed"]).default("open"),
+		/**
+		 * Who may copy a virtual key again after it was issued.
+		 *
+		 * `open` - a role with `keys:write` can copy any key that is not private, and every copy is
+		 * audited. `sealed` - nobody can, through any credential: secrets already stored stay
+		 * encrypted at rest and new keys still store theirs, so opening access again restores copying
+		 * without reissuing anything. Like OBSERVABILITY_PAYLOAD_ACCESS it is an access policy, not a
+		 * cryptographic guarantee; a key that must never be stored is created private instead.
+		 */
+		VIRTUAL_KEY_SECRET_ACCESS: z.enum(["open", "sealed"]).default("open"),
 		OBSERVABILITY_PAYLOAD_RETENTION_DAYS: z.coerce
 			.number()
 			.int()

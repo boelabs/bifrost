@@ -10,6 +10,22 @@ export type VirtualKey = components["schemas"]["VirtualKey"];
 export type CreatedVirtualKey = components["schemas"]["CreatedVirtualKey"];
 export type CreateKeyInput = components["schemas"]["CreateKey"];
 export type UpdateKeyInput = components["schemas"]["UpdateKey"];
+export type RotateKeyInput = components["schemas"]["RotateKey"];
+
+/**
+ * What can be done with a key's secret right now: copied again, never (it is private), or not on
+ * this gateway (`sealed`: it is stored, but VIRTUAL_KEY_SECRET_ACCESS lets nobody read it).
+ */
+export type SecretState = "copyable" | "private" | "sealed";
+
+export function secretState(
+	key: Pick<VirtualKey, "private" | "copyable">,
+): SecretState {
+	if (key.private) {
+		return "private";
+	}
+	return key.copyable ? "copyable" : "sealed";
+}
 
 /** Cents are stored with 10 decimal places; render money, not a raw numeric string. */
 export function formatCents(value: string | number | null | undefined): string {

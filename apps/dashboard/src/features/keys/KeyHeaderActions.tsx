@@ -1,17 +1,27 @@
 "use client";
 
+import type { CreatedVirtualKey, VirtualKey } from "./common.ts";
 import { deleteKeyAction, updateKeyAction } from "./actions.ts";
 import { useConfirm } from "#/shared/feedback/confirm.tsx";
+import { IssuedKeyDialog } from "./IssuedKeyDialog.tsx";
+import { RotateKeyDialog } from "./RotateKeyDialog.tsx";
 import { useMutation } from "#/shared/lib/mutation.ts";
-import { Trash2 as IconTrash } from "lucide-react";
 import { Can } from "#/features/auth/session.tsx";
 import { Button } from "#/components/ui/button";
-import type { VirtualKey } from "./common.ts";
+import { useCopyKey } from "./useCopyKey.ts";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+import {
+	RefreshCw as IconRotate,
+	Trash2 as IconTrash,
+	Copy as IconCopy,
+} from "lucide-react";
 
 /**
- * A key page's header actions: turning it on or off, and deleting it. Only for roles that may write
- * keys; everyone else reads the form.
+ * A key page's header actions: copying it, regenerating it, turning it on or off, and deleting it.
+ * Only for roles that may write keys — copying included, since a copied key is as good as a written
+ * one; everyone else reads the form.
  */
 export function KeyHeaderActions({ apiKey }: { apiKey: VirtualKey }) {
 	return (
@@ -25,6 +35,9 @@ function Actions({ apiKey }: { apiKey: VirtualKey }) {
 	const router = useRouter();
 	const confirm = useConfirm();
 	const { pending, run } = useMutation();
+	const { copy, copying } = useCopyKey();
+	const [rotating, setRotating] = useState(false);
+	const [issued, setIssued] = useState<CreatedVirtualKey | null>(null);
 
 	async function toggle() {
 		const result = await run(
@@ -83,6 +96,36 @@ function Actions({ apiKey }: { apiKey: VirtualKey }) {
 			>
 				{apiKey.enabled ? "Disable" : "Enable"}
 			</Button>
+			<Button
+				disabled={pending}
+				onClick={() => setRotating(true)}
+				variant="secondary"
+			>
+				<IconRotate aria-hidden className="size-4" />
+				Regenerate
+			</Button>
+			{apiKey.copyable ? (
+				<Button
+					disabled={copying !== null}
+					onClick={() => copy(apiKey)}
+					variant="secondary"
+				>
+					<IconCopy aria-hidden className="size-4" />
+					Copy key
+				</Button>
+			) : null}
+			<RotateKeyDialog
+				apiKey={apiKey}
+				isOpen={rotating}
+				key={`${apiKey.id}:${apiKey.private}`}
+				onClose={() => setRotating(false)}
+				onRotated={setIssued}
+			/>
+			<IssuedKeyDialog
+				issued={issued}
+				onClose={() => setIssued(null)}
+				rotated
+			/>
 		</>
 	);
 }

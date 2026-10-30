@@ -8,6 +8,7 @@ import { createKeyAction, updateKeyAction } from "./actions.ts";
 import { Suspense, use, useState, useTransition } from "react";
 import { Select, SelectItem } from "#/components/ui/select";
 import { useConfirm } from "#/shared/feedback/confirm.tsx";
+import { PrivateKeySwitch } from "./PrivateKeySwitch.tsx";
 import { useSession } from "#/features/auth/session.tsx";
 import { IssuedKeyDialog } from "./IssuedKeyDialog.tsx";
 import { useMutation } from "#/shared/lib/mutation.ts";
@@ -18,6 +19,14 @@ import { Form } from "#/components/ui/form";
 import { useRouter } from "next/navigation";
 
 import {
+	type CreatedVirtualKey,
+	type SecretState,
+	type VirtualKey,
+	secretState,
+	formatCents,
+} from "./common.ts";
+
+import {
 	type KeyDraft,
 	toCreateBody,
 	toUpdateBody,
@@ -25,15 +34,18 @@ import {
 	EMPTY_DRAFT,
 } from "./draft.ts";
 
-import {
-	type CreatedVirtualKey,
-	type VirtualKey,
-	formatCents,
-} from "./common.ts";
-
 const LIST = "/keys";
 const RESET_PERIODS = ["hourly", "daily", "weekly", "monthly"] as const;
 const NO_RESET = "never";
+
+/** What an existing key's panel says about its secret. */
+const SECRET_STATE: Record<SecretState, string> = {
+	copyable: "The secret is stored encrypted: Copy key copies it again.",
+	private:
+		"Private: the secret was shown once and is not stored. Regenerate the key to get a new one.",
+	sealed:
+		"The secret is stored, but copying keys is turned off on this gateway.",
+};
 
 /**
  * One form for issuing a key and for editing one, on its own page.
@@ -58,6 +70,7 @@ export function KeyForm({
 	const { can } = useSession();
 	const save = useMutation();
 	const reset = useMutation();
+	const seal = useMutation();
 	const issueKey = useIdempotencyKey();
 	/** Captured once: a refresh after a header action must not wipe unsaved edits. */
 	const [draft, setDraft] = useState<KeyDraft>(() =>
@@ -135,6 +148,22 @@ export function KeyForm({
 		});
 	}
 
+	async function makePrivate(key: VirtualKey) {
+		const confirmed = await confirm({
+			title: `Make ${key.name} private?`,
+			description:
+				"The stored secret is erased, so it can never be copied again. The key keeps working; only regenerating it can make it copyable again.",
+			confirmLabel: "Make private",
+		});
+		if (!confirmed) {
+			return;
+		}
+		await seal.run(() => updateKeyAction(key.id, { private: true }), {
+			success: `${key.name} is now private`,
+			failure: "The key could not be made private.",
+		});
+	}
+
 	return (
 		<>
 			<KeyFields
@@ -145,7 +174,27 @@ export function KeyForm({
 				onChange={setDraft}
 				onSubmit={submit}
 				pending={save.pending || navigating}
-				{...(existing ? { spent: formatCents(existing.spendCents) } : {})}
+				{...(existing
+					? {
+							spent: formatCents(existing.spendCents),
+							secret: secretState(existing),
+						}
+					: {})}
+				{...(existing && writable && !existing.private
+					? {
+							keyAction: (
+								<Button
+									disabled={seal.pending}
+									onClick={() => void makePrivate(existing)}
+									size="sm"
+									type="button"
+									variant="secondary"
+								>
+									Make private
+								</Button>
+							),
+						}
+					: {})}
 				{...(existing && writable
 					? {
 							resetAction: (
@@ -198,9 +247,11 @@ function KeyFields({
 	draft,
 	editing,
 	spent,
+	secret,
 	error,
 	pending,
 	disabled,
+	keyAction,
 	resetAction,
 	onChange,
 	onSubmit,
@@ -210,9 +261,12 @@ function KeyFields({
 	editing: boolean;
 	/** What the key has spent in the current period, when editing. */
 	spent?: string;
+	/** What can be done with the secret, when editing. */
+	secret?: SecretState;
 	error: string | null;
 	pending: boolean;
 	disabled: boolean;
+	keyAction?: React.ReactNode;
 	resetAction?: React.ReactNode;
 	onChange: (update: (current: KeyDraft) => KeyDraft) => void;
 	onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
@@ -227,20 +281,29 @@ function KeyFields({
 		<Form className="flex flex-col gap-3" onSubmit={onSubmit}>
 			<fieldset className="contents" disabled={disabled}>
 				<Panel
+					action={keyAction}
 					description={
-						editing
-							? "The secret never changes here; everything else about the key does."
-							: "The secret is shown once, right after the key is created."
+						secret === undefined
+							? "The secret is shown right after the key is created."
+							: SECRET_STATE[secret]
 					}
 					title="Key"
 				>
-					<Input
-						autoFocus={!editing}
-						label="Name"
-						onValueChange={(value) => set("name", value)}
-						required
-						value={draft.name}
-					/>
+					<div className="flex flex-col gap-4">
+						<Input
+							autoFocus={!editing}
+							label="Name"
+							onValueChange={(value) => set("name", value)}
+							required
+							value={draft.name}
+						/>
+						{editing ? null : (
+							<PrivateKeySwitch
+								checked={draft.private}
+								onCheckedChange={(checked) => set("private", checked)}
+							/>
+						)}
+					</div>
 				</Panel>
 
 				<Panel
@@ -383,6 +446,12 @@ export function KeyFormSkeleton({ editing = false }: { editing?: boolean }) {
 				{...(editing
 					? {
 							spent: formatCents(0),
+							secret: "copyable" as const,
+							keyAction: (
+								<Button size="sm" type="button" variant="secondary">
+									Make private
+								</Button>
+							),
 							resetAction: (
 								<Button size="sm" type="button" variant="secondary">
 									Reset spend

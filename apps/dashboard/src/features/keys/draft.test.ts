@@ -28,6 +28,8 @@ const key: VirtualKey = {
 	expiresAt: null,
 	createdAt: "2026-01-01T00:00:00.000Z",
 	updatedAt: "2026-01-01T00:00:00.000Z",
+	private: false,
+	copyable: true,
 };
 
 describe("money", () => {
@@ -90,6 +92,15 @@ describe("toCreateBody", () => {
 			rpm: 60,
 		});
 	});
+
+	test("asks for a private key only when one was chosen", () => {
+		expect(toCreateBody({ ...EMPTY_DRAFT, name: "ci" })).not.toHaveProperty(
+			"private",
+		);
+		expect(toCreateBody({ ...EMPTY_DRAFT, name: "ci", private: true })).toEqual(
+			{ name: "ci", allowedModels: [], private: true },
+		);
+	});
 });
 
 describe("toUpdateBody", () => {
@@ -113,6 +124,11 @@ describe("toUpdateBody", () => {
 		expect(toUpdateBody(draft, key)).toEqual({
 			allowedModels: ["fast", "general"],
 		});
+	});
+
+	test("privacy never rides along with a save", () => {
+		const draft = { ...draftFromKey(key), private: true };
+		expect(toUpdateBody(draft, key)).toEqual({});
 	});
 
 	test("disabling travels on its own", () => {
