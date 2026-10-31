@@ -2542,46 +2542,6 @@
 				"cacheWriteCentsPerMTokens": 125
 			}
 		},
-		"arcee-ai/trinity-large-thinking": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": false,
-						"reasoning": true,
-						"structuredOutputs": true
-					},
-					"maxInputTokens": 262100,
-					"maxOutputTokens": 80000,
-					"modalities": {
-						"input": ["text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"include_reasoning": true,
-						"max_tokens": true,
-						"reasoning": true,
-						"reasoning_effort": true,
-						"response_format": true,
-						"stop": true,
-						"structured_outputs": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					},
-					"reasoning": {
-						"kind": "openai_effort",
-						"levels": ["none", "low", "medium", "high"]
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 25,
-				"outputCentsPerMTokens": 80,
-				"cacheReadCentsPerMTokens": 6
-			}
-		},
 		"bfl/flux-2-flex": {
 			"operations": {
 				"image.generate": {
@@ -13170,43 +13130,6 @@
 				"inputCentsPerMTokens": 9,
 				"outputCentsPerMTokens": 18,
 				"cacheReadCentsPerMTokens": 0.9
-			}
-		},
-		"poolside/laguna-s-2.1-free": {
-			"operations": {
-				"text.generate": {
-					"capabilities": {
-						"tools": true,
-						"vision": false,
-						"reasoning": true,
-						"structuredOutputs": false
-					},
-					"maxInputTokens": 256000,
-					"maxOutputTokens": 32768,
-					"modalities": {
-						"input": ["text"],
-						"output": ["text"]
-					},
-					"contracts": ["chat.completions", "responses"],
-					"parameters": {
-						"include_reasoning": true,
-						"max_tokens": true,
-						"reasoning": true,
-						"reasoning_effort": true,
-						"stop": true,
-						"temperature": true,
-						"tool_choice": true,
-						"tools": true
-					},
-					"reasoning": {
-						"kind": "openai_effort",
-						"levels": ["none", "high"]
-					}
-				}
-			},
-			"pricing": {
-				"inputCentsPerMTokens": 0,
-				"outputCentsPerMTokens": 0
 			}
 		},
 		"prodia/flux-fast-schnell": {
