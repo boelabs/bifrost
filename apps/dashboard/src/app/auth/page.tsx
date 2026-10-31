@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardContent } from "#/components/ui/card";
 import { currentSessionIfReachable } from "#/features/auth/api.ts";
-import { BifrozzMark } from "#/shared/components/BifrozzMark";
+import { BifrozzLogo } from "#/shared/components/BifrozzLogo";
 import { ThemeSelect } from "#/shared/theme/ThemeSelect.tsx";
 import { SignInForm } from "#/features/auth/SignInForm.tsx";
 import { redirect } from "next/navigation";
@@ -36,9 +36,8 @@ export default async function SignInPage(props: PageProps<"/auth">) {
 				<ThemeSelect />
 			</div>
 			<div className="flex w-full max-w-sm flex-col gap-6">
-				<div className="flex items-center justify-center gap-2">
-					<BifrozzMark decorative size={32} />
-					<span className="font-semibold text-lg">Bifrozz</span>
+				<div className="flex justify-center">
+					<BifrozzLogo size={28} />
 				</div>
 				<Card>
 					<CardHeader>

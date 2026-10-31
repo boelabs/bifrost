@@ -1,11 +1,11 @@
 <div align="center">
 
+<h1>
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="brand/bifrozz-mark-dark.png">
-  <img src="brand/bifrozz-mark-light.png" alt="" width="132">
+  <source media="(prefers-color-scheme: dark)" srcset="brand/bifrozz-logo-dark.png">
+  <img src="brand/bifrozz-logo-light.png" alt="Bifrozz" width="320">
 </picture>
-
-# Bifrozz
+</h1>
 
 **One contract. Every model provider.**
 

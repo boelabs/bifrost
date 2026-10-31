@@ -5,7 +5,10 @@ its own mark: the Boelabs isotipo belongs to Boelabs, not to one of the things B
 
 | File | What it is |
 |---|---|
-| `bifrozz-mark.svg` | The mark in `currentColor`, cropped to the artwork. The same paths both apps inline as their mark component. |
+| `bifrozz-logo.svg` | The logotype — mark and wordmark — in `currentColor`, cropped to the artwork. The same paths both apps inline as `BifrozzLogo`, wherever the product is named. |
+| `bifrozz-logo-light.png` | The logotype in black, 800px wide. The README's heading on light backgrounds. |
+| `bifrozz-logo-dark.png` | The same logotype in white, for dark backgrounds. |
+| `bifrozz-mark.svg` | The mark alone in `currentColor`, cropped to the artwork. The source of each app's `icon.svg`. |
 | `bifrozz-mark-light.png` | Black ink on transparency, 512px wide. For light backgrounds. |
 | `bifrozz-mark-dark.png` | The same mark in white. For dark backgrounds. |
 | `bifrozz-isotype-source.svg` | The designer's export, the source of truth. Only a `<title>` was added, for the accessibility gate. |
@@ -27,8 +30,13 @@ own mask and paints transparent corners black. `favicon.ico` is the kit's own.
 `bifrozz-mark.svg` is the source export's eight paths at two decimals (svgo, `floatPrecision: 2`),
 with the viewBox cropped from the original 1455 square to the artwork's own 1444 × 957. Rasterised
 at native resolution against the source, no pixel moves by more than 25 of 255 grey levels; one
-decimal moves edges visibly, so two is the floor. The apps' mark components (`BifrozzMark`) carry the
-same paths, and each app's `icon.svg` centres them in a padded square with the theme rule added.
+decimal moves edges visibly, so two is the floor. Each app's `icon.svg` centres those paths in a
+padded square with the theme rule added.
+
+`bifrozz-logo.svg` is the kit's horizontal black logo made the same way: its C2PA metadata dropped,
+the viewBox cropped from 1756 × 606 to the artwork's 1650 × 331, and the paths at two decimals (no
+pixel moves by more than 18 of 255). The apps' `BifrozzLogo` components carry the same paths.
+
 An `<img>` resolves `currentColor` to black, which is what the PNGs are rendered from.
 
 Redo them only from the source export, and check the result the same way.

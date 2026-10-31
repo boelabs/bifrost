@@ -1,5 +1,5 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
-import { BifrozzMark } from "#/components/bifrozz-mark.tsx";
+import { BifrozzLogo } from "#/components/bifrozz-logo.tsx";
 import { localizedPath, type Locale } from "#/lib/i18n.ts";
 
 /**
@@ -11,12 +11,7 @@ import { localizedPath, type Locale } from "#/lib/i18n.ts";
 const baseOptions: BaseLayoutProps = {
 	githubUrl: "https://github.com/boelabs/bifrost",
 	nav: {
-		title: (
-			<>
-				<BifrozzMark decorative size={17} />
-				<span className="font-medium">Bifrozz</span>
-			</>
-		),
+		title: <BifrozzLogo size={18} />,
 	},
 };
 
