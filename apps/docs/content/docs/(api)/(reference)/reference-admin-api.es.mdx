@@ -4,11 +4,11 @@ description: "Rutas de administración, permisos, paginación e idempotencia."
 ---
 Todas las rutas `/admin/*` requieren una identidad de operador: `Authorization: Bearer $MASTER_KEY` o, cuando `DASH_ENABLED`, una cookie de sesión de operador cuya función conlleva el permiso que necesita esa ruta (la master key los incluye todos). Consulta [Seguridad → Roles](/es/docs/security#roles). Las respuestas exitosas utilizan `{ "data": ... }`; las listas paginadas utilizan `{ "data": [...], "pagination": { limit, offset, total, nextOffset } }`.
 
-Cualquier `POST /admin/*` acepta un header `Idempotency-Key` opcional; consulta [Creaciones de idempotentes](#idempotent-creates). Esta página es un mapa de lo que existe; para conocer los cuerpos exactos de solicitud/respuesta, consulta [`apps/gateway/openapi.yaml`](https://github.com/boelabs/bifrost/blob/main/apps/gateway/openapi.yaml) o la especificación interactiva (consulta la [Referencia de la API](/es/docs/api-overview)).
+Cualquier `POST /admin/*` acepta un header `Idempotency-Key` opcional; consulta [Creaciones de idempotentes](#idempotent-creates). Esta página es un mapa de lo que existe; para conocer los cuerpos exactos de solicitud/respuesta, consulta [`apps/gateway/openapi.yaml`](https://github.com/boelabs/bifrozz/blob/main/apps/gateway/openapi.yaml) o la especificación interactiva (consulta la [Referencia de la API](/es/docs/api-overview)).
 
 ## Clientes escritos [#typed-clients]
 
-Cada respuesta de administración lleva un esquema en [`apps/gateway/openapi.yaml`](https://github.com/boelabs/bifrost/blob/main/apps/gateway/openapi.yaml), por lo que se genera un cliente completamente escrito en lugar de escrito a mano:
+Cada respuesta de administración lleva un esquema en [`apps/gateway/openapi.yaml`](https://github.com/boelabs/bifrozz/blob/main/apps/gateway/openapi.yaml), por lo que se genera un cliente completamente escrito en lugar de escrito a mano:
 
 ```bash
 bunx openapi-typescript apps/gateway/openapi.yaml -o src/api/schema.d.ts

@@ -1,7 +1,7 @@
 # Bifrozz from published images. Nothing is built, so this file is complete on its own: paste it
 # into Coolify, Dokploy or Portainer, or run it anywhere Docker is installed.
 #
-#   curl -O https://raw.githubusercontent.com/boelabs/bifrost/main/docker/compose.images.yaml
+#   curl -O https://raw.githubusercontent.com/boelabs/bifrozz/main/docker/compose.images.yaml
 #   cp .env.example .env   # then fill it in
 #   docker compose -f compose.images.yaml up -d
 #

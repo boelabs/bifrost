@@ -11,13 +11,13 @@ master key carries all of them). See [Security → Roles](/docs/security#roles).
 Any `POST /admin/*` accepts an optional `Idempotency-Key` header — see
 [Idempotent creates](#idempotent-creates).
 This page is a map of what exists; for exact request/response bodies, see
-[`apps/gateway/openapi.yaml`](https://github.com/boelabs/bifrost/blob/main/apps/gateway/openapi.yaml)
+[`apps/gateway/openapi.yaml`](https://github.com/boelabs/bifrozz/blob/main/apps/gateway/openapi.yaml)
 or the interactive spec (see [API guide](/docs/api-overview)).
 
 ## Typed clients
 
 Every management response carries a schema in
-[`apps/gateway/openapi.yaml`](https://github.com/boelabs/bifrost/blob/main/apps/gateway/openapi.yaml),
+[`apps/gateway/openapi.yaml`](https://github.com/boelabs/bifrozz/blob/main/apps/gateway/openapi.yaml),
 so a fully typed client is generated rather than hand-written:
 
 ```bash

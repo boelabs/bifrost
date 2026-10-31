@@ -78,7 +78,7 @@ bun install --frozen-lockfile
 **GitHub access.** In a cloud session, `gh` commands built on GraphQL (`gh pr list`, `gh pr create`,
 `gh pr checks`, `gh pr view`, `gh pr merge`) fail with 403. Use the GitHub tools the session provides
 (`list_pull_requests`, `create_pull_request`, `update_pull_request`, `pull_request_read` with
-`get` / `get_check_runs`, `merge_pull_request`) or the REST API through `gh api repos/boelabs/bifrost/...`.
+`get` / `get_check_runs`, `merge_pull_request`) or the REST API through `gh api repos/boelabs/bifrozz/...`.
 Locally, the `gh pr` commands below work as written.
 
 Look for an open pull request whose head branch starts with `chore/catalog-sync`. If one exists, do

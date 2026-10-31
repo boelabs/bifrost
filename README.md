@@ -128,8 +128,8 @@ Published images, no checkout required — `docker/compose.images.yaml` pulls th
 its own, so it can be pasted straight into Coolify, Dokploy or Portainer:
 
 ```bash
-curl -O https://raw.githubusercontent.com/boelabs/bifrost/main/docker/compose.images.yaml
-curl -o .env https://raw.githubusercontent.com/boelabs/bifrost/main/docker/.env.example  # then fill it in
+curl -O https://raw.githubusercontent.com/boelabs/bifrozz/main/docker/compose.images.yaml
+curl -o .env https://raw.githubusercontent.com/boelabs/bifrozz/main/docker/.env.example  # then fill it in
 docker compose -f compose.images.yaml up -d
 ```
 
