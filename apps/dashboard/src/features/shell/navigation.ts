@@ -14,6 +14,10 @@ import {
 	Plug,
 } from "lucide-react";
 
+/** A quiet sidebar row; the page open is `bg-primary/10 text-primary` (`aria-current`). */
+export const NAV_ROW =
+	"flex items-center gap-2 rounded-lg p-2 text-muted-foreground outline-none transition-colors hover:bg-accent/50 hover:text-accent-foreground/80 hover:transition-none focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-primary/10 aria-[current=page]:text-primary [&_svg]:size-4 [&_svg]:shrink-0";
+
 export interface NavItem {
 	href: string;
 	label: string;

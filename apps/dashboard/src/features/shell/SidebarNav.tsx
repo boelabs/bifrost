@@ -1,48 +1,100 @@
 "use client";
 
-import { isActive, type NavItem, visibleNavigation } from "./navigation.ts";
 import { useSession } from "#/features/auth/session.tsx";
 import { usePathname } from "next/navigation";
+import { PinnedPages } from "./RecentPages";
+import type { ReactNode } from "react";
+import { Fragment } from "react";
 import Link from "next/link";
 
-/** A quiet sidebar row; the page open is `bg-primary/10 text-primary` (`aria-current`). */
-export const NAV_ROW =
-	"flex items-center gap-2 rounded-lg p-2 text-muted-foreground outline-none transition-colors hover:bg-accent/50 hover:text-accent-foreground/80 hover:transition-none focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-primary/10 aria-[current=page]:text-primary [&_svg]:size-4 [&_svg]:shrink-0";
+import {
+	visibleNavigation,
+	type NavGroup,
+	type NavItem,
+	NAVIGATION,
+	isActive,
+	NAV_ROW,
+} from "./navigation.ts";
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 	// Suspends here, inside the shell's own boundary, until the gateway answers with the identity.
 	const { can } = useSession();
+	const pathname = usePathname();
 	return (
-		<>
-			{visibleNavigation(can).map((group) => (
-				<div className="flex flex-col gap-0.5" key={group.label ?? "main"}>
-					{group.label ? (
-						<p className="px-2 pb-1 font-medium text-muted-foreground text-xs">
-							{group.label}
-						</p>
-					) : null}
-					{group.items.map((item) => (
-						<NavLink item={item} key={item.href} onNavigate={onNavigate} />
-					))}
-				</div>
-			))}
-		</>
+		<NavGroups
+			groups={visibleNavigation(can)}
+			onNavigate={onNavigate}
+			pathname={pathname}
+			pinned={<PinnedPages onNavigate={onNavigate} />}
+		/>
 	);
+}
+
+/**
+ * What the sidebar shows while the operator's role is read. The pages and their names are known
+ * before the gateway answers, so they are drawn as they are rather than as placeholders; the
+ * entries the role cannot use go once it is known. It is part of the prerendered shell, which has
+ * no pathname, so the page open is marked once the role arrives with it.
+ */
+export function SidebarNavFallback({
+	onNavigate,
+}: {
+	onNavigate?: () => void;
+}) {
+	return (
+		<NavGroups groups={NAVIGATION} onNavigate={onNavigate} pathname={null} />
+	);
+}
+
+function NavGroups({
+	groups,
+	pathname,
+	pinned,
+	onNavigate,
+}: {
+	groups: NavGroup[];
+	/** The page open, or `null` when it is not known yet. */
+	pathname: string | null;
+	/** Like Stripe's shortcuts: right below the main pages, never past the fold. */
+	pinned?: ReactNode;
+	onNavigate?: (() => void) | undefined;
+}) {
+	return groups.map((group, index) => (
+		<Fragment key={group.label ?? "main"}>
+			<div className="flex flex-col gap-0.5">
+				{group.label ? (
+					<p className="px-2 pb-1 font-medium text-muted-foreground text-xs">
+						{group.label}
+					</p>
+				) : null}
+				{group.items.map((item) => (
+					<NavLink
+						current={pathname !== null && isActive(item, pathname)}
+						item={item}
+						key={item.href}
+						onNavigate={onNavigate}
+					/>
+				))}
+			</div>
+			{index === 0 ? pinned : null}
+		</Fragment>
+	));
 }
 
 /** Sidebar entry; active on its own path and on any record or creation page nested under it. */
 function NavLink({
 	item,
+	current,
 	onNavigate,
 }: {
 	item: NavItem;
+	current: boolean;
 	onNavigate?: (() => void) | undefined;
 }) {
-	const pathname = usePathname();
 	const Icon = item.icon;
 	return (
 		<Link
-			aria-current={isActive(item, pathname) ? "page" : undefined}
+			aria-current={current ? "page" : undefined}
 			className={NAV_ROW}
 			href={item.href}
 			onClick={onNavigate}

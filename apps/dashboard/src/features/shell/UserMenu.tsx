@@ -1,5 +1,6 @@
 "use client";
 
+import { TextSkeleton } from "#/shared/components/TextSkeleton";
 import { isThemePreference } from "#/shared/theme/theme";
 import { useTheme } from "#/shared/theme/ThemeProvider";
 import { useShowShortcuts } from "./KeyboardShortcuts";
@@ -24,6 +25,33 @@ import {
 	KeyboardIcon,
 	LogOutIcon,
 } from "lucide-react";
+
+/**
+ * The foot while the gateway says who is signed in: the trigger's own row, so nothing moves when
+ * the name arrives. The name is the one thing not known yet, so it is the only placeholder.
+ */
+export function UserMenuFallback() {
+	return (
+		<div
+			aria-busy="true"
+			aria-label="Loading account"
+			className="flex items-center gap-2 p-2"
+			role="status"
+		>
+			<span
+				aria-hidden="true"
+				className="size-6 shrink-0 rounded-full bg-primary/10"
+			/>
+			<span className="min-w-0 flex-1 text-sm">
+				<TextSkeleton length={10} />
+			</span>
+			<ChevronsUpDownIcon
+				aria-hidden="true"
+				className="size-4 shrink-0 text-muted-foreground"
+			/>
+		</div>
+	);
+}
 
 const THEMES = [
 	{ value: "light", label: "Light theme" },

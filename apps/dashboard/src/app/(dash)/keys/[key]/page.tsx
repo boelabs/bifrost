@@ -41,6 +41,7 @@ async function KeyDetail({ params }: { params: Params }) {
 		<>
 			<Breadcrumbs
 				items={[{ label: "API keys", href: "/keys" }, { label: apiKey.name }]}
+				recent={apiKey.name}
 			/>
 			<PageHeader
 				actions={<KeyHeaderActions apiKey={apiKey} />}
