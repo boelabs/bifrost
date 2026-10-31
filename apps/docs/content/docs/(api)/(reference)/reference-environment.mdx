@@ -91,10 +91,12 @@ them take effect on restart and one image tag can be promoted between environmen
 | Variable | Default | Controls |
 |---|---|---|
 | `GATEWAY_URL` | — | Where the gateway is. Required. Only this container needs to reach it — the browser never leaves the dashboard's own origin, so the gateway needs no public domain. |
+| `DOCS_URL` | — | The documentation site's public address. Optional; with it the sidebar and the command palette link to it, opening in a new tab. |
 | `PORT` | `3001` | Listen port (`DASH_PORT` in development). |
 
-The dashboard checks the address before it accepts its first request, so a missing one is a
-container that exits with the reason printed rather than one that starts and then fails every page.
+The dashboard checks the addresses before it accepts its first request, so a missing `GATEWAY_URL`,
+or a `DOCS_URL` that is not an http(s) address, is a container that exits with the reason printed
+rather than one that starts and then fails every page.
 
 `DASH_ENABLED` is read by the **gateway** — it gates `/auth/*` and `/admin/users` there. The Compose
 files in this repository reuse it as a single switch for the pair, so the dashboard container exits

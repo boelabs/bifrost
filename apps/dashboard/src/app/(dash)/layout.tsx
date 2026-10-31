@@ -1,5 +1,7 @@
 import { requireIdentity } from "#/features/auth/identity.ts";
 import { AppShell } from "#/features/shell/AppShell.tsx";
+import { docsUrl } from "#/shared/config/server.ts";
+import { connection } from "next/server";
 
 /**
  * The authenticated half of the dashboard. Every page except the login screen hangs off this layout,
@@ -15,5 +17,15 @@ export default function AuthedLayout({
 }: {
 	children: React.ReactNode;
 }) {
-	return <AppShell identity={requireIdentity()}>{children}</AppShell>;
+	return (
+		<AppShell docs={documentation()} identity={requireIdentity()}>
+			{children}
+		</AppShell>
+	);
+}
+
+/** Read from the environment when a request arrives, never at build time, and not awaited: see above. */
+async function documentation(): Promise<string | null> {
+	await connection();
+	return docsUrl();
 }

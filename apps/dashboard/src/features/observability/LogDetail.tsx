@@ -494,6 +494,7 @@ export function LogDetail({ detail }: { detail: OperationDetail }) {
 					{ label: "Logs", href: "/logs" },
 					{ label: shortId(detail.id) },
 				]}
+				recent={`${detail.publicModel ?? detail.callType} · ${shortId(detail.id)}`}
 			/>
 			<PageHeader
 				badge={

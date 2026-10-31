@@ -2,17 +2,17 @@
 
 import { CommandPalette, CommandPaletteTrigger } from "./CommandPalette";
 import { ScrollArea } from "#/components/ui/primitives/scroll-area";
-import { NavSkeleton, UserMenuSkeleton } from "./ShellSkeletons";
 import type { OperatorIdentity } from "#/features/auth/common";
 import { BifrozzLogo } from "#/shared/components/BifrozzLogo";
+import { SidebarNav, SidebarNavFallback } from "./SidebarNav";
 import { SessionProvider } from "#/features/auth/session";
+import { DocsLink, DocsProvider } from "./Documentation";
 import { KeyboardShortcuts } from "./KeyboardShortcuts";
+import { UserMenu, UserMenuFallback } from "./UserMenu";
 import { Button } from "#/components/ui/button";
 import { Suspense, useState } from "react";
-import { SidebarNav } from "./SidebarNav";
 import { CreateMenu } from "./CreateMenu";
 import { MenuIcon } from "lucide-react";
-import { UserMenu } from "./UserMenu";
 import Link from "next/link";
 
 import {
@@ -29,46 +29,50 @@ import {
  */
 export function AppShell({
 	identity,
+	docs,
 	children,
 }: {
 	identity: Promise<OperatorIdentity>;
+	docs: Promise<string | null>;
 	children: React.ReactNode;
 }) {
 	return (
 		<SessionProvider identity={identity}>
-			<CommandPalette>
-				<KeyboardShortcuts>
-					<div className="flex h-dvh overflow-hidden bg-background">
-						<a
-							className="sr-only fixed top-2 left-2 z-50 rounded-lg bg-primary p-3 text-primary-foreground focus:not-sr-only"
-							href="#main-content"
-						>
-							Skip to content
-						</a>
-						<aside className="hidden w-(--app-sidebar-width) shrink-0 border-r bg-background md:block">
-							<SidebarContent />
-						</aside>
-						<div className="flex min-w-0 flex-1 flex-col">
-							<MobileBar />
-							<main
-								className="min-h-0 min-w-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]"
-								id="main-content"
-								tabIndex={-1}
+			<DocsProvider docs={docs}>
+				<CommandPalette>
+					<KeyboardShortcuts>
+						<div className="flex h-dvh overflow-hidden bg-background">
+							<a
+								className="sr-only fixed top-2 left-2 z-50 rounded-lg bg-primary p-3 text-primary-foreground focus:not-sr-only"
+								href="#main-content"
 							>
-								{/*
-								 * A page that scrolls its own content (the playground's transcript) marks its
-								 * root `data-fill-viewport` and gets exactly the main column's height. Read from
-								 * the DOM rather than the pathname, which would keep dynamic routes from
-								 * prerendering the shell.
-								 */}
-								<div className="mx-auto flex min-h-full w-full max-w-6xl flex-col gap-6 p-4 has-data-fill-viewport:h-full has-data-fill-viewport:min-h-0 sm:p-6">
-									{children}
-								</div>
-							</main>
+								Skip to content
+							</a>
+							<aside className="hidden w-(--app-sidebar-width) shrink-0 border-r bg-background md:block">
+								<SidebarContent />
+							</aside>
+							<div className="flex min-w-0 flex-1 flex-col">
+								<MobileBar />
+								<main
+									className="min-h-0 min-w-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]"
+									id="main-content"
+									tabIndex={-1}
+								>
+									{/*
+									 * A page that scrolls its own content (the playground's transcript) marks its
+									 * root `data-fill-viewport` and gets exactly the main column's height. Read from
+									 * the DOM rather than the pathname, which would keep dynamic routes from
+									 * prerendering the shell.
+									 */}
+									<div className="mx-auto flex min-h-full w-full max-w-6xl flex-col gap-6 p-4 has-data-fill-viewport:h-full has-data-fill-viewport:min-h-0 sm:p-6">
+										{children}
+									</div>
+								</main>
+							</div>
 						</div>
-					</div>
-				</KeyboardShortcuts>
-			</CommandPalette>
+					</KeyboardShortcuts>
+				</CommandPalette>
+			</DocsProvider>
 		</SessionProvider>
 	);
 }
@@ -78,7 +82,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 		<div className="flex h-full flex-col gap-3 px-2 py-3">
 			<div className="flex shrink-0 items-center justify-between gap-2 border-b pb-3">
 				<Link
-					className="flex min-w-0 items-center gap-2 rounded-md px-2 py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					className="flex h-10 min-w-0 items-center rounded-md px-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					href="/"
 					onClick={onNavigate}
 				>
@@ -101,13 +105,16 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 				scrollFade
 			>
 				<nav aria-label="Main" className="flex flex-col gap-4 px-2">
-					<Suspense fallback={<NavSkeleton />}>
+					<Suspense fallback={<SidebarNavFallback onNavigate={onNavigate} />}>
 						<SidebarNav onNavigate={onNavigate} />
 					</Suspense>
 				</nav>
 			</ScrollArea>
 			<div className="flex shrink-0 flex-col gap-1 border-t pt-3">
-				<Suspense fallback={<UserMenuSkeleton />}>
+				<Suspense fallback={null}>
+					<DocsLink onNavigate={onNavigate} />
+				</Suspense>
+				<Suspense fallback={<UserMenuFallback />}>
 					<UserMenu onNavigate={onNavigate} />
 				</Suspense>
 			</div>
@@ -132,7 +139,7 @@ function MobileBar() {
 				</SheetPopup>
 			</Sheet>
 			<Link
-				className="flex items-center gap-2 rounded-md px-1 py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+				className="flex h-9 items-center rounded-md px-1 outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				href="/"
 			>
 				<BifrozzLogo size={18} />

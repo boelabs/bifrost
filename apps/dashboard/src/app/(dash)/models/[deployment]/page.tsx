@@ -60,6 +60,7 @@ async function Deployment({
 					{ label: "Models", href: "/models" },
 					{ label: deployment.publicModel },
 				]}
+				recent={`${deployment.publicModel} · ${deployment.adapterKey}`}
 			/>
 			<PageHeader
 				actions={

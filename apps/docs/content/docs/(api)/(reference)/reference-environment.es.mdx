@@ -78,9 +78,10 @@ Leído por el contenedor del dashboard, no por el gateway. La lista completa es 
 | Variables | Predeterminado | Controles |
 |---|---|---|
 | `GATEWAY_URL` | — | Donde está la gateway. Requerido. Sólo este contenedor necesita llegar a él: el navegador nunca abandona el origen del panel, por lo que el gateway no necesita dominio público. |
+| `DOCS_URL` | — | Dirección pública del sitio de documentación. Opcional; con ella la barra lateral y la paleta de comandos enlazan a él, en una pestaña nueva. |
 | `PORT` | `3001` | Puerto de escucha (`DASH_PORT` en desarrollo). |
 
-El panel verifica la dirección antes de aceptar su primera solicitud, por lo que falta un contenedor que sale con el motivo impreso en lugar de uno que comienza y luego falla en cada página.
+El panel verifica las direcciones antes de aceptar su primera solicitud, por lo que un `GATEWAY_URL` que falta, o un `DOCS_URL` que no es una dirección http(s), es un contenedor que sale con el motivo impreso en lugar de uno que comienza y luego falla en cada página.
 
 `DASH_ENABLED` es leído por el **gateway**: allí conecta `/auth/*` y `/admin/users`. Los archivos Compose en este repositorio lo reutilizan como un único interruptor para el par, por lo que el contenedor del panel sale limpiamente cuando es falso.
 

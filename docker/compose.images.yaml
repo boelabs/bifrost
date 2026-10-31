@@ -82,6 +82,8 @@ services:
       # The only address it needs. The browser never talks to the gateway directly, so the
       # gateway needs no public domain of its own.
       GATEWAY_URL: ${GATEWAY_URL:-http://gateway:4000}
+      # Optional: the documentation site's public address, linked from the sidebar.
+      DOCS_URL: ${DOCS_URL:-}
     expose:
       - "3001"
     depends_on:

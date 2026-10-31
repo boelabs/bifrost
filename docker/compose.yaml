@@ -87,6 +87,8 @@ services:
       # The only thing this container needs to know. The browser never talks to the gateway, so
       # the gateway does not have to be reachable from outside this network.
       GATEWAY_URL: ${GATEWAY_URL:-http://gateway:4000}
+      # Optional: the documentation site's public address, linked from the sidebar.
+      DOCS_URL: ${DOCS_URL:-}
       DASH_ENABLED: ${DASH_ENABLED:-false}
     entrypoint:
       - /bin/sh

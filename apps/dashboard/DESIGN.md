@@ -142,14 +142,28 @@ Billete's shell, value for value (`src/features/shell`):
 - **No header.** The desktop sidebar is `--app-sidebar-width` (268px, shared with Billete), with no
   collapsed mode. Top: the logo (link to Overview) and a quiet square search button, separated
   from the navigation by a hairline. Middle: the navigation groups in a `ScrollArea` with
-  `scrollFade` and the thin `edge` scrollbar. Foot: the operator (`UserMenu`).
+  `scrollFade` and the thin `edge` scrollbar. Foot: *Documentation* (`DocsLink`, only when
+  `DOCS_URL` is set; it leaves the dashboard, so it opens in a new tab with a quiet ↗ and says so to
+  screen readers; the palette lists it under *Help*), then the operator (`UserMenu`).
 - **Navigation** is one list, `src/features/shell/navigation.ts` (`NAVIGATION`), read by the
   sidebar, the command palette and the keyboard shortcuts. Each entry declares the permissions it
   needs; an operator never sees a page whose calls would come back 403. Rows are quiet (`NAV_ROW`:
   `text-muted-foreground`, `p-2`, 16px icon); the open page is `bg-primary/10 text-primary`
   (`aria-current="page"`) and is active on every page nested under it (`/models/new`,
   `/models/<id>`). Group captions are `text-xs font-medium text-muted-foreground`. A new page joins
-  the group of its area; a new group is for a new area.
+  the group of its area; a new group is for a new area. While the role is read, the sidebar draws
+  every page as it is (names are static; never placeholders) and drops what the role cannot use
+  once it is known; that first paint belongs to the prerendered shell, so it marks no page open.
+- **Pinned and Recent** (`src/features/shell/RecentPages.tsx`, Billete's *Fijados* and
+  *Recientes*): a record's page passes `recent` to its `Breadcrumbs` (its name: *batch-jobs*,
+  *gpt-5 · openai*, *gpt-5 · 3f2a9c1e*), which remembers the visit and ends the trail in the pin
+  button (*Pin to sidebar* / *Unpin*, `aria-pressed`). **Pinned** is a sidebar section right below
+  the main pages, only once something is pinned, in pinning order; its rows are the title and the
+  area in muted text (`areaOf`: *Models*, *API keys*, *Logs*), no icon, and on hover or focus the
+  area gives way to an unpin button (always shown on touch screens). The latest visits live only
+  in the command palette (*Pinned*, then *Recent*, never the page open), so the menu never moves
+  under the pointer. Per operator, in this browser's `localStorage` (`src/shared/lib/browserStore.ts`,
+  every access guarded); nothing depends on it.
 - **Create menu:** a quiet square "+" beside the search, in the sidebar and the mobile bar. Its menu
   (*Create*) lists what the role can create (`CREATE_ACTIONS`), each with its shortcut as a
   `MenuShortcut` (`C D`); items navigate, never mutate. A role that creates nothing gets no button.

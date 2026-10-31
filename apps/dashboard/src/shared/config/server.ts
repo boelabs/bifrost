@@ -38,7 +38,35 @@ export function gatewayUrl(path = ""): string {
 	return `${parsed.origin}${parsed.pathname.replace(/\/+$/, "")}${path}`;
 }
 
-/** Called from `instrumentation.ts` so a missing address fails the boot, not the first page. */
+/**
+ * Where this deployment's documentation site is, or `null` when it has none: the sidebar's
+ * Documentation link and the command palette's Help group appear only with it. Each operator hosts
+ * the docs image themselves, so there is no address to fall back to. Read on every call, as above.
+ */
+export function docsUrl(): string | null {
+	const raw = process.env.DOCS_URL?.trim();
+	if (!raw) {
+		return null;
+	}
+	let parsed: URL;
+	try {
+		parsed = new URL(raw);
+	} catch (cause) {
+		throw new Error(`DOCS_URL must be an absolute URL, got: ${raw}`, {
+			cause,
+		});
+	}
+	if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+		throw new Error(`DOCS_URL must be http or https, got: ${parsed.protocol}`);
+	}
+	return parsed.href;
+}
+
+/**
+ * Called from `instrumentation.ts` so a missing address, or a docs address that is not one, fails
+ * the boot rather than the first page.
+ */
 export function assertConfigured(): void {
 	gatewayUrl();
+	docsUrl();
 }

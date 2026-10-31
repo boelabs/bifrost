@@ -17,6 +17,8 @@
 # Required at RUN time:
 #   GATEWAY_URL   where the gateway is, e.g. http://gateway:4000. Only this container needs
 #                 to reach it; the browser never leaves this app's own origin.
+# Optional at RUN time:
+#   DOCS_URL      the documentation site's public address, linked from the sidebar.
 
 # ---- deps: full install (the build needs devDependencies) ----
 FROM oven/bun:1.4 AS deps
