@@ -602,7 +602,9 @@
 					"300": 1250,
 					"3600": 2000
 				}
-			}
+			},
+			"deprecated": true,
+			"notes": "Anthropic deprecated fast mode for Claude Opus 4.8; it is removed on 2026-11-30 (replacement: claude-opus-5-5-fast)."
 		},
 		"claude-opus-5-5-fast": {
 			"operations": {
