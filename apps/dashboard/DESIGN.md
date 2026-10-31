@@ -27,7 +27,7 @@ neutral), soft hairline borders, rounded panels, tabular numbers. Color only car
   and accessibility. Only build from scratch when coss has nothing suitable, following its geometry,
   states, focus and keyboard patterns.
 - **Icons:** `lucide-react` only, `aria-hidden` when decorative, sized with `size-*` classes. The
-  Bifrozz mark (`BifrozzMark`) is the one brand asset.
+  Bifrozz logotype (`BifrozzLogo`) is the one brand asset; never set the product name in the UI font.
 - **Charts:** `recharts` through `src/components/ui/chart.tsx`.
 - **Font:** Google Sans Flex, the only UI font, headings included (`src/shared/fonts`). Google Sans
   Code for identifiers and code. Never set a font family anywhere else.

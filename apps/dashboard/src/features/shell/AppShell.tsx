@@ -4,7 +4,7 @@ import { CommandPalette, CommandPaletteTrigger } from "./CommandPalette";
 import { ScrollArea } from "#/components/ui/primitives/scroll-area";
 import { NavSkeleton, UserMenuSkeleton } from "./ShellSkeletons";
 import type { OperatorIdentity } from "#/features/auth/common";
-import { BifrozzMark } from "#/shared/components/BifrozzMark";
+import { BifrozzLogo } from "#/shared/components/BifrozzLogo";
 import { SessionProvider } from "#/features/auth/session";
 import { KeyboardShortcuts } from "./KeyboardShortcuts";
 import { Button } from "#/components/ui/button";
@@ -82,8 +82,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 					href="/"
 					onClick={onNavigate}
 				>
-					<BifrozzMark decorative size={24} />
-					<span className="font-semibold text-base">Bifrozz</span>
+					<BifrozzLogo size={20} />
 				</Link>
 				<div className="hidden items-center gap-1 md:flex">
 					<CommandPaletteTrigger />
@@ -136,8 +135,7 @@ function MobileBar() {
 				className="flex items-center gap-2 rounded-md px-1 py-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				href="/"
 			>
-				<BifrozzMark decorative size={20} />
-				<span className="font-semibold text-base">Bifrozz</span>
+				<BifrozzLogo size={18} />
 			</Link>
 			<CommandPaletteTrigger />
 			<Suspense fallback={null}>
