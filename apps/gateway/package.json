@@ -12,13 +12,13 @@
 		"llm",
 		"router"
 	],
-	"homepage": "https://github.com/boelabs/bifrost#readme",
+	"homepage": "https://github.com/boelabs/bifrozz#readme",
 	"bugs": {
-		"url": "https://github.com/boelabs/bifrost/issues"
+		"url": "https://github.com/boelabs/bifrozz/issues"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/boelabs/bifrost.git",
+		"url": "git+https://github.com/boelabs/bifrozz.git",
 		"directory": "apps/gateway"
 	},
 	"license": "MIT",

@@ -6,7 +6,7 @@
 
 Report security issues privately through one of these channels:
 
-- GitHub's [private vulnerability reporting](https://github.com/boelabs/bifrost/security/advisories/new) (preferred).
+- GitHub's [private vulnerability reporting](https://github.com/boelabs/bifrozz/security/advisories/new) (preferred).
 
 Please include:
 

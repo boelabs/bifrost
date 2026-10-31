@@ -9,7 +9,7 @@ import { localizedPath, type Locale } from "#/lib/i18n.ts";
  * mobile menu, and the "Edit on GitHub" affordance from one value.
  */
 const baseOptions: BaseLayoutProps = {
-	githubUrl: "https://github.com/boelabs/bifrost",
+	githubUrl: "https://github.com/boelabs/bifrozz",
 	nav: {
 		title: <BifrozzLogo size={18} />,
 	},
